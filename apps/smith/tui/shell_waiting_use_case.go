@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // planWait is the plan that a confirmation, opened at once, still waits for.
@@ -55,7 +56,7 @@ func (s *Shell) captureInDialog(purpose, title, why string, shown, plan []string
 func (s *Shell) captureWorking(purpose, title, why string, shown, plan []string, doing, note string) tea.Cmd {
 	run := s.sources.Capture
 	if run == nil {
-		s.notify("This smith cannot read that here: run "+commands.Line(plan)+" in a terminal", toast.Warning)
+		s.notify(words.Say("tui.waiting.this_smith_cannot_read_that_here", "line", commands.Line(plan)), toast.Warning)
 		return nil
 	}
 	s.closeWaiting()

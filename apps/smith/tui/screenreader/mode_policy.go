@@ -3,12 +3,12 @@ package screenreader
 import "strings"
 
 // Variable is the environment variable that asks for this mode.
-const Variable = "SMITH_SCREEN_READER"
+const Variable = "SMITH_SCREEN_READER" // words:literal
 
 // ThemeVariable and PlainTheme name the setting that asks for no colour and
 // no decoration: SMITH_THEME=plain is also a request for plain output.
 const (
-	ThemeVariable = "SMITH_THEME"
+	ThemeVariable = "SMITH_THEME" // words:literal
 	PlainTheme    = "plain"
 )
 
@@ -31,7 +31,7 @@ func Plain(getenv func(string) string, stdoutIsTerminal bool) bool {
 		return true
 	}
 	// A dumb terminal cannot draw a screen, move the cursor or show colour.
-	if strings.EqualFold(strings.TrimSpace(getenv("TERM")), "dumb") {
+	if strings.EqualFold(strings.TrimSpace(getenv("TERM")), "dumb") { // words:literal
 		return true
 	}
 	return !stdoutIsTerminal

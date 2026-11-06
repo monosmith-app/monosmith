@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // NewRecipeSteps are the questions of "Write a recipe": its name, its version,
@@ -15,11 +16,11 @@ import (
 func NewRecipeSteps() []Step {
 	return []Step{
 		{
-			Key: "name", Prompt: "What is the recipe called? (lowercase words joined by dashes)", Placeholder: "team", Note: WhatIs("recipe"),
+			Key: "name", Prompt: words.Say("guide.new_recipe_form.what_is_the_recipe_called_lowercase"), Placeholder: "team", Note: WhatIs("recipe"),
 			Check: func(_ map[string][]string, v string) string { return planProblem(v, "", nil) },
 		},
 		{
-			Key: "version", Prompt: "Version (major.minor.patch). Enter keeps 0.1.0.", Placeholder: "0.1.0", Optional: true,
+			Key: "version", Prompt: words.Say("guide.new_recipe_form.version_major_minor_patch_enter_keeps"), Placeholder: "0.1.0", Optional: true,
 			Check: func(a map[string][]string, v string) string {
 				if v == "" {
 					return ""
@@ -27,10 +28,10 @@ func NewRecipeSteps() []Step {
 				return planProblem(first(a, "name"), v, nil)
 			},
 		},
-		{Key: "extends", Prompt: "Recipe it extends (a path or an https URL; enter for none)", Placeholder: "base.recipe.toml", Optional: true, Path: true},
+		{Key: "extends", Prompt: words.Say("guide.new_recipe_form.recipe_it_extends_a_path_or"), Placeholder: "base.recipe.toml", Optional: true, Path: true},
 		{
-			Key: "fixed", Prompt: "Fixed plugins as level=plugin, separated by spaces (language=python lint=ruff structure=slices,layers)",
-			Placeholder: "language=python lint=ruff", Optional: true,
+			Key: "fixed", Prompt: words.Say("guide.new_recipe_form.fixed_plugins_as_level_plugin_separated"),
+			Placeholder: words.Say("guide.new_recipe_form.language_python_lint_ruff"), Optional: true,
 			Check: func(a map[string][]string, v string) string {
 				return planProblem(first(a, "name"), "", strings.Fields(v))
 			},

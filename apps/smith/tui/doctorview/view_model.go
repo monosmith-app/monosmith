@@ -1,22 +1,17 @@
 package doctorview
 
 import (
-	"fmt"
-	"strings"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// Model lists doctor's failing checks, one line each, failures before
-// warnings; g files them by project (the workspace's first); enter expands the
-// selected one into its problem and remedy, and f opens the wizard of its fix
+// Model lists doctor's failing checks under a heading per group (the
+// workspace's first, then each project), failures before warnings; enter on a
+// heading folds or unfolds its group, E all of them, g turns the groups off;
+// enter on a check expands it into its problem and remedy, and f opens the wizard of its fix
 // (see package fixwizard); Plan, FixFor and FixAll say which fixes there are.
 type Model struct {
 	Report   *doctor.Report
@@ -25,8 +20,15 @@ type Model struct {
 	// Cursor is a position in the order the findings are drawn.
 	Cursor int
 	Open   bool
-	// Grouped files the findings under their project; by default they are one flat list.
+	// Grouped files the findings under headings, the workspace's first and then
+	// each project's; a model that is not grouped is one flat list.
 	Grouped bool
+	// Folds is what the person chose for single groups, by group (the project's
+	// name; "" is the workspace): true for open, false for closed.
+	Folds map[string]bool
+	// All is what the person chose for every group at once: above 0 opens
+	// them, below 0 closes them, 0 leaves each as it is by default.
+	All int
 	// Loading is true while doctor runs for the first time.
 	Loading bool
 	// Waited is how long that run has taken so far, set by the shell for drawing.
@@ -43,7 +45,9 @@ func FromResult(r Result) Model {
 	if r.Err != nil {
 		return Model{Err: r.Err}
 	}
-	return Model{Report: &r.Report, Projects: r.Projects}
+	m := Model{Report: &r.Report, Projects: r.Projects, Grouped: true}
+	m.Cursor = m.firstFinding()
+	return m
 }
 
 // groups is the findings as drawn: one group, or one per project.
@@ -88,35 +92,23 @@ func (v Model) collapsed() bool {
 	return v.Report != nil && !v.ShowPassed && v.Report.Passed > 0
 }
 
-// rows is how many rows the cursor moves over: the problems, then the line
-// that stands for the collapsed passes.
-func (v Model) rows() int {
-	n := len(v.order())
-	if v.collapsed() {
-		n++
-	}
-	return n
-}
+// rows is how many rows the cursor moves over: the headings, the problems
+// of the open groups, then the line that stands for the collapsed passes.
+func (v Model) rows() int { return len(v.layout()) }
 
 // OnPassedLine is true when the cursor is on the collapsed passes' line.
-func (v Model) OnPassedLine() bool { return v.collapsed() && v.Cursor == len(v.order()) }
-
-// order is the finding indexes in the order they are drawn.
-func (v Model) order() []int {
-	var out []int
-	for _, g := range v.groups() {
-		out = append(out, g.Indexes...)
-	}
-	return out
+func (v Model) OnPassedLine() bool {
+	rows := v.layout()
+	return v.Cursor >= 0 && v.Cursor < len(rows) && rows[v.Cursor].kind == passedRow
 }
 
 // Selected is the finding under the cursor.
 func (v Model) Selected() (doctor.Finding, bool) {
-	order := v.order()
-	if v.Report == nil || v.Cursor < 0 || v.Cursor >= len(order) {
+	rows := v.layout()
+	if v.Report == nil || v.Cursor < 0 || v.Cursor >= len(rows) || rows[v.Cursor].kind != findingRow {
 		return doctor.Finding{}, false
 	}
-	return v.Report.Findings[order[v.Cursor]], true
+	return v.Report.Findings[rows[v.Cursor].finding], true
 }
 
 // Update handles a key.
@@ -128,197 +120,83 @@ func (v Model) Update(key tea.KeyMsg) Model {
 	if n == 0 {
 		return v
 	}
-	switch key.String() {
-	case "up":
+	switch commands.NavNamed(key.String()) {
+	case commands.NavUp:
 		v.Cursor = (v.Cursor - 1 + n) % n
 		v.Open = false
-	case "down":
+	case commands.NavDown:
 		v.Cursor = (v.Cursor + 1) % n
 		v.Open = false
-	case "enter", " ":
-		if v.OnPassedLine() {
-			v.ShowPassed = true
-			return v
-		}
-		v.Open = !v.Open
-	case "p":
-		v.ShowPassed, v.Open = !v.ShowPassed, false
-		v.Cursor = min(v.Cursor, max(v.rows()-1, 0))
-	case "g":
-		v.Grouped, v.Cursor, v.Open = !v.Grouped, 0, false
+	default:
+		return v.keyed(key.String())
 	}
 	return v
 }
 
-// Headline is the state of the workspace in a few words: "2 failed · 2 warnings".
-func (v Model) Headline(th theme.Theme) string {
-	r := v.Report
-	var parts []string
-	if r.Failed > 0 {
-		parts = append(parts, th.Failure(fmt.Sprintf("%s %d failed", th.Icons.Failed, r.Failed)))
-	}
-	if r.Warnings > 0 {
-		parts = append(parts, th.Warning(fmt.Sprintf("%s %d warning(s)", th.Icons.Warning, r.Warnings)))
-	}
-	if len(parts) == 0 {
-		parts = append(parts, th.Success(th.Icons.Passed+" Every check passed"))
-	}
-	return strings.Join(parts, th.Muted(" · "))
-}
-
-// View draws the page in w cells: the headline first, then the failing
-// checks one line each (the state and the title), the passed ones behind one
-// line. With expand the open check shows its problem, remedy and fix under
-// its line; without it the detail beside the list says all that, so the page
-// does not repeat it. rowOf maps a line to the finding drawn on it.
-func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf map[int]int) {
-	rowOf = map[int]int{}
-	if v.Err != nil {
-		return []string{th.Failure(v.Err.Error())}, rowOf
-	}
-	if v.Report == nil {
-		return []string{th.Muted(progress.Waiting("Running the health checks on "+progress.OfProjects(v.Covered)+"…", v.Waited))}, rowOf
-	}
-	lines = append(lines, " "+v.Headline(th), "")
-	position := 0
-	for _, g := range v.groups() {
-		if v.Grouped {
-			lines = append(lines, v.header(th, g))
+// keyed handles the keys that are not movement: fold, expand and the toggles.
+func (v Model) keyed(name string) Model {
+	switch name {
+	case "enter", " ":
+		switch {
+		case v.OnPassedLine():
+			v.ShowPassed = true
+			return v
+		case v.OnHeader():
+			return v.toggleGroup(v.layout()[v.Cursor].group)
 		}
-		for _, i := range g.Indexes {
-			f := v.Report.Findings[i]
-			selected := position == v.Cursor
-			rowOf[len(lines)] = i
-			lines = append(lines, guide.Row(th, selected, Mark(th, f)+" ", f.Check, ""))
-			if selected && v.Open && expand && !f.OK {
-				lines = append(lines, Text(th, f, 5)...)
-			}
-			position++
-		}
-	}
-	if v.collapsed() {
-		if len(lines) > 2 {
-			lines = append(lines, "")
-		}
-		rowOf[len(lines)] = -1
-		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", fmt.Sprintf("%d checks passed", v.Report.Passed), "enter or p shows them"))
-	}
-	lines, rowOf = pane.WrapRows(lines, rowOf, w, 5)
-	for i := range lines {
-		lines[i] = pane.Fit(lines[i], w)
-	}
-	return lines, rowOf
-}
-
-// Mark is the symbol of a finding's state.
-func Mark(th theme.Theme, f doctor.Finding) string {
-	switch {
-	case !f.OK && f.Warning:
-		return th.Warning(th.Icons.Warning)
-	case !f.OK:
-		return th.Failure(th.Icons.Failed)
-	}
-	return th.Success(th.Icons.Passed)
-}
-
-// Text is a check told in full, each part once: the problem, the remedy, the
-// fix and the files it touches, indented by indent cells.
-func Text(th theme.Theme, f doctor.Finding, indent int) []string {
-	pad := strings.Repeat(" ", indent)
-	var out []string
-	if f.Detail != "" {
-		out = append(out, pad+th.Muted(f.Detail))
-	}
-	if f.Remedy != "" {
-		out = append(out, pad+th.Bold("→ ")+f.Remedy)
-	}
-	if f.OK {
-		return out
-	}
-	switch {
-	case f.Fix != nil && f.Fix.Safe && len(f.Fix.Choices) == 0:
-		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f shows what changes, then applies it)"))
-	case f.Fix != nil:
-		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (f asks, shows what changes, then applies it)"))
-		// The first answer is the suggested one: say it, so f then Enter is known to do it.
-		if s := suggestion(*f.Fix); s != "" {
-			out = append(out, pad+"  "+th.Muted("f, Enter takes the suggestion: "+s))
-		}
-	}
-	if f.Fix != nil {
-		for _, e := range f.Fix.Files {
-			verb := "writes "
-			if e.Delete {
-				verb = "removes "
-			}
-			out = append(out, pad+"  "+th.Muted(verb+e.Path))
-		}
-	}
-	return out
-}
-
-// suggestion is the first option of a fix's only question: the answer the
-// wizard has under its cursor. A fix with several questions has none, since
-// one key cannot answer them all.
-func suggestion(fix protocol.Fix) string {
-	if len(fix.Choices) != 1 || len(fix.Choices[0].Options) == 0 {
-		return ""
-	}
-	return fix.Choices[0].Options[0].Label
-}
-
-// header is a group's title line with what is wrong in it.
-func (v Model) header(th theme.Theme, g Group) string {
-	name := g.Project
-	if name == "" {
-		name = "workspace"
-	}
-	failed, warned := 0, 0
-	for _, i := range g.Indexes {
-		switch f := v.Report.Findings[i]; {
-		case f.OK:
-		case f.Warning:
-			warned++
-		default:
-			failed++
-		}
-	}
-	var facts []string
-	if failed > 0 {
-		facts = append(facts, th.Failure(fmt.Sprintf("%d failed", failed)))
-	}
-	if warned > 0 {
-		facts = append(facts, th.Warning(fmt.Sprintf("%d warning(s)", warned)))
-	}
-	if len(facts) == 0 {
-		facts = append(facts, th.Muted("all passed"))
-	}
-	return th.Title(name) + "  " + strings.Join(facts, " · ")
-}
-
-// SelectRow moves the cursor to finding i and toggles its details when it was already there.
-func (v Model) SelectRow(i int) Model {
-	if i == -1 && v.collapsed() {
-		// The line of collapsed passes: a click opens it.
-		v.ShowPassed = true
-		return v
-	}
-	if v.Report == nil || i < 0 || i >= len(v.Report.Findings) {
-		return v
-	}
-	at := -1
-	for pos, idx := range v.order() {
-		if idx == i {
-			at = pos
-		}
-	}
-	if at < 0 {
-		return v
-	}
-	if v.Cursor == at {
 		v.Open = !v.Open
-	} else {
-		v.Cursor, v.Open = at, false
+	case "right", "left":
+		if v.OnHeader() {
+			g := v.groups()[v.layout()[v.Cursor].group]
+			if v.groupOpen(g) != (name == "right") {
+				return v.toggleGroup(v.layout()[v.Cursor].group)
+			}
+		}
+	case "E": // words:literal
+		v = v.ToggleAll()
+		v.Cursor, v.Open = 0, false
+	case "p":
+		v.ShowPassed, v.Open = !v.ShowPassed, false
+		v.Cursor = min(v.Cursor, max(v.rows()-1, 0))
+	case "g":
+		v.Grouped, v.Open = !v.Grouped, false
+		v.Cursor = v.firstFinding()
+	}
+	return v
+}
+
+// SelectRow moves the cursor to the row a click landed on, given the code View
+// drew on that line: a finding's index (a second click toggles its details),
+// PassedRow, ToggleAllRow or a group's HeaderCode (a click folds or unfolds it).
+func (v Model) SelectRow(code int) Model {
+	switch {
+	case code == PassedRow:
+		if v.collapsed() {
+			// The line of collapsed passes: a click opens it.
+			v.ShowPassed = true
+		}
+		return v
+	case code == ToggleAllRow:
+		v = v.ToggleAll()
+		v.Cursor, v.Open = 0, false
+		return v
+	case v.Report == nil:
+		return v
+	}
+	for at, r := range v.layout() {
+		isHeader := r.kind == headerRow && code == HeaderCode(r.group)
+		isFinding := r.kind == findingRow && code >= 0 && code == r.finding
+		switch {
+		case isHeader:
+			v.Cursor, v.Open = at, false
+			return v.toggleGroup(r.group)
+		case isFinding && v.Cursor == at:
+			v.Open = !v.Open
+			return v
+		case isFinding:
+			v.Cursor, v.Open = at, false
+			return v
+		}
 	}
 	return v
 }

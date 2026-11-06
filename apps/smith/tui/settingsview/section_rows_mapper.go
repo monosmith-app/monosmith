@@ -2,25 +2,28 @@ package settingsview
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-// themeAbout and iconsAbout say what each choice of the Style section means.
+// themeAbout and iconsAbout are the catalog key of what each choice of the Style
+// section means.
 var (
 	themeAbout = map[string]string{
-		theme.Auto: "follow the terminal's background",
-		"dark":     "for a dark background",
-		"light":    "for a light background",
-		"plain":    "no colour: bold and reverse carry the meaning",
+		theme.Auto: "settingsview.theme.auto",
+		"dark":     "settingsview.theme.dark",
+		"light":    "settingsview.theme.light",
+		"plain":    "settingsview.theme.plain",
 	}
 	iconsAbout = map[string]string{
-		theme.Auto: "unicode, unless the terminal cannot draw it",
-		"unicode":  "✔ ✖ ▲ ● ⚡ and a braille spinner",
-		"ascii":    "[v] [x] [!] and a plain spinner, for terminals without unicode",
+		theme.Auto: "settingsview.icons.auto",
+		"unicode":  "settingsview.icons.unicode",
+		"ascii":    "settingsview.icons.ascii",
 	}
 )
 
@@ -29,47 +32,47 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 	switch it.kind {
 	case kindPlugin:
 		p := m.snap.Plugins[it.idx]
-		box, state := "[ ]", th.Muted("off")
+		state := th.Muted(words.Say("settingsview.row.off"))
 		if p.Enabled {
-			box, state = "[x]", th.Success("on")
+			state = th.Success(words.Say("settingsview.row.on"))
 		}
-		return "   " + box + " " + pane.Cell(p.Name, 14) + state
+		return "   " + choicerow.Box(p.Enabled, false) + " " + pane.Cell(p.Name, 14) + state
 	case kindExternal:
 		p := m.snap.External[it.idx]
-		mark, state := th.Success(th.Icons.Passed), "trusted"
+		mark, state := th.Success(th.Icons.Passed), words.Say("settingsview.row.trusted")
 		switch {
 		case p.Problem != "":
-			mark, state = th.Failure(th.Icons.Failed), "cannot start: "+p.Problem
+			mark, state = th.Failure(th.Icons.Failed), words.Say("settingsview.row.cannotstart", "problem", p.Problem)
 		case !p.Trusted:
-			mark, state = th.Warning(th.Icons.Warning), "not trusted"
+			mark, state = th.Warning(th.Icons.Warning), words.Say("settingsview.row.untrusted")
 		case p.Pinned:
-			state += ", pinned"
+			state = words.Say("settingsview.row.pinned")
 		}
 		return "   " + mark + " " + pane.Cell(p.Name, 14) + pane.Cell(state, 24) + th.Muted(p.Source)
 	case kindInstalled:
 		p := m.snap.Installed[it.idx]
 		if p.Problem != "" {
-			return "   " + th.Failure(th.Icons.Failed) + " " + pane.Cell(p.Name, 14) + th.Failure("invalid: "+p.Problem)
+			return "   " + th.Failure(th.Icons.Failed) + " " + pane.Cell(p.Name, 14) + th.Failure(words.Say("settingsview.row.invalid", "problem", p.Problem))
 		}
 		return "     " + pane.Cell(p.Name, 14) + pane.Cell(p.Version, 10) + th.Muted(p.Dir)
 	case kindInstall:
-		return "   " + th.Accent("+ Install a plugin…") + "  " + th.Muted("smith plugin install <source>")
+		return "   " + th.Accent(words.Say("settingsview.row.install")) + "  " + th.Muted("smith plugin install <source>") // words:literal
 	case kindSearch:
-		return "   " + th.Accent("+ Find a plugin in the marketplace…") + "  " + th.Muted("smith plugin search")
+		return "   " + th.Accent(words.Say("settingsview.row.search")) + "  " + th.Muted("smith plugin search") // words:literal
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
-		return "   " + m.radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
+		return "   " + choicerow.Radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
 	case kindTheme:
-		return "   " + m.radio(th, normalise(it.key) == m.savedTheme) + " " + pane.Cell(it.key, 8) + th.Muted(themeAbout[it.key])
+		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedTheme) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(themeAbout[it.key]))
 	case kindIcons:
-		return "   " + m.radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(iconsAbout[it.key])
+		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(iconsAbout[it.key]))
 	case kindSetting:
 		st := m.snap.Settings[it.idx]
 		return "   " + pane.Cell(st.Path, m.pathWidth(w)) + shownValue(th, st)
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
 		if r.Error != "" {
-			return "   " + th.Failure(th.Icons.Failed) + " " + pane.Cell(r.Path, 28) + th.Failure("invalid")
+			return "   " + th.Failure(th.Icons.Failed) + " " + pane.Cell(r.Path, 28) + th.Failure(words.Say("settingsview.row.recipe.invalid"))
 		}
 		return "   " + th.Success(th.Icons.Passed) + " " + pane.Cell(r.Path, 28) + th.Muted(strings.TrimSpace(r.Name+" "+r.Version))
 	case kindForm:
@@ -77,14 +80,6 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "   " + pane.Cell(f.Title, 28) + th.Muted(f.Hint)
 	}
 	return ""
-}
-
-// radio is the mark of a choice that is the saved one.
-func (m Model) radio(th theme.Theme, on bool) string {
-	if on {
-		return "(" + th.Success(th.Icons.Dot) + ")"
-	}
-	return "( )"
 }
 
 // pathWidth is the width of the setting names: the longest, up to half the pane.
@@ -100,15 +95,15 @@ func (m Model) pathWidth(w int) int {
 func (m Model) summary(it item) string {
 	switch it.kind {
 	case kindPlugin:
-		return "Enter or Space turns " + it.key + " on or off"
+		return words.Say("settingsview.summary.plugin", "name", it.key)
 	case kindExternal:
-		return "Enter reviews it before you trust it"
+		return words.Say("settingsview.summary.external")
 	case kindSetting:
 		return oneLine(m.snap.Settings[it.idx].Explanation)
 	case kindTheme, kindIcons:
-		return "Enter applies it at once"
+		return words.Say("settingsview.summary.style")
 	case kindArchitecture:
-		return "Enter chooses it and saves it in smith.toml"
+		return words.Say("settingsview.summary.architecture")
 	}
 	return ""
 }
@@ -118,9 +113,9 @@ func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 // emptyList is what a section with no rows says.
 func (m Model) emptyList(th theme.Theme, w int) []string {
 	if m.section == Recipes {
-		return append([]string{""}, indent(pane.Wrap(th.Muted("No recipe files (*.recipe.toml) in this workspace. A recipe is a team's choice of plugins and settings; smith recipe check <file> checks one. Write one with Write a recipe in the Guide tab, or press : and search for recipe."), w-2, 0))...)
+		return append([]string{""}, indent(pane.Wrap(th.Muted(words.Say("settingsview.empty.recipes")), w-2, 0))...)
 	}
-	return []string{"", " " + th.Muted("Nothing here.")}
+	return []string{"", " " + th.Muted(words.Say("settingsview.empty.list"))}
 }
 
 func (m Model) emptyDetail(th theme.Theme, w int) []string { return nil }
@@ -136,24 +131,24 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 	}
 	switch it.kind {
 	case kindPlugin:
-		add(th.Bold(it.key)+th.Muted("  support for a language, built into smith"),
-			"Enter or Space turns it on or off for this workspace and saves smith.toml at once; at least one must stay on. Projects in a language that is off are not built, tested or checked.",
-			th.Muted("Tools that are always on: "+strings.Join(m.snap.Addons, ", ")+". The same as: smith plugin enable|disable "+it.key))
+		add(th.Bold(it.key)+th.Muted(words.Say("settingsview.plugin.support")),
+			words.Say("settingsview.plugin.about"),
+			th.Muted(words.Say("settingsview.plugin.addons", "tools", strings.Join(m.snap.Addons, ", "), "name", it.key)))
 	case kindExternal:
 		p := m.snap.External[it.idx]
-		add(th.Bold(p.Name)+th.Muted("  from "+p.Source), th.Muted("runs   ")+p.Command)
-		sees := "the baseline environment only"
+		add(th.Bold(p.Name)+th.Muted(words.Say("settingsview.external.from", "source", p.Source)), th.Muted(words.Say("settingsview.external.runs"))+p.Command)
+		sees := words.Say("settingsview.external.sees.baseline")
 		if len(p.Env) > 0 {
-			sees = "the baseline plus " + strings.Join(p.Env, ", ")
+			sees = words.Say("settingsview.external.sees.plus", "env", strings.Join(p.Env, ", "))
 		}
-		add(th.Muted("sees   ") + sees)
+		add(th.Muted(words.Say("settingsview.external.sees")) + sees)
 		switch {
 		case p.Problem != "":
 			add(th.Failure(p.Problem))
 		case p.Trusted:
-			add(th.Success("Trusted") + ". Enter reviews it again, f forgets the decision (smith plugin untrust).")
+			add(words.Say("settingsview.external.trusted", "state", th.Success(words.Say("settingsview.external.trusted.word"))))
 		default:
-			add(th.Warning("Not trusted") + ": smith will not start it. Enter shows what it is, then trusts it (smith plugin trust). " + p.Detail)
+			add(words.Say("settingsview.external.untrusted", "state", th.Warning(words.Say("settingsview.external.untrusted.word")), "detail", p.Detail))
 		}
 	case kindInstalled:
 		p := m.snap.Installed[it.idx]
@@ -161,30 +156,30 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		if p.Problem != "" {
 			add(th.Failure(p.Problem))
 		} else {
-			add("A workspace starts it when smith.toml declares it under [plugins.external." + p.Name + "].")
+			add(words.Say("settingsview.installed.about", "name", p.Name))
 		}
-		add(th.Muted("Search path: " + strings.Join(m.snap.SearchPath, ", ")))
+		add(th.Muted(words.Say("settingsview.installed.path", "path", strings.Join(m.snap.SearchPath, ", "))))
 	case kindInstall:
-		add(th.Bold("Install a plugin"), "From a directory, an archive, an https URL or a GitHub release: smith plugin install <source>.",
-			"Enter asks where it comes from and shows the command line. After you confirm it, it runs in the Run view. The plugin is checked, never started, and trusted only when you say so here.")
+		add(th.Bold(words.Say("settingsview.install.title")), words.Say("settingsview.install.from"),
+			words.Say("settingsview.install.detail"))
 	case kindSearch:
-		add(th.Bold("Find a plugin in the marketplace"), "Type a word (deploy, go, scaffold) or leave it empty to list every plugin. smith searches the marketplace and lets you pick one.",
-			"The one you pick is installed with smith plugin install, after a confirmation that shows the command line. It is checked, never started, and trusted only when you say so here.")
+		add(th.Bold(words.Say("settingsview.search.title")), words.Say("settingsview.search.from"),
+			words.Say("settingsview.search.detail"))
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
 		add(th.Bold(a.Name)+th.Muted("  "+a.Meaning),
-			"The architecture is how the code of this workspace is laid out. smith checks that the code follows the one you choose, and the check fails when it does not.",
-			"Enter chooses it and saves it at once: it "+a.Writes+". Choose none to stop the checks.")
+			words.Say("settingsview.architecture.about"),
+			words.Say("settingsview.architecture.enter", "writes", a.Writes))
 		if a.AppliesTo != "" {
-			add(th.Bold("Applies to: ") + a.AppliesTo)
+			add(th.Bold(words.Say("settingsview.architecture.appliesto")) + a.AppliesTo)
 		}
 		if a.Here != "" {
-			add(th.Bold("In this workspace: ") + a.Here)
+			add(th.Bold(words.Say("settingsview.architecture.here")) + a.Here)
 		}
 		if a.Warning != "" {
 			add(th.Failure(a.Warning))
 		}
-		add(th.Muted("The same as: smith architecture " + a.Name))
+		add(th.Muted(words.Say("settingsview.architecture.same", "name", a.Name)))
 	case kindTheme:
 		add(m.previewLines(th, it, w)...)
 	case kindIcons:
@@ -193,23 +188,23 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		st := m.snap.Settings[it.idx]
 		add(th.Bold(st.Path)+th.Muted("  "+st.Type), st.Explanation)
 		if st.Default != "" {
-			add(th.Muted("Default: ") + st.Default)
+			add(th.Muted(words.Say("settingsview.setting.default")) + st.Default)
 		}
 		if st.Reason != "" {
-			add(th.Muted("Why: ") + st.Reason)
+			add(th.Muted(words.Say("settingsview.setting.why")) + st.Reason)
 		}
 		if len(st.Choices) > 0 {
-			add(th.Muted("Choices: ") + strings.Join(st.Choices, ", "))
+			add(th.Muted(words.Say("settingsview.setting.choices")) + strings.Join(st.Choices, ", "))
 		}
 		now := shownValue(th, st)
 		if !st.Set {
-			now += th.Muted(" (the default)")
+			now += th.Muted(words.Say("settingsview.setting.isdefault"))
 		}
-		keys := "Enter changes it"
+		keys := words.Say("settingsview.setting.keys.change")
 		if st.Set {
-			keys += ", u resets it to its default"
+			keys = words.Say("settingsview.setting.keys.reset")
 		}
-		add(th.Muted("Now: ")+now, th.Muted(keys+" (smith config set|unset "+st.Path+")"))
+		add(th.Muted(words.Say("settingsview.setting.now"))+now, th.Muted(words.Say("settingsview.setting.command", "keys", keys, "path", st.Path)))
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
 		add(th.Bold(r.Path))
@@ -218,13 +213,13 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		} else {
 			add(strings.TrimSpace(r.Name + " " + r.Version))
 			if r.Extends != "" {
-				add(th.Muted("extends ") + r.Extends)
+				add(th.Muted(words.Say("settingsview.recipe.extends")) + r.Extends)
 			}
 		}
-		add(th.Muted("smith recipe check " + r.Path + " shows what it would use and where each value came from."))
+		add(th.Muted(words.Say("settingsview.recipe.check", "path", r.Path)))
 	case kindForm:
 		f := m.forms[it.idx]
-		add(th.Bold(f.Title), f.Hint, th.Muted("Enter opens the form; it ends as a smith command line."))
+		add(th.Bold(f.Title), f.Hint, th.Muted(words.Say("settingsview.form.about")))
 	}
 	return out
 }
@@ -244,18 +239,18 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	switch e.kind {
 	case editText, editInstall, editSearch:
 		if e.setting.Default != "" {
-			add(th.Muted("Default: " + e.setting.Default))
+			add(th.Muted(words.Say("settingsview.setting.default.line", "default", e.setting.Default)))
 		}
 		if e.setting.Reason != "" {
-			add(th.Muted("Why: " + e.setting.Reason))
+			add(th.Muted(words.Say("settingsview.setting.why.line", "reason", e.setting.Reason)))
 		}
 		if e.setting.Type == "array" {
-			add(th.Muted("Separate the items with commas."))
+			add(th.Muted(words.Say("settingsview.editor.commas")))
 		}
 		in := e.input
 		in.Width = max(w-6, 4)
 		lines = append(lines, "", " "+in.View())
-		keys = "Enter saves · Esc cancels"
+		keys = words.Say("settingsview.keys.save")
 		if e.finder != nil {
 			for _, l := range e.finder.Rows(th, max(w-1, 4), max(min(pathfinder.DefaultRows, h-len(lines)-5), 2)) {
 				if l.Index >= 0 {
@@ -263,44 +258,40 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 				}
 				lines = append(lines, " "+l.Text)
 			}
-			keys = "Tab completes · Up/Down choose · " + keys
+			keys = words.Say("settingsview.keys.finder", "keys", keys)
 		}
 		if e.kind == editInstall {
 			argv, _ := installArgv(e.input.Value())
-			lines = append(lines, "", " "+th.Muted("smith "+strings.Join(argv, " ")))
-			keys = "Enter shows the command · Esc cancels"
+			lines = append(lines, "", " "+th.Muted("smith "+strings.Join(argv, " "))) // words:literal
+			keys = words.Say("settingsview.keys.install")
 		}
 		if e.kind == editSearch {
-			keys = "Enter searches · Esc cancels"
+			keys = words.Say("settingsview.keys.search")
 		}
 	case editMulti:
 		lines = append(lines, "")
 		for i, c := range e.choices {
-			box := "[ ]"
-			if e.marked[i] {
-				box = "[x]"
-			}
-			row := " " + map[bool]string{true: th.Icons.Pointer, false: " "}[i == e.at] + " " + box + " " + c
+			row := " " + choicerow.Render(th, c, e.marked[i], i == e.at, false)
 			if i == e.at {
 				row = th.Selected(pane.Fit(pane.Strip(row), w))
 			}
 			lines = append(lines, row)
 		}
-		keys = "Space ticks · Enter saves · Esc cancels"
+		keys = words.Say("settingsview.keys.multi")
 	case editReview:
 		var text []string
 		for _, l := range strings.Split(strings.TrimSpace(e.text), "\n") {
 			text = append(text, pane.Wrap(" "+l, max(w, 4), 3)...)
 		}
 		room := max(h-len(lines)-3, 1)
-		top := clamp(e.top, 0, len(text)-room)
+		top := pane.Clamp(e.top, 0, len(text)-room)
 		lines = append(lines, text[top:min(top+room, len(text))]...)
-		keys = "y trust · p trust and pin the sha256 for CI · Esc cancels"
+		keys = words.Say("settingsview.keys.review")
 		if e.trusted {
-			keys = "y trusts it again · p also pins the sha256 for CI · f forgets it · Esc closes"
+			keys = words.Say("settingsview.keys.review.again")
 		}
 		if len(text) > room {
-			keys += " · Up/Down read on"
+			keys = words.Say("settingsview.keys.more", "keys", keys)
 		}
 	}
 	if e.err != "" {
@@ -325,5 +316,5 @@ func shownValue(th theme.Theme, st Setting) string {
 	case st.Default != "":
 		return th.Muted(st.Default)
 	}
-	return th.Muted("default")
+	return th.Muted(words.Say("settingsview.value.default"))
 }

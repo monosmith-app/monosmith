@@ -19,6 +19,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/helpdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
@@ -31,14 +32,19 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toolsdialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-var tabTitles = map[string]string{
-	commands.TabHome: "Home", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabSettings: "Settings", commands.TabGuide: "Start",
+// tabTitles are the names of the tabs, by tab id.
+func tabTitles() map[string]string {
+	return map[string]string{
+		commands.TabHome: words.Say("tui.tab.home"), commands.TabProjects: words.Say("tui.tab.projects"), commands.TabRun: words.Say("tui.tab.run"), commands.TabDoctor: words.Say("tui.tab.doctor"),
+		commands.TabDeps: words.Say("tui.tab.deps"), commands.TabRelease: words.Say("tui.tab.release"), commands.TabSettings: words.Say("tui.tab.settings"), commands.TabGuide: words.Say("tui.tab.guide"),
+	}
 }
 
 // Config is what the shell is built from.
@@ -46,6 +52,10 @@ type Config struct {
 	Version   string
 	Workspace string
 	Theme     theme.Theme
+	// Splits are the sizes of the panels the person set earlier, by divider; SaveSplits
+	// keeps them when they change (nil keeps none).
+	Splits     map[string]int
+	SaveSplits func(map[string]int)
 	// Actions are the guided menu's entries.
 	Actions []guide.Action
 	// Commands are every smith command, for the guided forms.
@@ -99,10 +109,10 @@ type Shell struct {
 	inWorkspace bool
 	emptyFolder bool
 	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
-	problem   string
+	problem string
 	// repair is the fix offered for an unreadable smith.toml; the wizard that
 	// shows it is s.fix.
-	repair *sources.ConfigRepair
+	repair    *sources.ConfigRepair
 	commitOps bool
 	// environments are the names of `[workspace] environments`.
 	environments []string
@@ -123,7 +133,7 @@ type Shell struct {
 	loadedProjects bool
 	projectsErr    error
 
-	guide   guide.Model
+	guide guide.Model
 	// addForm is the add form as it ended, kept while its plan is on screen: Esc
 	// on the plan goes back to its last question, with the answers filled in.
 	addForm *guide.Model
@@ -132,11 +142,11 @@ type Shell struct {
 	formOrigin string
 	// settingsSince is when the Settings tab started the change it waits for.
 	settingsSince time.Time
-	pal     palette.Palette
-	palOpen bool
-	doctor  doctorview.Model
-	release releaseview.Model
-	deps    depsview.Model
+	pal           palette.Palette
+	palOpen       bool
+	doctor        doctorview.Model
+	release       releaseview.Model
+	deps          depsview.Model
 	// settings is the Settings tab: plugins, style and the settings of smith.toml.
 	settings settingsview.Model
 
@@ -198,7 +208,7 @@ type Shell struct {
 	pkg *packageprompt.Prompt
 	// relpick asks which packages of the release to hold back or bump, before the confirmation.
 	relpick *releasepick.Model
-	help    *dialog.Help
+	help    *helpdialog.Help
 	// fix is the doctor fix wizard while it is open; fixing is the fix being
 	// applied in the background.
 	fix    *fixwizard.Wizard
@@ -251,8 +261,10 @@ type Shell struct {
 	detailCursor int
 	// zoom is set while the detail fills the pane on a wide screen (z).
 	zoom bool
-	// detailW is the width the user gave the detail pane ([ and ]); 0 is automatic.
-	detailW int
+	// split is what the person did to the dividers between panels (see the splitter
+	// package); saveSplits keeps the sizes for the next start, nil to keep none.
+	split      splitter.State
+	saveSplits func(map[string]int)
 	// detailTop is the first visible line of the detail; detailAll shows every
 	// line of a folded list; detailFor is what the detail told last, so the
 	// place starts over for another selection.
@@ -295,10 +307,12 @@ func NewShell(cfg Config) Shell {
 		sh.th = theme.Default()
 	}
 	sh.pal = palette.New(nil)
+	sh.split, sh.saveSplits = splitter.New(cfg.Splits), cfg.SaveSplits
 	if cfg.Sources != nil {
 		sh.inWorkspace = true
 		sh.sources = *cfg.Sources
 		sh.settings = settingsview.New(sh.sources.Settings, settingsForms(cfg.Actions))
+		sh.applySplits()
 		sh.tab = commands.TabHome
 		// Doctor runs in the background from the start (see Init).
 		sh.doctor.Loading = sh.sources.Doctor != nil
@@ -362,37 +376,37 @@ func (s Shell) taskProjects() map[string]int {
 func (s Shell) viewReasons() map[string]string {
 	r := map[string]string{}
 	if s.doctor.Report == nil {
-		r["ws.fix"] = "doctor has not checked the workspace yet"
+		r["ws.fix"] = words.Say("tui.shell.doctor_has_not_checked_the_workspace")
 	} else if _, ok := s.doctor.FixAll(); !ok {
-		r["ws.fix"] = "doctor found nothing it can fix"
+		r["ws.fix"] = words.Say("tui.shell.doctor_found_nothing_it_can_fix")
 	}
 	if s.list.Len() == 0 {
-		r["projects.install-package"] = "the workspace has no project yet"
-		r["projects.remove-package"] = "the workspace has no project yet"
+		r["projects.install-package"] = words.Say("tui.shell.the_workspace_has_no_project_yet")
+		r["projects.remove-package"] = words.Say("tui.shell.the_workspace_has_no_project_yet")
 	}
 	switch s.tab {
 	case commands.TabDoctor:
 		if _, ok := s.doctor.SelectedFix(); !ok {
-			r["doctor.fix"] = "this check has no fix; its remedy says what to do"
+			r["doctor.fix"] = words.Say("tui.shell.this_check_has_no_fix_its")
 		}
 	case commands.TabDeps:
 		if s.deps.UpArgv() == nil {
-			r["deps.update"] = "no dependency to update"
+			r["deps.update"] = words.Say("tui.shell.no_dependency_to_update")
 		}
 		if _, _, ok := s.deps.RemoveTargets(); !ok {
-			r["deps.remove"] = "no dependency is selected"
+			r["deps.remove"] = words.Say("tui.shell.no_dependency_is_selected")
 		}
 		if len(s.deps.Policy) > 0 {
-			r["deps.one-version"] = "dependencies.one_version is already on"
+			r["deps.one-version"] = words.Say("tui.shell.dependencies_one_version_is_already_on")
 		}
 		if s.deps.AlignArgv() == nil {
-			r["deps.align"] = "the one-version policy found nothing to align"
+			r["deps.align"] = words.Say("tui.shell.the_one_version_policy_found_nothing")
 		}
 	case commands.TabRelease:
 		if !s.release.CanRelease() {
-			r["rel.notes"] = "there is no release to show the notes of"
-			r["rel.release"] = "there is nothing to release"
-			r["release.open"] = "there is no bump to show the commits of"
+			r["rel.notes"] = words.Say("tui.shell.there_is_no_release_to_show")
+			r["rel.release"] = words.Say("tui.shell.there_is_nothing_to_release")
+			r["release.open"] = words.Say("tui.shell.there_is_no_bump_to_show")
 		}
 	case commands.TabSettings:
 		for id, why := range s.settings.Reasons() {
@@ -400,7 +414,7 @@ func (s Shell) viewReasons() map[string]string {
 		}
 	case commands.TabHome:
 		if s.nextAction().CommandID == "" {
-			r["home.next"] = "nothing to do yet"
+			r["home.next"] = words.Say("tui.shell.nothing_to_do_yet")
 		}
 	case commands.TabRun:
 		for id, why := range s.runReasons() {
@@ -478,180 +492,9 @@ type (
 	}
 )
 
-// Update implements tea.Model.
-func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmd := s.handle(msg)
-	s.forgetDetailPlace()
-	s.refreshPalette()
-	s.trackWait()
-	if s.quit {
-		return s, tea.Quit
-	}
-	if s.animating() && !s.ticking {
-		s.ticking = true
-		cmd = tea.Batch(cmd, tickCmd())
-	}
-	return s, cmd
-}
-
-// tickInterval is the time between animation frames; tests shorten it.
-var tickInterval = 100 * time.Millisecond
-
-func tickCmd() tea.Cmd {
-	return tea.Tick(tickInterval, func(time.Time) tea.Msg { return tickMsg{} })
-}
-
-// animating is true while something moves: a run, a toast, a hint.
-func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil || s.settings.Busy()
-}
-
-func (s *Shell) handle(msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		s.resize(msg.Width, msg.Height)
-	case tea.KeyMsg:
-		if s.belowMinimum() {
-			// Nothing is drawn but the hint: a key must not act on a screen the
-			// person cannot see (Enter could start a command). Ctrl+C still leaves.
-			if msg.String() == "ctrl+c" {
-				s.quit = true
-			}
-			return nil
-		}
-		return s.key(msg)
-	case tea.MouseMsg:
-		if s.belowMinimum() {
-			return nil
-		}
-		return s.mouse(msg)
-	case tickMsg:
-		s.tick++
-		s.toast = s.toast.Tick()
-		if s.hintTicks > 0 {
-			if s.hintTicks--; s.hintTicks == 0 {
-				s.hint = ""
-			}
-		}
-		if s.animating() {
-			return tickCmd()
-		}
-		s.ticking = false
-	case sources.ProjectsLoaded:
-		s.loadedProjects, s.projectsErr = true, msg.Err
-		if msg.Err == nil {
-			selected := s.list.SelectedName()
-			if s.justAdded != "" {
-				// The project a finished add made is the one the next keys act on.
-				selected, s.justAdded = s.justAdded, ""
-			}
-			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
-			s.branch = msg.Branch
-			s.refreshProjectForms()
-		}
-	case doctorview.Result:
-		s.doctor = s.doctor.Replace(msg)
-		s.verifyFix(msg)
-	case settingsview.Msg:
-		return s.settingsMsg(msg)
-	case fixProgressMsg:
-		if s.adopting != nil && msg.run == s.adopting {
-			return s.adoptProgress(msg)
-		}
-		return s.fixProgress(msg)
-	case fixDoneMsg:
-		if s.adopting != nil && msg.run == s.adopting {
-			return s.adoptDone(msg)
-		}
-		return s.fixDone(msg)
-	case depsview.Result:
-		s.deps = depsview.FromResult(msg)
-	case releaseview.Result:
-		s.release = releaseview.FromResult(msg)
-		if argv := s.releaseWaiting; argv != nil {
-			// The release was asked before the plan was read: ask now, with the plan.
-			s.releaseWaiting = nil
-			s.closeWaiting()
-			return s.execute(argv, false)
-		}
-	case toolsStartedMsg:
-		return s.toolsStarted(msg)
-	case toolsOutputMsg:
-		return s.toolsOutput(msg)
-	case capturedMsg:
-		return s.captured(msg)
-	case openedMsg:
-		s.opened(msg)
-	case startRunMsg:
-		return s.execute(msg.argv, true)
-	case startedMsg:
-		return s.started(msg)
-	case plannedMsg:
-		if s.run != nil && !s.run.Finished && s.proc == msg.proc {
-			s.run.Plan(msg.ids)
-		}
-	case outputMsg:
-		return s.output(msg)
-	}
-	return nil
-}
-
-// dialogMargins are the rows a confirmation keeps clear: the header and the tab
-// bar above the framed area, the status bar below it.
-func (s Shell) dialogMargins() (top, bottom int) {
-	l := s.lay()
-	return l.Main.Y, max(s.h-l.Footer.Y, 0)
-}
-
-// resize re-lays the screen out; it runs on every WindowSizeMsg.
-func (s *Shell) resize(w, h int) {
-	s.w, s.h = w, h
-	if s.relpick != nil {
-		placed := s.relpick.Within(s.dialogMargins()).Place(w, h)
-		s.relpick = &placed
-	}
-	if s.confirm != nil {
-		// The dialog was placed for the old size: place it again, so a window
-		// that settles after the dialog opened still shows the whole command.
-		placed := s.confirm.Within(s.dialogMargins()).Place(w, h)
-		s.confirm = &placed
-	}
-	if s.fix != nil {
-		placed := s.fix.Place(w, h)
-		s.fix = &placed
-	}
-	if s.adopt != nil {
-		placed := s.adopt.Place(w, h)
-		s.adopt = &placed
-	}
-	if s.tools != nil {
-		placed := s.tools.Place(w, h)
-		s.tools = &placed
-	}
-	if s.compose != nil {
-		placed := s.compose.Place(w, h)
-		s.compose = &placed
-	}
-	if s.result != nil {
-		placed := s.result.Place(w, h)
-		s.result = &placed
-	}
-	s.tabs = s.tabList()
-	if !s.canShow(s.tab) {
-		s.tab = commands.TabHome
-		if !s.inWorkspace {
-			s.tab = commands.TabGuide
-		}
-	}
-	if s.lay().Mode == layout.Wide {
-		// The detail is beside the list now; there is nothing to close.
-		s.detailOpen = false
-	}
-}
-
 // lay is where each area of the screen is drawn, for the size and the open view.
 func (s Shell) lay() layout.Layout {
-	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailW)
+	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth())
 }
 
 // canShow is true for a view the shell can open: a tab of the strip, or the

@@ -125,7 +125,7 @@ func TestAFailedAttachResumesAndAttachesOnlyWhatIsMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
 	}
-	if want :=[]string{"core@0.5.2/core-0.5.2.tgz.sha256", "core@0.5.2/release-bundle.json", "core@0.5.2/INSTALL.md"}; strings.Join(gh.uploads, ",") != strings.Join(want, ",") || gh.deleted != 0 {
+	if want := []string{"core@0.5.2/core-0.5.2.tgz.sha256", "core@0.5.2/release-bundle.json", "core@0.5.2/INSTALL.md"}; strings.Join(gh.uploads, ",") != strings.Join(want, ",") || gh.deleted != 0 {
 		t.Fatalf("the identical file is kept, only the missing assets go up: %v (deleted %d)", gh.uploads, gh.deleted)
 	}
 	if res := report.Results[0]; res.Status != "already-released" || len(res.Packed) != 1 || res.Publish != attachedToRelease {

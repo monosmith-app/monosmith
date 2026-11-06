@@ -14,9 +14,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releasetable"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
-	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -64,11 +64,11 @@ const nothingReleased = "nothing released, skipping: no project with release fil
 func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 	platform := req.Platform
 	if platform == "" {
-		platform = workspace.HostCommandPlatform()
+		platform = releasetable.HostCommandPlatform()
 	}
-	if !slices.Contains(workspace.CommandPlatforms, platform) {
+	if !slices.Contains(releasetable.CommandPlatforms, platform) {
 		return Result{}, problem.New(fmt.Sprintf("%q is not a platform smith builds release files for", platform),
-			"smith release assets --platform "+strings.Join(workspace.CommandPlatforms, " | "))
+			"smith release assets --platform "+strings.Join(releasetable.CommandPlatforms, " | "))
 	}
 	for _, w := range buildoutputs.OverlapWarningsFor(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs) {
 		fmt.Fprintln(req.Out, w)

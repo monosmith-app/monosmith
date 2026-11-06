@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // hasDetail is true for the views whose selection has a detail: the project
@@ -56,7 +57,7 @@ func (s Shell) detailRect() layout.Rect {
 func (s Shell) detailContent(w, h int) content {
 	panel := s.detailPanel()
 	all, rows := panel.View(s.th, w, "")
-	_, hits := detail.Window(s.th, all, rows, s.detailTop, h)
+	_, hits := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
 	hover := ""
 	if r := s.detailRect(); s.detailFull() {
 		if a := panel.Actions; s.detailCursor < len(a) {
@@ -66,8 +67,8 @@ func (s Shell) detailContent(w, h int) content {
 		hover = hits[s.mouseY-r.Y]
 	}
 	all, _ = panel.View(s.th, w, hover)
-	lines, _ := detail.Window(s.th, all, rows, s.detailTop, h)
-	lines = pane.Scrollbar(s.th, lines, w, detail.ClampTop(s.detailTop, len(all), h), len(all))
+	lines, _ := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
+	lines = pane.Scrollbar(s.th, lines, w, pane.ClampTop(s.detailTop, len(all), h), len(all))
 	c := content{lines: lines, hits: map[int]hit{}}
 	for row, id := range hits {
 		c.hits[row] = hit{kind: "action", id: id}
@@ -79,18 +80,18 @@ func (s Shell) detailContent(w, h int) content {
 func (s *Shell) scrollDetail(delta int) {
 	r := s.detailRect()
 	lines, _ := s.detailPanel().View(s.th, r.W, "")
-	s.detailTop = detail.ClampTop(s.detailTop+delta, len(lines), r.H)
+	s.detailTop = pane.ClampTop(s.detailTop+delta, len(lines), r.H)
 }
 
 // pageDetail scrolls the detail by a page up (dir -1) or down (dir 1).
 func (s *Shell) pageDetail(dir int) {
-	s.scrollDetail(dir * detail.PageStep(s.detailRect().H))
+	s.scrollDetail(dir * pane.PageStep(s.detailRect().H))
 }
 
 // detailIdentity changes when the selection the detail tells about changes,
 // so the scroll and the expansion start over for the next one.
 func (s Shell) detailIdentity() string {
-	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.ShowPassed, "|", s.runSel)
+	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, "|", s.runSel)
 }
 
 // forgetDetailPlace starts the detail at its top, folded, when what it shows changed.
@@ -98,18 +99,6 @@ func (s *Shell) forgetDetailPlace() {
 	if id := s.detailIdentity(); id != s.detailFor {
 		s.detailFor, s.detailTop, s.detailAll = id, 0, false
 	}
-}
-
-// resizeDetail makes the detail pane step columns wider (or narrower, when
-// negative); the width is kept for the session.
-func (s *Shell) resizeDetail(step int) {
-	l := s.lay()
-	if !l.HasDetail() {
-		s.say("The detail is beside the list from 100 columns; z shows it alone")
-		return
-	}
-	s.detailW = layout.ClampDetailWidth(s.w, l.Detail.W+step)
-	s.say(fmt.Sprintf("Detail %d columns wide", s.lay().Detail.W))
 }
 
 // zoomDetail makes the detail fill the pane, or gives the list back.
@@ -135,8 +124,8 @@ func (s Shell) detailPanel() detail.Panel {
 func (s Shell) selectionPanel() detail.Panel {
 	if !s.inWorkspace {
 		return detail.Panel{
-			Sections: []detail.Section{{Heading: "No workspace", Items: []string{"No smith.toml here.", "Press " + commands.ShortcutOf("file.new") + " to create a workspace."}}},
-			Actions:  []detail.Action{s.action("file.palette", "Palette")},
+			Sections: []detail.Section{{Heading: words.Say("tui.detail.no_workspace"), Items: []string{words.Say("tui.detail.no_toml"), words.Say("tui.detail.press_to_create_a_workspace", "shortcutOf", commands.ShortcutOf("file.new"))}}},
+			Actions:  []detail.Action{s.action("file.palette", words.Say("tui.detail.palette"))},
 		}
 	}
 	switch s.tab {
@@ -166,7 +155,7 @@ func (s Shell) runPanel() detail.Panel {
 		if t.Reason != "" {
 			rows = append(rows, detail.Row{Label: "reason", Value: t.Reason})
 		}
-		rows = append(rows, detail.Row{Label: "log", Value: fmt.Sprintf("%d lines", len(t.Log))})
+		rows = append(rows, detail.Row{Label: "log", Value: words.Say("tui.detail.lines", "len", len(t.Log))})
 		return detail.Panel{
 			Sections: []detail.Section{{Heading: t.ID, Rows: rows}},
 			Actions:  s.runActions(),
@@ -177,9 +166,9 @@ func (s Shell) runPanel() detail.Panel {
 	if counts.Total > 0 {
 		rows = append(rows, detail.Row{Label: "tasks", Value: s.countsText(counts)})
 	}
-	rows = append(rows, detail.Row{Label: "output", Value: fmt.Sprintf("%d lines", len(s.run.Lines))})
+	rows = append(rows, detail.Row{Label: "output", Value: words.Say("tui.detail.lines", "len", len(s.run.Lines))})
 	return detail.Panel{
-		Sections: []detail.Section{{Heading: "This run", Rows: rows}},
+		Sections: []detail.Section{{Heading: words.Say("tui.detail.this_run"), Rows: rows}},
 		Actions:  s.runActions(),
 	}
 }
@@ -201,10 +190,10 @@ func (s Shell) projectPanel() detail.Panel {
 	rows = append(rows, detail.Row{Label: "affected", Value: yesNoMark(s, p.Affected)})
 	secs := []detail.Section{{Heading: p.Name, Rows: rows}}
 	if len(p.Deps) > 0 {
-		secs = append(secs, detail.Section{Heading: "Depends on", Items: p.Deps})
+		secs = append(secs, detail.Section{Heading: words.Say("tui.detail.depends_on"), Items: p.Deps})
 	}
 	if len(p.Dependents) > 0 {
-		secs = append(secs, detail.Section{Heading: "Used by", Items: p.Dependents})
+		secs = append(secs, detail.Section{Heading: words.Say("tui.detail.used_by"), Items: p.Dependents})
 	}
 	if sec, ok := s.derivedSection(p); ok {
 		secs = append(secs, sec)
@@ -216,16 +205,16 @@ func (s Shell) projectPanel() detail.Panel {
 		actions = append(actions, a)
 	}
 	actions = append(actions,
-		detail.Action{ID: "x:install", Label: "Install a package…", Hint: "adds packages to " + p.Name + " with its own toolchain (npm, the Python venv, go get)"},
-		detail.Action{ID: "x:uninstall", Label: "Remove a package…"},
-		detail.Action{ID: "x:explain", Label: "Explain"},
-		detail.Action{ID: "x:why", Label: "Why: who owns these files", Hint: "what produced the project's files and how to change them (smith why)"},
-		detail.Action{ID: "x:graph", Label: "Graph: needs and used by"},
+		detail.Action{ID: "x:install", Label: words.Say("tui.detail.install_a_package"), Hint: words.Say("tui.detail.adds_packages_to_with_its_own", "name", p.Name)},
+		detail.Action{ID: "x:uninstall", Label: words.Say("tui.detail.remove_a_package")},
+		detail.Action{ID: "x:explain", Label: words.Say("tui.detail.explain")},
+		detail.Action{ID: "x:why", Label: words.Say("tui.detail.why_who_owns_these_files"), Hint: words.Say("tui.detail.what_produced_the_project_s_files")},
+		detail.Action{ID: "x:graph", Label: words.Say("tui.detail.graph_needs_and_used_by")},
 	)
 	actions = append(actions, s.derivedActions(p)...)
 	title := ""
 	if len(p.Tasks) > 0 {
-		title = "Run on " + p.Name
+		title = words.Say("tui.detail.run_on", "name", p.Name)
 	}
 	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title}
 }
@@ -239,42 +228,42 @@ func taskHint(t projectlist.Task) string {
 	case t.Description != "":
 		parts = append(parts, t.Description)
 	case taskMeanings[t.Name] != "":
-		parts = append(parts, taskMeanings[t.Name])
+		parts = append(parts, words.Say(taskMeanings[t.Name]))
 	default:
-		parts = append(parts, "a task of this project")
+		parts = append(parts, words.Say("tui.detail.a_task_of_this_project"))
 	}
 	if len(t.DependsOn) > 0 {
 		parts = append(parts, needsText(t.DependsOn))
 	}
 	if t.Cache {
-		parts = append(parts, "result remembered: skipped when nothing changed")
+		parts = append(parts, words.Say("tui.detail.result_remembered_skipped_when_nothing_c"))
 	}
 	return strings.Join(parts, " · ")
 }
 
-// taskMeanings say what the common tasks do.
+// taskMeanings are the catalog key of what each common task does.
 var taskMeanings = map[string]string{
-	"build":      "turns the source into what gets shipped",
-	"lint":       "checks the code for mistakes and style",
-	"test":       "runs the tests",
-	"typecheck":  "checks the types without building",
-	"package":    "bundles the build for publishing",
-	"format":     "rewrites the files to the house style",
-	"deps-check": "fails when the code imports a package its manifest does not list (package.json, pyproject.toml, go.mod)",
-	"prune":      "writes the deploy folder: the app with only the packages it uses",
-	"audit":      "looks for known security problems in the dependencies",
+	"build":      "tui.detail.task.build",
+	"lint":       "tui.detail.task.lint",
+	"test":       "tui.detail.task.test",
+	"typecheck":  "tui.detail.task.typecheck",
+	"package":    "tui.detail.task.package",
+	"format":     "tui.detail.task.format",
+	"deps-check": "tui.detail.task.deps_check",
+	"prune":      "tui.detail.task.prune",
+	"audit":      "tui.detail.task.audit",
 }
 
-// stackMeanings say what a stack gives a project, for the stack row.
+// stackMeanings are the catalog key of what a stack gives a project, for the stack row.
 var stackMeanings = map[string]string{
-	"node-jest":   "ESLint and Jest tasks",
-	"node-vitest": "ESLint and Vitest tasks",
+	"node-jest":   "tui.detail.stack.node_jest",
+	"node-vitest": "tui.detail.stack.node_vitest",
 }
 
 // stackText is the stack's name, with what it gives when smith knows.
 func stackText(stack string) string {
 	if m := stackMeanings[stack]; m != "" {
-		return stack + " (" + m + ")"
+		return stack + " (" + words.Say(m) + ")"
 	}
 	return stack
 }
@@ -286,14 +275,14 @@ func needsText(deps []string) string {
 	for _, d := range deps {
 		switch {
 		case strings.HasPrefix(d, "^"):
-			parts = append(parts, "the "+d[1:]+" of the projects it needs")
+			parts = append(parts, words.Say("tui.detail.the_of_the_projects_it_needs", "d", d[1:]))
 		case strings.Contains(d, ":"):
 			parts = append(parts, d)
 		default:
-			parts = append(parts, "its own "+d)
+			parts = append(parts, words.Say("tui.detail.its_own", "d", d))
 		}
 	}
-	return "runs after " + strings.Join(parts, " and ")
+	return words.Say("tui.detail.runs_after", "tasks", strings.Join(parts, words.Say("tui.detail.and")))
 }
 
 // taskAction is the action that runs a task on the selected project; the
@@ -301,10 +290,10 @@ func needsText(deps []string) string {
 func (s Shell) taskAction(task string) detail.Action {
 	for _, id := range []string{"run.build", "run.test", "run.lint", "run.typecheck"} {
 		if c, _ := commands.ByID(id); c.Task == task {
-			return s.action(id, "Run "+task)
+			return s.action(id, words.Say("tui.detail.run", "task", task))
 		}
 	}
-	return detail.Action{ID: "x:run:" + task, Label: "Run " + task, Disabled: s.running()}
+	return detail.Action{ID: "x:run:" + task, Label: words.Say("tui.detail.run", "task", task), Disabled: s.running()}
 }
 
 // doctorPanel tells the selected check in full: the list beside it has one
@@ -314,12 +303,12 @@ func (s Shell) doctorPanel() detail.Panel {
 	if !ok {
 		return s.workspacePanel()
 	}
-	state := s.th.Success(s.th.Icons.Passed) + " passed"
+	state := words.Say("tui.detail.passed", "passed", s.th.Success(s.th.Icons.Passed))
 	switch {
 	case !f.OK && f.Warning:
-		state = s.th.Warning(s.th.Icons.Warning) + " warning"
+		state = words.Say("tui.detail.warning", "warning", s.th.Warning(s.th.Icons.Warning))
 	case !f.OK:
-		state = s.th.Failure(s.th.Icons.Failed) + " failed"
+		state = words.Say("tui.detail.failed", "failed", s.th.Failure(s.th.Icons.Failed))
 	}
 	planned, hasFix := s.doctor.FixFor(f)
 	// Four contexts, in this order: the state, the actions, what is wrong,
@@ -330,12 +319,12 @@ func (s Shell) doctorPanel() detail.Panel {
 	if hasFix {
 		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Shortcut: "f", Hint: planned.Description, Button: true, Disabled: s.running()})
 	}
-	actions = append(actions, detail.Action{ID: "x:reload", Label: "Check again", Shortcut: commands.ShortcutOf("view.reload"), Hint: "run every check again; nothing changes", Button: true})
+	actions = append(actions, detail.Action{ID: "x:reload", Label: words.Say("tui.detail.check_again"), Shortcut: commands.ShortcutOf("view.reload"), Hint: words.Say("tui.detail.run_every_check_again_nothing_changes"), Button: true})
 	var after []detail.Section
 	if problems := doctorview.SplitProblem(f.Detail); len(problems) > 0 {
-		after = append(after, detail.Section{Heading: "What is wrong", Items: problems, Bullets: len(problems) > 1, Collapse: 3})
+		after = append(after, detail.Section{Heading: words.Say("tui.detail.what_is_wrong"), Items: problems, Bullets: len(problems) > 1, Collapse: 3})
 	}
-	how := detail.Section{Heading: "How to fix"}
+	how := detail.Section{Heading: words.Say("tui.detail.how_to_fix")}
 	if f.Remedy != "" {
 		how.Items = append(how.Items, f.Remedy)
 	}
@@ -343,9 +332,9 @@ func (s Shell) doctorPanel() detail.Panel {
 	case hasFix:
 		// The fix title is on its button; the plan adds what the button does not say.
 		how.Items = append(how.Items, fixItems(planned)...)
-		how.Tail = []string{"or in a terminal: smith doctor --fix --only '" + f.Check + "'"}
+		how.Tail = []string{words.Say("tui.detail.or_in_a_terminal_smith_doctor", "check", f.Check)}
 	case commandIn(f.Remedy) != "":
-		how.Tail = []string{"in a terminal: " + commandIn(f.Remedy)}
+		how.Tail = []string{words.Say("tui.detail.in_a_terminal", "commandIn", commandIn(f.Remedy))}
 	}
 	if len(how.Items)+len(how.Tail) > 0 {
 		how.Collapse = 8
@@ -363,17 +352,17 @@ func fixItems(p doctorfix.Planned) []string {
 		items = append(items, scope)
 	}
 	for _, e := range p.Files {
-		verb := "writes "
+		verb := words.Say("tui.detail.writes")
 		if e.Delete {
-			verb = "removes "
+			verb = words.Say("tui.detail.removes")
 		}
 		items = append(items, "  "+verb+e.Path)
 	}
 	for _, st := range p.Steps {
-		items = append(items, "  runs $ "+strings.Join(st.Argv, " "))
+		items = append(items, words.Say("tui.detail.runs", "list", strings.Join(st.Argv, " ")))
 	}
 	for _, c := range p.Choices {
-		items = append(items, "  asks: "+c.Question)
+		items = append(items, words.Say("tui.detail.asks", "question", c.Question))
 	}
 	return items
 }
@@ -404,11 +393,11 @@ func (s Shell) workspacePanel() detail.Panel {
 		rows = append(rows, detail.Row{Label: "branch", Value: s.branch})
 	}
 	if n := derivedNeedingAction(projects); n > 0 {
-		rows = append(rows, detail.Row{Label: "derived files", Value: fmt.Sprintf("%d need action: pick the project, then Explain the derived files", n)})
+		rows = append(rows, detail.Row{Label: words.Say("tui.detail.derived_files"), Value: words.Say("tui.detail.need_action_pick_the_project_then", "n", n)})
 	}
 	return detail.Panel{
-		Sections: []detail.Section{{Heading: "Workspace", Rows: rows}},
-		Actions:  []detail.Action{s.action("ws.doctor", "Doctor"), s.action("rel.preview", "Preview the release")},
+		Sections: []detail.Section{{Heading: words.Say("tui.detail.workspace"), Rows: rows}},
+		Actions:  []detail.Action{s.action("ws.doctor", words.Say("tui.detail.doctor")), s.action("rel.preview", words.Say("tui.detail.preview_the_release"))},
 	}
 }
 

@@ -1,31 +1,18 @@
 package dependencies
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
 )
 
 // RubyGemsAPI is rubygems.org's API root; tests replace FetchJSON.
 const RubyGemsAPI = "https://rubygems.org/api/v1"
 
 // FetchJSON reads a JSON document over HTTP; tests replace it.
-var FetchJSON = func(url string, v any) error {
-	resp, err := (&http.Client{Timeout: 10 * time.Second}).Get(url)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s: %s", url, resp.Status)
-	}
-	return json.NewDecoder(resp.Body).Decode(v)
-}
+var FetchJSON = registry.GetJSON
 
 // Latest asks rubygems.org for the newest release of each gem (never a
 // pre-release), a few at a time. A gem it does not have (a private

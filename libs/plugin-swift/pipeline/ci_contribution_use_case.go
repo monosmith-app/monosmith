@@ -37,8 +37,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	_, err := probe(workspaceRoot, []string{"swift", "--version"})
 	return protocol.DoctorResult{Findings: []protocol.Finding{{
-		Check: "Swift is installed", OK: err == nil,
-		Detail: "swift --version failed",
-		Remedy: "install Swift " + SwiftVersion + " or newer (https://www.swift.org/install/)",
+		Check: "Swift is installed", Area: "toolchain", OK: err == nil,
+		Problem: toolrun.ProblemUnless(err == nil, "swift is not working: swift --version failed"),
+		Detail:  "swift --version failed",
+		Remedy:  "install Swift " + SwiftVersion + " or newer (https://www.swift.org/install/)",
 	}}}
 }

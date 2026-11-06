@@ -1,11 +1,13 @@
 package resultdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Model is the dialog: a title, what happened, and a list of choices. It runs
@@ -17,7 +19,7 @@ type Model struct {
 	cursor  int
 	// foot is the sentence under the list that tells what is safe.
 	foot string
-	rect dialog.Rect
+	rect layout.Rect
 	// working, tick and elapsed draw the moving line of a command that runs.
 	working string
 	tick    int
@@ -32,32 +34,32 @@ type Model struct {
 // Returns: the dialog.
 func NewAfterChange(argv, lines []string) Model {
 	op := OperationText(argv)
-	m := Model{title: "Done: " + op}
+	m := Model{title: words.Say("resultdialog.done", "operation", op)}
 	created, isAdd := ParseCreated(argv, lines)
 	if isAdd {
-		m.title = "Added " + created.Kind + " " + created.Name
+		m.title = words.Say("resultdialog.added", "kind", created.Kind, "name", created.Name)
 		where := ""
 		if created.Dir != "" {
-			where = " in " + created.Dir
+			where = words.Say("resultdialog.where", "dir", created.Dir)
 		}
 		count := ""
 		if created.Files > 0 {
-			count = " (" + Plural(created.Files, "file") + ")"
+			count = words.Say("resultdialog.files.note", "files", FileCount(created.Files))
 		}
-		m.facts = append(m.facts, Fact{Good, created.Name + " was created" + where + count + "."})
+		m.facts = append(m.facts, Fact{Good, words.Say("resultdialog.created", "name", created.Name, "where", where, "files", count)})
 		if created.Kind == "lib" {
-			m.facts = append(m.facts, Fact{Info, "Use it from an app: press + on the app and pick " + created.Name + ", or run smith install -p <app> " + created.Name + "."})
+			m.facts = append(m.facts, Fact{Info, words.Say("resultdialog.lib.tip", "name", created.Name)})
 		}
 	} else {
-		m.facts = append(m.facts, Fact{Good, "The change is written to your files."})
+		m.facts = append(m.facts, Fact{Good, words.Say("resultdialog.written")})
 	}
-	m.facts = append(m.facts, Fact{Info, "It is not committed: git shows these files as new changes."})
+	m.facts = append(m.facts, Fact{Info, words.Say("resultdialog.uncommitted")})
 	m.choices = []choice{
-		{"Leave them uncommitted", "review with git status and commit when you are ready (default)", Outcome{Done: true, Note: "Not committed: review with git status"}},
-		{"Commit only the files this operation changed", "one commit named chore: " + op + "; your own changes stay out; smith undo can revert it", Outcome{Commit: append(append([]string{"commit"}, strings.Fields(op)...), "--only-operation")}},
-		{"Commit everything git shows as changed", "one commit with every changed file, your own work included; you see the list first", Outcome{Commit: append(append([]string{"commit"}, strings.Fields(op)...), "--all")}},
+		{words.Say("resultdialog.leave.label"), words.Say("resultdialog.leave.hint"), Outcome{Done: true, Note: words.Say("resultdialog.leave.note")}},
+		{words.Say("resultdialog.only.label"), words.Say("resultdialog.only.hint", "operation", op), Outcome{Commit: append(append([]string{"commit"}, strings.Fields(op)...), "--only-operation")}},
+		{words.Say("resultdialog.all.label"), words.Say("resultdialog.all.hint"), Outcome{Commit: append(append([]string{"commit"}, strings.Fields(op)...), "--all")}},
 	}
-	m.foot = "Nothing is committed unless you choose it. You see the list of files before it is."
+	m.foot = words.Say("resultdialog.foot.change")
 	return m
 }
 
@@ -67,28 +69,28 @@ func NewAfterChange(argv, lines []string) Model {
 // Parameters: t is what the add printed.
 // Returns: the dialog, on the first choice.
 func NewMissingTool(t MissingTool) Model {
-	m := Model{title: "Add " + t.Project + ": it could not be checked"}
+	m := Model{title: words.Say("resultdialog.missing.title", "project", t.Project)}
 	where := ""
 	if t.Dir != "" {
-		where = " in " + t.Dir
+		where = words.Say("resultdialog.where", "dir", t.Dir)
 	}
 	count := ""
 	if t.Files > 0 {
-		count = " (" + Plural(t.Files, "file") + ")"
+		count = words.Say("resultdialog.files.note", "files", FileCount(t.Files))
 	}
 	m.facts = []Fact{
-		{Good, t.Project + " was created" + where + count + "."},
-		{Bad, "It could not be checked yet: " + t.Title + " is not installed."},
+		{Good, words.Say("resultdialog.created", "name", t.Project, "where", where, "files", count)},
+		{Bad, words.Say("resultdialog.missing.fact", "tool", t.Title)},
 	}
 	if t.URL != "" {
-		m.choices = append(m.choices, choice{"Open the install page", strings.TrimPrefix(strings.TrimPrefix(t.URL, "https://"), "http://") + " (copies the link)", Outcome{Open: t.URL}})
+		m.choices = append(m.choices, choice{words.Say("resultdialog.open.label"), words.Say("resultdialog.open.hint", "url", strings.TrimPrefix(strings.TrimPrefix(t.URL, "https://"), "http://")), Outcome{Open: t.URL}})
 	}
-	m.choices = append(m.choices, choice{"Install it with smith", "smith asks how, and nothing runs before you choose", Outcome{Install: []string{"tools", "install"}}})
+	m.choices = append(m.choices, choice{words.Say("resultdialog.install.label"), words.Say("resultdialog.install.hint"), Outcome{Install: []string{"tools", "install"}}})
 	if len(t.Check) > 0 {
-		m.choices = append(m.choices, choice{"Check again", "after you installed it", Outcome{Check: t.Check}})
+		m.choices = append(m.choices, choice{words.Say("resultdialog.check.label"), words.Say("resultdialog.check.hint"), Outcome{Check: t.Check}})
 	}
-	m.choices = append(m.choices, choice{"Continue without checking", "Doctor keeps reminding you", Outcome{Done: true, Note: "Not checked: " + t.Title + " is missing. Doctor will keep reminding you."}})
-	m.foot = "Nothing is lost: your project stays on disk."
+	m.choices = append(m.choices, choice{words.Say("resultdialog.skip.label"), words.Say("resultdialog.skip.hint"), Outcome{Done: true, Note: words.Say("resultdialog.skip.note", "tool", t.Title)}})
+	m.foot = words.Say("resultdialog.foot.missing")
 	return m
 }
 
@@ -119,16 +121,16 @@ func ChoosesVersion(argv []string) bool {
 // Parameters: argv is the sync command line that has no --prefer yet.
 // Returns: the dialog, on the first choice.
 func NewWhichVersion(argv []string) Model {
-	m := Model{title: "Which version wins?"}
-	m.facts = []Fact{{Info, "Some projects declare the same dependency at different versions. You choose the one every project gets."}}
+	m := Model{title: words.Say("resultdialog.version.title")}
+	m.facts = []Fact{{Info, words.Say("resultdialog.version.fact")}}
 	with := func(rule string) []string { return append(append([]string(nil), argv...), "--prefer", rule) }
 	m.choices = []choice{
-		{"The installed version (smith's pick)", "the version the package manager has installed (default)", Outcome{Check: with("installed")}},
-		{"The highest declared", "projects on an older version move up", Outcome{Check: with("highest")}},
-		{"The lowest declared", "projects on a newer version move down", Outcome{Check: with("lowest")}},
-		{"Cancel", "nothing is changed", Outcome{Done: true, Note: "Cancelled: no version was changed"}},
+		{words.Say("resultdialog.version.installed.label"), words.Say("resultdialog.version.installed.hint"), Outcome{Check: with("installed")}},
+		{words.Say("resultdialog.version.highest.label"), words.Say("resultdialog.version.highest.hint"), Outcome{Check: with("highest")}},
+		{words.Say("resultdialog.version.lowest.label"), words.Say("resultdialog.version.lowest.hint"), Outcome{Check: with("lowest")}},
+		{words.Say("resultdialog.version.cancel.label"), words.Say("resultdialog.version.cancel.hint"), Outcome{Done: true, Note: words.Say("resultdialog.version.cancel.note")}},
 	}
-	m.foot = "You see the plan before anything is written. One dependency at a time: smith sync --to <name>=<version>."
+	m.foot = words.Say("resultdialog.foot.version")
 	return m
 }
 
@@ -136,12 +138,12 @@ func NewWhichVersion(argv []string) Model {
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 92)
 	h := min(len(m.facts)*2+len(m.choices)*2+6, max(sh-2, 8))
-	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: max(h, 8)}
+	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: max(h, 8)}
 	return m
 }
 
 // Rect is where the dialog sits after Place.
-func (m Model) Rect() dialog.Rect { return m.rect }
+func (m Model) Rect() layout.Rect { return m.rect }
 
 // Cursor is the index of the choice under the cursor.
 func (m Model) Cursor() int { return m.cursor }
@@ -161,17 +163,17 @@ func (m Model) Labels() []string {
 // Returns: the new dialog and what the host must do; Esc closes with a note
 // that nothing was changed by the dialog.
 func (m Model) Key(name string) (Model, Outcome) {
-	switch name {
-	case "up", "k", "shift+tab":
+	switch commands.Nav(name) {
+	case commands.NavUp, commands.NavPrev:
 		m.cursor = max(m.cursor-1, 0)
-	case "down", "j", "tab":
+	case commands.NavDown, commands.NavNext:
 		m.cursor = min(m.cursor+1, len(m.choices)-1)
-	case "enter":
-		if m.cursor < len(m.choices) {
+	case commands.NavCancel:
+		return m, Outcome{Done: true}
+	default:
+		if name == "enter" && m.cursor < len(m.choices) {
 			return m, m.choices[m.cursor].out
 		}
-	case "esc", "q", "ctrl+c":
-		return m, Outcome{Done: true}
 	}
 	return m, Outcome{}
 }

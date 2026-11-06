@@ -41,8 +41,8 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	_, rocksErr := probe(workspaceRoot, []string{"luarocks", "--version"})
 	_, checkErr := probe(workspaceRoot, []string{"luacheck", "--version"})
 	findings := []protocol.Finding{
-		{Check: "LuaRocks is installed", OK: rocksErr == nil, Detail: "luarocks is not on PATH", Remedy: "install LuaRocks (https://luarocks.org/#quick-start)"},
-		{Check: "luacheck is installed", OK: checkErr == nil, Detail: "luacheck is not on PATH", Remedy: "run luarocks install luacheck"},
+		{Check: "LuaRocks is installed", Area: "toolchain", OK: rocksErr == nil, Problem: toolrun.ProblemUnless(rocksErr == nil, "luarocks is not on PATH"), Detail: "luarocks is not on PATH", Remedy: "install LuaRocks (https://luarocks.org/#quick-start)"},
+		{Check: "luacheck is installed", Area: "toolchain", OK: checkErr == nil, Problem: toolrun.ProblemUnless(checkErr == nil, "luacheck is not on PATH"), Detail: "luacheck is not on PATH", Remedy: "run luarocks install luacheck"},
 	}
 	for _, p := range params.Projects {
 		if f, ok := rockspecNameFinding(workspaceRoot, p); ok {
@@ -68,9 +68,10 @@ func rockspecNameFinding(workspaceRoot string, p protocol.Project) (protocol.Fin
 		return protocol.Finding{}, false
 	}
 	have, want := filepath.Base(found[0]), spec.Package+"-"+spec.Version+".rockspec"
-	finding := protocol.Finding{Check: p.Name + "'s rockspec is named for its version", OK: have == want, Warning: true}
+	finding := protocol.Finding{Check: p.Name + "'s rockspec is named for its version", Project: p.Name, OK: have == want, Warning: true}
 	if !finding.OK {
 		old, renamed := path.Join(p.Root, have), path.Join(p.Root, want)
+		finding.Problem = old + " is named for another version, LuaRocks expects " + want
 		finding.Detail = old + " should be " + want + ", as LuaRocks expects"
 		finding.Remedy = "rename " + old + " to " + renamed
 		finding.Fix = &protocol.Fix{

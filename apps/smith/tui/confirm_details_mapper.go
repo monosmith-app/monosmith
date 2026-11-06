@@ -1,12 +1,12 @@
 package tui
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // confirmDetails are the lines a confirmation dialog shows between its
@@ -38,7 +38,7 @@ func (s Shell) confirmDetails(argv []string) []string {
 // releaseDetails lists the packages and the versions the release publishes.
 func (s Shell) releaseDetails(argv []string) []string {
 	if !s.release.Loaded || len(s.release.Plan.Items) == 0 {
-		return []string{"The plan is not loaded: open the Release view first (" + commands.ShortcutOf("view.release") + ") to see the packages and versions."}
+		return []string{words.Say("tui.confirm_details.the_plan_is_not_loaded_open", "shortcutOf", commands.ShortcutOf("view.release"))}
 	}
 	var lines []string
 	if s.release.Plan.Channel != "" {
@@ -54,16 +54,16 @@ func (s Shell) releaseDetails(argv []string) []string {
 		}
 		plan = adjusted
 	}
-	lines = append(lines, "Packages and versions to publish:")
+	lines = append(lines, words.Say("tui.confirm_details.packages_and_versions_to_publish"))
 	for _, item := range plan.Items {
 		from := item.Current
 		if from == "" {
 			from = "new"
 		}
-		lines = append(lines, fmt.Sprintf("  %s  %s → %s", item.Project, from, item.Next))
+		lines = append(lines, words.Say("tui.confirm_details.text", "project", item.Project, "from", from, "next", item.Next))
 	}
 	if len(held) > 0 {
-		lines = append(lines, "", "Held back, not released: "+strings.Join(held, ", "))
+		lines = append(lines, "", words.Say("tui.confirm_details.held_back_not_released", "list", strings.Join(held, ", ")))
 	}
 	return lines
 }
@@ -81,9 +81,9 @@ func (s Shell) doctorFixDetails(only string) []string {
 			continue
 		}
 		for _, e := range f.Fix.Files {
-			verb := "writes "
+			verb := words.Say("tui.confirm_details.writes")
 			if e.Delete {
-				verb = "removes "
+				verb = words.Say("tui.confirm_details.removes")
 			}
 			if line := "  " + verb + e.Path; !seen[line] {
 				seen[line] = true
@@ -92,9 +92,9 @@ func (s Shell) doctorFixDetails(only string) []string {
 		}
 	}
 	if len(lines) == 0 {
-		return []string{"This fix lists no files: `smith doctor --fix` shows what it changes first."}
+		return []string{words.Say("tui.confirm_details.no_files")}
 	}
-	return append([]string{"Files that will change:"}, lines...)
+	return append([]string{words.Say("tui.confirm_details.files_change")}, lines...)
 }
 
 // capLines keeps at most n lines, replacing the rest with a count.
@@ -103,7 +103,7 @@ func capLines(lines []string, n int) []string {
 		return lines
 	}
 	out := append([]string(nil), lines[:n-1]...)
-	return append(out, fmt.Sprintf("  … and %d more", len(lines)-(n-1)))
+	return append(out, words.Say("tui.confirm_details.and_more", "value", len(lines)-(n-1)))
 }
 
 // adjustmentsIn reads the --hold and --bump flags of a release command line.

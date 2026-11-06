@@ -67,7 +67,7 @@ func repairRemovedKeys(cmd *cobra.Command, asJSON, fix, yes bool) (bool, error) 
 // printRemovedKeysFinding prints the finding the way the full report does.
 func printRemovedKeysFinding(cmd *cobra.Command, f protocol.Finding) {
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "✖ %s\n    %s\n", f.Check, f.Detail)
+	fmt.Fprintf(out, "✖ %s\n    %s\n", Finding{Finding: f}.Title(), f.Detail)
 	for _, step := range strings.Split(f.Remedy, "\n") {
 		fmt.Fprintf(out, "    → %s\n", step)
 	}

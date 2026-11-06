@@ -130,3 +130,24 @@ export function tellAgentFileOutcome (outcome: AgentFileOutcome, root: string): 
     }
   }
 }
+
+/** Says adding the agent writes files and needs a trusted workspace. */
+export function tellAgentNeedsTrust (): void {
+  void vscode.window.showWarningMessage('MonoSmith: adding the agent writes files and needs a trusted workspace.')
+}
+
+/**
+ * Says smith.toml was not changed when the person asked never to be offered the agent.
+ * @param failure - smith's words for why
+ */
+export function tellAgentOptOutFailed (failure: string): void {
+  void vscode.window.showWarningMessage(`MonoSmith: smith.toml was not changed. ${failure}`)
+}
+
+/**
+ * Says the folder will not be offered the agent again.
+ * @param folder - the name of the folder
+ */
+export function tellAgentOptedOut (folder: string): void {
+  void vscode.window.showInformationMessage(`MonoSmith: ${folder} will not be offered the agent again. smith.toml has enabled = false under [agent]; remove it to be asked.`)
+}

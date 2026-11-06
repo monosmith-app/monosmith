@@ -1,10 +1,9 @@
 package tui
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // tabPage is the open tab seen as a Page. The existing view models stay as
@@ -22,7 +21,7 @@ func (p tabPage) Title() string {
 		if s.detailFull() {
 			return s.list.SelectedName()
 		}
-		return fmt.Sprintf("Projects (%d)", s.list.Len())
+		return words.Say("tui.tab_page.projects", "len", s.list.Len())
 	case commands.TabRun:
 		if s.run != nil {
 			return s.run.CommandLine()
@@ -35,7 +34,7 @@ func (p tabPage) Title() string {
 			return t
 		}
 	}
-	return tabTitles[s.tab]
+	return tabTitles()[s.tab]
 }
 
 // guideModalName is what the Start tab is doing while a box is open over it and
@@ -50,9 +49,9 @@ func (s Shell) guideModalName() string {
 	case s.confirm != nil && s.Form != "":
 		return s.Form
 	case s.compose != nil:
-		return "Compose a stack"
+		return words.Say("tui.tab_page.compose_a_stack")
 	case s.adopt != nil:
-		return "Bring into MonoSmith"
+		return words.Say("tui.tab_page.bring_into_monosmith")
 	}
 	return ""
 }

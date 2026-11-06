@@ -121,16 +121,7 @@ func moveOwnFiles(edits *fileedits.Set, params protocol.ChangeKindParams) {
 // retargetDependents points every other project's manifest and tsconfig
 // references at the new directory.
 func retargetDependents(edits *fileedits.Set, params protocol.ChangeKindParams) {
-	for _, other := range params.Projects {
-		if other.Language != "node" || other.Root == params.Project.Root {
-			continue
-		}
-		for _, file := range configFiles(edits, other.Root) {
-			text, _ := edits.Read(file)
-			updated, _ := pathrefs.Retarget(text, other.Root, params.Project.Root, params.NewRoot)
-			edits.Write(file, updated)
-		}
-	}
+	fileedits.RetargetDependents(edits, params, "node", func(root string) []string { return configFiles(edits, root) })
 }
 
 // retargetWorkspace updates the root files, and lists the new directory in

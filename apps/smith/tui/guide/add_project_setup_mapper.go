@@ -1,5 +1,9 @@
 package guide
 
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+)
+
 // addSetupKey is the key of the first question after the name of a new project.
 const addSetupKey = "add-setup"
 
@@ -10,13 +14,11 @@ const addSetupKey = "add-setup"
 // them as a flag.
 func addSetupStep() Step {
 	return Step{
-		Key: addSetupKey, Prompt: "How do you want to set it up?",
-		Note: "The defaults are the answers the stack suggests: the choices you picked above, or none, and the shape of the other projects of its kind.\n" +
-			"A web app is built for lcl, dev, uat and prd: smith run build builds prd, the builds go to dist/apps/<name>/<env>, and the .env files are written for you and kept in git.\n" +
-			"The plan shows every default as a flag, and nothing is written before you say so.",
+		Key: addSetupKey, Prompt: words.Say("guide.add_project_setup.how_do_you_want_to_set"),
+		Note: words.Say("guide.add_project_setup.note"),
 		Options: []Option{
-			{Label: "Start with the defaults", Value: setupDefaults, Hint: "go to the plan now; each default is in the command (default)"},
-			{Label: "Customise", Value: setupCustom, Hint: "answer the questions one at a time: choices, the shape of the other projects, the environments"},
+			{Label: words.Say("guide.add_project_setup.start_with_the_defaults"), Value: setupDefaults, Hint: words.Say("guide.add_project_setup.go_to_the_plan_now_each")},
+			{Label: words.Say("guide.add_project_setup.customise"), Value: setupCustom, Hint: words.Say("guide.add_project_setup.answer_the_questions_one_at_a")},
 		},
 	}
 }

@@ -1,12 +1,12 @@
 package guide
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -70,8 +70,8 @@ func layerNeeds(outcomes []compose.Outcome) map[string]string {
 	return out
 }
 
-// layerWords say what a layer holds, for the sentence that asks for one.
-var layerWords = map[string]string{"framework": "a framework", "shell": "a desktop shell", "host": "a cloud host"}
+// layerWords are the catalog key of what a layer holds, for the sentence that asks for one.
+var layerWords = map[string]string{"framework": "guide.add_project_picks.layer.framework", "shell": "guide.add_project_picks.layer.shell", "host": "guide.add_project_picks.layer.host"}
 
 // picksCheck is the check of the choices step: it runs the solver of smith add
 // on the ticked set, offline, and says in plain words what is wrong or missing,
@@ -97,7 +97,7 @@ func picksCheck(lang string, offers []ChoiceOffer, needs map[string]string) func
 				for _, k := range offers[i].Kinds {
 					kinds = append(kinds, k+"s")
 				}
-				return fmt.Sprintf("%s makes only %s, and this is a %s: untick it, or go back and pick another kind", name, strings.Join(kinds, " and "), kind)
+				return words.Say("guide.add_project_picks.kind", "name", name, "kinds", strings.Join(kinds, words.Say("guide.add_project_picks.and")), "kind", kind)
 			}
 		}
 		if !knowsRoles {
@@ -125,12 +125,12 @@ func picksCheck(lang string, offers []ChoiceOffer, needs map[string]string) func
 				}
 			}
 		}
-		return fmt.Sprintf("this kind of project needs %s: tick one of %s, or untick everything", layerWords[layer], strings.Join(have, ", "))
+		return words.Say("guide.add_project_picks.needs", "layer", words.Say(layerWords[layer]), "names", strings.Join(have, ", "))
 	}
 }
 
 // plainWords turns a sentence of smith add (which talks of --with) into one for
 // the form, where nothing is typed as a flag.
 func plainWords(s string) string {
-	return strings.NewReplacer(" to --with", "", "give no --with to start", "untick everything to start").Replace(s)
+	return strings.NewReplacer(" to --with", "", "give no --with to start", words.Say("guide.add_project_picks.untick")).Replace(s) // words:literal
 }

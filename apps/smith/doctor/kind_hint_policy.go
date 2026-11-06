@@ -26,6 +26,8 @@ func UnusedLibHint(name string, dependents, otherProjects int, added, now time.T
 	return protocol.Finding{
 		Check:   "the lib " + name + " is used by a project",
 		Warning: true,
+		Project: name,
+		Problem: fmt.Sprintf("no project imports it, in the repository for %d days", days),
 		Detail:  fmt.Sprintf("no project imports %s, and it has been in the repository for %d days. A lib is shared inside the repository; nothing shares it yet", name, days),
 		Remedy:  "if it is a program, `smith kind " + name + " app`; if you publish it, `smith kind " + name + " package` (add --dry-run to see what changes first); if nothing needs it, `smith remove " + name + "`. Leave it if something outside the graph uses it",
 		Fix: smithfix.Choice("Say what the lib "+name+" is", "What is "+name+"? You see what changes before anything is written.",
@@ -45,6 +47,8 @@ func UnpublishedPackageHint(name string, neverUploaded bool) (protocol.Finding, 
 	return protocol.Finding{
 		Check:   "the package " + name + " is published",
 		Warning: true,
+		Project: name,
+		Problem: "is a package that nothing publishes",
 		Detail:  name + " is a package, but nothing publishes it: its own settings say registry is none, or its manifest says it is never published, so a release only tags it",
 		Remedy:  "if it only serves other projects of this repository, `smith kind " + name + " lib` says what changes (add --dry-run to see first); if you publish it another way, leave it",
 		Fix:     smithfix.Fix("Make the package "+name+" a lib", smithfix.Step("Make "+name+" a lib: it is shared inside the repository and no longer published", "kind", name, "lib")),

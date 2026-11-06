@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"encoding/json"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -56,6 +57,8 @@ func smithDependencyFinding(root, pipelineVersion string) []protocol.Finding {
 	return []protocol.Finding{{
 		Check:   "the smith the pipelines install is the smith in your dependencies",
 		Warning: true,
+		Area:    doctorchecks.AreaDependencies,
+		Problem: "the pipelines install smith " + pipelineVersion + ", your dependencies resolve " + have,
 		Detail:  "the pipelines install " + smithPackage + " " + pipelineVersion + ", but package.json resolves " + have + ", so CI and local runs use different smiths",
 		Remedy:  "`smith doctor --fix` sets the " + smithPackage + " dependency to " + pipelineVersion + " and runs npm install to refresh package-lock.json (it asks first), or set [ci] smith_version = \"" + have + "\" and regenerate the pipelines",
 		Fix: &protocol.Fix{

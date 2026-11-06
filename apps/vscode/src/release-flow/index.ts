@@ -4,3 +4,4 @@ export { firstVersionCommand, forcedConsequences, parseNeverReleasedPackages, pa
 export { chooseForced } from './forced-release.client.ts'
 export { chooseBump, chooseHold, confirmRelease, tellReleaseOutcome } from './release-prompts.client.ts'
 export { releaseWorkspace, type ReleaseDeps } from './release-workspace.use-case.ts'
+export { releaseHere } from './release-flow.handler.ts'

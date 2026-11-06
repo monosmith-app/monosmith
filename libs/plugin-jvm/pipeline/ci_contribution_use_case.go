@@ -166,7 +166,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	version := Version(workspaceRoot)
 	javaOut, javaErr := probe(workspaceRoot, []string{"java", "-version"})
 	findings := []protocol.Finding{
-		{Check: "a JDK is installed", OK: javaErr == nil, Detail: "java is not on PATH", Remedy: "install JDK " + version + " (https://adoptium.net)"},
+		{Check: "a JDK is installed", Area: "toolchain", OK: javaErr == nil, Problem: toolrun.ProblemUnless(javaErr == nil, "java is not on PATH"), Detail: "java is not on PATH", Remedy: "install JDK " + version + " (https://adoptium.net)"},
 	}
 	if f, ok := javaVersionFinding(javaOut, version); ok && javaErr == nil {
 		findings = append(findings, f)
@@ -174,14 +174,15 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	used := usedBuildTools(workspaceRoot, params.Projects)
 	if used.maven {
 		_, err := probe(workspaceRoot, []string{"mvn", "-v"})
-		findings = append(findings, protocol.Finding{Check: "Maven is installed", OK: err == nil, Detail: "mvn is not on PATH", Remedy: "install Maven " + MavenVersion + " (https://maven.apache.org)"})
+		findings = append(findings, protocol.Finding{Check: "Maven is installed", Area: "toolchain", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "mvn is not on PATH"), Detail: "mvn is not on PATH", Remedy: "install Maven " + MavenVersion + " (https://maven.apache.org)"})
 	}
 	if used.gradle {
 		_, err := probe(workspaceRoot, []string{"gradle", "--version"})
-		findings = append(findings, protocol.Finding{Check: "Gradle is installed", OK: err == nil, Detail: "gradle is not on PATH", Remedy: "install Gradle " + GradleVersion + " (https://gradle.org/install)"})
+		findings = append(findings, protocol.Finding{Check: "Gradle is installed", Area: "toolchain", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "gradle is not on PATH"), Detail: "gradle is not on PATH", Remedy: "install Gradle " + GradleVersion + " (https://gradle.org/install)"})
 	}
 	if used.android {
-		findings = append(findings, protocol.Finding{Check: "the Android SDK is installed", OK: androidSDKFound(workspaceRoot), Detail: "neither ANDROID_HOME nor local.properties' sdk.dir names an SDK", Remedy: "install the Android SDK command-line tools (https://developer.android.com/tools) and set ANDROID_HOME"})
+		sdkFound := androidSDKFound(workspaceRoot)
+		findings = append(findings, protocol.Finding{Check: "the Android SDK is installed", Area: "toolchain", OK: sdkFound, Problem: toolrun.ProblemUnless(sdkFound, "no Android SDK is found: neither ANDROID_HOME nor local.properties' sdk.dir names one"), Detail: "neither ANDROID_HOME nor local.properties' sdk.dir names an SDK", Remedy: "install the Android SDK command-line tools (https://developer.android.com/tools) and set ANDROID_HOME"})
 	}
 	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
 		findings = append(findings, found...)

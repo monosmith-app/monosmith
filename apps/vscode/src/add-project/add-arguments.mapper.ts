@@ -1,5 +1,5 @@
 import type { AddRequest } from './add-options.contract.ts'
-import { environmentArguments } from './web-environments.mapper.ts'
+import { environmentArguments } from '../web-environments/index.ts'
 import { longFlag } from '../smith-flags/index.ts'
 
 /**

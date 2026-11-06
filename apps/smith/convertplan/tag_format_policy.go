@@ -1,7 +1,7 @@
 package convertplan
 
 import (
-	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/apps/smith/releasetag"
 )
 
 // ScopedTagFormat is the [release] tag_format convert writes when the
@@ -33,7 +33,7 @@ func chooseTagFormat(scope string, choices []tagChoice) (format string, exceptio
 	for _, c := range choices {
 		switch {
 		case c.fresh:
-		case c.prefix == workspace.ExpandTagFormat(ScopedTagFormat, scope, c.project):
+		case c.prefix == releasetag.ExpandTagFormat(ScopedTagFormat, scope, c.project):
 			follows++
 		default:
 			other[c.project] = c.prefix

@@ -62,9 +62,13 @@ const FIXTURES: Record<string, string> = {
     "import { report } from './index.ts'\n\nexport function again (): number {\n  return report()\n}\n",
   'packages/app/src/reports/selfish.use-case.ts':
     "import { report } from '.'\n\nexport function twice (): number {\n  return report() * 2\n}\n",
-  'packages/app/src/reports/reportHelper.ts':          'export const helper = 1\n',
-  'packages/app/src/reports/deeper/inner.use-case.ts': 'export const inner = 1\n',
-  'packages/app/src/stray.ts':                         'export const stray = 1\n',
+  'packages/app/src/reports/reportHelper.ts':             'export const helper = 1\n',
+  'packages/app/src/reports/deeper/inner.use-case.ts':    'export const inner = 1\n',
+  // A banned word in a file name, in a production file and in a test, and one inside a fixtures folder.
+  'packages/app/src/reports/date-utils.algorithm.ts':     'export const dateUtils = 1\n',
+  'packages/app/src/reports/shared-state.store.spec.ts':  'export const sharedState = 1\n',
+  'packages/app/src/reports/fixtures/helper.contract.ts': 'export const fixture = 1\n',
+  'packages/app/src/stray.ts':                            'export const stray = 1\n',
   // Tests name the file they test, and are exempt from the role and cycle rules.
   'packages/app/src/arithmetic/add.algorithm.spec.ts':
     "import { add } from './add.algorithm'\n\ndescribe('add', () => {\n  it('adds', () => {\n    expect(add(1, 2)).toBe(3)\n  })\n})\n",
@@ -248,5 +252,11 @@ describe('monosmith({ verticalSlices })', () => {
     expect(slicesFor('packages/app/src/reports/deeper/inner.use-case.ts')).toEqual(['vertical-slices/file-role'])
     expect(slicesFor('packages/app/src/stray.ts')).toEqual(['vertical-slices/file-role'])
     expect(slicesFor('packages/app/src/content.config.ts')).toEqual([])
+  })
+
+  it('reports a banned word in a file name, in production files and tests, but not in a fixtures folder', () => {
+    expect(slicesFor('packages/app/src/reports/date-utils.algorithm.ts')).toEqual(['vertical-slices/file-role'])
+    expect(slicesFor('packages/app/src/reports/shared-state.store.spec.ts')).toEqual(['vertical-slices/file-role'])
+    expect(slicesFor('packages/app/src/reports/fixtures/helper.contract.ts')).toEqual([])
   })
 })

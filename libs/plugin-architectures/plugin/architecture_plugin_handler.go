@@ -104,9 +104,10 @@ func (a *Architecture) Doctor(params protocol.DoctorParams) (protocol.DoctorResu
 	if checked == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}, nil
 	}
-	f := protocol.Finding{Check: "Code follows the " + a.rules.Name + " architecture (" + a.rules.Summary + ")", OK: len(bare) == 0}
+	f := protocol.Finding{Check: "Code follows the " + a.rules.Name + " architecture (" + a.rules.Summary + ")", Area: "config", OK: len(bare) == 0}
 	if !f.OK {
 		f.Warning = true
+		f.Problem = "no folder is named for a part of the architecture in " + named(bare)
 		f.Detail = "no folder is named for a part of the architecture (" + strings.Join(a.rules.FolderNames(), ", ") + ") in " + named(bare) + ", so its rules check nothing there"
 		f.Remedy = "move the code into folders with those names, or run smith architecture none to stop checking the layout"
 		// Moving the code is the person's own work; smith can only do the other way.

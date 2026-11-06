@@ -2,6 +2,8 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
@@ -28,13 +30,17 @@ const outputOverlapCheck = "no two tasks write the same output directory"
 // Returns: the finding; it passes when no two tasks overlap.
 func outputOverlapFinding(projects []*projectgraph.Project, allowed []string, alternatives [][]string, tomlSrc string) protocol.Finding {
 	overlaps := buildoutputs.Overlaps(projects, allowed, alternatives)
-	f := protocol.Finding{Check: outputOverlapCheck, OK: len(overlaps) == 0, Warning: true}
+	f := protocol.Finding{Check: outputOverlapCheck, OK: len(overlaps) == 0, Warning: true, Area: doctorchecks.AreaLint}
 	if f.OK {
 		return f
 	}
 	var lines []string
 	for _, o := range overlaps {
 		lines = append(lines, o.Line())
+	}
+	f.Problem = lines[0]
+	if len(lines) > 1 {
+		f.Problem = strconv.Itoa(len(lines)) + " output folders are filled by more than one task"
 	}
 	f.Detail = strings.Join(lines, "; ") + ". smith keeps each task's output in its cache. Restoring one task from the cache first " +
 		"clears its output folder, which deletes the files the other task wrote there. A task that runs clears its folder first too"

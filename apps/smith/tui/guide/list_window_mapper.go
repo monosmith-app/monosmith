@@ -3,11 +3,13 @@ package guide
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
+// wordsHint is the line a folded glossary leaves.
+var wordsHint = words.Say("guide.list_window.words_hint")
+
 const (
-	// wordsHint is the line a folded glossary leaves.
-	wordsHint = "what do these words mean? press ?"
 	// glossaryListRows is how many lines of the list a glossary must leave. A row of
 	// the list wraps to two or three lines, so 16 lines are about 7 rows; when the
 	// words would leave fewer, they fold to the one line above.

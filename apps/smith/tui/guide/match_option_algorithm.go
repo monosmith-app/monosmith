@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // MatchesFilter reports whether an option is on offer for what was typed: every
@@ -60,9 +61,9 @@ func Suggestions(options []Option, typed string) []string {
 // says so and suggests the closest names the options know (labels and Also
 // names), or a few names to try when none is close.
 func NothingMatches(options []Option, typed string) string {
-	line := "nothing matches \"" + typed + "\"."
+	line := words.Say("guide.match_option.nothing", "typed", typed)
 	if near := Suggestions(options, typed); len(near) > 0 {
-		return line + " Did you mean " + strings.Join(near, " or ") + "?"
+		return line + words.Say("guide.match_option.did_you_mean", "options", strings.Join(near, words.Say("guide.match_option.or")))
 	}
 	var some []string
 	for _, o := range options {
@@ -72,7 +73,7 @@ func NothingMatches(options []Option, typed string) string {
 		}
 	}
 	if len(some) >= 3 {
-		return line + " Try a language or a framework, such as " + strings.Join(some[:3], ", ") + "."
+		return line + words.Say("guide.match_option.try_examples", "examples", strings.Join(some[:3], ", "))
 	}
-	return line + " Try a language name."
+	return line + words.Say("guide.match_option.try_language")
 }

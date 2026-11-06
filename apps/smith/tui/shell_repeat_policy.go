@@ -1,6 +1,10 @@
 package tui
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+)
 
 // oncePerThing are the commands that make or remove something: the same line
 // run a second time fails or does nothing, because the thing exists already or
@@ -18,9 +22,9 @@ func repeatable(argv []string) bool {
 // notRepeatableReason says why a command is not run again and what to do
 // instead, for the key and the action that would have run it.
 func notRepeatableReason(argv []string) string {
-	verb := "that command"
+	verb := words.Say("tui.repeat.that_command")
 	if len(argv) > 0 {
-		verb = "smith " + argv[0]
+		verb = words.Say("tui.repeat.smith", "argv", argv[0])
 	}
-	return verb + " makes or removes something, so running it again would fail. Use the Start menu to make another, or check the result with Doctor"
+	return words.Say("tui.repeat.makes_or_removes_something_so_running", "verb", verb)
 }

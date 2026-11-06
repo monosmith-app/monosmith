@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-go/apisurface"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pipeline"
@@ -77,7 +78,7 @@ func (g *Go) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error)
 
 // Remove implements serve.Remover.
 func (g *Go) Remove(params protocol.RemoveParams) (protocol.RemoveResult, error) {
-	return pipeline.Remove(g.root, params)
+	return gowork.Remove(g.root, params)
 }
 
 // Install implements serve.DependencyManager.

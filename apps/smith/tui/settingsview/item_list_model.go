@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Section is one entry of the list on the left.
@@ -24,18 +25,18 @@ var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Forms
 
 // Title is the name in the list.
 func (s Section) Title() string {
-	return [...]string{"Plugins", "Architecture", "Style", "Workspace", "Recipes", "Forms"}[s]
+	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.forms")}[s]
 }
 
 // About is the line under the heading of the open section.
 func (s Section) About() string {
 	return [...]string{
-		"which plugins this workspace uses",
-		"how the code of this workspace is laid out",
-		"the colours and symbols of this interface, yours alone",
-		"the settings of smith.toml",
-		"the recipes of this workspace",
-		"guided forms that run a smith command",
+		words.Say("settingsview.about.plugins"),
+		words.Say("settingsview.about.architecture"),
+		words.Say("settingsview.about.style"),
+		words.Say("settingsview.about.workspace"),
+		words.Say("settingsview.about.recipes"),
+		words.Say("settingsview.about.forms"),
 	}[s]
 }
 
@@ -75,26 +76,26 @@ func (m Model) items(s Section) []item {
 	switch s {
 	case Plugins:
 		for i, p := range m.snap.Plugins {
-			add(kindPlugin, "Built-in plugins", p.Name, i)
+			add(kindPlugin, words.Say("settingsview.group.builtin"), p.Name, i)
 		}
 		for i, p := range m.snap.External {
-			add(kindExternal, "External plugins this workspace uses", p.Name, i)
+			add(kindExternal, words.Say("settingsview.group.external"), p.Name, i)
 		}
 		for i, p := range m.snap.Installed {
-			add(kindInstalled, "Installed on the search path", p.Name+"\x00"+p.Dir, i)
+			add(kindInstalled, words.Say("settingsview.group.installed"), p.Name+"\x00"+p.Dir, i)
 		}
-		add(kindSearch, "Install", "search", 0)
-		add(kindInstall, "Install", "install", 0)
+		add(kindSearch, words.Say("settingsview.group.install"), "search", 0)
+		add(kindInstall, words.Say("settingsview.group.install"), "install", 0)
 	case Architecture:
 		for i, a := range m.snap.Architectures {
-			add(kindArchitecture, "Code layout", a.Name, i)
+			add(kindArchitecture, words.Say("settingsview.group.layout"), a.Name, i)
 		}
 	case Style:
 		for i, t := range theme.ThemeNames {
-			add(kindTheme, "Theme", t, i)
+			add(kindTheme, words.Say("settingsview.group.theme"), t, i)
 		}
 		for i, t := range theme.IconSetNames {
-			add(kindIcons, "Symbols", t, i)
+			add(kindIcons, words.Say("settingsview.group.symbols"), t, i)
 		}
 	case Workspace:
 		for i, st := range m.snap.Settings {
@@ -102,11 +103,11 @@ func (m Model) items(s Section) []item {
 		}
 	case Recipes:
 		for i, r := range m.snap.Recipes {
-			add(kindRecipe, "Recipe files", r.Path, i)
+			add(kindRecipe, words.Say("settingsview.group.recipes"), r.Path, i)
 		}
 	case Forms:
 		for i, f := range m.forms {
-			add(kindForm, "Guided forms", f.Title, i)
+			add(kindForm, words.Say("settingsview.group.forms"), f.Title, i)
 		}
 	}
 	return out

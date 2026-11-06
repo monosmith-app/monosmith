@@ -60,7 +60,7 @@ Core slices in `apps/smith`:
 | `recipedrift` | compare each recipe project with its recipe as it is now (`smith doctor`), plan the upgrade, and list where a recipe's values came from (`smith explain`) |
 | `nxworkspace`, `turboworkspace`, `convertplan`, `turboplan`, `convert` | read an Nx or Turborepo workspace, plan its conversion, apply it (`smith convert`) |
 | `legacyinventory`, `convertchoices`, `removalplan`, `fullconversion` | the full level of `smith convert --level full`: what the old tooling leaves, the four choices, the groups of removals, and the trial on a scratch copy |
-| `legacyjesthelpers` | the Jest helper files an older `smith convert` wrote at the root, and the cleanup `smith doctor --fix` offers (`@monosmith/jest-preset` replaces them) |
+| `legacyjestsupport` | the Jest helper files an older `smith convert` wrote at the root, and the cleanup `smith doctor --fix` offers (`@monosmith/jest-preset` replaces them) |
 | `adoptflow` | what the TUI's adopt wizard asks of `adoption` and `convert`, as data and calls |
 | `doctorfix`, `corefixes` | turn the fixes doctor's findings carry into a plan (questions, files, steps) and apply it; the fixes of smith's own checks |
 | `engineserver`, `runevents` | `smith serve` and the event stream of runs, installs and releases |
@@ -86,6 +86,7 @@ Core slices in `apps/smith`:
 | `operation`, `operationplan` | the plan printed before a write and `smith undo` |
 | `why`, `report`, `agentdoc`, `agentfiles` | `smith why`, `smith report`, `smith agent file` and `smith agent install` |
 | `pluginmarket`, `plugininstall`, `pluginpack`, `pluginarchive`, `plugintrust`, `pluginadmit`, `pluginenv` | external plugins: marketplace search, install, pack, trust and environment |
+| `semver` | the one ordering of dotted version strings (pre-releases sort before their release) |
 | `releaserehearsal`, `releaseassets` | `smith release --rehearse` and `smith release assets` |
 | `kindchange`, `lockfilesync`, `taskfolding`, `languageserver`, `tauriadd`, `tauriprepare`, `updatenotice` | `smith kind`; the lockfile step of adopt and convert; folding task overrides into `[[groups]]`; `smith lsp`; `smith tauri`; the update notice |
 | `clicontract` | `smith commands`, `smith kinds`, `smith info`: the --json contracts editors read |

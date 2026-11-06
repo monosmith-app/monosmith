@@ -5,12 +5,15 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // shortTitles are the shorter tab names, used only for as many tabs as it takes
 // for the strip to fit.
-var shortTitles = map[string]string{
-	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabSettings: "Sett",
+func shortTitles() map[string]string {
+	return map[string]string{
+		commands.TabProjects: words.Say("tui.tab.projects_short"), commands.TabRelease: words.Say("tui.tab.release_short"), commands.TabSettings: words.Say("tui.tab.settings_short"),
+	}
 }
 
 // shortOrder is the order tabs give up their full name in: the ones people
@@ -22,7 +25,7 @@ var shortOrder = []string{commands.TabSettings, commands.TabRelease, commands.Ta
 // which names are spelled out.
 const badgeRoom = 3
 
-// tabStrip is the row of views, three rows high on a tall terminal.
+// tabStrip is the row of views.
 func (s Shell) tabStrip() tabs.Strip { return s.renderStrip(s.hoveredTab()) }
 
 // renderStrip draws the strip with the tab hover highlighted.
@@ -30,7 +33,7 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 	l := s.lay()
 	list := make([]tabs.Tab, 0, len(s.tabs))
 	for _, id := range s.tabs {
-		t := tabs.Tab{ID: id, Label: tabTitles[id], Short: shortTitles[id], Badge: s.tabBadge(id)}
+		t := tabs.Tab{ID: id, Label: tabTitles()[id], Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id)}
 		if name := s.guideModalName(); id == commands.TabGuide && name != "" {
 			// A form that was answered and waits for its confirmation, or a box
 			// that took its place: the tab names it, not "Start".
@@ -41,27 +44,10 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 		}
 		list = append(list, t)
 	}
-	divider := 0
-	if l.HasDetail() {
-		divider = l.Main.W - 1
-	}
-	title := ""
-	if l.Tall {
-		title = s.page().Title()
-	}
 	return tabs.Render(tabs.Props{
-		Theme: s.th, Tabs: list, Active: s.tab, Hover: hover, Width: l.Tabs.W, Tall: l.Tall,
-		ShortenOrder: shortOrder, Title: title, Divider: divider,
+		Theme: s.th, Tabs: list, Active: s.tab, Hover: hover, Width: l.Tabs.W,
+		ShortenOrder: shortOrder,
 	})
-}
-
-// tabsInBody is how many rows of the strip belong to the content below it: the
-// last one of a tall strip is the content's top edge.
-func (s Shell) tabsInBody() int {
-	if s.lay().Tall {
-		return 1
-	}
-	return 0
 }
 
 // tabBadge is the mark after a tab's name: how the run is going, what doctor found.

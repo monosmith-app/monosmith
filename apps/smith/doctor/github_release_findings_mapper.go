@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"os"
 	"sort"
 	"strings"
@@ -50,15 +51,16 @@ func githubReleaseFindings(all []*projectgraph.Project, githubReleases bool, pac
 		}
 		attached = append(attached, name)
 		if _, ok := releasepack.EcosystemOf(p.Plugin); ok && !packs(p.Plugin) {
-			out = append(out, protocol.Finding{Check: "release: " + name + " can be packed", Detail: fmt.Sprintf("registry = \"github-release\", but the %s plugin cannot pack a package", p.Plugin), Remedy: "update the plugin; until then the release refuses to run, so nothing is published to a public registry"})
+			out = append(out, protocol.Finding{Check: "release: " + name + " can be packed", Project: name, Problem: fmt.Sprintf("the %s plugin cannot pack it for GitHub Releases", p.Plugin), Detail: fmt.Sprintf("registry = \"github-release\", but the %s plugin cannot pack a package", p.Plugin), Remedy: "update the plugin; until then the release refuses to run, so nothing is published to a public registry"})
 		}
 	}
 	if len(attached) == 0 {
 		return out
 	}
-	out = append(out, protocol.Finding{Check: "release: github_releases is on for the packages that attach to GitHub Releases", OK: githubReleases,
-		Detail: "registry = \"github-release\" attaches package files to GitHub Releases, which are off", Remedy: "set github_releases = true under [release] in smith.toml"})
-	out = append(out, protocol.Finding{Check: fmt.Sprintf("release: %d package(s) attach to GitHub Releases, not to a registry: %s", len(attached), strings.Join(attached, ", ")), OK: true})
+	out = append(out, protocol.Finding{Check: "release: github_releases is on for the packages that attach to GitHub Releases", OK: githubReleases, Area: doctorchecks.AreaRelease,
+		Problem: doctorchecks.ProblemWhen(!githubReleases, "github_releases is off, but "+strings.Join(attached, ", ")+" attach to GitHub Releases"),
+		Detail:  "registry = \"github-release\" attaches package files to GitHub Releases, which are off", Remedy: "set github_releases = true under [release] in smith.toml"})
+	out = append(out, protocol.Finding{Check: fmt.Sprintf("release: %d package(s) attach to GitHub Releases, not to a registry: %s", len(attached), strings.Join(attached, ", ")), OK: true, Area: doctorchecks.AreaRelease})
 	for _, name := range names {
 		p := projects[name]
 		if p.Kind != protocol.ProjectPackage || release.Native(p) || release.PublishesToNoRegistry(p) || !p.Publishes() {
@@ -71,9 +73,10 @@ func githubReleaseFindings(all []*projectgraph.Project, githubReleases bool, pac
 		if !ok || env(credential) != "" {
 			continue
 		}
-		out = append(out, protocol.Finding{Check: "release: " + name + " has the credential its public registry asks for", Warning: true,
-			Detail: fmt.Sprintf("%s would publish to the public %s registry, and %s is not set; a private repository must not publish there", name, p.Plugin, credential),
-			Remedy: fmt.Sprintf("set [projects.%s] registry = \"github-release\" to attach its package file to the GitHub Release, or \"none\" to release it by its tag only", name)})
+		out = append(out, protocol.Finding{Check: "release: " + name + " has the credential its public registry asks for", Warning: true, Project: name,
+			Problem: fmt.Sprintf("%s is not set, so it would publish to the public %s registry", credential, p.Plugin),
+			Detail:  fmt.Sprintf("%s would publish to the public %s registry, and %s is not set; a private repository must not publish there", name, p.Plugin, credential),
+			Remedy:  fmt.Sprintf("set [projects.%s] registry = \"github-release\" to attach its package file to the GitHub Release, or \"none\" to release it by its tag only", name)})
 	}
 	return out
 }

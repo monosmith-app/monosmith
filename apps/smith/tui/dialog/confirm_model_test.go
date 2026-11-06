@@ -14,7 +14,7 @@ func release() Confirm {
 
 func TestTheDialogShowsTheExactCommandFirst(t *testing.T) {
 	text := strings.Join(release().Lines(theme.Default()), "\n")
-	for _, want := range []string{"Release", "The command that will run:", "$ smith release --yes", "Run  Enter", "Cancel  Esc", "╭", "╯"} {
+	for _, want := range []string{"Release", "The command that will run:", "$ smith release --yes", "Run (enter)", "Cancel (esc)", "╭", "╯"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}
@@ -112,12 +112,12 @@ func TestALongCommandWrapsAndStillFitsASmallScreen(t *testing.T) {
 func TestANoticeTellsAndOnlyClosesWithOK(t *testing.T) {
 	c := NewNotice("Cannot add web like that", "smith said:", []string{"✖ svelte needs node", "  → pick another framework"}).Place(100, 30)
 	text := strings.Join(c.Lines(theme.Default()), "\n")
-	for _, want := range []string{"Cannot add web like that", "smith said:", "svelte needs node", "pick another framework", "OK  Enter"} {
+	for _, want := range []string{"Cannot add web like that", "smith said:", "svelte needs node", "pick another framework", "OK (enter)"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}
 	}
-	for _, not := range []string{"The command that will run", "Run  Enter", "Cancel"} {
+	for _, not := range []string{"The command that will run", "Run (enter)", "Cancel"} {
 		if strings.Contains(text, not) {
 			t.Fatalf("a notice runs nothing, but shows %q:\n%s", not, text)
 		}

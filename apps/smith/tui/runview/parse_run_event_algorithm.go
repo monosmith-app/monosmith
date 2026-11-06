@@ -2,11 +2,11 @@ package runview
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // parseEventLine reads a line of the event stream `smith run --json-events`
@@ -30,7 +30,7 @@ func parseEventLine(line string) (Event, bool) {
 	case runevents.TaskQueued:
 		return Event{Kind: Queue, Task: e.Task, Hidden: true}, true
 	case runevents.TaskStarted:
-		return Event{Kind: Started, Task: e.Task, Display: e.Task + " ▶ started"}, true
+		return Event{Kind: Started, Task: e.Task, Display: e.Task + words.Say("runview.started")}, true
 	case runevents.TaskOutput:
 		return Event{Kind: Output, Task: e.Task, Text: e.Line, Display: e.Task + " │ " + e.Line}, true
 	case runevents.TaskFinished:
@@ -55,7 +55,7 @@ func parseEventLine(line string) (Event, bool) {
 			mark = "✔"
 		}
 		took := (time.Duration(s.DurationMs) * time.Millisecond).String()
-		text := fmt.Sprintf("%s %d/%d tasks succeeded (%d from cache) in %s", mark, done, total, s.Cached, took)
+		text := words.Say("runview.summary", "mark", mark, "done", done, "total", total, "cached", s.Cached, "took", took)
 		return Event{Kind: Summary, Done: done, Total: total, OK: ok, Text: text, Display: text}, true
 	}
 	return Event{}, false

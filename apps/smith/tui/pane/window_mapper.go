@@ -1,9 +1,8 @@
 package pane
 
 import (
-	"fmt"
-
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Window draws the part of a list that fits in h lines: the lines from the
@@ -29,11 +28,11 @@ func Window(th theme.Theme, rows []string, w, h, sel int, sc *Scroll) (out []str
 	var note string
 	switch {
 	case above > 0 && below > 0:
-		note = fmt.Sprintf("↑ %d more · ↓ %d more", above, below)
+		note = words.Say("pane.window.both", "above", above, "below", below)
 	case above > 0:
-		note = fmt.Sprintf("↑ %d more", above)
+		note = words.Say("pane.window.above", "above", above)
 	case below > 0:
-		note = fmt.Sprintf("↓ %d more", below)
+		note = words.Say("pane.window.below", "below", below)
 	}
 	return append(out, "  "+th.Muted(note)), top
 }

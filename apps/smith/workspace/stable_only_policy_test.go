@@ -21,21 +21,3 @@ func TestStableOnlySkipsOnlyPrereleasesOfTheNamedRegistries(t *testing.T) {
 		t.Error("an unset stable_only skips nothing")
 	}
 }
-
-func TestStableOnlyIsValidated(t *testing.T) {
-	cases := []struct {
-		name string
-		r    ProjectRelease
-		ok   bool
-	}{
-		{"pypi set", ProjectRelease{PyPI: "acme", StableOnly: []string{"pypi"}}, true},
-		{"npm cannot skip", ProjectRelease{NPM: []string{"acme"}, StableOnly: []string{"npm"}}, false},
-		{"registry not set", ProjectRelease{NuGet: "acme", StableOnly: []string{"pypi"}}, false},
-		{"twice", ProjectRelease{PyPI: "acme", StableOnly: []string{"pypi", "pypi"}}, false},
-	}
-	for _, c := range cases {
-		if err := validateStableOnly("[projects.cli.release]", &c.r); (err == nil) != c.ok {
-			t.Errorf("%s: %v", c.name, err)
-		}
-	}
-}

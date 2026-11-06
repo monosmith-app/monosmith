@@ -44,7 +44,7 @@ func TestLOpensTheFullLogAndEscClosesItBeforeItStopsTheStep(t *testing.T) {
 	if !w.LogOpen() || out != (Outcome{}) {
 		t.Fatalf("l did not open the log: %+v", out)
 	}
-	if got := text(w); !strings.Contains(got, "full log") || !strings.Contains(got, "[ Close log  l ]") {
+	if got := text(w); !strings.Contains(got, "full log") || !strings.Contains(got, "Close log (l)") {
 		t.Fatalf("log view:\n%s", got)
 	}
 	w, out = press(t, w, "esc")

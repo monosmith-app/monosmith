@@ -3,6 +3,7 @@ package dev.monosmith.jetbrains.health
 import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
+import dev.monosmith.jetbrains.flowports.WorkspaceChangedStore
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.notice.NoticeClient
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
@@ -10,7 +11,6 @@ import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.OutputConsoleStore
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import java.nio.file.Path
 
 /** Reads the health of the workspace (`smith doctor --json`), fixes a check with its plan shown, and applies the safe fixes. */

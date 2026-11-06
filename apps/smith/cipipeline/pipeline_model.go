@@ -46,7 +46,7 @@ type Model struct {
 	NativeRunners       []string
 	NativeLinuxPackages []string
 	// AssetPlatforms are the platforms an app's [release] build command runs
-	// for, in workspace.CommandPlatforms order: a job runs smith ci assets on
+	// for, in releasetable.CommandPlatforms order: a job runs smith ci assets on
 	// a runner of each.
 	AssetPlatforms []string
 	// Provenance is true when an app is published to npm: on GitHub the job

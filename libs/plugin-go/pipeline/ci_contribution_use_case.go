@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -24,17 +25,17 @@ const DefaultGoVersion = "1.24"
 // asks for, so a missing go.work does not downgrade the pipelines to the default.
 func toolchainVersion(workspaceRoot string, projects []protocol.Project) string {
 	if src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work")); err == nil {
-		if v := ParseGoWork(string(src)).GoVersion; v != "" {
+		if v := gowork.ParseGoWork(string(src)).GoVersion; v != "" {
 			return v
 		}
 	}
 	newest := ""
 	for _, p := range projects {
-		src, err := os.ReadFile(ModuleFile(workspaceRoot, p.Root))
+		src, err := os.ReadFile(gowork.ModuleFile(workspaceRoot, p.Root))
 		if err != nil {
 			continue
 		}
-		if m := goDirective.FindStringSubmatch(string(src)); m != nil && versionLess(newest, m[1]) {
+		if m := gowork.GoDirective.FindStringSubmatch(string(src)); m != nil && versionLess(newest, m[1]) {
 			newest = m[1]
 		}
 	}

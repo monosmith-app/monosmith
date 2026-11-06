@@ -1,14 +1,14 @@
 package pathfinder
 
 import (
-	"fmt"
-
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Hint is the line of keys to show under the list.
-const Hint = "type to filter · up/down choose · tab completes · enter opens or confirms · esc back"
+var Hint = words.Say("pathfinder.hint")
 
 // DefaultRows is how many rows of the list are drawn before the rest is
 // folded into a "more" line.
@@ -32,16 +32,16 @@ func (m Model) Rows(th theme.Theme, w, limit int) []Line {
 	if limit <= 0 {
 		limit = DefaultRows
 	}
-	where := "here (the folder smith started in)"
+	where := words.Say("pathfinder.here")
 	if m.dir != "" {
 		where = m.dir
 	}
-	out := []Line{{Text: pane.Fit(" "+th.Muted("in "+where), w), Index: -1}}
+	out := []Line{{Text: pane.Fit(" "+th.Muted(words.Say("pathfinder.in", "where", where)), w), Index: -1}}
 	switch {
 	case m.unreadable:
-		return append(out, Line{Text: pane.Fit("  "+th.Muted("this folder cannot be read: enter uses what you typed"), w), Index: -1})
+		return append(out, Line{Text: pane.Fit("  "+th.Muted(words.Say("pathfinder.unreadable")), w), Index: -1})
 	case len(m.rows) == 0:
-		return append(out, Line{Text: pane.Fit("  "+th.Muted("nothing here matches: enter uses what you typed"), w), Index: -1})
+		return append(out, Line{Text: pane.Fit("  "+th.Muted(words.Say("pathfinder.nomatch")), w), Index: -1})
 	}
 	top := max(m.cursor-limit+1, 0)
 	end := min(top+limit, len(m.rows))
@@ -49,11 +49,11 @@ func (m Model) Rows(th theme.Theme, w, limit int) []Line {
 		out = append(out, Line{Text: pane.Fit(m.rowText(th, i), w), Index: i})
 	}
 	if hidden := len(m.rows) - (end - top); hidden > 0 {
-		note := fmt.Sprintf("%d more: keep typing to narrow the list", hidden)
+		note := words.Say("pathfinder.more", "count", hidden)
 		if m.truncated {
-			note = fmt.Sprintf("%d more, and the folder holds more than %d names: keep typing to narrow the list", hidden, maxNames)
+			note = words.Say("pathfinder.more.truncated", "count", hidden, "max", maxNames)
 		}
-		out = append(out, Line{Text: pane.Fit("  "+th.Muted("… "+note), w), Index: -1})
+		out = append(out, Line{Text: pane.Fit("  "+th.Muted(words.Say("pathfinder.note", "note", note)), w), Index: -1})
 	}
 	return out
 }
@@ -66,10 +66,10 @@ func (m Model) rowText(th theme.Theme, i int) string {
 	if r.kind == rowFolder {
 		name += "/"
 	}
-	pointer := "  "
+	pointer := choicerow.Cursor(th, false)
 	switch {
 	case i == m.cursor:
-		pointer, name = th.Accent(th.Icons.Pointer+" "), th.Accent(name)
+		pointer, name = th.Accent(choicerow.Cursor(th, true)), th.Accent(name)
 	case r.ignored:
 		name = th.Faint(name)
 	case r.kind == rowFolder:

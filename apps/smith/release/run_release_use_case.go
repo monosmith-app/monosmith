@@ -6,28 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
-	"github.com/monosmith-app/monosmith/apps/smith/linuxpackages"
-	"github.com/monosmith-app/monosmith/apps/smith/npmbinaries"
-	"github.com/monosmith-app/monosmith/apps/smith/nugettool"
 	"github.com/monosmith-app/monosmith/apps/smith/packagemanifests"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
-	"github.com/monosmith-app/monosmith/apps/smith/pypiwheels"
-	"github.com/monosmith-app/monosmith/apps/smith/rubygems"
-	"github.com/monosmith-app/monosmith/apps/smith/sbom"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -315,63 +305,6 @@ func packageManifests(s *session.Session, p *projectgraph.Project, item Item, pr
 	return written
 }
 
-// linuxPackages builds the .deb and .rpm packages a release asks for from
-// its linux archives, before the app is tagged: a failure stops the release.
-// A dry run returns the files it would build.
-func linuxPackages(s *session.Session, p *projectgraph.Project, item Item, pr protocol.PublishResult, dryRun bool) ([]string, error) {
-	r, ok := linuxRelease(s, p, item, pr)
-	if !ok {
-		return nil, nil
-	}
-	built := linuxpackages.Built{Assets: pr.Assets, Platforms: pr.AssetPlatforms}
-	if dryRun {
-		dir := ""
-		for asset := range pr.AssetPlatforms {
-			dir = path.Dir(asset)
-		}
-		var names []string
-		for _, name := range linuxpackages.Expected(r, slices.Collect(maps.Values(pr.AssetPlatforms))) {
-			names = append(names, path.Join(dir, name))
-		}
-		return names, nil
-	}
-	packages, err := linuxpackages.Build(s.Root, built, r)
-	if err != nil {
-		return nil, fmt.Errorf("linux packages: %w", err)
-	}
-	return packages, nil
-}
-
-// linuxRelease is what a project's Linux packages hold, if it asks for any.
-func linuxRelease(s *session.Session, p *projectgraph.Project, item Item, pr protocol.PublishResult) (linuxpackages.Release, bool) {
-	if p.Release == nil || len(p.Release.LinuxPackages) == 0 || Native(p) || len(pr.AssetPlatforms) == 0 {
-		return linuxpackages.Release{}, false
-	}
-	product := p.Release.Product
-	if product == "" {
-		product = p.Name
-	}
-	binary := pr.Binary
-	if binary == "" {
-		binary = p.Name
-	}
-	homepage, maintainer := p.Release.Homepage, product
-	if repo, err := Repository(s); err == nil {
-		if homepage == "" {
-			homepage = "https://github.com/" + repo.String()
-		}
-		maintainer = repo.Owner + " <https://github.com/" + repo.String() + ">"
-	}
-	return linuxpackages.Release{Kinds: p.Release.LinuxPackages, Product: product, Binary: binary, Version: item.Next, Summary: p.Release.Description, Homepage: homepage, License: p.Release.License, Maintainer: maintainer}, true
-}
-
-// NativeTag marks a project built on each OS (smith ci native), whose release
-// assets each native job attaches for its own platform.
-const NativeTag = "native"
-
-// Native reports whether a project is built on each OS.
-func Native(p *projectgraph.Project) bool { return slices.Contains(p.Tags, NativeTag) }
-
 // publish asks the project's plugin to publish it; an app with a release
 // configuration gets its assets built instead, except a native app's, which
 // the native jobs build and attach. A native package is published by the
@@ -457,137 +390,6 @@ func deploy(ctx context.Context, s *session.Session, p *projectgraph.Project, it
 	return nil
 }
 
-// distribute publishes an app's binaries as npm packages, PyPI wheels, a
-// .NET tool and gems, made from the archives its plugin built, before the
-// app is tagged: a failure stops the release, and the re-run skips what the
-// registries have.
-func distribute(s *session.Session, p *projectgraph.Project, item Item, pr protocol.PublishResult, dryRun bool, res *ReportResult, say func(string, ...any)) error {
-	r := p.Release
-	if r == nil || (len(r.NPM) == 0 && r.PyPI == "" && r.NuGet == "" && r.RubyGems == "") {
-		return nil
-	}
-	if PublishesToNoRegistry(p) {
-		say("no npm, PyPI, NuGet or RubyGems packages for %s: smith.toml sends it to no registry", p.Name)
-		return nil
-	}
-	if Native(p) {
-		say("no npm, PyPI, NuGet or RubyGems packages: a native app's archives are built on separate runners")
-		return nil
-	}
-	binary := pr.Binary
-	if binary == "" {
-		binary = p.Name
-	}
-	homepage, repository := r.Homepage, ""
-	if repo, err := Repository(s); err == nil {
-		repository = "https://github.com/" + repo.String()
-		if homepage == "" {
-			homepage = repository
-		}
-	}
-	type archive struct{ path, os, arch string }
-	var archives []archive
-	for asset, platform := range pr.AssetPlatforms {
-		goos, goarch, _ := strings.Cut(platform, "/")
-		archives = append(archives, archive{asset, goos, goarch})
-	}
-	out := "dist/release/" + p.Name
-	verb := "published"
-	if dryRun {
-		verb = "would publish"
-	}
-	report := func(kind string, published, existing, skipped []string) {
-		res.Packages = append(res.Packages, published...)
-		res.ExistingPackages = append(res.ExistingPackages, existing...)
-		if len(published) > 0 {
-			say("%s %s %s", verb, kind, strings.Join(published, ", "))
-		}
-		if len(existing) > 0 {
-			say("%s already has %s", kind, strings.Join(existing, ", "))
-		}
-		if len(skipped) > 0 {
-			say("no %s package for %s", kind, strings.Join(skipped, ", "))
-		}
-	}
-	// skip says, and records, that stable_only leaves a pre-release out of a
-	// registry.
-	skip := func(kind, key, name string) bool {
-		if !r.SkipsPrerelease(key, item.Next) {
-			return false
-		}
-		res.SkippedPackages = append(res.SkippedPackages, kind+" "+name+": skipped: pre-release")
-		say("%s %s: skipped: pre-release %s (stable_only in smith.toml)", kind, name, item.Next)
-		return true
-	}
-	if len(r.NPM) > 0 {
-		release := npmbinaries.Release{Names: r.NPM, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/npm"}
-		if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
-			release.Tag = ch.Tag
-		}
-		for _, a := range archives {
-			release.Archives = append(release.Archives, npmbinaries.Archive{Path: a.path, OS: a.os, Arch: a.arch})
-		}
-		wait, err := npmpropagation.ParseWait(PropagationWait(s.Config, p))
-		if err != nil {
-			return err
-		}
-		release.PropagationWait = wait
-		release.Progress = func(line string) { say("%s", line) }
-		result, err := npmbinaries.Publish(s.Root, release, dryRun)
-		report("npm", result.Published, result.Existing, result.Skipped)
-		for _, move := range result.PendingMoves {
-			say("the dist-tag %s of %s moves at the end of the release, once npm serves the platform packages", move.Tag, move.Package)
-		}
-		res.addPending("", result.PendingMoves...)
-		if err != nil {
-			return fmt.Errorf("npm: %w", err)
-		}
-	}
-	if r.PyPI != "" && !skip("PyPI", "pypi", r.PyPI) {
-		release := pypiwheels.Release{Name: r.PyPI, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, OutDir: out + "/pypi"}
-		for _, a := range archives {
-			release.Archives = append(release.Archives, pypiwheels.Archive{Path: a.path, OS: a.os, Arch: a.arch})
-		}
-		result, err := pypiwheels.Publish(s.Root, release, dryRun)
-		report("PyPI", result.Published, result.Existing, result.Skipped)
-		if err != nil {
-			return fmt.Errorf("PyPI: %w", err)
-		}
-	}
-	if r.NuGet != "" && !skip("NuGet", "nuget", r.NuGet) {
-		release := nugettool.Release{ID: r.NuGet, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/nuget"}
-		if repo, err := Repository(s); err == nil {
-			release.Authors = repo.Owner
-		}
-		for _, a := range archives {
-			release.Archives = append(release.Archives, nugettool.Archive{Path: a.path, OS: a.os, Arch: a.arch})
-		}
-		result, err := nugettool.Publish(s.Root, release, dryRun)
-		report("NuGet", result.Published, result.Existing, result.Skipped)
-		if err != nil {
-			return fmt.Errorf("NuGet: %w", err)
-		}
-	}
-	if r.RubyGems != "" && !skip("RubyGems", "rubygems", r.RubyGems) {
-		release := rubygems.Release{Name: r.RubyGems, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/rubygems"}
-		for _, a := range archives {
-			release.Archives = append(release.Archives, rubygems.Archive{Path: a.path, OS: a.os, Arch: a.arch})
-		}
-		result, err := rubygems.Publish(s.Root, release, dryRun)
-		report("RubyGems", result.Published, result.Existing, result.Skipped)
-		if err != nil {
-			return fmt.Errorf("RubyGems: %w", err)
-		}
-	}
-	return nil
-}
-
-// AssetSpec is what a plugin needs to build an app's release assets, or nil
-// for a project without them.
-func AssetSpec(p *projectgraph.Project) *protocol.AssetSpec {
-	return p.AssetSpec()
-}
-
 // mirror pushes a project with a split repository there, once its tag is
 // pushed: the mirror's history is taken from the monorepo's tag, so a tag
 // that only exists locally is not mirrored yet, and the re-run that pushes
@@ -625,113 +427,6 @@ func pushTag(s *session.Session, item Item, opts Options, res *ReportResult) err
 	}
 	res.Pushed = true
 	return nil
-}
-
-// publishGitHubRelease creates the tag's GitHub Release and attaches the
-// assets. When assets is nil (a resumed release), the plugin lists the
-// expected files and they are rebuilt only if the release lacks any.
-func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, res *ReportResult, say func(string, ...any), assets []string) error {
-	if !res.Pushed {
-		say("not creating a GitHub Release: the tag was not pushed")
-		if PacksToRelease(p) {
-			say("the package files are in %s; push the tag and run the release again to attach them", PackDir(p.Name))
-		}
-		return nil
-	}
-	client, err := githubrelease.FromEnvironment()
-	if err != nil {
-		return err
-	}
-	repo, err := Repository(s)
-	if err != nil {
-		return err
-	}
-	if assets == nil && (p.Release != nil || attachesItsFile(p)) && !Native(p) && !BuildsAssetsFromCommand(p) {
-		existing, found, err := client.ReleaseByTag(repo, item.Tag)
-		if err != nil {
-			return err
-		}
-		planned, err := publish(ctx, s, p, item, true)
-		if err != nil {
-			return err
-		}
-		packages, err := linuxPackages(s, p, item, planned, true)
-		if err != nil {
-			return err
-		}
-		if !found || missing(existing, append(planned.Assets, packages...)) {
-			say("building assets for %s", item.Next)
-			built, err := publish(ctx, s, p, item, false)
-			if err != nil {
-				return err
-			}
-			packages, err := linuxPackages(s, p, item, built, false)
-			if err != nil {
-				return err
-			}
-			assets = append(built.Assets, packages...)
-		}
-	}
-	if len(assets) > 0 && p.Release != nil && !Native(p) {
-		bom, err := sbom.Write(s, p, sbom.Request{Version: item.Next,
-			Product: p.Release.Product, OutDir: "dist/release/" + p.Name, SmithVersion: s.Version})
-		if err != nil {
-			return fmt.Errorf("SBOM for %s: %w (re-run the release to finish it)", item.Tag, err)
-		}
-		if bom != "" {
-			assets = append(slices.Clone(assets), bom)
-		}
-	}
-	files := make([]string, len(assets))
-	for i, a := range assets {
-		files[i] = filepath.Join(s.Root, filepath.FromSlash(a))
-	}
-	out, err := githubrelease.Ensure(client, repo, githubrelease.Request{Tag: item.Tag, Title: item.Project + " " + item.Next, Notes: RenderNotes(item), Prerelease: strings.Contains(item.Next, "-"), Assets: files, Verify: PacksToRelease(p)})
-	if err != nil {
-		return fmt.Errorf("GitHub Release %s: %w (re-run the release to finish it)", item.Tag, err)
-	}
-	res.GitHubRelease = out.URL
-	if out.Created {
-		say("created GitHub Release %s", out.URL)
-	}
-	if len(out.Replaced) > 0 {
-		say("replaced %s: the attached file differed from the one packed now", strings.Join(out.Replaced, ", "))
-	}
-	if len(out.Uploaded) > 0 {
-		say("attached %s", strings.Join(out.Uploaded, ", "))
-	}
-	return nil
-}
-
-// attachesItsFile reports whether a project's release has an asset without
-// the project having a [release] table: a recipe attaches its own file, so a
-// URL can pin a version of it. A resumed release lists it from the plugin.
-func attachesItsFile(p *projectgraph.Project) bool { return p.Language == "recipe" }
-
-func missing(r githubrelease.Release, assets []string) bool {
-	have := map[string]bool{}
-	for _, a := range r.Assets {
-		have[a.Name] = true
-	}
-	for _, a := range assets {
-		if !have[path.Base(a)] {
-			return true
-		}
-	}
-	return false
-}
-
-// Repository is the GitHub repository releases go to: GITHUB_REPOSITORY on
-// Actions, otherwise the release remote's URL.
-func Repository(s *session.Session) (githubrelease.Repository, error) {
-	if env := os.Getenv("GITHUB_REPOSITORY"); env != "" {
-		return githubrelease.ParseRepository(env)
-	}
-	remote, err := s.Git.RemoteURL(s.Config.Release.Remote)
-	if err != nil {
-		return githubrelease.Repository{}, fmt.Errorf("no GitHub repository: set GITHUB_REPOSITORY or add the %s remote", s.Config.Release.Remote)
-	}
-	return githubrelease.ParseRepository(remote)
 }
 
 // pushPending pushes release tags at HEAD left local by an interrupted run.

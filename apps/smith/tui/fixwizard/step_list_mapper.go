@@ -1,12 +1,12 @@
 package fixwizard
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -34,7 +34,7 @@ func stepListRows(th theme.Theme, steps []protocol.FixStep, current, inner int) 
 		if n < current {
 			mark = th.Muted("✓")
 		}
-		rows = append(rows, pane.Wrap(fmt.Sprintf("%s step %d: %s", mark, n, s.Description), inner, 2)...)
+		rows = append(rows, pane.Wrap(words.Say("fixwizard.steps.done", "mark", mark, "number", n, "description", s.Description), inner, 2)...)
 	}
 	return rows
 }

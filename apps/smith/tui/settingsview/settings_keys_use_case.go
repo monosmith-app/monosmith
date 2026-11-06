@@ -3,12 +3,15 @@ package settingsview
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-var errUnavailable = errors.New("this smith cannot do that here")
+// errUnavailable is the error of a change this smith has no backend for.
+func errUnavailable() error { return errors.New(words.Say("settingsview.error.unavailable")) }
 
 // Key gives the tab a key press.
 func (m Model) Key(msg tea.KeyMsg) (Model, Result) {
@@ -21,9 +24,10 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Result) {
 		return m.editorKey(msg)
 	}
 	name := msg.String()
+	if nav := commands.NavNamed(name); nav.Moves() {
+		return m.move(nav), Result{}
+	}
 	switch name {
-	case "up", "down", "pgup", "pgdown", "home", "end":
-		return m.move(name), Result{}
 	case "tab":
 		m.onItems = !m.onItems
 	case "shift+tab", "left", "backspace":
@@ -59,34 +63,35 @@ type busyAnswer struct {
 // tab treats as usual.
 func (m Model) busyKey(msg tea.KeyMsg) (busyAnswer, bool) {
 	name := msg.String()
-	switch name {
-	case "esc":
+	nav := commands.NavNamed(name)
+	switch {
+	case name == "esc":
 		if m.stoppable {
 			m.busy, m.ticket = "", m.ticket+1
-			return busyAnswer{m, Result{Note: "Cancelled: nothing was changed"}}, true
+			return busyAnswer{m, Result{Note: words.Say("settingsview.busy.cancelled")}}, true
 		}
-		return busyAnswer{m, Result{Note: "That change is being saved and cannot be stopped: it ends in a moment"}}, true
-	case "up", "down", "pgup", "pgdown", "home", "end", "tab", "shift+tab", "left", "right":
+		return busyAnswer{m, Result{Note: words.Say("settingsview.busy.unstoppable")}}, true
+	case nav.Moves() || nav == commands.NavNext || nav == commands.NavPrev || name == "left" || name == "right":
 		if m.ed == nil {
 			return busyAnswer{}, false
 		}
 	}
-	return busyAnswer{m, Result{Note: "Wait for " + m.busy + " to end first"}}, true
+	return busyAnswer{m, Result{Note: words.Say("settingsview.busy.wait", "task", m.busy)}}, true
 }
 
 // move moves the cursor of the rows, or the section while the keyboard is on the list of sections.
-func (m Model) move(key string) Model {
+func (m Model) move(key commands.NavAction) Model {
 	m.note, m.confirm = "", ""
 	if !m.onItems {
 		at := int(m.section)
 		switch key {
-		case "up":
+		case commands.NavUp:
 			at--
-		case "down":
+		case commands.NavDown:
 			at++
-		case "home":
+		case commands.NavHome:
 			at = 0
-		case "end":
+		case commands.NavEnd:
 			at = len(Sections) - 1
 		}
 		m.section = Section(max(min(at, len(Sections)-1), 0))
@@ -95,17 +100,17 @@ func (m Model) move(key string) Model {
 	n := len(m.items(m.section))
 	c := m.cursor[m.section]
 	switch key {
-	case "up":
+	case commands.NavUp:
 		c--
-	case "down":
+	case commands.NavDown:
 		c++
-	case "pgup":
+	case commands.NavPageUp:
 		c -= 8
-	case "pgdown":
+	case commands.NavPageDown:
 		c += 8
-	case "home":
+	case commands.NavHome:
 		c = 0
-	case "end":
+	case commands.NavEnd:
 		c = n - 1
 	}
 	m.cursor[m.section] = max(min(c, n-1), 0)
@@ -122,7 +127,7 @@ func (m Model) activate() (Model, Result) {
 	switch it.kind {
 	case kindPlugin:
 		p := m.snap.Plugins[it.idx]
-		m = m.begin(map[bool]string{true: "turning " + p.Name + " on", false: "turning " + p.Name + " off"}[!p.Enabled], false)
+		m = m.begin(map[bool]string{true: words.Say("settingsview.busy.on", "name", p.Name), false: words.Say("settingsview.busy.off", "name", p.Name)}[!p.Enabled], false)
 		return m, Result{Cmd: m.setPlugin(p.Name, !p.Enabled)}
 	case kindExternal:
 		return m.askTrust()
@@ -135,26 +140,26 @@ func (m Model) activate() (Model, Result) {
 		if a.Warning != "" && m.confirm != a.Name {
 			// It would check nothing here: say so, and apply on the second Enter.
 			m.confirm = a.Name
-			m.note = a.Name + " would check none of your projects. Enter again to choose it anyway."
+			m.note = words.Say("settingsview.architecture.confirm", "name", a.Name)
 			return m, Result{}
 		}
 		m.confirm = ""
-		m = m.begin("choosing the "+it.key+" architecture", false)
+		m = m.begin(words.Say("settingsview.busy.architecture", "name", it.key), false)
 		return m, Result{Cmd: m.setArchitecture(it.key)}
 	case kindTheme:
-		m = m.begin("saving the style", false)
+		m = m.begin(words.Say("settingsview.busy.style"), false)
 		return m, Result{Cmd: m.saveStyle(normalise(it.key), m.savedIcons)}
 	case kindIcons:
-		m = m.begin("saving the style", false)
+		m = m.begin(words.Say("settingsview.busy.style"), false)
 		return m, Result{Cmd: m.saveStyle(m.savedTheme, normalise(it.key))}
 	case kindSetting:
 		return m.editSetting(m.snap.Settings[it.idx])
 	case kindForm:
 		return m, Result{Form: it.key}
 	case kindInstalled:
-		m.note = "Installed here; a workspace uses it when smith.toml declares it under [plugins.external]."
+		m.note = words.Say("settingsview.note.installed")
 	case kindRecipe:
-		m.note = "Recipes are chosen in smith.toml ([workspace] recipe); smith recipe check <file> checks one."
+		m.note = words.Say("settingsview.note.recipe")
 	}
 	return m, Result{}
 }
@@ -164,7 +169,7 @@ func (m Model) activate() (Model, Result) {
 func (m Model) editSetting(st Setting) (Model, Result) {
 	switch {
 	case st.Type == "boolean":
-		m = m.begin("saving "+st.Path, false)
+		m = m.begin(words.Say("settingsview.busy.saving", "path", st.Path), false)
 		return m, Result{Cmd: m.setSetting(st.Path, []string{fmt.Sprint(!boolValue(st))})}
 	case st.Type == "array" && len(st.Choices) > 0:
 		m.ed = newPicker(st)
@@ -192,7 +197,7 @@ func (m Model) askTrust() (Model, Result) {
 		return m, Result{Cmd: unavailable()}
 	}
 	name := m.snap.External[it.idx].Name
-	m = m.begin("reading what "+name+" does", true)
+	m = m.begin(words.Say("settingsview.busy.reading", "name", name), true)
 	ticket := m.ticket
 	return m, Result{Cmd: func() tea.Msg {
 		r, err := review(name)
@@ -205,7 +210,7 @@ func (m Model) forgetTrust() (Model, Result) {
 	if !ok || it.kind != kindExternal || !m.onItems || !m.snap.External[it.idx].Trusted {
 		return m, Result{}
 	}
-	m = m.begin("forgetting the trust of "+m.snap.External[it.idx].Name, false)
+	m = m.begin(words.Say("settingsview.busy.forgetting", "name", m.snap.External[it.idx].Name), false)
 	return m, Result{Cmd: m.untrust(m.snap.External[it.idx].Name)}
 }
 
@@ -216,14 +221,14 @@ func (m Model) resetSetting() (Model, Result) {
 	}
 	st := m.snap.Settings[it.idx]
 	if !st.Set {
-		m.note = st.Path + " already has its default"
+		m.note = words.Say("settingsview.note.default", "path", st.Path)
 		return m, Result{}
 	}
-	m = m.begin("resetting "+st.Path, false)
+	m = m.begin(words.Say("settingsview.busy.resetting", "path", st.Path), false)
 	return m, Result{Cmd: m.unsetSetting(st.Path)}
 }
 
-func unavailable() tea.Cmd { return func() tea.Msg { return Applied{Err: errUnavailable} } }
+func unavailable() tea.Cmd { return func() tea.Msg { return Applied{Err: errUnavailable()} } }
 
 // run does a change off the update loop and reads the workspace again after it.
 func (m Model) run(op func() (string, error)) tea.Cmd {
@@ -252,9 +257,12 @@ func (m Model) setPlugin(name string, enable bool) tea.Cmd {
 		if err != nil {
 			return "", err
 		}
-		note := name + map[bool]string{true: " is on", false: " is off"}[enable]
+		note := words.Say("settingsview.plugin.off", "name", name)
+		if enable {
+			note = words.Say("settingsview.plugin.on", "name", name)
+		}
 		if warning != "" {
-			note += ". " + warning
+			note = words.Say("settingsview.plugin.warning", "note", note, "warning", warning)
 		}
 		return note, nil
 	})
@@ -269,7 +277,7 @@ func (m Model) setArchitecture(name string) tea.Cmd {
 		if err := set(name); err != nil {
 			return "", err
 		}
-		return "Architecture: " + name, nil
+		return words.Say("settingsview.architecture.chosen", "name", name), nil
 	})
 }
 
@@ -307,7 +315,7 @@ func (m Model) saveStyle(themeName, icons string) tea.Cmd {
 	st := m.b.Style
 	return func() tea.Msg {
 		if st.Save == nil {
-			return StyleSaved{Err: errUnavailable}
+			return StyleSaved{Err: errUnavailable()}
 		}
 		if err := st.Save(themeName, icons); err != nil {
 			return StyleSaved{Err: err}

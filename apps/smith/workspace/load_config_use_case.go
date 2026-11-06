@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/dockerregistries"
 	"io/fs"
 	"os"
 	"path"
@@ -226,7 +227,7 @@ func Validate(cfg *Config) error {
 			continue
 		}
 		label := "[conventions.docker]"
-		registries, err := checkDockerRegistries(label, conv.Registry, conv.Registries, conv.DescriptionFrom)
+		registries, err := dockerregistries.CheckDockerRegistries(label, conv.Registry, conv.Registries, conv.DescriptionFrom)
 		if err != nil {
 			return fmt.Errorf("%s: %w", FileName, err)
 		}
@@ -244,10 +245,10 @@ func Validate(cfg *Config) error {
 			if _, ok := cfg.Conventions["docker"]; !ok {
 				return fmt.Errorf("%s: [projects.%s.docker] needs [conventions.docker]", FileName, name)
 			}
-			if c := po.Docker.Context; c != "" && !ValidContext(c) {
+			if c := po.Docker.Context; c != "" && !dockerregistries.ValidContext(c) {
 				return fmt.Errorf("%s: [projects.%s.docker] context %q must be a workspace-relative directory with forward slashes (\".\" or apps/%s, say)", FileName, name, c, name)
 			}
-			registries, err := checkDockerRegistries("[projects."+name+".docker]", po.Docker.Registry, po.Docker.Registries, po.Docker.DescriptionFrom)
+			registries, err := dockerregistries.CheckDockerRegistries("[projects."+name+".docker]", po.Docker.Registry, po.Docker.Registries, po.Docker.DescriptionFrom)
 			if err != nil {
 				return fmt.Errorf("%s: %w", FileName, err)
 			}

@@ -9,14 +9,6 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-func TestParseGoWork(t *testing.T) {
-	src := "go 1.24.3\n\nuse (\n\t./apps/api // the api\n\t\"./libs/core\"\n)\nuse ./packages/sdk\n"
-	w := ParseGoWork(src)
-	if w.GoVersion != "1.24" || !reflect.DeepEqual(w.Use, []string{"apps/api", "libs/core", "packages/sdk"}) {
-		t.Fatalf("%+v", w)
-	}
-}
-
 func TestDoctorFindsStaleAndMissingEntries(t *testing.T) {
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "apps", "api"), 0o755)

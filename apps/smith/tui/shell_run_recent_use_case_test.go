@@ -50,15 +50,15 @@ func TestTheRunHeaderStepsThroughTheRunsWithTheMouse(t *testing.T) {
 }
 
 func TestTheRunFooterNamesTheKeysThatMoveBetweenRuns(t *testing.T) {
-	l := newLab(t, true, 100, 36)
+	l := newLab(t, true, 150, 36)
 	l.next = failingRun()
 	l.keys("b")
 	l.keys("r")
-	if f := footerOf(l); !strings.Contains(f, ", older") || strings.Contains(f, "newer") || !strings.Contains(f, "Esc start screen") {
+	if f := footerOf(l); !strings.Contains(f, "older (,)") || strings.Contains(f, "newer") || !strings.Contains(f, "start screen (Esc)") {
 		t.Fatalf("run footer %q", f)
 	}
 	l.keys("esc", "esc")
-	if f := footerOf(l); !strings.Contains(f, "↑↓ choose run") || !strings.Contains(f, "Enter open") || strings.Contains(f, "follow") {
+	if f := footerOf(l); !strings.Contains(f, "↑↓ choose run") || !strings.Contains(f, "open (Enter)") || strings.Contains(f, "follow") {
 		t.Fatalf("start screen footer %q", f)
 	}
 }

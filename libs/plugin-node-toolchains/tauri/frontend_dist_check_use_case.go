@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // frontendDistFindings warns for each project whose tauri.conf.json names a
@@ -41,8 +42,10 @@ func frontendDistFindings(workspaceRoot string, projects []protocol.Project) []p
 		want := "../" + protocol.BuildDirFromProject(p.Root)
 		findings = append(findings, protocol.Finding{
 			Check:   "frontendDist of " + p.Name + " is the project's build output",
+			Project: p.Name,
 			OK:      path.Clean(path.Join(tauriapp.SrcDir, dist)) == path.Clean(path.Join(tauriapp.SrcDir, want)),
 			Warning: true,
+			Problem: toolrun.ProblemUnless(path.Clean(path.Join(tauriapp.SrcDir, dist)) == path.Clean(path.Join(tauriapp.SrcDir, want)), "frontendDist is "+dist+", not "+want),
 			Detail:  p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json has frontendDist " + dist + ", but smith builds the web app into " + protocol.ProjectBuildDir(p.Root),
 			Remedy:  `set build.frontendDist to "` + want + `" in ` + p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json, and leave beforeBuildCommand empty (smith builds the web app first)",
 		})

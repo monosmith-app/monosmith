@@ -1,13 +1,12 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // View implements tea.Model. It fills the whole terminal and can be called in
@@ -16,7 +15,7 @@ import (
 func (s Shell) View() (out string) {
 	defer func() {
 		if r := recover(); r != nil {
-			out = fmt.Sprintf("smith: the interface could not be drawn (%v). Press Ctrl+C to leave.", r)
+			out = words.Say("tui.render.smith_the_interface_could_not_be", "r", r)
 		}
 	}()
 	if s.w < 1 || s.h < 1 {
@@ -44,9 +43,9 @@ func (s Shell) belowMinimum() bool {
 // tooSmall is the one-line hint shown on a terminal below the minimum, cut to
 // the width when even the hint does not fit.
 func (s Shell) tooSmall() string {
-	msg := fmt.Sprintf("Terminal too small (%dx%d): enlarge it to at least %dx%d, or press Ctrl+C to leave.", s.w, s.h, minWidth, minHeight)
+	msg := words.Say("tui.render.terminal_too_small_x_enlarge_it", "w", s.w, "h", s.h, "minWidth", minWidth, "minHeight", minHeight)
 	if pane.Width(msg) > s.w {
-		msg = fmt.Sprintf("Terminal too small: need %dx%d", minWidth, minHeight)
+		msg = words.Say("tui.render.terminal_too_small_need_x", "minWidth", minWidth, "minHeight", minHeight)
 	}
 	// One line of hint; the rest stays blank, so the screen still has exactly
 	// the terminal's size.
@@ -64,10 +63,11 @@ func (s Shell) screen() []string {
 	rows := make([]string, 0, h)
 	strip := s.tabStrip()
 	rows = append(rows, s.headerRow())
-	rows = append(rows, strip.Lines[:len(strip.Lines)-s.tabsInBody()]...)
-	rows = append(rows, s.body(strip)...)
+	rows = append(rows, strip.Lines...)
+	rows = append(rows, s.body()...)
 	rows = append(rows, s.footerRow())
 	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
+	rows = s.paintSplits(rows)
 	rows = s.overlays(rows)
 	for i := range rows {
 		rows[i] = pane.Fit(rows[i], w)
@@ -105,35 +105,22 @@ func (s Shell) statusInfo() statusbar.Info {
 
 // body draws the list, or the detail that took its place, and, on a wide
 // screen, the detail of the selection in the same frame: one border all round,
-// the list's right border dividing the two, and the top edge shared with the
-// tabs when they are tall.
-func (s Shell) body(strip tabs.Strip) []string {
+// the list's right border dividing the two.
+func (s Shell) body() []string {
 	l := s.lay()
 	page := s.page()
 	in := l.Main.Inner()
-	title := page.Title()
-	if l.Tall {
-		// The strip's last row is the pane's top edge, and the title sits in the strip.
-		title = ""
-	}
 	reserve := s.toastRows(in.H)
-	main := pane.Frame(s.th, title, page.View(in.W, in.H-reserve).lines, l.Main.W, l.Main.H, false)
+	main := pane.Frame(s.th, page.Title(), page.View(in.W, in.H-reserve).lines, l.Main.W, l.Main.H, false)
 	edge := func(r string) string { return s.th.Border(r, false) }
 	if !l.HasDetail() {
-		if l.Tall {
-			main[0] = strip.Lines[len(strip.Lines)-1]
-		}
 		return main
 	}
 	din := l.DetailInner()
 	side := pane.Block(s.detailContent(din.W, din.H-reserve).lines, din.W, din.H)
 	cut := func(line string) string { return ansi.Truncate(line, l.Main.W-1, "") + "\x1b[m" }
 	out := make([]string, 0, len(main))
-	if l.Tall {
-		out = append(out, strip.Lines[len(strip.Lines)-1])
-	} else {
-		out = append(out, cut(main[0])+edge("┬"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╮"))
-	}
+	out = append(out, cut(main[0])+edge("┬"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╮"))
 	for y := 1; y < len(main)-1; y++ {
 		out = append(out, main[y]+side[y-1]+edge("│"))
 	}
@@ -168,7 +155,7 @@ func (s Shell) overlays(rows []string) []string {
 	}
 	if s.palOpen {
 		box := s.paletteBox()
-		lines := pane.Frame(s.th, "Command palette", s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
+		lines := pane.Frame(s.th, words.Say("tui.render.command_palette"), s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
 		rows = pane.Overlay(rows, lines, box.X, box.Y)
 	}
 	if s.help != nil {

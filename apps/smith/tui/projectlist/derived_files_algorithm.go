@@ -1,5 +1,7 @@
 package projectlist
 
+import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+
 // The things a person can do about the derived files of a project.
 const (
 	// DeriveExplain says who owns the files and why they are in their state.
@@ -20,23 +22,23 @@ const (
 func StatusWords(status string) string {
 	switch status {
 	case StatusCurrent:
-		return "up to date"
+		return words.Say("projectlist.status.current")
 	case StatusStale:
-		return "out of date: derive rewrites it"
+		return words.Say("projectlist.status.stale")
 	case StatusMissing:
-		return "missing: derive writes it back"
+		return words.Say("projectlist.status.missing")
 	case StatusUnrecorded:
-		return "not recorded yet: derive records it"
+		return words.Say("projectlist.status.unrecorded")
 	case StatusDrift:
-		return "edited by hand: derive keeps your edit until you choose"
+		return words.Say("projectlist.status.drift")
 	case StatusDiverged:
-		return "differs from what smith derives: kept until you choose"
+		return words.Say("projectlist.status.diverged")
 	case StatusBroken:
-		return "smith cannot edit it: see Explain"
+		return words.Say("projectlist.status.broken")
 	case StatusEjected:
-		return "yours: smith does not touch it"
+		return words.Say("projectlist.status.ejected")
 	case StatusDiffers:
-		return "the project's own: it differs from its siblings"
+		return words.Say("projectlist.status.differs")
 	}
 	return status
 }

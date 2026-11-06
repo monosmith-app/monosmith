@@ -1,10 +1,9 @@
 package tui
 
 import (
-	"fmt"
-
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // derivedSection lists the derived files of a project with their state in
@@ -15,9 +14,9 @@ func (s Shell) derivedSection(p projectlist.Project) (detail.Section, bool) {
 	if len(p.Derived) == 0 {
 		return detail.Section{}, false
 	}
-	heading := "Derived files"
+	heading := words.Say("tui.derived.derived_files")
 	if n := p.DerivedNeedingAction(); n > 0 {
-		heading += fmt.Sprintf(" (%d need action)", n)
+		heading += words.Say("tui.derived.need_action", "n", n)
 	}
 	rows := make([]detail.Row, 0, len(p.Derived))
 	for _, f := range p.Derived {
@@ -53,15 +52,15 @@ func (s Shell) derivedActions(p projectlist.Project) []detail.Action {
 	action := func(id, label, hint, verb string) detail.Action {
 		a := detail.Action{ID: id, Label: label, Hint: hint, Disabled: s.running()}
 		if p.DeriveArgv(verb) == nil {
-			a.Disabled, a.Hint = true, hint+" (no file of this project needs it)"
+			a.Disabled, a.Hint = true, words.Say("tui.derived.no_file_of_this_project_needs", "hint", hint)
 		}
 		return a
 	}
 	return []detail.Action{
-		action("x:derive-explain", "Explain the derived files", "who owns each file and why it is in its state (smith derive --explain)", projectlist.DeriveExplain),
-		{ID: "x:derive-apply", Label: "Update the derived files", Hint: "writes the files that are out of date or missing, for the whole workspace; never overwrites a file you edited (smith derive)", Disabled: s.running()},
-		action("x:derive-adopt", "Keep my edit of a derived file", "takes your edit of a keys file as the new baseline (smith derive --adopt)", projectlist.DeriveAdopt),
-		action("x:derive-eject", "Own the files I edited", "the files become yours, smith stops touching them (smith derive --eject)", projectlist.DeriveEject),
-		action("x:derive-replace", "Replace the files I edited", "overwrites them with what smith derives; your edit is lost (smith derive --replace)", projectlist.DeriveReplace),
+		action("x:derive-explain", words.Say("tui.derived.explain_the_derived_files"), words.Say("tui.derived.who_owns_each_file_and_why"), projectlist.DeriveExplain),
+		{ID: "x:derive-apply", Label: words.Say("tui.derived.update_the_derived_files"), Hint: words.Say("tui.derived.writes_the_files_that_are_out"), Disabled: s.running()},
+		action("x:derive-adopt", words.Say("tui.derived.keep_my_edit_of_a_derived"), words.Say("tui.derived.takes_your_edit_of_a_keys"), projectlist.DeriveAdopt),
+		action("x:derive-eject", words.Say("tui.derived.own_the_files_i_edited"), words.Say("tui.derived.the_files_become_yours_smith_stops"), projectlist.DeriveEject),
+		action("x:derive-replace", words.Say("tui.derived.replace_the_files_i_edited"), words.Say("tui.derived.overwrites_them_with_what_smith_derives"), projectlist.DeriveReplace),
 	}
 }

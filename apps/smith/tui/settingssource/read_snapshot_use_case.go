@@ -121,7 +121,7 @@ func decode(raw string, set bool) []string {
 		return nil
 	}
 	var doc struct{ V any }
-	if err := toml.Unmarshal([]byte("v = "+raw), &doc); err != nil {
+	if err := toml.Unmarshal([]byte("v = "+raw), &doc); err != nil { // words:literal
 		return []string{raw}
 	}
 	if list, ok := doc.V.([]any); ok {

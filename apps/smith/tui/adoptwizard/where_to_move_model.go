@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -38,9 +39,9 @@ func moveOptions(c adoptmove.Candidate) []adoptmove.Choice {
 func moveLabel(ch adoptmove.Choice) string {
 	switch ch.Key {
 	case adoptmove.KeyOther:
-		return "another folder: {name} (edit the text; it is the whole folder, such as tools/web)"
+		return words.Say("adopt.move.other", "name", "{name}")
 	case adoptmove.KeyNone:
-		return ch.Label + ": smith adopts an empty workspace and the project stays at the root"
+		return ch.Label + words.Say("adopt.move.none")
 	}
 	return ch.Key + "/{name}"
 }
@@ -62,7 +63,7 @@ func (m Model) askMove() Model {
 	}
 	fix := protocol.Fix{Description: desc, Choices: []protocol.FixChoice{{Question: adoptmove.Question, Options: opts}}}
 	style := adoptStyle
-	style.Back, style.Ask, style.Input = true, "where it goes", "Name"
+	style.Back, style.Ask, style.Input = true, words.Say("adopt.move.ask"), words.Say("adopt.move.input")
 	text := m.moveName
 	if text == "" {
 		text = c.Name

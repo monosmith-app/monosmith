@@ -1,16 +1,15 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, NeededTools, PlanAnswer } from './add-options.contract.ts'
-import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
+import { tellDoctorFailure } from '../doctor-failure/index.ts'
 import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
 import { choicesByAxis, roleOf } from './add-options.mapper.ts'
 import { typedItem } from './add-choice-rows.mapper.ts'
 import { pickChoices, type ChoicePrompts, type PicksCheck } from './pick-choices.use-case.ts'
 import type { PicksAsked } from './check-picks.use-case.ts'
 import { showNotice } from '../notice-buttons/index.ts'
-import { isWebApp } from './web-environments.mapper.ts'
+import { askWebEnvironments, isWebApp } from '../web-environments/index.ts'
 import { mainLanguage, startOnMainLanguage } from './main-language.mapper.ts'
-import { askWebEnvironments } from './web-environments-prompts.client.ts'
 import { canStartWithDefaults, defaultsRequest } from './defaults-request.mapper.ts'
 
 const ROLES: Record<string, string> = {

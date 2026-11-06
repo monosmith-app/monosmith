@@ -9,6 +9,9 @@ type Preferences struct {
 	// SettingsTipSeen is true once the Settings tab was opened, so Home stops
 	// pointing at it.
 	SettingsTipSeen bool `json:"settingsTipSeen,omitempty"`
+	// Splits are the sizes the person gave the panels by moving the dividers
+	// between them, in cells, by divider (for example "doctor.detail").
+	Splits map[string]int `json:"splits,omitempty"`
 }
 
 // FileName is the file in the smith home.

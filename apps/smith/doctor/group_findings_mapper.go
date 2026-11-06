@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -35,6 +36,8 @@ func GroupFindings(projects []*projectgraph.Project, groups []workspace.Group) [
 		out = append(out, protocol.Finding{
 			Check:   "every group names a project",
 			Warning: true,
+			Area:    doctorchecks.AreaConfig,
+			Problem: fmt.Sprintf("the [[groups]] with %s matches no project", selectors),
 			Detail:  fmt.Sprintf("the [[groups]] with %s matches no project, so its settings apply to nothing", selectors),
 			Remedy:  "check the selectors in smith.toml against your project names, folders, kinds, languages and tags, or delete the group",
 		})

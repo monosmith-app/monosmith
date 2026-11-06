@@ -1,9 +1,12 @@
 package dialog
 
-import "slices"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"slices"
+)
 
 // CommitLabel is the text of the box that makes a change a commit.
-const CommitLabel = "Commit this change so it can be undone"
+var CommitLabel = words.Say("dialog.commit.label")
 
 // committing lists the commands that can end in a commit: the ones that change
 // the workspace and accept --commit. A command of two words is written with
@@ -11,8 +14,8 @@ const CommitLabel = "Commit this change so it can be undone"
 var committing = []string{
 	"adopt", "new", "add", "remove", "convert", "upgrade", "swap", "derive",
 	"install", "uninstall", "sync", "up", "kind", "bootstrap", "architecture",
-	"environments add", "environments remove", "tauri add",
-	"config set", "config unset", "plugin enable", "plugin disable",
+	"environments add", "environments remove", "tauri add", // words:literal
+	"config set", "config unset", "plugin enable", "plugin disable", // words:literal
 }
 
 // Committable is true for a command that accepts --commit, so its confirmation

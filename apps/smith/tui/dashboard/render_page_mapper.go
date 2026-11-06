@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Lines is Page without the buttons: the lines, the row of the next action
@@ -30,21 +31,21 @@ func Page(th theme.Theme, f Facts, w int) (lines []string, actionRow int, comman
 	if next.CommandID == "" {
 		arrow = th.Muted(th.Icons.Queued)
 	}
-	lines = append(lines, pane.Wrap(" "+arrow+" "+th.Bold("Next: ")+next.Text, w, 4)...)
+	lines = append(lines, pane.Wrap(" "+arrow+" "+th.Bold(words.Say("dashboard.next.label"))+next.Text, w, 4)...)
 	lines = append(lines, "")
 
 	row := func(name, text string) {
 		lines = append(lines, pane.Wrap(" "+th.Muted(pane.Cell(name, 10))+text, w, 11)...)
 	}
-	row("Health", healthText(th, f))
-	row("Affected", affectedText(th, f))
-	row("Last run", lastRunText(th, f))
-	row("Updates", updatesText(th, f))
+	row(words.Say("dashboard.row.health"), healthText(th, f))
+	row(words.Say("dashboard.row.affected"), affectedText(th, f))
+	row(words.Say("dashboard.row.last"), lastRunText(th, f))
+	row(words.Say("dashboard.row.updates"), updatesText(th, f))
 	if f.ProjectsLoaded && f.Projects > 0 {
-		row("Projects", projectsText(f))
+		row(words.Say("dashboard.row.projects"), projectsText(f))
 	}
 	if f.SettingsTip {
-		row("Settings", th.Accent("New here?")+" Plugins, the colour theme and the settings of smith.toml are in the Settings tab: press "+commands.ShortcutOf("view.settings"))
+		row(words.Say("dashboard.row.settings"), words.Say("dashboard.settings.tip", "new", th.Accent(words.Say("dashboard.settings.new")), "shortcut", commands.ShortcutOf("view.settings")))
 	}
 	where, at := whereToGo(th, w)
 	buttons = map[int]string{}
@@ -62,22 +63,22 @@ func Page(th theme.Theme, f Facts, w int) (lines []string, actionRow int, comman
 func headline(th theme.Theme, f Facts) string {
 	switch {
 	case f.CheckErr != "":
-		return th.Failure(th.Icons.Failed + " doctor could not run")
+		return th.Failure(th.Icons.Failed + " " + words.Say("dashboard.headline.checkerr"))
 	case !f.Checked:
-		return th.Muted(progress.Waiting("Running the health checks on "+progress.OfProjects(f.Projects)+"…", f.Waited))
+		return th.Muted(progress.Waiting(words.Say("dashboard.headline.waiting", "projects", progress.OfProjects(f.Projects)), f.Waited))
 	case f.Failed > 0:
-		return th.Failure(th.Icons.Failed+" "+count(f.Failed, "check fails", "checks fail")) + warnTail(th, f)
+		return th.Failure(th.Icons.Failed+" "+words.Count("dashboard.check.fails", f.Failed)) + warnTail(th, f)
 	case f.Warnings > 0:
-		return th.Warning(th.Icons.Warning + " " + count(f.Warnings, "warning", "warnings"))
+		return th.Warning(th.Icons.Warning + " " + words.Count("dashboard.warning", f.Warnings))
 	}
-	return th.Success(th.Icons.Passed + " The workspace is healthy")
+	return th.Success(th.Icons.Passed + " " + words.Say("dashboard.headline.healthy"))
 }
 
 func warnTail(th theme.Theme, f Facts) string {
 	if f.Warnings == 0 {
 		return ""
 	}
-	return th.Muted(" · ") + th.Warning(count(f.Warnings, "warning", "warnings"))
+	return th.Muted(" · ") + th.Warning(words.Count("dashboard.warning", f.Warnings))
 }
 
 func healthText(th theme.Theme, f Facts) string {
@@ -85,47 +86,47 @@ func healthText(th theme.Theme, f Facts) string {
 	case f.CheckErr != "":
 		return th.Failure(f.CheckErr)
 	case !f.Checked:
-		return th.Muted("running doctor in the background")
+		return th.Muted(words.Say("dashboard.health.running"))
 	}
-	parts := []string{th.Success(fmt.Sprintf("%d passed", f.Passed))}
+	parts := []string{th.Success(words.Say("dashboard.health.passed", "count", f.Passed))}
 	if f.Failed > 0 {
-		parts = append(parts, th.Failure(fmt.Sprintf("%d failed", f.Failed)))
+		parts = append(parts, th.Failure(words.Say("dashboard.health.failed", "count", f.Failed)))
 	}
 	if f.Warnings > 0 {
-		parts = append(parts, th.Warning(count(f.Warnings, "warning", "warnings")))
+		parts = append(parts, th.Warning(words.Count("dashboard.warning", f.Warnings)))
 	}
-	return strings.Join(parts, th.Muted(" · ")) + th.Muted("   ("+commands.ShortcutOf("ws.doctor")+" opens Doctor)")
+	return strings.Join(parts, th.Muted(" · ")) + th.Muted(words.Say("dashboard.health.hint", "shortcut", commands.ShortcutOf("ws.doctor")))
 }
 
 func affectedText(th theme.Theme, f Facts) string {
 	switch {
 	case !f.ProjectsLoaded:
-		return th.Muted("reading the workspace…")
+		return th.Muted(words.Say("dashboard.affected.reading"))
 	case f.Affected == 0:
-		return "nothing changed, of " + count(f.Projects, "project", "projects")
+		return words.Say("dashboard.affected.none", "projects", words.Count("dashboard.project", f.Projects))
 	}
-	return th.Warning(fmt.Sprintf("%d", f.Affected)) + " of " + count(f.Projects, "project", "projects") + " changed"
+	return words.Say("dashboard.affected.some", "affected", th.Warning(fmt.Sprintf("%d", f.Affected)), "projects", words.Count("dashboard.project", f.Projects))
 }
 
 func lastRunText(th theme.Theme, f Facts) string {
 	r := f.Last
 	switch {
 	case r == nil:
-		return th.Muted("nothing has run yet")
+		return th.Muted(words.Say("dashboard.last.none"))
 	case r.Cancelled:
-		return th.Warning(th.Icons.Skipped+" stopped") + "  " + r.Command
+		return th.Warning(th.Icons.Skipped+" "+words.Say("dashboard.last.stopped")) + "  " + r.Command
 	case r.OK:
-		return th.Success(th.Icons.Passed+" passed") + "  " + r.Command + th.Muted("  "+r.Took)
+		return th.Success(th.Icons.Passed+" "+words.Say("dashboard.last.passed")) + "  " + r.Command + th.Muted("  "+r.Took)
 	}
-	return th.Failure(th.Icons.Failed+" failed") + "  " + r.Command + th.Muted("  "+r.Took)
+	return th.Failure(th.Icons.Failed+" "+words.Say("dashboard.last.failed")) + "  " + r.Command + th.Muted("  "+r.Took)
 }
 
 func updatesText(th theme.Theme, f Facts) string {
 	switch {
 	case !f.DepsChecked:
-		return th.Muted("not checked: " + commands.ShortcutOf("view.deps") + " opens Deps")
+		return th.Muted(words.Say("dashboard.updates.unchecked", "shortcut", commands.ShortcutOf("view.deps")))
 	case f.Outdated == 0:
-		return "every dependency is on its latest release"
+		return words.Say("dashboard.updates.current")
 	}
-	return th.Warning(fmt.Sprintf("%d", f.Outdated)) + " with newer releases"
+	return words.Say("dashboard.updates.outdated", "count", th.Warning(fmt.Sprintf("%d", f.Outdated)))
 }

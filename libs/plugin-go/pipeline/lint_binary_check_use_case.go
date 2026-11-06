@@ -131,7 +131,7 @@ func lintFinding(root, pin string) protocol.Finding {
 	found, onPath := lintCandidates(root)
 	first := found[0]
 	accepted := acceptedLintVersion(root)
-	f := protocol.Finding{Check: "golangci-lint is " + pin + ", as in CI", Warning: true}
+	f := protocol.Finding{Check: "golangci-lint is " + pin + ", as in CI", Area: "toolchain", Warning: true}
 	switch {
 	case !onPath && first.line == "":
 		f.Detail = "golangci-lint is not on PATH"
@@ -152,6 +152,14 @@ func lintFinding(root, pin string) protocol.Finding {
 	case first.version != "" && accepted != "" && versionAccepted(accepted, first.version):
 		f.OK, f.Detail = true, f.Detail+"; kept on purpose by [toolchains] in smith.toml (CI pins "+pin+", so lint results may differ from CI)"
 		return f
+	}
+	switch {
+	case !onPath && first.line == "":
+		f.Problem = "golangci-lint is not on PATH, CI uses " + pin
+	case first.version == "":
+		f.Problem = "the golangci-lint on PATH reports no version, CI uses " + pin
+	default:
+		f.Problem = "golangci-lint is " + first.version + ", CI uses " + pin
 	}
 	switch order, ok := toolrun.PinOrder(first.version, pin); {
 	case ok && order > 0:

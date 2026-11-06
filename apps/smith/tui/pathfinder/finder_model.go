@@ -2,6 +2,7 @@ package pathfinder
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 )
 
 // Model is the list under a path field. It holds the folder read last, the
@@ -96,22 +97,22 @@ func (m Model) Select(i int) Model {
 // Parameters: key is the key press.
 // Returns: the list and what the key did to the field.
 func (m Model) Handle(key tea.KeyMsg) (Model, Outcome) {
-	switch key.String() {
-	case "up":
+	switch commands.NavNamed(key.String()) {
+	case commands.NavUp:
 		return m.move(-1), Outcome{Handled: true}
-	case "down":
+	case commands.NavDown:
 		return m.move(1), Outcome{Handled: true}
-	case "pgup":
+	case commands.NavPageUp:
 		return m.move(-pageRows), Outcome{Handled: true}
-	case "pgdown":
+	case commands.NavPageDown:
 		return m.move(pageRows), Outcome{Handled: true}
-	case "tab":
+	case commands.NavNext:
 		if len(m.rows) == 0 {
 			return m, Outcome{Handled: true}
 		}
 		r := m.rows[m.cursor]
 		return m.Sync(r.value), Outcome{Handled: true, Set: true, Value: r.value}
-	case "enter":
+	case commands.NavConfirm:
 		if !m.active || len(m.rows) == 0 {
 			return m, Outcome{}
 		}

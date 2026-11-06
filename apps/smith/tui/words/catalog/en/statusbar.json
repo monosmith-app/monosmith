@@ -1,0 +1,9 @@
+{
+  "statusbar.ready": " ready",
+  "statusbar.running": " running",
+  "statusbar.passed": " passed",
+  "statusbar.failed": " failed",
+  "statusbar.cancelled": " cancelled",
+  "statusbar.version": "smith {version}",
+  "statusbar.mouseoff": "mouse off · m turns it on"
+}

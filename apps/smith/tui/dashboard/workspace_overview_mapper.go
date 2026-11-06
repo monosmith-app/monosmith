@@ -1,7 +1,7 @@
 package dashboard
 
 import (
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"sort"
 	"strings"
 
@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // maxLanguages is how many languages the Projects row names before "and more".
@@ -32,23 +33,16 @@ func projectsText(f Facts) string {
 	var parts []string
 	for i, id := range ids {
 		if i == maxLanguages {
-			parts = append(parts, fmt.Sprintf("%d more", len(ids)-maxLanguages))
+			parts = append(parts, words.Say("dashboard.projects.more", "count", len(ids)-maxLanguages))
 			break
 		}
-		parts = append(parts, fmt.Sprintf("%d %s", count[id], languagenames.Of(id)))
+		parts = append(parts, words.Say("dashboard.projects.language", "count", count[id], "language", languagenames.Of(id)))
 	}
-	text := plural(f.Projects, "project", "projects")
+	text := words.Count("dashboard.project", f.Projects)
 	if len(parts) == 0 {
 		return text
 	}
 	return text + ": " + strings.Join(parts, " · ")
-}
-
-func plural(n int, one, many string) string {
-	if n == 1 {
-		return fmt.Sprintf("%d %s", n, one)
-	}
-	return fmt.Sprintf("%d %s", n, many)
 }
 
 // whereToGo is the list of places the tabs lead to, one line each, so a
@@ -57,19 +51,19 @@ func plural(n int, one, many string) string {
 // index into the lines) to its command.
 func whereToGo(th theme.Theme, w int) (lines []string, at map[int]string) {
 	places := []struct{ id, what string }{
-		{"view.projects", "every project, what it needs and what depends on it"},
-		{"view.run", "build, test and lint, and watch them run"},
-		{"view.doctor", "problems in the setup, with a fix for most"},
-		{"view.deps", "newer versions of what the projects install"},
-		{"view.release", "what the next release would publish"},
+		{"view.projects", words.Say("dashboard.place.projects")},
+		{"view.run", words.Say("dashboard.place.run")},
+		{"view.doctor", words.Say("dashboard.place.doctor")},
+		{"view.deps", words.Say("dashboard.place.deps")},
+		{"view.release", words.Say("dashboard.place.release")},
 	}
-	lines, at = []string{"", " " + th.Muted("Where to go")}, map[int]string{}
+	lines, at = []string{"", " " + th.Muted(words.Say("dashboard.where"))}, map[int]string{}
 	for _, b := range []struct{ id, label, what string }{
-		{"file.add", "Add a project", "say what you are building, smith picks the tools"},
-		{"file.compose", "Compose a stack", "search frameworks, desktop shells and cloud hosts"},
+		{"file.add", words.Say("dashboard.add.label"), words.Say("dashboard.add.what")},
+		{"file.compose", words.Say("dashboard.compose.label"), words.Say("dashboard.compose.what")},
 	} {
 		at[len(lines)] = b.id
-		button := th.Accent("[ " + b.label + "  " + commands.ShortcutOf(b.id) + " ]")
+		button := button.Render(th, b.label, commands.ShortcutOf(b.id), button.Rest)
 		lines = append(lines, "  "+button+" "+th.Muted(b.what))
 	}
 	for _, p := range places {

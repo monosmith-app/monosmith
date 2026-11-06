@@ -203,8 +203,8 @@ func (f Field) Encode(args []string) (string, error) {
 		if len(f.Enum) > 0 && !slices.Contains(f.Enum, args[0]) {
 			return "", fmt.Errorf("%s takes %s, not %q", f.Path, strings.Join(f.Enum, " or "), args[0])
 		}
-		if f.Path == "workspace.scope" && args[0] != "" && !npmScope.MatchString(args[0]) {
-			return "", fmt.Errorf("%s is an npm scope: an @ and lowercase words joined by dashes, like @acme, not %q", f.Path, args[0])
+		if err := checkNpmScope(f.Path, args[0]); err != nil {
+			return "", err
 		}
 		return Quote(args[0]), nil
 	case "array":
@@ -228,9 +228,6 @@ func (f Field) Encode(args []string) (string, error) {
 	}
 	return "", fmt.Errorf("%s has a type smith config does not edit (%s)", f.Path, f.Type)
 }
-
-// npmScope is what npm accepts as a scope: an @ and a lowercase name.
-var npmScope = regexp.MustCompile(`^@[a-z0-9-~][a-z0-9-._~]*$`)
 
 var bareKey = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 

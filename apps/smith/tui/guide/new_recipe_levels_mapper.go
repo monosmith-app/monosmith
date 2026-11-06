@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // recipeLevelPrefix starts the answer key of a level of the recipe form:
@@ -25,7 +26,7 @@ const recipeUnset = "unset"
 func ParseRecipeLevels(text string) (recipewizard.LevelCatalog, error) {
 	var cat recipewizard.LevelCatalog
 	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &cat); err != nil {
-		return recipewizard.LevelCatalog{}, fmt.Errorf("smith recipe new did not print its levels: %w", err)
+		return recipewizard.LevelCatalog{}, fmt.Errorf("%s: %w", words.Say("guide.new_recipe_levels.unreadable"), err) // words:literal
 	}
 	return cat, nil
 }
@@ -155,28 +156,28 @@ func recipeLevelSteps(level recipewizard.LevelOffer, lang string, plugins []reci
 // the recipe fixes ("" for none, which offers every plugin of the level).
 func recipeLevelStep(level recipewizard.LevelOffer, lang string, plugins []recipewizard.PluginOffer) Step {
 	key := recipeLevelKey(level.Level, lang)
-	unset := "Nothing is written for " + level.Level + ": the recipe it extends, or the person who uses the recipe, decides."
+	unset := words.Say("guide.new_recipe_levels.nothing_written", "level", level.Level)
 	s := Step{Key: key, Check: recipeLevelCheck(key), Optional: level.Additive}
 	switch {
 	case level.Level == recipewizard.LevelLanguage:
-		s.Prompt = "Which language plugin does the recipe fix? Every other question follows this answer."
-		s.Note = unset + "\nThe last answer lets the people who use the recipe choose between plugins."
+		s.Prompt = words.Say("guide.new_recipe_levels.which_language_plugin_does_the_recipe")
+		s.Note = words.Say("guide.new_recipe_levels.last_answer", "unset", unset)
 	case level.Additive:
 		s.Multi = true
-		s.Prompt = fmt.Sprintf("Which %s plugins does the recipe fix? Space ticks one, enter confirms.", level.Level)
-		s.Note = "Tick none to leave " + level.Level + " unset. " + unset
+		s.Prompt = words.Say("guide.new_recipe_levels.which_plugins", "level", level.Level)
+		s.Note = words.Say("guide.new_recipe_levels.tick_none", "level", level.Level, "unset", unset)
 	default:
-		s.Prompt = fmt.Sprintf("Which %s plugin does the recipe fix? Projects made from the recipe get it.", level.Level)
+		s.Prompt = words.Say("guide.new_recipe_levels.which_plugin", "level", level.Level)
 		s.Note = unset
 	}
 	if lang != "" {
 		s.Skip = func(a map[string][]string) bool { return recipeLanguage(a) != lang }
-		s.Note += "\nOnly plugins that fit " + lang + " are listed."
+		s.Note += words.Say("guide.new_recipe_levels.only_fit", "language", lang)
 	} else if level.Level != recipewizard.LevelLanguage {
 		s.Skip = func(a map[string][]string) bool { return recipeLanguage(a) != "" }
 	}
 	if !level.Additive {
-		s.Options = append(s.Options, Option{Label: "Leave unset (default)", Value: recipeUnset, Hint: "no " + level.Level + " plugin is fixed by this recipe"})
+		s.Options = append(s.Options, Option{Label: words.Say("guide.new_recipe_levels.leave_unset_default"), Value: recipeUnset, Hint: words.Say("guide.new_recipe_levels.none_fixed", "level", level.Level)})
 	}
 	for _, p := range plugins {
 		s.Options = append(s.Options, Option{Label: p.Name, Value: p.Name, Hint: p.Description})

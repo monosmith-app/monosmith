@@ -391,12 +391,3 @@ func printSyncResult(w io.Writer, r SyncReport, check, dryRun bool) {
 		fmt.Fprintf(w, "⊘ %s: not compared; its plugin does not list declarations\n", p)
 	}
 }
-
-// describeMajors lists major updates as "name 1.2.0 -> 3.0.0".
-func describeMajors(us []Update) string {
-	var parts []string
-	for _, u := range us {
-		parts = append(parts, u.Name+" "+u.Current+" -> "+u.Latest)
-	}
-	return strings.Join(parts, ", ")
-}

@@ -1,47 +1,38 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { basename, isAbsolute, join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import * as vscode from 'vscode'
-import {
-  confirmAgentFile, confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellAgentFileOutcome, tellInstallOutcome, writeAgentFile,
-  type AgentFilesState, type InstallScope,
-} from './agent-install/index.ts'
-import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
-import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
-import { addProject, askAddRequest, checkPicks, confirmAddPlan, outcomeWords, parseChoices, tellAddOutcome } from './add-project/index.ts'
-import { chooseCommitScope, commitChanges, tellCommitOutcome } from './commit-changes/index.ts'
-import { askKind, askLinkedLibrary, askRemoveChoice, confirmKind, confirmUnlink, kindArguments, kindPlanArguments, pickProjectFor, planThenApply, removeArguments, removePlanArguments, tellActionOutcome, unlinkArguments } from './project-actions/index.ts'
-import {
-  addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
-  type DeriveAction, type DeriveReport,
-} from './derive-files/index.ts'
-import { readFileWhy, readSettingWhy, readTaskWhy } from './why/index.ts'
-import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap-launcher/index.ts'
-import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
-import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
-import { describeFailure } from './smith-run/index.ts'
-import { askGuidedStep, confirmGuided, GUIDED_COMMANDS, parseWebApps, parseWorkspaceEnvironments, runGuidedCommand, tellGuidedOutcome, type GuidedCommand } from './guided-commands/index.ts'
-import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
-import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
-import { chooseSyncRule, confirmSync, syncVersions, tellSyncOutcome } from './sync-versions/index.ts'
-import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
-import { reportFile, writeReport } from './workspace-report/index.ts'
-import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
-import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
-import { askCommitBox } from './commit-box/index.ts'
-import { askConvertCommit, confirmConvert, convertWorkspace, tellConvertOutcome } from './convert-workspace/index.ts'
-import { askCustomChoices, pickNewQuestion, askSetupWay, askWorkspaceName, confirmNewWorkspace, createWorkspace as makeWorkspace, tellNewWorkspaceOutcome } from './new-workspace/index.ts'
+import { createAgentFlows, runSmith, writeAgentsFile, type AgentFilesState } from './agent-install/index.ts'
+import { addDependencyHere } from './install-dependency/index.ts'
+import { composeStackHere } from './compose-stack/index.ts'
+import { addProjectHere } from './add-project/index.ts'
+import { commitHere } from './commit-changes/index.ts'
+import { projectAction } from './project-actions/index.ts'
+import { addDeriveRows, createDeriveDiagnostics, deriveFile, readDeriveStatus, type DeriveReport, type DeriveView } from './derive-files/index.ts'
+import { showWhy } from './why/index.ts'
+import { bootstrapHere } from './bootstrap-launcher/index.ts'
+import { installToolsHere } from './install-tools/index.ts'
+import { tryHere } from './try-command/index.ts'
+import { GUIDED_COMMANDS, guidedHere, readWebApps, showDivergences } from './guided-commands/index.ts'
+import { newRecipeHere } from './new-recipe/index.ts'
+import { swapHere } from './swap-choice/index.ts'
+import { syncHere } from './sync-versions/index.ts'
+import { undoHere } from './undo-change/index.ts'
+import { openReport } from './workspace-report/index.ts'
+import { adopt, findRepositoryOffers, type RepositoryOffer } from './adopt-offer/index.ts'
+import { findBlankFolders, type BlankFolder } from './empty-folder/index.ts'
+import { convertChoices } from './convert-workspace/index.ts'
+import { createWorkspaceHere } from './new-workspace/index.ts'
 import { setContextKey } from './context-keys/index.ts'
-import { connectFolder, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './folder-session/index.ts'
-import { confirmFix, fixDoctor, fixFinding, pickFixAnswer, readHealth, tellFixOutcome, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
-import { pickArguments, readUpdates, toDependencyRows, updateArguments } from './dependencies/index.ts'
-import { createListView, groupByFolder, readFolderData, tagWithFolder, type ListNode, type ListResult } from './list-view/index.ts'
-import { createInsightDocuments, readExplain, readGraph } from './project-insight/index.ts'
-import { pickProject, pickTask, pickTaskName, showStatusMenu } from './quick-pick/index.ts'
-import { chooseBump, chooseForced, chooseHold, confirmRelease, releaseWorkspace, tellReleaseOutcome } from './release-flow/index.ts'
+import { createCommandHost } from './command-host/index.ts'
+import { connectFolder, createFolderRegistry, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './folder-session/index.ts'
+import { doctor, fixFindingRow, fixHealth, readHealth, toHealthRows, type HealthReading, type HealthView } from './health/index.ts'
+import { readUpdates, runUp, toDependencyRows, updateDependency } from './dependencies/index.ts'
+import { createListView, loadAcross, type ListNode, type ListResult } from './list-view/index.ts'
+import { createInsightDocuments, showInsight } from './project-insight/index.ts'
+import { pickTask, pickTaskName, showStatusMenu } from './quick-pick/index.ts'
+import { releaseHere } from './release-flow/index.ts'
 import { explanationLines, readReleasePreview, toReleaseRows } from './release-preview/index.ts'
 import { readSettings } from './settings/index.ts'
-import { openSmithTerminal } from './smith-terminal/index.ts'
 import { registerSmithTasks, type TaskFolder } from './task-provider/index.ts'
 import {
   createTaskDiagnostics, createTaskLogDocuments, createTaskLogStore, logKey, registerOutputLinks, resolveSourcePath, sourceBases, LOG_SCHEME, type FolderProjects,
@@ -58,33 +49,20 @@ import {
   type RunEvent, type RunPlan, type RunTarget, type TaskStatusStore,
 } from './task-run/index.ts'
 import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapshot } from './workspace/index.ts'
-import { findSmithRoots, folderOfFile, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged, toFolderPath } from './workspace-folders/index.ts'
+import { findSmithRoots, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged } from './workspace-folders/index.ts'
 import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter, type WebAppEnvironments } from './workspace-view/index.ts'
 import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
 
 const INSTALL_COMMAND = 'npm i -D monosmith'
 const UPDATE_COMMAND = 'npm i -D monosmith@latest'
 const FILTER_KEY = 'monosmith.filter'
-const AGENT_ASKED_KEY = 'monosmith.agentOffered'
-const AGENT_FILE = join('.claude', 'agents', 'smith.md')
 
-const folders = new Map<string, FolderState>()
+const registry = createFolderRegistry()
+const { folders, states, ready } = registry
 const agentFiles = new Map<string, AgentFilesState>()
 /** Folders without a smith.toml that look like a repository smith can bring in. */
 let offers: RepositoryOffer[] = []
 /** Folders without a smith.toml and without a tool smith recognises: empty ones and ones with files. */
-/**
- * What a button on an Environments row already answers: the web app, and for the minus button of one
- * environment, that environment. The questions about them are not asked again.
- */
-function environmentAnswers (id: string, argument: unknown): Record<string, string | string[]> {
-  const node = argument as Partial<TreeNode> | undefined
-  if (node?.project === undefined || (node.kind !== 'environments' && node.kind !== 'environment')) return {}
-  if (id === 'environmentsAdd') return { project: node.project }
-
-  return id === 'environmentsRemove' ? { project: node.project, ...(node.kind === 'environment' && node.label !== undefined && { names: [node.label] }) } : {}
-}
-
 let blanks: BlankFolder[] = []
 
 /** What the folders without a smith.toml hold, for the state of the view. */
@@ -104,7 +82,6 @@ function listTopLevel (root: string): string[] | undefined {
     return undefined
   }
 }
-const INSTALL_GLOBAL_COMMAND = 'npm i -g monosmith'
 
 /** A small text file, or undefined when it is missing, unreadable or too big to be a manifest. */
 function readSmallText (path: string): string | undefined {
@@ -115,18 +92,10 @@ function readSmallText (path: string): string | undefined {
   }
 }
 
-function states (): FolderState[] {
-  return Array.from(folders, ([, state]) => state)
-}
-
 function readyWorkspaces (): FolderWorkspace[] {
   return ready()
     .filter((state) => state.snapshot !== undefined)
     .map((state) => ({ root: state.root, name: state.name, snapshot: state.snapshot as WorkspaceSnapshot }))
-}
-
-function ready (): FolderState[] {
-  return states().filter((state) => state.phase === 'ready' && state.session !== undefined)
 }
 
 function folderProjects (): FolderProjects[] {
@@ -140,28 +109,6 @@ function options (): { bail: boolean, noCache: boolean, parallel: number } {
   const { bail, noCache, parallel } = readSettings()
 
   return { bail, noCache, parallel }
-}
-
-/** Reads a list view's rows from every folder that runs smith, and lays them out by folder. */
-async function loadAcross (nothing: string, read: (state: FolderState, connection: NonNullable<FolderState['session']>['connection']) => Promise<ListResult>): Promise<ListResult> {
-  const targets = ready()
-  if (targets.length === 0) return { nodes: [], message: nothing }
-  const results = await Promise.all(targets.map(async (state) => {
-    try {
-      return { state, result: await read(state, (state.session as NonNullable<FolderState['session']>).connection) }
-    } catch (error) {
-      return { state, result: { nodes: [], message: `${state.name}: ${error instanceof Error ? error.message : String(error)}` } satisfies ListResult }
-    }
-  }))
-  const nodes = groupByFolder(results.map(({ state, result }) => ({ root: state.root, name: state.name, nodes: tagWithFolder(result.nodes, state.root) })))
-  const messages = results.flatMap(({ result }) => result.message ?? [])
-  const summaries = results.flatMap(({ result }) => result.summary ?? [])
-
-  return {
-    nodes,
-    ...(messages.length > 0 && (nodes.length === 0 || results.length === 1) && { message: messages.join(' ') }),
-    ...(summaries.length > 0 && { summary: results.length === 1 ? summaries[0] : summaries.join(' · ') }),
-  }
 }
 
 function taskFolders (): TaskFolder[] {
@@ -179,18 +126,7 @@ function resolveFile (root: string | undefined, task: string | undefined, file: 
   return resolveSourcePath({ file, bases: sourceBases(folderProjects(), task, root), exists: existsSync })
 }
 
-function stopFolder (root: string): void {
-  const state = folders.get(root)
-  state?.session?.stop()
-  if (state !== undefined) state.session = undefined
-}
-
-/** The project a command was started on, when the person used the menu of a project row. */
-function projectGiven (argument: unknown): string | undefined {
-  const node = typeof argument === 'object' && argument !== null && 'kind' in argument ? argument as TreeNode : undefined
-
-  return node?.kind === 'project' ? node.project : undefined
-}
+const stopFolder = registry.stop
 
 /**
  * Starts the extension: the MonoSmith view, its commands and the status bar,
@@ -326,7 +262,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         state.snapshot = snapshot
         // The environments come from a second smith process: the view shows the projects first and the
         // Environments rows when they arrive.
-        void readWebApps(state).then((found) => {
+        void readWebApps(host, state).then((found) => {
           if (stale()) return
           webApps.set(root, found)
           sync()
@@ -459,6 +395,19 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     })
   }
 
+  const host = createCommandHost({
+    registry,
+    runSmith,
+    note,
+    showOutput:  () => { output.show(true) },
+    focusOutput: () => { output.show() },
+    fail,
+    refreshFolder,
+  })
+  const { smithIn } = host
+  const { checkAgentFiles, installFiles, talkToTheAgent } = createAgentFlows(host, { agentFiles, sync: () => { sync() }, workspaceState: context.workspaceState })
+  const showPage = async (name: string, text: string): Promise<void> => { await insight.show(name, text) }
+
   /** Keeps what a task printed: its log for the row, and its failures for the Problems panel. */
   const keepOutput = (root: string, event: RunEvent, command: string): void => {
     const task = event.task
@@ -571,41 +520,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     await cancelRun(session.connection, current.id)
   }
 
-  const doctor = async (): Promise<void> => {
-    const targets = ready()
-    if (targets.length === 0) {
-      void vscode.window.showInformationMessage('MonoSmith: smith is not running, so there is nothing to check.')
-
-      return
-    }
-    output.show(true)
-    for (const state of targets) {
-      if (state.session === undefined) continue
-      try {
-        const summary = summarizeDoctor(await runDoctor(state.session.connection))
-        output.appendLine(`$ smith doctor${targets.length > 1 ? ` (${state.name})` : ''}`)
-        for (const line of summary.lines) output.appendLine(line)
-        const message = sayDoctor(summary)
-        output.appendLine(message)
-        const show = summary.failed > 0 || summary.warnings > 0 ? vscode.window.showWarningMessage : vscode.window.showInformationMessage
-        void show(`MonoSmith: ${message}`, 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
-      } catch (error) {
-        fail(error)
-      }
-    }
-  }
-
   const fixableRoots = new Set<string>()
   const deriveReports = new Map<string, DeriveReport>()
   const deriveProblems = createDeriveDiagnostics()
-
-  /** Runs smith in the folder of a state; the caller checked that the state has a smith. */
-  const smithIn = (state: FolderState, log = true, timeoutMs = 60_000): ((args: string[]) => ReturnType<typeof runSmith>) => async (args) => {
-    if (state.location === undefined) return { code: 1, stdout: '', stderr: '✖ smith was not found\n  → install smith in the workspace, or set monosmith.path\n' }
-    if (log) note(`$ smith ${args.join(' ')}${states().length > 1 ? ` (${state.name})` : ''}`)
-
-    return await runSmith(state.location.executable, args, state.root, timeoutMs)
-  }
 
   /** Adds what `smith derive --check` finds to the rows of the doctor, and to the Problems panel. */
   const withDerivedFiles = async (state: FolderState, rows: ListResult): Promise<ListResult> => {
@@ -623,7 +540,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       fixableRoots.clear()
       deriveReports.clear()
 
-      return await loadAcross('smith is not running, so there is nothing to check.', async (state, connection) => {
+      return await loadAcross(ready, 'smith is not running, so there is nothing to check.', async (state, connection) => {
         const reading: HealthReading = await readHealth(connection)
         if (reading.preview !== undefined) fixableRoots.add(state.root)
 
@@ -635,15 +552,21 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       void setContextKey('monosmith.derivedPaths', [...deriveReports].flatMap(([root, report]) => report.files.map((file) => vscode.Uri.file(join(root, file.path)).fsPath)))
     },
   })
+  const healthView: HealthView = {
+    fixableRoots,
+    reload:   async () => { await health.reload() },
+    afterFix: () => { release.invalidate() },
+  }
+  const deriveView: DeriveView = { reports: deriveReports, reload: healthView.reload }
   const dependencies = createListView({
     id:    'monosmith.dependencies',
     title: 'Dependencies',
-    load:  async () => await loadAcross('smith is not running, so dependencies cannot be read.', async (_state, connection) => toDependencyRows(await readUpdates(connection))),
+    load:  async () => await loadAcross(ready, 'smith is not running, so dependencies cannot be read.', async (_state, connection) => toDependencyRows(await readUpdates(connection))),
   })
   const release = createListView({
     id:    'monosmith.release',
     title: 'Release Preview',
-    load:  async () => await loadAcross('smith is not running, so there is no release to preview.', async (state, connection) => {
+    load:  async () => await loadAcross(ready, 'smith is not running, so there is no release to preview.', async (state, connection) => {
       const preview = await readReleasePreview(connection)
       if ((preview.results ?? []).length > 0 || preview.error !== undefined) return toReleaseRows(preview)
       const said = await smithIn(state, false)(['release', '--dry-run'])
@@ -652,101 +575,6 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     }),
   })
 
-  const fixHealth = async (): Promise<void> => {
-    const targets = ready().filter((state) => fixableRoots.has(state.root))
-    if (targets.length === 0) {
-      void vscode.window.showInformationMessage('MonoSmith: doctor proposes no fix. The remedies listed under a check say what to do by hand.')
-
-      return
-    }
-    for (const state of targets) {
-      if (state.session === undefined) continue
-      const outcome = await fixDoctor(state.session.connection, async (preview) => {
-        const choice = await vscode.window.showWarningMessage(
-          `MonoSmith: apply ${preview.titles.length} ${preview.titles.length === 1 ? 'fix' : 'fixes'}${states().length > 1 ? ` in ${state.name}` : ''}?`,
-          { modal: true, detail: `${preview.text}\n\nThe files are changed as shown. Review them with git afterwards.` },
-          'Apply fixes',
-        )
-
-        return choice === 'Apply fixes'
-      }, (line) => { output.appendLine(`doctor | ${line}`) })
-      if (outcome === 'fixed') void vscode.window.showInformationMessage(`MonoSmith: the fixes were applied${states().length > 1 ? ` in ${state.name}` : ''}.`)
-      else if (outcome === 'incomplete') void vscode.window.showInformationMessage('MonoSmith: the fixes were applied. Some checks still fail and need their remedy by hand; the Health view lists them.')
-    }
-    await health.reload()
-    release.invalidate()
-  }
-
-  /** Fixes the check of a Health row: smith asks the fix's questions, shows what it changes, and applies it only on a yes. */
-  const fixFindingRow = async (argument: unknown): Promise<void> => {
-    const tagged = readFolderData((argument as ListNode | undefined)?.data)
-    const state = tagged === undefined ? undefined : folders.get(tagged.root)
-    if (tagged === undefined || state?.session === undefined) {
-      void vscode.window.showInformationMessage('MonoSmith: choose a check in the Health view first.')
-
-      return
-    }
-    if (!mayWrite('a fix')) return
-    const report = await runDoctor(state.session.connection)
-    const finding = (report.findings ?? []).find((item) => item.check === tagged.data)
-    if (finding === undefined) {
-      void vscode.window.showInformationMessage('MonoSmith: that check passes now. Refresh the Health view.')
-      await health.reload()
-
-      return
-    }
-    const outcome = await fixFinding({
-      run:     smithIn(state, true, 600_000),
-      pick:    pickFixAnswer,
-      confirm: async (review) => await confirmFix(review, finding.fix?.description ?? finding.check),
-    }, finding)
-    tellFixOutcome(outcome)
-    await health.reload()
-    await refreshFolder(state.root, 'full', true)
-  }
-
-  const folderOf = async (): Promise<FolderState | undefined> => {
-    const targets = ready()
-    if (targets.length <= 1) return targets[0]
-    const picked = await vscode.window.showQuickPick(targets.map((state) => ({ label: state.name, description: state.root, state })), { title: 'Choose a folder', placeHolder: 'Folder' })
-
-    return picked?.state
-  }
-
-  const runUp = async (): Promise<void> => {
-    const state = await folderOf()
-    if (state?.location === undefined) return
-    openSmithTerminal(state.location.executable, pickArguments(), state.root)
-  }
-
-  const updateDependency = async (node: ListNode | undefined): Promise<void> => {
-    const tagged = readFolderData(node?.data)
-    const args = tagged === undefined ? undefined : updateArguments(tagged.data)
-    const state = tagged === undefined ? undefined : folders.get(tagged.root)
-    if (tagged === undefined || args === undefined || state?.location === undefined) return
-    if (!isWorkspaceTrusted()) {
-      void vscode.window.showWarningMessage('MonoSmith: updating dependencies needs a trusted workspace.')
-
-      return
-    }
-    const choice = await vscode.window.showWarningMessage(
-      `MonoSmith: update ${tagged.data} to its latest version?`,
-      { modal: true, detail: 'smith rewrites the manifests of every project that declares it, then installs again. It runs in a terminal so you can read what it does.' },
-      'Update',
-    )
-    if (choice === 'Update') openSmithTerminal(state.location.executable, args, state.root)
-  }
-
-  const showInsight = async (node: TreeNode | undefined, kind: 'explain' | 'graph'): Promise<void> => {
-    const picked = node?.kind === 'project' && node.project !== undefined
-      ? { root: node.root, project: node.project }
-      : await pickProject(readyWorkspaces(), kind === 'explain' ? 'Explain a project' : 'Show the graph of a project')
-    const session = picked === undefined ? undefined : folders.get(picked.root)?.session
-    if (picked === undefined || session === undefined) return
-    const text = kind === 'explain' ? await readExplain(session.connection, picked.project) : await readGraph(session.connection, picked.project)
-    await insight.show(`${picked.project}-${kind}.md`, text)
-  }
-
   const setFilter = (next: ViewFilter): void => {
     tree.setFilter(next)
     void context.workspaceState.update(FILTER_KEY, next)
@@ -754,691 +582,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     void setContextKey('monosmith.filtered', next.text.trim() !== '')
   }
 
-  /** Asks the doctor whether the folder has the agent files, shows the line in the view, and offers them once. */
-  const checkAgentFiles = async (state: FolderState, offer: boolean): Promise<void> => {
-    const session = state.session
-    if (session === undefined) return
-    try {
-      agentFiles.set(state.root, judgeAgentFiles(await runDoctor(session.connection)))
-    } catch (error) {
-      note(`MonoSmith: could not read the agent files check of ${state.name}: ${error instanceof Error ? error.message : String(error)}`)
-
-      return
-    }
-    sync()
-    const asked = `${AGENT_ASKED_KEY}:${state.root}`
-    if (!offer || !shouldOfferAgent({ state: agentFiles.get(state.root) ?? 'unknown', alreadyAsked: context.workspaceState.get<boolean>(asked) === true })) return
-    await context.workspaceState.update(asked, true)
-    const answer = await offerAgent(state.name)
-    if (answer === 'install') await installIn(state, 'agent', false)
-    else if (answer === 'never') await declineAgent(state)
-  }
-
-  const declineAgent = async (state: FolderState): Promise<void> => {
-    if (state.location === undefined) return
-    const location = state.location
-    const failure = await optOutOfAgent(async (args) => await runSmith(location.executable, args, state.root))
-    if (failure !== undefined) {
-      void vscode.window.showWarningMessage(`MonoSmith: smith.toml was not changed. ${failure}`)
-
-      return
-    }
-    agentFiles.set(state.root, 'unknown')
-    sync()
-    void vscode.window.showInformationMessage(`MonoSmith: ${state.name} will not be offered the agent again. smith.toml has enabled = false under [agent]; remove it to be asked.`)
-  }
-
-  const installIn = async (state: FolderState, scope: InstallScope, confirmed: boolean): Promise<boolean> => {
-    if (state.location === undefined) return false
-    if (!isWorkspaceTrusted()) {
-      void vscode.window.showWarningMessage('MonoSmith: adding the agent writes files and needs a trusted workspace.')
-
-      return false
-    }
-    const location = state.location
-    const outcome = await installAgent({
-      run:     async (args) => await runSmith(location.executable, args, state.root),
-      confirm: async (preview) => await confirmInstall(preview, scope, state.name),
-    }, scope, confirmed)
-    note(`MonoSmith: install ${scope} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellInstallOutcome(outcome, scope, state.root)
-    if (outcome.kind === 'written' || outcome.kind === 'current') await checkAgentFiles(state, false)
-
-    return outcome.kind === 'written' || outcome.kind === 'current'
-  }
-
-  /** The folder a command works in: the one in the row it came from, else the one the person picks. */
-  const folderFor = async (argument: unknown): Promise<FolderState | undefined> => {
-    const root = (argument as { root?: unknown } | undefined)?.root
-    const given = typeof root === 'string' ? folders.get(root) : undefined
-    if (given?.session !== undefined) return given
-    const state = await folderOf()
-    if (state === undefined) void vscode.window.showInformationMessage('MonoSmith: smith is not running in a folder, so there is nothing to do yet. Open a folder with a smith.toml and wait for the MonoSmith view to say it is ready.')
-
-    return state
-  }
-
-  const installFiles = async (scope: InstallScope, argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state !== undefined) await installIn(state, scope, (argument as { confirmed?: unknown } | undefined)?.confirmed === true)
-  }
-
-  const talkToTheAgent = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined) return
-    const location = state.location
-    await talkToAgent({
-      hasClaude:       hasClaudeCode,
-      hasAgentFile:    () => existsSync(join(state.root, AGENT_FILE)),
-      offerInstall:    async () => await installIn(state, 'agent', false) && existsSync(join(state.root, AGENT_FILE)),
-      openAgent:       () => { openSmithTerminal(location.executable, ['agent'], state.root) },
-      explainNoClaude: explainNoClaudeCode,
-    })
-  }
-
   const copyInstallCommand = async (): Promise<void> => {
     await vscode.env.clipboard.writeText(INSTALL_COMMAND)
     void vscode.window.showInformationMessage(`MonoSmith: copied "${INSTALL_COMMAND}". Run it in the workspace, then retry.`)
-  }
-
-  /** Asks which of several folders, or takes the only one. */
-  const chooseFolder = async <T extends { root: string, name: string }>(candidates: readonly T[]): Promise<T | undefined> => {
-    if (candidates.length <= 1) return candidates[0]
-    const picked = await vscode.window.showQuickPick(candidates.map((candidate) => ({ label: candidate.name, description: candidate.root, candidate })), { placeHolder: 'Which folder?' })
-
-    return picked?.candidate
-  }
-
-  /** The smith a terminal in the folder would run, or undefined after saying it is not installed. */
-  const smithForTerminal = async (root: string): Promise<string | undefined> => {
-    const found = locateSmith({
-      setting:       vscode.workspace.getConfiguration('monosmith').get<string>('path', ''),
-      workspaceRoot: root,
-      trusted:       isWorkspaceTrusted(),
-      platform:      process.platform,
-      pathVariable:  process.env.PATH ?? '',
-      exists:        existsSync,
-    })
-    if (found.location === undefined) {
-      const copy = `Copy "${INSTALL_GLOBAL_COMMAND}"`
-      const choice = await vscode.window.showWarningMessage('MonoSmith: smith is not installed on this computer. Install it, then try again.', copy)
-      if (choice === copy) await vscode.env.clipboard.writeText(INSTALL_GLOBAL_COMMAND)
-
-      return undefined
-    }
-
-    return found.location.executable
-  }
-
-  /**
-   * Opens smith in a terminal on the folder to bring in: the repositories it
-   * recognises, else the folders with files. Nothing is written by this
-   * click: smith asks first.
-   */
-  const adopt = async (action: AdoptAction): Promise<void> => {
-    const candidates = offers.length > 0
-      ? offers.map((offer) => ({ root: offer.root, name: offer.name, why: `found ${offer.marker}`, project: offer.project }))
-      : blanks.filter((folder) => folder.kind === 'unrecognised').map((folder) => ({ root: folder.root, name: folder.name, why: 'no tool it recognises', project: undefined }))
-    const chosen = await chooseFolder(candidates)
-    if (chosen === undefined) return
-    // One project at the root: ask where it goes (smith never picks), then run the step that does not ask again.
-    const answer = action === 'start' && chosen.project !== undefined ? await askWhereToMove(chosen.project) : undefined
-    if (answer === undefined && action === 'start' && chosen.project !== undefined) return
-    const executable = await smithForTerminal(chosen.root)
-    if (executable === undefined) return
-    note(`MonoSmith: ${action === 'start' ? 'bringing' : 'previewing bringing'} ${chosen.name} into MonoSmith (${chosen.why}).`)
-    const terminal = openSmithTerminal(executable, answer === undefined ? toAdoptArguments(action) : toMoveArguments(answer.dir, answer.commit), chosen.root)
-    if (action === 'start' && (answer === undefined || answer.commit)) offerUndoWhenDone(terminal, `${chosen.name} is converted`)
-  }
-
-  /**
-   * Offers Undo when the command in the terminal ends well. It needs the
-   * shell integration of the terminal; without it the offer is not made, and
-   * "Undo the last change" stays in the palette.
-   */
-  function offerUndoWhenDone (terminal: vscode.Terminal, what: string): void {
-    const ended = vscode.window.onDidEndTerminalShellExecution((event) => {
-      if (event.terminal !== terminal) return
-      ended.dispose()
-      if (event.exitCode !== 0) return
-      void vscode.window.showInformationMessage(`MonoSmith: ${what}. If it is not what you wanted, undo it in one step.`, 'Undo the last change').then(async (choice) => {
-        if (choice !== undefined) await vscode.commands.executeCommand('monosmith.undo')
-      })
-    })
-    context.subscriptions.push(ended)
-  }
-
-  /** Says a command that writes files needs a trusted workspace; true when it may go on. */
-  const mayWrite = (what: string): boolean => {
-    if (isWorkspaceTrusted()) return true
-    void vscode.window.showWarningMessage(`MonoSmith: ${what} writes files and needs a trusted workspace. Trust the workspace, then try again.`)
-
-    return false
-  }
-
-  /** Asks what to add, shows the plan of `smith add --dry-run`, and adds on a yes. */
-  const addProjectHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('adding a project')) return
-    output.show(true)
-    const outcome = await addProject({
-      run:   smithIn(state),
-      apply: async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding to ${state.name}… smith installs and tests the new project.` },
-        async () => await smithIn(state, true, 600_000)(args),
-      ),
-      ask: async (options) => {
-        const configured = await smithIn(state)(['config', 'get', 'workspace.environments'])
-
-        return await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? [], configured.code === 0 ? parseWorkspaceEnvironments(configured.stdout) : [], async (asked) => await checkPicks(smithIn(state), options, asked))
-      },
-      confirm: confirmAddPlan,
-    })
-    note(`MonoSmith: add in ${state.name}: ${outcomeWords(outcome)}`)
-    if (outcome.kind === 'composing') {
-      await vscode.commands.executeCommand('monosmith.composeStack', argument)
-
-      return
-    }
-    tellAddOutcome(outcome, note, {
-      commit:     commitAfterTheFact(state),
-      checkAgain: (args) => { openSmithTerminal(state.location?.executable ?? 'smith', args, state.root) },
-    })
-    if (['added', 'unchecked', 'failing'].includes(outcome.kind)) await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Commits the changes of an operation after the fact: shows the files, asks which ones go in, and commits on a yes. */
-  const commitAfterTheFact = (state: FolderState) => async (operation: string): Promise<void> => {
-    const done = await commitChanges({ run: smithIn(state), choose: chooseCommitScope }, operation)
-    note(`MonoSmith: commit in ${state.name}: ${done.kind}${done.kind === 'refused' ? ` (${done.message})` : ''}`)
-    tellCommitOutcome(done)
-  }
-
-  /** Searches the catalogue, composes the stack, shows the plan of `smith add`, and adds on a yes. */
-  const composeStackHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('composing a stack')) return
-    output.show(true)
-    const existing = state.snapshot?.projects.map((project) => project.name) ?? []
-    const outcome = await composeStack({
-      run:   smithIn(state),
-      apply: async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: composing in ${state.name}… smith installs and tests the new project.` },
-        async () => await smithIn(state, true, 600_000)(args),
-      ),
-      pick:         pickItems,
-      answer:       answerQuestion,
-      askName:      async (stack) => await askProjectName(existing, stack),
-      tell:         (message) => { void vscode.window.showInformationMessage(`MonoSmith: ${message}`) },
-      confirm:      confirmComposePlan,
-      installTools: async () => { await vscode.commands.executeCommand('monosmith.installTools', argument) },
-    })
-    note(`MonoSmith: compose in ${state.name}: ${outcomeWords(outcome)}`)
-    tellComposeOutcome(outcome, note, { commit: commitAfterTheFact(state) })
-    if (outcome.kind === 'added' || outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Commits the changes of the last operation: shows the files, asks which ones go in, and commits on a yes. */
-  const commitHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('committing')) return
-    output.show(true)
-    await commitAfterTheFact(state)('')
-  }
-
-  /**
-   * Runs an action on a project from its menu or the palette: the project is the row or a pick,
-   * smith shows a plan, and the change runs only on a yes.
-   */
-  const projectAction = async (argument: unknown, action: 'remove' | 'kind' | 'unlink'): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('changing a project')) return
-    const projects = state.snapshot?.projects ?? []
-    const title = { remove: 'remove a project', kind: 'make a project another kind', unlink: 'unlink a library' }[action]
-    const name = projectGiven(argument) ?? await pickProjectFor(projects, title)
-    const project = projects.find((item) => item.name === name)
-    if (project === undefined) return
-    output.show(true)
-    const run = smithIn(state)
-    const apply = async (args: string[]): ReturnType<typeof run> => await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: ${title} in ${state.name}…` },
-      async () => await smithIn(state, true, 600_000)(args),
-    )
-    let outcome
-    let done: string
-    if (action === 'remove') {
-      outcome = await planThenApply({ run, apply, confirm: async (plan) => await askRemoveChoice(project.name, plan) }, removePlanArguments(project.name), (keep) => removeArguments(project.name, keep))
-      done = `${project.name} is removed`
-    } else if (action === 'kind') {
-      const kind = await askKind(project.name, project.kind)
-      if (kind === undefined) return
-      outcome = await planThenApply({ run, apply, confirm: async (plan) => await confirmKind(project.name, kind, plan) }, kindPlanArguments(project.name, kind), () => kindArguments(project.name, kind))
-      done = `${project.name} is now ${kind === 'app' ? 'an app' : `a ${kind}`}`
-    } else {
-      const linked = project.deps.filter((dep) => projects.some((item) => item.name === dep && item.kind !== 'app'))
-      if (linked.length === 0) {
-        void vscode.window.showInformationMessage(`MonoSmith: ${project.name} uses no library of this workspace, so there is nothing to unlink.`)
-
-        return
-      }
-      const library = await askLinkedLibrary(project.name, linked)
-      if (library === undefined) return
-      outcome = await planThenApply(
-        {
-          run,
-          apply,
-          confirm: async () => {
-            const commit = await askCommitBox('unlink a library')
-
-            return commit !== undefined && await confirmUnlink(project.name, library) ? { commit } : undefined
-          },
-        },
-        undefined,
-        (answer) => [...unlinkArguments(project.name, library), ...(answer.commit ? ['--commit'] : [])],
-      )
-      done = `${library} is unlinked from ${project.name}`
-    }
-    note(`MonoSmith: ${action} ${project.name} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellActionOutcome(outcome, done, note, state.root)
-    if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Releases the workspace: the plan, the packages to hold back, the bumps to change, then the last question. */
-  const releaseHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state === undefined) return
-    if (state.location === undefined) {
-      void vscode.window.showWarningMessage(`MonoSmith: smith was not found for ${state.name}, so nothing can be released. Install smith, then run "MonoSmith: Release…" again.`)
-
-      return
-    }
-    if (!mayWrite('releasing')) return
-    output.show(true)
-    const outcome = await releaseWorkspace({
-      run:   smithIn(state),
-      apply: async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: releasing ${state.name}… smith tags and publishes.` },
-        async () => await smithIn(state, true, 1_800_000)(args),
-      ),
-      chooseHold,
-      chooseBump,
-      chooseForced,
-      confirm: confirmRelease,
-    })
-    note(`MonoSmith: release in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellReleaseOutcome(outcome, note)
-    await release.reload()
-  }
-
-  /** Asks library or registry first, then what to add, and runs `smith install`. */
-  const addDependencyHere = async (argument: unknown, only?: 'workspace' | 'registry'): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('adding a dependency')) return
-    const projects = state.snapshot?.projects ?? []
-    if (projects.length === 0) {
-      void vscode.window.showInformationMessage('MonoSmith: this workspace has no project to add a dependency to.')
-
-      return
-    }
-    output.show(true)
-    const outcome = await installDependency({
-      askCommit: async () => await askCommitBox('add a dependency'),
-      ask:       async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps })), projectGiven(argument), only),
-      apply:     async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding a dependency in ${state.name}…` },
-        async () => await smithIn(state, true, 600_000)(args),
-      ),
-    })
-    note(`MonoSmith: add dependency in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellDependencyOutcome(outcome, note)
-    if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** The folder and file a derive or why command works on: a Health row, a file given by the explorer or the editor, or the open editor. */
-  const fileTarget = (argument: unknown): { state: FolderState, file: string } | undefined => {
-    const tagged = readFolderData((argument as ListNode | undefined)?.data)
-    if (tagged !== undefined) {
-      const state = folders.get(tagged.root)
-
-      return state === undefined ? undefined : { state, file: tagged.data }
-    }
-    const uri = argument instanceof vscode.Uri ? argument : vscode.window.activeTextEditor?.document.uri
-    if (uri?.scheme !== 'file') return undefined
-    const root = folderOfFile(ready().map((state) => state.root), uri.fsPath)
-    const state = root === undefined ? undefined : folders.get(root)
-    const file = root === undefined ? undefined : toFolderPath(root, uri.fsPath)
-
-    return state === undefined || file === undefined ? undefined : { state, file }
-  }
-
-  const deriveFile = async (argument: unknown, action: 'explain' | 'apply' | 'adopt' | 'eject'): Promise<void> => {
-    const target = fileTarget(argument)
-    if (target === undefined) {
-      void vscode.window.showInformationMessage('MonoSmith: choose a derived file first. Right-click it in the Health view, or open it in the editor and run the command again.')
-
-      return
-    }
-    const { state, file } = target
-    const run = smithIn(state)
-    const explain = async (): Promise<void> => { await insight.show(`${basename(file)}-derive.md`, toExplainDocument(file, await explainDerivedFile(run, file))) }
-    if (action === 'explain') {
-      await explain()
-
-      return
-    }
-    if (!mayWrite('changing a derived file')) return
-    const status = deriveReports.get(state.root)?.files.find((item) => item.path === file)?.status
-    if (action === 'apply' && status === undefined) {
-      void vscode.window.showInformationMessage(`MonoSmith: smith has nothing to write for ${file}. Refresh the Health view to read the derived files again.`)
-
-      return
-    }
-    const change: DeriveAction & ('apply' | 'replace' | 'adopt' | 'eject') = action === 'apply' && status !== undefined ? applyActionFor(status) : action
-    let commit: boolean
-    for (;;) {
-      const answer = await confirmDeriveChange(change, change === 'apply' ? undefined : file)
-      if (answer === 'no') return
-      if (answer === 'yes' || answer === 'yes-commit') {
-        commit = answer === 'yes-commit'
-        break
-      }
-      if (answer === 'preview') await insight.show('derive-preview.md', toTextDocument('Derived files: what smith derive would write', await previewDerive(run)))
-      else await explain()
-    }
-    const result = await changeDerivedFile(run, change, change === 'apply' ? undefined : file, commit)
-    const printed = result.ok ? result.output.split(/\r?\n/).filter(Boolean) : []
-    for (const line of printed) note(line)
-    tellDeriveChange(change, change === 'apply' ? undefined : file, result.ok, result.ok ? '' : result.message)
-    await health.reload()
-    await refreshFolder(state.root, 'full', true)
-  }
-
-  /** Shows why a file is as it is, why a task runs again, or how a project resolved. */
-  const showWhy = async (argument: unknown): Promise<void> => {
-    const node = typeof argument === 'object' && argument !== null && 'kind' in argument ? argument as TreeNode : undefined
-    const whyTask = async (root: string, project: string, task: string): Promise<void> => {
-      const state = folders.get(root)
-      if (state !== undefined) await insight.show(`${project}-${task}-why.md`, await readTaskWhy(smithIn(state), project, task))
-    }
-    if (node?.kind === 'task' && node.project !== undefined && node.task !== undefined) return await whyTask(node.root, node.project, node.task)
-    if (node?.kind === 'project') return await showInsight(node, 'explain')
-
-    const file = fileTarget(argument)
-    // A file given by the explorer or the editor menu is answered at once; from the palette the person says what to ask about.
-    const kinds = [
-      ...(file === undefined ? [] : [{ label: '$(file) This file', description: file.file, pick: 'file' as const }]),
-      { label: '$(package) A project', description: 'how its tasks resolved and where each setting came from', pick: 'project' as const },
-      { label: '$(play) A task', description: 'why it runs again instead of coming from the cache', pick: 'task' as const },
-      { label: '$(settings-gear) A setting', description: 'why a setting of smith.toml has its value, and why its default is what it is', pick: 'setting' as const },
-    ]
-    const chosen = argument instanceof vscode.Uri ? undefined : await vscode.window.showQuickPick(kinds, { title: 'MonoSmith: Why', placeHolder: 'What do you want to know about?' })
-    switch (argument instanceof vscode.Uri ? 'file' : chosen?.pick) {
-      case 'file': {
-        if (file !== undefined) await insight.show(`${basename(file.file)}-why.md`, await readFileWhy(smithIn(file.state), file.file))
-        break
-      }
-      case 'project': {
-        await showInsight(undefined, 'explain')
-        break
-      }
-      case 'setting': {
-        const state = await folderFor(argument)
-        const setting = state === undefined ? undefined : await vscode.window.showInputBox({ title: 'MonoSmith: Why', prompt: 'Which setting of smith.toml?', placeHolder: 'workspace.commit_operations' })
-        if (state !== undefined && setting !== undefined && setting.trim() !== '') await insight.show(`${setting.trim()}-why.md`, await readSettingWhy(smithIn(state), setting.trim()))
-        break
-      }
-      case 'task': {
-        const picked = await pickTask(readyWorkspaces())
-        if (picked?.target.kind === 'task') await whyTask(picked.root, picked.target.project, picked.target.task)
-        else if (picked !== undefined) void vscode.window.showInformationMessage('MonoSmith: choose one task of a project, not all of its tasks.')
-        break
-      }
-      default: {
-        break
-      }
-    }
-  }
-
-  /** Asks which choice of which project to swap, shows the plan of `smith swap --dry-run`, and swaps on a yes. */
-  const swapHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('swapping a choice')) return
-    const node = typeof argument === 'object' && argument !== null && 'kind' in argument ? argument as TreeNode : undefined
-    const given = node?.kind === 'project' ? node.project : undefined
-    output.show(true)
-    const outcome = await swapChoice({
-      run:   smithIn(state),
-      apply: async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: swapping in ${state.name}… smith installs and tests the project.` },
-        async () => await smithIn(state, true, 600_000)(args),
-      ),
-      parse:   parseChoices,
-      ask:     async (choices) => await askSwapRequest(choices, state.snapshot?.projects ?? [], given),
-      confirm: confirmSwapPlan,
-    })
-    note(`MonoSmith: swap in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellSwapOutcome(outcome, note)
-    if (outcome.kind === 'swapped') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Asks the name, then a pick list or tick boxes for each level, shows the `smith recipe new` command and the file, and writes on a yes. */
-  const newRecipeHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('writing a recipe')) return
-    output.show(true)
-    const outcome = await newRecipe({
-      run:       smithIn(state),
-      apply:     smithIn(state, true),
-      askBasics: askRecipeBasics,
-      pick:      pickLevel,
-      decide:    decideLevel,
-      askChoice,
-      confirm:   confirmRecipe,
-    })
-    note(`MonoSmith: recipe in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellRecipeOutcome(outcome, state.root, note)
-    if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** The web apps of a folder and their environments, for the Projects view; none when smith lists none. */
-  const readWebApps = async (state: FolderState): Promise<WebAppEnvironments[]> => {
-    try {
-      const listed = await smithIn(state)(['environments', 'list', '--json'])
-
-      return listed.code === 0 ? parseWebApps(listed.stdout) : []
-    } catch {
-      return []
-    }
-  }
-
-  /** Runs a command of smith that has a screen of its own (environments, cache, pipeline...): asks, shows the output or the plan, and changes nothing before a yes. */
-  const guidedHere = async (spec: GuidedCommand, argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined) return
-    if (spec.mode === 'change' && !mayWrite(spec.title.replace(/…$/, '').toLowerCase())) return
-    const outcome = await runGuidedCommand(spec, {
-      run:       smithIn(state, true, 300_000),
-      ask:       askGuidedStep,
-      show:      async (title, text) => { await insight.show(`${spec.id}.md`, toTextDocument(title, text)) },
-      confirm:   confirmGuided,
-      askCommit: async () => await askCommitBox(spec.title),
-    }, environmentAnswers(spec.id, argument))
-    note(`MonoSmith: ${spec.title} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellGuidedOutcome(spec.title, outcome, note)
-    if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Lists where the workspace chose differently from smith's defaults (`smith divergences`), with the reason and the way back. */
-  const showDivergences = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined) return
-    const result = await smithIn(state)(['divergences'])
-    if (result.code !== 0) {
-      void vscode.window.showWarningMessage(`MonoSmith: smith could not list the divergences. ${describeFailure(result)}`)
-
-      return
-    }
-    await insight.show('divergences.md', toTextDocument('Divergences from smith\'s defaults', result.stdout))
-  }
-
-  /** Shows what the last change smith committed did, and reverts it on a yes. */
-  const undoHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('undoing a change')) return
-    const outcome = await undoLastChange({ run: smithIn(state), confirm: async (plan) => await confirmUndo(plan, state.name) })
-    note(`MonoSmith: undo in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellUndoOutcome(outcome)
-    if (outcome.kind === 'undone') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Asks which version wins, shows smith's sync plan, and writes it on a yes. */
-  const syncHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('syncing dependency versions')) return
-    const outcome = await syncVersions({ run: smithIn(state), choose: chooseSyncRule, confirm: confirmSync })
-    note(`MonoSmith: sync in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellSyncOutcome(outcome)
-    if (outcome.kind === 'synced') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Writes the HTML report of the workspace to a temp file and opens it in the browser. */
-  const openReport = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined) return
-    const outcome = await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: writing the report of ${state.name}…` },
-      async () => await writeReport(smithIn(state), reportFile(tmpdir(), state.name)),
-    )
-    if (!outcome.ok) {
-      void vscode.window.showWarningMessage(`MonoSmith: the report was not written. ${outcome.message}`)
-
-      return
-    }
-    note(`MonoSmith: report of ${state.name}: ${outcome.file}`)
-    await vscode.env.openExternal(vscode.Uri.file(outcome.file))
-  }
-
-  /** Writes AGENTS.md, from the agent menu or from the notice after the agent install. */
-  const writeAgentsFile = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('AGENTS.md')) return
-    const outcome = await writeAgentFile({ run: smithIn(state), confirm: async (lines) => await confirmAgentFile(lines, state.name) })
-    note(`MonoSmith: AGENTS.md in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellAgentFileOutcome(outcome, state.root)
-  }
-
-  /** Runs a smith command in a temporary copy (`smith try`), shows what it did, and runs it for real on a yes. */
-  const tryHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('running a command for real')) return
-    const outcome = await tryCommand({
-      run:   smithIn(state),
-      ask:   askTryCommand,
-      show:  async (page) => { await insight.show('try.md', page) },
-      offer: offerTryApply,
-    })
-    note(`MonoSmith: try in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellTryOutcome(outcome)
-    if (outcome.kind === 'tried' && outcome.applied) await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Writes the launcher (`smith bootstrap`) that makes a laptop and CI run the same smith. */
-  const bootstrapHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('the smith launcher')) return
-    const outcome = await writeLauncher({ run: smithIn(state), confirm: async (plan) => await confirmLauncher(state.name, plan) })
-    note(`MonoSmith: launcher in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellLauncherOutcome(outcome)
-    if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
-  }
-
-  /** Offers the ways to get the tools the workspace needs (`smith tools install`): a pick per tool with the command in front of the person. */
-  const installToolsHere = async (argument: unknown): Promise<void> => {
-    const state = await folderFor(argument)
-    if (state?.location === undefined) return
-    const outcome = await installTools({
-      run:           smithIn(state, true, 600_000),
-      chooseWay:     chooseToolWay,
-      chooseAdmin:   chooseToolAdmin,
-      openPage:      openToolPage,
-      showCommands:  showToolCommands,
-      runInTerminal: (args) => { openSmithTerminal(state.location?.executable ?? 'smith', args, state.root) },
-    })
-    note(`MonoSmith: tools in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellToolsOutcome(outcome)
-  }
-
-  /**
-   * Creates a workspace in an empty folder with the same two-way start as the TUI
-   * (the defaults, or customise). Nothing is written before the person has seen the
-   * choices and the list of files and said yes. "Answer in a terminal" keeps smith's own questions.
-   */
-  const createWorkspace = async (): Promise<void> => {
-    const chosen = await chooseFolder(blanks.filter((folder) => folder.kind === 'empty'))
-    if (chosen === undefined) return
-    const executable = await smithForTerminal(chosen.root)
-    if (executable === undefined) return
-    output.show(true)
-    const inFolder = (timeoutMs: number) => async (args: string[]): Promise<Awaited<ReturnType<typeof runSmith>>> => {
-      note(`$ smith ${args.join(' ')} (${chosen.name})`)
-
-      return await runSmith(executable, args, chosen.root, timeoutMs)
-    }
-    const outcome = await makeWorkspace({
-      folderName: chosen.name,
-      run:        inFolder(60_000),
-      apply:      async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: creating the workspace in ${chosen.name}…` },
-        async () => await inFolder(600_000)(args),
-      ),
-      askWay:    askSetupWay,
-      askName:   askWorkspaceName,
-      askCustom: askCustomChoices,
-      confirm:   confirmNewWorkspace,
-    })
-    note(`MonoSmith: new workspace in ${chosen.name}: ${outcome.kind === 'refused' ? `stopped: ${outcome.message}` : (outcome.kind === 'terminal' ? 'you chose to answer in a terminal' : outcome.kind)}`)
-    if (outcome.kind === 'terminal') {
-      note(`MonoSmith: creating a new workspace in ${chosen.name} (the folder is empty).`)
-      openSmithTerminal(executable, toNewArguments(), chosen.root)
-
-      return
-    }
-    tellNewWorkspaceOutcome(outcome, note)
-    if (outcome.kind === 'created') await refresh()
-  }
-
-  /**
-   * Converts an Nx or Turborepo workspace with the questions of `smith convert --questions --json`:
-   * the level, and at the full level the four choices. Nothing is changed before the plan is shown
-   * and the person has said yes; smith commits only when the box is ticked.
-   */
-  const convertChoices = async (): Promise<void> => {
-    const chosen = await chooseFolder(offers.filter((offer) => offer.kind === 'nx' || offer.kind === 'turborepo'))
-    if (chosen === undefined) {
-      void vscode.window.showInformationMessage('MonoSmith: no Nx or Turborepo workspace is open here. "Convert This Folder to MonoSmith" brings in any other repository.')
-
-      return
-    }
-    const executable = await smithForTerminal(chosen.root)
-    if (executable === undefined) return
-    output.show(true)
-    const inFolder = async (args: string[]): Promise<Awaited<ReturnType<typeof runSmith>>> => {
-      note(`$ smith ${args.join(' ')} (${chosen.name})`)
-
-      return await runSmith(executable, args, chosen.root, 600_000)
-    }
-    const outcome = await convertWorkspace({
-      run:   inFolder,
-      apply: async (args) => await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: converting ${chosen.name}…` },
-        async () => await inFolder(args),
-      ),
-      pick:      pickNewQuestion,
-      askCommit: askConvertCommit,
-      confirm:   confirmConvert,
-    })
-    tellConvertOutcome(outcome, note)
-    if (outcome.kind === 'converted') await refresh()
   }
 
   const command = <T = TreeNode>(id: string, action: (node?: T) => Promise<void>): vscode.Disposable => vscode.commands.registerCommand(id, async (node?: T) => {
@@ -1512,55 +658,55 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       else await run(last.root, last.plan)
     }),
     command('monosmith.cancelRun', cancel),
-    command('monosmith.doctor', doctor),
+    command('monosmith.doctor', async () => { await doctor(host) }),
     command('monosmith.showMenu', async () => {
       await showStatusMenu({ running: activeRun !== undefined, hasLastRun: lastRun.last() !== undefined, failed: failedTasks(), view: judgeViewState(states().map((state) => state.phase), withoutSmith()) })
     }),
     command('monosmith.showOutput', async () => { output.show() }),
     command('monosmith.openSettings', async () => { await vscode.commands.executeCommand('workbench.action.openSettings', 'monosmith') }),
     command('monosmith.copyInstallCommand', copyInstallCommand),
-    command('monosmith.new', createWorkspace),
-    command('monosmith.convert.choose', convertChoices),
-    command('monosmith.adopt.start', async () => { await adopt('start') }),
-    command('monosmith.adopt.preview', async () => { await adopt('preview') }),
+    command('monosmith.new', async () => { await createWorkspaceHere(host, blanks, refresh) }),
+    command('monosmith.convert.choose', async () => { await convertChoices(host, offers, refresh) }),
+    command('monosmith.adopt.start', async () => { await adopt(host, { offers, blanks }, context.subscriptions, 'start') }),
+    command('monosmith.adopt.preview', async () => { await adopt(host, { offers, blanks }, context.subscriptions, 'preview') }),
     command<unknown>('monosmith.installAgent', async (argument) => { await installFiles('agent', argument) }),
     command<unknown>('monosmith.installMcp', async (argument) => { await installFiles('mcp', argument) }),
     command<unknown>('monosmith.talkToAgent', talkToTheAgent),
-    command<unknown>('monosmith.agentFile', writeAgentsFile),
-    command<unknown>('monosmith.addProject', addProjectHere),
-    command<unknown>('monosmith.composeStack', composeStackHere),
-    command<unknown>('monosmith.addDependency', async (argument) => { await addDependencyHere(argument) }),
-    command<unknown>('monosmith.addLibrary', async (argument) => { await addDependencyHere(argument, 'workspace') }),
-    command<unknown>('monosmith.installPackage', async (argument) => { await addDependencyHere(argument, 'registry') }),
-    command<unknown>('monosmith.commit', commitHere),
-    command<unknown>('monosmith.release', releaseHere),
-    command<unknown>('monosmith.removeProject', async (argument) => { await projectAction(argument, 'remove') }),
-    command<unknown>('monosmith.changeKind', async (argument) => { await projectAction(argument, 'kind') }),
-    command<unknown>('monosmith.unlinkLibrary', async (argument) => { await projectAction(argument, 'unlink') }),
-    command<unknown>('monosmith.undo', undoHere),
-    command<unknown>('monosmith.syncVersions', syncHere),
-    command<unknown>('monosmith.swap', swapHere),
-    command<unknown>('monosmith.newRecipe', newRecipeHere),
-    command<unknown>('monosmith.divergences', showDivergences),
-    ...GUIDED_COMMANDS.map((spec) => command<unknown>(`monosmith.${spec.id}`, async (argument) => { await guidedHere(spec, argument) })),
-    command<unknown>('monosmith.try', tryHere),
-    command<unknown>('monosmith.bootstrap', bootstrapHere),
-    command<unknown>('monosmith.installTools', installToolsHere),
-    command<unknown>('monosmith.openReport', openReport),
-    command<unknown>('monosmith.why', showWhy),
-    command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(argument, 'explain') }),
-    command<unknown>('monosmith.derive.apply', async (argument) => { await deriveFile(argument, 'apply') }),
-    command<unknown>('monosmith.derive.adopt', async (argument) => { await deriveFile(argument, 'adopt') }),
-    command<unknown>('monosmith.derive.eject', async (argument) => { await deriveFile(argument, 'eject') }),
+    command<unknown>('monosmith.agentFile', async (argument) => { await writeAgentsFile(host, argument) }),
+    command<unknown>('monosmith.addProject', async (argument) => { await addProjectHere(host, argument) }),
+    command<unknown>('monosmith.composeStack', async (argument) => { await composeStackHere(host, argument) }),
+    command<unknown>('monosmith.addDependency', async (argument) => { await addDependencyHere(host, argument) }),
+    command<unknown>('monosmith.addLibrary', async (argument) => { await addDependencyHere(host, argument, 'workspace') }),
+    command<unknown>('monosmith.installPackage', async (argument) => { await addDependencyHere(host, argument, 'registry') }),
+    command<unknown>('monosmith.commit', async (argument) => { await commitHere(host, argument) }),
+    command<unknown>('monosmith.release', async (argument) => { await releaseHere(host, argument, async () => { await release.reload() }) }),
+    command<unknown>('monosmith.removeProject', async (argument) => { await projectAction(host, argument, 'remove') }),
+    command<unknown>('monosmith.changeKind', async (argument) => { await projectAction(host, argument, 'kind') }),
+    command<unknown>('monosmith.unlinkLibrary', async (argument) => { await projectAction(host, argument, 'unlink') }),
+    command<unknown>('monosmith.undo', async (argument) => { await undoHere(host, argument) }),
+    command<unknown>('monosmith.syncVersions', async (argument) => { await syncHere(host, argument) }),
+    command<unknown>('monosmith.swap', async (argument) => { await swapHere(host, argument) }),
+    command<unknown>('monosmith.newRecipe', async (argument) => { await newRecipeHere(host, argument) }),
+    command<unknown>('monosmith.divergences', async (argument) => { await showDivergences(host, showPage, argument) }),
+    ...GUIDED_COMMANDS.map((spec) => command<unknown>(`monosmith.${spec.id}`, async (argument) => { await guidedHere(host, showPage, spec, argument) })),
+    command<unknown>('monosmith.try', async (argument) => { await tryHere(host, showPage, argument) }),
+    command<unknown>('monosmith.bootstrap', async (argument) => { await bootstrapHere(host, argument) }),
+    command<unknown>('monosmith.installTools', async (argument) => { await installToolsHere(host, argument) }),
+    command<unknown>('monosmith.openReport', async (argument) => { await openReport(host, argument) }),
+    command<unknown>('monosmith.why', async (argument) => { await showWhy(host, insight, argument) }),
+    command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(host, insight, deriveView, argument, 'explain') }),
+    command<unknown>('monosmith.derive.apply', async (argument) => { await deriveFile(host, insight, deriveView, argument, 'apply') }),
+    command<unknown>('monosmith.derive.adopt', async (argument) => { await deriveFile(host, insight, deriveView, argument, 'adopt') }),
+    command<unknown>('monosmith.derive.eject', async (argument) => { await deriveFile(host, insight, deriveView, argument, 'eject') }),
     command('monosmith.health.refresh', async () => { await health.reload() }),
-    command('monosmith.health.fix', fixHealth),
-    command<unknown>('monosmith.health.fixFinding', fixFindingRow),
+    command('monosmith.health.fix', async () => { await fixHealth(host, healthView) }),
+    command<unknown>('monosmith.health.fixFinding', async (argument) => { await fixFindingRow(host, healthView, argument) }),
     command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
-    command('monosmith.dependencies.up', runUp),
-    command<ListNode>('monosmith.dependencies.update', updateDependency),
+    command('monosmith.dependencies.up', async () => { await runUp(host) }),
+    command<ListNode>('monosmith.dependencies.update', async (node) => { await updateDependency(host, node) }),
     command('monosmith.release.refresh', async () => { await release.reload() }),
-    command('monosmith.explainProject', async (node) => { await showInsight(node, 'explain') }),
-    command('monosmith.showGraph', async (node) => { await showInsight(node, 'graph') }),
+    command('monosmith.explainProject', async (node) => { await showInsight(host, insight, node, 'explain') }),
+    command('monosmith.showGraph', async (node) => { await showInsight(host, insight, node, 'graph') }),
     command('monosmith.showTaskOutput', async (node) => {
       const target = node ?? tree.selected()
       if (target?.kind !== 'task' || target.project === undefined || target.task === undefined) return

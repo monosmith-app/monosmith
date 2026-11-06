@@ -2,7 +2,6 @@ package releaserehearsal
 
 import (
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 )
@@ -67,16 +66,4 @@ func NpmrcToken(npmrc, registry string, env func(string) string) (token, variabl
 		token = envRef.ReplaceAllStringFunc(value, func(ref string) string { return env(envRef.FindStringSubmatch(ref)[1]) })
 	}
 	return token, variable
-}
-
-// readNpmrc joins the .npmrc files npm reads, lowest priority first, so the
-// last line for a key is the one npm uses.
-func readNpmrc(paths ...string) string {
-	var out []string
-	for _, p := range paths {
-		if raw, err := os.ReadFile(p); err == nil {
-			out = append(out, string(raw))
-		}
-	}
-	return strings.Join(out, "\n")
 }

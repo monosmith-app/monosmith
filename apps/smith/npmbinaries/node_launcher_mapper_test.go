@@ -8,6 +8,15 @@ import (
 	"testing"
 )
 
+func TestShimResolvesThePlatformPackage(t *testing.T) {
+	shim := Shim("acme", map[string]string{"linux-x64": "@acme/cli-linux-x64"})
+	for _, want := range []string{"#!/usr/bin/env node", `"linux-x64": "@acme/cli-linux-x64"`, "const NAME = 'acme'", "NAME + '.exe' : NAME", "require.resolve(pkg + '/bin/' + file)", "is not on the npm registry yet", "Install it now?", "SMITH_AUTO_FIX"} {
+		if !strings.Contains(shim, want) {
+			t.Errorf("shim lacks %q:\n%s", want, shim)
+		}
+	}
+}
+
 // TestTheLauncherLogicPassesItsNodeTests runs the node tests of the launcher's
 // choices (fake npm, no clock, no terminal). It is skipped where node is not installed.
 func TestTheLauncherLogicPassesItsNodeTests(t *testing.T) {

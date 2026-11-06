@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // The answers of the first question after the name of a new workspace.
@@ -15,12 +16,14 @@ const (
 
 // defaultedQuestions are the questions the defaults settle, with the words a
 // person knows them by and how to change the answer later.
-var defaultedQuestions = []struct{ key, name, later string }{
-	{scaffold.AnswerCI, "CI", "[ci] providers in smith.toml, then smith ci generate"},
-	{scaffold.AnswerLanguage, "language", "smith add --lang <language> for each project"},
-	{scaffold.AnswerArchitecture, "code layout", "smith architecture"},
-	{scaffold.AnswerAgent, "agent files", "smith agent install adds them"},
-	{scaffold.AnswerDevcontainer, "dev container", "[ci] devcontainer in smith.toml"},
+func defaultedQuestions() []struct{ key, name, later string } {
+	return []struct{ key, name, later string }{
+		{scaffold.AnswerCI, words.Say("guide.new_workspace_setup.question.ci.name"), words.Say("guide.new_workspace_setup.question.ci.later")},
+		{scaffold.AnswerLanguage, words.Say("guide.new_workspace_setup.question.language.name"), words.Say("guide.new_workspace_setup.question.language.later")},
+		{scaffold.AnswerArchitecture, words.Say("guide.new_workspace_setup.question.layout.name"), words.Say("guide.new_workspace_setup.question.layout.later")},
+		{scaffold.AnswerAgent, words.Say("guide.new_workspace_setup.question.agent.name"), words.Say("guide.new_workspace_setup.question.agent.later")},
+		{scaffold.AnswerDevcontainer, words.Say("guide.new_workspace_setup.question.devcontainer.name"), words.Say("guide.new_workspace_setup.question.devcontainer.later")},
+	}
 }
 
 // setupStep is the first question after the name: take smith's defaults and
@@ -30,12 +33,11 @@ var defaultedQuestions = []struct{ key, name, later string }{
 // in the folder) are still asked in a folder that calls for them.
 func setupStep() Step {
 	return Step{
-		Key: answerSetup, Prompt: "How do you want to set it up?",
-		Note: "CI = where your tests run on every push.\n" + defaultsSummary() +
-			"\nEvery one can be changed later. If the folder has files and no git repository, smith still asks what the first commit holds.",
+		Key: answerSetup, Prompt: words.Say("guide.new_workspace_setup.how_do_you_want_to_set"),
+		Note: words.Say("guide.new_workspace_setup.note", "defaults", defaultsSummary()),
 		Options: []Option{
-			{Label: "Start with the defaults", Value: setupDefaults, Hint: "the name is the only answer; the list above is what you get (default)"},
-			{Label: "Customise", Value: setupCustom, Hint: "answer the questions one at a time: CI, language, code layout, agent files, dev container, more options"},
+			{Label: words.Say("guide.new_workspace_setup.start_with_the_defaults"), Value: setupDefaults, Hint: words.Say("guide.new_workspace_setup.the_name_is_the_only_answer")},
+			{Label: words.Say("guide.new_workspace_setup.customise"), Value: setupCustom, Hint: words.Say("guide.new_workspace_setup.answer_the_questions_one_at_a")},
 		},
 	}
 }
@@ -44,7 +46,7 @@ func setupStep() Step {
 // change it later.
 func defaultsSummary() string {
 	var lines []string
-	for _, d := range defaultedQuestions {
+	for _, d := range defaultedQuestions() {
 		for _, q := range scaffold.NewQuestions() {
 			if q.Key != d.key {
 				continue
@@ -58,7 +60,7 @@ func defaultsSummary() string {
 					}
 				}
 			}
-			lines = append(lines, "  "+d.name+": "+label+" (change it later: "+d.later+")")
+			lines = append(lines, words.Say("guide.new_workspace_setup.summary_line", "name", d.name, "label", label, "later", d.later))
 		}
 	}
 	return strings.Join(lines, "\n")

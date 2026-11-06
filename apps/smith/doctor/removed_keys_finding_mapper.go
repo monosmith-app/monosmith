@@ -1,6 +1,9 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
+	"strings"
+
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -16,9 +19,11 @@ func RemovedKeysFinding(raw []byte) (protocol.Finding, bool) {
 	}
 	err := &workspace.RemovedKeysError{Keys: removed}
 	finding := protocol.Finding{
-		Check:  "smith.toml uses current key names",
-		Detail: err.Error(),
-		Remedy: "run `smith doctor --fix`: it renames the keys and keeps your comments",
+		Check:   "smith.toml uses current key names",
+		Area:    doctorchecks.AreaConfig,
+		Problem: strings.TrimSuffix(err.Error(), ": run smith doctor --fix"),
+		Detail:  err.Error(),
+		Remedy:  "run `smith doctor --fix`: it renames the keys and keeps your comments",
 	}
 	if text, ok := workspace.RenameRemovedKeys(raw); ok {
 		finding.Fix = &protocol.Fix{

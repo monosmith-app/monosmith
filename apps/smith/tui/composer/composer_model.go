@@ -1,6 +1,8 @@
 package composer
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"regexp"
 	"slices"
 	"strings"
@@ -9,8 +11,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // stage is the step the screen is on.
@@ -67,7 +69,7 @@ type Model struct {
 	note    string
 
 	w, h int
-	rect dialog.Rect
+	rect layout.Rect
 }
 
 // New builds the screen on a catalogue (the output of smith compose --json).
@@ -76,10 +78,10 @@ type Model struct {
 // Returns: the screen with nothing ticked, searching for everything.
 func New(cat compose.Catalogue) Model {
 	search := textinput.New()
-	search.Placeholder = "search: react, desktop, serverless, test…"
+	search.Placeholder = words.Say("composer.search.placeholder")
 	search.Focus()
 	name := textinput.New()
-	name.Placeholder = "web"
+	name.Placeholder = words.Say("composer.name.placeholder")
 	m := Model{cat: cat, offers: compose.OffersOf(cat.Items), search: search, name: name, scroll: &pane.Scroll{}}
 	return m.refresh()
 }
@@ -97,7 +99,7 @@ func (m Model) Place(sw, sh int) Model {
 	m.w, m.h = sw, sh
 	w := min(max(sw-6, 40), 104)
 	h := min(max(sh-2, 12), 34)
-	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)
 	return m
@@ -110,7 +112,7 @@ func (m Model) Wheel(delta int) Model {
 }
 
 // Rect is where the screen sits after Place.
-func (m Model) Rect() dialog.Rect { return m.rect }
+func (m Model) Rect() layout.Rect { return m.rect }
 
 // Check is what the ticks add up to now.
 func (m Model) Check() compose.Check { return m.chk }
@@ -168,7 +170,7 @@ func (m Model) refresh() Model {
 	}
 	m.chk = compose.CheckItems(m.offers, pickLang, m.ticked)
 	if len(m.ticked) == 0 {
-		m.chk = compose.Check{Language: pickLang, Missing: "tick what you want: a framework, a desktop shell, a cloud host. The language comes with it."}
+		m.chk = compose.Check{Language: pickLang, Missing: words.Say("composer.missing.empty")}
 	}
 	return m
 }
@@ -194,10 +196,10 @@ func (m Model) tick(it compose.Item) Model {
 	m.note = ""
 	switch {
 	case it.Kind == compose.KindPlugin:
-		m.note = it.Title + " is a workspace plugin, not part of the stack of one project. Turn it on with: " + it.Route
+		m.note = words.Say("composer.note.plugin", "title", it.Title, "route", it.Route)
 		return m
 	case it.Problem != "":
-		m.note = it.Title + " cannot be used here: " + it.Problem
+		m.note = words.Say("composer.note.problem", "title", it.Title, "problem", it.Problem)
 		return m
 	case it.Kind == compose.KindLanguage:
 		if m.lang != nil && m.lang.ID == it.ID {
@@ -222,7 +224,7 @@ func (m Model) tick(it compose.Item) Model {
 				for i, r := range rivals {
 					names[i] = r.Title
 				}
-				m.note = it.Title + " replaces " + strings.Join(names, " and ") + ": a project has one " + it.Axis + ". Untick " + it.Title + " to get " + names[0] + " back."
+				m.note = words.Say("composer.note.replaces", "title", it.Title, "names", strings.Join(names, words.Say("composer.and")), "axis", it.Axis, "first", names[0])
 			}
 		}
 	}
@@ -258,6 +260,26 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
 
 // browseKey handles a key while the person searches and ticks.
 func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
+	switch commands.NavNamed(msg.String()) {
+	case commands.NavUp:
+		m.cursor = max(m.cursor-1, 0)
+		return m, Outcome{}
+	case commands.NavDown:
+		m.cursor = min(m.cursor+1, max(m.length()-1, 0))
+		return m, Outcome{}
+	case commands.NavPageUp:
+		m.cursor = max(m.cursor-8, 0)
+		return m, Outcome{}
+	case commands.NavPageDown:
+		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
+		return m, Outcome{}
+	case commands.NavHome:
+		m.cursor = 0
+		return m, Outcome{}
+	case commands.NavEnd:
+		m.cursor = max(m.length()-1, 0)
+		return m, Outcome{}
+	}
 	switch msg.String() {
 	case "ctrl+c":
 		return m, Outcome{Done: true}
@@ -271,18 +293,6 @@ func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
 			return m, Outcome{}
 		}
 		return m, Outcome{Done: true}
-	case "up":
-		m.cursor = max(m.cursor-1, 0)
-	case "down":
-		m.cursor = min(m.cursor+1, max(m.length()-1, 0))
-	case "pgup":
-		m.cursor = max(m.cursor-8, 0)
-	case "pgdown":
-		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
-	case "home":
-		m.cursor = 0
-	case "end":
-		m.cursor = max(m.length()-1, 0)
 	case "tab":
 		m.stack, m.cursor = !m.stack, 0
 	case "enter":
@@ -343,11 +353,11 @@ func layerIndex(cat compose.Catalogue, id string) int {
 func (m Model) next() (Model, Outcome) {
 	switch {
 	case m.chk.Conflict != "":
-		m.note = "Fix the conflict first: " + m.chk.Conflict
+		m.note = words.Say("composer.note.conflict", "conflict", m.chk.Conflict)
 	case m.chk.Question != nil:
 		m.stage, m.qcursor = stQuestion, suggestedIndex(m.chk.Question)
 	case !m.chk.Complete:
-		m.note = firstNonEmpty(m.chk.Missing, "the selection is not complete")
+		m.note = firstNonEmpty(m.chk.Missing, words.Say("composer.note.incomplete"))
 	default:
 		m.stage = stName
 		m.name.Focus()
@@ -363,14 +373,14 @@ func (m Model) questionKey(key string) (Model, Outcome) {
 		m.stage = stBrowse
 		return m, Outcome{}
 	}
-	switch key {
-	case "ctrl+c", "esc":
+	switch commands.NavNamed(key) {
+	case commands.NavCancel:
 		m.stage = stBrowse
-	case "up":
+	case commands.NavUp:
 		m.qcursor = max(m.qcursor-1, 0)
-	case "down":
+	case commands.NavDown:
 		m.qcursor = min(m.qcursor+1, len(q.Options)-1)
-	case "enter":
+	case commands.NavConfirm:
 		answer := q.Options[min(m.qcursor, len(q.Options)-1)]
 		for _, it := range m.cat.Items {
 			if it.Kind == compose.KindChoice && it.Name == answer.Name && it.Language == m.language() {
@@ -401,7 +411,7 @@ func (m Model) nameKey(msg tea.KeyMsg) (Model, Outcome) {
 	case "enter":
 		value := strings.TrimSpace(m.name.Value())
 		if !projectName.MatchString(value) {
-			m.note = "Name the project with lowercase words joined by dashes, like web or my-api."
+			m.note = words.Say("composer.note.name")
 			return m, Outcome{}
 		}
 		m.note = ""
@@ -427,7 +437,7 @@ func (m Model) planKey(key string) (Model, Outcome) {
 		}
 	case "c":
 		if m.plan != nil {
-			return m, Outcome{Copy: m.plan.Command, Note: "Copied the command."}
+			return m, Outcome{Copy: m.plan.Command, Note: words.Say("composer.note.copied")}
 		}
 	case "s":
 		if m.plan != nil && len(m.plan.RecipeArgv) > 1 {

@@ -1,26 +1,27 @@
 package composer
 
 import (
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Title is the frame title of the screen.
 func (m Model) Title() string {
 	switch m.stage {
 	case stQuestion:
-		return "Compose a stack: an answer is needed"
+		return words.Say("composer.title.question")
 	case stName:
-		return "Compose a stack: name the project"
+		return words.Say("composer.title.name")
 	case stPlan:
-		return "Compose a stack: the plan"
+		return words.Say("composer.title.plan")
 	}
-	return "Compose a stack"
+	return words.Say("composer.title")
 }
 
 // Lines draws the screen, framed, at the size Place set.
@@ -56,7 +57,7 @@ func (m Model) Lines(th theme.Theme) []string {
 func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 	lines := []string{m.search.View(), m.summaryLine(th), ""}
 	status := m.statusLines(th, inner)
-	keys := th.Muted("enter tick · tab " + map[bool]string{true: "catalogue", false: "your stack"}[m.stack] + " · ctrl+n next · esc back")
+	keys := th.Muted(words.Say("composer.keys.browse", "target", words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])))
 	room := max(height-len(lines)-len(status)-1, 3)
 	list := m.listLines(th, inner)
 	for i := range list {
@@ -73,13 +74,13 @@ func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 // summaryLine says what is ticked, by layer.
 func (m Model) summaryLine(th theme.Theme) string {
 	if len(m.ticked) == 0 && m.lang == nil {
-		return th.Muted("Nothing ticked yet. Search, then press enter on what you want.")
+		return th.Muted(words.Say("composer.summary.empty"))
 	}
 	var parts []string
 	for _, it := range m.entries() {
 		parts = append(parts, it.Title)
 	}
-	return th.Muted("Stack: ") + strings.Join(parts, " + ")
+	return th.Muted(words.Say("composer.stack.label")) + strings.Join(parts, " + ")
 }
 
 // listLines draws the rows of the catalogue or of the stack and sets where the
@@ -100,7 +101,7 @@ func (m *Model) listLines(th theme.Theme, inner int) []string {
 			lines = append(lines, m.row(th, it, i == m.cursor, true))
 		}
 		if len(entries) == 0 {
-			lines = append(lines, th.Muted("Nothing here yet. Press tab to go back to the catalogue."))
+			lines = append(lines, th.Muted(words.Say("composer.list.empty.stack")))
 		}
 		return lines
 	}
@@ -117,40 +118,33 @@ func (m *Model) listLines(th theme.Theme, inner int) []string {
 		lines = append(lines, m.row(th, h.Item, i == m.cursor, false))
 	}
 	if len(m.hits) == 0 {
-		lines = append(lines, th.Muted("Nothing matches. Try a word like web, desktop or serverless, or esc to clear."))
+		lines = append(lines, th.Muted(words.Say("composer.list.empty.search")))
 	}
 	return lines
 }
 
 // row is one item: a box, the title, where it is for, and what it is.
 func (m Model) row(th theme.Theme, it compose.Item, selected, inStack bool) string {
-	box := "[ ]"
-	if m.isTicked(it) {
-		box = "[x]"
-	}
-	if it.Kind == compose.KindPlugin {
-		box = "[-]"
-	}
-	text := box + " " + it.Title
+	text := choicerow.Box(m.isTicked(it), it.Kind == compose.KindPlugin) + " " + it.Title
 	if it.Language != "" && it.Kind != compose.KindLanguage {
 		text += th.Muted(" (" + it.Language + ")")
 	}
 	switch {
 	case it.Default:
-		text += th.Muted(" (default)")
+		text += th.Muted(words.Say("composer.row.default"))
 	case it.Suggested:
-		text += th.Muted(" (suggested)")
+		text += th.Muted(words.Say("composer.row.suggested"))
 	}
 	if !inStack && it.Description != "" {
 		text += th.Muted("  " + it.Description)
 	}
 	if it.Problem != "" {
-		text += " " + th.Warning("(cannot be used: "+it.Problem+")")
+		text += " " + th.Warning(words.Say("composer.row.problem", "problem", it.Problem))
 	}
 	if selected {
-		return th.Selected("> " + text)
+		return th.Selected(choicerow.Cursor(th, true) + text)
 	}
-	return "  " + text
+	return choicerow.Cursor(th, false) + text
 }
 
 // isTicked reports whether the item is ticked.
@@ -190,17 +184,17 @@ func (m Model) statusLines(th theme.Theme, inner int) []string {
 	}
 	switch {
 	case m.chk.Conflict != "":
-		add(th.Failure("Conflict: ") + m.chk.Conflict)
+		add(th.Failure(words.Say("composer.status.conflict")) + m.chk.Conflict)
 	case m.chk.Question != nil:
-		add(th.Warning("An answer is needed: ") + fmt.Sprintf("%s needs a choice on the %s axis. Press ctrl+n to answer; smith does not choose it for you.", m.chk.Question.Choice, m.chk.Question.Axis))
+		add(th.Warning(words.Say("composer.status.answer")) + words.Say("composer.status.answer.body", "choice", m.chk.Question.Choice, "axis", m.chk.Question.Axis))
 	case m.chk.Missing != "":
-		add(th.Muted("Next: " + m.chk.Missing))
+		add(th.Muted(words.Say("composer.status.next", "missing", m.chk.Missing)))
 	case m.chk.Complete:
-		line := th.Success("Ready: ") + strings.Join(m.chk.Selection, ", ") + " for " + m.chk.Language + "."
+		line := th.Success(words.Say("composer.status.ready")) + words.Say("composer.status.ready.body", "selection", strings.Join(m.chk.Selection, ", "), "language", m.chk.Language)
 		if len(m.chk.Added) > 0 {
-			line += " Added by default: " + strings.Join(m.chk.Added, ", ") + "."
+			line += words.Say("composer.status.added", "added", strings.Join(m.chk.Added, ", "))
 		}
-		add(line + " Press ctrl+n for the plan.")
+		add(line + words.Say("composer.status.plan"))
 	}
 	return out
 }
@@ -211,62 +205,62 @@ func (m Model) questionBody(th theme.Theme, inner int) []string {
 	if q == nil {
 		return nil
 	}
-	lines := []string{th.Bold(fmt.Sprintf("Which %s for %s?", q.Axis, q.Choice))}
+	lines := []string{th.Bold(words.Say("composer.question.title", "axis", q.Axis, "choice", q.Choice))}
 	if q.About != "" {
-		lines = append(lines, pane.Wrap(th.Muted(q.Choice+" writes: "+q.About), inner, 2)...)
+		lines = append(lines, pane.Wrap(th.Muted(words.Say("composer.question.writes", "choice", q.Choice, "about", q.About)), inner, 2)...)
 	}
-	lines = append(lines, th.Muted("smith does not choose this for you. The first line is suggested; enter takes the one under the cursor."), "")
+	lines = append(lines, th.Muted(words.Say("composer.question.hint")), "")
 	for i, o := range q.Options {
 		text := o.Title
 		if o.Suggested {
-			text += th.Muted(" (suggested)")
+			text += th.Muted(words.Say("composer.row.suggested"))
 		}
 		if o.Description != "" {
 			text += th.Muted("  " + o.Description)
 		}
 		if i == m.qcursor {
-			lines = append(lines, th.Selected("> "+text))
+			lines = append(lines, th.Selected(choicerow.Cursor(th, true)+text))
 		} else {
-			lines = append(lines, "  "+text)
+			lines = append(lines, choicerow.Cursor(th, false)+text)
 		}
 	}
-	return append(lines, "", th.Muted("up/down choose · enter answer · esc back to the list"))
+	return append(lines, "", th.Muted(words.Say("composer.question.keys")))
 }
 
 // nameBody asks the name and the kind.
 func (m Model) nameBody(th theme.Theme, inner int) []string {
 	lines := []string{
-		th.Bold("Almost there. Name the project."),
-		th.Muted("Stack: " + strings.Join(m.chk.Selection, ", ") + " (" + m.chk.Language + ")"),
+		th.Bold(words.Say("composer.name.title")),
+		th.Muted(words.Say("composer.name.stack", "selection", strings.Join(m.chk.Selection, ", "), "language", m.chk.Language)),
 		"",
-		"Name: " + m.name.View(),
-		"Kind: " + th.Bold(kinds[m.kind]) + th.Muted("   "+kindMeaning(kinds[m.kind])),
+		words.Say("composer.name.field", "field", m.name.View()),
+		words.Say("composer.name.kind") + th.Bold(kinds[m.kind]) + th.Muted("   "+kindMeaning(kinds[m.kind])),
 	}
 	if m.note != "" {
 		lines = append(lines, "", th.Warning(m.note))
 	}
-	return append(lines, "", th.Muted("enter shows the plan · tab changes the kind · esc back"))
+	return append(lines, "", th.Muted(words.Say("composer.name.keys")))
 }
 
 // kindMeaning says what a kind of project is.
 func kindMeaning(kind string) string {
 	switch kind {
 	case "app":
-		return "something you run or deploy"
+		return words.Say("composer.kind.app")
 	case "lib":
-		return "code other projects here share"
+		return words.Say("composer.kind.lib")
 	}
-	return "code you publish for others to install"
+	return words.Say("composer.kind.package")
 }
 
 // planBody shows the plan: the command, the files, the tools, the notes, and
 // what can be done with it.
 func (m Model) planBody(th theme.Theme, inner int) []string {
 	if m.planErr != "" {
-		return append(pane.Wrap(th.Failure("The plan could not be made: ")+m.planErr, inner, 2), "", th.Muted("esc goes back"))
+		return append(pane.Wrap(th.Failure(words.Say("composer.plan.failed"))+m.planErr, inner, 2), "", th.Muted(words.Say("composer.plan.back")))
 	}
 	if m.plan == nil {
-		return []string{th.Muted("Reading the plan…")}
+		return []string{th.Muted(words.Say("composer.plan.reading"))}
 	}
 	p := m.plan
 	// Every line is wrapped to the dialog, with a hanging indent, never cut.
@@ -276,9 +270,9 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 			lines = append(lines, pane.Wrap(one, inner, 4)...)
 		}
 	}
-	add(th.Bold("Run this:"), "  "+th.Accent(p.Command), "")
+	add(th.Bold(words.Say("composer.plan.run")), "  "+th.Accent(p.Command), "")
 	if len(p.Files) > 0 {
-		add(th.Bold("It writes:"))
+		add(th.Bold(words.Say("composer.plan.writes")))
 		for _, f := range p.Files {
 			text := "  " + f.Action + " " + f.Path
 			if f.Note != "" {
@@ -289,9 +283,9 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 		add("")
 	}
 	if len(p.Tools) > 0 {
-		add(th.Bold("It needs these tools:"))
+		add(th.Bold(words.Say("composer.plan.tools")))
 		for _, t := range p.Tools {
-			text := "  " + t.Title + th.Muted(" ("+t.State+", for "+t.Choice+")")
+			text := "  " + t.Title + th.Muted(words.Say("composer.plan.tool", "state", t.State, "choice", t.Choice))
 			if t.State != "installed" {
 				text += th.Muted(": " + t.Command)
 			}
@@ -303,8 +297,8 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 		add(th.Muted(n))
 	}
 	if p.RecipeNote != "" {
-		add(th.Muted("s: " + p.RecipeNote))
+		add(th.Muted(words.Say("composer.plan.recipe", "note", p.RecipeNote)))
 	}
-	add("", th.Muted("r run it now · c copy the command · s save the plugins as a recipe · esc back"))
+	add("", th.Muted(words.Say("composer.plan.keys")))
 	return lines
 }

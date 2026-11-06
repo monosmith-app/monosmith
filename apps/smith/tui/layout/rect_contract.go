@@ -1,5 +1,7 @@
 package layout
 
+import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+
 // Rect is a rectangle of terminal cells; X and Y are the top-left cell.
 type Rect struct{ X, Y, W, H int }
 
@@ -29,7 +31,7 @@ const (
 
 // String names the area.
 func (a Area) String() string {
-	return [...]string{"nowhere", "header", "tabs", "main", "detail", "footer", "status bar"}[a]
+	return words.Say([...]string{"layout.area.nowhere", "layout.area.header", "layout.area.tabs", "layout.area.main", "layout.area.detail", "layout.area.footer", "layout.area.status"}[a])
 }
 
 // Mode is how much of the interface fits.
@@ -45,7 +47,3 @@ const (
 // WideFrom is the width, in columns, from which the detail sits beside the
 // list. 72 is the supported floor (see the shell).
 const WideFrom = 100
-
-// TallFrom is the height, in rows, from which the tabs are drawn as rounded
-// boxes three rows high; below it they are one row.
-const TallFrom = 24

@@ -6,13 +6,16 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 )
 
 // The titles of the forms that change the environments of a web app.
-const (
-	EnvironmentsAddTitle    = "Add environments to a web app"
-	EnvironmentsRemoveTitle = "Remove environments from a web app"
+var (
+	// EnvironmentsAddTitle is the title of the form that adds environments to a web app.
+	EnvironmentsAddTitle = words.Say("guide.parity_forms.add_title")
+	// EnvironmentsRemoveTitle is the title of the form that removes environments from a web app.
+	EnvironmentsRemoveTitle = words.Say("guide.parity_forms.remove_title")
 )
 
 // environmentsForm is the form of `smith environments add` or `remove`: the
@@ -20,13 +23,13 @@ const (
 // leaves) is shown by the confirmation before anything changes.
 func environmentsForm(verb string) Action {
 	title, names := EnvironmentsAddTitle, Step{
-		Key: "names", Prompt: "Names to add, separated by commas (lowercase words, such as qa, stage)", Placeholder: "qa, stage",
-		Note: "Each name gets a .env.<name> file, a build:<name> task and an output folder. The plan shows the files before they are written.",
+		Key: "names", Prompt: words.Say("guide.parity_forms.names_to_add_separated_by_commas"), Placeholder: words.Say("guide.parity_forms.qa_stage"),
+		Note: words.Say("guide.parity_forms.each_name_gets_a_env_name"),
 	}
 	if verb == "remove" {
 		title, names = EnvironmentsRemoveTitle, Step{
-			Key: "names", Prompt: "Names to remove, separated by commas (smith environments list shows them)", Placeholder: "dev",
-			Note: "The .env.<name> file stays, because it holds your values. The default environment cannot be removed.",
+			Key: "names", Prompt: words.Say("guide.parity_forms.names_to_remove_separated_by_commas"), Placeholder: "dev",
+			Note: words.Say("guide.parity_forms.the_env_name_file_stays_because"),
 		}
 	}
 	names.Check = func(_ map[string][]string, value string) string {
@@ -36,8 +39,8 @@ func environmentsForm(verb string) Action {
 		return ""
 	}
 	return Action{
-		Title: title, Presents: "environments " + verb, Hint: "smith environments " + verb + ": the plan comes first; the .env files you wrote stay", NeedsWorkspace: true,
-		Steps: []Step{{Key: "project", Prompt: "Which web app?", Placeholder: "web"}, names},
+		Title: title, Presents: "environments " + verb, Hint: words.Say("guide.parity_forms.hint", "verb", verb), NeedsWorkspace: true, // words:literal
+		Steps: []Step{{Key: "project", Prompt: words.Say("guide.parity_forms.which_web_app"), Placeholder: "web"}, names},
 		Argv: func(a map[string][]string) []string {
 			return append([]string{"environments", verb, first(a, "project")}, webenv.ParseList(first(a, "names"))...)
 		},
@@ -51,7 +54,7 @@ func WithProjectPick(base Action, key string, names []string) Action {
 	if len(names) == 0 {
 		return base
 	}
-	pick := Step{Key: key, Prompt: "Which project?", Filter: len(names) > 10}
+	pick := Step{Key: key, Prompt: words.Say("guide.parity_forms.which_project"), Filter: len(names) > 10}
 	for _, n := range names {
 		pick.Options = append(pick.Options, Option{Label: n, Value: n})
 	}
@@ -93,7 +96,7 @@ func parityForms() []Action {
 	for _, t := range pipelinetemplate.Catalog {
 		hint := t.Description
 		if t.NeedsProject {
-			hint += " (asks for the app)"
+			hint += words.Say("guide.parity_forms.asks_for_the_app")
 		}
 		templates = append(templates, Option{Label: t.Name, Value: t.Name, Hint: hint})
 	}
@@ -105,10 +108,10 @@ func parityForms() []Action {
 		environmentsForm("add"),
 		environmentsForm("remove"),
 		{
-			Title: "Add a ready-made pipeline", Presents: "pipeline", Hint: "smith pipeline: a pipeline file beside the generated CI; it is yours from then on and smith upgrade never rewrites it", NeedsWorkspace: true,
+			Title: words.Say("guide.parity_forms.add_a_ready_made_pipeline"), Presents: "pipeline", Hint: words.Say("guide.parity_forms.smith_pipeline_a_pipeline_file_beside"), NeedsWorkspace: true,
 			Steps: []Step{
-				{Key: "template", Prompt: "Which pipeline?", Options: templates},
-				{Key: "project", Prompt: "Which app does it build?", Placeholder: "web", Skip: needsNoApp},
+				{Key: "template", Prompt: words.Say("guide.parity_forms.which_pipeline"), Options: templates},
+				{Key: "project", Prompt: words.Say("guide.parity_forms.which_app_does_it_build"), Placeholder: "web", Skip: needsNoApp},
 			},
 			Argv: func(a map[string][]string) []string {
 				argv := []string{"pipeline", first(a, "template")}
@@ -119,10 +122,10 @@ func parityForms() []Action {
 			},
 		},
 		{
-			Title: "Make the icons of a Tauri app", Presents: "tauri icon", Hint: "smith tauri icon: every icon size from one square PNG; the plan lists the files it overwrites", NeedsWorkspace: true,
+			Title: words.Say("guide.parity_forms.make_the_icons_of_a_tauri"), Presents: words.Say("guide.parity_forms.tauri_icon"), Hint: words.Say("guide.parity_forms.smith_tauri_icon_every_icon_size"), NeedsWorkspace: true,
 			Steps: []Step{
-				{Key: "logo", Prompt: "Which square PNG? (a path from where you started smith)", Placeholder: "logo.png", Path: true},
-				{Key: "project", Prompt: "Which app? (only when more than one has a src-tauri; Enter leaves it out)", Optional: true, Placeholder: "desktop"},
+				{Key: "logo", Prompt: words.Say("guide.parity_forms.which_square_png_a_path_from"), Placeholder: "logo.png", Path: true},
+				{Key: "project", Prompt: words.Say("guide.parity_forms.which_app_only_when_more_than"), Optional: true, Placeholder: "desktop"},
 			},
 			Argv: func(a map[string][]string) []string {
 				argv := []string{"tauri", "icon", first(a, "logo")}
@@ -133,10 +136,10 @@ func parityForms() []Action {
 			},
 		},
 		{
-			Title: "Set the Docker Hub descriptions", Presents: "docker description", Hint: "smith docker description: the description of each app's image on Docker Hub", NeedsWorkspace: true,
-			Steps: []Step{{Key: "mode", Prompt: "Preview first?", Options: []Option{
-				{Label: "Name the repositories only", Value: "preview", Hint: "default: nothing is sent to Docker Hub"},
-				{Label: "Set the descriptions", Value: "set", Hint: "calls Docker Hub with your login"},
+			Title: words.Say("guide.parity_forms.set_the_docker_hub_descriptions"), Presents: words.Say("guide.parity_forms.docker_description"), Hint: words.Say("guide.parity_forms.smith_docker_description_the_description"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "mode", Prompt: words.Say("guide.parity_forms.preview_first"), Options: []Option{
+				{Label: words.Say("guide.parity_forms.name_the_repositories_only"), Value: "preview", Hint: words.Say("guide.parity_forms.default_nothing_is_sent_to_docker")},
+				{Label: words.Say("guide.parity_forms.set_the_descriptions"), Value: "set", Hint: words.Say("guide.parity_forms.calls_docker_hub_with_your_login")},
 			}}},
 			Argv: func(a map[string][]string) []string {
 				if first(a, "mode") == "set" {
@@ -146,15 +149,15 @@ func parityForms() []Action {
 			},
 		},
 		{
-			Title: "Why would a task run again?", Presents: "why-miss", Hint: "smith why-miss: why a task did not come from the cache", NeedsWorkspace: true,
-			Steps: []Step{{Key: "task", Prompt: "Which task? (project:task)", Placeholder: "web:build"}},
+			Title: words.Say("guide.parity_forms.why_would_a_task_run_again"), Presents: "why-miss", Hint: words.Say("guide.parity_forms.smith_why_miss_why_a_task"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "task", Prompt: words.Say("guide.parity_forms.which_task_project_task"), Placeholder: "web:build"}},
 			Argv:  func(a map[string][]string) []string { return []string{"why-miss", first(a, "task")} },
 		},
 		{
-			Title: "Connect smith to a coding assistant", Presents: "mcp install", Hint: "smith mcp install: writes the file that lets the assistant start smith's MCP server", NeedsWorkspace: true,
-			Steps: []Step{{Key: "tools", Prompt: "Which assistants? (space toggles, enter confirms)", Multi: true, Options: []Option{
-				{Label: "Claude Code", Value: "--claude", Hint: "writes .mcp.json"},
-				{Label: "VS Code", Value: "--vscode", Hint: "writes .vscode/mcp.json"},
+			Title: words.Say("guide.parity_forms.connect_smith_to_a_coding_assistant"), Presents: words.Say("guide.parity_forms.mcp_install"), Hint: words.Say("guide.parity_forms.smith_mcp_install_writes_the_file"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "tools", Prompt: words.Say("guide.parity_forms.which_assistants_space_toggles_enter_con"), Multi: true, Options: []Option{
+				{Label: words.Say("guide.parity_forms.claude_code"), Value: "--claude", Hint: words.Say("guide.parity_forms.writes_mcp_json")},
+				{Label: words.Say("guide.parity_forms.vs_code"), Value: "--vscode", Hint: words.Say("guide.parity_forms.writes_vscode_mcp_json")},
 			}}},
 			Argv: func(a map[string][]string) []string { return append([]string{"mcp", "install"}, a["tools"]...) },
 		},

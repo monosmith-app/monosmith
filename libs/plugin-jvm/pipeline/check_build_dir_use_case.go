@@ -154,17 +154,19 @@ func mavenFinding(workspaceRoot string, p protocol.Project, projects []protocol.
 		return protocol.Finding{}, false
 	}
 	if protocol.InBuildDir(dir) {
-		return protocol.Finding{Check: check, OK: true}, true
+		return protocol.Finding{Check: check, Project: p.Name, OK: true}, true
 	}
 	source := "no <build><directory> in " + pom + " or its parent pom"
 	if set {
 		source = "its pom sets <directory> to " + dir
 	}
 	f := protocol.Finding{
-		Check:  check,
-		Detail: pom + " builds into " + dir + "/ (" + source + "), not into " + target + "/",
-		Remedy: "set <build><directory>${project.basedir}/" + upTo(p.Root) + target + "</directory></build> in " + pom + ", or run smith doctor --fix",
+		Check:   check,
+		Project: p.Name,
+		Detail:  pom + " builds into " + dir + "/ (" + source + "), not into " + target + "/",
+		Remedy:  "set <build><directory>${project.basedir}/" + upTo(p.Root) + target + "</directory></build> in " + pom + ", or run smith doctor --fix",
 	}
+	f.Problem = f.Detail
 	if outputs := p.Tasks["build"].Outputs; len(outputs) > 0 {
 		f.Detail += ". The build task caches " + target + " instead, which that build never writes, so a cache hit restores nothing"
 	}
@@ -251,7 +253,7 @@ func gradleFinding(workspaceRoot string, p protocol.Project, script string, proj
 	if line != nil {
 		text := src[line[0]:line[1]]
 		if centralDir.MatchString(text) {
-			return protocol.Finding{Check: check, OK: true}, true
+			return protocol.Finding{Check: check, Project: p.Name, OK: true}, true
 		}
 		lit := quoted.FindStringSubmatch(text)
 		if lit == nil || strings.Count(src, "buildDir") > 1 {
@@ -269,10 +271,12 @@ func gradleFinding(workspaceRoot string, p protocol.Project, script string, proj
 		}
 	}
 	f := protocol.Finding{
-		Check:  check,
-		Detail: script + " builds into " + where + "/ (" + source + "), not into " + target + "/",
-		Remedy: "add layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(\"" + target + "\")) to " + script + ", or run smith doctor --fix",
+		Check:   check,
+		Project: p.Name,
+		Detail:  script + " builds into " + where + "/ (" + source + "), not into " + target + "/",
+		Remedy:  "add layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(\"" + target + "\")) to " + script + ", or run smith doctor --fix",
 	}
+	f.Problem = f.Detail
 	manual := f.Remedy
 	if reason := gradleRefusal(workspaceRoot, p, src, script, where, projects); reason != "" {
 		return refusedFinding(f, script, reason, manual), true

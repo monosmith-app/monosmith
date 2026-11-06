@@ -18,10 +18,10 @@ var probe = func(dir string, argv []string) (string, error) { return toolrun.Pro
 // and runs nothing before the person picks. Node.js missing from the PATH is a
 // failure.
 func CheckNodeVersion(workspaceRoot, pin string) protocol.Finding {
-	f := protocol.Finding{Check: "Node.js is " + pin + ", as in CI", Warning: true, Remedy: "install Node.js " + pin + " (https://nodejs.org)"}
+	f := protocol.Finding{Check: "Node.js is " + pin + ", as in CI", Area: "toolchain", Warning: true, Remedy: "install Node.js " + pin + " (https://nodejs.org)"}
 	got, err := probe(workspaceRoot, []string{"node", "--version"})
 	if err != nil {
-		f.Warning, f.Detail = false, "node is not on PATH"
+		f.Warning, f.Problem, f.Detail = false, "Node.js is not on PATH, CI installs "+pin, "node is not on PATH"
 		return f
 	}
 	have := strings.TrimPrefix(strings.TrimSpace(got), "v")

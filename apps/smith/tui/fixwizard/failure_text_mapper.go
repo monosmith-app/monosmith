@@ -2,10 +2,10 @@ package fixwizard
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // failureOf tells how a fix stopped: a headline, and what the step printed.
@@ -16,15 +16,15 @@ func failureOf(err error, name string) (headline string, output []string) {
 	var step *doctorfix.StepError
 	if !errors.As(err, &step) {
 		if name != "" {
-			return name + " failed: " + err.Error(), nil
+			return words.Say("fixwizard.failed.named", "name", name, "error", err.Error()), nil
 		}
-		return "Could not apply the fix: " + err.Error(), nil
+		return words.Say("fixwizard.failed.fix", "error", err.Error()), nil
 	}
 	label := step.Step.Description
 	if label == "" {
 		label = strings.Join(step.Step.Argv, " ")
 	}
-	headline = fmt.Sprintf("Step %d of %d failed: %s (%v)", step.Number, step.Total, label, step.Err)
+	headline = words.Say("fixwizard.failed.step", "number", step.Number, "total", step.Total, "label", label, "error", step.Err)
 	if strings.TrimSpace(step.Output) != "" {
 		output = strings.Split(strings.TrimRight(step.Output, "\r\n"), "\n")
 	}

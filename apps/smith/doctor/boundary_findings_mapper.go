@@ -1,6 +1,9 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
+	"strconv"
+
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -32,7 +35,7 @@ func BoundaryFindings(vs []boundaries.Violation) []protocol.Finding {
 }
 
 func boundaryFinding(check string, vs []boundaries.Violation, warning bool) protocol.Finding {
-	f := protocol.Finding{Check: check, OK: len(vs) == 0, Warning: warning}
+	f := protocol.Finding{Check: check, OK: len(vs) == 0, Warning: warning, Area: doctorchecks.AreaDependencies}
 	if len(vs) == 0 {
 		return f
 	}
@@ -40,7 +43,14 @@ func boundaryFinding(check string, vs []boundaries.Violation, warning bool) prot
 	for i, v := range vs {
 		edges[i] = v.Edge() + ": " + v.Rule
 	}
-	f.Detail = Summary(edges, "; ", shownProblems)
+	f.Problem = edges[0]
+	if len(edges) > 1 {
+		f.Problem = strconv.Itoa(len(edges)) + " dependencies break a boundary rule"
+		if warning {
+			f.Problem = strconv.Itoa(len(edges)) + " dependencies point at an app"
+		}
+	}
+	f.Detail = doctorchecks.Summary(edges, "; ", doctorchecks.ShownProblems)
 	f.Remedy = vs[0].Hint
 	if warning {
 		f.Remedy += "; set kinds = true under [boundaries] in smith.toml to make this fail smith ci verify, or kinds = false to switch the rule off"

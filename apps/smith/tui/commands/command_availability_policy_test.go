@@ -198,7 +198,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	}
 	for view, want := range map[string]string{
 		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
-		TabDoctor:   "Enter expand · f fix · F fix all · g group · p passed · r reload view · b build · B build all · t test · z zoom · y copy",
+		TabDoctor:   "Enter expand · f fix · F fix all · g group · E expand/collapse all · p passed · r reload view · b build · B build all · t test · z zoom · y copy",
 		TabHome:     "Enter next · r reload view · b build · B build all · t test · w changed · d doctor",
 		TabDeps:     "Space mark · s safe · a all · u update · i install · x remove · v align · o one version · r reload view · b build · B build all · t test · y copy",
 		TabRelease:  "Enter commits · p preview · n notes · x release · r reload view · b build · B build all · t test",

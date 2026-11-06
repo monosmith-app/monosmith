@@ -9,16 +9,16 @@ import (
 
 var (
 	// taskLine is "<project>:<task> <marker> <rest>" as taskrun prints it.
-	taskLine = regexp.MustCompile(`^([^\s│]+:[^\s│]+) (│|▶|✔|✖|■|!)(?: (.*))?$`)
+	taskLine = regexp.MustCompile(`^([^\s│]+:[^\s│]+) (│|▶|✔|✖|■|!)(?: (.*))?$`) // words:literal
 	// summaryTask is a line of the closing summary: "  ↷ web:test because ..."
 	// or "  ✖ web:build exited with code 1".
-	summaryTask = regexp.MustCompile(`^\s+(↷|✖) (\S+:\S+)(?: (.*))?$`)
+	summaryTask = regexp.MustCompile(`^\s+(↷|✖) (\S+:\S+)(?: (.*))?$`) // words:literal
 	// summaryLine is "✔ 3/4 tasks succeeded (1 from cache) in 1.2s".
-	summaryLine = regexp.MustCompile(`^(✔|✖) (\d+)/(\d+) tasks succeeded`)
+	summaryLine = regexp.MustCompile(`^(✔|✖) (\d+)/(\d+) tasks succeeded`) // words:literal
 )
 
 // fromCache is how smith says a task was replayed.
-const fromCache = "from cache"
+const fromCache = "from cache" // words:literal the text of `smith run` that the parser matches
 
 // ParseLine reads one line of `smith run` output (without its newline): a line
 // of the event stream (`--json-events`, see parseEventLine) or of the text.

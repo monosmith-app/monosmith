@@ -1,0 +1,7 @@
+{
+  "palette.placeholder": "type to find a command",
+  "palette.unavailable": "{title} is unavailable: {reason}",
+  "palette.empty": " no command matches",
+  "palette.footer": "up/down choose · enter pick · esc close",
+  "palette.footer.hidden": "{count} more not usable here: type to find them"
+}

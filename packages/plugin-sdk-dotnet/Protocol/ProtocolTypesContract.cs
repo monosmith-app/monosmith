@@ -1957,14 +1957,23 @@ public sealed record FileEdit : IProtocolValue<FileEdit>
     }
 }
 
-/// <summary>Finding is one check. Every failed finding names its remedy.</summary>
+/// <summary>Finding is one check. Every failed finding names its problem and its remedy.</summary>
 public sealed record Finding : IProtocolValue<Finding>
 {
-    /// <summary>The <c>check</c> member of <c>Finding</c>.</summary>
+    /// <summary>Check is the rule, stated as it should hold ("golangci-lint is 2.15.0, as in CI"). A passing finding is listed by it.</summary>
     public required string Check { get; init; }
 
     /// <summary>The <c>ok</c> member of <c>Finding</c>.</summary>
     public bool Ok { get; init; }
+
+    /// <summary>Problem is what is wrong, in one line ("golangci-lint is 2.14.0, CI uses 2.15.0"). A failed finding is listed by it; one without it is listed by its Check.</summary>
+    public string Problem { get; init; } = string.Empty;
+
+    /// <summary>Project is the project the finding is about, as the workspace names it ("web"); empty for a finding about the workspace itself. The host files a finding under its project, so the Check, Problem and Detail need not name it.</summary>
+    public string Project { get; init; } = string.Empty;
+
+    /// <summary>Area is the part of the workspace a workspace-wide finding is about, in one lowercase word: "toolchain", "ci", "lint", "dependencies", "release", "git" or "config". A finding with a Project has none.</summary>
+    public string Area { get; init; } = string.Empty;
 
     /// <summary>The <c>detail</c> member of <c>Finding</c>.</summary>
     public string Detail { get; init; } = string.Empty;
@@ -1986,6 +1995,9 @@ public sealed record Finding : IProtocolValue<Finding>
         {
             Check = StringValue(Member(map, "check"), Join(path, "check")),
             Ok = BooleanValue(Member(map, "ok"), Join(path, "ok")),
+            Problem = StringValue(Member(map, "problem"), Join(path, "problem")),
+            Project = StringValue(Member(map, "project"), Join(path, "project")),
+            Area = StringValue(Member(map, "area"), Join(path, "area")),
             Detail = StringValue(Member(map, "detail"), Join(path, "detail")),
             Remedy = StringValue(Member(map, "remedy"), Join(path, "remedy")),
             Warning = BooleanValue(Member(map, "warning"), Join(path, "warning")),
@@ -2001,6 +2013,21 @@ public sealed record Finding : IProtocolValue<Finding>
         writer.String(Check);
         writer.Property("ok");
         writer.Boolean(Ok);
+        if (Problem.Length > 0)
+        {
+            writer.Property("problem");
+            writer.String(Problem);
+        }
+        if (Project.Length > 0)
+        {
+            writer.Property("project");
+            writer.String(Project);
+        }
+        if (Area.Length > 0)
+        {
+            writer.Property("area");
+            writer.String(Area);
+        }
         if (Detail.Length > 0)
         {
             writer.Property("detail");

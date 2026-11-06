@@ -4,6 +4,7 @@ import (
 	"os/exec"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // cocoapods is installed when `pod` is missing (GitHub's macOS images carry
@@ -35,12 +36,12 @@ func Doctor(_ string, params protocol.DoctorParams) protocol.DoctorResult {
 	}
 	_, podErr := lookPath("pod")
 	_, xcodeErr := lookPath("xcodebuild")
-	xcode := protocol.Finding{Check: "Xcode is installed", OK: xcodeErr == nil, Warning: true, Detail: "xcodebuild is not on PATH: Objective-C projects build on macOS only", Remedy: "build on a Mac with Xcode; in CI set [ci] native_runners = [\"macos-latest\"] in smith.toml"}
+	xcode := protocol.Finding{Check: "Xcode is installed", Area: "toolchain", OK: xcodeErr == nil, Warning: true, Problem: toolrun.ProblemUnless(xcodeErr == nil, "xcodebuild is not on PATH: Objective-C projects build on macOS only"), Detail: "xcodebuild is not on PATH: Objective-C projects build on macOS only", Remedy: "build on a Mac with Xcode; in CI set [ci] native_runners = [\"macos-latest\"] in smith.toml"}
 	if xcodeErr != nil {
 		xcode.Fix = macRunnerFix()
 	}
 	return protocol.DoctorResult{Findings: []protocol.Finding{
-		{Check: "CocoaPods is installed", OK: podErr == nil, Warning: true, Detail: "pod is not on PATH", Remedy: "run gem install cocoapods (or brew install cocoapods) on a Mac"},
+		{Check: "CocoaPods is installed", Area: "toolchain", OK: podErr == nil, Warning: true, Problem: toolrun.ProblemUnless(podErr == nil, "pod is not on PATH"), Detail: "pod is not on PATH", Remedy: "run gem install cocoapods (or brew install cocoapods) on a Mac"},
 		xcode,
 	}}
 }

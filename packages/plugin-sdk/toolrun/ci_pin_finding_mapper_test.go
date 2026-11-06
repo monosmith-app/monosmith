@@ -22,3 +22,10 @@ func TestCIPinFinding(t *testing.T) {
 		}
 	}
 }
+
+func TestCIPinFindingIsAToolchainFinding(t *testing.T) {
+	f, ok := CIPinFinding("Node.js", "20.1.0", "22.0.0")
+	if !ok || f.Area != "toolchain" || f.Project != "" {
+		t.Fatalf("%+v", f)
+	}
+}

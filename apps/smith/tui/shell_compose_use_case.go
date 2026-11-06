@@ -2,11 +2,13 @@ package tui
 
 import (
 	"encoding/json"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commandtext"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // What the composer's captured commands were asked for.
@@ -29,7 +31,7 @@ func (s *Shell) openCompose() tea.Cmd {
 		return s.showCompose()
 	}
 	argv := []string{"compose", "--json"}
-	return s.captureWorking(capCompose, "Compose a stack", "The screen lists what your plugins offer, so smith asks them first.", argv, argv, "Reading what your plugins offer", "Cancelled: the screen was not opened")
+	return s.captureWorking(capCompose, words.Say("tui.compose.compose_a_stack"), words.Say("tui.compose.the_screen_lists_what_your_plugins"), argv, argv, words.Say("tui.compose.reading_what_your_plugins_offer"), words.Say("tui.compose.cancelled_the_screen_was_not_opened"))
 }
 
 // composeRead keeps the catalogue and opens the screen; when it cannot be read
@@ -37,7 +39,7 @@ func (s *Shell) openCompose() tea.Cmd {
 func (s *Shell) composeRead(msg capturedMsg) tea.Cmd {
 	var rep composeReport
 	if !msg.res.OK || json.Unmarshal([]byte(msg.res.Text), &rep) != nil {
-		s.notify("Could not read the catalogue: "+firstLine(failureText(msg.res)), toast.Warning)
+		s.notify(words.Say("tui.compose.could_not_read_the_catalogue", "firstLine", commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err))), toast.Warning)
 		return nil
 	}
 	s.composeCat = &compose.Catalogue{Layers: rep.Layers, Items: rep.Items}
@@ -60,9 +62,9 @@ func (s *Shell) composePlanRead(msg capturedMsg) tea.Cmd {
 	var err error
 	switch {
 	case !msg.res.OK:
-		err = errText(firstLine(failureText(msg.res)))
+		err = errText(commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err)))
 	case json.Unmarshal([]byte(msg.res.Text), &rep) != nil || rep.Plan == nil:
-		err = errText("smith did not print a plan")
+		err = errText(words.Say("tui.compose.smith_did_not_print_a_plan"))
 	}
 	m := s.compose.WithPlan(planOrEmpty(rep.Plan), err)
 	s.compose = &m

@@ -58,3 +58,8 @@ export function tellConvertOutcome (outcome: ConvertOutcome, onOutput: (line: st
     }
   }
 }
+
+/** Says no Nx or Turborepo workspace is open. */
+export function tellNoConvertible (): void {
+  void vscode.window.showInformationMessage('MonoSmith: no Nx or Turborepo workspace is open here. "Convert This Folder to MonoSmith" brings in any other repository.')
+}

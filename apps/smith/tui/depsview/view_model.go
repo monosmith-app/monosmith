@@ -1,15 +1,12 @@
 package depsview
 
 import (
-	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // Model lists the dependencies that have newer releases, patch before
@@ -21,11 +18,11 @@ type Model struct {
 	Waited time.Duration
 	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
 	Projects int
-	Rows   []Row
-	Policy []PolicyLine
-	Err    error
-	Cursor int
-	Marked map[string]bool
+	Rows     []Row
+	Policy   []PolicyLine
+	Err      error
+	Cursor   int
+	Marked   map[string]bool
 	// Anchor is the row a shift-click or shift-arrow extends the marks from.
 	Anchor int
 	// scroll is where the list's window starts, apart from the cursor, so the
@@ -77,7 +74,7 @@ func (v Model) Update(key tea.KeyMsg, page int) Model {
 	case "shift+down":
 		return v.extend(1)
 	}
-	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), key.String(), page)
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), commands.Nav(key.String()), page)
 	v.Anchor = v.Cursor
 	return v
 }
@@ -98,7 +95,7 @@ func (v Model) extend(delta int) Model {
 		return v
 	}
 	v.Anchor = min(max(v.Anchor, 0), len(v.Rows)-1)
-	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), map[int]string{-1: "up", 1: "down"}[delta], 1)
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), map[int]commands.NavAction{-1: commands.NavUp, 1: commands.NavDown}[delta], 1)
 	return v.markRange(v.Anchor, v.Cursor, true, false)
 }
 
@@ -310,148 +307,4 @@ func (v Model) AlignArgv() []string {
 // drifting is true when the one-version policy found dependencies at different versions.
 func (v Model) drifting() bool {
 	return slices.ContainsFunc(v.Policy, func(p PolicyLine) bool { return !p.OK && !p.Warning })
-}
-
-// levelCounts counts the rows of each level.
-func (v Model) levelCounts() (patch, minor, major int) {
-	for _, r := range v.Rows {
-		switch r.Level {
-		case "patch":
-			patch++
-		case "minor":
-			minor++
-		default:
-			major++
-		}
-	}
-	return
-}
-
-// inProjects says whose dependencies a load asks about, once the count is known.
-func inProjects(n int) string {
-	if n <= 0 {
-		return ""
-	}
-	return " of " + progress.OfProjects(n)
-}
-
-// View draws the view in a w by h area; rowOf maps a line to the row drawn on it.
-func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int) {
-	rowOf = map[int]int{}
-	switch {
-	case v.Err != nil:
-		return []string{th.Failure(v.Err.Error())}, rowOf
-	case !v.Loaded:
-		return pane.Wrap(th.Muted(progress.Waiting("Asking the package registries for newer releases of every dependency"+inProjects(v.Projects)+".", v.Waited)+" On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
-	}
-	var tail []string
-	tail = append(tail, "", th.Title("One version"))
-	if len(v.Policy) == 0 {
-		tail = append(tail, "  "+th.Muted("not required yet: press o to make every project use the same version of a shared dependency"))
-	}
-	for _, p := range v.Policy {
-		mark := th.Success(th.Icons.Passed)
-		switch {
-		case !p.OK && p.Warning:
-			mark = th.Warning(th.Icons.Warning)
-		case !p.OK:
-			mark = th.Failure(th.Icons.Failed)
-		}
-		tail = append(tail, "  "+mark+" "+p.Check)
-		if !p.OK && p.Detail != "" {
-			for _, d := range strings.Split(p.Detail, "; ") {
-				tail = append(tail, "      "+th.Muted(d))
-			}
-		}
-	}
-	if n := v.chosenMajors(); n > 0 {
-		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+fmt.Sprintf("%d of the chosen packages are major releases: they can break your code. Read their release notes first.", n)))
-	}
-	var wrapped []string
-	for _, l := range tail {
-		wrapped = append(wrapped, pane.Wrap(l, w, 4)...)
-	}
-	tail = wrapped
-
-	if len(v.Rows) == 0 {
-		lines = append(lines, th.Success(th.Icons.Passed+" Every dependency is on its latest release."))
-	} else {
-		patch, minor, major := v.levelCounts()
-		lines = append(lines, th.Bold(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major", len(v.Rows), patch, minor, major))+th.Muted(fmt.Sprintf("   %d marked", len(v.Marked))))
-		if safe := patch + minor; safe > 0 {
-			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press s).", safe))+th.Muted(majorWarning(major)), w, 0)...)
-		}
-		lines = append(lines, "")
-		nameW := 8
-		for _, r := range v.Rows {
-			nameW = max(nameW, pane.Width(r.Name))
-		}
-		nameW = min(nameW+1, max(w/3, 8))
-		const verW, levelW, kindW = 11, 8, 12
-		usedW := max(w-6-nameW-2*verW-levelW-kindW, 8)
-		cols := func(name, now, latest, level, kind, projects string) string {
-			return pane.MiddleCell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(kind, kindW) + pane.Cell(projects, usedW)
-		}
-		headBox := [3]string{"[ ]", "[-]", "[x]"}[v.MarkState()]
-		rowOf[len(lines)] = HeadingRow
-		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols("Package", "Now", "Latest", "Level", "Kind", "Projects"), w)))
-		// Two group headings may sit among the rows: they take room too.
-		avail := max(h-len(lines)-len(tail)-2, 3)
-		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
-		first := len(lines)
-		prevMajor := top > 0 && v.Rows[top-1].Level == "major"
-		for i := top; i < len(v.Rows) && i < top+avail; i++ {
-			r := v.Rows[i]
-			if isMajor := r.Level == "major"; i == top || isMajor != prevMajor {
-				if isMajor {
-					lines = append(lines, "  "+th.Warning("Major releases: may break your code, take one at a time"))
-				} else {
-					lines = append(lines, "  "+th.Success("Patch and minor releases: safe to take together"))
-				}
-			}
-			prevMajor = r.Level == "major"
-			box := "[ ] "
-			if v.Marked[r.Name] {
-				box = "[x] "
-			}
-			level := th.Muted(r.Level)
-			switch r.Level {
-			case "major":
-				level = th.Warning(r.Level)
-			case "patch":
-				level = th.Success(r.Level)
-			}
-			kind := strings.Join(r.Kinds, ", ")
-			projects := strings.Join(r.Projects, ", ")
-			plain := "  " + box + cols(r.Name, r.Current, r.Latest, r.Level, kind, projects)
-			line := "  " + box + cols(r.Name, r.Current, r.Latest, level, kind, projects)
-			if i == v.Cursor {
-				line = th.Selected(pane.Fit(plain, w))
-			}
-			rowOf[len(lines)] = i
-			lines = append(lines, line)
-		}
-		if len(v.Rows) > avail {
-			// The rows and the group headings between them scroll as one block.
-			block := pane.Scrollbar(th, lines[first:], w, top, len(v.Rows)+len(lines[first:])-min(avail, len(v.Rows)-top))
-			copy(lines[first:], block)
-		}
-	}
-	lines = append(lines, tail...)
-	for i := range lines {
-		lines[i] = pane.Fit(lines[i], w)
-	}
-	return lines, rowOf
-}
-
-// majorWarning is the sentence about major releases after the count of the safe
-// ones: nothing when there is none, singular and plural otherwise.
-func majorWarning(major int) string {
-	switch major {
-	case 0:
-		return ""
-	case 1:
-		return " The 1 major one can break your code: take it on its own."
-	}
-	return fmt.Sprintf(" The %d major ones can break your code: take them one at a time.", major)
 }

@@ -1,10 +1,11 @@
 package guide
 
 import (
-	"fmt"
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // askedAxes are the axes of a language's offers that a choice needs and that
@@ -51,7 +52,7 @@ func axisSteps(lang string, offers []ChoiceOffer) []Step {
 		sort.SliceStable(onAxis, func(i, j int) bool { return onAxis[i].Suggested && !onAxis[j].Suggested })
 		step := Step{
 			Key:    axisKey(lang, axis),
-			Prompt: fmt.Sprintf("Which %s? smith does not choose it for you (the first is suggested)", axis),
+			Prompt: words.Say("guide.add_project_axes.which", "axis", axis),
 			Skip: func(a map[string][]string) bool {
 				for _, picked := range a[withKeyPrefix+lang] {
 					if i := slices.IndexFunc(offers, func(o ChoiceOffer) bool { return o.Name == picked }); i >= 0 && slices.Contains(offers[i].Needs, axis) {
@@ -64,10 +65,10 @@ func axisSteps(lang string, offers []ChoiceOffer) []Step {
 		for _, o := range onAxis {
 			hint := o.Description
 			if o.Suggested {
-				hint += " (suggested)"
+				hint += words.Say("guide.add_project_axes.suggested")
 			}
 			if len(o.Conflicts) > 0 {
-				hint += " (not with " + strings.Join(o.Conflicts, ", ") + ")"
+				hint += words.Say("guide.add_project_axes.conflicts", "names", strings.Join(o.Conflicts, ", "))
 			}
 			step.Options = append(step.Options, Option{Label: o.Name, Value: o.Name, Hint: hint})
 		}

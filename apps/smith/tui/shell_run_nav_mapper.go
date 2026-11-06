@@ -1,34 +1,17 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-// navPart is one part of the run header: its text, the action a click on it
-// stands for ("" for plain text) and whether that action can be done now.
-type navPart struct {
-	text, action string
-	on           bool
-}
-
-// navParts are the parts of the header of a run view: "‹ Start · run 2 of 5 ·
-// ‹ older  newer ›". A part that cannot be used now is drawn faint; a click on
-// it still says why nothing happened.
-func (s Shell) navParts() []navPart {
-	idle := !s.running()
-	return []navPart{
-		{"‹ Start", "start", idle},
-		{" · ", "", false},
-		{fmt.Sprintf("run %d of %d", s.runAt+1, len(s.runs)), "", false},
-		{" · ", "", false},
-		{"‹ older", "older", idle && s.runAt > 0},
-		{"  ", "", false},
-		{"newer ›", "newer", idle && s.runAt < len(s.runs)-1},
-	}
+// navParts are the parts of the header of a run view.
+func (s Shell) navParts() []runhistory.NavPart {
+	return runhistory.NavParts(!s.running(), s.runAt, len(s.runs))
 }
 
 // navLine draws the header of a run view in w cells.
@@ -37,12 +20,12 @@ func (s Shell) navLine(w int) string {
 	b.WriteString(" ")
 	for _, p := range s.navParts() {
 		switch {
-		case p.action == "":
-			b.WriteString(s.th.Muted(p.text))
-		case p.on:
-			b.WriteString(s.th.Accent(p.text))
+		case p.Action == "":
+			b.WriteString(s.th.Muted(p.Text))
+		case p.On:
+			b.WriteString(s.th.Accent(p.Text))
 		default:
-			b.WriteString(s.th.Faint(p.text))
+			b.WriteString(s.th.Faint(p.Text))
 		}
 	}
 	return pane.Fit(b.String(), w)
@@ -50,17 +33,7 @@ func (s Shell) navLine(w int) string {
 
 // navAction is the action of the header part under column x ("start", "older"
 // or "newer"), or "" when x is on plain text.
-func (s Shell) navAction(x int) string {
-	at := 1
-	for _, p := range s.navParts() {
-		w := pane.Width(p.text)
-		if x >= at && x < at+w {
-			return p.action
-		}
-		at += w
-	}
-	return ""
-}
+func (s Shell) navAction(x int) string { return runhistory.ActionAt(s.navParts(), x) }
 
 // lastRun is the newest run kept, or the one shown when none is kept.
 func (s Shell) lastRun() *runview.Run {
@@ -74,7 +47,7 @@ func (s Shell) lastRun() *runview.Run {
 // its list of recent runs. A run in progress keeps the screen.
 func (s *Shell) openStart() {
 	if s.running() {
-		s.say("A run is in progress; the start screen waits until it ends")
+		s.say(words.Say("tui.run_nav.a_run_is_in_progress_the"))
 		return
 	}
 	s.runSel, s.runHome = "", true
@@ -89,9 +62,8 @@ func (s *Shell) openRecent() {
 // recentRows are the rows of the list of recent runs that fit in rows lines,
 // the chosen one in view; first is the position of the first row in the list.
 func (s Shell) recentRows(w, rows int) (lines []string, first int) {
-	rows = min(rows, len(s.runs))
-	first = max(s.recentAt-rows+1, 0)
-	for i := first; i < first+rows; i++ {
+	first, n := runhistory.Window(s.recentAt, len(s.runs), rows)
+	for i := first; i < first+n; i++ {
 		lines = append(lines, s.recentLine(i, w))
 	}
 	return lines, first
@@ -104,19 +76,16 @@ func (s Shell) recentLine(i, w int) string {
 	now := s.now()
 	ago := "now"
 	if r.Finished {
-		ago = agoText(now.Sub(r.Ended))
+		ago = runhistory.Ago(now.Sub(r.Ended))
 	}
-	cmdW := max(w-3-1-10-1-8-1-10, 12)
 	pointer := " "
 	if i == s.recentAt {
 		pointer = s.th.Icons.Pointer
 	}
-	line := " " + pointer + " " + pad(r.CommandLine(), cmdW) + " " + pad(s.runResult(r), 10) + " " +
-		fmt.Sprintf("%8s", shortDuration(r.RunTime(now))) + " " + s.th.Muted(fmt.Sprintf("%10s", ago))
-	if i == s.recentAt {
-		return s.th.Selected(pane.Fit(pane.Strip(line), w))
-	}
-	return pane.Fit(line, w)
+	return runhistory.Line(runhistory.Row{
+		Pointer: pointer, Command: r.CommandLine(), Result: s.runResult(r),
+		Took: shortDuration(r.RunTime(now)), Ago: ago, Selected: i == s.recentAt,
+	}, w, s.th.Muted, s.th.Selected)
 }
 
 // runResult is how a run stands, as a mark and a word: running, passed, failed
@@ -124,11 +93,11 @@ func (s Shell) recentLine(i, w int) string {
 func (s Shell) runResult(r *runview.Run) string {
 	switch {
 	case !r.Finished:
-		return s.th.Info(s.th.Spin(s.tick) + " running")
+		return s.th.Info(words.Say("tui.run_nav.running", "spin", s.th.Spin(s.tick)))
 	case r.Cancelled:
-		return s.th.Warning(s.th.Icons.Skipped + " stopped")
+		return s.th.Warning(words.Say("tui.run_nav.stopped", "skipped", s.th.Icons.Skipped))
 	case r.OK():
-		return s.th.Success(s.th.Icons.Passed + " passed")
+		return s.th.Success(words.Say("tui.run_nav.passed", "passed", s.th.Icons.Passed))
 	}
-	return s.th.Failure(s.th.Icons.Failed + " failed")
+	return s.th.Failure(words.Say("tui.run_nav.failed", "failed", s.th.Icons.Failed))
 }

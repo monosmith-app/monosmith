@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releasetable"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -67,7 +68,7 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 			c.Pack = true
 		}
 		if release.BuildsAssetsFromCommand(p) {
-			for _, platform := range workspace.CommandPlatforms {
+			for _, platform := range releasetable.CommandPlatforms {
 				if slices.Contains(p.Release.Platforms, platform) && !slices.Contains(c.AssetPlatforms, platform) {
 					c.AssetPlatforms = append(c.AssetPlatforms, platform)
 				}

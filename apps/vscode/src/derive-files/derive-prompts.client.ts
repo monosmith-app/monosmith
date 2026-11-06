@@ -47,3 +47,16 @@ export function tellDeriveChange (action: Exclude<DeriveAction, 'check' | 'expla
     void vscode.window.showWarningMessage(`MonoSmith: nothing was changed. ${message}`)
   }
 }
+
+/** Says a derived file must be chosen first. */
+export function tellChooseDerivedFile (): void {
+  void vscode.window.showInformationMessage('MonoSmith: choose a derived file first. Right-click it in the Health view, or open it in the editor and run the command again.')
+}
+
+/**
+ * Says smith has nothing to write for a file.
+ * @param file - the file, relative to its folder
+ */
+export function tellNothingToWrite (file: string): void {
+  void vscode.window.showInformationMessage(`MonoSmith: smith has nothing to write for ${file}. Refresh the Health view to read the derived files again.`)
+}

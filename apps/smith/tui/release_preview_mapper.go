@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // isPreview is true for the command line of the release preview.
@@ -19,18 +20,17 @@ func (s Shell) previewLines(w, room int) []string {
 	if s.run == nil || !isPreview(s.run.Command) || room < 3 {
 		return nil
 	}
-	lines := []string{"", s.th.Title("Preview: " + s.run.CommandLine())}
+	lines := []string{"", s.th.Title(words.Say("tui.release_preview.preview", "commandLine", s.run.CommandLine()))}
 	if s.running() {
-		wait := "Waiting for each package's registry (is this version already published?) and for the git history. " +
-			"With many packages this takes a while. Nothing is changed. Ctrl+C stops it."
+		wait := words.Say("tui.release_preview.waiting_for_each_package_s_registry")
 		lines = append(lines, pane.Wrap(s.th.Info(s.th.Spin(s.tick))+" "+wait, w, 2)...)
 		return capTail(lines, room)
 	}
-	mark := s.th.Success(s.th.Icons.Passed) + " done"
+	mark := words.Say("tui.release_preview.done", "passed", s.th.Success(s.th.Icons.Passed))
 	if !s.run.OK() {
-		mark = s.th.Failure(s.th.Icons.Failed) + " failed"
+		mark = words.Say("tui.release_preview.failed", "failed", s.th.Failure(s.th.Icons.Failed))
 	}
-	lines = append(lines, mark+s.th.Muted(" · full output on the Run screen ("+commands.ShortcutOf("view.run")+")"))
+	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_on_the_run_screen", "shortcutOf", commands.ShortcutOf("view.run"))))
 	var out []string
 	for _, l := range s.run.Lines {
 		out = append(out, pane.Wrap(pane.Strip(l), w-2, 2)...)

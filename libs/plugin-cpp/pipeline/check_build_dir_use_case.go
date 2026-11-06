@@ -82,15 +82,17 @@ func projectBuildDir(workspaceRoot string, p protocol.Project, projects []protoc
 	}
 	if len(where) == 0 {
 		if taskKnown || (len(dirs) > 0 && !unreadable) {
-			return protocol.Finding{Check: check, OK: true}, true
+			return protocol.Finding{Check: check, Project: p.Name, OK: true}, true
 		}
 		return protocol.Finding{}, false
 	}
 	f := protocol.Finding{
-		Check:  check,
-		Detail: strings.Join(where, "; ") + ", not into " + target + "/",
-		Remedy: "set binaryDir to \"${sourceDir}/" + upTo(p.Root) + target + "\" in " + presetsPath + ", or run smith doctor --fix",
+		Check:   check,
+		Project: p.Name,
+		Detail:  strings.Join(where, "; ") + ", not into " + target + "/",
+		Remedy:  "set binaryDir to \"${sourceDir}/" + upTo(p.Root) + target + "\" in " + presetsPath + ", or run smith doctor --fix",
 	}
+	f.Problem = f.Detail
 	if taskWrong {
 		f.Remedy = "pass -B " + target + " (from the workspace root) to the configure, build and test tasks in smith.toml, and set binaryDir in " + presetsPath + " to the same folder"
 		return f, true // a command line written by hand is not rewritten

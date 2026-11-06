@@ -2,3 +2,4 @@ export { convertWorkspace, type ConvertDeps } from './convert-workspace.use-case
 export { askConvertCommit, confirmConvert, tellConvertOutcome } from './convert-prompts.client.ts'
 export { toConvertArguments } from './convert-arguments.mapper.ts'
 export type { ConvertOutcome } from './convert-workspace.contract.ts'
+export { convertChoices, type ConvertOffer } from './convert-workspace.handler.ts'

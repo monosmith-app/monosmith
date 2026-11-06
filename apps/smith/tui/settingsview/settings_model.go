@@ -1,13 +1,13 @@
 package settingsview
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Model is the state of the Settings tab. It is a value: every method returns
@@ -26,6 +26,9 @@ type Model struct {
 	// scroll is where the window of each section's list starts, apart from
 	// the cursor, so the wheel scrolls without selecting (see pane.Scroll).
 	scroll [6]*pane.Scroll
+	// listW and detailRows are the width of the list of sections and the rows of
+	// the detail the person gave by moving a divider; 0 is automatic.
+	listW, detailRows int
 	// ed is the editor over the right pane, nil when none is open.
 	ed *editor
 	// note is the last thing that happened, shown under the list; failed makes it an error.
@@ -157,13 +160,13 @@ func (m Model) Handle(msg Msg) (Model, Result) {
 	case StyleSaved:
 		m.busy = ""
 		if msg.Err != nil {
-			m.note, m.failed = "Could not save the style: "+msg.Err.Error(), true
+			m.note, m.failed = words.Say("settingsview.style.failed", "reason", msg.Err.Error()), true
 			return m, Result{Note: m.note, Failed: true}
 		}
 		m.savedTheme, m.savedIcons = msg.Theme, msg.Icons
 		choice := msg.Choice
 		m.note, m.failed = "", false
-		return m, Result{Note: "Style saved: " + describeStyle(msg.Theme, msg.Icons), Theme: &choice}
+		return m, Result{Note: words.Say("settingsview.style.saved", "style", describeStyle(msg.Theme, msg.Icons)), Theme: &choice}
 	}
 	return m, Result{}
 }
@@ -192,7 +195,7 @@ func (m Model) applied(msg Applied) (Model, Result) {
 }
 
 func describeStyle(themeName, icons string) string {
-	return fmt.Sprintf("theme %s, symbols %s", orAuto(themeName), orAuto(icons))
+	return words.Say("settingsview.style.describe", "theme", orAuto(themeName), "symbols", orAuto(icons))
 }
 
 func orAuto(v string) string {
@@ -208,33 +211,33 @@ func (m Model) Reasons() map[string]string {
 	r := map[string]string{}
 	if m.ed != nil {
 		for _, id := range []string{"settings.move", "settings.change", "settings.sections", "settings.trust", "settings.forget", "settings.unset"} {
-			r[id] = "finish or cancel the editor first (Esc)"
+			r[id] = words.Say("settingsview.reason.editor")
 		}
 		return r
 	}
 	it, ok := m.current()
 	if !m.onItems {
-		r["settings.back"] = "the list of sections has the keys"
-		r["settings.trust"] = "move to the rows first (Tab)"
+		r["settings.back"] = words.Say("settingsview.reason.sections")
+		r["settings.trust"] = words.Say("settingsview.reason.rows")
 		r["settings.forget"], r["settings.unset"] = r["settings.trust"], r["settings.trust"]
 		return r
 	}
 	switch {
 	case !ok:
-		r["settings.change"] = "nothing here to change"
+		r["settings.change"] = words.Say("settingsview.reason.nothing")
 	case it.kind == kindInstalled || it.kind == kindRecipe:
-		r["settings.change"] = "this one is only listed: smith.toml says which plugins and recipes are used"
+		r["settings.change"] = words.Say("settingsview.reason.listed")
 	}
 	if !ok || it.kind != kindExternal {
-		r["settings.trust"] = "select an external plugin to trust"
-		r["settings.forget"] = "select an external plugin that is trusted"
+		r["settings.trust"] = words.Say("settingsview.reason.select.trust")
+		r["settings.forget"] = words.Say("settingsview.reason.select.forget")
 	} else if !m.snap.External[it.idx].Trusted {
-		r["settings.forget"] = "this plugin is not trusted"
+		r["settings.forget"] = words.Say("settingsview.reason.untrusted")
 	}
 	if !ok || it.kind != kindSetting {
-		r["settings.unset"] = "select a setting to reset to its default"
+		r["settings.unset"] = words.Say("settingsview.reason.select.unset")
 	} else if !m.snap.Settings[it.idx].Set {
-		r["settings.unset"] = "this setting already has its default"
+		r["settings.unset"] = words.Say("settingsview.reason.default")
 	}
 	return r
 }

@@ -1,13 +1,16 @@
 package fixwizard
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -120,7 +123,7 @@ func (w Wizard) resolve() Wizard {
 	if w.show != nil {
 		text, err := w.show(planned)
 		if err != nil {
-			text = "● " + fix.Description + "\n  could not show the changes: " + err.Error()
+			text = words.Say("fixwizard.review.failed", "description", fix.Description, "error", err.Error())
 		}
 		w.review = strings.Split(strings.TrimRight(text, "\n"), "\n")
 		w.summary, w.hasDiff = summarizeDiffs(w.review)
@@ -181,7 +184,7 @@ func (w Wizard) Logged(lines []string) Wizard {
 func (w Wizard) LogOpen() bool { return w.phase == Applying && w.logOpen }
 
 // bottom is the first line of the log view that shows the newest line.
-func (w Wizard) bottom() int { return detail.ClampTop(1<<30, len(w.log), w.visible()) }
+func (w Wizard) bottom() int { return pane.ClampTop(1<<30, len(w.log), w.visible()) }
 
 // Begin switches to the applying phase, as Outcome.Apply asks the shell to run the fix.
 func (w Wizard) begin() Wizard {
@@ -285,29 +288,32 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 		}
 	}
 	n := len(w.question.Options)
-	switch name {
-	case "esc", "ctrl+c", "q":
+	switch commands.Nav(name) {
+	case commands.NavCancel:
 		return w, Outcome{Done: true}
-	case "up", "k":
+	case commands.NavUp:
 		w.cursor = (w.cursor - 1 + n) % n
-	case "down", "j", "tab":
+	case commands.NavDown, commands.NavNext:
 		w.cursor = (w.cursor + 1) % n
-	case "home":
+	case commands.NavHome:
 		w.cursor = 0
-	case "end":
+	case commands.NavEnd:
 		w.cursor = n - 1
-	case "left", "b", "backspace":
-		if w.canGoBack() {
-			return w.back(), Outcome{}
-		}
-		if w.style.Back {
-			return w, Outcome{Back: true}
-		}
-	case "enter", " ":
+	case commands.NavConfirm:
 		return w.choose(w.cursor), Outcome{}
 	default:
-		if i, err := strconv.Atoi(name); err == nil && i >= 1 && i <= n {
-			return w.choose(i - 1), Outcome{}
+		switch name {
+		case "left", "b", "backspace":
+			if w.canGoBack() {
+				return w.back(), Outcome{}
+			}
+			if w.style.Back {
+				return w, Outcome{Back: true}
+			}
+		default:
+			if i, err := strconv.Atoi(name); err == nil && i >= 1 && i <= n {
+				return w.choose(i - 1), Outcome{}
+			}
 		}
 	}
 	return w.follow(), Outcome{}
@@ -368,19 +374,26 @@ func (w Wizard) failedKey(name string) (Wizard, Outcome) {
 
 // scrollKey moves the body of the review or of a failure.
 func (w Wizard) scrollKey(name string) Wizard {
-	page := detail.PageStep(w.visible())
+	page := pane.PageStep(w.visible())
+	action := commands.Nav(name)
 	switch name {
-	case "up", "k":
+	case "ctrl+u":
+		action = commands.NavPageUp
+	case "ctrl+d":
+		action = commands.NavPageDown
+	}
+	switch action {
+	case commands.NavUp:
 		return w.scroll(-1)
-	case "down", "j":
+	case commands.NavDown:
 		return w.scroll(1)
-	case "pgup", "ctrl+u":
+	case commands.NavPageUp:
 		return w.scroll(-page)
-	case "pgdown", "ctrl+d":
+	case commands.NavPageDown:
 		return w.scroll(page)
-	case "home":
+	case commands.NavHome:
 		return w.scroll(-w.top)
-	case "end":
+	case commands.NavEnd:
 		return w.scroll(1 << 20)
 	}
 	return w
@@ -392,7 +405,7 @@ func (w Wizard) scroll(delta int) Wizard {
 	if w.LogOpen() {
 		total = len(w.log)
 	}
-	w.top = detail.ClampTop(w.top+delta, total, w.visible())
+	w.top = pane.ClampTop(w.top+delta, total, w.visible())
 	if w.LogOpen() {
 		w.tailing = w.top >= w.bottom()
 	}
@@ -409,10 +422,7 @@ func (w Wizard) Wheel(delta int) Wizard {
 
 // Hover highlights the button or the option under the pointer.
 func (w Wizard) Hover(x, y int) Wizard {
-	w.hover = -1
-	if i := w.buttonAt(x, y); i >= 0 {
-		w.hover = i
-	}
+	w.hover = button.At(w.buttonSpans(w.Rect().W-4), w.Rect(), x, y)
 	return w
 }
 
@@ -426,7 +436,7 @@ func (w Wizard) Click(x, y int) (Wizard, Outcome) {
 		}
 		return w, Outcome{Done: true}
 	}
-	if i := w.buttonAt(x, y); i >= 0 {
+	if i := button.At(w.buttonSpans(r.W-4), r, x, y); i >= 0 {
 		return w.Key(w.buttons()[i].key)
 	}
 	if w.phase == Applying && !w.logOpen && w.onLogHint(x, y) {

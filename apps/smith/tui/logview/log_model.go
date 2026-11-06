@@ -24,13 +24,13 @@ func (l Log) Top(total, h int) int {
 	if !l.paused {
 		return last
 	}
-	return min(max(l.top, 0), last)
+	return pane.Clamp(l.top, 0, last)
 }
 
 // Scroll moves by delta lines (negative is up). Scrolling up pauses the log;
 // scrolling down to the end follows it again.
 func (l Log) Scroll(delta, total, h int) Log {
-	top := min(max(l.Top(total, h)+delta, 0), max(total-h, 0))
+	top := pane.ClampTop(l.Top(total, h)+delta, total, h)
 	l.top = top
 	l.paused = top < max(total-h, 0)
 	return l

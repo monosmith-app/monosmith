@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+
 // HelpRow is one line of the help: the group it sits under, what it does and
 // its keys.
 type HelpRow struct {
@@ -13,7 +15,7 @@ func HelpRows(s State, viewTitle string) []HelpRow {
 	var rows []HelpRow
 	for _, c := range all {
 		if len(c.Views) > 0 && c.inView(s) && c.Shortcut != "" && (c.Kind == PaneKey || c.Visible(s)) {
-			rows = append(rows, HelpRow{Group: viewTitle + " view", Title: c.Title, Shortcut: c.Shortcut})
+			rows = append(rows, HelpRow{Group: words.Say("commands.help.view", "view", viewTitle), Title: c.Title, Shortcut: c.Shortcut})
 		}
 	}
 	for _, g := range GroupOrder {

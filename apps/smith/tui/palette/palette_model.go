@@ -1,13 +1,14 @@
 package palette
 
 import (
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Entry is a shell command (an id) listed with its shortcut, under a section.
@@ -47,7 +48,7 @@ type Palette struct {
 // New builds a palette of the shell's commands.
 func New(entries []Entry) Palette {
 	in := textinput.New()
-	in.Placeholder = "type to find a command"
+	in.Placeholder = words.Say("palette.placeholder")
 	in.Focus()
 	return Palette{filter: in}.WithEntries(entries)
 }
@@ -137,18 +138,18 @@ func (p Palette) Reset() Palette {
 
 // Key handles a key press.
 func (p Palette) Key(msg tea.KeyMsg) (Palette, Result) {
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	switch commands.NavNamed(msg.String()) {
+	case commands.NavCancel:
 		return p, Result{Closed: true}
-	case "up":
+	case commands.NavUp:
 		p.cursor = max(p.cursor-1, 0)
-	case "down":
+	case commands.NavDown:
 		p.cursor = min(p.cursor+1, max(len(p.matches())-1, 0))
-	case "pgup":
+	case commands.NavPageUp:
 		p.cursor = max(p.cursor-8, 0)
-	case "pgdown":
+	case commands.NavPageDown:
 		p.cursor = min(p.cursor+8, max(len(p.matches())-1, 0))
-	case "enter":
+	case commands.NavConfirm:
 		return p.choose(p.cursor)
 	default:
 		p.filter, _ = p.filter.Update(msg)
@@ -167,7 +168,7 @@ func (p Palette) choose(i int) (Palette, Result) {
 	}
 	e := found[min(i, len(found)-1)]
 	if e.unavailable() {
-		return p, Result{Refused: e.Title + " is unavailable: " + e.Unavailable}
+		return p, Result{Refused: words.Say("palette.unavailable", "title", e.Title, "reason", e.Unavailable)}
 	}
 	return p, Result{CommandID: e.ID, Closed: true}
 }
@@ -224,7 +225,7 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 	height := max(h-2, 1)
 	found := p.matches()
 	if len(found) == 0 {
-		out = append(out, th.Muted(" no command matches"))
+		out = append(out, th.Muted(words.Say("palette.empty")))
 	}
 	rows := p.rows()
 	top := p.windowTop(rows, height)
@@ -235,9 +236,9 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 			out = append(out, p.line(th, found[r.index], r.index == p.cursor, w))
 		}
 	}
-	footer := "up/down choose · enter pick · esc close"
+	footer := words.Say("palette.footer")
 	if n := p.hidden(); n > 0 && strings.TrimSpace(p.filter.Value()) == "" {
-		footer = fmt.Sprintf("%d more not usable here: type to find them", n)
+		footer = words.Say("palette.footer.hidden", "count", n)
 	}
 	for len(out) < h-1 {
 		out = append(out, "")

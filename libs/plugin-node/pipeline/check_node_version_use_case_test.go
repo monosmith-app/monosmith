@@ -15,8 +15,8 @@ func TestCheckNodeVersion(t *testing.T) {
 		ok, warns bool
 	}{
 		{"v24.11.0\n", nil, true, false},
-		{"v25.1.0\n", nil, false, true},  // newer than CI warns
-		{"v22.3.0\n", nil, false, true},  // older than CI warns too
+		{"v25.1.0\n", nil, false, true}, // newer than CI warns
+		{"v22.3.0\n", nil, false, true}, // older than CI warns too
 		{"", errors.New("not found"), false, false},
 	} {
 		probe = func(string, []string) (string, error) { return c.out, c.err }

@@ -27,7 +27,7 @@ func TestAWaitingConfirmShowsProgressAndRefusesRun(t *testing.T) {
 			t.Fatalf("%q must do nothing while the plan is read", key)
 		}
 	}
-	if _, out := c.Click(c.Rect().X+c.buttonsRow(c.Rect().W - 4)[0][0] + 1, c.Rect().Y+c.Rect().H-2); out.Done {
+	if _, out := c.Click(c.Rect().X+c.buttonsRow(c.Rect().W - 4)[0][0]+1, c.Rect().Y+c.Rect().H-2); out.Done {
 		t.Fatal("a click on Run must do nothing")
 	}
 	if _, out := c.Key("esc"); !out.Done || out.Confirmed {

@@ -47,12 +47,12 @@ func TestForcedReleaseWithOnlyNeverReleasedPackagesShowsTheCommitInANotice(t *te
 func TestTheReleaseFooterOffersTheCommitsOnlyWhenSomethingReleases(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.keys("6")
-	l.has("Enter commits")
+	l.has("commits (Enter)")
 	sh := l.sh()
 	sh.release.Plan.Items = nil
 	l.m = sh
 	l.keys("down") // draws it again
-	l.hasNot("Enter commits")
+	l.hasNot("commits (Enter)")
 }
 
 func TestForcedReleaseConfirmationSaysWhatHappens(t *testing.T) {

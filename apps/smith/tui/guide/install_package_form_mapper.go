@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 )
@@ -14,12 +15,12 @@ type InstallTarget struct {
 // RootInstallTarget is the target that stands for the workspace root: the value
 // smith install -p takes for the package.json at the top of the workspace.
 var RootInstallTarget = InstallTarget{
-	Label: "Workspace root: shared by every project, in the root package.json",
+	Label: words.Say("guide.install_package.root"),
 	Value: ".",
 }
 
 // InstallPackageTitle is the title of the form that installs packages.
-const InstallPackageTitle = "Install a package"
+var InstallPackageTitle = words.Say("guide.install_package.title")
 
 // InstallPackageArgv turns the answers into `smith install -p <project> ... [-D]
 // <package> ...`. It returns nil while no package or no project is given, so
@@ -47,7 +48,7 @@ func InstallPackageArgv(answers map[string][]string) []string {
 func installNamesProblem(_ map[string][]string, value string) string {
 	for _, n := range strings.Fields(value) {
 		if strings.HasPrefix(n, "-") {
-			return n + " is an option, not a package: the next question sets the kind"
+			return words.Say("guide.install_package.option", "name", n)
 		}
 	}
 	return ""
@@ -66,21 +67,21 @@ func installNamesProblem(_ map[string][]string, value string) string {
 // when the workspace root can take packages; preset are the values ticked at the
 // start.
 func InstallPackageAction(targets []InstallTarget, preset []string) Action {
-	projects := Step{Key: "projects", Prompt: "Install into which projects? (space ticks, enter confirms). Each project uses its own package manager, so tick projects of one language when the name is the same in every registry.", Multi: true,
+	projects := Step{Key: "projects", Prompt: words.Say("guide.install_package_form.install_into_which_projects_space_ticks"), Multi: true,
 		Ticked: func(map[string][]string) []string { return preset }}
 	for _, t := range targets {
 		projects.Options = append(projects.Options, Option{Label: t.Label, Value: t.Value})
 	}
 	return Action{
-		Title: InstallPackageTitle, Hint: "smith install -p <project> <package>", NeedsWorkspace: true, Presents: "install",
+		Title: InstallPackageTitle, Hint: words.Say("guide.install_package_form.smith_install_p_project_package"), NeedsWorkspace: true, Presents: "install",
 		Steps: []Step{
-			{Key: "names", Prompt: "Which packages? Type a name or name@version; separate several with spaces.", Placeholder: "zod  react@19",
-				Note:  "Installs into projects, or the workspace root where it is offered. A tool installed on the machine (npm -g) has no smith command yet.",
+			{Key: "names", Prompt: words.Say("guide.install_package_form.which_packages_type_a_name_or"), Placeholder: words.Say("guide.install_package_form.zod_react_19"),
+				Note:  words.Say("guide.install_package_form.installs_into_projects_or_the_workspace"),
 				Check: installNamesProblem},
 			projects,
-			{Key: "kind", Prompt: "As which kind of dependency?", Options: []Option{
-				{Label: "Production", Value: "prod", Hint: "the project needs it when it runs (the default)"},
-				{Label: "Development", Value: "dev", Hint: "only for building and testing (smith install -D). Peer and optional have no flag yet."},
+			{Key: "kind", Prompt: words.Say("guide.install_package_form.as_which_kind_of_dependency"), Options: []Option{
+				{Label: words.Say("guide.install_package_form.production"), Value: "prod", Hint: words.Say("guide.install_package_form.the_project_needs_it_when_it")},
+				{Label: words.Say("guide.install_package_form.development"), Value: "dev", Hint: words.Say("guide.install_package_form.only_for_building_and_testing_smith")},
 			}},
 		},
 		Argv: InstallPackageArgv,

@@ -31,10 +31,10 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
 	_, azErr := probe(workspaceRoot, []string{"az", "version"})
-	findings := []protocol.Finding{{Check: "the Azure CLI is installed", OK: azErr == nil, Detail: "az is not on PATH", Remedy: "install the Azure CLI (https://aka.ms/installazurecli)"}}
+	findings := []protocol.Finding{{Check: "the Azure CLI is installed", Area: "toolchain", OK: azErr == nil, Problem: toolrun.ProblemUnless(azErr == nil, "az is not on PATH"), Detail: "az is not on PATH", Remedy: "install the Azure CLI (https://aka.ms/installazurecli)"}}
 	if azErr == nil {
 		_, err := probe(workspaceRoot, []string{"az", "bicep", "version"})
-		findings = append(findings, protocol.Finding{Check: "the Bicep CLI is installed", OK: err == nil, Detail: "az bicep version failed", Remedy: "run az bicep install"})
+		findings = append(findings, protocol.Finding{Check: "the Bicep CLI is installed", Area: "toolchain", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "az bicep version failed"), Detail: "az bicep version failed", Remedy: "run az bicep install"})
 	}
 	return protocol.DoctorResult{Findings: findings}
 }

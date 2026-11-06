@@ -1,3 +1,4 @@
+export { createFolderRegistry, type FolderRegistry } from './folder-registry.store.ts'
 export { connectFolder, type ConnectDeps, type ConnectOutcome } from './connect-folder.use-case.ts'
 export { describeFolderNote } from './folder-note.mapper.ts'
 export { judgeViewState, type FoldersWithoutSmith } from './view-state.policy.ts'

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -45,25 +44,6 @@ func NoticeText(list []Status) string {
 func Notice(ctx context.Context, s *session.Session, out io.Writer, projects, extraLanguages, extraChoices []string) {
 	needs := OnlyProjects(WorkspaceNeeds(s, extraLanguages, extraChoices), projects)
 	fmt.Fprint(out, NoticeText(DetectAll(ctx, ExecDetector{}, needs)))
-}
-
-// OnlyProjects keeps the tools that the named projects use, and the tools no
-// project owns (git, the GitHub CLI, a tool named on the command line).
-//
-// Parameters: needs are the tools of the workspace; projects are the projects a
-// command touches; nil keeps every tool.
-// Returns: the tools the command can need.
-func OnlyProjects(needs []Need, projects []string) []Need {
-	if projects == nil {
-		return needs
-	}
-	var out []Need
-	for _, n := range needs {
-		if len(n.Projects) == 0 || slices.ContainsFunc(n.Projects, func(p string) bool { return slices.Contains(projects, p) }) {
-			out = append(out, n)
-		}
-	}
-	return out
 }
 
 // OfferForLanguage deals with the tools of a language by name, without a

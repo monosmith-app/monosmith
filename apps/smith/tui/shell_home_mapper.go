@@ -58,5 +58,5 @@ func (s Shell) dashboardFacts() dashboard.Facts {
 
 // lastOf is how a command that ended is told on Home.
 func lastOf(argv []string, ok, cancelled bool, took string) *dashboard.Run {
-	return &dashboard.Run{Command: strings.TrimPrefix(commands.Line(argv), "smith "), OK: ok, Cancelled: cancelled, Took: took}
+	return &dashboard.Run{Command: strings.TrimPrefix(commands.Line(argv), "smith "), OK: ok, Cancelled: cancelled, Took: took} // words:literal
 }

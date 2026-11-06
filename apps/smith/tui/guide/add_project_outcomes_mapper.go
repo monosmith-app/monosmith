@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // The answers of the outcome-first questions.
@@ -39,16 +40,16 @@ func withOutcomes(steps []Step, offers []ChoiceOffer) []Step {
 	outcomes := compose.Outcomes(catalogueItems(lang.Options, offers))
 	byID := map[string]compose.Outcome{}
 	ask := Step{
-		Key: outcomeKey, Prompt: "What are you building?", Filter: true,
-		Note: "Not sure? Pick the closest one: you can change the language and the tools in the next steps.",
-		Try:  "react, azure function, electron, tauri, api",
+		Key: outcomeKey, Prompt: words.Say("guide.add_project_outcomes.what_are_you_building"), Filter: true,
+		Note: words.Say("guide.add_project_outcomes.not_sure_pick_the_closest_one"),
+		Try:  words.Say("guide.add_project_outcomes.react_azure_function_electron_tauri_api"),
 	}
 	for _, o := range outcomes {
 		byID[o.ID] = o
 		ask.Options = append(ask.Options, Option{Label: o.Title, Value: o.ID, Hint: outcomeHint(o), Also: o.Words})
 	}
-	ask.Options = append(ask.Options, Option{Label: "I know the language: show every language", Value: everyLanguage,
-		Hint: "the long way: pick app, library or package, then the language from the full list", Also: []string{"language", "other", "all"}})
+	ask.Options = append(ask.Options, Option{Label: words.Say("guide.add_project_outcomes.i_know_the_language_show_every"), Value: everyLanguage,
+		Hint: words.Say("guide.add_project_outcomes.the_long_way_pick_app_library"), Also: []string{"language", "other", "all"}})
 
 	kind.Auto = func(a map[string][]string) string { return byID[first(a, outcomeKey)].Kind }
 	lang.Skip = func(a map[string][]string) bool { return first(a, outcomeKey) != everyLanguage }
@@ -93,7 +94,7 @@ func outcomeLanguageStep(o compose.Outcome, all []Option) Step {
 			options = append(options, opt)
 		}
 	}
-	step := Step{Key: "lang", Prompt: "Which language is it written in?", Options: options, Filter: len(options) > 10,
+	step := Step{Key: "lang", Prompt: words.Say("guide.add_project_outcomes.which_language_is_it_written_in"), Options: options, Filter: len(options) > 10,
 		Skip: func(a map[string][]string) bool { return first(a, outcomeKey) != o.ID }}
 	if len(options) == 1 {
 		only := options[0].Value
@@ -116,17 +117,17 @@ func outcomePickStep(o compose.Outcome, language string) (Step, bool) {
 	if len(options) == 0 {
 		return Step{}, false
 	}
-	prompt := map[string]string{"framework": "Which framework?", "shell": "Which desktop shell?", "host": "Which cloud?"}[o.Layer]
+	prompt := map[string]string{"framework": words.Say("guide.add_project_outcomes.which_framework"), "shell": words.Say("guide.add_project_outcomes.which_desktop_shell"), "host": words.Say("guide.add_project_outcomes.which_cloud")}[o.Layer]
 	if prompt == "" {
-		prompt = "Which one?"
+		prompt = words.Say("guide.add_project_outcomes.which_one")
 	}
 	if o.Layer != "host" {
 		// First, so a first-timer's Enter ticks nothing, and Down reads the list in order.
-		options = append([]Option{{Label: "Decide in the next question", Value: pickNone, Hint: "you can still tick a framework, a shell or a tool there"}}, options...)
+		options = append([]Option{{Label: words.Say("guide.add_project_outcomes.decide_in_the_next_question"), Value: pickNone, Hint: words.Say("guide.add_project_outcomes.you_can_still_tick_a_framework")}}, options...)
 	}
 	return Step{
 		Key: pickKey, Prompt: prompt, Options: options,
-		Note: WhatIs(o.Layer) + "\nYour pick starts ticked in the choices question after the name: you can change it there.",
+		Note: words.Say("guide.add_project_outcomes.pick_note", "what", WhatIs(o.Layer)),
 		Skip: func(a map[string][]string) bool { return first(a, outcomeKey) != o.ID || first(a, "lang") != language },
 		Preselect: func(typed string, opts []Option) string {
 			for _, opt := range opts {

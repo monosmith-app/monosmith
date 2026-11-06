@@ -1,26 +1,27 @@
 package resultdialog
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 var (
-	filesWritten  = regexp.MustCompile(`Wrote (\d+) file`)
-	creatingLine  = regexp.MustCompile(`^Creating \S+ (\S+) in (\S+?):`)
-	missingTool   = regexp.MustCompile(`(\S+) is not installed or not on PATH`)
-	installFrom   = regexp.MustCompile(`Install it from (https?://[^\s,]+)`)
-	verifyingLine = regexp.MustCompile(`^Verifying: smith (run .+ -p \S+)$`)
+	filesWritten  = regexp.MustCompile(`Wrote (\d+) file`)                      // words:literal
+	creatingLine  = regexp.MustCompile(`^Creating \S+ (\S+) in (\S+?):`)        // words:literal
+	missingTool   = regexp.MustCompile(`(\S+) is not installed or not on PATH`) // words:literal
+	installFrom   = regexp.MustCompile(`Install it from (https?://[^\s,]+)`)    // words:literal
+	verifyingLine = regexp.MustCompile(`^Verifying: smith (run .+ -p \S+)$`)    // words:literal
 )
 
 // toolTitles are the names a person knows for the programs smith checks.
 var toolTitles = map[string]string{
-	"dotnet": "the .NET SDK", "go": "Go", "node": "Node.js", "npm": "Node.js", "npx": "Node.js",
-	"python": "Python", "python3": "Python", "pip": "Python", "cargo": "Rust", "rustc": "Rust",
-	"java": "Java (JDK)", "javac": "Java (JDK)", "gradle": "Gradle", "mvn": "Maven", "flutter": "Flutter",
-	"dart": "Dart", "git": "Git", "docker": "Docker", "cmake": "CMake",
+	"dotnet": "the .NET SDK", "go": "Go", "node": "Node.js", "npm": "Node.js", "npx": "Node.js", // words:literal
+	"python": "Python", "python3": "Python", "pip": "Python", "cargo": "Rust", "rustc": "Rust", // words:literal
+	"java": "Java (JDK)", "javac": "Java (JDK)", "gradle": "Gradle", "mvn": "Maven", "flutter": "Flutter", // words:literal
+	"dart": "Dart", "git": "Git", "docker": "Docker", "cmake": "CMake", // words:literal
 }
 
 // MissingTool is what a `smith add` told when its first check could not run
@@ -121,10 +122,8 @@ func OperationText(argv []string) string {
 	return strings.Join(words, " ")
 }
 
-// Plural is "1 file" or "12 files".
-func Plural(n int, word string) string {
-	if n == 1 {
-		return fmt.Sprintf("1 %s", word)
-	}
-	return fmt.Sprintf("%d %ss", n, word)
-}
+// FileCount is "1 file" or "12 files".
+//
+// Parameters: n is the number of files.
+// Returns: the count with the noun in the form that fits n.
+func FileCount(n int) string { return words.Count("resultdialog.files", n) }

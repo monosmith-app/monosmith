@@ -2,6 +2,7 @@ package runview
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"sort"
 	"strings"
 	"time"
@@ -142,11 +143,11 @@ func (r *Run) End(exit int, cancelled bool, now time.Time) {
 	for _, t := range r.Tasks {
 		switch {
 		case t.Status == Running && (cancelled || exit != 0):
-			t.Status, t.Reason, t.Duration = Failed, "interrupted", now.Sub(t.Started)
+			t.Status, t.Reason, t.Duration = Failed, words.Say("runview.reason.interrupted"), now.Sub(t.Started)
 		case t.Status == Queued && cancelled:
-			t.Status, t.Reason = Skipped, "cancelled"
+			t.Status, t.Reason = Skipped, words.Say("runview.reason.cancelled")
 		case t.Status == Queued && exit != 0:
-			t.Status, t.Reason = Skipped, "the run ended before it started"
+			t.Status, t.Reason = Skipped, words.Say("runview.reason.unstarted")
 		}
 	}
 }

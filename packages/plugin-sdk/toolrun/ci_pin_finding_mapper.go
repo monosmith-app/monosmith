@@ -30,8 +30,12 @@ func CIPinFinding(name, have, ci string) (f protocol.Finding, ok bool) {
 	}
 	f = protocol.Finding{
 		Check: name + " is " + ci + ", as in CI",
+		Area:  "toolchain",
 		OK:    order == 0, Warning: order != 0,
 		Detail: "found " + name + " " + have,
+	}
+	if order != 0 {
+		f.Problem = name + " is " + have + ", CI uses " + ci
 	}
 	switch {
 	case order < 0:

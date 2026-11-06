@@ -1,5 +1,9 @@
 package packageprompt
 
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+)
+
 // Library is a project of the workspace that the selected project may depend
 // on: the dialog lists it with its kind and language, so nothing is typed.
 type Library struct {
@@ -22,16 +26,16 @@ func RangeChoices(language string, lib Library) []RangeChoice {
 		return nil
 	}
 	choices := []RangeChoice{
-		{Spec: "", Label: "Follow the workspace (default)", Meaning: "Use the range the workspace already uses for its own libraries. When it has none yet, smith writes * and says so."},
-		{Spec: "*", Label: "Any version (*)", Meaning: "npm uses the library of this workspace whatever its version. You never edit the line when the library changes."},
+		{Spec: "", Label: words.Say("packageprompt.range.follow.label"), Meaning: words.Say("packageprompt.range.follow.meaning")},
+		{Spec: "*", Label: words.Say("packageprompt.range.any.label"), Meaning: words.Say("packageprompt.range.any.meaning")},
 	}
 	if lib.Version != "" {
-		choices = append(choices, RangeChoice{Spec: "^" + lib.Version, Label: "The current version (^" + lib.Version + ")", Meaning: "npm uses the workspace copy while its version fits, and the registry copy when it does not. Edit the line on a new major version."})
+		choices = append(choices, RangeChoice{Spec: "^" + lib.Version, Label: words.Say("packageprompt.range.current.label", "version", lib.Version), Meaning: words.Say("packageprompt.range.current.meaning")})
 	}
 	return choices
 }
 
 // LibraryMeaning says in plain words what linking the library does.
 func LibraryMeaning(project string, lib Library) string {
-	return project + " will use the code of " + lib.Name + " in this workspace, always its current copy. Nothing is downloaded."
+	return words.Say("packageprompt.library.meaning", "project", project, "library", lib.Name)
 }

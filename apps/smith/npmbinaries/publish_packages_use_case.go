@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -196,23 +195,6 @@ func Finalize(root string, r Release, moves []protocol.TagMove) (Finalized, erro
 	return out, nil
 }
 
-// NotServedNote says why a dist-tag was not moved when the wait ended: npm said
-// it published the packages, the registry still does not serve them. It names
-// each package and says how to finish, by hand or by running the release again.
-func NotServedNote(m protocol.TagMove, out npmpropagation.Outcome) string {
-	missing := "the platform packages"
-	if len(out.Missing) > 0 {
-		var named []string
-		for _, n := range out.Missing {
-			named = append(named, n+"@"+m.Version)
-		}
-		missing = strings.Join(named, ", ")
-	}
-	return fmt.Sprintf("the dist-tag %q of %s was not moved: npm said it published %s but the registry still does not serve it after %s. "+
-		"Run the release again: it republishes what is missing and moves the tag. Or, when npm serves it, run: %s",
-		m.Tag, m.Package, missing, out.Waited.Round(time.Second), m.Command())
-}
-
 // Incomplete reports what a re-run of an already released version still has
 // to do: the packages the registry does not have, and the wrappers still under
 // "pending". With none of either, the release of the packages is done.
@@ -252,11 +234,6 @@ func hasPendingTag(dir, name, version, tag string) bool {
 	}
 	var tags map[string]string
 	return json.Unmarshal([]byte(out), &tags) == nil && tags[pendingTag] == version && tags[tag] != version
-}
-
-// folder is a package's directory name: @acme/cli → acme-cli.
-func folder(name string) string {
-	return strings.ReplaceAll(strings.TrimPrefix(name, "@"), "/", "-")
 }
 
 func writePlatform(root string, r Release, a Archive, name, dir string) error {
@@ -326,25 +303,11 @@ func extract(archive, name, to string) error {
 // not fetchable from the registry yet.
 const pendingTag = "pending"
 
-// intendedTag is the dist-tag the release moves: a prerelease's channel (npm
-// refuses a prerelease without a tag, so it never becomes latest), and none
-// for a stable version, which takes latest.
-func intendedTag(r Release) string {
-	if strings.Contains(r.Version, "-") {
-		return cmp.Or(r.Tag, "next")
-	}
-	return ""
-}
-
 // registryHas reports whether the registry has name@version. An unpublished
 // package is a 404, an unpublished version prints nothing.
 func registryHas(dir, name, version string) bool {
 	out, _, err := npm(dir, "view", name+"@"+version, "version")
 	return err == nil && strings.TrimSpace(out) == version
-}
-
-func platformNames(platforms map[string]string) []string {
-	return slices.Sorted(maps.Values(platforms))
 }
 
 // awaitPlatforms waits for the platform packages to be fetchable from the

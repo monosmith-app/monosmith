@@ -1,23 +1,24 @@
 package toolsdialog
 
 import (
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Title is the frame title of the dialog.
 func (m Model) Title() string {
 	switch m.ph {
 	case phaseDone:
-		return "Install the missing tools: done"
+		return words.Say("toolsdialog.title.done")
 	case phaseRun:
-		return fmt.Sprintf("Install the missing tools (%d of %d): running", m.at+1, len(m.plans))
+		return words.Say("toolsdialog.title.running", "current", m.at+1, "total", len(m.plans))
 	}
-	return fmt.Sprintf("Install the missing tools (%d of %d)", m.at+1, len(m.plans))
+	return words.Say("toolsdialog.title.asking", "current", m.at+1, "total", len(m.plans))
 }
 
 // Lines draws the dialog, framed, at the size Place set.
@@ -50,15 +51,15 @@ func (m Model) Lines(th theme.Theme) []string {
 
 // headLines say what the tool is and what stops working without it.
 func headLines(th theme.Theme, p toolinstall.ToolPlan, inner int) []string {
-	state := "is missing"
+	state := words.Say("toolsdialog.state.missing")
 	if p.State == toolinstall.Outdated {
-		state = "is too old (" + strings.TrimSpace(p.Program+" "+p.Version) + ")"
+		state = words.Say("toolsdialog.state.old", "tool", strings.TrimSpace(p.Program+" "+p.Version))
 		if p.Exact {
 			state = p.Problem()
 		}
 	}
-	lines := []string{th.Bold(p.Title + " " + state)}
-	lines = append(lines, pane.Wrap(th.Muted(p.Why+". If you skip it, "+p.Consequence+"."), inner, 3)...)
+	lines := []string{th.Bold(words.Say("toolsdialog.head", "title", p.Title, "state", state))}
+	lines = append(lines, pane.Wrap(th.Muted(words.Say("toolsdialog.why", "why", p.Why, "consequence", p.Consequence)), inner, 3)...)
 	return append(lines, "")
 }
 
@@ -68,33 +69,33 @@ func headLines(th theme.Theme, p toolinstall.ToolPlan, inner int) []string {
 func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 	p := m.current()
 	lines = headLines(th, p, inner)
-	lines = append(lines, "How do you want to get it?")
+	lines = append(lines, words.Say("toolsdialog.pick.question"))
 	first = len(lines)
 	for i, o := range p.Options {
-		mark, label := "  ", o.Label
+		mark, label := choicerow.Cursor(th, false), o.Label
 		if o.Value == p.Default {
-			label += " (default)"
+			label += words.Say("toolsdialog.default")
 		}
 		if i == m.cursor {
-			mark, label = th.Accent("> "), th.Bold(label)
+			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 		}
 		lines = append(lines, mark+label)
 	}
 	o := p.Options[m.cursor]
 	lines = append(lines, "")
 	if o.Kind == toolinstall.OptionInstall {
-		lines = append(lines, th.Muted("Command: ")+strings.Join(o.Command, " "))
+		lines = append(lines, th.Muted(words.Say("toolsdialog.command.label"))+strings.Join(o.Command, " "))
 		if o.Admin {
-			lines = append(lines, pane.Wrap(th.Warning("It needs administrator rights: you are asked next."), inner, 2)...)
+			lines = append(lines, pane.Wrap(th.Warning(words.Say("toolsdialog.admin.warning")), inner, 2)...)
 		}
 	} else {
 		lines = append(lines, pane.Wrap(th.Muted(o.Hint), inner, 2)...)
 	}
 	if o.Note != "" {
-		lines = append(lines, pane.Wrap(th.Muted("Note: "+o.Note+"."), inner, 2)...)
+		lines = append(lines, pane.Wrap(th.Muted(words.Say("toolsdialog.note", "note", o.Note)), inner, 2)...)
 	}
 	lines = append(lines, "")
-	return append(lines, th.Muted("up/down choose · enter confirm · esc cancel (nothing is installed)"), th.Muted("click an entry, double-click to select")), first
+	return append(lines, th.Muted(words.Say("toolsdialog.pick.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
 }
 
 // adminBody is the second question: who runs a command that needs
@@ -102,31 +103,31 @@ func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) {
 	p := m.current()
 	lines = headLines(th, p, inner)
-	lines = append(lines, "This command needs administrator rights:", "  "+th.Bold(strings.Join(m.opt.Command, " ")))
-	how := "The system asks for your permission itself."
+	lines = append(lines, words.Say("toolsdialog.admin.needs"), "  "+th.Bold(strings.Join(m.opt.Command, " ")))
+	how := words.Say("toolsdialog.admin.system")
 	if len(m.opt.Command) > 0 && m.opt.Command[0] == "sudo" {
-		how = "It asks for your password, so smith hands over to the terminal to run it."
+		how = words.Say("toolsdialog.admin.sudo")
 	}
 	lines = append(lines, pane.Wrap(th.Muted(how), inner, 2)...)
 	lines = append(lines, "")
 	first = len(lines)
-	for i, a := range adminAnswers {
-		mark, label := "  ", a
+	for i, a := range adminAnswers() {
+		mark, label := choicerow.Cursor(th, false), a
 		if i == 0 {
-			label += " (default)"
+			label += words.Say("toolsdialog.default")
 		}
 		if i == m.cursor {
-			mark, label = th.Accent("> "), th.Bold(label)
+			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 		}
 		lines = append(lines, mark+label)
 	}
 	lines = append(lines, "")
-	return append(lines, th.Muted("up/down choose · enter confirm · esc back"), th.Muted("click an entry, double-click to select")), first
+	return append(lines, th.Muted(words.Say("toolsdialog.admin.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
 }
 
 // runBody is the command and the end of its output, as it streams.
 func (m Model) runBody(th theme.Theme, inner, height int) []string {
-	lines := []string{th.Bold("Running: ") + strings.Join(m.opt.Command, " "), ""}
+	lines := []string{th.Bold(words.Say("toolsdialog.run.label")) + strings.Join(m.opt.Command, " "), ""}
 	room := max(height-len(lines)-2, 3)
 	out := m.out
 	if len(out) > room {
@@ -138,13 +139,13 @@ func (m Model) runBody(th theme.Theme, inner, height int) []string {
 	for len(lines) < height-1 {
 		lines = append(lines, "")
 	}
-	return append(lines, th.Muted("esc stops the install"))
+	return append(lines, th.Muted(words.Say("toolsdialog.run.keys")))
 }
 
 // doneBody is one line per tool, and the way on.
 func (m Model) doneBody(th theme.Theme, inner int) []string {
 	if len(m.results) == 0 {
-		return []string{"Every tool the workspace needs is installed.", "", th.Muted("enter closes")}
+		return []string{words.Say("toolsdialog.done.none"), "", th.Muted(words.Say("toolsdialog.done.close"))}
 	}
 	var lines []string
 	for _, r := range m.results {
@@ -158,7 +159,7 @@ func (m Model) doneBody(th theme.Theme, inner int) []string {
 			lines = append(lines, th.Muted("  | "+o))
 		}
 	}
-	return append(lines, "", th.Muted("smith tools shows what is still missing · enter closes"))
+	return append(lines, "", th.Muted(words.Say("toolsdialog.done.keys")))
 }
 
 // Click handles a left press on the list of options or answers: one press moves
@@ -181,7 +182,7 @@ func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 		n = len(m.current().Options)
 	case phaseAdmin:
 		_, first = m.adminBody(th, inner)
-		n = len(adminAnswers)
+		n = len(adminAnswers())
 	default:
 		return m, Outcome{}
 	}

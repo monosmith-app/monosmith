@@ -22,7 +22,7 @@ func CheckNuGetConfig(workspaceRoot string, projects []protocol.Project) (protoc
 	const check = "nuget.config lists the feeds smith.toml names"
 	raw, err := os.ReadFile(filepath.Join(workspaceRoot, FileName))
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return protocol.Finding{Check: check, Detail: err.Error(), Remedy: "make nuget.config readable"}, true
+		return protocol.Finding{Check: check, Area: "release", Problem: "nuget.config cannot be read", Detail: err.Error(), Remedy: "make nuget.config readable"}, true
 	}
 	existing, ours := string(raw), err != nil || strings.Contains(string(raw), Marker)
 	want := Config(Of(projects))
@@ -30,15 +30,16 @@ func CheckNuGetConfig(workspaceRoot string, projects []protocol.Project) (protoc
 		// No feed named: a nuget.config smith wrote is stale; the team's is
 		// none of smith's business.
 		if err == nil && ours {
-			return protocol.Finding{Check: check, Detail: "nuget.config was written for [registries] smith.toml no longer names", Remedy: "run `smith doctor --fix`",
+			return protocol.Finding{Check: check, Area: "release", Problem: "nuget.config lists feeds that smith.toml no longer names", Detail: "nuget.config was written for [registries] smith.toml no longer names", Remedy: "run `smith doctor --fix`",
 				Fix: &protocol.Fix{Description: "remove smith's nuget.config", Safe: true, Files: []protocol.FileEdit{{Path: FileName, Delete: true}}}}, true
 		}
 		return protocol.Finding{}, false
 	}
-	f := protocol.Finding{Check: check, OK: existing == want}
+	f := protocol.Finding{Check: check, Area: "release", OK: existing == want}
 	if f.OK {
 		return f, true
 	}
+	f.Problem = "nuget.config does not list the feeds smith.toml names"
 	if ours {
 		f.Detail = "nuget.config does not match [registries] in smith.toml"
 		f.Remedy = "run `smith doctor --fix`"

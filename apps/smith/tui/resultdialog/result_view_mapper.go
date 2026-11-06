@@ -1,15 +1,17 @@
 package resultdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Title is the frame title of the dialog.
 func (m Model) Title() string { return m.title }
 
 // Hint is the line under the choices that says how to answer.
-const Hint = "up/down choose · enter select · click an entry, double-click to select · esc closes and changes nothing"
+var Hint = words.Say("resultdialog.hint")
 
 // Lines draws the dialog, framed, at the size Place set.
 func (m Model) Lines(th theme.Theme) []string {
@@ -53,9 +55,9 @@ func (m Model) body(th theme.Theme) (body []string, spans []span) {
 	}
 	body = append(body, "")
 	for i, c := range m.choices {
-		mark, label := "  ", c.label
+		mark, label := choicerow.Cursor(th, false), c.label
 		if i == m.cursor {
-			mark, label = th.Accent(th.Icons.Pointer+" "), th.Bold(label)
+			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 		}
 		from := len(body)
 		body = append(body, pane.Wrap(mark+label+"  "+th.Muted(c.hint), inner, 4)...)

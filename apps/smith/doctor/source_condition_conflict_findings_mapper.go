@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"sort"
 	"strconv"
 	"strings"
@@ -46,6 +47,7 @@ func SourceConditionFindings(cfg workspace.Config) []protocol.Finding {
 	return []protocol.Finding{{
 		Check:  "a tool conflict is worked around in smith.toml",
 		OK:     true,
+		Area:   doctorchecks.AreaConfig,
 		Detail: strings.Join(where, "; ") + " set " + tsNodeOptionsEnv + " with customConditions null. tsconfig.base.json names a custom resolution condition so editors and tsc read the source of workspace packages. ts-node with module commonjs and node10 resolution cannot use it, so the task switches the condition off for ts-node only. It is one decision (resolve the source condition) written twice, in two tools.",
 		Remedy: "keep the line while a task runs under ts-node; if no task does, remove it. Change the condition name in tsconfig.base.json, vite and vitest resolve.conditions and the jest resolver together",
 	}}

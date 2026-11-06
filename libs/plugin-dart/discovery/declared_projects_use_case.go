@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -22,12 +23,11 @@ func DiscoverWithDeclared(workspaceRoot string, manifests []string, declared []p
 	if err != nil || len(declared) == 0 {
 		return result, err
 	}
-	for _, d := range declared {
-		project, err := describeDeclared(workspaceRoot, d)
-		if err != nil {
-			return result, fmt.Errorf("[projects.%s] at %s: %w", d.Name, d.Root, err)
-		}
-		result.Projects = append(result.Projects, project)
+	result, err = discovery.WithDeclared(result, declared, func(d protocol.DeclaredProject) (protocol.Project, error) {
+		return describeDeclared(workspaceRoot, d)
+	})
+	if err != nil {
+		return result, err
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("dart", "dart", "--version") })
 	return result, nil

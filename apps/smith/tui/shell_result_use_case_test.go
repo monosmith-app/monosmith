@@ -94,7 +94,7 @@ func TestAFailedAddThatIsNotAMissingToolKeepsTheRunScreen(t *testing.T) {
 func TestRunAgainIsNotOfferedForAnAddAndSaysWhy(t *testing.T) {
 	l := failedAdd(t)
 	l.keys("esc")
-	l.hasNot("Run again", "r run again")
+	l.hasNot("Run again", "run again (r)")
 	l.keys("r")
 	l.has("makes or removes something")
 	if got := l.lastStarted(); strings.HasPrefix(got, "add ") && strings.Count(strings.Join(joinAll(l.started), "\n"), "add app api-cs") > 1 {

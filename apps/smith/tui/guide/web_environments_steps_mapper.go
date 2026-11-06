@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 )
 
@@ -26,16 +27,14 @@ const (
 
 // The words of the one question about the environments of a web app. The
 // VS Code extension uses the same labels (docs/manual/tui.md).
-const (
-	// EnvUseThese is the label of the answer that takes the default four.
-	EnvUseThese = "Use these"
-	// EnvUseTheseHint says what taking them means, in one sentence.
-	EnvUseTheseHint = "smith run build builds prd, the builds go to dist/apps/<name>/<env>, and the .env files are written for you and kept in git (smith commits nothing)"
-	// EnvChangeNames is the label of the answer that types other names.
-	EnvChangeNames = "Change the names…"
-	// EnvChangeDetails is the label of the answer that opens the detailed questions.
-	EnvChangeDetails = "Change the build default, the output or the .env files…"
-)
+// EnvUseTheseHint says what taking the default four means, in one sentence.
+func EnvUseTheseHint() string { return words.Say("guide.web_environments.use_these_hint") }
+
+// EnvChangeNames is the label of the answer that types other names.
+func EnvChangeNames() string { return words.Say("guide.web_environments.change_names") }
+
+// EnvChangeDetails is the label of the answer that opens the detailed questions.
+func EnvChangeDetails() string { return words.Say("guide.web_environments.change_details") }
 
 // webChoices are the choices that make a web app built with Vite.
 var webChoices = []string{"react", "vue", "svelte", "html"}
@@ -80,17 +79,17 @@ func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 	}
 	defaults := strings.Join(webenv.DefaultNames, ", ")
 	return []Step{
-		{Key: envsKey, Prompt: "A web app is built once per environment. Which environments?",
+		{Key: envsKey, Prompt: words.Say("guide.web_environments_steps.a_web_app_is_built_once"),
 			Take: func(a map[string][]string) ([]string, bool) {
 				return []string{envsDefault}, first(a, addSetupKey) == setupDefaults
 			},
-			Note: "Vite writes its VITE_ values into the bundle when it builds, so each environment is its own build with its own .env file.", Skip: notWeb, Options: []Option{
-				{Label: EnvUseThese + ": " + defaults, Value: envsDefault, Hint: EnvUseTheseHint},
-				{Label: EnvChangeNames, Value: envsCustom, Hint: "you type the names (lowercase words, such as qa, stage), then say which one smith run build builds"},
-				{Label: EnvChangeDetails, Value: envsDetails, Hint: "which environment smith run build builds, where the builds go, and whether the .env files are kept in git"},
-				{Label: "One build only", Value: envsNone, Hint: "smith add --environments none: a single vite build, as before"},
+			Note: words.Say("guide.web_environments_steps.vite_writes_its_vite_values_into"), Skip: notWeb, Options: []Option{
+				{Label: words.Say("guide.web_environments.use_these", "defaults", defaults), Value: envsDefault, Hint: EnvUseTheseHint()},
+				{Label: EnvChangeNames(), Value: envsCustom, Hint: words.Say("guide.web_environments_steps.you_type_the_names_lowercase_words")},
+				{Label: EnvChangeDetails(), Value: envsDetails, Hint: words.Say("guide.web_environments_steps.which_environment_smith_run_build_builds")},
+				{Label: words.Say("guide.web_environments_steps.one_build_only"), Value: envsNone, Hint: words.Say("guide.web_environments_steps.smith_add_environments_none_a_single")},
 			}},
-		{Key: envNamesKey, Prompt: "Environment names, separated by commas", Placeholder: defaults,
+		{Key: envNamesKey, Prompt: words.Say("guide.web_environments_steps.environment_names_separated_by_commas"), Placeholder: defaults,
 			Initial: func(map[string][]string) string { return defaults },
 			Skip:    unless(envsCustom),
 			Check: func(_ map[string][]string, value string) string {
@@ -99,14 +98,14 @@ func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 				}
 				return ""
 			}},
-		{Key: envDefaultKey, Prompt: "Which environment is `smith run build`? CI and the release build this one", Skip: unless(envsCustom, envsDetails), OptionsFor: envDefaultOptions},
-		{Key: envOutputKey, Prompt: "Where do the builds go?", Skip: unless(envsDetails), Options: []Option{
-			{Label: "In the workspace", Value: webenv.OutputWorkspace, Hint: "default: dist/apps/<app>/<name>, with every other build"},
-			{Label: "In the project", Value: webenv.OutputProject, Hint: "dist/<name> in the app's own folder; smith doctor then accepts it"},
+		{Key: envDefaultKey, Prompt: words.Say("guide.web_environments_steps.which_environment_is_smith_run_build"), Skip: unless(envsCustom, envsDetails), OptionsFor: envDefaultOptions},
+		{Key: envOutputKey, Prompt: words.Say("guide.web_environments_steps.where_do_the_builds_go"), Skip: unless(envsDetails), Options: []Option{
+			{Label: words.Say("guide.web_environments_steps.in_the_workspace"), Value: webenv.OutputWorkspace, Hint: words.Say("guide.web_environments_steps.default_dist_apps_app_name_with")},
+			{Label: words.Say("guide.web_environments_steps.in_the_project"), Value: webenv.OutputProject, Hint: words.Say("guide.web_environments_steps.dist_name_in_the_app_s")},
 		}},
-		{Key: envFilesKey, Prompt: "The .env files hold VITE_ values, which end up in the browser, so no secret. Keep them in git?", Skip: unless(envsDetails), Options: []Option{
-			{Label: "Yes, keep the .env files in git", Value: webenv.FilesCommit, Hint: "default: CI builds with them"},
-			{Label: "Only .env.example", Value: webenv.FilesExample, Hint: "each machine and CI job makes its own files; git ignores them"},
+		{Key: envFilesKey, Prompt: words.Say("guide.web_environments_steps.the_env_files_hold_vite_values"), Skip: unless(envsDetails), Options: []Option{
+			{Label: words.Say("guide.web_environments_steps.yes_keep_the_env_files_in"), Value: webenv.FilesCommit, Hint: words.Say("guide.web_environments_steps.default_ci_builds_with_them")},
+			{Label: words.Say("guide.web_environments_steps.only_env_example"), Value: webenv.FilesExample, Hint: words.Say("guide.web_environments_steps.each_machine_and_ci_job_makes")},
 		}},
 	}
 }
@@ -132,7 +131,7 @@ func envDefaultOptions(a map[string][]string) []Option {
 	}
 	for _, n := range slices.Backward(names) {
 		if n != fallback {
-			out = append(out, Option{Label: n, Value: n, Hint: "the others are build:<name>"})
+			out = append(out, Option{Label: n, Value: n, Hint: words.Say("guide.web_environments_steps.the_others_are_build_name")})
 		}
 	}
 	return out

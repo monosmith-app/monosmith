@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // ChoicesInWords says the choices of a new project in words, and marks the
@@ -32,7 +33,7 @@ func ChoicesInWords(offers []ChoiceOffer, lang string, names []string) string {
 			title = o.Name
 		}
 		if o.Default {
-			title += " (default)"
+			title += words.Say("guide.choices_in_words.default")
 		}
 		chosen = append(chosen, title)
 	}
@@ -56,7 +57,7 @@ func ChoicesInWords(offers []ChoiceOffer, lang string, names []string) string {
 		if taken[axis] || defaulted[axis] || many[axis] || slices.Contains(asked, axis) {
 			continue
 		}
-		without = append(without, "no "+strings.ToLower(compose.TitleOfLayer(axis)))
+		without = append(without, words.Say("guide.choices_in_words.no", "layer", strings.ToLower(compose.TitleOfLayer(axis))))
 	}
 	if len(without) > 0 {
 		text += "; " + strings.Join(without, ", ")

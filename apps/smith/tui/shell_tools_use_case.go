@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toolsdialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // capTools is the purpose of the capture that reads the install choices.
@@ -49,7 +50,7 @@ func (s *Shell) openTools(argv []string) tea.Cmd {
 	}
 	s.toolsArgv = argv
 	plan := append(slices.Clone(argv), "--dry-run", "--json")
-	return s.captureWorking(capTools, "Install the missing tools", "smith looks for the tools this workspace needs and for the way to install each one.", plan, plan, "Looking for the tools that are missing", "Cancelled: no tool was installed")
+	return s.captureWorking(capTools, words.Say("tui.tools.install_the_missing_tools"), words.Say("tui.tools.smith_looks_for_the_tools_this"), plan, plan, words.Say("tui.tools.looking_for_the_tools_that_are"), words.Say("tui.tools.cancelled_no_tool_was_installed"))
 }
 
 // toolsRead opens the dialog on the plans the command printed. When they
@@ -57,7 +58,7 @@ func (s *Shell) openTools(argv []string) tea.Cmd {
 func (s *Shell) toolsRead(msg capturedMsg) tea.Cmd {
 	var plans []toolinstall.ToolPlan
 	if !msg.res.OK || json.Unmarshal([]byte(msg.res.Text), &plans) != nil {
-		s.notify("Could not read the tools here, so smith asks in the terminal", toast.Warning)
+		s.notify(words.Say("tui.tools.could_not_read_the_tools_here"), toast.Warning)
 		s.Argv, s.quit = s.toolsArgv, true
 		return nil
 	}
@@ -108,7 +109,7 @@ func (s *Shell) toolsStarted(msg toolsStartedMsg) tea.Cmd {
 		return nil
 	}
 	if msg.err != nil {
-		m := s.tools.Output([]string{"could not start: " + msg.err.Error()}).Finished(1, false)
+		m := s.tools.Output([]string{words.Say("tui.tools.could_not_start", "err", msg.err.Error())}).Finished(1, false)
 		s.tools = &m
 		return nil
 	}

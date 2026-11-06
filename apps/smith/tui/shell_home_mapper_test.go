@@ -28,7 +28,7 @@ func TestAWorkspaceOpensOnHomeAndChecksItselfInTheBackground(t *testing.T) {
 }
 
 func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
-	l := newHomeLab(t, 140, 34)
+	l := newHomeLab(t, 230, 34)
 	// The header badge is filled without the Doctor view having been opened.
 	if first := l.lines()[0]; !strings.Contains(first, "✗2") {
 		t.Fatalf("the header carries the health: %q", first)
@@ -48,12 +48,12 @@ func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 		t.Fatalf("the headline (row %d) comes before the next action (row %d)", headline, next)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"Enter next", "b build", "w changed", "d doctor", "1-7 views"} {
+	for _, want := range []string{"next (Enter)", "build all 3 (b)", "changed (w)", "doctor (d)", "1-7 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
 	}
-	if strings.Contains(footer, "f follow") || strings.Contains(footer, "F fix all") {
+	if strings.Contains(footer, "follow (f)") || strings.Contains(footer, "fix all (F)") {
 		t.Fatalf("keys of other views on Home: %q", footer)
 	}
 }
@@ -66,7 +66,7 @@ func TestEnterAndAClickDoTheSuggestedAction(t *testing.T) {
 	if l.sh().fix == nil || l.sh().tab != commands.TabHome || len(l.started) != 0 {
 		t.Fatalf("Enter did the next action: wizard %v, tab %q, started %v", l.sh().fix != nil, l.sh().tab, l.started)
 	}
-	l.has("Fix · review", "[ Apply  Enter ]")
+	l.has("Fix · review", "Apply (enter)")
 	l = newHomeLab(t, 140, 34)
 	l.clickText("Next: 2 checks fail")
 	if l.sh().fix == nil {

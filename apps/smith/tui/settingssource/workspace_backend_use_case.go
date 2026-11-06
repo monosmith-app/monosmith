@@ -2,7 +2,6 @@ package settingssource
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
@@ -12,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/userprefs"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
@@ -42,7 +42,7 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 				// The same count `smith plugin disable` shows.
 				if used, err := pluginusage.Projects(r, version, []string{name}); err == nil {
 					if count := pluginusage.Warning(used, []string{name}); count != "" {
-						warning = "it hides projects: " + count + ". " + warning
+						warning = words.Say("settingssource.disable.hides", "count", count, "warning", warning)
 					}
 				}
 				return warning, nil
@@ -82,9 +82,9 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			if err != nil {
 				return "", err
 			}
-			note := "Trusted " + name
+			note := words.Say("settingssource.trust.done", "name", name)
 			if pin {
-				note += "; sha256 " + digest + " pinned in smith.toml for CI"
+				note = words.Say("settingssource.trust.pinned", "note", note, "digest", digest)
 			}
 			return note, nil
 		},
@@ -98,9 +98,9 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 				return "", err
 			}
 			if !removed {
-				return name + " was not trusted", nil
+				return words.Say("settingssource.untrust.none", "name", name), nil
 			}
-			return "No longer trusting " + name, nil
+			return words.Say("settingssource.untrust.done", "name", name), nil
 		},
 		SetSetting: func(path string, values []string) (string, error) {
 			r, err := root()
@@ -111,7 +111,7 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 				return "", err
 			}
 			value, _, _ := configedit.Get(r, path)
-			return fmt.Sprintf("%s = %s", path, value), nil
+			return words.Say("settingssource.setting.set", "path", path, "value", value), nil
 		},
 		UnsetSetting: func(path string) (string, error) {
 			r, err := root()
@@ -121,7 +121,7 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			if err := configedit.Unset(r, path); err != nil {
 				return "", err
 			}
-			return path + " removed: it has its default", nil
+			return words.Say("settingssource.setting.unset", "path", path), nil
 		},
 		Style: settingsview.StylePrefs{
 			Theme: prefs.Theme, Icons: prefs.Icons, Path: userprefs.Path(home), Getenv: getenv, Dark: theme.DarkBackground(getenv),

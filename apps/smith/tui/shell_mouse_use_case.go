@@ -26,6 +26,9 @@ func (s Shell) paletteBox() layout.Rect {
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 	e := tea.MouseEvent(msg)
 	s.mouseX, s.mouseY, s.mouseShift = e.X, e.Y, e.Shift
+	if s.splitMouse(e) {
+		return nil
+	}
 	switch {
 	case e.Action == tea.MouseActionMotion:
 		s.hover(e.X, e.Y)

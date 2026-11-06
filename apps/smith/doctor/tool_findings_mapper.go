@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"context"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"strconv"
 	"strings"
 
@@ -56,14 +57,17 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 			continue
 		}
 		detail := st.Why
+		problem := st.Title + " is not on PATH"
 		if st.State == toolinstall.Outdated {
 			detail = st.Title + " " + st.Version + " is installed, " + st.Wanted.String() + " is wanted"
+			problem = detail
 		}
 		findings = append(findings, Finding{Source: "smith", Finding: protocol.Finding{
-			Check: check, OK: false, Warning: true,
-			Detail: detail + "; if you skip it, " + st.Consequence,
-			Remedy: "smith tools install " + st.Name,
-			Fix:    &fix,
+			Check: check, OK: false, Warning: true, Area: doctorchecks.AreaToolchain,
+			Problem: problem,
+			Detail:  detail + "; if you skip it, " + st.Consequence,
+			Remedy:  "smith tools install " + st.Name,
+			Fix:     &fix,
 		}})
 	}
 	return withoutRepeatedMachineChecks(findings)
@@ -74,15 +78,20 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 // Azure Functions Core Tools), and the machine has one answer, so the list
 // shows it once.
 func withoutRepeatedMachineChecks(findings []Finding) []Finding {
-	seen := map[string]bool{}
+	seen := map[string]int{}
 	out := findings[:0:0]
 	for _, f := range findings {
 		if IsMachineCheck(f) {
 			key := checkName(f.Check) + "|" + strconv.FormatBool(f.OK)
-			if seen[key] {
+			if at, ok := seen[key]; ok {
+				// The kept finding now speaks for several projects, so it is
+				// about the machine and no longer about the first project.
+				if kept := &out[at]; kept.Project != "" && kept.Project != f.Project {
+					kept.Project, kept.Area = "", doctorchecks.AreaToolchain
+				}
 				continue
 			}
-			seen[key] = true
+			seen[key] = len(out)
 		}
 		out = append(out, f)
 	}

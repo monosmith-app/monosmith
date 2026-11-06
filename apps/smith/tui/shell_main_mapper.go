@@ -1,11 +1,12 @@
 package tui
 
 import (
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
@@ -13,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // hit says what a click on a line of the main view means.
@@ -57,9 +59,8 @@ func (s Shell) mainContent(w, h int) content {
 		doctor.Waited, doctor.Covered = s.waited(), len(s.list.Projects())
 		lines, rowOf := doctor.View(s.th, w, !s.lay().HasDetail())
 		sel := 0
-		f, found := doctor.Selected()
 		for row, i := range rowOf {
-			if (i < 0 && doctor.OnPassedLine()) || (found && i >= 0 && doctor.Report.Findings[i].Check == f.Check) {
+			if doctor.IsCursorRow(i) {
 				sel = row
 			}
 		}
@@ -112,7 +113,7 @@ func (s Shell) mainContent(w, h int) content {
 func (s Shell) projectsContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
 	if !s.loadedProjects {
-		return withLines(c, s.th.Muted("Reading the workspace…"))
+		return withLines(c, s.th.Muted(words.Say("tui.main.reading_the_workspace")))
 	}
 	if s.projectsErr != nil {
 		return withLines(c, s.th.Failure(s.projectsErr.Error()))
@@ -120,10 +121,10 @@ func (s Shell) projectsContent(w, h int) content {
 	projects := s.list.Projects()
 	if len(projects) == 0 {
 		c.hits[0], c.hits[1] = hit{kind: "action", id: "file.add"}, hit{kind: "action", id: "file.compose"}
-		return withLines(c, s.newProjectButton(), s.th.Accent("[ Compose a stack  "+commands.ShortcutOf("file.compose")+" ]"),
-			"", s.th.Muted("No projects yet. Add one, or compose a stack from frameworks, desktop shells and cloud hosts."))
+		return withLines(c, s.newProjectButton(), button.Render(s.th, words.Say("tui.main.compose_a_stack"), commands.ShortcutOf("file.compose"), button.Rest),
+			"", s.th.Muted(words.Say("tui.main.no_projects_yet_add_one_or")))
 	}
-	scope := "every project"
+	scope := words.Say("tui.main.every_project")
 	if p := s.selectedProject(); p != "" {
 		scope = p
 	}
@@ -134,13 +135,13 @@ func (s Shell) projectsContent(w, h int) content {
 		}
 	}
 	// The explanations wrap instead of running off the pane.
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted("On: ")+s.th.Bold(scope), w, 0)...)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.on"))+s.th.Bold(scope), w, 0)...)
 	noun := "projects"
 	if len(projects) == 1 {
 		noun = "project"
 	}
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted(fmt.Sprintf("%d %s · %d affected by the changes (%s)", len(projects), noun, affected, s.th.Icons.Dot)), w, 0)...)
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted("↑ = projects it needs · ↓ = projects that use it"), w, 0)...)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.affected_by_the_changes", "len", len(projects), "noun", noun, "affected", affected, "dot", s.th.Icons.Dot)), w, 0)...)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.projects_it_needs_projects_that_use")), w, 0)...)
 	c.hits[len(c.lines)] = hit{kind: "action", id: "file.add"}
 	c.lines = append(c.lines, s.newProjectButton(), "")
 
@@ -151,17 +152,17 @@ func (s Shell) projectsContent(w, h int) content {
 		tasksW = max(tasksW, pane.Width(taskList(p)))
 	}
 	cols := projectlist.ColumnsFor(w, nameW, tasksW, hasStack)
-	head := "   " + pane.Cell("Project", cols.Name+1)
+	head := "   " + pane.Cell(words.Say("tui.main.project"), cols.Name+1)
 	if cols.Kind {
-		head += pane.Cell("Kind", projectlist.KindW)
+		head += pane.Cell(words.Say("tui.main.kind"), projectlist.KindW)
 	}
 	if cols.Lang {
-		head += pane.Cell("Language", projectlist.LangW)
+		head += pane.Cell(words.Say("tui.main.language"), projectlist.LangW)
 	}
 	if cols.Stack {
-		head += pane.Cell("Stack", projectlist.StackW)
+		head += pane.Cell(words.Say("tui.main.stack"), projectlist.StackW)
 	}
-	head += pane.Cell("↑ ↓", projectlist.DepsW) + "Tasks"
+	head += words.Say("tui.main.tasks", "cell", pane.Cell("↑ ↓", projectlist.DepsW))
 	c.lines = append(c.lines, s.th.Muted(pane.Fit(head, w)))
 
 	avail := max(h-len(c.lines), 1)
@@ -184,7 +185,7 @@ func (s Shell) projectsContent(w, h int) content {
 		if cols.Stack {
 			line += pane.Cell(p.Stack, projectlist.StackW)
 		}
-		line += pane.Cell(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), projectlist.DepsW)
+		line += pane.Cell(words.Say("tui.main.text", "len", len(p.Deps), "len2", len(p.Dependents)), projectlist.DepsW)
 		line += ansi.Truncate(taskList(p), cols.Tasks, "…")
 		if p.Name == s.selectedProject() {
 			line = s.th.Selected(pane.Fit(pane.Strip(line), w))
@@ -198,7 +199,7 @@ func (s Shell) projectsContent(w, h int) content {
 
 // newProjectButton is the row that starts the Add wizard from the list of projects.
 func (s Shell) newProjectButton() string {
-	return s.th.Accent("[ + New project  " + commands.ShortcutOf("file.add") + " ]")
+	return button.Render(s.th, words.Say("tui.main.new_project"), commands.ShortcutOf("file.add"), button.Rest)
 }
 
 // taskList is a project's task names on one line.
@@ -281,6 +282,9 @@ func (s Shell) runGeom(w, h int) runGeom {
 	n := len(s.runIDs())
 	avail := max(h-g.listTop-2, 1)
 	g.listRows = min(n, max(min(avail, 2), avail*2/5))
+	if given, ok := s.split.Size(splitter.RunListID); ok {
+		g.listRows = splitter.RunListRows(given, avail)
+	}
 	g.sepRow = g.listTop + g.listRows
 	g.logTop = g.sepRow + 1
 	g.logRows = max(h-g.logTop, 1)
@@ -321,33 +325,33 @@ func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
 	if s.run == nil || s.runHome {
 		if s.run == nil {
-			c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
+			c.lines = append(c.lines, "", s.th.Muted(words.Say("tui.main.nothing_has_run_yet")))
 		} else {
-			c.lines = append(c.lines, "", s.th.Muted("Last run: "+s.lastRun().CommandLine()))
+			c.lines = append(c.lines, "", s.th.Muted(words.Say("tui.main.last_run", "commandLine", s.lastRun().CommandLine())))
 		}
 		c.lines = append(c.lines, "")
 		// The scope of every key is spelled out; the buttons run on every project.
-		scope := "Press " + commands.ShortcutOf("run.build") + " to build"
+		scope := words.Say("tui.main.press_to_build", "shortcutOf", commands.ShortcutOf("run.build"))
 		if name := s.state().RunProject(); name != "" {
-			scope += " " + name + " (the project selected on Projects)"
+			scope += words.Say("tui.main.the_project_selected_on_projects", "name", name)
 		} else {
-			scope += " every project"
+			scope += words.Say("tui.main.every_project_2")
 		}
-		c.lines = append(c.lines, pane.Wrap(s.th.Muted(scope+", "+commands.ShortcutOf("run.test")+" to test, or start one on every project:"), w, 0)...)
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.to_test_or_start_one_on", "scope", scope, "shortcutOf", commands.ShortcutOf("run.test"))), w, 0)...)
 		c.lines = append(c.lines, "")
 		for _, b := range []struct{ id, label string }{
-			{"run.verify", "Verify everything: lint, typecheck, test  " + commands.ShortcutOf("run.verify")},
-			{"run.build-all", fmt.Sprintf("Build everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.build-all"))},
-			{"run.test-all", fmt.Sprintf("Test everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.test-all"))},
-			{"run.lint-all", fmt.Sprintf("Lint everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.lint-all"))},
-			{"run.typecheck-all", fmt.Sprintf("Typecheck everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.typecheck-all"))},
+			{"run.verify", words.Say("tui.main.verify_everything_lint_typecheck_test")},
+			{"run.build-all", words.Say("tui.main.build_everything", "len", s.list.Len())},
+			{"run.test-all", words.Say("tui.main.test_everything", "len", s.list.Len())},
+			{"run.lint-all", words.Say("tui.main.lint_everything", "len", s.list.Len())},
+			{"run.typecheck-all", words.Say("tui.main.typecheck_everything", "len", s.list.Len())},
 		} {
 			c.hits[len(c.lines)] = hit{kind: "action", id: b.id}
-			c.lines = append(c.lines, "  "+s.th.Accent("[ "+b.label+" ]"))
+			c.lines = append(c.lines, "  "+button.Render(s.th, b.label, commands.ShortcutOf(b.id), button.Rest))
 		}
 		c.lines = append(c.lines, "")
 		if len(s.runs) > 0 && h-len(c.lines) > 1 {
-			c.lines = append(c.lines, pane.Fit(s.th.Title("Recent runs")+"  "+s.th.Muted("Up Down choose, Enter or double-click opens"), w))
+			c.lines = append(c.lines, pane.Fit(s.th.Title(words.Say("tui.main.recent_runs"))+"  "+s.th.Muted(words.Say("tui.main.up_down_choose_enter_or_double")), w))
 			rows, first := s.recentRows(w, h-len(c.lines))
 			for i := range rows {
 				c.hits[len(c.lines)] = hit{kind: "recent", index: first + i}
@@ -360,16 +364,16 @@ func (s Shell) runContent(w, h int) content {
 	counts := s.run.Counts()
 	now := s.now()
 	took := shortDuration(s.run.RunTime(now))
-	state := s.th.Info(s.th.Spin(s.tick) + " running")
+	state := s.th.Info(words.Say("tui.main.running", "spin", s.th.Spin(s.tick)))
 	switch {
 	case s.stopping && s.running():
-		state = s.th.Warning(s.th.Spin(s.tick) + " stopping")
+		state = s.th.Warning(words.Say("tui.main.stopping", "spin", s.th.Spin(s.tick)))
 	case s.run.Cancelled:
-		state = s.th.Warning(s.th.Icons.Skipped + " cancelled")
+		state = s.th.Warning(words.Say("tui.main.cancelled", "skipped", s.th.Icons.Skipped))
 	case s.run.Finished && s.run.OK():
-		state = s.th.Success(s.th.Icons.Passed + " passed")
+		state = s.th.Success(words.Say("tui.main.passed", "passed", s.th.Icons.Passed))
 	case s.run.Finished:
-		state = s.th.Failure(s.th.Icons.Failed + " failed")
+		state = s.th.Failure(words.Say("tui.main.failed", "failed", s.th.Icons.Failed))
 	}
 	c.hits[len(c.lines)] = hit{kind: "nav"}
 	c.lines = append(c.lines, s.navLine(w))
@@ -395,7 +399,7 @@ func (s Shell) runContent(w, h int) content {
 		c.lines = append(c.lines, "")
 	}
 	copy(c.lines[g.listTop:g.sepRow], pane.Scrollbar(s.th, c.lines[g.listTop:g.sepRow], w, s.runTop, len(ids)))
-	title := "all output"
+	title := words.Say("tui.main.all_output")
 	if s.runSel != "" {
 		title = s.runSel
 	}
@@ -403,7 +407,7 @@ func (s Shell) runContent(w, h int) content {
 	if !s.log.Following() {
 		follow = "paused"
 	}
-	sep := "── Log: " + title + " (" + follow + ") "
+	sep := words.Say("tui.main.log", "title", title, "follow", follow)
 	c.lines = append(c.lines, s.th.Faint(pane.Fit(sep+strings.Repeat("─", max(w-pane.Width(sep), 0)), w)))
 	c.lines = append(c.lines, s.log.Render(s.th, logview.Rows(s.th, s.logLines(), w), w, g.logRows)...)
 	return c
@@ -414,7 +418,7 @@ func (s Shell) countsText(c runview.Counts) string {
 	var parts []string
 	add := func(n int, st runview.Status) {
 		if n > 0 {
-			parts = append(parts, fmt.Sprintf("%s %d %s", s.statusIcon(st), n, st))
+			parts = append(parts, words.Say("tui.main.text_2", "statusIcon", s.statusIcon(st), "n", n, "st", st))
 		}
 	}
 	add(c.Failed, runview.Failed)
@@ -429,7 +433,7 @@ func (s Shell) countsText(c runview.Counts) string {
 // taskLine is one row of the task list.
 func (s Shell) taskLine(id string, w int, now time.Time) string {
 	if id == "" {
-		line := fmt.Sprintf(" %s All output  %s", s.th.Icons.Pointer, s.th.Muted(fmt.Sprintf("%d lines", len(s.run.Lines))))
+		line := words.Say("tui.main.all_output_2", "pointer", s.th.Icons.Pointer, "say", s.th.Muted(words.Say("tui.main.lines", "len", len(s.run.Lines))))
 		if s.runSel == "" {
 			return s.th.Selected(pane.Fit(pane.Strip(line), w))
 		}
@@ -448,7 +452,7 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 		detail += "  " + t.Reason
 	}
 	if t.Status == runview.Running && strings.HasSuffix(t.ID, ":lint") && s.run.Elapsed(t, now) >= slowLintAfter {
-		detail += "  (lint checks every file: it is often the slow step)"
+		detail += words.Say("tui.main.lint_checks_every_file_it_is")
 	}
 	line := " " + s.statusIcon(t.Status) + " " + pad(t.ID, nameW) + " " + s.th.Muted(detail)
 	if id == s.runSel {
@@ -463,7 +467,7 @@ const slowLintAfter = 5 * time.Second
 
 func yesNoMark(s Shell, b bool) string {
 	if b {
-		return s.th.Warning(s.th.Icons.Dot) + " yes"
+		return words.Say("tui.main.yes", "dot", s.th.Warning(s.th.Icons.Dot))
 	}
 	return "no"
 }
