@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -163,9 +165,14 @@ const metadata = `<metadata><versioning><versions>
 func TestLatestTakesTheHighestStableVersionFromMavenCentral(t *testing.T) {
 	real := FetchMetadata
 	t.Cleanup(func() { FetchMetadata = real })
-	var asked []string
+	var (
+		mu    sync.Mutex
+		asked []string
+	)
 	FetchMetadata = func(url string) ([]byte, error) {
+		mu.Lock()
 		asked = append(asked, url)
+		mu.Unlock()
 		switch {
 		case strings.Contains(url, "internal"):
 			return nil, nil
@@ -181,7 +188,7 @@ func TestLatestTakesTheHighestStableVersionFromMavenCentral(t *testing.T) {
 	if res.Latest["com.acme:thing"] != "2.1.0" || len(res.Latest) != 1 || res.Unreachable["com.acme:offline"] != "no route" || len(res.Unreachable) != 1 {
 		t.Fatalf("%+v", res)
 	}
-	if asked[0] != MavenCentral+"/com/acme/thing/maven-metadata.xml" && asked[1] != MavenCentral+"/com/acme/thing/maven-metadata.xml" && asked[2] != MavenCentral+"/com/acme/thing/maven-metadata.xml" {
+	if !slices.Contains(asked, MavenCentral+"/com/acme/thing/maven-metadata.xml") {
 		t.Errorf("group dots become folders: %v", asked)
 	}
 }
