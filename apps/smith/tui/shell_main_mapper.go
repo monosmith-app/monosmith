@@ -340,14 +340,14 @@ func (s Shell) runContent(w, h int) content {
 		c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.to_test_or_start_one_on", "scope", scope, "shortcutOf", commands.ShortcutOf("run.test"))), w, 0)...)
 		c.lines = append(c.lines, "")
 		for _, b := range []struct{ id, label string }{
-			{"run.verify", words.Say("tui.main.verify_everything_lint_typecheck_test", "shortcutOf", commands.ShortcutOf("run.verify"))},
-			{"run.build-all", words.Say("tui.main.build_everything", "len", s.list.Len(), "shortcutOf", commands.ShortcutOf("run.build-all"))},
-			{"run.test-all", words.Say("tui.main.test_everything", "len", s.list.Len(), "shortcutOf", commands.ShortcutOf("run.test-all"))},
-			{"run.lint-all", words.Say("tui.main.lint_everything", "len", s.list.Len(), "shortcutOf", commands.ShortcutOf("run.lint-all"))},
-			{"run.typecheck-all", words.Say("tui.main.typecheck_everything", "len", s.list.Len(), "shortcutOf", commands.ShortcutOf("run.typecheck-all"))},
+			{"run.verify", words.Say("tui.main.verify_everything_lint_typecheck_test")},
+			{"run.build-all", words.Say("tui.main.build_everything", "len", s.list.Len())},
+			{"run.test-all", words.Say("tui.main.test_everything", "len", s.list.Len())},
+			{"run.lint-all", words.Say("tui.main.lint_everything", "len", s.list.Len())},
+			{"run.typecheck-all", words.Say("tui.main.typecheck_everything", "len", s.list.Len())},
 		} {
 			c.hits[len(c.lines)] = hit{kind: "action", id: b.id}
-			c.lines = append(c.lines, "  "+s.th.Accent("[ "+b.label+" ]"))
+			c.lines = append(c.lines, "  "+button.Render(s.th, b.label, commands.ShortcutOf(b.id), button.Rest))
 		}
 		c.lines = append(c.lines, "")
 		if len(s.runs) > 0 && h-len(c.lines) > 1 {
