@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Entry is a shell command (an id) listed with its shortcut, under a section.

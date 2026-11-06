@@ -5,7 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Unavailable says why the command cannot be used now, or "" when it can.

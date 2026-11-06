@@ -3,7 +3,7 @@ package commandtext
 import (
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // DryRunLine ends the plan a command prints with --dry-run.

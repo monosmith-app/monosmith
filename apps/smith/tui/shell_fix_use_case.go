@@ -12,7 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // fixRun is a fix being applied off the UI goroutine. Its steps report on

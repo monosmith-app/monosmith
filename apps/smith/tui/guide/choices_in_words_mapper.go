@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // ChoicesInWords says the choices of a new project in words, and marks the

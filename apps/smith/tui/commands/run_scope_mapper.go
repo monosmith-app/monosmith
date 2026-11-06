@@ -3,7 +3,7 @@ package commands
 import (
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // RunProject is the project the run keys act on in a state: the one selected

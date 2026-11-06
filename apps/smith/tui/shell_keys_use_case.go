@@ -16,7 +16,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // mouseHelp are the mouse actions listed in the shortcuts overlay.

@@ -3,7 +3,7 @@ package tui
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // derivedSection lists the derived files of a project with their state in

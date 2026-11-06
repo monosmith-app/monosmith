@@ -1,7 +1,6 @@
 package words
 
 import (
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -9,16 +8,15 @@ import (
 	"path"
 	"strings"
 	"sync/atomic"
-)
 
-//go:embed catalog
-var catalogFiles embed.FS
+	"github.com/monosmith-app/monosmith/libs/words/catalog"
+)
 
 // referenceLocale is the locale every other falls back to, key by key.
 const referenceLocale = "en"
 
 // catalogs is every locale's texts, by locale then key; it is built once.
-var catalogs = mustLoad(catalogFiles)
+var catalogs = mustLoad(catalog.Files)
 
 // active is the locale in use, set by Use.
 var active atomic.Value
@@ -59,12 +57,36 @@ func lookup(key string) string {
 	return key
 }
 
-// mustLoad reads catalog/<locale>/*.json from files into one map per locale. It
-// panics on a file that is not a JSON object of strings, or a key two files
-// both define: the catalog ships inside the binary, so either is a build error.
+// Reference is the English texts, by key: the catalog every surface falls back
+// to. The map is a copy, so a caller may keep or change it.
+func Reference() map[string]string {
+	out := make(map[string]string, len(catalogs[referenceLocale]))
+	for key, text := range catalogs[referenceLocale] {
+		out[key] = text
+	}
+	return out
+}
+
+// mustLoad is LoadCatalog for the catalog that ships inside the binary: a file
+// that is not a JSON object of strings, or a key two files both define, is a
+// build error, so it panics.
 func mustLoad(files fs.FS) map[string]map[string]string {
+	out, err := LoadCatalog(files)
+	if err != nil {
+		panic("words: " + err.Error())
+	}
+	return out
+}
+
+// LoadCatalog reads <locale>/*.json from files into one map per locale.
+//
+// Parameters: files is the catalogue folder (libs/words/catalog: the embedded one,
+// or the folder on disk for the generator and its tests).
+// Errors: a file that is not a JSON object of strings, or a key that two files
+// of one locale both define.
+func LoadCatalog(files fs.FS) (map[string]map[string]string, error) {
 	out := map[string]map[string]string{}
-	err := fs.WalkDir(files, "catalog", func(p string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(files, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || path.Ext(p) != ".json" {
 			return err
 		}
@@ -88,8 +110,5 @@ func mustLoad(files fs.FS) map[string]map[string]string {
 		}
 		return nil
 	})
-	if err != nil {
-		panic("words: " + err.Error())
-	}
-	return out
+	return out, err
 }

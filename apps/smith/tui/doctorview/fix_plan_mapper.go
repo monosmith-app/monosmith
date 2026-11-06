@@ -5,7 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Plan is the fixes the failed checks carry, folded as `smith doctor --fix`

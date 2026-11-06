@@ -2,7 +2,7 @@ package pane
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Clamp keeps v between lo and hi. When hi is below lo, lo wins, so a range

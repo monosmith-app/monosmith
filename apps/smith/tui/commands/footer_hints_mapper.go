@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Hint is one entry of the footer: the key as drawn, what it does, and the

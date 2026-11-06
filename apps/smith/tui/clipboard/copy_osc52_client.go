@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // maxBytes is the most text sent in one sequence; terminals drop longer ones.

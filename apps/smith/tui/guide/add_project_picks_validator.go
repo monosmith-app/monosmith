@@ -6,7 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 

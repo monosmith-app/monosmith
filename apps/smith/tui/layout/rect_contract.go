@@ -1,6 +1,6 @@
 package layout
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+import "github.com/monosmith-app/monosmith/libs/words/words"
 
 // Rect is a rectangle of terminal cells; X and Y are the top-left cell.
 type Rect struct{ X, Y, W, H int }

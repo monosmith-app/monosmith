@@ -9,7 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // maxLanguages is how many languages the Projects row names before "and more".

@@ -32,9 +32,9 @@ func TestALocaleThatLacksAKeyShowsTheEnglishText(t *testing.T) {
 
 func TestTheCatalogLoadsEveryFileOfALocale(t *testing.T) {
 	got := mustLoad(fstest.MapFS{
-		"catalog/en/a.json": {Data: []byte(`{"a.one": "1"}`)},
-		"catalog/en/b.json": {Data: []byte(`{"b.one": "2"}`)},
-		"catalog/pt/a.json": {Data: []byte(`{"a.one": "um"}`)},
+		"en/a.json": {Data: []byte(`{"a.one": "1"}`)},
+		"en/b.json": {Data: []byte(`{"b.one": "2"}`)},
+		"pt/a.json": {Data: []byte(`{"a.one": "um"}`)},
 	})
 	if got["en"]["a.one"] != "1" || got["en"]["b.one"] != "2" || got["pt"]["a.one"] != "um" {
 		t.Fatalf("loaded %v", got)
@@ -48,7 +48,28 @@ func TestAKeyDefinedInTwoFilesIsABuildError(t *testing.T) {
 		}
 	}()
 	mustLoad(fstest.MapFS{
-		"catalog/en/a.json": {Data: []byte(`{"same": "1"}`)},
-		"catalog/en/b.json": {Data: []byte(`{"same": "2"}`)},
+		"en/a.json": {Data: []byte(`{"same": "1"}`)},
+		"en/b.json": {Data: []byte(`{"same": "2"}`)},
 	})
+}
+
+func TestReferenceIsACopyOfTheEnglishTexts(t *testing.T) {
+	got := Reference()
+	if len(got) == 0 || len(got) != len(catalogs[referenceLocale]) {
+		t.Fatalf("Reference has %d keys, catalog has %d", len(got), len(catalogs[referenceLocale]))
+	}
+	got["test.copy"] = "x"
+	if _, ok := catalogs[referenceLocale]["test.copy"]; ok {
+		t.Fatal("changing the copy changed the catalog")
+	}
+}
+
+func TestLoadCatalogReportsADuplicateKeyAsAnError(t *testing.T) {
+	_, err := LoadCatalog(fstest.MapFS{
+		"en/a.json": {Data: []byte(`{"same": "1"}`)},
+		"en/b.json": {Data: []byte(`{"same": "2"}`)},
+	})
+	if err == nil {
+		t.Fatal("a duplicate key must be an error")
+	}
 }

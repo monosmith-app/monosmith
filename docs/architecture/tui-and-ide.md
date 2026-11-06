@@ -245,6 +245,11 @@ the rerun-failed line) and `commandtext` (the text a captured command printed).
 `apps/smith/tui/README.md` lists what is still a method on `Shell` and the next
 slice to cut.
 
+The text of the shell is not in this tree. It is the catalogue in `libs/words`, which the
+editors share ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)): the shell
+reads it with `words.Say`, and the generator `libs/words/wordgen` writes the VS Code and JetBrains
+text files from it. The guard tests that scan the shell source are in `apps/smith/tui/wordsguard`.
+
 ## Interaction
 
 No key needs a modifier except `Ctrl+C` (stop, then quit) and the palette's

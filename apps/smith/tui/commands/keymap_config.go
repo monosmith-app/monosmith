@@ -1,6 +1,6 @@
 package commands
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+import "github.com/monosmith-app/monosmith/libs/words/words"
 
 // The keymap: the one list the keys, the footer hints, the help (F1 and ?)
 // and the command palette are all drawn from, so a label cannot go stale.

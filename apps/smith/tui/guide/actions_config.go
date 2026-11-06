@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // WizardAdopt is the one wizard that brings a folder in, whether it is a plain

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // The keys of the decisions the form asks beyond smith new's own questions.

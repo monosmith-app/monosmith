@@ -2,7 +2,7 @@ package guide
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // checkProjectName is the live check of the name step of Add a project: the

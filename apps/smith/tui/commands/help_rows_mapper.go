@@ -1,6 +1,6 @@
 package commands
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+import "github.com/monosmith-app/monosmith/libs/words/words"
 
 // HelpRow is one line of the help: the group it sits under, what it does and
 // its keys.

@@ -10,7 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // The review paints lines that start with + green and - red (they are

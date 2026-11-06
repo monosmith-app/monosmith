@@ -10,7 +10,12 @@
 // keys, key.one and key.other.
 //
 // English is the reference: a locale that lacks a key shows the English text.
-// The guard test in this package fails a key that no code uses, a key that the
-// code asks for and the catalog lacks, a placeholder the call does not fill,
-// and raw wording in a package that has moved to the catalog.
+//
+// Each interface (surface) lists the keys it uses in surface/<name>.json. The
+// guard tests fail a key that no surface claims, a key that code asks for and
+// the catalogue lacks, a placeholder the call does not fill, and raw wording in
+// a package that has moved to the catalogue. The TUI part of the guard is
+// apps/smith/tui/wordsguard, because it scans the TUI source. The generator in
+// wordgen writes the editors' native text files from the same catalogue
+// (ADR 0089).
 package words

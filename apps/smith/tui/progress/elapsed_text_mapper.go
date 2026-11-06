@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Elapsed says how long something has been going on: "12s", "1m 05s". Under

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // ChoiceOffer is one choice of a project as `smith choices --json` lists it:

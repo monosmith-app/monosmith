@@ -1,4 +1,4 @@
-package words
+package wordsguard
 
 import (
 	"go/ast"
@@ -13,6 +13,9 @@ import (
 	"strings"
 	"testing"
 	"unicode"
+
+	"github.com/monosmith-app/monosmith/libs/words/surface"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // migrated are the packages under tui that hold no wording of their own: each
@@ -76,7 +79,7 @@ func asksTheCatalog(call *ast.CallExpr) (string, bool) {
 }
 
 func TestEveryKeyTheCodeAsksForIsInTheCatalogAndItsPlaceholdersAreFilled(t *testing.T) {
-	en := catalogs[referenceLocale]
+	en := words.Reference()
 	for _, src := range sources(t) {
 		ast.Inspect(src.file, func(n ast.Node) bool {
 			call, ok := n.(*ast.CallExpr)
@@ -117,12 +120,29 @@ func TestEveryKeyTheCodeAsksForIsInTheCatalogAndItsPlaceholdersAreFilled(t *test
 	}
 }
 
+// claimedElsewhere reports whether a surface other than the TUI claims key: the
+// TUI itself claims a key by asking for it in code, which the test scans for.
+func claimedElsewhere(t *testing.T) func(key string) bool {
+	t.Helper()
+	var manifests []surface.Manifest
+	for _, name := range surface.Names {
+		m, err := surface.Load(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		manifests = append(manifests, m)
+	}
+	return func(key string) bool {
+		return slices.ContainsFunc(manifests, func(m surface.Manifest) bool { return m.Claims(key) })
+	}
+}
+
+// A key is valid when at least one surface claims it: the TUI by asking for it in
+// code, any surface by listing it in libs/words/surface/<name>.json.
 func TestNoKeyIsUnused(t *testing.T) {
+	claimed := claimedElsewhere(t)
 	seen := map[string]bool{}
 	for _, src := range sources(t) {
-		if strings.Contains(src.path, "/words/") {
-			continue
-		}
 		ast.Inspect(src.file, func(n ast.Node) bool {
 			if e, ok := n.(ast.Expr); ok {
 				if s, ok := literal(e); ok {
@@ -133,15 +153,15 @@ func TestNoKeyIsUnused(t *testing.T) {
 		})
 	}
 	var unused []string
-	for key := range catalogs[referenceLocale] {
+	for key := range words.Reference() {
 		base := strings.TrimSuffix(strings.TrimSuffix(key, ".one"), ".other")
-		if !seen[key] && !seen[base] {
+		if !seen[key] && !seen[base] && !claimed(key) && !claimed(base) {
 			unused = append(unused, key)
 		}
 	}
 	sort.Strings(unused)
 	if len(unused) > 0 {
-		t.Errorf("catalog keys no code asks for:\n  %s", strings.Join(unused, "\n  "))
+		t.Errorf("catalog keys no surface claims:\n  %s", strings.Join(unused, "\n  "))
 	}
 }
 

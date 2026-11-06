@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // rowKind says what a row of the list stands for.

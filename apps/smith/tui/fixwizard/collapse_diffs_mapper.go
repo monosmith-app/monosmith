@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // summarizeDiffs replaces each unified diff in a review text by one line, so a

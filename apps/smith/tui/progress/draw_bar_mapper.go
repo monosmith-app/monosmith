@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Draw renders "████░░░░ 3/8 37%" in width cells at most. The filled part is

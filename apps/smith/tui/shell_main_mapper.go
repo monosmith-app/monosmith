@@ -14,7 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // hit says what a click on a line of the main view means.

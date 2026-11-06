@@ -2,7 +2,7 @@ package runhistory
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // NavPart is one part of the run header: its text, the action a click on it

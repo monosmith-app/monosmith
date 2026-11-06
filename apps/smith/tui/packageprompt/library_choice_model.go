@@ -1,7 +1,7 @@
 package packageprompt
 
 import (
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Library is a project of the workspace that the selected project may depend

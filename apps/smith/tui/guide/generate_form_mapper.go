@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // notAsked are the flags a form never offers: the output format for tools,

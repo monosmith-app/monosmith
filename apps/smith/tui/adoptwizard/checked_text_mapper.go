@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // checkedText says what the closing checks proved, in the order they ran:
