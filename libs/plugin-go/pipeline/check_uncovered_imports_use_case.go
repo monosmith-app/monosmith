@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -19,10 +20,10 @@ var modulePathLine = regexp.MustCompile(`(?m)^module\s+"?([^\s"]+)"?\s*$`)
 func CheckUncoveredImports(workspaceRoot string, projects []protocol.Project) []protocol.Finding {
 	var findings []protocol.Finding
 	for _, p := range projects {
-		if !declaredInModule(workspaceRoot, p.Root) {
+		if !gowork.DeclaredInModule(workspaceRoot, p.Root) {
 			continue
 		}
-		src, err := os.ReadFile(ModuleFile(workspaceRoot, p.Root))
+		src, err := os.ReadFile(gowork.ModuleFile(workspaceRoot, p.Root))
 		if err != nil {
 			continue
 		}

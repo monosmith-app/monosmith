@@ -1,4 +1,4 @@
-package pipeline
+package gowork
 
 import (
 	"regexp"
@@ -6,7 +6,9 @@ import (
 )
 
 var (
-	goDirective = regexp.MustCompile(`(?m)^go\s+(\d+\.\d+)`)
+	// GoDirective matches the go directive of a go.work or go.mod file. Its first
+	// submatch is the major.minor version.
+	GoDirective = regexp.MustCompile(`(?m)^go\s+(\d+\.\d+)`)
 	useBlock    = regexp.MustCompile(`(?ms)^use\s*\((.*?)\)`)
 	useLine     = regexp.MustCompile(`(?m)^use\s+([^\s(]+)\s*$`)
 )
@@ -22,7 +24,7 @@ type GoWork struct {
 // ParseGoWork reads the go directive and the use entries.
 func ParseGoWork(src string) GoWork {
 	var w GoWork
-	if m := goDirective.FindStringSubmatch(src); m != nil {
+	if m := GoDirective.FindStringSubmatch(src); m != nil {
 		w.GoVersion = m[1]
 	}
 	add := func(entry string) {

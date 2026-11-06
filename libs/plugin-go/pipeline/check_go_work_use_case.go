@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -20,7 +21,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 	all := params.Projects
 	var modules []protocol.Project
 	for _, p := range all {
-		if !declaredInModule(workspaceRoot, p.Root) {
+		if !gowork.DeclaredInModule(workspaceRoot, p.Root) {
 			modules = append(modules, p)
 		}
 	}
@@ -35,7 +36,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 			Check: "go.work exists", Area: "config", Problem: "the workspace has Go projects but no go.work", Detail: "the workspace has Go projects but no go.work", Remedy: "run `go work init` then `go work use` for each Go project",
 		}}}
 	}
-	work := ParseGoWork(string(src))
+	work := gowork.ParseGoWork(string(src))
 	listed := map[string]bool{}
 	var findings []protocol.Finding
 	fixed := string(src)
@@ -43,7 +44,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 		listed[entry] = true
 		_, err := os.Stat(filepath.Join(workspaceRoot, filepath.FromSlash(entry), "go.mod"))
 		if err != nil {
-			fixed, _ = DropUse(fixed, entry)
+			fixed, _ = gowork.DropUse(fixed, entry)
 		}
 		findings = append(findings, protocol.Finding{
 			Check: "go.work entry " + entry + " exists", Area: "config", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "go.work lists "+entry+", which has no go.mod"),
@@ -53,7 +54,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 	lints := false
 	for _, p := range params.Projects {
 		if !listed[p.Root] {
-			fixed = AddUse(fixed, p.Root)
+			fixed = gowork.AddUse(fixed, p.Root)
 		}
 		findings = append(findings, protocol.Finding{
 			Check: "go.work lists " + p.Root, Project: p.Name, OK: listed[p.Root], Problem: toolrun.ProblemUnless(listed[p.Root], "is not listed in go.work"),

@@ -11,7 +11,9 @@ JVM or PHP projects against the vertical-slice rules:
   `validator`, `repository`, `client`, `store`, `middleware`, `error`, `config`, `enum`;
 - a module's or package's root holds only its entry files;
 - no folder is named `util`, `helper`, `common`, `shared`, `manager`, `processor`, `data` or
-  `misc`;
+  `misc`, and no file name has one of those words as a part (split on `_`, `.` and `-`), tests
+  included; `testdata` and `fixtures` folders and the setup files a test tool loads by name
+  (`spec_helper.rb`, `rails_helper.rb`, `test_helper.rb`) are not checked;
 - a slice with more than 12 production files is reported for review.
 
 The vertical-slices convention (`[conventions.vertical-slices]` in `smith.toml`) runs this
@@ -46,7 +48,7 @@ smith slices check <project directory>... [--lang <language>]
 ## Arguments and flags
 
 <!-- smith:begin slices check -->
-Check that files are role-named and no folder is a junk drawer
+Check that files are role-named and no folder or file name is a junk drawer
 
 Usage: `smith slices check <project directory>... [flags]`
 
@@ -105,6 +107,7 @@ The exit code is 1.
 | `open apps\nope: The system cannot find the file specified.` | The directory does not exist. |
 | `<file> - a <language> file is <name>_<role>...` | Rename the file for its role, or move its code. |
 | `"util" is a junk drawer; name the folder for the outcome it serves` | Rename the folder after what it does. |
+| `"helper" is in the name of this file and names no outcome; name the file for what it does` | Rename the file after what it does. The word can be any part of the name, such as `parse_helper_mapper.go`. |
 
 ## Related
 

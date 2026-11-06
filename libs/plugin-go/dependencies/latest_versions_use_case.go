@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pipeline"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
@@ -26,7 +27,7 @@ func Latest(workspaceRoot string, params protocol.LatestParams) (protocol.Latest
 		return res, nil
 	}
 	src, _ := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
-	goPin := protocol.ToolPin{Name: "Go", Pinned: pipeline.ParseGoWork(string(src)).GoVersion}
+	goPin := protocol.ToolPin{Name: "Go", Pinned: gowork.ParseGoWork(string(src)).GoVersion}
 	var releases []struct {
 		Version string `json:"version"`
 		Stable  bool   `json:"stable"`

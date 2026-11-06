@@ -78,3 +78,14 @@ func firstLine(text, fallback string) string {
 	}
 	return fallback
 }
+
+// usesGolangciLint says whether any of the projects lints with golangci-lint,
+// which makes its tool version a requirement.
+func usesGolangciLint(projects []protocol.Project) bool {
+	for _, p := range projects {
+		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {
+			return true
+		}
+	}
+	return false
+}
