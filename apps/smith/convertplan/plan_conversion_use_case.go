@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/legacyjesthelpers"
+	"github.com/monosmith-app/monosmith/apps/smith/legacyjestsupport"
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
@@ -133,7 +133,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	}
 	removal(plan, w, in.Files, in.Read)
 	if _, ok := plan.AddDevDependencies[JestPresetPackage]; ok {
-		plan.AddDevDependencies[JestPresetPackage] = legacyjesthelpers.PackageRangeFor(in.SmithVersion)
+		plan.AddDevDependencies[JestPresetPackage] = legacyjestsupport.PackageRangeFor(in.SmithVersion)
 	}
 	planBuildOutputs(plan, w)
 	planPythonTools(plan, in)

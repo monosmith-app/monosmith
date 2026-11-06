@@ -1,9 +1,13 @@
-package workspace
+package dockerregistries
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
+
+// envName is a portable environment variable name.
+var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // ValidRegistryURL reports why a "host/namespace" registry is malformed, or
 // "" when it is fine. The host is the first segment and must look like one (a
@@ -27,11 +31,11 @@ func ValidRegistryURL(url string) string {
 	return ""
 }
 
-// checkDockerRegistries validates one table's registry settings
+// CheckDockerRegistries validates one table's registry settings
 // ([conventions.docker] or [projects.<name>.docker]): registry and registries
 // are alternatives, the list is well formed, and description_from stays in the
 // workspace. It returns the normalized list, nil when none is set.
-func checkDockerRegistries(label, registry string, registries []any, descriptionFrom string) ([]any, error) {
+func CheckDockerRegistries(label, registry string, registries []any, descriptionFrom string) ([]any, error) {
 	if registry != "" && registries != nil {
 		return nil, fmt.Errorf("%s sets both registry and registries: use registries for several, registry for one", label)
 	}

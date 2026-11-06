@@ -1,7 +1,8 @@
-package doctorchecks
+package lockfilechecks
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +43,7 @@ func checkLockfilePlatformDeps(root string) []protocol.Finding {
 	if err != nil {
 		return nil
 	}
-	f := protocol.Finding{Check: lockfilePlatformCheck, OK: len(missing) == 0, Warning: true, Area: AreaDependencies}
+	f := protocol.Finding{Check: lockfilePlatformCheck, OK: len(missing) == 0, Warning: true, Area: doctorchecks.AreaDependencies}
 	if f.OK {
 		return []protocol.Finding{f}
 	}

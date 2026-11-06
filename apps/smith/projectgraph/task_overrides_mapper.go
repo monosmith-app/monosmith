@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/releasetable"
+	"github.com/monosmith-app/monosmith/apps/smith/releasetag"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -72,7 +74,7 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		}
 		sort.Strings(p.Tags)
 		p.BareTags = po.BareTags
-		release, err := workspace.ResolveRelease(p.Name, po, p.releaseDefaults, cfg.Release.GitHubReleases)
+		release, err := releasetable.ResolveRelease(p.Name, po, p.releaseDefaults, cfg.Release.GitHubReleases)
 		if err != nil {
 			return err
 		}
@@ -105,7 +107,7 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 	// [release] tag_format names the prefix of a project that sets none. A
 	// prefix a plugin reports (a Go module's <dir>/v) stays, and so do bare tags.
 	if cfg.Release.TagFormat != "" && p.TagPrefix == "" && !p.BareTags {
-		p.TagPrefix = workspace.ExpandTagFormat(cfg.Release.TagFormat, cfg.Workspace.Scope, p.Name)
+		p.TagPrefix = releasetag.ExpandTagFormat(cfg.Release.TagFormat, cfg.Workspace.Scope, p.Name)
 		p.TagPrefixSet = true
 	}
 	return nil

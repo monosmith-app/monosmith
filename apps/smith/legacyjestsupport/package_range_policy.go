@@ -1,4 +1,4 @@
-package legacyjesthelpers
+package legacyjestsupport
 
 import (
 	"fmt"

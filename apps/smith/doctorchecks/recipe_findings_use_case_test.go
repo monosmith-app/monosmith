@@ -9,7 +9,7 @@ import (
 
 func TestRecipeFindingWarnsAboutDriftAndNamesTheRemedy(t *testing.T) {
 	r := recipedrift.Report{Project: "orders", Recipe: "team", From: "1.2.0", To: "1.3.0", Changes: []string{"changes the settings of the lint plugin eslint (config: 1 → 2)"}}
-	f := recipeFinding(r)
+	f := RecipeFinding(r)
 	if f.OK || !f.Warning || f.Check != "orders follows its recipe team" {
 		t.Fatalf("drift is a warning: %+v", f)
 	}
@@ -22,14 +22,14 @@ func TestRecipeFindingWarnsAboutDriftAndNamesTheRemedy(t *testing.T) {
 }
 
 func TestRecipeFindingPassesWhenTheProjectFollowsTheRecipe(t *testing.T) {
-	f := recipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", From: "1.3.0", To: "1.3.0"})
+	f := RecipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", From: "1.3.0", To: "1.3.0"})
 	if !f.OK || f.Warning {
 		t.Errorf("%+v", f)
 	}
 }
 
 func TestRecipeFindingReportsAProjectItCannotCheck(t *testing.T) {
-	f := recipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", Problem: "the recipe could not be loaded (no network)"})
+	f := RecipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", Problem: "the recipe could not be loaded (no network)"})
 	if f.OK || !f.Warning || !strings.Contains(f.Detail, "could not be loaded") || !strings.Contains(f.Remedy, "smith recipe check") {
 		t.Errorf("an unreadable recipe is a warning, not a failure: %+v", f)
 	}

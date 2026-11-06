@@ -112,3 +112,60 @@ func TestEveryToolHasAUniqueNameAndFile(t *testing.T) {
 		names[tool.Name], files[tool.File] = true, true
 	}
 }
+
+func TestAPerProjectToolIsCopiedIntoEachProjectThatUsesTheDefault(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, ".smith/defaults/phpstan.neon", "parameters:\n    level: 8\n")
+	write(t, root, "packages/a/src/x.php", "<?php\n")
+	write(t, root, "packages/b/src/x.php", "<?php\n")
+	targets, err := Eject(root, tooldefaults.PHPStan, false, []string{"packages/a", "packages/b"})
+	if err != nil || strings.Join(targets, " ") != "packages/a/phpstan.neon packages/b/phpstan.neon" {
+		t.Fatalf("%v %v", targets, err)
+	}
+	if got := read(t, root, "packages/b/phpstan.neon"); !strings.Contains(got, "level: 8") {
+		t.Fatalf("copied %q", got)
+	}
+	if _, err := Eject(root, tooldefaults.PHPStan, false, nil); err == nil {
+		t.Fatal("no project uses the default: nothing to copy")
+	}
+}
+
+func TestARefusalWritesNothing(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, ".smith/defaults/phpstan.neon", "default\n")
+	write(t, root, "packages/b/phpstan.neon", "mine\n")
+	if _, err := Eject(root, tooldefaults.PHPStan, false, []string{"packages/a", "packages/b"}); err == nil {
+		t.Fatal("expected a refusal")
+	}
+	if _, err := os.Stat(filepath.Join(root, "packages", "a", "phpstan.neon")); err == nil {
+		t.Fatal("packages/a was written although packages/b refused")
+	}
+}
+
+func TestReplacementsShowWhatForceWouldLose(t *testing.T) {
+	root := t.TempDir()
+	tool := tooldefaults.Tool{Name: "demo", File: "demo.cfg", Target: "demo.cfg"}
+	def := defaultPath(root, tool)
+	if err := os.MkdirAll(filepath.Dir(def), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(def, []byte("a = 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := Replacements(root, tool, nil); len(got) != 0 {
+		t.Fatalf("no file there, nothing is replaced: %v", got)
+	}
+	if err := os.WriteFile(filepath.Join(root, "demo.cfg"), []byte("a = 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := Replacements(root, tool, nil); len(got) != 0 {
+		t.Fatalf("the same content loses nothing: %v", got)
+	}
+	if err := os.WriteFile(filepath.Join(root, "demo.cfg"), []byte("a = 2\nmine = true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := Replacements(root, tool, nil)
+	if len(got) != 1 || got[0].Path != "demo.cfg" || !strings.Contains(got[0].Diff, "-mine = true") {
+		t.Fatalf("the diff names the line that is lost: %+v", got)
+	}
+}

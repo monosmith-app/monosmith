@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"sort"
 	"strings"
 
@@ -41,8 +42,8 @@ func CoverageFinding(name string, declared []string, cov projectgraph.Coverage) 
 		left[i] = fmt.Sprintf("%s (%s)", p.Name, p.Language)
 	}
 	sort.Strings(left)
-	f := protocol.Finding{Warning: true, Area: AreaLint}
-	list := Summary(left, ", ", shownProblems)
+	f := protocol.Finding{Warning: true, Area: doctorchecks.AreaLint}
+	list := doctorchecks.Summary(left, ", ", doctorchecks.ShownProblems)
 	applies := "it applies to " + strings.Join(declared, ", ")
 	if len(cov.Checked) == 0 {
 		f.Check = name + " checks at least one project"

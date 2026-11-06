@@ -1,4 +1,4 @@
-package scaffold
+package removeproject
 
 import (
 	"os"

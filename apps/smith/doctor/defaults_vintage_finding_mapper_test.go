@@ -42,3 +42,10 @@ func TestDefaultsVintageFindingOffersToRecordTheCurrentDefaults(t *testing.T) {
 		t.Errorf("an older recorded vintage has one remedy, the move: %+v", older.Fix)
 	}
 }
+
+func TestDefaultsVintageFindingNamesWhatItFound(t *testing.T) {
+	f := defaultsVintageFinding("", "")
+	if f.OK || f.Problem != "the workspace does not record which defaults it uses" {
+		t.Errorf("%+v", f)
+	}
+}

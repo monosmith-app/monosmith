@@ -8,10 +8,10 @@ import (
 // MnciESLintConfig is the shared ESLint config the old mnci installed.
 const MnciESLintConfig = "@mnci/eslint-config"
 
-// planSharedESLintConfig tells a workspace whose root ESLint config still
+// planLegacyESLintConfig tells a workspace whose root ESLint config still
 // imports the old shared config that smith's own rules are not active, and
 // how to switch. Convert does not change lint behaviour by itself.
-func planSharedESLintConfig(plan *Plan, files []string, read func(string) string) {
+func planLegacyESLintConfig(plan *Plan, files []string, read func(string) string) {
 	for _, f := range files {
 		if path.Dir(f) != "." || !strings.HasPrefix(path.Base(f), "eslint.config.") {
 			continue

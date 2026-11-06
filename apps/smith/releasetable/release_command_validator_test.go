@@ -1,14 +1,16 @@
-package workspace
+package releasetable
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
 const releaseHead = "[workspace]\nname = \"a\"\n[release]\ngithub_releases = true\n[projects.app.release]\n"
 
 func TestParseReadsAReleaseBuildCommand(t *testing.T) {
-	cfg, err := Parse([]byte(releaseHead + "build = \"make dist\"\nassets = [\"out/*.zip\"]\nplatforms = [\"windows-x64\", \"linux-arm64\"]\n"))
+	cfg, err := workspace.Parse([]byte(releaseHead + "build = \"make dist\"\nassets = [\"out/*.zip\"]\nplatforms = [\"windows-x64\", \"linux-arm64\"]\n"))
 	if err != nil {
 		t.Fatal(err)
 	}

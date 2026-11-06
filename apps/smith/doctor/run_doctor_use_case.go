@@ -3,6 +3,8 @@ package doctor
 import (
 	"context"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
+	"github.com/monosmith-app/monosmith/apps/smith/lockfilechecks"
 	"maps"
 	"os"
 	"path/filepath"
@@ -107,16 +109,16 @@ func run(s *session.Session, askRegistries bool) Report {
 	add("smith", boundaryChecks(s)...)
 	add("smith", groupChecks(s)...)
 	add("smith", overrideSuggestionChecks(s)...)
-	add("smith", tauriSidecarChecks(s)...)
-	add("smith", taskFoldChecks(s)...)
+	add("smith", doctorchecks.TauriSidecarChecks(s)...)
+	add("smith", doctorchecks.TaskFoldChecks(s)...)
 	add("smith", sourceConditionChecks(s)...)
-	add("smith", recipeChecks(s)...)
-	add("smith", recipeReleaseChecks(s)...)
+	add("smith", doctorchecks.RecipeChecks(s)...)
+	add("smith", doctorchecks.RecipeReleaseChecks(s)...)
 	add("smith", notStartedChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
 	add("smith", deriveChecks(s)...)
-	add("smith", lockfileChecks(s)...)
-	add("smith", lockfilePlatformChecks(s)...)
+	add("smith", lockfilechecks.LockfileChecks(s)...)
+	add("smith", lockfilechecks.LockfilePlatformChecks(s)...)
 	findings = append(findings, trustFindings(s.Root, s.Config)...)
 	findings = append(findings, PluginChecks(s, nil)...)
 	findings = ToolFindings(context.Background(), s, findings)
@@ -152,7 +154,7 @@ func PluginChecks(s *session.Session, only map[string]bool) []Finding {
 		}
 		var res protocol.DoctorResult
 		if err := c.Call(protocol.MethodDoctor, protocol.DoctorParams{Projects: projects}, &res, time.Minute); err != nil {
-			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers doctor", Area: AreaConfig, Problem: "plugin " + c.Info.Plugin.Name + " did not answer doctor: " + err.Error(), Detail: err.Error(), Remedy: "report this to the plugin's maintainers"})
+			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers doctor", Area: doctorchecks.AreaConfig, Problem: "plugin " + c.Info.Plugin.Name + " did not answer doctor: " + err.Error(), Detail: err.Error(), Remedy: "report this to the plugin's maintainers"})
 			continue
 		}
 		add(c.Info.Plugin.Name, res.Findings...)
@@ -167,11 +169,11 @@ func lineageChecks(s *session.Session) []protocol.Finding {
 	var out []protocol.Finding
 	for _, f := range release.CheckLineage(s, false) {
 		failed[f.Check] = true
-		out = append(out, protocol.Finding{Check: f.Check, Area: AreaRelease, Problem: strings.TrimSuffix(f.Message, "."), Detail: f.Message, Warning: !f.Blocking, Remedy: strings.Join(f.Remedy, "\n")})
+		out = append(out, protocol.Finding{Check: f.Check, Area: doctorchecks.AreaRelease, Problem: strings.TrimSuffix(f.Message, "."), Detail: f.Message, Warning: !f.Blocking, Remedy: strings.Join(f.Remedy, "\n")})
 	}
 	for _, check := range []string{releaselineage.CheckResolve, releaselineage.CheckRegistry} {
 		if !failed[check] {
-			out = append(out, protocol.Finding{Check: check, OK: true, Area: AreaRelease})
+			out = append(out, protocol.Finding{Check: check, OK: true, Area: doctorchecks.AreaRelease})
 		}
 	}
 	return out
@@ -182,7 +184,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	var out []protocol.Finding
 	_, err := s.Git.Run("check-ignore", ".smith/cache/x")
 	ignoreCache := protocol.Finding{
-		Check: "the cache directory is ignored by git", OK: err == nil, Area: AreaGit,
+		Check: "the cache directory is ignored by git", OK: err == nil, Area: doctorchecks.AreaGit,
 		Detail: ".smith/ is not in .gitignore, so cache files could be committed", Remedy: "add `.smith/` to .gitignore",
 	}
 	if err != nil {
@@ -191,8 +193,8 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	}
 	out = append(out, ignoreCache)
 	out = append(out, protocol.Finding{
-		Check: "the repository has commits", OK: s.Git.HasCommits(), Area: AreaGit,
-		Problem: problemWhen(!s.Git.HasCommits(), "the repository has no commits"),
+		Check: "the repository has commits", OK: s.Git.HasCommits(), Area: doctorchecks.AreaGit,
+		Problem: doctorchecks.ProblemWhen(!s.Git.HasCommits(), "the repository has no commits"),
 		Detail:  "releases and affected detection need history", Remedy: "commit the workspace",
 	})
 	var ignored, tracked []string
@@ -205,13 +207,13 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	generatedFiles := TrackedGeneratedFiles(ignored, tracked, s.Graph.Projects)
 	generated := TrackedGenerated(ignored, tracked, s.Graph.Projects)
 	untrack := protocol.Finding{
-		Check: "tracked files are not generated files", OK: len(generated) == 0, Warning: true, Area: AreaGit,
-		Detail: "these files are in git but a run rewrites them (.gitignore ignores them, or a task writes there), so the tree is dirty after a build and a release refuses it: " + Summary(generated, "; ", shownProblems),
+		Check: "tracked files are not generated files", OK: len(generated) == 0, Warning: true, Area: doctorchecks.AreaGit,
+		Detail: "these files are in git but a run rewrites them (.gitignore ignores them, or a task writes there), so the tree is dirty after a build and a release refuses it: " + doctorchecks.Summary(generated, "; ", doctorchecks.ShownProblems),
 		Remedy: "stop tracking generated files: `git rm --cached <file>` (keep or add its .gitignore rule) and commit; a file a task updates on purpose is committed with the change",
 	}
 	if len(generated) > 0 {
 		untrack.Check = "git tracks files that a build rewrites"
-		untrack.Problem = "git tracks " + leadProblem(generated) + ", which a build rewrites"
+		untrack.Problem = "git tracks " + doctorchecks.LeadProblem(generated) + ", which a build rewrites"
 		files := make([]corefixes.TrackedFile, len(generatedFiles))
 		for i, f := range generatedFiles {
 			files[i] = f.TrackedFile
@@ -232,18 +234,18 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	out = append(out, jestHelperFilesFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects, s.Config.Workspace.AllowedOutputs...)
 	out = append(out, protocol.Finding{
-		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0, Area: AreaLint,
-		Problem: leadProblem(outside),
-		Detail:  Summary(outside, "; ", shownProblems),
+		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0, Area: doctorchecks.AreaLint,
+		Problem: doctorchecks.LeadProblem(outside),
+		Detail:  doctorchecks.Summary(outside, "; ", doctorchecks.ShownProblems),
 		Remedy:  "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin; or, for a folder a tool needs the output in (a go:embed folder), list it under [workspace] allowed_outputs",
 	})
-	out = append(out, buildWritesFinding(s))
+	out = append(out, doctorchecks.BuildWritesFinding(s))
 	out = append(out, outputOverlapFinding(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs, readConfigText(s.Root)))
-	out = append(out, webEnvironmentFindings(s.Root, s.Graph.Projects)...)
+	out = append(out, doctorchecks.WebEnvironmentFindings(s.Root, s.Graph.Projects)...)
 	badServe := BadServe(s.Graph)
 	out = append(out, protocol.Finding{
-		Check: "every task that serves an app can start it", OK: len(badServe) == 0, Area: AreaLint,
-		Problem: leadProblem(badServe),
+		Check: "every task that serves an app can start it", OK: len(badServe) == 0, Area: doctorchecks.AreaLint,
+		Problem: doctorchecks.LeadProblem(badServe),
 		Detail:  strings.Join(badServe, "; "),
 		Remedy:  "serve names a task (web:start) that exists; serve_url is an http(s) URL and serve_timeout a duration like 60s, both only with serve",
 	})
@@ -254,14 +256,14 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		edges = append(edges, projectgraph.CycleRemedy(c))
 	}
 	out = append(out, protocol.Finding{
-		Check: "projects do not import each other in a cycle", OK: len(cycles) == 0, Area: AreaDependencies,
-		Problem: problemWhen(len(cycles) > 0, "projects import each other in a cycle: "+leadProblem(paths)),
+		Check: "projects do not import each other in a cycle", OK: len(cycles) == 0, Area: doctorchecks.AreaDependencies,
+		Problem: doctorchecks.ProblemWhen(len(cycles) > 0, "projects import each other in a cycle: "+doctorchecks.LeadProblem(paths)),
 		Detail:  "import cycles: " + strings.Join(paths, "; ") + ". Tasks cannot be ordered and a release cannot version them",
 		Remedy:  strings.Join(edges, "; ") + ", or move what both sides need into a project of its own that neither imports back, or merge the projects",
 	})
 	out = append(out, protocol.Finding{
-		Check: "the clone has full history", OK: !s.Git.IsShallow(), Warning: true, Area: AreaGit,
-		Problem: problemWhen(s.Git.IsShallow(), "the clone is shallow"),
+		Check: "the clone has full history", OK: !s.Git.IsShallow(), Warning: true, Area: doctorchecks.AreaGit,
+		Problem: doctorchecks.ProblemWhen(s.Git.IsShallow(), "the clone is shallow"),
 		Detail:  "a shallow clone cannot compute versions or affected projects", Remedy: "`git fetch --unshallow` (in CI: checkout with fetch-depth 0)",
 	})
 	out = append(out, smithDependencyFinding(s.Root, cipipeline.SmithVersionFor(s.Config, s.Version))...)
@@ -273,8 +275,8 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 			detail = drift[0]
 		}
 		pipelines := protocol.Finding{
-			Check: "CI pipelines match the workspace", OK: len(drift) == 0, Area: AreaCI,
-			Problem: leadProblem(drift), Detail: detail, Remedy: "run `smith ci generate` and commit the result",
+			Check: "CI pipelines match the workspace", OK: len(drift) == 0, Area: doctorchecks.AreaCI,
+			Problem: doctorchecks.LeadProblem(drift), Detail: detail, Remedy: "run `smith ci generate` and commit the result",
 		}
 		planned, lost := cipipeline.Planned(s.Root, s.Config, model)
 		stale := cipipeline.Stale(s.Root, cipipeline.Rendered(s.Config, model))

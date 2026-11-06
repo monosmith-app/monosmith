@@ -75,7 +75,7 @@ func TestBuildWritesFindingSummarisesManyProjectsButFixesThemAll(t *testing.T) {
 	if f.Fix == nil || !f.Fix.Safe || len(f.Fix.AppliesTo) != 23 || strings.Count(f.Fix.Files[0].Content, "[projects.pkg") != 23 {
 		t.Fatalf("one safe fix declaring all 23: %+v", f.Fix)
 	}
-	plan := Plan(Report{Findings: []Finding{{Finding: f}}})
+	plan := doctorfix.Group([]doctorfix.Item{{Check: f.Check, Fix: f.Fix}})
 	if len(plan) != 1 || doctorfix.Scope(plan[0].AppliesTo) != "applies to 23 projects: pkg00, pkg01, pkg02, pkg03 and 19 more" {
 		t.Fatalf("%+v", plan)
 	}

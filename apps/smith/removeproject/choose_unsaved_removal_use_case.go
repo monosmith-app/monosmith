@@ -1,13 +1,17 @@
-package scaffold
+package removeproject
 
 import (
 	"bufio"
 	"fmt"
 	"io"
 
+	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 )
+
+// maxListed is how many files the question lists before it says "and N more".
+const maxListed = 15
 
 // The answers to "what happens to the files git cannot bring back".
 const (
@@ -42,16 +46,11 @@ func chooseUnsaved(preview Removal, canAsk bool, in *bufio.Reader, out io.Writer
 	if preview.Ignored > 0 {
 		fmt.Fprintf(out, "  (and %d ignored entries such as node_modules, which a build makes again)\n", preview.Ignored)
 	}
-	q := NewQuestion{
-		Prompt:  "What should happen to the folder?",
-		Default: removeKeepCopy, Flag: "keep-copy",
-		Options: []NewOption{
-			{Label: "Move it to .smith/removed/", Value: removeKeepCopy, Hint: "the project leaves the workspace and nothing is lost"},
-			{Label: "Delete it for good", Value: removeDelete, Hint: "the files listed above cannot be brought back"},
-			{Label: "Cancel", Value: removeCancel, Hint: "change nothing"},
-		},
-	}
-	answer, _ := askNewQuestion(q, in, out)
+	answer := choiceprompt.Ask("What should happen to the folder?", []choiceprompt.Option{
+		{Label: "Move it to .smith/removed/", Value: removeKeepCopy, Hint: "the project leaves the workspace and nothing is lost"},
+		{Label: "Delete it for good", Value: removeDelete, Hint: "the files listed above cannot be brought back"},
+		{Label: "Cancel", Value: removeCancel, Hint: "change nothing"},
+	}, removeKeepCopy, in, out)
 	if answer == removeCancel {
 		return "", operationplan.ErrDeclined
 	}

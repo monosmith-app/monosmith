@@ -1,13 +1,16 @@
-package workspace
+package dockerregistries_test
 
 import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/dockerregistries"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
 func TestDockerRegistriesAreParsedAsListedAndNormalized(t *testing.T) {
-	cfg, err := Parse([]byte(`[workspace]
+	cfg, err := workspace.Parse([]byte(`[workspace]
 name = "a"
 [conventions.docker]
 registries = [
@@ -31,7 +34,7 @@ description_from = "README.md"
 }
 
 func TestAnAppsRegistriesAreChecked(t *testing.T) {
-	cfg, err := Parse([]byte(`[workspace]
+	cfg, err := workspace.Parse([]byte(`[workspace]
 name = "a"
 [conventions.docker]
 registry = "ghcr.io/a"
@@ -65,7 +68,7 @@ func TestDockerRegistryMistakesAreErrors(t *testing.T) {
 			"[conventions.vertical-slices]\nregistries = [\"ghcr.io/a\"]\n", "settings of the docker convention",
 		},
 	} {
-		_, err := Parse([]byte("[workspace]\nname = \"a\"\n" + tc.toml))
+		_, err := workspace.Parse([]byte("[workspace]\nname = \"a\"\n" + tc.toml))
 		if err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: want error containing %q, got %v", name, tc.want, err)
 		}
@@ -74,12 +77,12 @@ func TestDockerRegistryMistakesAreErrors(t *testing.T) {
 
 func TestValidRegistryURL(t *testing.T) {
 	for _, ok := range []string{"ghcr.io/acme", "docker.io/acme", "localhost:5000/e2e", "127.0.0.1:5000", "acme.azurecr.io/team/app"} {
-		if why := ValidRegistryURL(ok); why != "" {
+		if why := dockerregistries.ValidRegistryURL(ok); why != "" {
 			t.Errorf("%s: %s", ok, why)
 		}
 	}
 	for _, bad := range []string{"", "acme", "ghcr.io/a b", " ghcr.io/a", "ghcr.io/a?x=1", "ghcr.io/../b"} {
-		if ValidRegistryURL(bad) == "" {
+		if dockerregistries.ValidRegistryURL(bad) == "" {
 			t.Errorf("%q should be rejected", bad)
 		}
 	}

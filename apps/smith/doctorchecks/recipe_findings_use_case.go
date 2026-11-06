@@ -13,14 +13,14 @@ import (
 func RecipeChecks(s *session.Session) []protocol.Finding {
 	var out []protocol.Finding
 	for _, r := range recipedrift.Check(s) {
-		out = append(out, recipeFinding(r))
+		out = append(out, RecipeFinding(r))
 	}
 	return out
 }
 
-// recipeFinding is a drift report as a finding: a project that has drifted,
+// RecipeFinding is a drift report as a finding: a project that has drifted,
 // or that cannot be checked, is a warning that names its remedy.
-func recipeFinding(r recipedrift.Report) protocol.Finding {
+func RecipeFinding(r recipedrift.Report) protocol.Finding {
 	f := protocol.Finding{Check: r.Project + " follows its recipe " + r.Recipe, Project: r.Project}
 	problem := strings.TrimPrefix(r.Summary(), r.Project+" ")
 	switch {

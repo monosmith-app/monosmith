@@ -1,4 +1,4 @@
-package workspace
+package releasetable
 
 import (
 	"fmt"
@@ -8,13 +8,14 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
 // validateReleaseCommand checks the [projects.<name>.release] of a project
 // whose release files come from a command: it names what to build, which
 // files to upload and known platforms, and leaves out what only applies to
 // the archives a plugin builds.
-func validateReleaseCommand(name string, r *ProjectRelease, tags []string, githubReleases bool) error {
+func validateReleaseCommand(name string, r *workspace.ProjectRelease, tags []string, githubReleases bool) error {
 	table := fmt.Sprintf("[projects.%s.release]", name)
 	if strings.TrimSpace(r.Build) == "" {
 		if r.Build != "" {

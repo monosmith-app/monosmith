@@ -1,4 +1,4 @@
-package workspace
+package releasetable
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -14,7 +15,7 @@ import (
 // what the table leaves out, and the result is validated as a release from a
 // command, or as the archives the project's plugin builds. The table is not
 // changed; the resolved copy is returned.
-func ResolveRelease(name string, po ProjectOverride, defaults *protocol.ReleaseDefaults, githubReleases bool) (*ProjectRelease, error) {
+func ResolveRelease(name string, po workspace.ProjectOverride, defaults *protocol.ReleaseDefaults, githubReleases bool) (*workspace.ProjectRelease, error) {
 	if po.Release == nil {
 		return nil, nil
 	}
@@ -52,14 +53,14 @@ func ResolveRelease(name string, po ProjectOverride, defaults *protocol.ReleaseD
 			"remove checksums, or add build")
 	}
 	if len(r.Platforms) == 0 {
-		r.Platforms = append([]string(nil), DefaultPlatforms...)
+		r.Platforms = append([]string(nil), workspace.DefaultPlatforms...)
 	}
 	if r.AssetName == "" {
 		r.AssetName = "{product}_{version}_{os}_{arch}.{ext}"
 	}
 	for _, p := range r.Platforms {
 		if os, arch, ok := strings.Cut(p, "/"); !ok || os == "" || arch == "" {
-			return nil, fmt.Errorf("%s: %s platform %q must be os/arch", FileName, table, p)
+			return nil, fmt.Errorf("%s: %s platform %q must be os/arch", workspace.FileName, table, p)
 		}
 	}
 	return &r, nil
@@ -67,7 +68,7 @@ func ResolveRelease(name string, po ProjectOverride, defaults *protocol.ReleaseD
 
 // setsArchiveOnly reports whether the table sets something only the archives
 // a plugin builds have, which a plugin's build command defaults would replace.
-func setsArchiveOnly(r *ProjectRelease) bool {
+func setsArchiveOnly(r *workspace.ProjectRelease) bool {
 	return len(r.OSAlias) > 0 || len(r.ArchAlias) > 0 || r.VersionVariable != "" || len(r.PackageManagers) > 0 ||
 		len(r.LinuxPackages) > 0 || len(r.NPM) > 0 || r.PyPI != "" || r.NuGet != "" || r.RubyGems != "" || r.Pub != ""
 }

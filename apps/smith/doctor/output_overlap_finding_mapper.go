@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"strconv"
 	"strings"
 
@@ -29,7 +30,7 @@ const outputOverlapCheck = "no two tasks write the same output directory"
 // Returns: the finding; it passes when no two tasks overlap.
 func outputOverlapFinding(projects []*projectgraph.Project, allowed []string, alternatives [][]string, tomlSrc string) protocol.Finding {
 	overlaps := buildoutputs.Overlaps(projects, allowed, alternatives)
-	f := protocol.Finding{Check: outputOverlapCheck, OK: len(overlaps) == 0, Warning: true, Area: AreaLint}
+	f := protocol.Finding{Check: outputOverlapCheck, OK: len(overlaps) == 0, Warning: true, Area: doctorchecks.AreaLint}
 	if f.OK {
 		return f
 	}

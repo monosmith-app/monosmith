@@ -1,4 +1,4 @@
-package doctorchecks
+package doctor
 
 import (
 	"strings"
@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
 	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/derive"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"github.com/monosmith-app/monosmith/apps/smith/overridelearn"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/recipedrift"
@@ -26,23 +27,12 @@ func assertLocated(t *testing.T, what string, fs ...protocol.Finding) {
 		switch {
 		case f.Project != "" && f.Area != "":
 			t.Errorf("%s: %q has both project %q and area %q", what, f.Check, f.Project, f.Area)
-		case f.Project == "" && !ValidArea(f.Area):
+		case f.Project == "" && !doctorchecks.ValidArea(f.Area):
 			t.Errorf("%s: %q has no project and area %q is not valid", what, f.Check, f.Area)
 		}
 		if f.Project != "" && strings.HasPrefix(f.Problem, f.Project+" ") {
 			t.Errorf("%s: %q repeats the project in its problem %q", what, f.Check, f.Problem)
 		}
-	}
-}
-
-func TestValidAreaIsTheClosedSet(t *testing.T) {
-	for _, a := range Areas {
-		if !ValidArea(a) {
-			t.Errorf("%s", a)
-		}
-	}
-	if ValidArea("") || ValidArea("Config") || ValidArea("other") {
-		t.Error("only the closed set is valid")
 	}
 }
 
@@ -66,8 +56,8 @@ func TestEveryHostMapperLocatesItsFindings(t *testing.T) {
 		t.Errorf("a kind hint is about its project: %q, %q", lib.Project, pkgHint.Project)
 	}
 
-	assertLocated(t, "recipe drift", recipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", Problem: "no network"}))
-	assertLocated(t, "recipe ok", recipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", From: "1", To: "1"}))
+	assertLocated(t, "recipe drift", doctorchecks.RecipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", Problem: "no network"}))
+	assertLocated(t, "recipe ok", doctorchecks.RecipeFinding(recipedrift.Report{Project: "orders", Recipe: "team", From: "1", To: "1"}))
 	assertLocated(t, "overrides",
 		overrideSuggestionFinding(overridelearn.Suggestion{Kind: overridelearn.Replace, Task: "test", Field: "cache", Value: "x", Projects: []string{"a"}, Total: 2}),
 		overrideSuggestionFinding(overridelearn.Suggestion{Task: "test", Field: "cache", Value: "x", Projects: []string{"a", "b"}, Total: 4}))
@@ -82,7 +72,7 @@ func TestACollapsedMachineCheckSpeaksForTheMachine(t *testing.T) {
 	two := one
 	two.Project = "web"
 	got := withoutRepeatedMachineChecks([]Finding{one, two})
-	if len(got) != 1 || got[0].Project != "" || got[0].Area != AreaToolchain {
+	if len(got) != 1 || got[0].Project != "" || got[0].Area != doctorchecks.AreaToolchain {
 		t.Fatalf("shared by two projects it is about the machine: %+v", got)
 	}
 	got = withoutRepeatedMachineChecks([]Finding{one})

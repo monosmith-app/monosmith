@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/overridelearn"
@@ -31,7 +32,7 @@ func overrideSuggestionFinding(sg overridelearn.Suggestion) protocol.Finding {
 		return protocol.Finding{
 			Check:   "a workspace default is not overridden by nearly every project",
 			Warning: true,
-			Area:    AreaConfig,
+			Area:    doctorchecks.AreaConfig,
 			Problem: fmt.Sprintf("%d of %d projects override %s = %s", len(sg.Projects), sg.Total, setting, sg.Value),
 			Detail:  fmt.Sprintf("%d of %d projects override %s = %s (%s)", len(sg.Projects), sg.Total, setting, sg.Value, names),
 			Remedy:  fmt.Sprintf("the default is probably wrong: change %s in smith.toml to what they set and remove the overrides they repeat", setting),
@@ -40,7 +41,7 @@ func overrideSuggestionFinding(sg overridelearn.Suggestion) protocol.Finding {
 	return protocol.Finding{
 		Check:   "repeated project overrides are a workspace default",
 		Warning: true,
-		Area:    AreaConfig,
+		Area:    doctorchecks.AreaConfig,
 		Problem: fmt.Sprintf("%d projects set %s = %s", len(sg.Projects), setting, sg.Value),
 		Detail:  fmt.Sprintf("%d projects set %s = %s (%s)", len(sg.Projects), setting, sg.Value, names),
 		Remedy:  fmt.Sprintf("make it the default for all projects: set %s = %s under [tasks.%s] in smith.toml, then remove it from the projects that set it", sg.Field, sg.Value, sg.Task),

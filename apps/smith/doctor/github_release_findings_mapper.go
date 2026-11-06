@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"os"
 	"sort"
 	"strings"
@@ -56,10 +57,10 @@ func githubReleaseFindings(all []*projectgraph.Project, githubReleases bool, pac
 	if len(attached) == 0 {
 		return out
 	}
-	out = append(out, protocol.Finding{Check: "release: github_releases is on for the packages that attach to GitHub Releases", OK: githubReleases, Area: AreaRelease,
-		Problem: problemWhen(!githubReleases, "github_releases is off, but "+strings.Join(attached, ", ")+" attach to GitHub Releases"),
+	out = append(out, protocol.Finding{Check: "release: github_releases is on for the packages that attach to GitHub Releases", OK: githubReleases, Area: doctorchecks.AreaRelease,
+		Problem: doctorchecks.ProblemWhen(!githubReleases, "github_releases is off, but "+strings.Join(attached, ", ")+" attach to GitHub Releases"),
 		Detail:  "registry = \"github-release\" attaches package files to GitHub Releases, which are off", Remedy: "set github_releases = true under [release] in smith.toml"})
-	out = append(out, protocol.Finding{Check: fmt.Sprintf("release: %d package(s) attach to GitHub Releases, not to a registry: %s", len(attached), strings.Join(attached, ", ")), OK: true, Area: AreaRelease})
+	out = append(out, protocol.Finding{Check: fmt.Sprintf("release: %d package(s) attach to GitHub Releases, not to a registry: %s", len(attached), strings.Join(attached, ", ")), OK: true, Area: doctorchecks.AreaRelease})
 	for _, name := range names {
 		p := projects[name]
 		if p.Kind != protocol.ProjectPackage || release.Native(p) || release.PublishesToNoRegistry(p) || !p.Publishes() {

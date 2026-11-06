@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"strconv"
 
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
@@ -34,7 +35,7 @@ func BoundaryFindings(vs []boundaries.Violation) []protocol.Finding {
 }
 
 func boundaryFinding(check string, vs []boundaries.Violation, warning bool) protocol.Finding {
-	f := protocol.Finding{Check: check, OK: len(vs) == 0, Warning: warning, Area: AreaDependencies}
+	f := protocol.Finding{Check: check, OK: len(vs) == 0, Warning: warning, Area: doctorchecks.AreaDependencies}
 	if len(vs) == 0 {
 		return f
 	}
@@ -49,7 +50,7 @@ func boundaryFinding(check string, vs []boundaries.Violation, warning bool) prot
 			f.Problem = strconv.Itoa(len(edges)) + " dependencies point at an app"
 		}
 	}
-	f.Detail = Summary(edges, "; ", shownProblems)
+	f.Detail = doctorchecks.Summary(edges, "; ", doctorchecks.ShownProblems)
 	f.Remedy = vs[0].Hint
 	if warning {
 		f.Remedy += "; set kinds = true under [boundaries] in smith.toml to make this fail smith ci verify, or kinds = false to switch the rule off"

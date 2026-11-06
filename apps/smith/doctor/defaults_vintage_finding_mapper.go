@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -20,7 +21,7 @@ import (
 // smith.toml, from which the record fix is made ("" offers no record fix).
 func defaultsVintageFinding(recorded, tomlSrc string) protocol.Finding {
 	latest := workspace.LatestDefaultsVintage()
-	f := protocol.Finding{Check: "the workspace uses the latest defaults", Area: AreaConfig}
+	f := protocol.Finding{Check: "the workspace uses the latest defaults", Area: doctorchecks.AreaConfig}
 	switch workspace.DefaultsVintageState(recorded) {
 	case workspace.VintageCurrent:
 		f.OK = true

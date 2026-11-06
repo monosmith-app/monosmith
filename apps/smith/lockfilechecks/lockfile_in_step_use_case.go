@@ -1,8 +1,9 @@
-package doctorchecks
+package lockfilechecks
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,7 +41,7 @@ func checkLockfile(root string, run func(root string) (output string, ran bool, 
 	if !ran {
 		return nil
 	}
-	f := protocol.Finding{Check: lockfileCheck, OK: err == nil, Warning: true, Area: AreaDependencies}
+	f := protocol.Finding{Check: lockfileCheck, OK: err == nil, Warning: true, Area: doctorchecks.AreaDependencies}
 	if err == nil {
 		return []protocol.Finding{f}
 	}

@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"context"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"strconv"
 	"strings"
 
@@ -62,7 +63,7 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 			problem = detail
 		}
 		findings = append(findings, Finding{Source: "smith", Finding: protocol.Finding{
-			Check: check, OK: false, Warning: true, Area: AreaToolchain,
+			Check: check, OK: false, Warning: true, Area: doctorchecks.AreaToolchain,
 			Problem: problem,
 			Detail:  detail + "; if you skip it, " + st.Consequence,
 			Remedy:  "smith tools install " + st.Name,
@@ -86,7 +87,7 @@ func withoutRepeatedMachineChecks(findings []Finding) []Finding {
 				// The kept finding now speaks for several projects, so it is
 				// about the machine and no longer about the first project.
 				if kept := &out[at]; kept.Project != "" && kept.Project != f.Project {
-					kept.Project, kept.Area = "", AreaToolchain
+					kept.Project, kept.Area = "", doctorchecks.AreaToolchain
 				}
 				continue
 			}

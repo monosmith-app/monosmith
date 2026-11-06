@@ -43,3 +43,10 @@ func TestUnusableEntriesWarnAndNameVerifyFix(t *testing.T) {
 		t.Fatalf("%+v", broken)
 	}
 }
+
+func TestLocalCacheFindingsNameWhatTheyFound(t *testing.T) {
+	got := localCacheFindings(cachemaintenance.Status{Exists: true, BrokenEntries: 3})
+	if got[0].Problem != "" || got[1].Problem != "3 local cache entries are unusable" {
+		t.Errorf("%+v", got)
+	}
+}

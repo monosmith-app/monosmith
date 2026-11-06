@@ -233,6 +233,18 @@ compact layout) are drawn in it from this palette, saved as `.cuppa` files and
 exported as images, and would be kept in `docs/architecture/tui/` (the folder does not exist). The Go interface is built
 from the same libraries and checked against those pictures.
 
+## Code layout of the shell
+
+The shell is one Bubble Tea model, `Shell`, in the root of `apps/smith/tui`. It is
+split by role: `shell_model.go` (state and queries), `shell_update_use_case.go`
+(`Update`, `handle`, `resize`), the key, mouse and run use cases, the mappers that
+draw, and `splits_repository.go` (the one file write). What needs no `Shell` lives
+in slices of its own that take plain values: `splitter` (dividers, their keys and
+spots), `runhistory` (the Run tab's history: ago text, header parts, recent rows,
+the rerun-failed line) and `commandtext` (the text a captured command printed).
+`apps/smith/tui/README.md` lists what is still a method on `Shell` and the next
+slice to cut.
+
 ## Interaction
 
 No key needs a modifier except `Ctrl+C` (stop, then quit) and the palette's

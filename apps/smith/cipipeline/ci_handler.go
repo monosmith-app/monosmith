@@ -86,7 +86,7 @@ rewrites or deletes, with a diff of what changes, because edits you made
 outside a smith:slot marker are lost and a pipeline file of a provider you
 dropped from [ci] providers is deleted. In a terminal it asks before it writes;
 without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`,
-		Args:  cobra.NoArgs,
+		Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: c.ErrOrStderr()})
 			if err != nil {

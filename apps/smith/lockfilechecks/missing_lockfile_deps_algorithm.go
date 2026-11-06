@@ -1,4 +1,4 @@
-package doctorchecks
+package lockfilechecks
 
 import (
 	"encoding/json"

@@ -3,7 +3,7 @@ package convertplan
 import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
-	"github.com/monosmith-app/monosmith/apps/smith/legacyjesthelpers"
+	"github.com/monosmith-app/monosmith/apps/smith/legacyjestsupport"
 	"path"
 	"regexp"
 	"sort"
@@ -192,7 +192,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			plan.Add(Manual, "", f, "imports Nx ("+nxImport(text)+"), which convert removes; rewrite it without Nx")
 		}
 	}
-	planSharedESLintConfig(plan, files, read)
+	planLegacyESLintConfig(plan, files, read)
 	if w.Nx.NxCloudID != "" || w.Nx.NxCloudToken != "" {
 		plan.Add(Changed, "", "nx.json", "Nx Cloud is not used: smith caches locally (.smith/cache)")
 	}
@@ -384,5 +384,5 @@ func addJestPresetPackage(plan *Plan) {
 		plan.AddDevDependencies = map[string]string{}
 	}
 	// MakePlanWith sets the range of the running smith's release line.
-	plan.AddDevDependencies[JestPresetPackage] = legacyjesthelpers.StableRange
+	plan.AddDevDependencies[JestPresetPackage] = legacyjestsupport.StableRange
 }

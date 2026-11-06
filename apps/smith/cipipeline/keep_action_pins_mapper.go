@@ -2,8 +2,9 @@ package cipipeline
 
 import (
 	"regexp"
-	"strconv"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/semver"
 )
 
 var usesPattern = regexp.MustCompile(`(uses:[ \t]+)([\w./-]+)@(v\d+(?:\.\d+){0,2})\b`)
@@ -38,23 +39,8 @@ func Preserve(old, rendered string) (content string, lost []string) {
 }
 
 // newerVersion reports whether a ("v6", "v1.2") is a higher version than b.
+// Both are the numeric tags the uses pattern matches, so the "v" prefix is the
+// only thing to remove before they compare as semantic versions.
 func newerVersion(a, b string) bool {
-	as, bs := versionParts(a), versionParts(b)
-	for i := 0; i < len(as) || i < len(bs); i++ {
-		x, y := part(as, i), part(bs, i)
-		if x != y {
-			return x > y
-		}
-	}
-	return false
-}
-
-func versionParts(v string) []string { return strings.Split(strings.TrimPrefix(v, "v"), ".") }
-
-func part(parts []string, i int) int {
-	if i >= len(parts) {
-		return 0
-	}
-	n, _ := strconv.Atoi(parts[i])
-	return n
+	return semver.Compare(strings.TrimPrefix(a, "v"), strings.TrimPrefix(b, "v")) > 0
 }

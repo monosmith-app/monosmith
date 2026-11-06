@@ -1,17 +1,18 @@
-package workspace
+package releasetable
 
 import (
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // parseAndResolve parses smith.toml and resolves the release of project app
 // without a plugin's defaults.
-func parseAndResolve(input string) (*ProjectRelease, error) {
-	cfg, err := Parse([]byte(input))
+func parseAndResolve(input string) (*workspace.ProjectRelease, error) {
+	cfg, err := workspace.Parse([]byte(input))
 	if err != nil {
 		return nil, err
 	}
@@ -26,9 +27,9 @@ var tauriDefaults = &protocol.ReleaseDefaults{
 	Checksums: true,
 }
 
-func resolveWithDefaults(t *testing.T, table string) (*ProjectRelease, error) {
+func resolveWithDefaults(t *testing.T, table string) (*workspace.ProjectRelease, error) {
 	t.Helper()
-	cfg, err := Parse([]byte(releaseHead + table))
+	cfg, err := workspace.Parse([]byte(releaseHead + table))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,13 +63,13 @@ func TestResolveReleaseKeepsWhatTheTableSets(t *testing.T) {
 
 func TestResolveReleaseLeavesATableOfArchivesToThePlugin(t *testing.T) {
 	r, err := resolveWithDefaults(t, "os_alias = { windows = \"win\" }\n")
-	if err != nil || r.Build != "" || len(r.Platforms) != len(DefaultPlatforms) {
+	if err != nil || r.Build != "" || len(r.Platforms) != len(workspace.DefaultPlatforms) {
 		t.Fatalf("%+v %v", r, err)
 	}
 }
 
 func TestResolveReleaseNeedsGitHubReleasesForTheDefaults(t *testing.T) {
-	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[projects.app.release]\n"))
+	cfg, err := workspace.Parse([]byte("[workspace]\nname = \"a\"\n[projects.app.release]\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,5 +106,27 @@ func TestResolveReleaseDefaultsToTheSixPlatformsTheDocsName(t *testing.T) {
 	r, err := resolveWithDefaults(t, "os_alias = { windows = \"win\" }\n")
 	if err != nil || !slices.Equal(r.Platforms, want) {
 		t.Fatalf("%+v %v", r, err)
+	}
+}
+
+func TestParseProjectReleaseAndTagPrefix(t *testing.T) {
+	cfg, err := workspace.Parse([]byte("[workspace]\nname = \"a\"\n[release]\ngithub_releases = true\n[projects.cli]\ntag_prefix = \"@a/cli@\"\n[projects.cli.release]\nproduct = \"acme\"\n[projects.cli.tasks.slice]\ncommand = [\"node\", \"check.cjs\"]\ncwd = \".\"\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli := cfg.Projects["cli"]
+	if !cfg.Release.GitHubReleases || cli.TagPrefix != "@a/cli@" || cli.Tasks["slice"].Cwd != "." {
+		t.Fatalf("%+v", cfg)
+	}
+	release, err := ResolveRelease("cli", cli, nil, true)
+	if err != nil || release.Product != "acme" || len(release.Platforms) != 6 || release.AssetName != "{product}_{version}_{os}_{arch}.{ext}" {
+		t.Fatalf("release defaults %+v %v", release, err)
+	}
+	bad, err := workspace.Parse([]byte("[workspace]\nname = \"a\"\n[projects.cli.release]\nplatforms = [\"linux\"]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveRelease("cli", bad.Projects["cli"], nil, false); err == nil || !strings.Contains(err.Error(), "os/arch") {
+		t.Fatalf("a bad platform must be rejected: %v", err)
 	}
 }

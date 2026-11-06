@@ -7,16 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/nativebuild"
-	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -414,110 +411,6 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
 }
 
-// uncommitted lists the tracked files changed in the working tree, as the
-// release's preflight sees them; nil when git cannot say.
-func uncommitted(s *session.Session) []string {
-	out, err := s.Git.Run("status", "--porcelain", "--untracked-files=no")
-	if err != nil {
-		return nil
-	}
-	return release.Uncommitted(out)
-}
-
-// verifyClean fails verify when its tasks left tracked files changed: the
-// release refuses a dirty tree, and the pull request is where to find out.
-// A file already changed before verify fails it only in CI, where checkout
-// starts clean; on a laptop it is the developer's own edit.
-func verifyClean(s *session.Session, before []string, summary taskrun.Summary) error {
-	after := uncommitted(s)
-	if len(after) == 0 {
-		return nil
-	}
-	ran := make([]string, 0, len(summary.Results))
-	for _, r := range summary.Results {
-		ran = append(ran, r.Task)
-	}
-	var changes []TrackedChange
-	for _, c := range TrackedChanges(before, after, s.Graph.Projects, ran) {
-		if !c.Before || os.Getenv("CI") != "" {
-			changes = append(changes, c)
-		}
-	}
-	if len(changes) == 0 {
-		return nil
-	}
-	return errors.New(ExplainTrackedChanges(changes))
-}
-
-// verifyMarked runs, after the verify tasks, the tasks a plugin marked for
-// verify (protocol.Task.Verify: an app's image), each for the affected
-// projects that have it marked, native ones left to the native job. A task
-// whose program is not installed is skipped with a warning.
-func verifyMarked(ctx context.Context, s *session.Session, base string, out io.Writer) ([]taskrun.Result, error) {
-	byTask, missing := MarkedForVerify(s.Graph.Projects, func(program string) bool {
-		_, err := exec.LookPath(program)
-		return err == nil
-	})
-	for _, m := range missing {
-		warn(out, m)
-	}
-	names := make([]string, 0, len(byTask))
-	for name := range byTask {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	var results []taskrun.Result
-	for _, name := range names {
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{name}, Projects: byTask[name], Affected: base != "", Base: base, Out: out})
-		if err != nil {
-			return results, err
-		}
-		if len(summary.Results) > 0 {
-			fmt.Fprintln(out, summary.String())
-		}
-		results = append(results, summary.Results...)
-		if !summary.OK() {
-			return results, taskrun.ErrTasksFailed
-		}
-	}
-	return results, nil
-}
-
-// taskOf is the task of a task id ("core:test" is "test").
-func taskOf(id string) string {
-	_, task := projectOf(id)
-	return task
-}
-
-// MarkedForVerify lists, by task, the projects whose task a plugin marked
-// for verify, leaving out native projects, the verify tasks themselves and
-// tasks whose program is not installed (named in missing, for a warning).
-func MarkedForVerify(projects []*projectgraph.Project, installed func(string) bool) (byTask map[string][]string, missing []string) {
-	byTask = map[string][]string{}
-	for _, p := range projects {
-		if slices.Contains(p.Tags, release.NativeTag) {
-			continue
-		}
-		tasks := make([]string, 0, len(p.Tasks))
-		for name := range p.Tasks {
-			tasks = append(tasks, name)
-		}
-		sort.Strings(tasks)
-		for _, name := range tasks {
-			t := p.Tasks[name]
-			if !t.Verify || slices.Contains(VerifyTasks, name) || len(t.Command) == 0 {
-				continue
-			}
-			if program := t.Command[0]; !strings.HasPrefix(program, "{") && !installed(program) {
-				missing = append(missing, fmt.Sprintf("%s:%s not verified: %s is not installed", p.Name, name, program))
-				continue
-			}
-			byTask[name] = append(byTask[name], p.Name)
-		}
-	}
-	return byTask, missing
-}
-
 func runSteps(ctx context.Context, root string, steps []protocol.Step, remembered *verdicts, out io.Writer) ([]stepOutcome, error) {
 	var failures []string
 	var outcomes []stepOutcome
@@ -604,11 +497,6 @@ func failureWithOutput(out io.Writer, step, msg, output string) string {
 	return msg + "\n" + lastLines(output, outputTailLines)
 }
 
-// inGroupedLog reports whether the CI log folds groups (GitHub or Azure).
-func inGroupedLog() bool {
-	return os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("TF_BUILD") != ""
-}
-
 // ensureIdentity gives CI a committer identity for annotated release tags.
 func ensureIdentity(s *session.Session) {
 	if v, _ := s.Git.Run("config", "user.email"); v == "" {
@@ -616,51 +504,5 @@ func ensureIdentity(s *session.Session) {
 	}
 	if v, _ := s.Git.Run("config", "user.name"); v == "" {
 		_, _ = s.Git.Run("config", "user.name", "smith release")
-	}
-}
-
-func group(out io.Writer, name string) {
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintf(out, "::group::%s\n", name)
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintf(out, "##[group]%s\n", name)
-	}
-}
-
-func endGroup(out io.Writer) {
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintln(out, "::endgroup::")
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintln(out, "##[endgroup]")
-	}
-}
-
-func annotate(out io.Writer, phase string, err error) {
-	msg := strings.ReplaceAll(err.Error(), "\n", " ")
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintf(out, "::error title=smith ci %s::%s\n", phase, msg)
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintf(out, "##vso[task.logissue type=error]smith ci %s: %s\n", phase, msg)
-	}
-}
-
-// notice puts a result in the run summary of the CI that has notices.
-func notice(out io.Writer, msg string) {
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Fprintf(out, "::notice title=smith ci release::%s\n", msg)
-	}
-}
-
-func warn(out io.Writer, msg string) {
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintf(out, "::warning::%s\n", msg)
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintf(out, "##vso[task.logissue type=warning]%s\n", msg)
-	default:
-		fmt.Fprintln(out, "warning: "+msg)
 	}
 }
