@@ -104,16 +104,7 @@ func rebasePaths(src, oldRoot, newRoot string) string {
 // retargetDependents points every other crate's path dependencies at the new
 // directory.
 func retargetDependents(edits *fileedits.Set, params protocol.ChangeKindParams) {
-	for _, other := range params.Projects {
-		if other.Language != "rust" || other.Root == params.Project.Root {
-			continue
-		}
-		file := path.Join(other.Root, manifestName)
-		if text, ok := edits.Read(file); ok {
-			updated, _ := pathrefs.Retarget(text, other.Root, params.Project.Root, params.NewRoot)
-			edits.Write(file, updated)
-		}
-	}
+	fileedits.RetargetDependents(edits, params, "rust", func(root string) []string { return []string{path.Join(root, manifestName)} })
 }
 
 // retargetWorkspace updates the root manifest: explicit members and path

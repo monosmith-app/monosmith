@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/apisurface"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/ci"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/deriving"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
@@ -93,7 +94,7 @@ func (n *Node) Published(params protocol.PublishedParams) (protocol.PublishedRes
 func (n *Node) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	return pipeline.CI(n.root, params, scaffolding.NodeVersion), nil
+	return ci.CI(n.root, params, scaffolding.NodeVersion), nil
 }
 
 // Doctor implements serve.DoctorContributor.

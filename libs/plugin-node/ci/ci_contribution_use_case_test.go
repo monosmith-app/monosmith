@@ -1,6 +1,8 @@
-package pipeline
+package ci
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -35,5 +37,23 @@ func TestCIAddsTheNpmPolicyStepOnlyWhenOptedIn(t *testing.T) {
 	audit.Warn = []string{"node"}
 	if CI(t.TempDir(), protocol.CIParams{Projects: projects, Audit: audit}, "22").Audit[1].Blocking {
 		t.Error("warn makes it report only")
+	}
+}
+
+func TestCIOnlyWhenNodeProjectsExist(t *testing.T) {
+	if r := CI(t.TempDir(), protocol.CIParams{}, "24"); len(r.Toolchains) != 0 {
+		t.Fatal("no projects, no contribution")
+	}
+	ws := t.TempDir()
+	r := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Kind: protocol.ProjectPackage, Root: "packages/sdk"}}}, "24")
+	if r.Toolchains[0].Version != "24" || len(r.Credentials) != 1 || r.Credentials[0].Env != "NODE_AUTH_TOKEN" || !r.Setup[0].Blocking {
+		t.Fatalf("contribution %+v", r)
+	}
+	dir := filepath.Join(ws, "packages", "tools")
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name": "tools", "engines": {"vscode": "^1.96.0"}}`), 0o644)
+	r = CI(ws, protocol.CIParams{Projects: []protocol.Project{{Kind: protocol.ProjectPackage, Root: "packages/tools"}}}, "24")
+	if len(r.Credentials) != 1 || r.Credentials[0].Env != "VSCE_PAT" {
+		t.Errorf("an extension publishes to the Marketplace, not npm: %+v", r.Credentials)
 	}
 }

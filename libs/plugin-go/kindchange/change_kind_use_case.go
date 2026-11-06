@@ -93,16 +93,7 @@ func rebaseReplaces(src, oldRoot, newRoot string) string {
 // retargetDependents points the replace directives of every other module at
 // the new directory.
 func retargetDependents(edits *fileedits.Set, params protocol.ChangeKindParams) {
-	for _, other := range params.Projects {
-		if other.Language != "go" || other.Root == params.Project.Root {
-			continue
-		}
-		file := path.Join(other.Root, "go.mod")
-		if text, ok := edits.Read(file); ok {
-			updated, _ := pathrefs.Retarget(text, other.Root, params.Project.Root, params.NewRoot)
-			edits.Write(file, updated)
-		}
-	}
+	fileedits.RetargetDependents(edits, params, "go", func(root string) []string { return []string{path.Join(root, "go.mod")} })
 }
 
 // renameModule changes the module path where it is declared, required,

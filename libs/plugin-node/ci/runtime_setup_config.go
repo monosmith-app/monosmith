@@ -1,4 +1,4 @@
-package pipeline
+package ci
 
 import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 
