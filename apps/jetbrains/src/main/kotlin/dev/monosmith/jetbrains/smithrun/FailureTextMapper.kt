@@ -1,6 +1,5 @@
 package dev.monosmith.jetbrains.smithrun
 
-
 /** Words why a smith command failed, in smith's own words and with its fix. */
 object FailureTextMapper {
     /**
