@@ -10,6 +10,35 @@ import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.FIXWIZARD_STYLE_APPLY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_A_PLAIN_SMITH_DERIVE_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_BY_DEFAULT_SMITH_LEAVES_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_BY_DEFAULT_SMITH_LEAVES_THE_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_DERIVED_FILES_NEED_ACTION_PICK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_DO_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_EJECT_OWN_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_EVERY_DERIVED_FILE_IS_CURRENT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_EVERY_FILE_THAT_IS_STALE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_EXPLAIN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_IS_DONE_COMMIT_IT_TOGETHER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_KEEP_MY_EDIT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_MONOSMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_MONOSMITH_CHECK_THE_DERIVED_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_MONOSMITH_DERIVED_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_MONOSMITH_PREVIEW_THE_DERIVED_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_MONOSMITH_WRITE_THE_DERIVED_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_OVERWRITE_WITH_THE_DERIVED_CONTENT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_RECLAIM_GIVE_IT_BACK_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_SAY_WHO_OWNS_THIS_FILE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_SMITH_GIVES_THE_FILE_BACK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_SMITH_KEEPS_YOUR_EDIT_AS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_SMITH_OVERWRITES_THE_FILE_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_SMITH_WRITES_EVERY_DERIVED_FILE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_THE_DERIVED_FILES_ARE_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_THE_FILE_BECOMES_YOURS_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_WRITE_THE_DERIVED_CONTENT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -18,39 +47,44 @@ import java.nio.file.Path
  * to smith). Each change shows its effect first and commits nothing unless the box is ticked.
  */
 object DeriveFilesUseCase {
-    private const val TITLE = "MonoSmith: derived files"
+    private val TITLE = say(JETBRAINS_DERIVEFILES_MONOSMITH_DERIVED_FILES)
     private const val ALL = "\u0000all"
 
     private val effects =
         mapOf(
             "apply" to
-                "smith writes every derived file that is stale or missing and records it in smith.lock. It leaves the files someone edited alone.",
-            "replace" to "smith overwrites the file with the derived content. Your edit is lost; git can bring it back.",
+                say(JETBRAINS_DERIVEFILES_SMITH_WRITES_EVERY_DERIVED_FILE),
+            "replace" to say(JETBRAINS_DERIVEFILES_SMITH_OVERWRITES_THE_FILE_WITH),
             "adopt" to
-                "smith keeps your edit as the new baseline. This works for a file smith owns by keys that still has every derived key. If the inputs change later, the file is in drift again.",
-            "eject" to "The file becomes yours. smith writes \"you\" as its owner in smith.lock and never touches it again.",
-            "reclaim" to "smith gives the file back to itself: it shows the diff, rewrites the file and records smith as the owner.",
+                say(JETBRAINS_DERIVEFILES_SMITH_KEEPS_YOUR_EDIT_AS),
+            "eject" to say(JETBRAINS_DERIVEFILES_THE_FILE_BECOMES_YOURS_SMITH),
+            "reclaim" to say(JETBRAINS_DERIVEFILES_SMITH_GIVES_THE_FILE_BACK),
         )
 
     private fun actionRows(file: DerivedFileContract): List<ChoiceRowContract> {
         val write = if (DeriveReportMapper.isHeldBack(file.status)) "replace" else "apply"
         return listOf(
-            ChoiceRowContract("explain", "Explain", "(default)", "Say who owns this file and why it is in its state. Changes nothing."),
+            ChoiceRowContract(
+                "explain",
+                say(JETBRAINS_DERIVEFILES_EXPLAIN),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                say(JETBRAINS_DERIVEFILES_SAY_WHO_OWNS_THIS_FILE),
+            ),
             ChoiceRowContract(
                 write,
                 if (write ==
                     "replace"
                 ) {
-                    "Overwrite with the derived content"
+                    say(JETBRAINS_DERIVEFILES_OVERWRITE_WITH_THE_DERIVED_CONTENT)
                 } else {
-                    "Write the derived content"
+                    say(JETBRAINS_DERIVEFILES_WRITE_THE_DERIVED_CONTENT)
                 },
                 "",
                 effects.getValue(write),
             ),
-            ChoiceRowContract("adopt", "Keep my edit", "", effects.getValue("adopt")),
-            ChoiceRowContract("eject", "Eject: own it", "", effects.getValue("eject")),
-            ChoiceRowContract("reclaim", "Reclaim: give it back to smith", "", effects.getValue("reclaim")),
+            ChoiceRowContract("adopt", say(JETBRAINS_DERIVEFILES_KEEP_MY_EDIT), "", effects.getValue("adopt")),
+            ChoiceRowContract("eject", say(JETBRAINS_DERIVEFILES_EJECT_OWN_IT), "", effects.getValue("eject")),
+            ChoiceRowContract("reclaim", say(JETBRAINS_DERIVEFILES_RECLAIM_GIVE_IT_BACK_TO), "", effects.getValue("reclaim")),
         )
     }
 
@@ -58,7 +92,7 @@ object DeriveFilesUseCase {
     fun check(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: check the derived files") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_DERIVEFILES_MONOSMITH_CHECK_THE_DERIVED_FILES)) {
         SmithRunClient.run(ide, root, DeriveReportMapper.arguments("check"), show = true)
     }
 
@@ -66,7 +100,7 @@ object DeriveFilesUseCase {
     fun preview(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: preview the derived files") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_DERIVEFILES_MONOSMITH_PREVIEW_THE_DERIVED_FILES)) {
         SmithRunClient.run(ide, root, DeriveReportMapper.arguments("preview"), show = true)
     }
 
@@ -90,7 +124,7 @@ object DeriveFilesUseCase {
         val files = DeriveReportMapper.files(run.stdout)
         if (files.isEmpty()) {
             if (run.ok) {
-                ports.notice.info("Every derived file is current.")
+                ports.notice.info(say(JETBRAINS_DERIVEFILES_EVERY_DERIVED_FILE_IS_CURRENT))
             } else {
                 ports.notice.warn(FailureTextMapper.describe(run))
             }
@@ -100,9 +134,9 @@ object DeriveFilesUseCase {
             listOf(
                 ChoiceRowContract(
                     ALL,
-                    "Every file that is stale or missing",
-                    "(default)",
-                    "A plain smith derive: it leaves the files someone edited alone.",
+                    say(JETBRAINS_DERIVEFILES_EVERY_FILE_THAT_IS_STALE),
+                    say(JETBRAINS_ADDCHOICES_DEFAULT),
+                    say(JETBRAINS_DERIVEFILES_A_PLAIN_SMITH_DERIVE_IT),
                 ),
             ) +
                 files.map { ChoiceRowContract(it.path, it.path, "${it.status} · ${it.renderer}", it.detail) }
@@ -110,7 +144,7 @@ object DeriveFilesUseCase {
             ports.prompt
                 .pickOne(
                     TITLE,
-                    "${files.size} derived files need action. Pick one. The first answer is the default.",
+                    say(JETBRAINS_DERIVEFILES_DERIVED_FILES_NEED_ACTION_PICK, files.size.toString()),
                     rows,
                 )?.name
                 ?: return false
@@ -125,14 +159,14 @@ object DeriveFilesUseCase {
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "MonoSmith: $action ${file.path}?",
+                title = say(JETBRAINS_DERIVEFILES_MONOSMITH, action.toString(), file.path.toString()),
                 planArgs = null,
                 fixedPlan = "smith ${DeriveReportMapper.arguments(action, file.path).joinToString(" ")}",
-                header = "${effects.getValue(action)} By default smith leaves the files uncommitted: review them with the Commit window.",
-                okText = "Do it",
+                header = say(JETBRAINS_DERIVEFILES_BY_DEFAULT_SMITH_LEAVES_THE, effects.getValue(action).toString()),
+                okText = say(JETBRAINS_DERIVEFILES_DO_IT),
                 offerCommit = true,
                 apply = { DeriveReportMapper.arguments(action, file.path) },
-                done = "${file.path}: $action is done. Commit it together with smith.lock",
+                done = say(JETBRAINS_DERIVEFILES_IS_DONE_COMMIT_IT_TOGETHER, file.path.toString(), action.toString()),
                 operation = "derive",
             ),
             commitLater,
@@ -146,13 +180,13 @@ object DeriveFilesUseCase {
         PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "MonoSmith: write the derived files?",
+                title = say(JETBRAINS_DERIVEFILES_MONOSMITH_WRITE_THE_DERIVED_FILES),
                 planArgs = DeriveReportMapper.arguments("preview"),
-                header = "${effects.getValue("apply")} By default smith leaves the files uncommitted.",
-                okText = "Apply",
+                header = say(JETBRAINS_DERIVEFILES_BY_DEFAULT_SMITH_LEAVES_THE_2, effects.getValue("apply").toString()),
+                okText = say(FIXWIZARD_STYLE_APPLY),
                 offerCommit = true,
                 apply = { DeriveReportMapper.arguments("apply") },
-                done = "The derived files are written. Commit them together with smith.lock",
+                done = say(JETBRAINS_DERIVEFILES_THE_DERIVED_FILES_ARE_WRITTEN),
                 operation = "derive",
             ),
             commitLater,

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { findPathReferences } from './find-path-reference.algorithm.ts'
 import type { PathReference } from './parsed-diagnostic.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What the links need to know about the documents they are made in. */
 export interface OutputLinkSource {
@@ -39,7 +40,7 @@ export function registerOutputLinks (source: OutputLinkSource): vscode.Disposabl
           if (file === undefined) continue
           const target = vscode.Uri.file(file).with({ fragment: `L${reference.line}${reference.column === undefined ? '' : `,${reference.column}`}` })
           const link = new vscode.DocumentLink(new vscode.Range(index, reference.start, index, reference.end), target)
-          link.tooltip = 'Open the file at that line'
+          link.tooltip = say('vscode.task-output.open-the-file-at-that-line')
           links.push(link)
         }
       }

@@ -4,6 +4,27 @@ import dev.monosmith.jetbrains.addchoices.ChoiceRowsAlgorithm
 import dev.monosmith.jetbrains.addchoices.GlossaryAlgorithm
 import dev.monosmith.jetbrains.addchoices.PickChoicesUseCase
 import dev.monosmith.jetbrains.flowports.PromptPort
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_APP_LIB_OR_PACKAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CI_AND_RELEASES_BUILD_THIS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_ENVIRONMENTS_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_FOLLOW_WHICH_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_HOW_DO_YOU_WANT_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_MONOSMITH_ADD_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_PICK_THE_LANGUAGE_WHAT_EACH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_PICK_WHAT_YOU_WANT_TYPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_DEFAULTS_ARE_THE_ANSWERS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_ENV_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_NAME_OF_THE_NEW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_NEW_PROJECT_COPIES_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_VITE_WRITES_ITS_VITE_VALUES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHAT_ARE_YOU_BUILDING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHAT_KIND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHERE_DO_THE_BUILDS_GO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHICH_ENVIRONMENT_IS_BUILD
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHICH_LANGUAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_YOUR_PICK_IS_KEPT_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * The questions of Add project, outcome first: what is being built, the language only where several fit,
@@ -11,7 +32,7 @@ import dev.monosmith.jetbrains.flowports.PromptPort
  * environments. Every list is a presented choice with the default first. Blocks: call it from a background flow.
  */
 object AddQuestionsUseCase {
-    private const val TITLE = "MonoSmith: Add project"
+    private val TITLE = say(JETBRAINS_ADDPROJECT_MONOSMITH_ADD_PROJECT)
 
     /** A project of the workspace, as far as these questions read it. */
     data class Sibling(
@@ -33,8 +54,8 @@ object AddQuestionsUseCase {
     ): AddAnswerContract? {
         val first =
             prompt.pickOne(
-                "$TITLE: what are you building?",
-                "Pick what you want. Type in the box to narrow the list: try react, azure function, electron, tauri, api.",
+                say(JETBRAINS_ADDPROJECT_WHAT_ARE_YOU_BUILDING, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_PICK_WHAT_YOU_WANT_TYPE),
                 AddRowsAlgorithm.outcomeRows(options.outcomes),
             ) ?: return null
         if (first.name == AddRowsAlgorithm.COMPOSE) return AddAnswerContract.Compose
@@ -49,8 +70,8 @@ object AddQuestionsUseCase {
             typedName = chosen
             val setup =
                 prompt.pickOne(
-                    "$TITLE: how do you want to set it up?",
-                    "The defaults are the answers the stack suggests. The plan shows every default as a flag.",
+                    say(JETBRAINS_ADDPROJECT_HOW_DO_YOU_WANT_TO, TITLE.toString()),
+                    say(JETBRAINS_ADDPROJECT_THE_DEFAULTS_ARE_THE_ANSWERS),
                     AddRowsAlgorithm.setupRows,
                 ) ?: return null
             if (setup.name == AddRowsAlgorithm.SETUP_DEFAULTS) {
@@ -103,7 +124,7 @@ object AddQuestionsUseCase {
         role: String,
         siblings: List<Sibling>,
     ): String? =
-        prompt.text("$TITLE: name", "The name of the new $role (for example billing-api):") {
+        prompt.text("$TITLE: name", say(JETBRAINS_ADDPROJECT_THE_NAME_OF_THE_NEW, role.toString())) {
             ProjectNameValidator.problem(it, siblings.map { sibling -> sibling.name })
         }
 
@@ -133,7 +154,7 @@ object AddQuestionsUseCase {
             prompt.pickOne(
                 "$TITLE: which ${layer ?: "one"}?",
                 GlossaryAlgorithm.withLine(
-                    "Your pick is kept: the next questions do not ask it again. The first answer is the default.",
+                    say(JETBRAINS_ADDPROJECT_YOUR_PICK_IS_KEPT_THE),
                     GlossaryAlgorithm.line(items.first().layer, options.layers, options.layerAbout),
                 ),
                 AddRowsAlgorithm.presetRows(items, outcome.id),
@@ -146,7 +167,11 @@ object AddQuestionsUseCase {
         options: AddOptionsContract,
     ): Found? {
         val role =
-            prompt.pickOne("$TITLE: what kind?", "app, lib or package.", AddRowsAlgorithm.roleRows(options.kinds)) ?: return null
+            prompt.pickOne(
+                say(JETBRAINS_ADDPROJECT_WHAT_KIND, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_APP_LIB_OR_PACKAGE),
+                AddRowsAlgorithm.roleRows(options.kinds),
+            ) ?: return null
         val language = askLanguage(prompt, options, role.name, options.kinds.map { it.language }.distinct(), null) ?: return null
         return Found(role.name, language, emptyList(), null)
     }
@@ -161,8 +186,8 @@ object AddQuestionsUseCase {
         val rows = AddRowsAlgorithm.languageRows(options.languages, options.kinds, role, fitting, outcome)
         return prompt
             .pickOne(
-                "$TITLE: which language?",
-                "Pick the language. What each one offers for this project is next to it.",
+                say(JETBRAINS_ADDPROJECT_WHICH_LANGUAGE, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_PICK_THE_LANGUAGE_WHAT_EACH),
                 rows,
             )?.name
     }
@@ -175,8 +200,8 @@ object AddQuestionsUseCase {
         if (siblings.size < 2) return ""
         return prompt
             .pickOne(
-                "$TITLE: follow which project?",
-                "The new project copies the build, test, layout and lint of one project (smith add --like).",
+                say(JETBRAINS_ADDPROJECT_FOLLOW_WHICH_PROJECT, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_THE_NEW_PROJECT_COPIES_THE),
                 AddRowsAlgorithm.likeRows(siblings),
             )?.name
     }
@@ -187,24 +212,32 @@ object AddQuestionsUseCase {
     ): EnvironmentsContract? {
         val typed =
             prompt.text(
-                "$TITLE: environments of $app",
-                "Vite writes its VITE_ values into the bundle when it builds, so the app is built once per environment.\nEdit the names (lowercase words, separated by commas):",
+                say(JETBRAINS_ADDPROJECT_ENVIRONMENTS_OF, TITLE.toString(), app.toString()),
+                say(JETBRAINS_ADDPROJECT_VITE_WRITES_ITS_VITE_VALUES),
                 EnvironmentsAlgorithm.defaults.joinToString(", "),
                 EnvironmentsAlgorithm::problem,
             ) ?: return null
         val names = EnvironmentsAlgorithm.parse(typed)
         val build =
             prompt.pickOne(
-                "$TITLE: which environment is \"build\"?",
-                "CI and releases build this one; the others are build:<name>.",
+                say(JETBRAINS_ADDPROJECT_WHICH_ENVIRONMENT_IS_BUILD, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_CI_AND_RELEASES_BUILD_THIS),
                 AddRowsAlgorithm.environmentRows(names),
             )
                 ?: return null
         val output =
-            prompt.pickOne("$TITLE: where do the builds go?", "The first answer is the default.", AddRowsAlgorithm.outputRows)
+            prompt.pickOne(
+                say(JETBRAINS_ADDPROJECT_WHERE_DO_THE_BUILDS_GO, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE),
+                AddRowsAlgorithm.outputRows,
+            )
                 ?: return null
         val files =
-            prompt.pickOne("$TITLE: the .env files", "The first answer is the default.", AddRowsAlgorithm.envFileRows)
+            prompt.pickOne(
+                say(JETBRAINS_ADDPROJECT_THE_ENV_FILES, TITLE.toString()),
+                say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE),
+                AddRowsAlgorithm.envFileRows,
+            )
                 ?: return null
         return EnvironmentsContract(names, build.name, output.name, files.name)
     }

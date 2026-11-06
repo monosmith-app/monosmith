@@ -1,4 +1,5 @@
 import type { SmithAnswer, SmithQuestion } from './smith-question.contract.ts'
+import { say } from '../words/index.ts'
 
 function text (value: unknown): string {
   return typeof value === 'string' ? value : ''
@@ -12,7 +13,7 @@ function text (value: unknown): string {
  */
 export function parseQuestions (json: string): SmithQuestion[] {
   const list: unknown = JSON.parse(json)
-  if (!Array.isArray(list)) throw new TypeError('smith did not print a list of questions')
+  if (!Array.isArray(list)) throw new TypeError(say('vscode.smith-questions.smith-did-not-print-a-list'))
 
   return list
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && text((item as Record<string, unknown>).key) !== '')

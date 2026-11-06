@@ -1,6 +1,6 @@
 package fixwizard
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+import "github.com/monosmith-app/monosmith/libs/words/words"
 
 // Style words the dialog for a walk that is not a doctor fix. The zero Style
 // is the fix wizard itself, so a caller sets only what differs.

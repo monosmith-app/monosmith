@@ -2,6 +2,9 @@ package dev.monosmith.jetbrains.newrecipe
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_USE_LOWERCASE_WORDS_JOINED_BY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_USE_MAJOR_MINOR_PATCH_FOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** A plugin a recipe can fix at a level. */
 data class RecipePluginContract(
@@ -130,7 +133,7 @@ object RecipeLevelsMapper {
         ) {
             null
         } else {
-            "Use lowercase words joined by dashes, for example \"team\" or \"team-node\". The name is the name of the recipe's releases."
+            say(JETBRAINS_NEWRECIPE_USE_LOWERCASE_WORDS_JOINED_BY)
         }
 
     /** What is wrong with a version, or null when it is fine. Empty takes 0.1.0. */
@@ -140,6 +143,6 @@ object RecipeLevelsMapper {
         ) {
             null
         } else {
-            "Use major.minor.patch, for example 0.1.0."
+            say(JETBRAINS_NEWRECIPE_USE_MAJOR_MINOR_PATCH_FOR)
         }
 }

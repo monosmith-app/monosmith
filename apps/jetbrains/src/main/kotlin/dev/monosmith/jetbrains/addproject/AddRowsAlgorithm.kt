@@ -1,6 +1,34 @@
 package dev.monosmith.jetbrains.addproject
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMMANDS_FILE_COMPOSE_TITLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_OUTCOMES_DECIDE_IN_THE_NEXT_QUESTION
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_OUTCOMES_I_KNOW_THE_LANGUAGE_SHOW_EVERY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_SETUP_CUSTOMISE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_SETUP_START_WITH_THE_DEFAULTS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_WEB_ENVIRONMENTS_STEPS_IN_THE_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_WEB_ENVIRONMENTS_STEPS_IN_THE_WORKSPACE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_ANSWER_THE_QUESTIONS_ONE_AT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_BUILT_BY_SMITH_RUN_BUILD
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_BUILT_BY_SMITH_RUN_BUILD_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CODE_PUBLISHED_TO_A_REGISTRY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CODE_THE_OTHER_PROJECTS_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMIT_ONLY_ENV_EXAMPLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMIT_THE_ENV_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COPY_THE_BUILD_TEST_LAYOUT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_DIST_APPS_APP_NAME_AT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_DIST_NAME_INSIDE_THE_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_EACH_MACHINE_AND_CI_JOB
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_SEARCH_FRAMEWORKS_DESKTOP_SHELLS_AND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_SMITH_FOLLOWS_THE_SIBLINGS_THAT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_SOMETHING_YOU_RUN_OR_DEPLOY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THEY_HOLD_VITE_VALUES_WHICH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_LONG_WAY_THE_KIND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHAT_MOST_PROJECTS_DO_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WHAT_THE_STACK_SUGGESTS_YOUR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_YOU_CAN_STILL_PICK_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** The lines of the first questions of Add project, built from what smith lists. No outcome, language or framework is named here. */
 object AddRowsAlgorithm {
@@ -16,9 +44,9 @@ object AddRowsAlgorithm {
     /** What the three kinds of project mean, one sentence each. */
     val roleWords =
         mapOf(
-            "app" to "Something you run or deploy. Other projects do not import it.",
-            "lib" to "Code the other projects of this workspace import. It is not published.",
-            "package" to "Code published to a registry on release, for other people to install.",
+            "app" to say(JETBRAINS_ADDPROJECT_SOMETHING_YOU_RUN_OR_DEPLOY),
+            "lib" to say(JETBRAINS_ADDPROJECT_CODE_THE_OTHER_PROJECTS_OF),
+            "package" to say(JETBRAINS_ADDPROJECT_CODE_PUBLISHED_TO_A_REGISTRY),
         )
 
     /** The first question: what is being built. The two last lines lead to the long way and to the composer. */
@@ -35,11 +63,16 @@ object AddRowsAlgorithm {
             listOf(
                 ChoiceRowContract(
                     EVERY,
-                    "I know the language: show every language",
+                    say(GUIDE_ADD_PROJECT_OUTCOMES_I_KNOW_THE_LANGUAGE_SHOW_EVERY),
                     "",
-                    "The long way: the kind first, then the language from the full list.",
+                    say(JETBRAINS_ADDPROJECT_THE_LONG_WAY_THE_KIND),
                 ),
-                ChoiceRowContract(COMPOSE, "Compose a stack…", "", "Search frameworks, desktop shells and cloud hosts in one place."),
+                ChoiceRowContract(
+                    COMPOSE,
+                    say(COMMANDS_FILE_COMPOSE_TITLE),
+                    "",
+                    say(JETBRAINS_ADDPROJECT_SEARCH_FRAMEWORKS_DESKTOP_SHELLS_AND),
+                ),
             )
 
     /**
@@ -79,15 +112,15 @@ object AddRowsAlgorithm {
         listOf(
             ChoiceRowContract(
                 SETUP_DEFAULTS,
-                "Start with the defaults",
-                "(default)",
-                "What the stack suggests: your pick, the shape of the other projects, and for a website lcl, dev, uat, prd with prd as the build.",
+                say(GUIDE_ADD_PROJECT_SETUP_START_WITH_THE_DEFAULTS),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                say(JETBRAINS_ADDPROJECT_WHAT_THE_STACK_SUGGESTS_YOUR),
             ),
             ChoiceRowContract(
                 "custom",
-                "Customise",
+                say(GUIDE_ADD_PROJECT_SETUP_CUSTOMISE),
                 "",
-                "Answer the questions one at a time: choices, the project to follow, the environments.",
+                say(JETBRAINS_ADDPROJECT_ANSWER_THE_QUESTIONS_ONE_AT),
             ),
         )
 
@@ -111,9 +144,9 @@ object AddRowsAlgorithm {
                 listOf(
                     ChoiceRowContract(
                         LATER,
-                        "Decide in the next question",
-                        "(default)",
-                        "You can still pick a framework, a shell or a tool there.",
+                        say(GUIDE_ADD_PROJECT_OUTCOMES_DECIDE_IN_THE_NEXT_QUESTION),
+                        say(JETBRAINS_ADDCHOICES_DEFAULT),
+                        say(JETBRAINS_ADDPROJECT_YOU_CAN_STILL_PICK_A),
                     ),
                 )
             }
@@ -121,8 +154,15 @@ object AddRowsAlgorithm {
 
     /** The rows of "follow which project?": what most siblings do first, then each sibling. */
     fun likeRows(siblings: List<String>): List<ChoiceRowContract> =
-        listOf(ChoiceRowContract("", "What most projects do (default)", "", "smith follows the siblings that agree.")) +
-            siblings.map { ChoiceRowContract(it, it, "", "Copy the build, test, layout and lint of this project.") }
+        listOf(
+            ChoiceRowContract(
+                "",
+                say(JETBRAINS_ADDPROJECT_WHAT_MOST_PROJECTS_DO_DEFAULT),
+                "",
+                say(JETBRAINS_ADDPROJECT_SMITH_FOLLOWS_THE_SIBLINGS_THAT),
+            ),
+        ) +
+            siblings.map { ChoiceRowContract(it, it, "", say(JETBRAINS_ADDPROJECT_COPY_THE_BUILD_TEST_LAYOUT)) }
 
     /** The rows of "which environment is build?". */
     fun environmentRows(names: List<String>): List<ChoiceRowContract> {
@@ -133,8 +173,14 @@ object AddRowsAlgorithm {
                 ChoiceRowContract(
                     it,
                     it,
-                    if (it == fallback) "(default)" else "",
-                    if (it == fallback) "Built by `smith run build`: what CI and the release build." else "Built by `smith run build:$it`.",
+                    if (it == fallback) say(JETBRAINS_ADDCHOICES_DEFAULT) else "",
+                    if (it ==
+                        fallback
+                    ) {
+                        say(JETBRAINS_ADDPROJECT_BUILT_BY_SMITH_RUN_BUILD)
+                    } else {
+                        say(JETBRAINS_ADDPROJECT_BUILT_BY_SMITH_RUN_BUILD_2, it.toString())
+                    },
                 )
             }
     }
@@ -144,11 +190,16 @@ object AddRowsAlgorithm {
         listOf(
             ChoiceRowContract(
                 "workspace",
-                "In the workspace",
-                "(default)",
-                "dist/apps/<app>/<name> at the workspace root, with every other build.",
+                say(GUIDE_WEB_ENVIRONMENTS_STEPS_IN_THE_WORKSPACE),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                say(JETBRAINS_ADDPROJECT_DIST_APPS_APP_NAME_AT),
             ),
-            ChoiceRowContract("project", "In the project", "", "dist/<name> inside the app's own folder; smith doctor then accepts it."),
+            ChoiceRowContract(
+                "project",
+                say(GUIDE_WEB_ENVIRONMENTS_STEPS_IN_THE_PROJECT),
+                "",
+                say(JETBRAINS_ADDPROJECT_DIST_NAME_INSIDE_THE_APP),
+            ),
         )
 
     /** The rows of "the .env files"; the first is the default. */
@@ -156,15 +207,15 @@ object AddRowsAlgorithm {
         listOf(
             ChoiceRowContract(
                 "commit",
-                "Commit the .env files",
-                "(default)",
-                "They hold VITE_ values, which end up in the browser, so they hold no secret; CI builds with them.",
+                say(JETBRAINS_ADDPROJECT_COMMIT_THE_ENV_FILES),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                say(JETBRAINS_ADDPROJECT_THEY_HOLD_VITE_VALUES_WHICH),
             ),
             ChoiceRowContract(
                 "example",
-                "Commit only .env.example",
+                say(JETBRAINS_ADDPROJECT_COMMIT_ONLY_ENV_EXAMPLE),
                 "",
-                "Each machine and CI job makes its own .env.<name>; git ignores them.",
+                say(JETBRAINS_ADDPROJECT_EACH_MACHINE_AND_CI_JOB),
             ),
         )
 }

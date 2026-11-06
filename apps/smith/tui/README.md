@@ -17,6 +17,14 @@ person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix
 history: ago text, header parts, recent rows, steps, the rerun-failed line) and `commandtext` (the
 text a captured command printed: plan lines, failure text, report file, not-committed line).
 
+## Text
+
+The TUI shows no wording of its own. Every sentence, label and hint is a key in the shared catalogue
+in [`libs/words`](../../../libs/words/README.md), read with `words.Say` and `words.Count`. The guard tests
+that scan this tree are in `wordsguard`: a key the code asks for must exist, its placeholders must be
+filled, a key must be claimed by a surface, and a migrated package holds no raw wording. The TUI
+claims a key by asking for it in code; the editors claim theirs in `libs/words/surface/<name>.json`.
+
 ## The Run tab
 
 Every task run (build, test, lint, typecheck, `run <task>`, "Lint all", "changed", from the keys,

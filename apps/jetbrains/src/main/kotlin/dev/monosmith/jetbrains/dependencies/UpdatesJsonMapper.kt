@@ -2,6 +2,10 @@ package dev.monosmith.jetbrains.dependencies
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_MAJOR_MAY_BREAK_YOUR_CODE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_MINOR_NEW_FEATURES_NO_BREAKING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_PATCH_FIXES_ONLY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * One dependency with a newer version, as `smith up --json` lists it.
@@ -78,9 +82,9 @@ object UpdatesJsonMapper {
     /** What a level means, in a few words. */
     fun levelWords(level: String): String =
         when (level) {
-            "major" -> "Major: may break your code; read the changelog"
-            "minor" -> "Minor: new features, no breaking change"
-            else -> "Patch: fixes only"
+            "major" -> say(JETBRAINS_DEPENDENCIES_MAJOR_MAY_BREAK_YOUR_CODE)
+            "minor" -> say(JETBRAINS_DEPENDENCIES_MINOR_NEW_FEATURES_NO_BREAKING)
+            else -> say(JETBRAINS_DEPENDENCIES_PATCH_FIXES_ONLY)
         }
 
     /** One line for an update: `zod 3.22.0 → 3.23.1 (3 projects)`. */

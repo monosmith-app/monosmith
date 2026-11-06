@@ -6,6 +6,11 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_AGENTFILE_AGENTS_MD_IS_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_AGENTFILE_MONOSMITH_WRITE_THE_AGENT_FILE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_AGENTFILE_WRITE_THE_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_AGENTFILE_YOUR_OWN_TEXT_OUTSIDE_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -14,7 +19,7 @@ import java.nio.file.Path
  * smith has no `--commit` here, so nothing is committed.
  */
 object WriteAgentFileUseCase {
-    private const val TITLE = "MonoSmith: write the agent file"
+    private val TITLE = say(JETBRAINS_AGENTFILE_MONOSMITH_WRITE_THE_AGENT_FILE)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -31,11 +36,11 @@ object WriteAgentFileUseCase {
             PlanStepContract(
                 title = "$TITLE?",
                 planArgs = listOf("agent", "file", "--dry-run"),
-                header = "Your own text outside smith's markers is kept. Nothing was written yet.",
-                okText = "Write the files",
+                header = say(JETBRAINS_AGENTFILE_YOUR_OWN_TEXT_OUTSIDE_SMITH),
+                okText = say(JETBRAINS_AGENTFILE_WRITE_THE_FILES),
                 offerCommit = false,
                 apply = { listOf("agent", "file", "--yes") },
-                done = "AGENTS.md is written",
+                done = say(JETBRAINS_AGENTFILE_AGENTS_MD_IS_WRITTEN),
             ),
         ) {}
 }

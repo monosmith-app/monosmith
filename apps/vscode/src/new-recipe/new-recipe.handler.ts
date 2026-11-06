@@ -1,6 +1,7 @@
 import type { CommandHost } from '../command-host/index.ts'
 import { newRecipe } from './new-recipe.use-case.ts'
 import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, pickLevel, tellRecipeOutcome } from './recipe-prompts.client.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks the name, then a pick list or tick boxes for each level, shows the `smith recipe new` command and the file, and writes on a yes.
@@ -9,7 +10,7 @@ import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, pickLevel, tell
  */
 export async function newRecipeHere (host: CommandHost, argument: unknown): Promise<void> {
   const state = await host.folderFor(argument)
-  if (state?.location === undefined || !host.mayWrite('writing a recipe')) return
+  if (state?.location === undefined || !host.mayWrite(say('vscode.new-recipe.writing-a-recipe'))) return
   host.showOutput()
   const outcome = await newRecipe({
     run:       host.smithIn(state),

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // NewWorkspaceSteps are the questions of "Create a workspace": the name, then

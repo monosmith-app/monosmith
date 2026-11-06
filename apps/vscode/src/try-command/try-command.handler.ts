@@ -1,6 +1,7 @@
 import type { CommandHost } from '../command-host/index.ts'
 import { tryCommand } from './try-command.use-case.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome } from './try-prompts.client.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Runs a smith command in a temporary copy (`smith try`), shows what it did, and runs it for real on a yes.
@@ -10,7 +11,7 @@ import { askTryCommand, offerTryApply, tellTryOutcome } from './try-prompts.clie
  */
 export async function tryHere (host: CommandHost, showPage: (name: string, text: string) => Promise<void>, argument: unknown): Promise<void> {
   const state = await host.folderFor(argument)
-  if (state?.location === undefined || !host.mayWrite('running a command for real')) return
+  if (state?.location === undefined || !host.mayWrite(say('vscode.try-command.running-a-command-for-real'))) return
   const outcome = await tryCommand({
     run:   host.smithIn(state),
     ask:   askTryCommand,

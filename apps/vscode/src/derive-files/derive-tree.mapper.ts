@@ -1,14 +1,15 @@
 import type { ListNode, ListResult } from '../list-view/index.ts'
 import { isHeldBack } from './derive-arguments.mapper.ts'
 import type { DeriveReport, DerivedFile, DeriveStatus } from './derive-report.contract.ts'
+import { say } from '../words/index.ts'
 
 const FIXES: Record<DeriveStatus, string> = {
-  stale:      'The inputs changed and nobody edited the file. Apply rewrites it.',
-  missing:    'The file is gone. Apply writes it back.',
-  unrecorded: 'The file is right but smith.lock does not list it. Apply records it.',
-  drift:      'Someone edited the file. Explain shows the diff. Then Apply overwrites it, Adopt keeps the edit, or Eject makes the file yours.',
-  diverged:   'The file differs from what the sibling projects share. Explain shows the diff. Then Apply follows the siblings, or Eject keeps the file as yours.',
-  broken:     'smith cannot edit the file (a region without its markers, or a file that does not parse). Fix the file, or Eject it.',
+  stale:      say('vscode.derive-files.the-inputs-changed-and-nobody-edited'),
+  missing:    say('vscode.derive-files.the-file-is-gone-apply-writes'),
+  unrecorded: say('vscode.derive-files.the-file-is-right-but-smith'),
+  drift:      say('vscode.derive-files.someone-edited-the-file-explain-shows'),
+  diverged:   say('vscode.derive-files.the-file-differs-from-what-the'),
+  broken:     say('vscode.derive-files.smith-cannot-edit-the-file-a'),
 }
 
 const ICONS: Record<DeriveStatus, string> = {
@@ -46,7 +47,7 @@ function toFileRow (file: DerivedFile): ListNode {
     tooltip,
     children:    [
       ...(file.detail === '' ? [] : [{ id: `derive:${file.path}:detail`, label: file.detail, icon: 'info', tooltip: file.detail }]),
-      { id: `derive:${file.path}:fix`, label: `Fix: ${fixFor(file.status)}`, icon: 'lightbulb', tooltip: fixFor(file.status) },
+      { id: `derive:${file.path}:fix`, label: say('vscode.derive-files.fix', { fixFor: fixFor(file.status) }), icon: 'lightbulb', tooltip: fixFor(file.status) },
     ],
   }
 }
@@ -65,28 +66,28 @@ export function addDeriveRows (health: ListResult, report: DeriveReport): ListRe
       return health
     }
     case 'current': {
-      const row: ListNode = { id: 'derive:current', label: 'Derived files', description: `${report.total} up to date`, icon: 'pass', color: 'charts.green' }
+      const row: ListNode = { id: 'derive:current', label: say('vscode.derive-files.derived-files'), description: `${report.total} up to date`, icon: 'pass', color: 'charts.green' }
 
       return { ...health, nodes: [...health.nodes, row] }
     }
     case 'failed': {
-      const row: ListNode = { id: 'derive:failed', label: `Derived files: ${report.message ?? 'smith could not check them.'}`, icon: 'error', color: 'charts.red', tooltip: report.message }
+      const row: ListNode = { id: 'derive:failed', label: say('vscode.derive-files.derived-files-2', { part: report.message ?? say('vscode.derive-files.smith-could-not-check-them') }), icon: 'error', color: 'charts.red', tooltip: report.message }
 
       return { ...health, nodes: [...health.nodes, row] }
     }
     case 'pending': {
       const row: ListNode = {
         id:          'derive:pending',
-        label:       'Derived files',
-        description: `${report.files.length} need action`,
+        label:       say('vscode.derive-files.derived-files'),
+        description: say('vscode.derive-files.need-action', { length: report.files.length }),
         icon:        'diff',
         color:       'charts.yellow',
         expanded:    true,
         children:    report.files.map((file) => toFileRow(file)),
       }
-      const note = `${report.files.length} derived ${report.files.length === 1 ? 'file' : 'files'} need action`
+      const note = say('vscode.derive-files.derived-need-action', { length: report.files.length, part: say(report.files.length === 1 ? 'vscode.agent-install.file' : 'vscode.agent-install.files') })
 
-      return { ...health, nodes: [...health.nodes, row], summary: health.summary === undefined || health.summary === 'all passed' ? note : `${health.summary}, ${note}` }
+      return { ...health, nodes: [...health.nodes, row], summary: health.summary === undefined || health.summary === say('doctor.group.passed') ? note : `${health.summary}, ${note}` }
     }
   }
 }

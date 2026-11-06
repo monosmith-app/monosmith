@@ -3,6 +3,7 @@ import { parseQuestions } from '../smith-questions/index.ts'
 import type { SmithQuestion } from '../smith-questions/index.ts'
 import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** How the person wants to set the workspace up. */
 export type SetupWay = 'defaults' | 'customise' | 'terminal'
@@ -42,7 +43,7 @@ export async function createWorkspace (deps: NewWorkspaceDeps): Promise<NewWorks
   try {
     questions = parseQuestions(asked.stdout)
   } catch {
-    return { kind: 'refused', message: 'smith did not list the questions of `smith new`. Update smith and try again.' }
+    return { kind: 'refused', message: say('vscode.new-workspace.smith-did-not-list-the-questions') }
   }
   const defaultLines = describeChoices({ name: deps.folderName, ...DEFAULT_CHOICES }, deps.folderName, questions).slice(1)
   const way = await deps.askWay(defaultLines)

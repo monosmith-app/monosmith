@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // maxTries is how many times one question is asked before giving up.

@@ -1,9 +1,15 @@
 import * as vscode from 'vscode'
 import type { LevelDecider, LevelQuestion, RecipeBasics, RecipeChoice, RecipeOutcome, RecipeRequest } from './new-recipe.contract.ts'
 import { checkChoiceAnswer, checkChoiceQuestion, checkRecipeName, checkRecipeVersion } from './recipe-levels.mapper.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: New recipe'
-const UNSET = 'Leave unset (default)'
+const TITLE = say('vscode.new-recipe.monosmith-new-recipe')
+const UNSET = say('guide.new_recipe_levels.leave_unset_default')
+
+/** The sentence that names what the recipe fixes. */
+function fixedSentence (fixed: readonly string[]): string {
+  return fixed.length > 0 ? say('vscode.new-recipe.the-recipe-fixes', { join: fixed.join('; ') }) : say('vscode.new-recipe.the-recipe-fixes-no-plugin')
+}
 
 /**
  * Asks the recipe's name, version and parent recipe.
@@ -11,23 +17,23 @@ const UNSET = 'Leave unset (default)'
  */
 export async function askRecipeBasics (): Promise<RecipeBasics | undefined> {
   const name = await vscode.window.showInputBox({
-    title:         `${TITLE}: what is the recipe called?`,
+    title:         say('vscode.new-recipe.what-is-the-recipe-called', { title: TITLE }),
     placeHolder:   'team',
-    prompt:        'Lowercase words joined by dashes. The file is <name>.recipe.toml.',
+    prompt:        say('vscode.new-recipe.lowercase-words-joined-by-dashes-the'),
     validateInput: checkRecipeName,
   })
   if (name === undefined) return undefined
   const version = await vscode.window.showInputBox({
     title:         `${TITLE}: version`,
     value:         '0.1.0',
-    prompt:        'major.minor.patch. Enter keeps 0.1.0.',
+    prompt:        say('vscode.new-recipe.major-minor-patch-enter-keeps-0'),
     validateInput: checkRecipeVersion,
   })
   if (version === undefined) return undefined
   const parent = await vscode.window.showInputBox({
-    title:       `${TITLE}: recipe it extends`,
-    placeHolder: 'base.recipe.toml (a path or an https URL; enter for none)',
-    prompt:      'The new recipe starts from that one and changes what it names.',
+    title:       say('vscode.new-recipe.recipe-it-extends', { title: TITLE }),
+    placeHolder: say('vscode.new-recipe.base-recipe-toml-a-path-or'),
+    prompt:      say('vscode.new-recipe.the-new-recipe-starts-from-that'),
   })
 
   return parent === undefined ? undefined : { name, version, extends: parent.trim() }
@@ -42,21 +48,21 @@ export async function askRecipeBasics (): Promise<RecipeBasics | undefined> {
  */
 export async function pickLevel (question: LevelQuestion): Promise<string[] | undefined> {
   const plugins = question.options.map((option) => ({ label: option.name, description: option.description }))
-  const fit = question.language === '' ? '' : ` that fit ${question.language}`
-  const whenLeftOut = 'Unset: the recipe it extends, or the person who uses the recipe, decides.'
+  const fit = question.language === '' ? '' : say('vscode.new-recipe.that-fit', { language: question.language })
+  const whenLeftOut = say('vscode.new-recipe.unset-the-recipe-it-extends-or')
   if (question.multi) {
     const chosen = await vscode.window.showQuickPick(plugins, {
-      title:              `${TITLE}: which ${question.level} plugins does the recipe fix?`,
-      placeHolder:        `Tick the plugins${fit}; tick none to leave it unset. ${whenLeftOut}`,
+      title:              say('vscode.new-recipe.which-plugins-does-the-recipe-fix', { title: TITLE, level: question.level }),
+      placeHolder:        say('vscode.new-recipe.tick-the-plugins-tick-none-to', { fit, whenLeftOut }),
       canPickMany:        true,
       matchOnDescription: true,
     })
 
     return chosen?.map((item) => item.label)
   }
-  const chosen = await vscode.window.showQuickPick([{ label: UNSET, description: `no ${question.level} plugin is fixed`, unset: true }, ...plugins.map((item) => ({ ...item, unset: false }))], {
-    title:              `${TITLE}: which ${question.level} plugin does the recipe fix?`,
-    placeHolder:        `Pick one${fit}. ${whenLeftOut}`,
+  const chosen = await vscode.window.showQuickPick([{ label: UNSET, description: say('vscode.new-recipe.no-plugin-is-fixed', { level: question.level }), unset: true }, ...plugins.map((item) => ({ ...item, unset: false }))], {
+    title:              say('vscode.new-recipe.which-plugin-does-the-recipe-fix', { title: TITLE, level: question.level }),
+    placeHolder:        say('vscode.new-recipe.pick-one', { fit, whenLeftOut }),
     matchOnDescription: true,
   })
 
@@ -73,9 +79,9 @@ export async function pickLevel (question: LevelQuestion): Promise<string[] | un
  */
 export async function decideLevel (question: LevelQuestion): Promise<LevelDecider | undefined> {
   const picked = await vscode.window.showQuickPick<{ label: string, description: string, who: LevelDecider }>([
-    { label: 'Fixed by the recipe (default)', description: `every project made from the recipe gets the ${question.level} plugin you pick next, or none`, who: 'fixed' },
-    { label: 'Chosen by the people who use it', description: `smith asks them a question for the ${question.level} when they make a project; each answer gives a plugin`, who: 'chosen' },
-  ], { title: `${TITLE}: who decides the ${question.level}?`, placeHolder: 'Pick who decides' })
+    { label: say('guide.new_recipe_chosen.fixed_by_the_recipe_default'), description: say('vscode.new-recipe.every-project-made-from-the-recipe', { level: question.level }), who: 'fixed' },
+    { label: say('guide.new_recipe_chosen.chosen_by_the_people_who_use'), description: say('vscode.new-recipe.smith-asks-them-a-question-for', { level: question.level }), who: 'chosen' },
+  ], { title: say('vscode.new-recipe.who-decides-the', { title: TITLE, level: question.level }), placeHolder: say('vscode.new-recipe.pick-who-decides') })
 
   return picked?.who
 }
@@ -88,31 +94,31 @@ export async function decideLevel (question: LevelQuestion): Promise<LevelDecide
  */
 export async function askChoice (question: LevelQuestion): Promise<RecipeChoice | undefined> {
   const text = await vscode.window.showInputBox({
-    title:         `${TITLE}: the question for the ${question.level}`,
-    value:         `Which ${question.level} do you want?`,
-    prompt:        'The people who make a project from the recipe read it. Do not use a colon.',
+    title:         say('vscode.new-recipe.the-question-for-the', { title: TITLE, level: question.level }),
+    value:         say('vscode.new-recipe.which-do-you-want', { level: question.level }),
+    prompt:        say('vscode.new-recipe.the-people-who-make-a-project'),
     validateInput: checkChoiceQuestion,
   })
   if (text === undefined) return undefined
   if (question.multi) return await askGroupedAnswers(question, text.trim())
   const plugins = await vscode.window.showQuickPick(question.options.map((option) => ({ label: option.name, description: option.description })), {
-    title:              `${TITLE}: which ${question.level} plugins can they end up with?`,
-    placeHolder:        'Tick at least two: a choice with one answer is a fixed plugin',
+    title:              say('vscode.new-recipe.which-plugins-can-they-end-up', { title: TITLE, level: question.level }),
+    placeHolder:        say('vscode.new-recipe.tick-at-least-two-a-choice'),
     canPickMany:        true,
     matchOnDescription: true,
   })
   if (plugins === undefined) return undefined
   if (plugins.length < 2) {
-    void vscode.window.showWarningMessage('MonoSmith: a choice needs at least two plugins. Tick two or more, or fix the plugin instead.')
+    void vscode.window.showWarningMessage(say('vscode.new-recipe.monosmith-a-choice-needs-at-least'))
 
     return undefined
   }
   const answers: Array<{ answer: string, plugin: string }> = []
   for (const plugin of plugins) {
     const answer = await vscode.window.showInputBox({
-      title:         `${TITLE}: the answer that gives ${plugin.label}`,
+      title:         say('vscode.new-recipe.the-answer-that-gives', { title: TITLE, label: plugin.label }),
       value:         plugin.label,
-      prompt:        'What the user reads for this plugin. Enter keeps the plugin name.',
+      prompt:        say('vscode.new-recipe.what-the-user-reads-for-this'),
       validateInput: (value) => checkChoiceAnswer(value, answers.map((a) => a.answer)),
     })
     if (answer === undefined) return undefined
@@ -136,14 +142,14 @@ async function askGroupedAnswers (question: LevelQuestion, text: string): Promis
     const enough = answers.length >= 2
     const answer = await vscode.window.showInputBox({
       title:         `${TITLE}: answer ${answers.length + 1} of the ${question.level}`,
-      prompt:        enough ? 'Name another answer, or leave it empty to finish.' : 'A word or two the user reads. A choice needs at least two answers.',
+      prompt:        say(enough ? 'vscode.new-recipe.name-another-answer-or-leave-it' : 'vscode.new-recipe.a-word-or-two-the-user'),
       validateInput: (value) => enough && value.trim() === '' ? undefined : checkChoiceAnswer(value, answers.map((a) => a.answer)),
     })
     if (answer === undefined) return undefined
     if (answer.trim() === '') return { question: text, answers }
     const plugins = await vscode.window.showQuickPick(question.options.map((option) => ({ label: option.name, description: option.description })), {
-      title:              `${TITLE}: the plugins that "${answer.trim()}" gives`,
-      placeHolder:        'Tick one or more; several are installed together',
+      title:              say('vscode.new-recipe.the-plugins-that-gives', { title: TITLE, trim: answer.trim() }),
+      placeHolder:        say('vscode.new-recipe.tick-one-or-more-several-are'),
       canPickMany:        true,
       matchOnDescription: true,
     })
@@ -161,14 +167,14 @@ async function askGroupedAnswers (question: LevelQuestion, text: string): Promis
  * @returns true to write the recipe
  */
 export async function confirmRecipe (request: RecipeRequest, command: string, file: string): Promise<boolean> {
-  const write = 'Write the recipe'
+  const write = say('vscode.new-recipe.write-the-recipe')
   const fixed = [
     ...Object.entries(request.fixed).map(([level, plugins]) => `${level}: ${plugins.join(', ')}`),
-    ...Object.entries(request.chosen ?? {}).map(([level, choice]) => `${level}: chosen by the users (${choice.answers.map((a) => a.answer).join(' or ')})`),
+    ...Object.entries(request.chosen ?? {}).map(([level, choice]) => say('vscode.new-recipe.chosen-by-the-users', { level, join: choice.answers.map((a) => a.answer).join(' or ') })),
   ]
   const choice = await vscode.window.showInformationMessage(
-    `MonoSmith: write ${file}?`,
-    { modal: true, detail: `${command}\n\n${fixed.length > 0 ? `The recipe fixes ${fixed.join('; ')}.` : 'The recipe fixes no plugin.'}\n\nNothing was written yet. smith checks that the recipe resolves before it writes the file, and does not replace a file that exists. The file is not committed.` },
+    say('vscode.new-recipe.monosmith-write', { file }),
+    { modal: true, detail: say('vscode.new-recipe.nothing-was-written-yet-smith-checks', { command, part: fixedSentence(fixed) }) },
     write,
   )
 
@@ -185,14 +191,14 @@ export function tellRecipeOutcome (outcome: RecipeOutcome, root: string, onOutpu
   switch (outcome.kind) {
     case 'written': {
       for (const line of outcome.lines) onOutput(line)
-      const open = 'Open the recipe'
-      void vscode.window.showInformationMessage(`MonoSmith: wrote ${outcome.file}. Check it any time with smith recipe check ${outcome.file} --all.`, open).then(async (choice) => {
+      const open = say('vscode.new-recipe.open-the-recipe')
+      void vscode.window.showInformationMessage(say('vscode.new-recipe.monosmith-wrote-check-it-any-time', { file: outcome.file, file2: outcome.file }), open).then(async (choice) => {
         if (choice === open) await vscode.window.showTextDocument(vscode.Uri.joinPath(vscode.Uri.file(root), outcome.file))
       })
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: no recipe was written. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.new-recipe.monosmith-no-recipe-was-written', { message: outcome.message }))
       break
     }
     case 'cancelled': {

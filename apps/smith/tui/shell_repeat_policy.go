@@ -3,7 +3,7 @@ package tui
 import (
 	"slices"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // oncePerThing are the commands that make or remove something: the same line

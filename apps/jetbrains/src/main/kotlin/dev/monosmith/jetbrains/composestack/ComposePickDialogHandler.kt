@@ -8,6 +8,10 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_MONOSMITH_COMPOSE_A_STACK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NOTHING_IS_SELECTED_YET
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_SELECTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.BoxLayout
@@ -34,7 +38,7 @@ class ComposePickDialogHandler(
     private val search = SearchTextField()
 
     init {
-        title = "MonoSmith: compose a stack"
+        title = say(JETBRAINS_COMPOSESTACK_MONOSMITH_COMPOSE_A_STACK)
         setOKButtonText(okText)
         init()
         rebuild()
@@ -110,5 +114,7 @@ class ComposePickDialogHandler(
     }
 
     private fun selectionText(): String =
-        ComposeStackAlgorithm.tickedTitles(items, ticks).let { if (it.isEmpty()) "Nothing is selected yet." else "Selected: $it" }
+        ComposeStackAlgorithm.tickedTitles(items, ticks).let {
+            if (it.isEmpty()) say(JETBRAINS_COMPOSESTACK_NOTHING_IS_SELECTED_YET) else say(JETBRAINS_COMPOSESTACK_SELECTED, it.toString())
+        }
 }

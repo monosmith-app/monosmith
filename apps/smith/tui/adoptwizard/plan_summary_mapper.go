@@ -5,7 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // planSummaryText is the top of the review of a conversion, before the files:

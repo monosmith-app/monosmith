@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // The answers of the first question after the name of a new workspace.

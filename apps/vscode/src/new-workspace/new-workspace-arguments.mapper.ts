@@ -1,6 +1,7 @@
 import type { SmithQuestion } from '../smith-questions/index.ts'
 import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
 import { longFlag } from '../smith-flags/index.ts'
+import { say } from '../words/index.ts'
 
 /** What "Start with the defaults" chooses: the same defaults as `smith new --yes` and the TUI. */
 export const DEFAULT_CHOICES: Omit<NewWorkspaceChoices, 'name'> = {
@@ -49,13 +50,13 @@ export function toCreateArguments (choices: NewWorkspaceChoices, preview = false
  */
 export function describeChoices (choices: NewWorkspaceChoices, folderName: string, questions: readonly SmithQuestion[]): string[] {
   return [
-    `Name: ${choices.name}${choices.name === folderName ? ' (the name of this folder)' : ''}`,
+    say('vscode.new-workspace.name', { name: choices.name, part: choices.name === folderName ? say('vscode.new-workspace.the-name-of-this-folder') : '' }),
     `CI: ${choices.ci.map((value) => labelOf(questions, 'ci', value)).join(', ')}`,
-    `Main language: ${labelOf(questions, 'language', choices.language)}`,
-    ...(choices.language === 'node' ? [`Tests and lint for Node projects: ${labelOf(questions, 'node-stack', choices.nodeStack)}`] : []),
-    `Code layout smith checks: ${labelOf(questions, 'architecture', choices.architecture)}`,
-    `Agent files for Claude Code and VS Code: ${choices.agent ? 'yes' : 'no'}`,
-    `Dev container: ${choices.devcontainer ? 'yes' : 'no'}`,
-    `First commit of smith's own files: ${choices.commit ? 'yes, smith makes it' : 'no, the files stay uncommitted'}`,
+    say('vscode.new-workspace.main-language', { labelOf: labelOf(questions, 'language', choices.language) }),
+    ...(choices.language === 'node' ? [say('vscode.new-workspace.tests-and-lint-for-node-projects', { labelOf: labelOf(questions, 'node-stack', choices.nodeStack) })] : []),
+    say('vscode.new-workspace.code-layout-smith-checks', { labelOf: labelOf(questions, 'architecture', choices.architecture) }),
+    say('vscode.new-workspace.agent-files-for-claude-code-and', { part: say(choices.agent ? 'vscode.new-workspace.yes' : 'vscode.new-workspace.no') }),
+    say('vscode.new-workspace.dev-container', { part: say(choices.devcontainer ? 'vscode.new-workspace.yes' : 'vscode.new-workspace.no') }),
+    say('vscode.new-workspace.first-commit-of-smith-s-own', { part: say(choices.commit ? 'vscode.new-workspace.yes-smith-makes-it' : 'vscode.new-workspace.no-the-files-stay-uncommitted') }),
   ]
 }

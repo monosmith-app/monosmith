@@ -1,4 +1,5 @@
 import type { WebAppChoice, WebEnvironments } from './web-environments.contract.ts'
+import { say } from '../words/index.ts'
 
 /** The environments a web app starts from: lcl is the developer's machine. */
 export const DEFAULT_ENVIRONMENTS = ['lcl', 'dev', 'uat', 'prd']
@@ -32,13 +33,13 @@ export function parseEnvironmentNames (text: string): string[] {
  */
 export function checkEnvironmentNames (text: string): string | undefined {
   const names = parseEnvironmentNames(text)
-  if (names.length === 0) return 'Name at least one environment, for example lcl, dev, uat, prd.'
+  if (names.length === 0) return say('vscode.web-environments.name-at-least-one-environment-for')
   for (const name of names) {
-    if (!/^[a-z][a-z0-9-]*$/.test(name)) return `"${name}" is not an environment name: use a lowercase word, for example uat.`
-    if (RESERVED.has(name)) return `"${name}" cannot be an environment name: Vite or the env files already give it a meaning. Use another word, for example lcl for local.`
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) return say('vscode.web-environments.is-not-an-environment-name-use', { name })
+    if (RESERVED.has(name)) return say('vscode.web-environments.cannot-be-an-environment-name-vite', { name })
   }
 
-  return new Set(names).size === names.length ? undefined : 'An environment is listed twice.'
+  return new Set(names).size === names.length ? undefined : say('vscode.web-environments.an-environment-is-listed-twice')
 }
 
 /**
@@ -76,10 +77,10 @@ export function startingEnvironments (workspaceNames: readonly string[]): WebEnv
  * @param environments - the choices
  */
 export function describeEnvironments (environments: WebEnvironments): string {
-  const output = environments.output === 'workspace' ? 'dist/apps/<name>/<env>' : 'dist/<env> inside the app'
-  const files = environments.envFiles === 'commit' ? 'created and kept by git' : 'created and ignored by git, only .env.example is kept'
+  const output = environments.output === 'workspace' ? 'dist/apps/<name>/<env>' : say('vscode.web-environments.dist-env-inside-the-app')
+  const files = say(environments.envFiles === 'commit' ? 'vscode.web-environments.created-and-kept-by-git' : 'vscode.web-environments.created-and-ignored-by-git-only')
 
-  return `Environments: ${environments.names.join(', ')}; smith run build builds ${environments.default}; builds go to ${output}; .env files are ${files}`
+  return say('vscode.web-environments.environments-smith-run-build-builds-builds', { join: environments.names.join(', '), default: environments.default, output, files })
 }
 
 /**

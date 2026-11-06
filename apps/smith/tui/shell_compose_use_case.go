@@ -8,7 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // What the composer's captured commands were asked for.

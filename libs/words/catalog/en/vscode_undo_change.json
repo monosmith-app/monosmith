@@ -1,0 +1,8 @@
+{
+  "vscode.undo-change.undoing-a-change": "undoing a change",
+  "vscode.undo-change.monosmith-undo-the-last-change-in": "MonoSmith: undo the last change in {folder}?",
+  "vscode.undo-change.smith-reverts-it-with-git-revert": "{plan}\n\nsmith reverts it with git revert: a new commit, and your history stays.",
+  "vscode.undo-change.undo": "Undo",
+  "vscode.undo-change.monosmith-the-last-change-is-reverted": "MonoSmith: the last change is reverted in a new commit.",
+  "vscode.undo-change.monosmith-nothing-was-undone": "MonoSmith: nothing was undone. {message}"
+}

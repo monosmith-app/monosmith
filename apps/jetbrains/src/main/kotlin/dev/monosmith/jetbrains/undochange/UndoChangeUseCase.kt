@@ -5,6 +5,13 @@ import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_UNDOCHANGE_MONOSMITH_UNDO_THE_LAST_CHANGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_UNDOCHANGE_MONOSMITH_UNDO_THE_LAST_CHANGE_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_UNDOCHANGE_NOTHING_WAS_UNDONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_UNDOCHANGE_SMITH_REVERTS_THE_LAST_CHANGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_UNDOCHANGE_THE_LAST_CHANGE_IS_UNDONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -17,7 +24,7 @@ object UndoChangeUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: undo the last change") { run(IdePortsClient.of(ide, root)) }
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_UNDOCHANGE_MONOSMITH_UNDO_THE_LAST_CHANGE)) { run(IdePortsClient.of(ide, root)) }
 
     /**
      * Runs the flow with the given ports.
@@ -27,23 +34,23 @@ object UndoChangeUseCase {
     fun run(ports: FlowPortsContract): Boolean {
         val plan = ports.smith.run(listOf("undo", "--dry-run"))
         if (!plan.ok) {
-            ports.notice.warn("Nothing was undone. ${FailureTextMapper.describe(plan)}")
+            ports.notice.warn(say(JETBRAINS_UNDOCHANGE_NOTHING_WAS_UNDONE, FailureTextMapper.describe(plan).toString()))
             return false
         }
         ports.prompt.plan(
-            "MonoSmith: undo the last change?",
-            "smith reverts the last change it committed with git revert: a new commit, and your history stays.",
+            say(JETBRAINS_UNDOCHANGE_MONOSMITH_UNDO_THE_LAST_CHANGE_2),
+            say(JETBRAINS_UNDOCHANGE_SMITH_REVERTS_THE_LAST_CHANGE),
             plan.stdout.trim(),
-            "Undo",
+            say(JETBRAINS_ADDPROJECT_UNDO),
             offerCommit = false,
         ) ?: return false
         val done = ports.smith.run(listOf("undo", "--yes"), show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("Nothing was undone. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_UNDOCHANGE_NOTHING_WAS_UNDONE, FailureTextMapper.describe(done).toString()))
             return false
         }
-        ports.notice.info(done.lines.lastOrNull() ?: "The last change is undone.")
+        ports.notice.info(done.lines.lastOrNull() ?: say(JETBRAINS_UNDOCHANGE_THE_LAST_CHANGE_IS_UNDONE))
         return true
     }
 }

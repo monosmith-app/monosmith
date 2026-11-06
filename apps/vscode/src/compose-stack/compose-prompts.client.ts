@@ -3,8 +3,9 @@ import { checkProjectName } from '../add-project/index.ts'
 import { tellDoctorFailure, type DoctorFailureFollowUp } from '../doctor-failure/index.ts'
 import { pickLabels, settleRivals, tickedTitles } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion } from './compose-stack.contract.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: Compose a stack'
+const TITLE = say('vscode.compose-stack.monosmith-compose-a-stack')
 
 /**
  * Shows the catalogue as one list, grouped by layer, with the picks ticked.
@@ -22,7 +23,7 @@ export async function pickItems (items: readonly ComposeItem[], ticked: readonly
   pick.matchOnDescription = true
   pick.matchOnDetail = true
   pick.ignoreFocusOut = true
-  pick.placeholder = 'Search, then tick what you want: a language, a framework, a desktop shell, a cloud host'
+  pick.placeholder = say('vscode.compose-stack.search-then-tick-what-you-want')
   let current = [...ticked]
   let updating = false
 
@@ -48,7 +49,7 @@ export async function pickItems (items: readonly ComposeItem[], ticked: readonly
   }
   const setTitle = (): void => {
     const chosen = tickedTitles(items, current)
-    pick.title = `${TITLE} (1/3): ${message === '' ? 'what do you want?' : message}${chosen === '' ? '' : `  ·  Selected: ${chosen}`}`
+    pick.title = `${TITLE} (1/3): ${message === '' ? say('vscode.compose-stack.what-do-you-want') : message}${chosen === '' ? '' : say('vscode.compose-stack.selected', { chosen })}`
   }
   render()
 
@@ -88,8 +89,8 @@ export async function pickItems (items: readonly ComposeItem[], ticked: readonly
 export async function answerQuestion (question: ComposeQuestion): Promise<ComposeOption | undefined> {
   const options = [...question.options].sort((a, b) => Number(b.suggested) - Number(a.suggested))
   const picked = await vscode.window.showQuickPick(
-    options.map((option) => ({ label: `${option.title}${option.suggested ? ' (suggested)' : ''}`, detail: option.description, option })),
-    { title: `${TITLE}: which ${question.axis} for ${question.choice}?`, placeHolder: 'smith does not choose this for you; the first is only a suggestion', matchOnDetail: true },
+    options.map((option) => ({ label: `${option.title}${option.suggested ? say('vscode.compose-stack.suggested') : ''}`, detail: option.description, option })),
+    { title: `${TITLE}: which ${question.axis} for ${question.choice}?`, placeHolder: say('vscode.compose-stack.smith-does-not-choose-this-for'), matchOnDetail: true },
   )
 
   return picked?.option
@@ -104,10 +105,10 @@ export async function answerQuestion (question: ComposeQuestion): Promise<Compos
  */
 export async function askProjectName (existing: readonly string[], stack = ''): Promise<string | undefined> {
   return await vscode.window.showInputBox({
-    title:         `${TITLE} (2/3): name your ${stack === '' ? 'app' : stack}`,
-    prompt:        'smith shows the whole plan next, once it has the name, because the files are named after it. Nothing is written until you agree.',
-    placeHolder:   'for example web',
-    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
+    title:         say('vscode.compose-stack.2-3-name-your', { title: TITLE, part: stack === '' ? say('vscode.compose-stack.app') : stack }),
+    prompt:        say('vscode.compose-stack.smith-shows-the-whole-plan-next'),
+    placeHolder:   say('vscode.compose-stack.for-example-web'),
+    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? say('vscode.add-project.exists-already-pick-another-name', { value }) : undefined),
   })
 }
 
@@ -119,15 +120,15 @@ export async function askProjectName (existing: readonly string[], stack = ''): 
  * @returns the answer
  */
 export async function confirmComposePlan (plan: string, hasRecipe: boolean, toolsMissing = false): Promise<ComposeAnswer> {
-  const run = 'Run it'
-  const commit = 'Run it and commit'
-  const copy = 'Copy the command'
-  const recipe = 'Save the plugins as a recipe'
-  const tools = 'Install the tools first'
-  const missing = toolsMissing ? '\n\nA tool above is missing. You can run it anyway: the project is written, and smith then says what it could not check.' : ''
+  const run = say('vscode.compose-stack.run-it')
+  const commit = say('vscode.compose-stack.run-it-and-commit')
+  const copy = say('vscode.compose-stack.copy-the-command')
+  const recipe = say('vscode.compose-stack.save-the-plugins-as-a-recipe')
+  const tools = say('vscode.compose-stack.install-the-tools-first')
+  const missing = toolsMissing ? say('vscode.compose-stack.a-tool-above-is-missing-you') : ''
   const choice = await vscode.window.showInformationMessage(
-    'MonoSmith (3/3): this is the plan for your stack.',
-    { modal: true, detail: `${plan}${missing}\n\nNothing was changed yet. By default smith leaves the files uncommitted: review them with git.` },
+    say('vscode.compose-stack.monosmith-3-3-this-is-the'),
+    { modal: true, detail: say('vscode.compose-stack.nothing-was-changed-yet-by-default', { plan, missing }) },
     run,
     commit,
     ...(toolsMissing ? [tools] : []),
@@ -160,7 +161,7 @@ export function tellComposeOutcome (outcome: ComposeOutcome, onOutput: (line: st
   switch (outcome.kind) {
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage(`MonoSmith: ${outcome.name} is added. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status.'}`)
+      void vscode.window.showInformationMessage(say('vscode.compose-stack.monosmith-is-added', { name: outcome.name, say: say(outcome.committed ? 'vscode.add-project.committed-as-one-change-undo-reverts' : 'vscode.compose-stack.not-committed-review-with-git-status') }))
       break
     }
     case 'written': {
@@ -169,16 +170,16 @@ export function tellComposeOutcome (outcome: ComposeOutcome, onOutput: (line: st
     }
     case 'recipe': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage('MonoSmith: the recipe is written. A recipe fixes the plugins, not the choices.')
+      void vscode.window.showInformationMessage(say('vscode.compose-stack.monosmith-the-recipe-is-written-a'))
       break
     }
     case 'copied': {
       void vscode.env.clipboard.writeText(outcome.command)
-      void vscode.window.showInformationMessage('MonoSmith: the command is on the clipboard.')
+      void vscode.window.showInformationMessage(say('vscode.compose-stack.monosmith-the-command-is-on-the'))
       break
     }
     case 'refused': {
-      void vscode.window.showErrorMessage(`MonoSmith: ${outcome.message}`)
+      void vscode.window.showErrorMessage(say('vscode.compose-stack.monosmith', { message: outcome.message }))
       break
     }
     case 'cancelled': {

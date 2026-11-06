@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { describeDoctorFailure, type DoctorFailure } from '../smith-run/index.ts'
 import { showNotice } from '../notice-buttons/index.ts'
+import { say } from '../words/index.ts'
 
 /** What the notice of a project that fails its checks can do beyond showing text: the editor carries these out. */
 export interface DoctorFailureFollowUp {
@@ -19,25 +20,25 @@ export interface DoctorFailureFollowUp {
  * @param next - carries out the buttons that need the editor
  */
 export function tellDoctorFailure (failure: DoctorFailure, operation: string, lines: readonly string[], onOutput: (line: string) => void, next?: DoctorFailureFollowUp): void {
-  onOutput(`MonoSmith: ${failure.name} was written, and smith doctor found a problem with it. smith's steps:`)
+  onOutput(say('vscode.doctor-failure.monosmith-was-written-and-smith-doctor', { name: failure.name }))
   for (const line of lines) onOutput(line)
   void askNextStep(failure, operation, next)
 }
 
 async function askNextStep (failure: DoctorFailure, operation: string, next?: DoctorFailureFollowUp): Promise<void> {
-  const install = 'Install tools'
-  const health = 'Open Health'
-  const commit = 'Commit anyway'
-  const leave = 'Keep uncommitted'
+  const install = say('vscode.add-project.install-tools')
+  const health = say('vscode.doctor-failure.open-health')
+  const commit = say('vscode.doctor-failure.commit-anyway')
+  const leave = say('vscode.doctor-failure.keep-uncommitted')
   const canCommit = next !== undefined && !failure.committed
   const choice = await showNotice(
     'warning',
-    `${describeDoctorFailure(failure)} Install tools fetches what is missing. Open Health lists every check.${canCommit ? ' Commit anyway makes one commit that Undo can revert.' : ''}`,
+    say('vscode.doctor-failure.install-tools-fetches-what-is-missing', { describeDoctorFailure: describeDoctorFailure(failure), part: canCommit ? say('vscode.doctor-failure.commit-anyway-makes-one-commit-that') : '' }),
     [
-      { label: install, detail: 'Install the tools the project needs, with smith tools install.' },
-      { label: health, detail: 'Open the Health view: it lists every check and its remedy.' },
-      ...(canCommit ? [{ label: commit, detail: 'Commit the files now, although a check fails. It is one commit that Undo can revert.' }] : []),
-      { label: leave, detail: 'Leave the files uncommitted: review them with git, and commit when you decide.' },
+      { label: install, detail: say('vscode.doctor-failure.install-the-tools-the-project-needs') },
+      { label: health, detail: say('vscode.doctor-failure.open-the-health-view-it-lists') },
+      ...(canCommit ? [{ label: commit, detail: say('vscode.doctor-failure.commit-the-files-now-although-a') }] : []),
+      { label: leave, detail: say('vscode.doctor-failure.leave-the-files-uncommitted-review-them') },
     ],
   )
   switch (choice) {
@@ -54,8 +55,8 @@ async function askNextStep (failure: DoctorFailure, operation: string, next?: Do
       break
     }
     case leave: {
-      const later = 'Commit the changes…'
-      void vscode.window.showInformationMessage(`MonoSmith: ${failure.name} is left uncommitted. smith remembers its files. Commit them when you decide: run "MonoSmith: Commit the changes…".`, later).then(async (again) => {
+      const later = say('commands.ws.commit.title')
+      void vscode.window.showInformationMessage(say('vscode.doctor-failure.monosmith-is-left-uncommitted-smith-remembers', { name: failure.name }), later).then(async (again) => {
         if (again === later) await next?.commit(operation)
       })
       break

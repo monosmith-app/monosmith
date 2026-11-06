@@ -2,6 +2,7 @@ import { appliesWhen, askableQuestions, parseQuestions, type PickAnswer } from '
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import { toConvertArguments } from './convert-arguments.mapper.ts'
 import type { ConvertOutcome } from './convert-workspace.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What converting a workspace needs from the editor. */
 export interface ConvertDeps {
@@ -26,12 +27,12 @@ export interface ConvertDeps {
  */
 export async function convertWorkspace (deps: ConvertDeps): Promise<ConvertOutcome> {
   const listed = await deps.run(['convert', '--questions', '--json'])
-  if (listed.code !== 0) return { kind: 'refused', message: `${describeFailure(listed)} Update smith and try again.` }
+  if (listed.code !== 0) return { kind: 'refused', message: say('vscode.convert-workspace.update-smith-and-try-again', { describeFailure: describeFailure(listed) }) }
   let questions
   try {
     questions = askableQuestions(parseQuestions(listed.stdout))
   } catch {
-    return { kind: 'refused', message: 'smith did not list the questions of `smith convert`. Update smith and try again.' }
+    return { kind: 'refused', message: say('vscode.convert-workspace.smith-did-not-list-the-questions') }
   }
   const answers: Record<string, string> = {}
   for (const question of questions) {

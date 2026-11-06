@@ -36,7 +36,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toolsdialog"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // tabTitles are the names of the tabs, by tab id.

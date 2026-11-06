@@ -2,6 +2,9 @@ package dev.monosmith.jetbrains.settings
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_WHY_THE_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * One setting of smith.toml, as `smith config list --json` lists it.
@@ -64,7 +67,14 @@ object SettingsJsonMapper {
 
     /** The lines of "which setting?": the value it has (or `default`) after the name, and what it is for. */
     fun rows(settings: List<SettingContract>): List<ChoiceRowContract> =
-        settings.map { ChoiceRowContract(it.path, it.path, if (it.set) "= ${shown(it)}" else "(default)", it.description) }
+        settings.map {
+            ChoiceRowContract(
+                it.path,
+                it.path,
+                if (it.set) "= ${shown(it)}" else say(JETBRAINS_ADDCHOICES_DEFAULT),
+                it.description,
+            )
+        }
 
     /** The lines of a setting that takes one of a few values; the current one is first and marked. */
     fun enumRows(setting: SettingContract): List<ChoiceRowContract> {
@@ -120,6 +130,6 @@ object SettingsJsonMapper {
     fun words(setting: SettingContract): String =
         listOf(
             setting.description,
-            if (setting.reason.isEmpty()) "" else "Why the default: ${setting.reason}",
+            if (setting.reason.isEmpty()) "" else say(JETBRAINS_SETTINGS_WHY_THE_DEFAULT, setting.reason.toString()),
         ).filter(String::isNotEmpty).joinToString("\n")
 }

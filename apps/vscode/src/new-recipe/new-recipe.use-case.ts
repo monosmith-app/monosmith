@@ -1,6 +1,7 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import type { LevelDecider, LevelQuestion, RecipeBasics, RecipeChoice, RecipeOutcome, RecipeRequest } from './new-recipe.contract.ts'
 import { parseRecipeLevels, questionFor, recipeArguments, recipeFile } from './recipe-levels.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What writing a recipe needs from the editor. */
 export interface NewRecipeDeps {
@@ -37,9 +38,9 @@ export async function newRecipe (deps: NewRecipeDeps): Promise<RecipeOutcome> {
   try {
     levels = parseRecipeLevels(listed.stdout)
   } catch {
-    return { kind: 'refused', message: 'smith printed its levels in a form this editor does not read. Update the extension, or run smith recipe new in a terminal.' }
+    return { kind: 'refused', message: say('vscode.new-recipe.smith-printed-its-levels-in-a') }
   }
-  if (levels.levels.length === 0) return { kind: 'refused', message: 'smith knows no plugin a recipe can fix. Update smith, or run smith recipe new in a terminal.' }
+  if (levels.levels.length === 0) return { kind: 'refused', message: say('vscode.new-recipe.smith-knows-no-plugin-a-recipe') }
 
   const basics = await deps.askBasics()
   if (basics === undefined) return { kind: 'cancelled' }

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // SwapProject is a project of the workspace as the Swap form lists it: its

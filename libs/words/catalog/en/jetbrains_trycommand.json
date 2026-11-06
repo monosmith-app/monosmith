@@ -1,0 +1,18 @@
+{
+  "jetbrains.trycommand.monosmith-try-a-command": "MonoSmith: try a command",
+  "jetbrains.trycommand.monosmith-try-a-command-in": "MonoSmith: try a command in a copy",
+  "jetbrains.trycommand.the-smith-command-to-try": "The smith command to try, the words after smith (for example add lib utils --lang node):",
+  "jetbrains.trycommand.type-the-command-to-try": "Type the command to try.",
+  "jetbrains.trycommand.nothing-was-tried": "Nothing was tried. {failureTextMapper}",
+  "jetbrains.trycommand.monosmith-try-smith": "MonoSmith: try smith {command}",
+  "jetbrains.trycommand.it-passed-in-a-copy": "It passed in a copy. Run it for real? Nothing is committed.",
+  "jetbrains.trycommand.it-failed-in-the-copy": "It failed in the copy, so it is not offered for real.",
+  "jetbrains.trycommand.run-it-for-real": "Run it for real",
+  "jetbrains.trycommand.the-command-ran-for-real": "The command ran for real.",
+  "jetbrains.trycommand.smith-printed-no-result": "smith printed no result",
+  "jetbrains.trycommand.try-smith": "Try: smith {command}",
+  "jetbrains.trycommand.the-command-and-every-check": "The command and every check passed in the copy. Your files were not touched.",
+  "jetbrains.trycommand.something-failed-in-the-copy": "Something failed in the copy. Your files were not touched.",
+  "jetbrains.trycommand.files-it-changed": "Files it changed:",
+  "jetbrains.trycommand.none-were-asked-for": "  none were asked for"
+}

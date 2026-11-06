@@ -5,6 +5,12 @@ import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.notice.NoticeClient
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHVERSION_COPY_COMMAND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHVERSION_COPY_TO_THE_CLIPBOARD
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHVERSION_MONOSMITH_NEEDS_SMITH_TO_LIST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHVERSION_SMITH_ANSWERED_WITH_AN_ERROR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHVERSION_SMITH_IS_NOT_INSTALLED_HERE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.awt.datatransfer.StringSelection
 import java.nio.file.Path
 
@@ -24,14 +30,30 @@ object SmithPresenceUseCase {
     ) {
         val problem =
             runCatching { SmithRunClient.run(null, root, listOf("--version")) }.fold(
-                onSuccess = { if (it.ok) null else "smith answered with an error. ${it.stderr.lines().firstOrNull().orEmpty()}" },
-                onFailure = { "smith is not installed here, or it is not on the PATH." },
+                onSuccess = {
+                    if (it.ok) {
+                        null
+                    } else {
+                        say(
+                            JETBRAINS_SMITHVERSION_SMITH_ANSWERED_WITH_AN_ERROR,
+                            it.stderr
+                                .lines()
+                                .firstOrNull()
+                                .orEmpty()
+                                .toString(),
+                        )
+                    }
+                },
+                onFailure = { say(JETBRAINS_SMITHVERSION_SMITH_IS_NOT_INSTALLED_HERE) },
             ) ?: return
         NoticeClient.warn(
             ide,
-            "$problem MonoSmith needs smith to list the projects and run the flows. Install or update it with: $INSTALL_COMMAND",
+            say(JETBRAINS_SMITHVERSION_MONOSMITH_NEEDS_SMITH_TO_LIST, problem.toString(), INSTALL_COMMAND.toString()),
             listOf(
-                NoticeButtonContract("Copy command", "Copy $INSTALL_COMMAND to the clipboard.") {
+                NoticeButtonContract(
+                    say(JETBRAINS_SMITHVERSION_COPY_COMMAND),
+                    say(JETBRAINS_SMITHVERSION_COPY_TO_THE_CLIPBOARD, INSTALL_COMMAND.toString()),
+                ) {
                     CopyPasteManager.getInstance().setContents(StringSelection(INSTALL_COMMAND))
                 },
             ),

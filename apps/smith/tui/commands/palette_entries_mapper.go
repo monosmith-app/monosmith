@@ -3,7 +3,7 @@ package commands
 import (
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // The sections of the command palette, in the order they are listed.

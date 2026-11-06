@@ -7,7 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/clipboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // focusedText is what `y` copies: the remedy (else the message) of the

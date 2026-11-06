@@ -11,14 +11,15 @@ import { showNotice } from '../notice-buttons/index.ts'
 import { askWebEnvironments, isWebApp } from '../web-environments/index.ts'
 import { mainLanguage, startOnMainLanguage } from './main-language.mapper.ts'
 import { canStartWithDefaults, defaultsRequest } from './defaults-request.mapper.ts'
+import { say } from '../words/index.ts'
 
 const ROLES: Record<string, string> = {
-  app:     'something you run or deploy (a website, an API) → apps/<name>',
-  lib:     'code the other projects here import → libs/<name>',
-  package: 'published to a registry on release → packages/<name>',
+  app:     say('vscode.add-project.something-you-run-or-deploy-a'),
+  lib:     say('vscode.add-project.code-the-other-projects-here-import'),
+  package: say('vscode.add-project.published-to-a-registry-on-release'),
 }
 
-const TITLE = 'MonoSmith: Add project'
+const TITLE = say('vscode.add-project.monosmith-add-project')
 
 /**
  * Asks what to add with quick picks: what is being built (then the language where
@@ -37,9 +38,9 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
   const { role, language, preset, outcomeId } = found
   const askName = async (title: string): Promise<string | undefined> => await vscode.window.showInputBox({
     title,
-    prompt:        `The name of the new ${role}`,
-    placeHolder:   'for example billing-api',
-    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
+    prompt:        say('vscode.add-project.the-name-of-the-new', { role }),
+    placeHolder:   say('vscode.add-project.for-example-billing-api'),
+    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? say('vscode.add-project.exists-already-pick-another-name', { value }) : undefined),
   })
   // The name comes first, then one question: the defaults (straight to the plan) or the questions one by one.
   let name: string | undefined
@@ -77,16 +78,16 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
 async function askSetup (): Promise<'defaults' | 'custom' | undefined> {
   const answer = await vscode.window.showQuickPick(
     [
-      { label: 'Start with the defaults', description: 'default', detail: 'The answers the stack suggests: what you picked, the shape of the other projects, and for a website lcl, dev, uat and prd with prd as the build. The plan shows every default as a flag.', value: 'defaults' as const },
-      { label: 'Customise', detail: 'Answer the questions one at a time: choices, the shape of the other projects, the environments.', value: 'custom' as const },
+      { label: say('guide.add_project_setup.start_with_the_defaults'), description: 'default', detail: say('vscode.add-project.the-answers-the-stack-suggests-what'), value: 'defaults' as const },
+      { label: say('guide.add_project_setup.customise'), detail: say('vscode.add-project.answer-the-questions-one-at-a'), value: 'custom' as const },
     ],
-    { title: `${TITLE}: how do you want to set it up?`, ignoreFocusOut: true },
+    { title: say('vscode.add-project.how-do-you-want-to-set', { title: TITLE }), ignoreFocusOut: true },
   )
 
   return answer?.value
 }
 
-const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'
+const EVERY_LANGUAGE = say('vscode.add-project.i-know-the-language-show-every')
 
 /**
  * The first questions: what is being built, in plain words, then the language
@@ -115,7 +116,7 @@ async function askOutcome (options: AddOptions, projects: ReadonlyArray<{ langua
 /** The old way: the kind, then every language of that kind. */
 async function askEveryLanguage (options: AddOptions, projects: ReadonlyArray<{ language: string }>): Promise<{ role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
   const roles = [...new Set(options.kinds.map((kind) => roleOf(kind.kind, kind.language)))]
-  const role = await vscode.window.showQuickPick(roles.map((name) => ({ label: name, description: ROLES[name] ?? '' })), { title: `${TITLE}: what kind?`, placeHolder: 'app, lib or package' })
+  const role = await vscode.window.showQuickPick(roles.map((name) => ({ label: name, description: ROLES[name] ?? '' })), { title: say('vscode.add-project.what-kind', { title: TITLE }), placeHolder: say('vscode.add-project.app-lib-or-package') })
   if (role === undefined) return undefined
 
   const language = await askLanguage(options, role.label, options.kinds.map((kind) => kind.language), projects)
@@ -133,9 +134,9 @@ async function askEveryLanguage (options: AddOptions, projects: ReadonlyArray<{ 
  */
 async function pickOutcomeRow (outcomes: readonly OutcomeOption[]): Promise<{ row: OutcomeRow, typed: string } | undefined> {
   const pick = vscode.window.createQuickPick<vscode.QuickPickItem & { row: OutcomeRow }>()
-  pick.title = `${TITLE}: what are you building?`
+  pick.title = say('vscode.add-project.what-are-you-building', { title: TITLE })
   pick.ignoreFocusOut = true
-  pick.placeholder = 'Type to narrow the list: try react, azure function, electron, tauri, api'
+  pick.placeholder = say('vscode.add-project.type-to-narrow-the-list-try')
   const show = (): void => {
     pick.items = outcomeRows(outcomes, pick.value).map((row) => ({ ...rowItem(row), row, alwaysShow: true }))
   }
@@ -164,13 +165,13 @@ function rowItem (row: OutcomeRow): vscode.QuickPickItem {
       return { label: row.outcome.title, description: row.outcome.typical, detail: row.outcome.consequence }
     }
     case 'none': {
-      return { label: `$(info) No result for "${row.query}"`, description: row.closest.length === 0 ? '' : `closest: ${row.closest.join(' · ')}`, detail: 'Change the words, or use one of the two lines below.' }
+      return { label: say('vscode.add-project.no-result-for', { query: row.query }), description: row.closest.length === 0 ? '' : `closest: ${row.closest.join(' · ')}`, detail: say('vscode.add-project.change-the-words-or-use-one') }
     }
     case 'every': {
-      return { label: EVERY_LANGUAGE, description: 'the long way: kind first, then the language from the full list' }
+      return { label: EVERY_LANGUAGE, description: say('vscode.add-project.the-long-way-kind-first-then') }
     }
     case 'compose': {
-      return { label: '$(search) Compose a stack…', description: 'search frameworks, desktop shells (Tauri, Electron) and cloud hosts in one place' }
+      return { label: say('vscode.add-project.compose-a-stack'), description: say('vscode.add-project.search-frameworks-desktop-shells-tauri-electron') }
     }
   }
 }
@@ -184,7 +185,7 @@ async function askLanguage (options: AddOptions, role: string, fitting: readonly
   const rows = startOnMainLanguage(languageRows(options.languages, options.kinds, role, fitting, outcome), main)
   const language = await vscode.window.showQuickPick(
     rows.map((row) => ({ label: row.label, description: row.language === main?.language ? `${row.description} ${main.why}`.trim() : row.description, detail: row.detail, language: row.language })),
-    { title: `${TITLE}: which language?`, placeHolder: outcome?.items[0]?.layer === 'host' ? 'The language of the function; the clouds it can run in are listed next to it' : 'Pick the language', matchOnDescription: true, matchOnDetail: true },
+    { title: say('vscode.add-project.which-language', { title: TITLE }), placeHolder: say(outcome?.items[0]?.layer === 'host' ? 'vscode.add-project.the-language-of-the-function-the' : 'vscode.add-project.pick-the-language'), matchOnDescription: true, matchOnDetail: true },
   )
 
   return language?.language
@@ -198,16 +199,16 @@ async function askPreset (options: AddOptions, outcome: OutcomeOption, language:
   const items = outcome.items.filter((item) => item.language === language)
   if (items.length === 0) return []
 
-  const later = '$(clock) Decide in the next question'
+  const later = say('vscode.add-project.decide-in-the-next-question')
   const layer = outcome.items[0]?.layer ?? ''
-  const question = options.layers[layer] === undefined ? 'Which one?' : `Which ${options.layers[layer].toLowerCase()}?`
+  const question = options.layers[layer] === undefined ? say('guide.add_project_outcomes.which_one') : say('vscode.add-project.which', { toLowerCase: options.layers[layer].toLowerCase() })
   // "Decide in the next question" is first, so the list reads in order and Enter on it picks nothing.
-  const laterRows = outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }]
+  const laterRows = outcome.id === 'function' ? [] : [{ label: later, description: '', detail: say('vscode.add-project.you-can-still-pick-a-framework') }]
   const rows = [...laterRows, ...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description }))]
   const start = typedItem(items, typed)
   // Nothing typed: the cursor starts on "Decide in the next question", so Enter picks nothing.
   const startRow = rows.find((row) => (start === undefined ? row.label === later : row.description === start))
-  const picked = await pickOne(rows, { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick is kept: the next questions do not ask it again`.trim() }, startRow)
+  const picked = await pickOne(rows, { title: `${TITLE}: ${question}`, placeHolder: say('vscode.add-project.your-pick-is-kept-the-next', { whatIs: whatIs(outcome.items[0]?.layer ?? '') }).trim() }, startRow)
   if (picked === undefined) return undefined
 
   return picked.label === later ? [] : [picked.description]
@@ -251,10 +252,10 @@ async function pickOne<T extends vscode.QuickPickItem> (rows: readonly T[], show
  */
 async function askLike (siblings: ReadonlyArray<{ name: string, language: string }>): Promise<string | undefined | null> {
   if (siblings.length < 2) return undefined
-  const majority = 'What most projects do'
+  const majority = say('vscode.add-project.what-most-projects-do')
   const picked = await vscode.window.showQuickPick(
-    [{ label: majority, description: 'smith follows the siblings that agree' }, ...siblings.map((project) => ({ label: project.name, description: 'copy the shape of this project' }))],
-    { title: `${TITLE}: follow which project?`, placeHolder: 'The new project copies the build, test, layout and lint of one project (smith add --like)' },
+    [{ label: majority, description: say('vscode.add-project.smith-follows-the-siblings-that-agree') }, ...siblings.map((project) => ({ label: project.name, description: say('vscode.add-project.copy-the-shape-of-this-project') }))],
+    { title: say('vscode.add-project.follow-which-project', { title: TITLE }), placeHolder: say('vscode.add-project.the-new-project-copies-the-build') },
   )
   if (picked === undefined) return null
 
@@ -266,11 +267,11 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
   const stacks = options.stacks.filter((stack) => stack.language === language)
   const axes = choicesByAxis(options.choices, language, role)
   const items: Array<vscode.QuickPickItem & { kind_: 'default' | 'stack' | 'choices', stack?: string }> = [
-    { label: '$(star) The default', description: `the stack the workspace uses for ${language}`, kind_: 'default' },
+    { label: say('vscode.add-project.the-default'), description: say('vscode.add-project.the-stack-the-workspace-uses-for', { language }), kind_: 'default' },
     ...stacks.map((stack) => ({ label: stack.name, description: stack.description, kind_: 'stack' as const, stack: stack.name })),
-    ...(axes.length === 0 ? [] : [{ label: '$(list-selection) Pick choices…', description: 'a framework, a test runner, a style', kind_: 'choices' as const }]),
+    ...(axes.length === 0 ? [] : [{ label: say('vscode.add-project.pick-choices'), description: say('vscode.add-project.a-framework-a-test-runner-a'), kind_: 'choices' as const }]),
   ]
-  const how = preset.length > 0 ? items.find((item) => item.kind_ === 'choices') : (items.length === 1 ? items[0] : await vscode.window.showQuickPick(items, { title: `${TITLE} (3/4): how is it built?`, placeHolder: 'The default, a stack, or your own choices', matchOnDescription: true }))
+  const how = preset.length > 0 ? items.find((item) => item.kind_ === 'choices') : (items.length === 1 ? items[0] : await vscode.window.showQuickPick(items, { title: say('vscode.add-project.3-4-how-is-it-built', { title: TITLE }), placeHolder: say('vscode.add-project.the-default-a-stack-or-your'), matchOnDescription: true }))
   if (how === undefined) return undefined
   if (how.kind_ === 'default') return { with: [] }
   if (how.kind_ === 'stack') return { stack: how.stack, with: [] }
@@ -281,19 +282,24 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
   return picked === undefined ? undefined : { with: picked }
 }
 
+/** What Enter keeps in a single-choice list: the first row, the default, or none. */
+function keptDefault (rows: Parameters<ChoicePrompts['one']>[1]): string {
+  return rows[0]?.name === '' ? say('vscode.add-project.none-nothing-extra') : say('vscode.add-project.the-default-2', { part: rows[0]?.label ?? say('vscode.add-project.the-first-line') })
+}
+
 /** The questions of the choices, as quick picks. */
 const vscodeChoicePrompts: ChoicePrompts = {
   many: async (question, rows) => {
     const defaults = rows.filter((row) => row.picked).map((row) => row.name)
-    const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: `${question.hint} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : 'Tick any, or Escape to cancel'}`.trim(), canPickMany: true, ignoreFocusOut: true })
+    const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: `${question.hint} ${defaults.length > 0 ? say('vscode.add-project.enter-keeps-the-default', { join: defaults.join(', ') }) : say('vscode.add-project.tick-any-or-escape-to-cancel')}`.trim(), canPickMany: true, ignoreFocusOut: true })
 
     return answer?.map((row) => row.name)
   },
   // A single-choice axis is a radio list: one answer. Enter takes the first row, which is the default, or "None".
-  one:   async (question, rows) => await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: `${question.hint} Enter keeps ${rows[0]?.name === '' ? 'None (nothing extra)' : `${rows[0]?.label ?? 'the first line'} (the default)`}.`.trim(), matchOnDetail: true }),
-  again: async (problem) => await vscode.window.showWarningMessage(`MonoSmith: ${problem}`, { modal: true }, 'Pick again') === 'Pick again',
+  one:   async (question, rows) => await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: say('vscode.add-project.enter-keeps', { hint: question.hint, part: keptDefault(rows) }).trim(), matchOnDetail: true }),
+  again: async (problem) => await vscode.window.showWarningMessage(say('vscode.add-project.monosmith', { problem }), { modal: true }, say('vscode.add-project.pick-again')) === say('vscode.add-project.pick-again'),
   asked: async (question, rows, needing) => {
-    const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.axis} for ${needing.join(', ')}`, placeHolder: `smith does not choose the ${question.axis} for you: the first is suggested`, matchOnDetail: true })
+    const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.axis} for ${needing.join(', ')}`, placeHolder: say('vscode.add-project.smith-does-not-choose-the-for', { axis: question.axis }), matchOnDetail: true })
 
     return answer?.name
   },
@@ -309,15 +315,15 @@ const vscodeChoicePrompts: ChoicePrompts = {
  * @returns `add`, `fresh` (add with `--fresh`) or `cancel`
  */
 export async function confirmAddPlan (request: AddRequest, plan: string, follows: boolean, choices = ''): Promise<PlanAnswer> {
-  const add = 'Add project'
-  const commitAdd = 'Add and commit (so Undo works)'
-  const fresh = 'Add with the stack defaults'
-  const commitFresh = 'Stack defaults, and commit'
-  const open = 'Open the plan'
+  const add = say('vscode.add-project.add-project')
+  const commitAdd = say('vscode.add-project.add-and-commit-so-undo-works')
+  const fresh = say('vscode.add-project.add-with-the-stack-defaults')
+  const commitFresh = say('vscode.add-project.stack-defaults-and-commit')
+  const open = say('vscode.add-project.open-the-plan')
   for (;;) {
     const choice = await vscode.window.showInformationMessage(
-      `MonoSmith: add the ${request.role} ${request.name} (${request.language})?`,
-      { modal: true, detail: `${choices === '' ? '' : `${choices}\n\n`}${plan}\n\nNothing was changed yet. By default smith leaves the files uncommitted: review them with git. The commit buttons make it one commit that Undo can revert.${follows ? '\n\n"Add with the stack defaults" skips the shape of the sibling projects (smith add --fresh).' : ''}` },
+      say('vscode.add-project.monosmith-add-the', { role: request.role, name: request.name, language: request.language }),
+      { modal: true, detail: say('vscode.add-project.nothing-was-changed-yet-by-default', { part: choices === '' ? '' : `${choices}\n\n`, plan, part2: follows ? say('vscode.add-project.add-with-the-stack-defaults-skips') : '' }) },
       add,
       commitAdd,
       ...(follows ? [fresh, commitFresh] : []),
@@ -356,12 +362,12 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
   switch (outcome.kind) {
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
-      const undo = 'Undo'
-      const commit = 'Commit now'
-      const use = 'Use in an app…'
+      const undo = say('vscode.undo-change.undo')
+      const commit = say('vscode.add-project.commit-now')
+      const use = say('vscode.add-project.use-in-an-app')
       const library = outcome.role === 'lib'
       void vscode.window.showInformationMessage(
-        `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status, or commit it now (one commit that Undo can revert).'}${library ? ' Use it from an app: pick the app, then this library.' : ''}`,
+        say('vscode.add-project.monosmith-is-added-and-the-ci', { name: outcome.name, part: say(outcome.committed ? 'vscode.add-project.committed-as-one-change-undo-reverts' : 'vscode.add-project.not-committed-review-with-git-status'), part2: library ? say('vscode.add-project.use-it-from-an-app-pick') : '' }),
         ...(outcome.committed ? [undo] : (next === undefined ? [] : [commit])),
         ...(library ? [use] : []),
       ).then(async (choice) => {
@@ -382,7 +388,7 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was added. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.add-project.monosmith-nothing-was-added', { message: outcome.message }))
       break
     }
     case 'composing':
@@ -398,14 +404,14 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
  * Nothing is installed before the person picks.
  */
 function tellNeededTools (name: string, tools: NeededTools): void {
-  const install = 'Install tools'
-  const later = 'Not now'
+  const install = say('vscode.add-project.install-tools')
+  const later = say('adopt.agent.decline')
   void showNotice(
     'warning',
-    `MonoSmith: ${name} needs tools this machine lacks. ${tools.problems.join(' ')} Without them the first doctor run warns. Install tools shows the ways to get each one and asks you; nothing is installed before you choose.`,
+    say('vscode.add-project.monosmith-needs-tools-this-machine-lacks', { name, join: tools.problems.join(' ') }),
     [
-      { label: install, detail: `Choose how to get ${tools.names.join(', ')} with smith tools install.` },
-      { label: later, detail: 'Go on. smith doctor and the Health view keep reminding you.' },
+      { label: install, detail: say('vscode.add-project.choose-how-to-get-with-smith', { join: tools.names.join(', ') }) },
+      { label: later, detail: say('vscode.add-project.go-on-smith-doctor-and-the') },
     ],
   ).then(async (choice) => {
     if (choice === install) await vscode.commands.executeCommand('monosmith.installTools')
@@ -414,22 +420,22 @@ function tellNeededTools (name: string, tools: NeededTools): void {
 
 /** Says the project was made but could not be checked, and offers the ways on. Nothing is lost: the project stays on disk. */
 async function tellUnchecked (outcome: Extract<AddOutcome, { kind: 'unchecked' }>, next?: AddFollowUp): Promise<void> {
-  const open = 'Install page'
-  const install = 'Install tools'
-  const again = 'Check again'
-  const skip = 'Skip the check'
+  const open = say('vscode.add-project.install-page')
+  const install = say('vscode.add-project.install-tools')
+  const again = say('resultdialog.check.label')
+  const skip = say('vscode.add-project.skip-the-check')
   const where = outcome.tool.dir === undefined ? '' : ` in ${outcome.tool.dir}`
   const files = outcome.tool.files > 0 ? ` (${outcome.tool.files} files)` : ''
   const check = outcome.tool.check
   for (;;) {
     const choice = await showNotice(
       'warning',
-      `MonoSmith: ${outcome.name} was created${where}${files}, and could not be checked yet: ${outcome.tool.title} is not installed. Nothing is lost: your project stays on disk.`,
+      say('vscode.add-project.monosmith-was-created-and-could-not', { name: outcome.name, where, files, title: outcome.tool.title }),
       [
-        ...(outcome.tool.url === undefined ? [] : [{ label: open, detail: `Open the page that tells how to get ${outcome.tool.title}.` }]),
-        { label: install, detail: 'Install the missing tools with smith tools install.' },
-        ...(check === undefined || next === undefined ? [] : [{ label: again, detail: 'Run the first check of the new project again, in a terminal.' }]),
-        { label: skip, detail: 'Continue without the check. The Health view keeps reminding you.' },
+        ...(outcome.tool.url === undefined ? [] : [{ label: open, detail: say('vscode.add-project.open-the-page-that-tells-how', { title: outcome.tool.title }) }]),
+        { label: install, detail: say('vscode.add-project.install-the-missing-tools-with-smith') },
+        ...(check === undefined || next === undefined ? [] : [{ label: again, detail: say('vscode.add-project.run-the-first-check-of-the') }]),
+        { label: skip, detail: say('vscode.add-project.continue-without-the-check-the-health') },
       ],
     )
     if (choice === open && outcome.tool.url !== undefined) {
@@ -438,7 +444,7 @@ async function tellUnchecked (outcome: Extract<AddOutcome, { kind: 'unchecked' }
     }
     if (choice === install) await vscode.commands.executeCommand('monosmith.installTools')
     if (choice === again && check !== undefined) next?.checkAgain(check)
-    if (choice === skip) void vscode.window.showInformationMessage(`MonoSmith: not checked. ${outcome.tool.title} is missing; the health view keeps reminding you.`)
+    if (choice === skip) void vscode.window.showInformationMessage(say('vscode.add-project.monosmith-not-checked-is-missing-the', { title: outcome.tool.title }))
 
     return
   }

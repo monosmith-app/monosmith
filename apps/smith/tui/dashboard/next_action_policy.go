@@ -2,7 +2,7 @@ package dashboard
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // NextAction chooses the one thing to do next: what is broken first, then the

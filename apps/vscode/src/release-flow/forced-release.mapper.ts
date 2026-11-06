@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 /**
  * Reads the packages that no commit releases from `smith release --dry-run --json`.
  * @param json - what smith printed
@@ -42,5 +43,5 @@ export function forcedConsequences (forced: string[]): string {
   if (forced.length === 0) return ''
   const names = forced.map((item) => item.split('=', 1)[0]).join(', ')
 
-  return `\n\n${names}: no commit releases it. The new tag points at HEAD, and the same code is published under a new version, with a GitHub Release and the assets.`
+  return say('vscode.release-flow.no-commit-releases-it-the-new', { names })
 }

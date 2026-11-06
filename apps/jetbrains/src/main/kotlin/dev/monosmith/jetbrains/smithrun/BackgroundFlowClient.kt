@@ -7,6 +7,8 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.notice.NoticeClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHRUN_NOTHING_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** Runs a multi-step flow (questions and smith commands in turn) in a background task with a progress bar. */
 object BackgroundFlowClient {
@@ -33,7 +35,10 @@ object BackgroundFlowClient {
                         } catch (cancelled: ProcessCanceledException) {
                             throw cancelled
                         } catch (problem: Exception) {
-                            NoticeClient.warn(ide, "Nothing was changed. ${problem.message ?: problem.javaClass.simpleName}")
+                            NoticeClient.warn(
+                                ide,
+                                say(JETBRAINS_SMITHRUN_NOTHING_WAS_CHANGED, (problem.message ?: problem.javaClass.simpleName).toString()),
+                            )
                         }
                     }
                 },

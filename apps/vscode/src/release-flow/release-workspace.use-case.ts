@@ -2,6 +2,7 @@ import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import { parseNeverReleasedPackages, parseUnchangedPackages } from './forced-release.mapper.ts'
 import { parsePlannedPackages, releaseArguments } from './release-arguments.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What releasing needs from the editor. */
 export interface ReleaseDeps {
@@ -39,7 +40,7 @@ export async function releaseWorkspace (deps: ReleaseDeps): Promise<ReleaseOutco
   try {
     packages = parsePlannedPackages(json.stdout)
   } catch {
-    return { kind: 'refused', message: 'smith printed the release plan in a form this editor does not read. Update the extension, or run smith release in a terminal.' }
+    return { kind: 'refused', message: say('vscode.release-flow.smith-printed-the-release-plan-in') }
   }
   let unchanged: string[]
   let never: string[]

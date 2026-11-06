@@ -1,5 +1,6 @@
 import type { SmithLocation, SmithLookup, SmithSession } from '../smith-client/index.ts'
 import type { FolderPhase } from './folder-state.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What connecting needs from the outside. */
 export interface ConnectDeps {
@@ -33,6 +34,6 @@ export async function connectFolder (deps: ConnectDeps, root: string): Promise<C
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
 
-    return { phase: 'failed', location, pathSmith, skippedUntrusted, error: location.source === 'setting' ? `the monosmith.path setting (${location.executable}) did not start: ${reason}` : reason }
+    return { phase: 'failed', location, pathSmith, skippedUntrusted, error: location.source === 'setting' ? say('vscode.folder-session.the-monosmith-path-setting-did-not', { executable: location.executable, reason }) : reason }
   }
 }

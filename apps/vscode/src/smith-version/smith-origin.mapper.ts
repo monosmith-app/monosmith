@@ -1,16 +1,17 @@
 import type { SmithLocation, SmithSource } from '../smith-client/index.ts'
+import { say } from '../words/index.ts'
 
 /** Names where a smith came from, as a phrase that follows "from". */
 export function sourceName (source: SmithSource): string {
   switch (source) {
     case 'setting': {
-      return 'the monosmith.path setting'
+      return say('vscode.smith-version.the-monosmith-path-setting')
     }
     case 'workspace': {
-      return 'this workspace (node_modules/.bin or .smith/bin)'
+      return say('vscode.smith-version.this-workspace-node-modules-bin-or')
     }
     case 'path': {
-      return 'the PATH'
+      return say('vscode.smith-version.the-path')
     }
   }
 }
@@ -35,10 +36,10 @@ export function describeOrigin (facts: OriginFacts): string[] {
     facts.location.executable,
   ]
   if (facts.skippedUntrusted) {
-    lines.push('This workspace has its own smith, which is not used because the workspace is not trusted.')
+    lines.push(say('vscode.smith-version.this-workspace-has-its-own-smith'))
   }
   if (facts.terminalVersion !== undefined && facts.terminalVersion !== facts.version) {
-    lines.push(`A terminal runs smith ${facts.terminalVersion} from the PATH.`)
+    lines.push(say('vscode.smith-version.a-terminal-runs-smith-from-the', { terminalVersion: facts.terminalVersion }))
   }
 
   return lines

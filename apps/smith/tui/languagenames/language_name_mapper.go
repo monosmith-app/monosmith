@@ -3,7 +3,7 @@ package languagenames
 import (
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // languages is the catalog key of the name of each language, by language id.

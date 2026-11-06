@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import type { ProjectActionOutcome, ProjectKind } from './project-action.contract.ts'
 import { otherKinds } from './project-action-arguments.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** A project, as far as these questions read it. */
 export interface ProjectChoice {
@@ -11,9 +12,9 @@ export interface ProjectChoice {
 }
 
 const WHAT_A_KIND_IS: Record<ProjectKind, string> = {
-  app:     'Something you run or deploy. Other projects do not import it.',
-  lib:     'Code the other projects of this workspace import. It is not published.',
-  package: 'Code published to a registry on release, for other people to install.',
+  app:     say('vscode.project-actions.something-you-run-or-deploy-other'),
+  lib:     say('vscode.project-actions.code-the-other-projects-of-this'),
+  package: say('vscode.project-actions.code-published-to-a-registry-on'),
 }
 
 /**
@@ -23,7 +24,7 @@ const WHAT_A_KIND_IS: Record<ProjectKind, string> = {
  * @returns the project name, or undefined when the person cancels
  */
 export async function pickProjectFor (projects: readonly ProjectChoice[], title: string): Promise<string | undefined> {
-  const picked = await vscode.window.showQuickPick(projects.map((project) => ({ label: project.name, description: `${project.kind} · ${project.language}` })), { title: `MonoSmith: ${title}`, placeHolder: 'Which project?' })
+  const picked = await vscode.window.showQuickPick(projects.map((project) => ({ label: project.name, description: `${project.kind} · ${project.language}` })), { title: say('vscode.project-actions.monosmith', { title }), placeHolder: say('guide.actions.which_project') })
 
   return picked?.label
 }
@@ -35,11 +36,11 @@ export async function pickProjectFor (projects: readonly ProjectChoice[], title:
  * @returns `keep-copy`, `delete`, or undefined when the person cancels
  */
 export async function askRemoveChoice (project: string, plan: string): Promise<'keep-copy' | 'delete' | undefined> {
-  const keep = 'Remove it and keep a copy'
-  const drop = 'Remove it and delete the folder'
+  const keep = say('vscode.project-actions.remove-it-and-keep-a-copy')
+  const drop = say('vscode.project-actions.remove-it-and-delete-the-folder')
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: remove ${project}?`,
-    { modal: true, detail: `${plan}\n\n"Keep a copy" moves the folder to .smith/removed/ so you can get it back. "Delete" removes the folder for good, files that git cannot bring back included. Nothing is committed.` },
+    say('vscode.project-actions.monosmith-remove', { project }),
+    { modal: true, detail: say('vscode.project-actions.keep-a-copy-moves-the-folder', { plan }) },
     keep,
     drop,
   )
@@ -56,7 +57,7 @@ export async function askRemoveChoice (project: string, plan: string): Promise<'
 export async function askKind (project: string, current: string): Promise<ProjectKind | undefined> {
   const picked = await vscode.window.showQuickPick(
     otherKinds(current).map((kind) => ({ label: kind, detail: WHAT_A_KIND_IS[kind], value: kind })),
-    { title: `MonoSmith: make ${project} a ...`, placeHolder: `${project} is ${current === 'app' ? 'an app' : `a ${current}`} now. What should it become?` },
+    { title: say('vscode.project-actions.monosmith-make-a', { project }), placeHolder: say('vscode.project-actions.is-now-what-should-it-become', { project, part: current === 'app' ? say('vscode.project-actions.an-app') : `a ${current}` }) },
   )
 
   return picked?.value
@@ -70,10 +71,10 @@ export async function askKind (project: string, current: string): Promise<Projec
  * @returns true on a yes, undefined when the person cancels
  */
 export async function confirmKind (project: string, kind: ProjectKind, plan: string): Promise<true | undefined> {
-  const go = `Make it ${kind === 'app' ? 'an app' : `a ${kind}`}`
+  const go = say('vscode.project-actions.make-it', { part: kind === 'app' ? say('vscode.project-actions.an-app') : `a ${kind}` })
   const choice = await vscode.window.showInformationMessage(
-    `MonoSmith: make ${project} ${kind === 'app' ? 'an app' : `a ${kind}`}?`,
-    { modal: true, detail: `${plan}\n\nNothing was changed yet. smith moves the folder and rewrites every place that names it. Nothing is committed.` },
+    say('vscode.project-actions.monosmith-make', { project, part: kind === 'app' ? say('vscode.project-actions.an-app') : `a ${kind}` }),
+    { modal: true, detail: say('vscode.project-actions.nothing-was-changed-yet-smith-moves', { plan }) },
     go,
   )
 
@@ -87,7 +88,7 @@ export async function confirmKind (project: string, kind: ProjectKind, plan: str
  * @returns the library, or undefined when the person cancels
  */
 export async function askLinkedLibrary (project: string, libraries: readonly string[]): Promise<string | undefined> {
-  const picked = await vscode.window.showQuickPick(libraries.map((label) => ({ label })), { title: `MonoSmith: unlink a library from ${project}`, placeHolder: 'Which library should the project stop using?' })
+  const picked = await vscode.window.showQuickPick(libraries.map((label) => ({ label })), { title: say('vscode.project-actions.monosmith-unlink-a-library-from', { project }), placeHolder: say('vscode.project-actions.which-library-should-the-project-stop') })
 
   return picked?.label
 }
@@ -99,10 +100,10 @@ export async function askLinkedLibrary (project: string, libraries: readonly str
  * @returns true on a yes, undefined when the person cancels
  */
 export async function confirmUnlink (project: string, library: string): Promise<true | undefined> {
-  const go = 'Unlink it'
+  const go = say('vscode.project-actions.unlink-it')
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: unlink ${library} from ${project}?`,
-    { modal: true, detail: `${project} stops depending on ${library}. The library stays in this workspace, and other projects keep using it. smith edits the manifest of ${project} and runs the install. Nothing is committed.` },
+    say('vscode.project-actions.monosmith-unlink-from', { library, project }),
+    { modal: true, detail: say('vscode.project-actions.stops-depending-on-the-library-stays', { project, library, project2: project }) },
     go,
   )
 
@@ -121,14 +122,14 @@ export function tellActionOutcome (outcome: ProjectActionOutcome, done: string, 
   switch (outcome.kind) {
     case 'done': {
       for (const line of outcome.lines) onOutput(line)
-      const commit = 'Commit changes…'
-      void vscode.window.showInformationMessage(`MonoSmith: ${done}. Not committed: review with git status, or commit it so Undo can revert it.`, commit).then(async (choice) => {
+      const commit = say('vscode.project-actions.commit-changes')
+      void vscode.window.showInformationMessage(say('vscode.project-actions.monosmith-not-committed-review-with-git', { done }), commit).then(async (choice) => {
         if (choice === commit) await vscode.commands.executeCommand('monosmith.commit', { root })
       })
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was changed. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.convert-workspace.monosmith-nothing-was-changed', { message: outcome.message }))
       break
     }
     case 'cancelled': {

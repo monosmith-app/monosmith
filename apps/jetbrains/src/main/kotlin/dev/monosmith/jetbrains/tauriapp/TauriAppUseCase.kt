@@ -8,6 +8,25 @@ import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_NAME_THE_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_ADD_TAURI
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_ADD_TAURI_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_ADD_TAURI_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_IS_A_TAURI_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_MAKE_A_TAURI_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_MAKE_THE_ICONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_MAKE_THE_ICONS_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_MONOSMITH_TAURI
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_NAME_A_PNG_FILE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_SMITH_OVERWRITES_THE_ICONS_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_SMITH_WRITES_SRC_TAURI_AND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_THE_APP_ONLY_WHEN_MORE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_THE_BUNDLE_IDENTIFIER_LIKE_COM
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_THE_ICONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_THE_ICONS_ARE_MADE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_THE_NODE_APP_TO_MAKE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TAURIAPP_THE_SQUARE_PNG_THE_ICONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -16,7 +35,7 @@ import java.nio.file.Path
  * plan first. smith commits the second only when the unticked box is ticked.
  */
 object TauriAppUseCase {
-    private const val TITLE = "MonoSmith: Tauri"
+    private val TITLE = say(JETBRAINS_TAURIAPP_MONOSMITH_TAURI)
 
     /** Starts the icons flow in a background task. */
     fun startIcons(
@@ -38,23 +57,23 @@ object TauriAppUseCase {
      */
     fun icons(ports: FlowPortsContract): Boolean {
         val logo =
-            ports.prompt.text("$TITLE: the icons", "The square PNG the icons are made from (1024x1024 is best):") {
-                if (it.endsWith(".png", ignoreCase = true)) null else "Name a PNG file."
+            ports.prompt.text(say(JETBRAINS_TAURIAPP_THE_ICONS, TITLE.toString()), say(JETBRAINS_TAURIAPP_THE_SQUARE_PNG_THE_ICONS)) {
+                if (it.endsWith(".png", ignoreCase = true)) null else say(JETBRAINS_TAURIAPP_NAME_A_PNG_FILE)
             } ?: return false
         val app =
-            ports.prompt.text("$TITLE: the icons", "The app, only when more than one project has a src-tauri (empty leaves it out):")
+            ports.prompt.text(say(JETBRAINS_TAURIAPP_THE_ICONS, TITLE.toString()), say(JETBRAINS_TAURIAPP_THE_APP_ONLY_WHEN_MORE))
                 ?: return false
         val args = listOf("tauri", "icon", logo) + if (app.isEmpty()) emptyList() else listOf(SmithFlagsConfig.PROJECT, app)
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "$TITLE: make the icons?",
+                title = say(JETBRAINS_TAURIAPP_MAKE_THE_ICONS, TITLE.toString()),
                 planArgs = args + "--dry-run",
-                header = "smith overwrites the icons in src-tauri/icons. Nothing was changed yet.",
-                okText = "Make the icons",
+                header = say(JETBRAINS_TAURIAPP_SMITH_OVERWRITES_THE_ICONS_IN),
+                okText = say(JETBRAINS_TAURIAPP_MAKE_THE_ICONS_2),
                 offerCommit = false,
                 apply = { args + "--yes" },
-                done = "The icons are made",
+                done = say(JETBRAINS_TAURIAPP_THE_ICONS_ARE_MADE),
             ),
         ) {}
     }
@@ -70,27 +89,26 @@ object TauriAppUseCase {
         commitLater: (String) -> Unit,
     ): Boolean {
         val app =
-            ports.prompt.text("$TITLE: add Tauri", "The Node app to make a Tauri app (the name of a project):") {
-                if (it.isEmpty()) "Name the app." else null
+            ports.prompt.text(say(JETBRAINS_TAURIAPP_ADD_TAURI, TITLE.toString()), say(JETBRAINS_TAURIAPP_THE_NODE_APP_TO_MAKE)) {
+                if (it.isEmpty()) say(JETBRAINS_PIPELINETEMPLATE_NAME_THE_APP) else null
             } ?: return false
         val identifier =
             ports.prompt.text(
-                "$TITLE: add Tauri to $app",
-                "The bundle identifier, like com.yourcompany.yourapp. Empty takes com.<workspace>.<project>:",
+                say(JETBRAINS_TAURIAPP_ADD_TAURI_TO, TITLE.toString(), app.toString()),
+                say(JETBRAINS_TAURIAPP_THE_BUNDLE_IDENTIFIER_LIKE_COM),
             ) ?: return false
         val args = listOf("tauri", "add", app) + if (identifier.isEmpty()) emptyList() else listOf("--identifier", identifier)
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "$TITLE: make $app a Tauri app?",
+                title = say(JETBRAINS_TAURIAPP_MAKE_A_TAURI_APP, TITLE.toString(), app.toString()),
                 planArgs = args + "--dry-run",
                 header =
-                    "smith writes src-tauri and the tauri tasks in the app, and never overwrites a file that exists. " +
-                        "Nothing was changed yet.",
-                okText = "Add Tauri",
+                    say(JETBRAINS_TAURIAPP_SMITH_WRITES_SRC_TAURI_AND),
+                okText = say(JETBRAINS_TAURIAPP_ADD_TAURI_2),
                 offerCommit = true,
                 apply = { args + "--yes" },
-                done = "$app is a Tauri app",
+                done = say(JETBRAINS_TAURIAPP_IS_A_TAURI_APP, app.toString()),
                 operation = "tauri add $app",
             ),
             commitLater,

@@ -2,7 +2,7 @@ package pane
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Window draws the part of a list that fits in h lines: the lines from the

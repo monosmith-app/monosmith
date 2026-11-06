@@ -1,6 +1,7 @@
 import type { CommandHost } from '../command-host/index.ts'
 import { chooseSyncRule, confirmSync, tellSyncOutcome } from './sync-prompts.client.ts'
 import { syncVersions } from './sync-versions.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks which version wins, shows smith's sync plan, and writes it on a yes.
@@ -9,7 +10,7 @@ import { syncVersions } from './sync-versions.use-case.ts'
  */
 export async function syncHere (host: CommandHost, argument: unknown): Promise<void> {
   const state = await host.folderFor(argument)
-  if (state?.location === undefined || !host.mayWrite('syncing dependency versions')) return
+  if (state?.location === undefined || !host.mayWrite(say('vscode.sync-versions.syncing-dependency-versions'))) return
   const outcome = await syncVersions({ run: host.smithIn(state), choose: chooseSyncRule, confirm: confirmSync })
   host.report('sync', state, outcome)
   tellSyncOutcome(outcome)

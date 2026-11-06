@@ -2,6 +2,7 @@ import type { ChoiceOption } from '../add-project/index.ts'
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import { swapArguments } from './swap-arguments.mapper.ts'
 import type { SwapAnswer, SwapOutcome, SwapRequest } from './swap-choice.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What swapping a choice needs from the editor. */
 export interface SwapDeps {
@@ -32,7 +33,7 @@ export async function swapChoice (deps: SwapDeps): Promise<SwapOutcome> {
   try {
     choices = deps.parse(listed.stdout)
   } catch {
-    return { kind: 'refused', message: 'smith printed its choices in a form this editor does not read. Update the extension, or run smith swap in a terminal.' }
+    return { kind: 'refused', message: say('vscode.swap-choice.smith-printed-its-choices-in-a') }
   }
 
   const request = await deps.ask(choices)

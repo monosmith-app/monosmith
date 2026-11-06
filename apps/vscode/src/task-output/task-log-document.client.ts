@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { TaskLogStore } from './task-log.store.ts'
+import { say } from '../words/index.ts'
 
 /** The scheme the logs of tasks are opened under. */
 export const LOG_SCHEME = 'monosmith-log'
@@ -45,7 +46,7 @@ export function createTaskLogDocuments (logs: TaskLogStore): TaskLogDocuments {
       const which = taskOf(uri)
       const lines = which === undefined ? undefined : logs.lines(logKey(which.root, which.task))
 
-      return lines === undefined ? 'No output was kept for this task. Run it to see its output here.' : lines.join('\n')
+      return lines === undefined ? say('vscode.task-output.no-output-was-kept-for-this') : lines.join('\n')
     },
   })
 

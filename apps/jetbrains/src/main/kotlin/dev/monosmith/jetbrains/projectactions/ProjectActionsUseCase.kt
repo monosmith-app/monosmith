@@ -9,6 +9,32 @@ import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_DEPENDS_ON_NO_LIBRARY_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_IS_NOW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_IS_NOW_WHAT_SHOULD_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_IS_REMOVED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_IS_UNLINKED_FROM
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_KEEP_A_COPY_MOVES_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MAKE_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MAKE_IT_AN_APP_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_CHANGE_THE_KIND_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_MAKE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_MAKE_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_REMOVE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_REMOVE_A_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_UNLINK_A_LIBRARY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_UNLINK_A_LIBRARY_FROM
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_MONOSMITH_UNLINK_FROM
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_NOTHING_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_NOTHING_WAS_CHANGED_YET_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_REMOVE_A_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_REMOVE_IT_AND_DELETE_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_REMOVE_IT_AND_KEEP_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_STOPS_DEPENDING_ON_THE_LIBRARY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_UNLINK_A_LIBRARY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_UNLINK_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_WHICH_LIBRARY_SHOULD_THE_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.PortProjectsUseCase
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
 import java.nio.file.Path
@@ -23,7 +49,7 @@ object ProjectActionsUseCase {
         val listed = PortProjectsUseCase.list(ports)
         val nodes = listed.getOrNull()
         if (nodes == null) {
-            ports.notice.warn("Nothing was changed. ${listed.exceptionOrNull()?.message}")
+            ports.notice.warn(say(JETBRAINS_PROJECTACTIONS_NOTHING_WAS_CHANGED, listed.exceptionOrNull()?.message.toString()))
             return null
         }
         return if (project != null) nodes.firstOrNull { it.name == project } else PortProjectsUseCase.pick(ports, nodes, title)
@@ -39,7 +65,7 @@ object ProjectActionsUseCase {
         ide: Project,
         root: Path,
         project: String?,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: remove a project") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_PROJECTACTIONS_MONOSMITH_REMOVE_A_PROJECT)) {
         runRemove(IdePortsClient.of(ide, root), { CommitChangesUseCase.start(ide, root, it) }, project)
     }
 
@@ -54,20 +80,19 @@ object ProjectActionsUseCase {
         commitLater: (String) -> Unit,
         project: String?,
     ): Boolean {
-        val node = target(ports, project, "remove a project") ?: return false
+        val node = target(ports, project, say(JETBRAINS_PROJECTACTIONS_REMOVE_A_PROJECT)) ?: return false
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "MonoSmith: remove ${node.name}?",
+                title = say(JETBRAINS_PROJECTACTIONS_MONOSMITH_REMOVE, node.name.toString()),
                 planArgs = ProjectActionArgumentsAlgorithm.removePlan(node.name),
                 header =
-                    "\"Keep a copy\" moves the folder to .smith/removed/ so you can get it back. \"Delete\" removes the folder for good, " +
-                        "files that git cannot bring back included. Nothing is removed until you answer.",
-                okText = "Remove it and keep a copy",
+                    say(JETBRAINS_PROJECTACTIONS_KEEP_A_COPY_MOVES_THE),
+                okText = say(JETBRAINS_PROJECTACTIONS_REMOVE_IT_AND_KEEP_A),
                 offerCommit = true,
-                others = listOf("Remove it and delete the folder"),
+                others = listOf(say(JETBRAINS_PROJECTACTIONS_REMOVE_IT_AND_DELETE_THE)),
                 apply = { ProjectActionArgumentsAlgorithm.remove(node.name, delete = it.other == 0) },
-                done = "${node.name} is removed",
+                done = say(JETBRAINS_PROJECTACTIONS_IS_REMOVED, node.name.toString()),
                 operation = "remove ${node.name}",
             ),
             commitLater,
@@ -83,7 +108,7 @@ object ProjectActionsUseCase {
         ide: Project,
         root: Path,
         project: String?,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: change the kind of a project") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_PROJECTACTIONS_MONOSMITH_CHANGE_THE_KIND_OF)) {
         runChangeKind(IdePortsClient.of(ide, root), { CommitChangesUseCase.start(ide, root, it) }, project)
     }
 
@@ -98,24 +123,38 @@ object ProjectActionsUseCase {
         commitLater: (String) -> Unit,
         project: String?,
     ): Boolean {
-        val node = target(ports, project, "make it an app, a library or a package") ?: return false
+        val node = target(ports, project, say(JETBRAINS_PROJECTACTIONS_MAKE_IT_AN_APP_A)) ?: return false
         val kind =
             ports.prompt
                 .pickOne(
-                    "MonoSmith: make ${node.name} a ...",
-                    "${node.name} is ${ProjectActionArgumentsAlgorithm.withArticle(node.kind)} now. What should it become?",
+                    say(JETBRAINS_PROJECTACTIONS_MONOSMITH_MAKE_A, node.name.toString()),
+                    say(
+                        JETBRAINS_PROJECTACTIONS_IS_NOW_WHAT_SHOULD_IT,
+                        node.name.toString(),
+                        ProjectActionArgumentsAlgorithm.withArticle(node.kind).toString(),
+                    ),
                     ProjectActionArgumentsAlgorithm.kindRows(node.kind),
                 )?.name ?: return false
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "MonoSmith: make ${node.name} ${ProjectActionArgumentsAlgorithm.withArticle(kind)}?",
+                title =
+                    say(
+                        JETBRAINS_PROJECTACTIONS_MONOSMITH_MAKE,
+                        node.name.toString(),
+                        ProjectActionArgumentsAlgorithm.withArticle(kind).toString(),
+                    ),
                 planArgs = ProjectActionArgumentsAlgorithm.kindPlan(node.name, kind),
-                header = "Nothing was changed yet. smith moves the folder and rewrites every place that names it.",
-                okText = "Make it ${ProjectActionArgumentsAlgorithm.withArticle(kind)}",
+                header = say(JETBRAINS_PROJECTACTIONS_NOTHING_WAS_CHANGED_YET_SMITH),
+                okText = say(JETBRAINS_PROJECTACTIONS_MAKE_IT, ProjectActionArgumentsAlgorithm.withArticle(kind).toString()),
                 offerCommit = true,
                 apply = { ProjectActionArgumentsAlgorithm.kind(node.name, kind) },
-                done = "${node.name} is now ${ProjectActionArgumentsAlgorithm.withArticle(kind)}",
+                done =
+                    say(
+                        JETBRAINS_PROJECTACTIONS_IS_NOW,
+                        node.name.toString(),
+                        ProjectActionArgumentsAlgorithm.withArticle(kind).toString(),
+                    ),
                 operation = "kind ${node.name} $kind",
             ),
             commitLater,
@@ -131,7 +170,7 @@ object ProjectActionsUseCase {
         ide: Project,
         root: Path,
         project: String?,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: unlink a library") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_PROJECTACTIONS_MONOSMITH_UNLINK_A_LIBRARY)) {
         runUnlink(IdePortsClient.of(ide, root), project) { CommitChangesUseCase.start(ide, root, it) }
     }
 
@@ -146,31 +185,30 @@ object ProjectActionsUseCase {
         project: String?,
         commitLater: (String) -> Unit,
     ): Boolean {
-        val node = target(ports, project, "unlink a library") ?: return false
+        val node = target(ports, project, say(JETBRAINS_PROJECTACTIONS_UNLINK_A_LIBRARY)) ?: return false
         if (node.deps.isEmpty()) {
-            ports.notice.info("${node.name} depends on no library of this workspace.")
+            ports.notice.info(say(JETBRAINS_PROJECTACTIONS_DEPENDS_ON_NO_LIBRARY_OF, node.name.toString()))
             return false
         }
         val library =
             ports.prompt
                 .pickOne(
-                    "MonoSmith: unlink a library from ${node.name}",
-                    "Which library should the project stop using?",
+                    say(JETBRAINS_PROJECTACTIONS_MONOSMITH_UNLINK_A_LIBRARY_FROM, node.name.toString()),
+                    say(JETBRAINS_PROJECTACTIONS_WHICH_LIBRARY_SHOULD_THE_PROJECT),
                     node.deps.map { ChoiceRowContract(it, it) },
                 )?.name ?: return false
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "MonoSmith: unlink $library from ${node.name}?",
+                title = say(JETBRAINS_PROJECTACTIONS_MONOSMITH_UNLINK_FROM, library.toString(), node.name.toString()),
                 planArgs = null,
                 fixedPlan = "smith uninstall -p ${node.name} workspace:$library",
                 header =
-                    "${node.name} stops depending on $library. The library stays in this workspace, and other projects keep using it. " +
-                        "smith edits the manifest of ${node.name} and runs the install.",
-                okText = "Unlink it",
+                    say(JETBRAINS_PROJECTACTIONS_STOPS_DEPENDING_ON_THE_LIBRARY, node.name.toString(), library.toString()),
+                okText = say(JETBRAINS_PROJECTACTIONS_UNLINK_IT),
                 offerCommit = true,
                 apply = { InstallArgumentsAlgorithm.unlink(node.name, library) },
-                done = "$library is unlinked from ${node.name}",
+                done = say(JETBRAINS_PROJECTACTIONS_IS_UNLINKED_FROM, library.toString(), node.name.toString()),
                 operation = "uninstall $library from ${node.name}",
             ),
             commitLater,

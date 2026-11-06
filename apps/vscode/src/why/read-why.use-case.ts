@@ -1,5 +1,6 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import { toFileWhyDocument, toSettingWhyDocument, toTaskWhyDocument } from './why-document.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** Runs smith in the workspace folder with these arguments. */
 export type RunSmithIn = (args: string[]) => Promise<SmithRun>
@@ -9,7 +10,7 @@ function pageOf (run: SmithRun, toPage: (json: string) => string): string {
   try {
     return toPage(run.stdout)
   } catch {
-    throw new Error('smith answered in a form this editor does not read. Update the extension, or run the command in a terminal.')
+    throw new Error(say('vscode.why.smith-answered-in-a-form-this'))
   }
 }
 

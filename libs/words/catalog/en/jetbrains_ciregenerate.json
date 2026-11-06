@@ -1,0 +1,6 @@
+{
+  "jetbrains.ciregenerate.monosmith-regenerate-the-ci-pipelines": "MonoSmith: regenerate the CI pipelines",
+  "jetbrains.ciregenerate.the-plan-is-a-diff": "The plan is a diff of every file smith rewrites or deletes. A pipeline of your own is not touched. Nothing was written yet.",
+  "jetbrains.ciregenerate.regenerate": "Regenerate",
+  "jetbrains.ciregenerate.the-ci-pipelines-are-regenerated": "The CI pipelines are regenerated"
+}

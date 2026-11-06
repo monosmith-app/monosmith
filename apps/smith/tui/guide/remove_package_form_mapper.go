@@ -3,7 +3,7 @@ package guide
 import (
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // RemoveTarget is a project a package can be removed from: the label the form

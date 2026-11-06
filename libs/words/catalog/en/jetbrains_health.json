@@ -1,0 +1,20 @@
+{
+  "jetbrains.health.doctor-all-checks-passed": "Doctor: all {passed} checks passed.",
+  "jetbrains.health.doctor-failed-warnings-passed": "Doctor: {failed} failed, {warnings} warnings, {passed} passed.",
+  "jetbrains.health.monosmith-doctor": "MonoSmith: doctor",
+  "jetbrains.health.doctor-did-not-run": "Doctor did not run. {message}",
+  "jetbrains.health.open-the-health-tab-each": "Open the Health tab: each check with a fix has a Fix row.",
+  "jetbrains.health.monosmith-fix": "MonoSmith: fix {check}",
+  "jetbrains.health.smith-has-no-fix-for": "smith has no fix for this check. {remedy}",
+  "jetbrains.health.nothing-was-changed": "Nothing was changed. {failureTextMapper}",
+  "jetbrains.health.monosmith-fix-2": "MonoSmith: fix {check}?",
+  "jetbrains.health.this-is-what-smith-would": "{description}. This is what smith would change. Nothing is changed until you apply it. Nothing is committed.",
+  "jetbrains.health.the-fix-is-applied-another": "The fix is applied. Another check still fails.",
+  "jetbrains.health.the-fix-is-applied-review": "The fix is applied. Review it with the Commit window.",
+  "jetbrains.health.monosmith-apply-the-safe-fixes": "MonoSmith: apply the safe fixes",
+  "jetbrains.health.smith-has-no-safe-fix": "smith has no safe fix to apply. {failureTextMapper}",
+  "jetbrains.health.monosmith-apply-the-safe-fixes-2": "MonoSmith: apply the safe fixes?",
+  "jetbrains.health.each-fix-is-shown-as": "Each fix is shown as a diff. Nothing is changed until you apply. A fix with a question has its own Fix row in the Health tab. Nothing is committed.",
+  "jetbrains.health.apply-the-safe-fixes": "Apply the safe fixes",
+  "jetbrains.health.the-safe-fixes-are-applied": "The safe fixes are applied. Review them with the Commit window."
+}

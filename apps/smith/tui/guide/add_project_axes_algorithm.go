@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // askedAxes are the axes of a language's offers that a choice needs and that

@@ -2,6 +2,8 @@ package dev.monosmith.jetbrains.newworkspace
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** One answer of a question of `smith new`. */
 data class NewOptionContract(
@@ -79,7 +81,7 @@ object NewQuestionsMapper {
                     .removeSuffix("(default)")
                     .trim()
                     .let { text -> if (text == "default") "" else text }
-            ChoiceRowContract(it.value, it.label, if (isDefault) "(default)" else "", hint, picked = isDefault)
+            ChoiceRowContract(it.value, it.label, if (isDefault) say(JETBRAINS_ADDCHOICES_DEFAULT) else "", hint, picked = isDefault)
         }
 
     /** The questions a first answer settles: not advanced, not asked at the end. */

@@ -18,9 +18,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/userprefs"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/apps/smith/updatenotice"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"golang.org/x/term"
 )
 

@@ -1,0 +1,9 @@
+{
+  "jetbrains.commitchanges.monosmith-commit-the-changes": "MonoSmith: commit the changes",
+  "jetbrains.commitchanges.nothing-was-committed": "Nothing was committed. {failureTextMapper}",
+  "jetbrains.commitchanges.git-also-shows-other-changed": " Git also shows {more} other changed files; they stay out unless you pick all.",
+  "jetbrains.commitchanges.smith-makes-one-commit-that": "smith makes one commit that Undo can revert. Pick which files go in. Nothing is committed until you do.{extras}",
+  "jetbrains.commitchanges.commit-only-the-files-of": "Commit only the files of the operation",
+  "jetbrains.commitchanges.commit-everything-git-shows": "Commit everything git shows",
+  "jetbrains.commitchanges.the-changes-are-committed-as": "The changes are committed as one change. Undo reverts it."
+}

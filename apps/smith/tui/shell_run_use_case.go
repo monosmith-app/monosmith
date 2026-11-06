@@ -18,8 +18,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // maxHistory bounds the command log.

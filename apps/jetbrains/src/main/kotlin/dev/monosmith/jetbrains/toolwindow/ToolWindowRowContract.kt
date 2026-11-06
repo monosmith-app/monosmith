@@ -1,6 +1,8 @@
 package dev.monosmith.jetbrains.toolwindow
 
 import dev.monosmith.jetbrains.health.DoctorFindingContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_FIX_THIS_CHECK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
 
 /** One row of a view of the MonoSmith tool window. */
@@ -58,6 +60,13 @@ sealed interface ToolWindowRowContract {
     data class Fix(
         val finding: DoctorFindingContract,
     ) : ToolWindowRowContract {
-        override val text: String get() = "Fix this check: ${finding.fix?.description.orEmpty()}"
+        override val text: String get() =
+            say(
+                JETBRAINS_TOOLWINDOW_FIX_THIS_CHECK,
+                finding.fix
+                    ?.description
+                    .orEmpty()
+                    .toString(),
+            )
     }
 }

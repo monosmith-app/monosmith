@@ -5,6 +5,18 @@ import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_NOTHING_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_IT_FAILED_IN_THE_COPY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_IT_PASSED_IN_A_COPY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_MONOSMITH_TRY_A_COMMAND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_MONOSMITH_TRY_A_COMMAND_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_MONOSMITH_TRY_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_NOTHING_WAS_TRIED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_RUN_IT_FOR_REAL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_THE_COMMAND_RAN_FOR_REAL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_THE_SMITH_COMMAND_TO_TRY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TRYCOMMAND_TYPE_THE_COMMAND_TO_TRY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -17,7 +29,7 @@ object TryCommandUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: try a command") { run(IdePortsClient.of(ide, root)) }
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_TRYCOMMAND_MONOSMITH_TRY_A_COMMAND)) { run(IdePortsClient.of(ide, root)) }
 
     /**
      * Runs the flow with the given ports.
@@ -27,10 +39,10 @@ object TryCommandUseCase {
     fun run(ports: FlowPortsContract): Boolean {
         val typed =
             ports.prompt.text(
-                "MonoSmith: try a command in a copy",
-                "The smith command to try, the words after smith (for example add lib utils --lang node):",
+                say(JETBRAINS_TRYCOMMAND_MONOSMITH_TRY_A_COMMAND_IN),
+                say(JETBRAINS_TRYCOMMAND_THE_SMITH_COMMAND_TO_TRY),
             ) {
-                if (it.isEmpty()) "Type the command to try." else null
+                if (it.isEmpty()) say(JETBRAINS_TRYCOMMAND_TYPE_THE_COMMAND_TO_TRY) else null
             } ?: return false
         val command = typed.removePrefix("smith ").split(Regex("\\s+")).filter { it.isNotEmpty() }
         val tried = ports.smith.run(listOf("try") + command + "--json")
@@ -38,29 +50,29 @@ object TryCommandUseCase {
             runCatching {
                 TryResultMapper.toPage(tried.stdout)
             }.getOrElse {
-                ports.notice.warn("Nothing was tried. ${FailureTextMapper.describe(tried)}")
+                ports.notice.warn(say(JETBRAINS_TRYCOMMAND_NOTHING_WAS_TRIED, FailureTextMapper.describe(tried).toString()))
                 return false
             }
         val answer =
             ports.prompt.plan(
-                "MonoSmith: try smith ${command.joinToString(" ")}",
+                say(JETBRAINS_TRYCOMMAND_MONOSMITH_TRY_SMITH, command.joinToString(" ").toString()),
                 if (shown.passed) {
-                    "It passed in a copy. Run it for real? Nothing is committed."
+                    say(JETBRAINS_TRYCOMMAND_IT_PASSED_IN_A_COPY)
                 } else {
-                    "It failed in the copy, so it is not offered for real."
+                    say(JETBRAINS_TRYCOMMAND_IT_FAILED_IN_THE_COPY)
                 },
                 shown.page,
-                if (shown.passed) "Run it for real" else "Close",
+                if (shown.passed) say(JETBRAINS_TRYCOMMAND_RUN_IT_FOR_REAL) else "Close",
                 offerCommit = false,
             )
         if (answer == null || !shown.passed) return false
         val done = ports.smith.run(listOf("try") + command + "--yes", show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_HEALTH_NOTHING_WAS_CHANGED, FailureTextMapper.describe(done).toString()))
             return false
         }
-        ports.notice.info("The command ran for real.")
+        ports.notice.info(say(JETBRAINS_TRYCOMMAND_THE_COMMAND_RAN_FOR_REAL))
         return true
     }
 }

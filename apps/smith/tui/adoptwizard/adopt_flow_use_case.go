@@ -8,7 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Done reports the end of the job the shell ran.

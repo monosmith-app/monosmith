@@ -14,6 +14,7 @@ packages/plugin-sdk-ts/, plugin-sdk-py/, plugin-sdk-dotnet/   the TypeScript, Py
 packages/eslint-config/         @monosmith/eslint-config: the shared ESLint config with the vertical-slice rules (published)
 packages/jest-preset/           @monosmith/jest-preset: the Jest preset, resolver and asset transform that replace Nx's Jest plugins (published)
 libs/actions/                   the catalog of what smith can do, read by the CLI, the shell, the MCP server and `smith serve`
+libs/words/                     the text catalogue of every interface (TUI, VS Code, JetBrains) and `wordgen`, which writes the editors' text files from it
 libs/plugin-recipe/             the recipe language plugin (a `*.recipe.toml` is a project, released as `name@x.y.z`)
 libs/plugin-node/               the Node language plugin
 libs/plugin-node-toolchains/    the typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode and tauri plugins and their stacks

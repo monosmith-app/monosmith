@@ -1,6 +1,7 @@
 import type { AddRequest } from './add-options.contract.ts'
 import { environmentArguments } from '../web-environments/index.ts'
 import { longFlag } from '../smith-flags/index.ts'
+import { say } from '../words/index.ts'
 
 /**
  * The arguments of `smith add` for a request.
@@ -38,5 +39,5 @@ export function followsSiblings (plan: string): boolean {
  * @returns the problem with its fix, or undefined when the name is fine
  */
 export function checkProjectName (name: string): string | undefined {
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name) ? undefined : 'Use lowercase letters, digits and single dashes, for example "web" or "billing-api".'
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name) ? undefined : say('vscode.add-project.use-lowercase-letters-digits-and-single')
 }

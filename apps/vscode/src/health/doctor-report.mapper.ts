@@ -1,4 +1,5 @@
 import type { DoctorReport } from './doctor-report.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What a doctor report comes to. */
 export interface DoctorSummary {
@@ -16,7 +17,7 @@ export function summarizeDoctor (report: DoctorReport): DoctorSummary {
   const failed = problems.filter((finding) => finding.warning !== true)
   const warnings = problems.filter((finding) => finding.warning === true)
   const lines = [...failed, ...warnings].flatMap((finding) => [
-    `${finding.warning === true ? 'warning' : 'failed'}: ${finding.check}`,
+    `${say(finding.warning === true ? 'vscode.health.warning' : 'vscode.health.failed')}: ${finding.check}`,
     ...(finding.detail === undefined ? [] : [`  ${finding.detail}`]),
     ...(finding.remedy === undefined ? [] : [`  fix: ${finding.remedy}`]),
   ])
@@ -26,8 +27,8 @@ export function summarizeDoctor (report: DoctorReport): DoctorSummary {
 
 /** One sentence for a notification. */
 export function sayDoctor (summary: DoctorSummary): string {
-  if (summary.failed === 0 && summary.warnings === 0) return `Doctor: all ${summary.passed} checks passed.`
+  if (summary.failed === 0 && summary.warnings === 0) return say('vscode.health.doctor-all-checks-passed', { passed: summary.passed })
   const parts = [`${summary.failed} failed`, `${summary.warnings} warnings`, `${summary.passed} passed`]
 
-  return `Doctor: ${parts.join(', ')}.`
+  return say('vscode.health.doctor', { join: parts.join(', ') })
 }

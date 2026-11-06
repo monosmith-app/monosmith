@@ -3,6 +3,7 @@ import {
   countProjects, describeAffected, describeFilter, toTree,
   type TaskFacts, type TreeFolder, type TreeNode, type ViewFilter,
 } from './workspace-tree.mapper.ts'
+import { say } from '../words/index.ts'
 
 const VIEW_ID = 'monosmith.projects'
 const DOT_SCHEME = 'monosmith-project'
@@ -74,11 +75,11 @@ export function createWorkspaceTree (factsOf: (root: string, task: string) => Ta
     },
   }
   const view = vscode.window.createTreeView<TreeNode>(VIEW_ID, { treeDataProvider: provider, showCollapseAll: true })
-  view.title = 'Projects'
+  view.title = say('commands.view.projects.title')
   const decorator = vscode.window.registerFileDecorationProvider({
     onDidChangeFileDecorations: decorations.event,
     provideFileDecoration:      (uri) => (uri.scheme === DOT_SCHEME && uri.query === 'affected'
-      ? { badge: '●', tooltip: 'Affected by the changes', color: new vscode.ThemeColor('charts.orange'), propagate: false }
+      ? { badge: '●', tooltip: say('vscode.workspace-view.affected-by-the-changes'), color: new vscode.ThemeColor('charts.orange'), propagate: false }
       : undefined),
   })
 

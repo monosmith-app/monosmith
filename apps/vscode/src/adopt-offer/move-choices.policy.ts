@@ -1,10 +1,11 @@
 import type { RootProject } from './repository-offer.contract.ts'
+import { say } from '../words/index.ts'
 
 /** The `--move` value that keeps the project where it is. */
 export const LEAVE = 'none'
 
 /** The question smith asks, word for word (`smith adopt --init` and the wizard use it too). */
-export const MOVE_QUESTION = 'Move it into a folder of its own so smith can manage it?'
+export const MOVE_QUESTION = say('vscode.adopt-offer.move-it-into-a-folder-of')
 
 /** One answer of the question. */
 export interface MoveChoice {
@@ -29,8 +30,8 @@ export function moveChoices (project: RootProject): MoveChoice[] {
 
   return [
     ...(['apps', 'packages', 'libs'] as const).map((key) => ({ key, label: `${key}/${project.name}`, dir: `${key}/${project.name}`, suggested: key === suggested })),
-    { key: 'other', label: 'another folder', suggested: false },
-    { key: 'none', label: 'no, leave it', suggested: false },
+    { key: 'other', label: say('vscode.adopt-offer.another-folder'), suggested: false },
+    { key: 'none', label: say('vscode.adopt-offer.no-leave-it'), suggested: false },
   ]
 }
 
@@ -40,7 +41,7 @@ export function moveChoices (project: RootProject): MoveChoice[] {
  * @returns a sentence, or undefined when the name is fine
  */
 export function checkName (name: string): string | undefined {
-  return name.length <= 50 && NAME_PATTERN.test(name) ? undefined : `${JSON.stringify(name)} must be lowercase letters and digits with words joined by single hyphens, starting with a letter (for example web-app).`
+  return name.length <= 50 && NAME_PATTERN.test(name) ? undefined : say('vscode.adopt-offer.must-be-lowercase-letters-and-digits', { stringify: JSON.stringify(name) })
 }
 
 /**
@@ -50,14 +51,14 @@ export function checkName (name: string): string | undefined {
  */
 export function checkFolder (folder: string): { dir: string } | { problem: string } {
   const raw = folder.trim().replaceAll('\\', '/')
-  const bad = (why: string): { problem: string } => ({ problem: `${JSON.stringify(folder)} is not a folder smith can move the project into: ${why}.` })
-  if (['', '.', './'].includes(raw)) return bad('it is the repository root, where the project is already')
-  if (raw.startsWith('/') || /^[A-Z]:/i.test(raw)) return bad('it must be relative to the repository root')
+  const bad = (why: string): { problem: string } => ({ problem: say('vscode.adopt-offer.is-not-a-folder-smith-can', { stringify: JSON.stringify(folder), why }) })
+  if (['', '.', './'].includes(raw)) return bad(say('vscode.adopt-offer.it-is-the-repository-root-where'))
+  if (raw.startsWith('/') || /^[A-Z]:/i.test(raw)) return bad(say('vscode.adopt-offer.it-must-be-relative-to-the'))
   const segments = raw.split('/').filter((segment) => segment !== '' && segment !== '.')
   for (const segment of segments) {
-    if (segment === '..') return bad('it leaves the repository')
-    if (segment.startsWith('.')) return bad('a folder that starts with a dot is for tools')
-    if (!FOLDER_SEGMENT.test(segment)) return bad('use letters, digits, dot, hyphen and underscore')
+    if (segment === '..') return bad(say('vscode.adopt-offer.it-leaves-the-repository'))
+    if (segment.startsWith('.')) return bad(say('vscode.adopt-offer.a-folder-that-starts-with-a'))
+    if (!FOLDER_SEGMENT.test(segment)) return bad(say('vscode.adopt-offer.use-letters-digits-dot-hyphen-and'))
   }
 
   return { dir: segments.join('/') }

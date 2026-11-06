@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // recipeChosen is the value of the answer that leaves a level to the people

@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import type { RunTarget } from '../task-run/index.ts'
 import type { FolderWorkspace } from '../workspace/index.ts'
 import { everyProjectChoice, folderChoices, projectChoices, taskChoices, taskNameChoices } from './task-choices.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What the person chose to run, and in which folder. */
 export interface PickedTarget {
@@ -18,15 +19,15 @@ export async function pickTask (folders: readonly FolderWorkspace[]): Promise<Pi
   const folder = await pickFolder(folders)
   if (folder === undefined) return undefined
   const project = await vscode.window.showQuickPick(projectChoices(folder.snapshot), {
-    title:              'Run Task: choose a project',
-    placeHolder:        'Project',
+    title:              say('vscode.quick-pick.run-task-choose-a-project'),
+    placeHolder:        say('vscode.quick-pick.project'),
     matchOnDescription: true,
     matchOnDetail:      true,
   })
   if (project === undefined) return undefined
   const task = await vscode.window.showQuickPick(taskChoices(project.value), {
-    title:       `Run Task: ${project.value.name}`,
-    placeHolder: 'Task',
+    title:       say('vscode.quick-pick.run-task', { name: project.value.name }),
+    placeHolder: say('vscode.quick-pick.task'),
   })
   if (task === undefined) return undefined
 
@@ -48,13 +49,13 @@ export async function pickTaskName (folders: readonly FolderWorkspace[], scope: 
   if (folder === undefined) return undefined
   const choices = taskNameChoices(folder.snapshot, scope === 'affected')
   if (choices.length === 0) {
-    void vscode.window.showInformationMessage(scope === 'affected' ? 'MonoSmith: no project is affected by the changes.' : 'MonoSmith: no project has a task.')
+    void vscode.window.showInformationMessage(say(scope === 'affected' ? 'vscode.quick-pick.monosmith-no-project-is-affected-by' : 'vscode.quick-pick.monosmith-no-project-has-a-task'))
 
     return undefined
   }
   const task = await vscode.window.showQuickPick(choices, {
-    title:       scope === 'affected' ? 'Run Affected: choose a task' : 'Run in All Projects: choose a task',
-    placeHolder: 'Task',
+    title:       say(scope === 'affected' ? 'vscode.quick-pick.run-affected-choose-a-task' : 'vscode.quick-pick.run-in-all-projects-choose-a'),
+    placeHolder: say('vscode.quick-pick.task'),
   })
 
   return task === undefined ? undefined : { root: folder.root, target: { kind: scope, task: task.value } }
@@ -62,12 +63,12 @@ export async function pickTaskName (folders: readonly FolderWorkspace[], scope: 
 
 async function pickFolder (folders: readonly FolderWorkspace[]): Promise<FolderWorkspace | undefined> {
   if (folders.length === 0) {
-    void vscode.window.showInformationMessage('MonoSmith: there are no projects to run yet.')
+    void vscode.window.showInformationMessage(say('vscode.quick-pick.monosmith-there-are-no-projects-to'))
 
     return undefined
   }
   if (folders.length === 1) return folders[0]
-  const chosen = await vscode.window.showQuickPick(folderChoices(folders), { title: 'Choose a folder', placeHolder: 'Folder' })
+  const chosen = await vscode.window.showQuickPick(folderChoices(folders), { title: say('vscode.command-host.choose-a-folder'), placeHolder: say('vscode.command-host.folder') })
 
   return folders.find((folder) => folder.root === chosen?.value)
 }
@@ -81,7 +82,7 @@ async function pickFolder (folders: readonly FolderWorkspace[]): Promise<FolderW
 export async function pickProject (folders: readonly FolderWorkspace[], title: string): Promise<{ root: string, project: string } | undefined> {
   const folder = await pickFolder(folders)
   if (folder === undefined) return undefined
-  const project = await vscode.window.showQuickPick(everyProjectChoice(folder.snapshot), { title, placeHolder: 'Project', matchOnDescription: true })
+  const project = await vscode.window.showQuickPick(everyProjectChoice(folder.snapshot), { title, placeHolder: say('vscode.quick-pick.project'), matchOnDescription: true })
 
   return project === undefined ? undefined : { root: folder.root, project: project.value }
 }

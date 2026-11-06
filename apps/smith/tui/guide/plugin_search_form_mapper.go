@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // PluginHit is one plugin as `smith plugin search --json` lists it.

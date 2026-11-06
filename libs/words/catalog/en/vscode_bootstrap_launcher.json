@@ -1,0 +1,7 @@
+{
+  "vscode.bootstrap-launcher.the-smith-launcher": "the smith launcher",
+  "vscode.bootstrap-launcher.monosmith-write-the-smith-launcher-in": "MonoSmith: write the smith launcher in {folder}?",
+  "vscode.bootstrap-launcher.they-run-the-smith-version-that": "{plan}\n\nThey run the smith version that smith.toml pins, so a laptop and CI use the same one. A launcher that exists is replaced. Commit them.",
+  "vscode.bootstrap-launcher.monosmith-the-launcher-is-written-in": "MonoSmith: the launcher is written in tools/smith. Commit it.",
+  "vscode.bootstrap-launcher.monosmith-the-launcher-was-not-written": "MonoSmith: the launcher was not written. {message}"
+}

@@ -6,6 +6,7 @@ import { toExplainDocument, toTextDocument } from './derive-explain.mapper.ts'
 import { confirmDeriveChange, tellChooseDerivedFile, tellDeriveChange, tellNothingToWrite } from './derive-prompts.client.ts'
 import type { DeriveAction, DeriveReport } from './derive-report.contract.ts'
 import { changeDerivedFile, explainDerivedFile, previewDerive } from './derive-files.use-case.ts'
+import { say } from '../words/index.ts'
 
 /** What the Health view lets the derive commands do. */
 export interface DeriveView {
@@ -38,7 +39,7 @@ export async function deriveFile (host: CommandHost, insight: InsightDocuments, 
 
     return
   }
-  if (!host.mayWrite('changing a derived file')) return
+  if (!host.mayWrite(say('vscode.derive-files.changing-a-derived-file'))) return
   const status = view.reports.get(state.root)?.files.find((item) => item.path === file)?.status
   if (action === 'apply' && status === undefined) {
     tellNothingToWrite(file)
@@ -54,7 +55,7 @@ export async function deriveFile (host: CommandHost, insight: InsightDocuments, 
       commit = answer === 'yes-commit'
       break
     }
-    if (answer === 'preview') await insight.show('derive-preview.md', toTextDocument('Derived files: what smith derive would write', await previewDerive(run)))
+    if (answer === 'preview') await insight.show('derive-preview.md', toTextDocument(say('vscode.derive-files.derived-files-what-smith-derive-would'), await previewDerive(run)))
     else await explain()
   }
   const result = await changeDerivedFile(run, change, change === 'apply' ? undefined : file, commit)

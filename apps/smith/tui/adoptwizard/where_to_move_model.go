@@ -7,7 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 

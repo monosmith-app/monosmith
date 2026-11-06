@@ -1,5 +1,8 @@
 package dev.monosmith.jetbrains.smithrun
 
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHRUN_SMITH_STOPPED_WITH_EXIT_CODE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
+
 /** Words why a smith command failed, in smith's own words and with its fix. */
 object FailureTextMapper {
     /**
@@ -10,5 +13,8 @@ object FailureTextMapper {
      * @return the problem, then the first fix as `Try: ...`
      */
     fun describe(run: SmithRunContract): String =
-        ProblemTextMapper.toLine(run.stderr.ifBlank { run.stdout }).ifBlank { "smith stopped with exit code ${run.code}" }
+        ProblemTextMapper
+            .toLine(
+                run.stderr.ifBlank { run.stdout },
+            ).ifBlank { say(JETBRAINS_SMITHRUN_SMITH_STOPPED_WITH_EXIT_CODE, run.code.toString()) }
 }

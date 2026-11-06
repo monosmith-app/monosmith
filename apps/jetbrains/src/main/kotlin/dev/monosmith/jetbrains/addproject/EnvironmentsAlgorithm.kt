@@ -1,5 +1,11 @@
 package dev.monosmith.jetbrains.addproject
 
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_AN_ENVIRONMENT_IS_LISTED_TWICE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CANNOT_BE_AN_ENVIRONMENT_NAME
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_IS_NOT_AN_ENVIRONMENT_NAME
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NAME_AT_LEAST_ONE_ENVIRONMENT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
+
 /** The environments of a web app, built once for each: the names, the default one and the flags of `smith add`. */
 object EnvironmentsAlgorithm {
     /** The environments a web app starts from: lcl is the developer's machine. */
@@ -22,20 +28,19 @@ object EnvironmentsAlgorithm {
     /** What is wrong with the names typed, in words that name the fix; null when they are fine. smith has the last word. */
     fun problem(text: String): String? {
         val names = parse(text)
-        if (names.isEmpty()) return "Name at least one environment, for example lcl, dev, uat, prd."
+        if (names.isEmpty()) return say(JETBRAINS_ADDPROJECT_NAME_AT_LEAST_ONE_ENVIRONMENT)
         for (name in names) {
             if (!Regex(
                     "^[a-z][a-z0-9-]*$",
                 ).matches(name)
             ) {
-                return "\"$name\" is not an environment name: use a lowercase word, for example uat."
+                return say(JETBRAINS_ADDPROJECT_IS_NOT_AN_ENVIRONMENT_NAME, name.toString())
             }
             if (name in reserved) {
-                return "\"$name\" cannot be an environment name: Vite or the env files already give it a meaning. " +
-                    "Use another word, for example lcl for local."
+                return say(JETBRAINS_ADDPROJECT_CANNOT_BE_AN_ENVIRONMENT_NAME, name.toString())
             }
         }
-        return if (names.toSet().size == names.size) null else "An environment is listed twice."
+        return if (names.toSet().size == names.size) null else say(JETBRAINS_ADDPROJECT_AN_ENVIRONMENT_IS_LISTED_TWICE)
     }
 
     /** The environment that `smith run build` builds when the person does not pick one: prd, else the last. */

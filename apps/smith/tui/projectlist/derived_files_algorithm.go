@@ -1,6 +1,6 @@
 package projectlist
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/words"
+import "github.com/monosmith-app/monosmith/libs/words/words"
 
 // The things a person can do about the derived files of a project.
 const (

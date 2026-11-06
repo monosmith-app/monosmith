@@ -6,6 +6,18 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_DELETE_THE_CACHE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_IT_DELETES_CORRUPT_BLOBS_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_IT_DELETES_THE_LOCAL_CACHE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_IT_REMOVES_THE_LEAST_RECENTLY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_MONOSMITH_CACHE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_NOTHING_WAS_CHANGED_YET
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_REMOVE_WHAT_IS_BROKEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_THE_CACHE_IS_TRIMMED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_THE_LOCAL_CACHE_IS_DELETED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_TRIM_THE_CACHE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CACHECONTROL_WHAT_WAS_BROKEN_IS_REMOVED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -15,7 +27,7 @@ import java.nio.file.Path
  * `--commit` here, so nothing is committed.
  */
 object CacheControlUseCase {
-    private const val TITLE = "MonoSmith: cache"
+    private val TITLE = say(JETBRAINS_CACHECONTROL_MONOSMITH_CACHE)
 
     /** The kinds of change. */
     enum class Kind(
@@ -28,32 +40,32 @@ object CacheControlUseCase {
     ) {
         /** `smith cache verify --fix`: deletes what the check finds broken. */
         REPAIR(
-            "Remove what is broken",
-            "It deletes corrupt blobs, the entries that name them, unused blobs and leftover files. The next run of an affected task is slower.",
+            say(JETBRAINS_CACHECONTROL_REMOVE_WHAT_IS_BROKEN),
+            say(JETBRAINS_CACHECONTROL_IT_DELETES_CORRUPT_BLOBS_THE),
             listOf("cache", "verify", "--fix"),
             listOf("cache", "verify", "--fix"),
             null,
-            "What was broken is removed from the cache",
+            say(JETBRAINS_CACHECONTROL_WHAT_WAS_BROKEN_IS_REMOVED),
         ),
 
         /** `smith cache prune`: removes the least recently used entries. */
         PRUNE(
-            "Trim the cache",
-            "It removes the least recently used entries, then the blobs no entry uses.",
+            say(JETBRAINS_CACHECONTROL_TRIM_THE_CACHE),
+            say(JETBRAINS_CACHECONTROL_IT_REMOVES_THE_LEAST_RECENTLY),
             listOf("cache", "prune"),
             listOf("cache", "prune"),
             listOf("cache", "prune", "--dry-run"),
-            "The cache is trimmed",
+            say(JETBRAINS_CACHECONTROL_THE_CACHE_IS_TRIMMED),
         ),
 
         /** `smith cache clear --yes`: deletes the local cache. */
         CLEAR(
-            "Delete the cache",
-            "It deletes the local cache. The remote cache stays, and the next run of every task is slower.",
+            say(JETBRAINS_CACHECONTROL_DELETE_THE_CACHE),
+            say(JETBRAINS_CACHECONTROL_IT_DELETES_THE_LOCAL_CACHE),
             listOf("cache", "clear"),
             listOf("cache", "clear", "--yes"),
             null,
-            "The local cache is deleted",
+            say(JETBRAINS_CACHECONTROL_THE_LOCAL_CACHE_IS_DELETED),
         ),
     }
 
@@ -77,7 +89,7 @@ object CacheControlUseCase {
                 title = "$TITLE: ${kind.verb.replaceFirstChar { it.lowercase() }}?",
                 planArgs = kind.planArgs,
                 fixedPlan = "smith ${kind.args.joinToString(" ")}\n\n${kind.consequence}",
-                header = "${kind.consequence} Nothing was changed yet.",
+                header = say(JETBRAINS_CACHECONTROL_NOTHING_WAS_CHANGED_YET, kind.consequence.toString()),
                 okText = kind.verb,
                 offerCommit = false,
                 apply = { kind.applyArgs },

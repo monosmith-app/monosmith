@@ -179,6 +179,14 @@ It talks to `smith serve` (JSON-RPC over stdin and stdout, no network port) and
 works with any smith whose protocol it knows; see
 [Serve and the event stream](https://github.com/monosmith-app/monosmith/blob/main/docs/reference/serve.md).
 
+## Where the texts live
+
+Every text a person reads comes from the catalogue in `libs/words` ([ADR 0089](https://github.com/monosmith-app/monosmith/blob/main/docs/architecture/decisions/0089-one-text-catalogue-for-every-interface.md)). Do not write wording in `package.json` or in the code.
+
+- Add or change a text in `libs/words/catalog/en/vscode_<area>.json`. A text that the terminal screen already has keeps its key: list it in `libs/words/surface/vscode.json`.
+- `package.json` holds `%key%` references. `package.nls.json` and `src/words/smith-words.config.ts` are generated: run `go run ./wordgen -surface vscode` in `libs/words`. Do not edit them.
+- In TypeScript, call `say('key', { name: value })` from `src/words`. The guard `src/words/no-raw-text.policy.spec.ts` fails on raw wording in a prompt and on a `package.json` label that is not a `%key%`.
+
 ## Developing
 
 ```sh

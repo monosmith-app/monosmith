@@ -2,6 +2,8 @@ package dev.monosmith.jetbrains.pluginmarket
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINMARKET_IS_A_PROGRAM_THAT_RUNS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * A plugin of the marketplace, as `smith plugin search --json` lists it.
@@ -76,7 +78,5 @@ object PluginSearchMapper {
 
     /** What the install checks and what the two boxes mean, said before the question. */
     fun trustWords(plugin: PluginContract): String =
-        "${plugin.name} ${plugin.newest} is a program that runs on your computer${license(plugin)}. " +
-            "smith checks the archive's SHA-256 and file list and every path before it installs. " +
-            "Installing does not trust it: --trust records that you trust it in this workspace. Nothing is committed."
+        say(JETBRAINS_PLUGINMARKET_IS_A_PROGRAM_THAT_RUNS, plugin.name.toString(), plugin.newest.toString(), license(plugin).toString())
 }

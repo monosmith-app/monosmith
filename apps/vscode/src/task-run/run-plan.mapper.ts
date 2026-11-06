@@ -1,5 +1,6 @@
 import type { WorkspaceProject } from '../workspace/index.ts'
 import type { RunOptions, RunPlan, RunTarget } from './run-plan.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Turns what the person asked to run into the plan smith is given.
@@ -32,10 +33,10 @@ export function toRunPlan (target: RunTarget, projects: readonly WorkspaceProjec
 /** Says what a plan runs, in a few words, for messages and menus. */
 export function describePlan (plan: RunPlan): string {
   const where = plan.affected === true
-    ? 'affected projects'
-    : (plan.projects === undefined ? 'all projects' : plan.projects.join(', '))
+    ? say('vscode.task-run.affected-projects')
+    : (plan.projects === undefined ? say('vscode.task-run.all-projects') : plan.projects.join(', '))
   if (plan.tasks.length === 1 && plan.projects?.length === 1 && plan.affected !== true) return `${plan.projects[0]}:${plan.tasks[0]}`
   const what = plan.tasks.length === 1 ? plan.tasks[0] : `${plan.tasks.length} tasks`
 
-  return `${what} in ${where.length > 60 ? `${plan.projects?.length ?? 0} projects` : where}`
+  return `${what} in ${where.length > 60 ? say('vscode.task-run.projects', { part: plan.projects?.length ?? 0 }) : where}`
 }

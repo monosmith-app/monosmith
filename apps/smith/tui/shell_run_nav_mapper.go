@@ -6,7 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // navParts are the parts of the header of a run view.

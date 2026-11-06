@@ -3,7 +3,7 @@ package runhistory
 import (
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Ago says how long ago something happened in a few words: "just now",

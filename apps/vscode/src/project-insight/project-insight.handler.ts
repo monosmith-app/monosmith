@@ -2,6 +2,7 @@ import type { CommandHost } from '../command-host/index.ts'
 import { pickProject } from '../quick-pick/index.ts'
 import type { InsightDocuments } from './insight-documents.client.ts'
 import { readExplain, readGraph } from './read-insight.use-case.ts'
+import { say } from '../words/index.ts'
 
 /** The parts of a row of the Projects view that tell which project a command started on. */
 export interface InsightRow {
@@ -20,7 +21,7 @@ export interface InsightRow {
 export async function showInsight (host: CommandHost, insight: InsightDocuments, node: InsightRow | undefined, kind: 'explain' | 'graph'): Promise<void> {
   const picked = node?.kind === 'project' && node.project !== undefined
     ? { root: node.root, project: node.project }
-    : await pickProject(host.readyWorkspaces(), kind === 'explain' ? 'Explain a project' : 'Show the graph of a project')
+    : await pickProject(host.readyWorkspaces(), say(kind === 'explain' ? 'vscode.project-insight.explain-a-project' : 'vscode.project-insight.show-the-graph-of-a-project'))
   const session = picked === undefined ? undefined : host.registry.folders.get(picked.root)?.session
   if (picked === undefined || session === undefined) return
   const text = kind === 'explain' ? await readExplain(session.connection, picked.project) : await readGraph(session.connection, picked.project)

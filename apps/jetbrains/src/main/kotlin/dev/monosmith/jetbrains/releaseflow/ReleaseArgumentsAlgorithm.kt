@@ -2,6 +2,18 @@ package dev.monosmith.jetbrains.releaseflow
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_A_BREAKING_CHANGE_1_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_A_FIX_1_2_3
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_A_NEW_FEATURE_1_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_CHANGE_ITS_BUMP_A_REQUEST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_HOLD_IT_BACK_IT_DOES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_KEEP_THE_BUMPS_AS_THEY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_IT_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_RELEASE_IT_ANYWAY_THE_SAME
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_THE_COMMITS_DECIDE_THE_LEVELS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * A package the release would publish.
@@ -35,9 +47,9 @@ object ReleaseArgumentsAlgorithm {
     /** The levels a bump can take, with what each means. */
     val levelRows =
         listOf(
-            ChoiceRowContract("patch", "patch", "(default)", "A fix: 1.2.3 → 1.2.4."),
-            ChoiceRowContract("minor", "minor", "", "A new feature: 1.2.3 → 1.3.0."),
-            ChoiceRowContract("major", "major", "", "A breaking change: 1.2.3 → 2.0.0. On a 0.x package, major gives 1.0.0."),
+            ChoiceRowContract("patch", "patch", say(JETBRAINS_ADDCHOICES_DEFAULT), say(JETBRAINS_RELEASEFLOW_A_FIX_1_2_3)),
+            ChoiceRowContract("minor", "minor", "", say(JETBRAINS_RELEASEFLOW_A_NEW_FEATURE_1_2)),
+            ChoiceRowContract("major", "major", "", say(JETBRAINS_RELEASEFLOW_A_BREAKING_CHANGE_1_2)),
         )
 
     /**
@@ -82,8 +94,7 @@ object ReleaseArgumentsAlgorithm {
     fun forcedConsequences(forced: List<String>): String {
         if (forced.isEmpty()) return ""
         val names = forced.joinToString(", ") { it.substringBefore("=") }
-        return "\n\n$names: no commit releases it. The new tag points at HEAD, and the same code is published " +
-            "under a new version, with a GitHub Release and the assets."
+        return say(JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_IT_THE, names.toString())
     }
 
     /** The lines of "hold packages back?": nothing is ticked at first. */
@@ -93,7 +104,7 @@ object ReleaseArgumentsAlgorithm {
                 it.name,
                 it.name,
                 "${it.current.ifEmpty { "new" }} → ${it.next} · ${it.level}",
-                "Hold it back: it does not release this time. A package that releases only because of it is held back too.",
+                say(JETBRAINS_RELEASEFLOW_HOLD_IT_BACK_IT_DOES),
             )
         }
 
@@ -105,9 +116,9 @@ object ReleaseArgumentsAlgorithm {
         listOf(
             ChoiceRowContract(
                 "",
-                "Keep the bumps as they are",
-                "(default)",
-                if (changed.isEmpty()) "The commits decide the levels." else "${changed.size} changed.",
+                say(JETBRAINS_RELEASEFLOW_KEEP_THE_BUMPS_AS_THEY),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                if (changed.isEmpty()) say(JETBRAINS_RELEASEFLOW_THE_COMMITS_DECIDE_THE_LEVELS) else "${changed.size} changed.",
             ),
         ) +
             packages.filter { it.current.isNotEmpty() }.map {
@@ -116,7 +127,7 @@ object ReleaseArgumentsAlgorithm {
                     it.name,
                     it.name,
                     "${it.current} → ${it.next} · $level${if (it.name in changed) " (changed)" else ""}",
-                    "Change its bump: a request, not an inference.",
+                    say(JETBRAINS_RELEASEFLOW_CHANGE_ITS_BUMP_A_REQUEST),
                 )
             }
 
@@ -126,8 +137,8 @@ object ReleaseArgumentsAlgorithm {
             ChoiceRowContract(
                 it,
                 it,
-                "no commit releases it",
-                "Release it anyway: the same code under a new version. It creates a tag at HEAD, publishes to the registry, makes a GitHub Release and cannot be undone.",
+                say(JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_IT),
+                say(JETBRAINS_RELEASEFLOW_RELEASE_IT_ANYWAY_THE_SAME),
             )
         }
 }

@@ -7,6 +7,35 @@ import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.ADOPT_FOUND_CONTINUE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_A_PACKAGE_RELEASES_WHEN_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_CHANGED_BUMPS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_CHANGE_A_BUMP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_CHOOSE_A_PACKAGE_TO_RELEASE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_HELD_BACK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_HOLD_PACKAGES_BACK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_MONOSMITH_RELEASE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_MONOSMITH_RELEASE_PREVIEW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NOTHING_IS_PUBLISHED_YET_NEXT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NOTHING_TO_RELEASE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NOTHING_WAS_RELEASED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_ANYTHING_NOW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_THESE_PACKAGES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_OPEN_PREVIEW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_PICK_A_PACKAGE_TO_CHANGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_RELEASE_A_PACKAGE_WITHOUT_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_RELEASE_NOW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_RELEASE_NOW_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_SHOW_THE_RELEASE_PREVIEW_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_SMITH_PRINTED_THE_RELEASE_PLAN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_THE_RELEASE_IS_DONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_THIS_CANNOT_BE_UNDONE_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_THIS_IS_WHAT_A_RELEASE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_TICK_THE_PACKAGES_THAT_MUST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_WHICH_LEVEL_FOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_WITHOUT_A_COMMIT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -16,7 +45,7 @@ import java.nio.file.Path
  * A release tags and publishes, and Undo does not revert it.
  */
 object ReleaseWorkspaceUseCase {
-    private const val TITLE = "MonoSmith: Release"
+    private val TITLE = say(JETBRAINS_RELEASEFLOW_MONOSMITH_RELEASE)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -32,7 +61,7 @@ object ReleaseWorkspaceUseCase {
     fun preview(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: release preview") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_RELEASEFLOW_MONOSMITH_RELEASE_PREVIEW)) {
         SmithRunClient.run(ide, root, listOf("release", "--dry-run"), show = true)
     }
 
@@ -50,19 +79,19 @@ object ReleaseWorkspaceUseCase {
     ): Boolean {
         val text = ports.smith.run(listOf("release", "--dry-run"))
         if (!text.ok) {
-            ports.notice.warn("Nothing was released. ${FailureTextMapper.describe(text)}")
+            ports.notice.warn(say(JETBRAINS_RELEASEFLOW_NOTHING_WAS_RELEASED, FailureTextMapper.describe(text).toString()))
             return false
         }
         val json = ports.smith.run(listOf("release", "--dry-run", "--json"))
         if (!json.ok) {
-            ports.notice.warn("Nothing was released. ${FailureTextMapper.describe(json)}")
+            ports.notice.warn(say(JETBRAINS_RELEASEFLOW_NOTHING_WAS_RELEASED, FailureTextMapper.describe(json).toString()))
             return false
         }
         val packages =
             runCatching { ReleaseArgumentsAlgorithm.planned(json.stdout) }
                 .getOrElse {
                     ports.notice.warn(
-                        "smith printed the release plan in a form this plugin does not read. Update the plugin, or run smith release in a terminal.",
+                        say(JETBRAINS_RELEASEFLOW_SMITH_PRINTED_THE_RELEASE_PLAN),
                     )
                     return false
                 }
@@ -77,16 +106,16 @@ object ReleaseWorkspaceUseCase {
         var bump = emptyList<String>()
         if (packages.isNotEmpty()) {
             ports.prompt.plan(
-                "$TITLE: this is what a release would do now",
-                "Nothing is published yet. Next you can hold packages back and change a bump. After that comes the last question.",
+                say(JETBRAINS_RELEASEFLOW_THIS_IS_WHAT_A_RELEASE, TITLE.toString()),
+                say(JETBRAINS_RELEASEFLOW_NOTHING_IS_PUBLISHED_YET_NEXT),
                 text.stdout.trim(),
-                "Continue",
+                say(ADOPT_FOUND_CONTINUE),
                 offerCommit = false,
             ) ?: return false
             hold =
                 ports.prompt.pickMany(
-                    "$TITLE: hold packages back?",
-                    "Tick the packages that must not release this time. Nothing ticked releases them all.",
+                    say(JETBRAINS_RELEASEFLOW_HOLD_PACKAGES_BACK, TITLE.toString()),
+                    say(JETBRAINS_RELEASEFLOW_TICK_THE_PACKAGES_THAT_MUST),
                     ReleaseArgumentsAlgorithm.holdRows(packages),
                 ) ?: return false
             bump = askBumps(ports, packages.filter { it.name !in hold }) ?: return false
@@ -99,25 +128,25 @@ object ReleaseWorkspaceUseCase {
                 ports.smith.run(ReleaseArgumentsAlgorithm.arguments(choices, publish = false))
             }
         if (!final.ok) {
-            ports.notice.warn("Nothing was released. ${FailureTextMapper.describe(final)}")
+            ports.notice.warn(say(JETBRAINS_RELEASEFLOW_NOTHING_WAS_RELEASED, FailureTextMapper.describe(final).toString()))
             return false
         }
-        val held = if (hold.isEmpty()) "" else "\nHeld back: ${hold.joinToString(", ")}."
-        val bumped = if (bump.isEmpty()) "" else "\nChanged bumps: ${bump.joinToString(", ")}."
+        val held = if (hold.isEmpty()) "" else say(JETBRAINS_RELEASEFLOW_HELD_BACK, hold.joinToString(", ").toString())
+        val bumped = if (bump.isEmpty()) "" else say(JETBRAINS_RELEASEFLOW_CHANGED_BUMPS, bump.joinToString(", ").toString())
         ports.prompt.plan(
-            "$TITLE: release now?",
-            "This cannot be undone. smith creates the tags, pushes them and publishes the packages to the registries. Undo does not revert it.",
+            say(JETBRAINS_RELEASEFLOW_RELEASE_NOW, TITLE.toString()),
+            say(JETBRAINS_RELEASEFLOW_THIS_CANNOT_BE_UNDONE_SMITH),
             "${final.stdout.trim()}$held$bumped${ReleaseArgumentsAlgorithm.forcedConsequences(forced)}",
-            "Release now",
+            say(JETBRAINS_RELEASEFLOW_RELEASE_NOW_2),
             offerCommit = false,
         ) ?: return false
         val done = ports.smith.run(ReleaseArgumentsAlgorithm.arguments(choices, publish = true), show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("Nothing was released. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_RELEASEFLOW_NOTHING_WAS_RELEASED, FailureTextMapper.describe(done).toString()))
             return false
         }
-        ports.notice.info(done.lines.lastOrNull() ?: "The release is done.")
+        ports.notice.info(done.lines.lastOrNull() ?: say(JETBRAINS_RELEASEFLOW_THE_RELEASE_IS_DONE))
         return true
     }
 
@@ -128,13 +157,13 @@ object ReleaseWorkspaceUseCase {
     ): List<String>? {
         val header =
             if (nothingPlanned) {
-                "No commit releases anything now. You can release a package anyway: the same code under a new version. Tick none to release nothing."
+                say(JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_ANYTHING_NOW)
             } else {
-                "No commit releases these packages. Tick one to release it anyway; tick none to release only what the plan lists."
+                say(JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_THESE_PACKAGES)
             }
         val ticked =
             ports.prompt.pickMany(
-                "$TITLE: release a package without a releasing commit?",
+                say(JETBRAINS_RELEASEFLOW_RELEASE_A_PACKAGE_WITHOUT_A, TITLE.toString()),
                 header,
                 ReleaseArgumentsAlgorithm.forcedRows(unchanged),
             )
@@ -142,8 +171,8 @@ object ReleaseWorkspaceUseCase {
         return ticked.map { name ->
             val level =
                 ports.prompt.pickOne(
-                    "$TITLE: which level for $name?",
-                    "The first answer is the default.",
+                    say(JETBRAINS_RELEASEFLOW_WHICH_LEVEL_FOR, TITLE.toString(), name.toString()),
+                    say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE),
                     ReleaseArgumentsAlgorithm.levelRows,
                 )
                     ?: return null
@@ -160,15 +189,15 @@ object ReleaseWorkspaceUseCase {
         while (true) {
             val picked =
                 ports.prompt.pickOne(
-                    "$TITLE: change a bump?",
-                    "Pick a package to change its level, or keep them all.",
+                    say(JETBRAINS_RELEASEFLOW_CHANGE_A_BUMP, TITLE.toString()),
+                    say(JETBRAINS_RELEASEFLOW_PICK_A_PACKAGE_TO_CHANGE),
                     ReleaseArgumentsAlgorithm.bumpRows(packages, changed),
                 ) ?: return null
             if (picked.name.isEmpty()) return changed.map { "${it.key}=${it.value}" }
             val level =
                 ports.prompt.pickOne(
-                    "$TITLE: which level for ${picked.name}?",
-                    "The first answer is the default.",
+                    say(JETBRAINS_RELEASEFLOW_WHICH_LEVEL_FOR, TITLE.toString(), picked.name.toString()),
+                    say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE),
                     ReleaseArgumentsAlgorithm.levelRows,
                 )
                     ?: return null
@@ -183,10 +212,10 @@ object ReleaseWorkspaceUseCase {
         openPreview: () -> Unit,
         restart: () -> Unit,
     ) {
-        val first = lines.firstOrNull { it.startsWith("Nothing to release") } ?: "Nothing to release."
+        val first = lines.firstOrNull { it.startsWith("Nothing to release") } ?: say(JETBRAINS_RELEASEFLOW_NOTHING_TO_RELEASE)
         val why =
             if (unchanged.isEmpty()) {
-                "A package releases when a commit since its last tag asks for it."
+                say(JETBRAINS_RELEASEFLOW_A_PACKAGE_RELEASES_WHEN_A)
             } else {
                 "No commit releases ${unchanged.joinToString(
                     ", ",
@@ -195,15 +224,15 @@ object ReleaseWorkspaceUseCase {
         val buttons =
             listOfNotNull(
                 NoticeButtonContract(
-                    "Open Preview",
-                    "Show the release preview: it says why nothing releases and what to do.",
+                    say(JETBRAINS_RELEASEFLOW_OPEN_PREVIEW),
+                    say(JETBRAINS_RELEASEFLOW_SHOW_THE_RELEASE_PREVIEW_IT),
                 ) { openPreview() },
                 if (unchanged.isEmpty()) {
                     null
                 } else {
                     NoticeButtonContract(
-                        "Without a commit…",
-                        "Choose a package to release although no commit releases it. It creates a tag at HEAD, publishes, and cannot be undone.",
+                        say(JETBRAINS_RELEASEFLOW_WITHOUT_A_COMMIT),
+                        say(JETBRAINS_RELEASEFLOW_CHOOSE_A_PACKAGE_TO_RELEASE),
                     ) {
                         restart()
                     }

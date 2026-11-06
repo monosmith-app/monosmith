@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 interface TryCheck { name: string, ok: boolean, tail?: string }
 
 interface TryResult {
@@ -18,7 +19,7 @@ interface TryResult {
  */
 export function toTryDocument (json: string): { page: string, passed: boolean } {
   const value: unknown = JSON.parse(json)
-  if (typeof value !== 'object' || value === null || !Array.isArray((value as TryResult).command)) throw new TypeError('smith printed no result')
+  if (typeof value !== 'object' || value === null || !Array.isArray((value as TryResult).command)) throw new TypeError(say('vscode.try-command.smith-printed-no-result'))
   const result = value as TryResult
   const checks = result.checks ?? []
   const changed = result.changed ?? []
@@ -28,20 +29,20 @@ export function toTryDocument (json: string): { page: string, passed: boolean } 
   return {
     passed,
     page: [
-      `# Try: smith ${result.command.join(' ')}`,
+      say('vscode.try-command.try-smith', { join: result.command.join(' ') }),
       '',
-      passed ? 'The command and every check passed in the copy. Your files were not touched.' : 'Something failed in the copy. Your files were not touched.',
+      say(passed ? 'vscode.try-command.the-command-and-every-check-passed' : 'vscode.try-command.something-failed-in-the-copy-your'),
       '',
-      `- **command:** ${result.commandOk ? 'ran' : 'failed'}`,
+      `- **command:** ${say(result.commandOk ? 'vscode.try-command.ran' : 'vscode.health.failed')}`,
       ...tail(result.commandOk ? undefined : result.commandTail),
       '',
-      '## Files it changed',
+      say('vscode.try-command.files-it-changed'),
       '',
-      ...(changed.length === 0 ? ['None.'] : changed.map((file) => `- \`${file}\``)),
+      ...(changed.length === 0 ? [say('vscode.try-command.none')] : changed.map((file) => `- \`${file}\``)),
       '',
-      '## Checks',
+      say('vscode.try-command.checks'),
       '',
-      ...(checks.length === 0 ? ['None were asked for.'] : checks.flatMap((check) => [`- **${check.name}:** ${check.ok ? 'passed' : 'failed'}`, ...tail(check.ok ? undefined : check.tail)])),
+      ...(checks.length === 0 ? [say('vscode.try-command.none-were-asked-for')] : checks.flatMap((check) => [`- **${check.name}:** ${say(check.ok ? 'vscode.try-command.passed' : 'vscode.health.failed')}`, ...tail(check.ok ? undefined : check.tail)])),
       '',
     ].join('\n'),
   }

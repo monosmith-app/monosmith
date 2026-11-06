@@ -6,6 +6,9 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHACTION_MONOSMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SMITHACTION_THERE_IS_NO_SMITH_TOML
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.FindWorkspaceRootUseCase
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,8 +36,8 @@ open class SmithActionHandler(
         if (root == null) {
             Messages.showInfoMessage(
                 ide,
-                "There is no smith.toml in this project or above it, so there is no MonoSmith workspace to work on.",
-                "MonoSmith",
+                say(JETBRAINS_SMITHACTION_THERE_IS_NO_SMITH_TOML),
+                say(JETBRAINS_SMITHACTION_MONOSMITH),
             )
             return
         }

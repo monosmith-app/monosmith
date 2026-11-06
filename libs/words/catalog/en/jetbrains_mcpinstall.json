@@ -1,0 +1,9 @@
+{
+  "jetbrains.mcpinstall.monosmith-connect-an-assistant": "MonoSmith: connect an assistant",
+  "jetbrains.mcpinstall.writes-mcp-json": "Writes .mcp.json.",
+  "jetbrains.mcpinstall.writes-vscode-mcp-json": "Writes .vscode/mcp.json.",
+  "jetbrains.mcpinstall.tick-the-assistants-to-connect": "Tick the assistants to connect.",
+  "jetbrains.mcpinstall.smith-it-writes-the-file": "smith {args}\n\nIt writes the file that lets the assistant start smith's MCP server, merges into a file that exists and keeps your other servers.",
+  "jetbrains.mcpinstall.nothing-was-written-yet": "Nothing was written yet.",
+  "jetbrains.mcpinstall.smith-is-connected": "smith is connected"
+}

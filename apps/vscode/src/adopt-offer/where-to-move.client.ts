@@ -1,8 +1,9 @@
 import * as vscode from 'vscode'
 import { destinationFor, LEAVE, MOVE_QUESTION, moveChoices, type MoveChoice } from './move-choices.policy.ts'
 import type { RootProject } from './repository-offer.contract.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: bring in'
+const TITLE = say('vscode.adopt-offer.monosmith-bring-in')
 
 /** What the person decided. */
 export interface MoveAnswer {
@@ -23,15 +24,15 @@ export interface MoveAnswer {
 export async function askWhereToMove (project: RootProject): Promise<MoveAnswer | undefined> {
   const picked = await vscode.window.showQuickPick(
     moveChoices(project).map((choice) => ({ label: choice.label, description: choice.suggested ? 'suggested' : '', choice })),
-    { title: `${TITLE} (1/3): ${MOVE_QUESTION}`, placeHolder: `${project.manifest} is at the root; smith manages one folder per project and does not pick it for you` },
+    { title: `${TITLE} (1/3): ${MOVE_QUESTION}`, placeHolder: say('vscode.adopt-offer.is-at-the-root-smith-manages', { manifest: project.manifest }) },
   )
   if (picked === undefined) return undefined
   const dir = picked.choice.key === 'none' ? LEAVE : await askName(picked.choice, project)
   if (dir === undefined) return undefined
 
   const ticked = await vscode.window.showQuickPick(
-    [{ label: 'Commit this change so it can be undone', description: 'unticked: smith commits nothing unless you tick this', picked: false }],
-    { title: `${TITLE} (3/3): commit?`, canPickMany: true, placeHolder: 'Enter with nothing ticked leaves the change uncommitted' },
+    [{ label: say('dialog.commit.label'), description: say('vscode.adopt-offer.unticked-smith-commits-nothing-unless-you'), picked: false }],
+    { title: `${TITLE} (3/3): commit?`, canPickMany: true, placeHolder: say('vscode.adopt-offer.enter-with-nothing-ticked-leaves-the') },
   )
 
   return ticked === undefined ? undefined : { dir, commit: ticked.length > 0 }
@@ -41,9 +42,9 @@ async function askName (choice: MoveChoice, project: RootProject): Promise<strin
   const whole = choice.key === 'other'
 
   const typed = await vscode.window.showInputBox({
-    title:         `${TITLE} (2/3): ${whole ? 'folder' : 'name'}`,
-    prompt:        whole ? 'The folder, from the repository root' : `The name of the folder in ${choice.key}/`,
-    ...(whole ? { placeHolder: `for example tools/${project.name}` } : { value: project.name }),
+    title:         `${TITLE} (2/3): ${say(whole ? 'vscode.adopt-offer.folder' : 'vscode.adopt-offer.name')}`,
+    prompt:        whole ? say('vscode.adopt-offer.the-folder-from-the-repository-root') : say('vscode.adopt-offer.the-name-of-the-folder-in', { key: choice.key }),
+    ...(whole ? { placeHolder: say('vscode.adopt-offer.for-example-tools', { name: project.name }) } : { value: project.name }),
     validateInput: (value) => {
       const result = destinationFor(choice, value)
 

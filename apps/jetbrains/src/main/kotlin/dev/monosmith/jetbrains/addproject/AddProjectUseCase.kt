@@ -14,6 +14,39 @@ import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.OutputConsoleStore
 import dev.monosmith.jetbrains.smithrun.SmithRunContract
 import dev.monosmith.jetbrains.undochange.UndoChangeUseCase
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_ADD_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_ADD_THIS_LIBRARY_TO_AN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CHOOSE_HOW_TO_GET_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMITTED_AS_ONE_CHANGE_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMIT_ANYWAY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMIT_NOW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMIT_THE_PROJECT_ALTHOUGH_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CONTINUE_WITHOUT_THE_CHECK_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_INSTALL_PAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_INSTALL_THE_MISSING_TOOLS_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_INSTALL_TOOLS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_IS_ADDED_AND_THE_CI
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_KEEP_UNCOMMITTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_LEAVE_THE_FILES_IN_YOUR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_MONOSMITH_ADD_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NEEDS_TOOLS_THIS_MACHINE_LACKS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED_SMITH_PRINTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOTHING_WAS_CHANGED_YET_BY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOT_COMMITTED_REVIEW_IT_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_OPEN_HEALTH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_OPEN_THE_HEALTH_TAB_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_OPEN_THE_PAGE_THAT_TELLS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_REVERT_THE_COMMIT_OF_THIS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_RUN_THE_FIRST_CHECK_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_SKIP_THE_CHECK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_SKIP_THE_SHAPE_OF_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_USE_IN_AN_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_WAS_CREATED_AND_COULD_NOT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_CHECK_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
 import java.nio.file.Path
 
@@ -37,9 +70,9 @@ data class AddFollowUpsContract(
  * `--yes`. smith commits only when the unticked box is ticked.
  */
 object AddProjectUseCase {
-    private const val TITLE = "MonoSmith: Add project"
-    private const val COMMITTED = "Committed as one change: Undo reverts it."
-    private const val UNCOMMITTED = "Not committed: review it with the Commit window, or commit it now."
+    private val TITLE = say(JETBRAINS_ADDPROJECT_MONOSMITH_ADD_PROJECT)
+    private val COMMITTED = say(JETBRAINS_ADDPROJECT_COMMITTED_AS_ONE_CHANGE_UNDO)
+    private val UNCOMMITTED = say(JETBRAINS_ADDPROJECT_NOT_COMMITTED_REVIEW_IT_WITH)
 
     /**
      * Starts the flow in a background task.
@@ -88,22 +121,22 @@ object AddProjectUseCase {
         val (request, words) = answer as AddAnswerContract.Request
         val plan = ports.smith.run(AddArgumentsAlgorithm.arguments(request, apply = false))
         if (!plan.ok) {
-            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(plan)}")
+            ports.notice.warn(say(JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED, FailureTextMapper.describe(plan).toString()))
             return false
         }
         val follows = AddArgumentsAlgorithm.followsSiblings(plan.stdout)
-        val header = "$words Nothing was changed yet. By default smith leaves the files uncommitted: review them with the Commit window."
+        val header = say(JETBRAINS_ADDPROJECT_NOTHING_WAS_CHANGED_YET_BY, words.toString())
         val answered =
             ports.prompt.plan(
                 TITLE,
                 header,
                 withoutDryRunLine(plan.stdout),
-                "Add project",
+                say(JETBRAINS_ADDPROJECT_ADD_PROJECT),
                 offerCommit = true,
                 checks =
                     if (follows) {
                         listOf(
-                            "Skip the shape of the sibling projects and use the stack defaults (--fresh)",
+                            say(JETBRAINS_ADDPROJECT_SKIP_THE_SHAPE_OF_THE),
                         )
                     } else {
                         emptyList()
@@ -140,7 +173,7 @@ object AddProjectUseCase {
         val catalogue = ports.smith.run(listOf("compose", "--json"))
         val failed = listOf(kinds, choices, catalogue).firstOrNull { !it.ok }
         if (failed != null) {
-            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(failed)}")
+            ports.notice.warn(say(JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED, FailureTextMapper.describe(failed).toString()))
             return null
         }
         return runCatching {
@@ -156,7 +189,7 @@ object AddProjectUseCase {
             )
         }.getOrElse {
             ports.notice.warn(
-                "Nothing was added. smith printed its lists in a form this plugin does not read. Update the plugin, or run smith add in a terminal.",
+                say(JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED_SMITH_PRINTED),
             )
             null
         }
@@ -173,13 +206,22 @@ object AddProjectUseCase {
         if (done.ok) {
             val buttons =
                 listOfNotNull(
-                    if (committed) NoticeButtonContract("Undo", "Revert the commit of this add.") { follow.undo() } else null,
+                    if (committed) {
+                        NoticeButtonContract(
+                            say(JETBRAINS_ADDPROJECT_UNDO),
+                            say(JETBRAINS_ADDPROJECT_REVERT_THE_COMMIT_OF_THIS),
+                        ) {
+                            follow.undo()
+                        }
+                    } else {
+                        null
+                    },
                     if (committed) {
                         null
                     } else {
                         NoticeButtonContract(
-                            "Commit now",
-                            "Make one commit that Undo can revert; you choose the files first.",
+                            say(JETBRAINS_ADDPROJECT_COMMIT_NOW),
+                            say(JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO),
                         ) {
                             follow.commit(operation)
                         }
@@ -187,23 +229,33 @@ object AddProjectUseCase {
                     if (request.role ==
                         "lib"
                     ) {
-                        NoticeButtonContract("Use in an app…", "Add this library to an app.") { follow.useInApp() }
+                        NoticeButtonContract(
+                            say(JETBRAINS_ADDPROJECT_USE_IN_AN_APP),
+                            say(JETBRAINS_ADDPROJECT_ADD_THIS_LIBRARY_TO_AN),
+                        ) { follow.useInApp() }
                     } else {
                         null
                     },
                 )
             ports.notice.info(
-                "${request.name} is added and the CI pipelines are regenerated. ${if (committed) COMMITTED else UNCOMMITTED}",
+                say(
+                    JETBRAINS_ADDPROJECT_IS_ADDED_AND_THE_CI,
+                    request.name.toString(),
+                    (if (committed) COMMITTED else UNCOMMITTED).toString(),
+                ),
                 buttons,
             )
             NeededToolsMapper.parse(done.stdout)?.let { tools ->
                 ports.notice.warn(
-                    "${request.name} needs tools this machine lacks. ${tools.problems.joinToString(" ")} " +
-                        "Without them the first doctor run warns. Install tools asks how to get each one; nothing is installed before you choose.",
+                    say(
+                        JETBRAINS_ADDPROJECT_NEEDS_TOOLS_THIS_MACHINE_LACKS,
+                        request.name.toString(),
+                        tools.problems.joinToString(" ").toString(),
+                    ),
                     listOf(
                         NoticeButtonContract(
-                            "Install tools",
-                            "Choose how to get ${tools.names.joinToString(", ")} with smith tools install.",
+                            say(JETBRAINS_ADDPROJECT_INSTALL_TOOLS),
+                            say(JETBRAINS_ADDPROJECT_CHOOSE_HOW_TO_GET_WITH, tools.names.joinToString(", ").toString()),
                         ) { follow.installTools() },
                     ),
                 )
@@ -221,7 +273,7 @@ object AddProjectUseCase {
             tellUnchecked(ports, follow, request.name, tool)
             return false
         }
-        ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(done)}")
+        ports.notice.warn(say(JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED, FailureTextMapper.describe(done).toString()))
         return false
     }
 
@@ -233,12 +285,18 @@ object AddProjectUseCase {
     ) = ports.notice.warn(
         AddFailureMapper.describe(failure),
         listOf(
-            NoticeButtonContract("Install tools", "Install the missing tools with smith tools install.") { follow.installTools() },
-            NoticeButtonContract("Open Health", "Open the Health tab of the MonoSmith tool window.") { follow.openHealth() },
-            NoticeButtonContract("Commit anyway", "Commit the project although it fails its checks; you choose the files first.") {
+            NoticeButtonContract(
+                say(JETBRAINS_ADDPROJECT_INSTALL_TOOLS),
+                say(JETBRAINS_ADDPROJECT_INSTALL_THE_MISSING_TOOLS_WITH),
+            ) { follow.installTools() },
+            NoticeButtonContract(
+                say(JETBRAINS_ADDPROJECT_OPEN_HEALTH),
+                say(JETBRAINS_ADDPROJECT_OPEN_THE_HEALTH_TAB_OF),
+            ) { follow.openHealth() },
+            NoticeButtonContract(say(JETBRAINS_ADDPROJECT_COMMIT_ANYWAY), say(JETBRAINS_ADDPROJECT_COMMIT_THE_PROJECT_ALTHOUGH_IT)) {
                 follow.commit(operation)
             },
-            NoticeButtonContract("Keep uncommitted", "Leave the files in your work tree.") {},
+            NoticeButtonContract(say(JETBRAINS_ADDPROJECT_KEEP_UNCOMMITTED), say(JETBRAINS_ADDPROJECT_LEAVE_THE_FILES_IN_YOUR)) {},
         ),
     )
 
@@ -254,23 +312,29 @@ object AddProjectUseCase {
         val buttons =
             listOfNotNull(
                 tool.url?.let { url ->
-                    NoticeButtonContract("Install page", "Open the page that tells how to get ${tool.title}.") { follow.openPage(url) }
+                    NoticeButtonContract(
+                        say(JETBRAINS_ADDPROJECT_INSTALL_PAGE),
+                        say(JETBRAINS_ADDPROJECT_OPEN_THE_PAGE_THAT_TELLS, tool.title.toString()),
+                    ) { follow.openPage(url) }
                 },
-                NoticeButtonContract("Install tools", "Install the missing tools with smith tools install.") { follow.installTools() },
+                NoticeButtonContract(
+                    say(JETBRAINS_ADDPROJECT_INSTALL_TOOLS),
+                    say(JETBRAINS_ADDPROJECT_INSTALL_THE_MISSING_TOOLS_WITH),
+                ) { follow.installTools() },
                 if (check ==
                     null
                 ) {
                     null
                 } else {
                     NoticeButtonContract(
-                        "Check again",
-                        "Run the first check of the new project again.",
+                        say(RESULTDIALOG_CHECK_LABEL),
+                        say(JETBRAINS_ADDPROJECT_RUN_THE_FIRST_CHECK_OF),
                     ) { ports.smith.run(check, show = true) }
                 },
-                NoticeButtonContract("Skip the check", "Continue without the check. The Health tab keeps reminding you.") {},
+                NoticeButtonContract(say(JETBRAINS_ADDPROJECT_SKIP_THE_CHECK), say(JETBRAINS_ADDPROJECT_CONTINUE_WITHOUT_THE_CHECK_THE)) {},
             )
         ports.notice.warn(
-            "$name was created$where$files, and could not be checked yet: ${tool.title} is not installed. Nothing is lost: your project stays on disk.",
+            say(JETBRAINS_ADDPROJECT_WAS_CREATED_AND_COULD_NOT, name.toString(), where.toString(), files.toString(), tool.title.toString()),
             buttons,
         )
     }

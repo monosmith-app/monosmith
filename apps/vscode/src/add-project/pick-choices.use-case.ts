@@ -2,6 +2,7 @@ import type { AddOptions, ChoiceOption } from './add-options.contract.ts'
 import { askedAxes, choicesByAxis } from './add-options.mapper.ts'
 import { askedRows, singleChoiceRows, type ChoiceRow } from './add-choice-rows.mapper.ts'
 import { whatIs } from './add-outcomes.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What a question about one axis says about itself. */
 export interface AxisQuestion {
@@ -73,7 +74,7 @@ async function askAxes (options: AddOptions, language: string, preset: readonly 
       const rows = axis.choices.map((choice) => ({
         name:        choice.name,
         label:       choice.title ?? choice.name,
-        description: `${choice.isDefault ? '(default) ' : ''}${choice.layer === undefined ? '' : `${options.layers[choice.layer] ?? choice.layer} `}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
+        description: `${choice.isDefault ? say('vscode.add-project.default') : ''}${choice.layer === undefined ? '' : `${options.layers[choice.layer] ?? choice.layer} `}${choice.requires.length > 0 ? say('vscode.add-project.needs', { join: choice.requires.join(', ') }) : ''}`.trim(),
         detail:      choice.description,
         picked:      choice.isDefault,
       }))

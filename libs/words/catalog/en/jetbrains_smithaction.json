@@ -1,0 +1,10 @@
+{
+  "jetbrains.smithaction.the-cache-status": "the cache status",
+  "jetbrains.smithaction.the-cache-check": "the cache check",
+  "jetbrains.smithaction.the-copies-between-projects": "the copies between projects",
+  "jetbrains.smithaction.the-smith-info": "the smith info",
+  "jetbrains.smithaction.there-is-no-smith-toml": "There is no smith.toml in this project or above it, so there is no MonoSmith workspace to work on.",
+  "jetbrains.smithaction.monosmith": "MonoSmith",
+  "jetbrains.smithaction.the-tools": "the tools",
+  "jetbrains.smithaction.is-outside-the-monosmith-workspace": "{name} is outside the MonoSmith workspace at {root}, so smith has nothing to say about it."
+}

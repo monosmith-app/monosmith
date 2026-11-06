@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Model is the dialog: a title, what happened, and a list of choices. It runs

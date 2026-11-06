@@ -1,14 +1,15 @@
 import type { KindOption } from './add-options.contract.ts'
 import { roleOf } from './add-options.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What the words of a layer mean, the same sentences `smith compose` shows. */
 const LAYER_ABOUT: Record<string, string> = {
-  framework: 'how the app or library is written: a web framework, or a whole starter',
-  shell:     'what wraps the app as a program you install on a computer',
-  host:      'where the code runs in the cloud, with the trigger and the runtime it asks for',
-  test:      'the tool that runs the tests',
-  lint:      'the tool that checks and formats the code',
-  style:     'how the app looks: a CSS library',
+  framework: say('vscode.add-project.how-the-app-or-library-is'),
+  shell:     say('vscode.add-project.what-wraps-the-app-as-a'),
+  host:      say('vscode.add-project.where-the-code-runs-in-the'),
+  test:      say('vscode.add-project.the-tool-that-runs-the-tests'),
+  lint:      say('vscode.add-project.the-tool-that-checks-and-formats'),
+  style:     say('vscode.add-project.how-the-app-looks-a-css'),
 }
 
 /**
@@ -85,7 +86,7 @@ function records (value: unknown): Json[] {
  */
 export function parseOutcomes (json: string): { outcomes: OutcomeOption[], languages: LanguageInfo[], layers: Record<string, string> } {
   const value: unknown = JSON.parse(json)
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError('smith printed no catalogue')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError(say('vscode.add-project.smith-printed-no-catalogue'))
   const root = value as Json
   const outcomes = records(root.outcomes).map((outcome): OutcomeOption => ({
     id:          text(outcome.id),

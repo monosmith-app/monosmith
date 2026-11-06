@@ -7,6 +7,16 @@ import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_MONOSMITH_ADD_A_PIPELINE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_NAME_THE_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_NO_PIPELINE_WAS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_PICK_A_PIPELINE_IT_IS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_SMITH_LISTED_NO_PIPELINE_UPDATE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_THE_APP_THIS_PIPELINE_BUILDS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_THE_FILE_IS_YOURS_FROM
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_THE_PIPELINE_IS_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PIPELINETEMPLATE_WRITE_THE_PIPELINE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -14,7 +24,7 @@ import java.nio.file.Path
  * the app it builds. The plan is `--dry-run`, the files it would write; the file is the team's from then on.
  */
 object AddPipelineUseCase {
-    private const val TITLE = "MonoSmith: add a pipeline"
+    private val TITLE = say(JETBRAINS_PIPELINETEMPLATE_MONOSMITH_ADD_A_PIPELINE)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -28,21 +38,21 @@ object AddPipelineUseCase {
     fun run(ports: FlowPortsContract): Boolean {
         val listed = ports.smith.run(listOf("pipeline"))
         if (!listed.ok) {
-            ports.notice.warn("No pipeline was added. ${FailureTextMapper.describe(listed)}")
+            ports.notice.warn(say(JETBRAINS_PIPELINETEMPLATE_NO_PIPELINE_WAS_ADDED, FailureTextMapper.describe(listed).toString()))
             return false
         }
         val templates = PipelineTemplatesMapper.toTemplates(listed.stdout)
         if (templates.isEmpty()) {
-            ports.notice.warn("smith listed no pipeline. Update smith.")
+            ports.notice.warn(say(JETBRAINS_PIPELINETEMPLATE_SMITH_LISTED_NO_PIPELINE_UPDATE))
             return false
         }
         val rows = PipelineTemplatesMapper.rows(templates)
-        val name = ports.prompt.pickOne(TITLE, "Pick a pipeline. It is written beside the generated CI.", rows)?.name ?: return false
+        val name = ports.prompt.pickOne(TITLE, say(JETBRAINS_PIPELINETEMPLATE_PICK_A_PIPELINE_IT_IS), rows)?.name ?: return false
         val template = templates.first { it.name == name }
         val app =
             if (template.needsApp) {
-                ports.prompt.text(TITLE, "The app this pipeline builds (the name of a project):") {
-                    if (it.isEmpty()) "Name the app." else null
+                ports.prompt.text(TITLE, say(JETBRAINS_PIPELINETEMPLATE_THE_APP_THIS_PIPELINE_BUILDS)) {
+                    if (it.isEmpty()) say(JETBRAINS_PIPELINETEMPLATE_NAME_THE_APP) else null
                 } ?: return false
             } else {
                 null
@@ -54,12 +64,11 @@ object AddPipelineUseCase {
                 title = "$TITLE: ${template.name}?",
                 planArgs = args + "--dry-run",
                 header =
-                    "The file is yours from then on: smith upgrade never rewrites it. " +
-                        "A file that exists is kept. Nothing was written yet.",
-                okText = "Write the pipeline",
+                    say(JETBRAINS_PIPELINETEMPLATE_THE_FILE_IS_YOURS_FROM),
+                okText = say(JETBRAINS_PIPELINETEMPLATE_WRITE_THE_PIPELINE),
                 offerCommit = false,
                 apply = { args + "--yes" },
-                done = "The ${template.name} pipeline is written",
+                done = say(JETBRAINS_PIPELINETEMPLATE_THE_PIPELINE_IS_WRITTEN, template.name.toString()),
             ),
         ) {}
     }

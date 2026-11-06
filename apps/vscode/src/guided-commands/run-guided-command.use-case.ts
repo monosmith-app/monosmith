@@ -1,6 +1,7 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import type { GuidedAnswers, GuidedCommand, GuidedOutcome, GuidedStep, ResolvedStep } from './guided-command.contract.ts'
 import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarketplace, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, type Setting, type WebApp } from './guided-sources.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What running a guided command needs from the editor. */
 export interface GuidedDeps {
@@ -62,11 +63,11 @@ export async function runGuidedCommand (command: GuidedCommand, deps: GuidedDeps
   if (command.planFlag !== undefined) {
     const planned = await deps.run([...args, command.planFlag])
     if (planned.code !== 0) return { kind: 'refused', message: describeFailure(planned) }
-    detail = `${line}\n\n${planned.stdout.trim()}\n\nNothing was changed yet.${command.consequence === undefined ? '' : ` ${command.consequence}`}`
+    detail = say('vscode.guided-commands.nothing-was-changed-yet', { line, trim: planned.stdout.trim(), part: command.consequence === undefined ? '' : ` ${command.consequence}` })
   }
   // The box comes before the confirmation, unticked: smith commits only when it is ticked.
   const commit = command.commit === true && deps.askCommit !== undefined ? await deps.askCommit() : false
-  if ((commit === undefined) || !await deps.confirm(`MonoSmith: ${command.title}?`, detail.trim(), command.verb ?? 'Run it')) return { kind: 'cancelled' }
+  if ((commit === undefined) || !await deps.confirm(say('vscode.guided-commands.monosmith', { title: command.title }), detail.trim(), command.verb ?? say('vscode.compose-stack.run-it'))) return { kind: 'cancelled' }
   const done = await deps.run([...(command.yes === true ? [...args, '--yes'] : args), ...(commit ? ['--commit'] : [])])
 
   // A warning smith prints on stderr (the projects a plugin leaves) is part of the answer.
@@ -88,7 +89,7 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
   switch (step.from) {
     case 'web-apps': {
       const apps = await webApps()
-      if (apps.length === 0) return { refused: 'No web app here is built per environment. smith add app <name> --with react --environments lcl,dev,uat,prd makes one.' }
+      if (apps.length === 0) return { refused: say('vscode.guided-commands.no-web-app-here-is-built') }
       resolved.options = apps.map((app) => ({ label: app.project, value: app.project, description: app.environments.map((env) => env.name).join(', ') }))
       break
     }
@@ -96,7 +97,7 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       const known = await webApps()
       const app = known.find((item) => item.project === answers.project)
       resolved.options = app === undefined ? [] : environmentsOfApp(app)
-      if (resolved.options.length === 0) return { refused: `${String(answers.project)} has no environment that can be removed: the default one stays.` }
+      if (resolved.options.length === 0) return { refused: say('vscode.guided-commands.has-no-environment-that-can-be', { project: String(answers.project) }) }
       break
     }
     case 'workspace-environments': {
@@ -108,7 +109,7 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       const listed = await deps.run(['pipeline'])
       if (listed.code !== 0) return { refused: describeFailure(listed) }
       resolved.options = parsePipelineTemplates(listed.stdout)
-      if (resolved.options.length === 0) return { refused: 'smith listed no pipeline. Update smith, or run smith pipeline in a terminal.' }
+      if (resolved.options.length === 0) return { refused: say('vscode.guided-commands.smith-listed-no-pipeline-update-smith') }
       break
     }
     case 'settings':
@@ -117,15 +118,15 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       if (typeof settings === 'string') return { refused: settings }
       resolved.options = settings
         .filter((setting) => step.from === 'settings' || setting.set)
-        .map((setting) => ({ label: setting.path, value: setting.path, description: `${setting.set ? setting.value : '(default)'}: ${setting.description}` }))
-      if (resolved.options.length === 0) return { refused: 'No setting is written in smith.toml, so there is nothing to reset.' }
+        .map((setting) => ({ label: setting.path, value: setting.path, description: `${setting.set ? setting.value : say('vscode.guided-commands.default')}: ${setting.description}` }))
+      if (resolved.options.length === 0) return { refused: say('vscode.guided-commands.no-setting-is-written-in-smith') }
       break
     }
     case 'setting-value': {
       const settings = await readSettings(deps)
       if (typeof settings === 'string') return { refused: settings }
       const setting = settings.find((item) => item.path === answers.setting)
-      if (setting === undefined) return { refused: `smith has no setting ${String(answers.setting)}.` }
+      if (setting === undefined) return { refused: say('vscode.guided-commands.smith-has-no-setting', { setting: String(answers.setting) }) }
       const marked = (value: string): string => value === setting.value && setting.set ? ' (current)' : ''
       const choices = setting.type === 'boolean' ? ['true', 'false'] : (setting.enum ?? [])
       if (choices.length > 0) {
@@ -133,7 +134,7 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
         resolved.options = choices.map((value) => ({ label: `${value}${marked(value)}`, value, description: setting.reason ?? setting.description }))
       } else {
         resolved.value = setting.value
-        resolved.prompt = `${setting.description}${setting.reason === undefined ? '' : ` Why the default is what it is: ${setting.reason}`} A list is comma-separated.`
+        resolved.prompt = say('vscode.guided-commands.a-list-is-comma-separated', { description: setting.description, part: setting.reason === undefined ? '' : say('vscode.guided-commands.why-the-default-is-what-it', { reason: setting.reason }) })
       }
       break
     }
@@ -141,7 +142,7 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       const listed = await deps.run(['plugin', 'list', '--json'])
       if (listed.code !== 0) return { refused: describeFailure(listed) }
       resolved.options = parseBuiltinPlugins(listed.stdout)
-      if (resolved.options.length === 0) return { refused: 'smith listed no built-in plugin.' }
+      if (resolved.options.length === 0) return { refused: say('vscode.guided-commands.smith-listed-no-built-in-plugin') }
       break
     }
     case 'marketplace': {
@@ -149,14 +150,14 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       const listed = await deps.run(['plugin', 'search', ...term, '--json'])
       if (listed.code !== 0) return { refused: describeFailure(listed) }
       resolved.options = parseMarketplace(listed.stdout)
-      if (resolved.options.length === 0) return { refused: term.length > 0 ? 'No plugin in the marketplace matches. Search with fewer words, or leave the field empty to list them all.' : 'The marketplace lists no plugins yet, so there is nothing to install.' }
+      if (resolved.options.length === 0) return { refused: say(term.length > 0 ? 'vscode.guided-commands.no-plugin-in-the-marketplace-matches' : 'vscode.guided-commands.the-marketplace-lists-no-plugins-yet') }
       break
     }
     case 'architectures': {
       const listed = await deps.run(['architecture'])
       if (listed.code !== 0) return { refused: describeFailure(listed) }
       resolved.options = parseArchitectures(listed.stdout)
-      if (resolved.options.length === 0) return { refused: 'smith listed no architecture.' }
+      if (resolved.options.length === 0) return { refused: say('vscode.guided-commands.smith-listed-no-architecture') }
       break
     }
     case undefined: {

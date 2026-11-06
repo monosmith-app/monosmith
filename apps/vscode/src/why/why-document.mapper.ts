@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 type Answer = Record<string, unknown>
 
 const FILE_ORDER = ['owner', 'kind', 'project', 'rule', 'renderer', 'plugin', 'source', 'state']
@@ -6,7 +7,7 @@ const SAID_ELSEWHERE = new Set(['path', 'known', 'summary', 'change', 'task', 's
 
 function asAnswer (json: string): Answer {
   const value: unknown = JSON.parse(json)
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError('smith printed no answer')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError(say('vscode.why.smith-printed-no-answer'))
 
   return value as Answer
 }
@@ -34,14 +35,14 @@ export function toFileWhyDocument (json: string): string {
   const known = answer.known === false
 
   return [
-    `# Why: ${show(answer.path ?? 'this file')}`,
+    say('vscode.why.why', { show: show(answer.path ?? say('vscode.why.this-file')) }),
     '',
-    show(answer.summary ?? 'smith gave no summary.'),
+    show(answer.summary ?? say('vscode.why.smith-gave-no-summary')),
     '',
     ...(known ? [] : [...facts(answer, FILE_ORDER), '']),
-    '## How to change it',
+    say('vscode.why.how-to-change-it'),
     '',
-    ...(change.length === 0 ? ['smith named no step.'] : change),
+    ...(change.length === 0 ? [say('vscode.why.smith-named-no-step')] : change),
     '',
   ].join('\n')
 }
@@ -57,20 +58,20 @@ export function toFileWhyDocument (json: string): string {
 export function toSettingWhyDocument (json: string): string {
   const answer = asAnswer(json)
   const set = answer.source === 'smith.toml'
-  const value = set ? show(answer.value) : `${show(answer.default ?? 'none')} (the default: smith.toml does not set it)`
+  const value = set ? show(answer.value) : say('vscode.why.the-default-smith-toml-does-not', { show: show(answer.default ?? 'none') })
 
   return [
-    `# Why: ${show(answer.path ?? 'this setting')}`,
+    say('vscode.why.why', { show: show(answer.path ?? say('vscode.why.this-setting')) }),
     '',
-    show(answer.explanation ?? 'smith gave no explanation.'),
+    show(answer.explanation ?? say('vscode.why.smith-gave-no-explanation')),
     '',
     `- **value:** ${value}`,
     ...(set && answer.default !== undefined ? [`- **default:** ${show(answer.default)}`] : []),
-    ...(answer.reason === undefined || answer.reason === '' ? [] : ['', '## Why the default is what it is', '', show(answer.reason)]),
+    ...(answer.reason === undefined || answer.reason === '' ? [] : ['', say('vscode.why.why-the-default-is-what-it'), '', show(answer.reason)]),
     '',
-    '## How to change it',
+    say('vscode.why.how-to-change-it'),
     '',
-    `- ${show(answer.change ?? 'smith named no step.')}`,
+    `- ${show(answer.change ?? say('vscode.why.smith-named-no-step'))}`,
     ...(answer.undo === undefined || answer.undo === '' ? [] : [`- to go back: ${show(answer.undo)}`]),
     '',
   ].join('\n')
@@ -89,21 +90,21 @@ export function toTaskWhyDocument (json: string): string {
   const status = show(answer.status ?? 'unknown')
   const differences = Array.isArray(answer.differences) ? answer.differences as Answer[] : []
   const summary: Record<string, string> = {
-    'hit':            'Nothing changed since the last run, so the task comes from the cache.',
-    'changed':        'The task runs again because its inputs changed since the last run.',
-    'no-earlier-run': 'The task has no earlier run in the cache, so it runs.',
+    'hit':            say('vscode.why.nothing-changed-since-the-last-run'),
+    'changed':        say('vscode.why.the-task-runs-again-because-its'),
+    'no-earlier-run': say('vscode.why.the-task-has-no-earlier-run'),
   }
 
   return [
-    `# Why: ${show(answer.task ?? 'this task')}`,
+    say('vscode.why.why', { show: show(answer.task ?? say('vscode.why.this-task')) }),
     '',
-    summary[status] ?? `smith reports the state "${status}".`,
+    summary[status] ?? say('vscode.why.smith-reports-the-state', { status }),
     '',
     `- **state:** ${status}`,
-    ...(answer.lastRun === undefined ? [] : [`- **last run:** ${show(answer.lastRun)}`]),
-    ...(differences.length === 0 ? [] : ['', '## What changed', '', ...differences.map((item) => `- ${show(item.what)} \`${show(item.name)}\`: ${show(item.change)}`)]),
+    ...(answer.lastRun === undefined ? [] : [say('vscode.why.last-run', { show: show(answer.lastRun) })]),
+    ...(differences.length === 0 ? [] : ['', say('vscode.why.what-changed'), '', ...differences.map((item) => `- ${show(item.what)} \`${show(item.name)}\`: ${show(item.change)}`)]),
     '',
-    'Run `MonoSmith: Explain Project` to see where each setting of the task comes from.',
+    say('vscode.why.run-monosmith-explain-project-to-see'),
     '',
   ].join('\n')
 }

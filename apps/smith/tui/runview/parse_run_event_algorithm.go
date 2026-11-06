@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // parseEventLine reads a line of the event stream `smith run --json-events`

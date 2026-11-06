@@ -6,6 +6,23 @@ import dev.monosmith.jetbrains.health.DoctorFindingContract
 import dev.monosmith.jetbrains.health.DoctorReportJsonMapper
 import dev.monosmith.jetbrains.releaseflow.ReleasePreviewContract
 import dev.monosmith.jetbrains.releaseflow.ReleasePreviewMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMMANDS_FILE_NEW_TITLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_EVERY_DEPENDENCY_IS_UP_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RUNACROSS_NO_PROJECT_IS_AFFECTED_BY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_ADD_YOUR_FIRST_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_ALIGN_VERSIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_NEW_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_NO_PROJECT_MATCHES_THE_FILTER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_NO_SMITH_TOML_IN_THIS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_READING_THE_RELEASE_PLAN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_READING_THE_UPDATES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_RELEASE_HOLD_BUMP_FORCE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_RUNNING_DOCTOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_SMITH_FAILED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_TOOLS_WITH_A_NEWER_VERSION
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_UPDATE_DEPENDENCIES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.SETTINGSVIEW_READING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
 
 /** Builds the rows of the Projects and Health views from what smith reported. */
@@ -26,18 +43,19 @@ object ToolWindowRowsMapper {
     ): List<ToolWindowRowContract> {
         if (!hasWorkspace) {
             return listOf(
-                ToolWindowRowContract.Message("No smith.toml in this project"),
-                ToolWindowRowContract.NewWorkspace("New workspace…"),
+                ToolWindowRowContract.Message(say(JETBRAINS_TOOLWINDOW_NO_SMITH_TOML_IN_THIS)),
+                ToolWindowRowContract.NewWorkspace(say(COMMANDS_FILE_NEW_TITLE)),
             )
         }
         val list =
             projects?.getOrNull()
                 ?: return listOf(
                     ToolWindowRowContract.Message(
-                        projects?.exceptionOrNull()?.let { "smith failed: ${it.message}" } ?: "Reading the workspace…",
+                        projects?.exceptionOrNull()?.let { say(JETBRAINS_TOOLWINDOW_SMITH_FAILED, it.message.toString()) }
+                            ?: say(SETTINGSVIEW_READING),
                     ),
                 )
-        if (list.isEmpty()) return listOf(ToolWindowRowContract.AddProject("Add your first project"))
+        if (list.isEmpty()) return listOf(ToolWindowRowContract.AddProject(say(JETBRAINS_TOOLWINDOW_ADD_YOUR_FIRST_PROJECT)))
         val shown = list.filter { matches(it, query) && (!affectedOnly || it.name in affected) }
         val rows = shown.map { ToolWindowRowContract.Project(it, it.name in affected) }
         val none =
@@ -47,16 +65,16 @@ object ToolWindowRowsMapper {
                         if (affectedOnly &&
                             query.isEmpty()
                         ) {
-                            "No project is affected by the changes."
+                            say(JETBRAINS_RUNACROSS_NO_PROJECT_IS_AFFECTED_BY)
                         } else {
-                            "No project matches the filter."
+                            say(JETBRAINS_TOOLWINDOW_NO_PROJECT_MATCHES_THE_FILTER)
                         },
                     ),
                 )
             } else {
                 emptyList()
             }
-        return rows + none + ToolWindowRowContract.AddProject("New project…")
+        return rows + none + ToolWindowRowContract.AddProject(say(JETBRAINS_TOOLWINDOW_NEW_PROJECT))
     }
 
     /**
@@ -68,11 +86,14 @@ object ToolWindowRowsMapper {
         hasWorkspace: Boolean,
         findings: Result<List<DoctorFindingContract>>?,
     ): List<ToolWindowRowContract> {
-        if (!hasWorkspace) return listOf(ToolWindowRowContract.Message("No smith.toml in this project"))
+        if (!hasWorkspace) return listOf(ToolWindowRowContract.Message(say(JETBRAINS_TOOLWINDOW_NO_SMITH_TOML_IN_THIS)))
         val list =
             findings?.getOrNull()
                 ?: return listOf(
-                    ToolWindowRowContract.Message(findings?.exceptionOrNull()?.let { "smith failed: ${it.message}" } ?: "Running doctor…"),
+                    ToolWindowRowContract.Message(
+                        findings?.exceptionOrNull()?.let { say(JETBRAINS_TOOLWINDOW_SMITH_FAILED, it.message.toString()) }
+                            ?: say(JETBRAINS_TOOLWINDOW_RUNNING_DOCTOR),
+                    ),
                 )
         val summary = DoctorReportJsonMapper.summarize(list)
         val problems = list.filter { !it.ok }.sortedBy { it.warning }
@@ -99,15 +120,19 @@ object ToolWindowRowsMapper {
             report?.getOrNull()
                 ?: return listOf(
                     ToolWindowRowContract.Message(
-                        report?.exceptionOrNull()?.let { "smith failed: ${it.message}" } ?: "Reading the updates…",
+                        report?.exceptionOrNull()?.let { say(JETBRAINS_TOOLWINDOW_SMITH_FAILED, it.message.toString()) }
+                            ?: say(JETBRAINS_TOOLWINDOW_READING_THE_UPDATES),
                     ),
                 )
         val actions =
-            listOf(ToolWindowRowContract.Link("Update dependencies…", "update"), ToolWindowRowContract.Link("Align versions…", "align"))
+            listOf(
+                ToolWindowRowContract.Link(say(JETBRAINS_TOOLWINDOW_UPDATE_DEPENDENCIES), "update"),
+                ToolWindowRowContract.Link(say(JETBRAINS_TOOLWINDOW_ALIGN_VERSIONS), "align"),
+            )
         if (read.updates.isEmpty() &&
             read.tools.isEmpty()
         ) {
-            return actions + ToolWindowRowContract.Message("Every dependency is up to date.")
+            return actions + ToolWindowRowContract.Message(say(JETBRAINS_DEPENDENCIES_EVERY_DEPENDENCY_IS_UP_TO))
         }
         val groups =
             UpdatesJsonMapper.byRisk(read.updates).map { (level, list) ->
@@ -120,7 +145,7 @@ object ToolWindowRowsMapper {
                 listOf(
                     ToolWindowRowContract
                         .Group(
-                            "Tools with a newer version (${read.tools.size})",
+                            say(JETBRAINS_TOOLWINDOW_TOOLS_WITH_A_NEWER_VERSION, read.tools.size.toString()),
                             read.tools.map {
                                 "${it.name} ${it.pinned} → ${it.latest}"
                             },
@@ -136,10 +161,11 @@ object ToolWindowRowsMapper {
             preview?.getOrNull()
                 ?: return listOf(
                     ToolWindowRowContract.Message(
-                        preview?.exceptionOrNull()?.let { "smith failed: ${it.message}" } ?: "Reading the release plan…",
+                        preview?.exceptionOrNull()?.let { say(JETBRAINS_TOOLWINDOW_SMITH_FAILED, it.message.toString()) }
+                            ?: say(JETBRAINS_TOOLWINDOW_READING_THE_RELEASE_PLAN),
                     ),
                 )
-        return listOf<ToolWindowRowContract>(ToolWindowRowContract.Link("Release… (hold, bump, force)", "release")) +
+        return listOf<ToolWindowRowContract>(ToolWindowRowContract.Link(say(JETBRAINS_TOOLWINDOW_RELEASE_HOLD_BUMP_FORCE), "release")) +
             ReleasePreviewMapper.rows(read).map { ToolWindowRowContract.Group(it.text, it.children) }
     }
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // ParsePackages splits what was typed into package names. A name that starts

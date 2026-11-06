@@ -1,5 +1,6 @@
 import type { ListNode, ListResult } from '../list-view/index.ts'
 import type { ReleasePreview, ReleaseResult } from './release-report.contract.ts'
+import { say } from '../words/index.ts'
 
 const LEVEL_COLORS: Record<string, string> = {
   major: 'charts.red',
@@ -27,7 +28,7 @@ export function toReleaseRows (preview: ReleasePreview, explanation: readonly st
       ? []
       : [{
           id:          'release:unchanged',
-          label:       'Unchanged',
+          label:       say('vscode.release-preview.unchanged'),
           description: String(unchanged.length),
           icon:        'circle-slash',
           children:    unchanged.map((name) => ({ id: `release:unchanged:${name}`, label: name, icon: 'package' })),
@@ -37,9 +38,9 @@ export function toReleaseRows (preview: ReleasePreview, explanation: readonly st
   if (results.length === 0) {
     const why: ListNode[] = explanation.length === 0
       ? []
-      : [{ id: 'release:why', label: 'Why nothing releases', icon: 'info', expanded: true, children: explanation.map((line, index) => ({ id: `release:why:${index}`, label: line, icon: 'dash', tooltip: line })) }]
+      : [{ id: 'release:why', label: say('vscode.release-preview.why-nothing-releases'), icon: 'info', expanded: true, children: explanation.map((line, index) => ({ id: `release:why:${index}`, label: line, icon: 'dash', tooltip: line })) }]
 
-    return { nodes: [...why, ...nodes], message: preview.error === undefined ? 'Nothing to release.' : undefined, summary: `nothing to release${suffix}` }
+    return { nodes: [...why, ...nodes], message: preview.error === undefined ? say('vscode.release-flow.nothing-to-release') : undefined, summary: say('vscode.release-preview.nothing-to-release', { suffix }) }
   }
 
   return { nodes, summary: `${results.length} to release${suffix}` }
@@ -47,14 +48,14 @@ export function toReleaseRows (preview: ReleasePreview, explanation: readonly st
 
 /** The notice `smith release` prints for a channel, worded as smith words it. */
 function channelNotice (channel: string): string {
-  return `Release channel \`${channel}\`: prerelease versions, published under the \`${channel}\` tag; the stable version stays the latest.`
+  return say('vscode.release-preview.release-channel-prerelease-versions-published-under', { channel, channel2: channel })
 }
 
 function toChannelRow (channel: string): ListNode {
   return {
     id:          'release:channel',
-    label:       `Release channel ${channel}`,
-    description: 'prerelease versions',
+    label:       say('vscode.release-preview.release-channel', { channel }),
+    description: say('vscode.release-preview.prerelease-versions'),
     icon:        'beaker',
     color:       'charts.yellow',
     tooltip:     channelNotice(channel),
@@ -69,7 +70,7 @@ function toResultRow (result: ReleaseResult): ListNode {
   const level = result.level ?? ''
   const children: ListNode[] = [
     ...(result.reason === undefined || result.reason === '' ? [] : [{ id: `release:${result.project}:reason`, label: result.reason, icon: 'info', tooltip: result.reason }]),
-    ...(result.tag === undefined || result.tag === '' ? [] : [{ id: `release:${result.project}:tag`, label: result.tag, icon: 'tag', tooltip: 'The tag the release creates.' }]),
+    ...(result.tag === undefined || result.tag === '' ? [] : [{ id: `release:${result.project}:tag`, label: result.tag, icon: 'tag', tooltip: say('vscode.release-preview.the-tag-the-release-creates') }]),
     ...commits.map((commit, index) => ({ id: `release:${result.project}:commit:${index}`, label: commit, icon: 'git-commit', tooltip: commit })),
     ...(result.error === undefined ? [] : [{ id: `release:${result.project}:error`, label: result.error, icon: 'error', color: 'charts.red' }]),
   ]
@@ -81,7 +82,7 @@ function toResultRow (result: ReleaseResult): ListNode {
     icon:        'rocket',
     ...(LEVEL_COLORS[level] !== undefined && { color: LEVEL_COLORS[level] }),
     expanded:    children.length <= 5,
-    tooltip:     [`${result.project} ${from} → ${result.next}`, result.reason, result.forced === true ? 'Forced.' : undefined].filter(Boolean).join('\n'),
+    tooltip:     [`${result.project} ${from} → ${result.next}`, result.reason, result.forced === true ? say('vscode.release-preview.forced') : undefined].filter(Boolean).join('\n'),
     children,
   }
 }
@@ -95,5 +96,5 @@ function toResultRow (result: ReleaseResult): ListNode {
 export function explanationLines (text: string): string[] {
   return text.split(/\r?\n/)
     .map((line) => line.replace(/^\s*→\s*/, '').trim())
-    .filter((line) => line !== '' && !line.startsWith('Dry run:'))
+    .filter((line) => line !== '' && !line.startsWith(say('vscode.release-preview.dry-run')))
 }

@@ -12,6 +12,34 @@ import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_SUGGESTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMITTED_AS_ONE_CHANGE_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMIT_NOW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOT_COMMITTED_REVIEW_IT_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_2_OF_3_NAME
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_3_OF_3_PLAN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_ADD_THE_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_CONFLICT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_INSTALL_THE_TOOLS_FIRST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_IS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_IS_NOT_PART_OF_ONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_KEEP_IT_AS_A_RECIPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_MONOSMITH_COMPOSE_A_STACK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NEEDS_AN_ANSWER_ON_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NEXT_CHECK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NOTHING_IS_WRITTEN_YET_BY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NOTHING_WAS_ADDED_THE_COMMAND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NOTHING_WAS_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_SMITH_DID_NOT_CHECK_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_SMITH_MADE_NO_PLAN_FOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_SMITH_PRINTED_ITS_CATALOGUE_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_STILL_NEEDS_A_CHOICE_ON
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_THE_NAME_OF_THE_NEW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_THE_RECIPE_IS_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_TICK_AT_LEAST_ONE_CHOICE
 import dev.monosmith.jetbrains.workspace.PortProjectsUseCase
 import java.nio.file.Path
 
@@ -22,9 +50,9 @@ import java.nio.file.Path
  * person says so. The steps are numbered: 1 pick, 2 name, 3 plan.
  */
 object ComposeStackUseCase {
-    private const val TITLE = "MonoSmith: compose a stack"
-    private const val COMMITTED = "Committed as one change: Undo reverts it."
-    private const val UNCOMMITTED = "Not committed: review it with the Commit window, or commit it now."
+    private val TITLE = SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_MONOSMITH_COMPOSE_A_STACK)
+    private val COMMITTED = SmithWordsConfig.say(JETBRAINS_ADDPROJECT_COMMITTED_AS_ONE_CHANGE_UNDO)
+    private val UNCOMMITTED = SmithWordsConfig.say(JETBRAINS_ADDPROJECT_NOT_COMMITTED_REVIEW_IT_WITH)
 
     /**
      * The step that shows the catalogue and returns the ids ticked, or null when the person cancels.
@@ -47,7 +75,15 @@ object ComposeStackUseCase {
         val pick =
             PickStack { report, ticked, message ->
                 PromptClient.onUi {
-                    val dialog = ComposePickDialogHandler(ide, report.layers, report.items, ticked, message, "Next: check")
+                    val dialog =
+                        ComposePickDialogHandler(
+                            ide,
+                            report.layers,
+                            report.items,
+                            ticked,
+                            message,
+                            SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_NEXT_CHECK),
+                        )
                     if (dialog.showAndGet()) dialog.selected else null
                 }
             }
@@ -75,12 +111,12 @@ object ComposeStackUseCase {
     ): ComposeReportContract? {
         val run = ports.smith.run(args)
         if (!run.ok) {
-            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(run)}")
+            ports.notice.warn(SmithWordsConfig.say(JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED, FailureTextMapper.describe(run).toString()))
             return null
         }
         return runCatching { ComposeReportJsonMapper.toReport(run.stdout) }.getOrElse {
             ports.notice.warn(
-                "smith printed its catalogue in a form this plugin does not read. Update the plugin, or run smith compose in a terminal.",
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_SMITH_PRINTED_ITS_CATALOGUE_IN),
             )
             null
         }
@@ -106,21 +142,23 @@ object ComposeStackUseCase {
             val language =
                 ticks.firstOrNull { it.kind == "language" }?.name ?: ticks.firstOrNull { it.kind == "choice" }?.language.orEmpty()
             val plugins = ticks.filter { it.kind == "plugin" }
-            plugins.forEach { ports.notice.info("${it.title} is not part of one project. Turn it on with: ${it.route}") }
+            plugins.forEach {
+                ports.notice.info(SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_IS_NOT_PART_OF_ONE, it.title.toString(), it.route.toString()))
+            }
             ticked = ticked.filter { id -> plugins.none { it.id == id } }
             val picks = ticks.filter { it.kind == "choice" }.map { it.name }
             if (picks.isEmpty()) {
-                message = say("Tick at least one choice. To start from the defaults of the stack, pick the defaults in Add project.")
+                message = say(SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_TICK_AT_LEAST_ONE_CHOICE))
                 continue
             }
             val checked = read(ports, ComposeStackAlgorithm.arguments(language, picks)) ?: return false
             val check = checked.check
             if (check == null) {
-                ports.notice.warn("smith did not check the selection. Update smith, or run smith compose in a terminal.")
+                ports.notice.warn(SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_SMITH_DID_NOT_CHECK_THE))
                 return false
             }
             if (check.conflict.isNotEmpty()) {
-                message = say("Conflict: ${check.conflict}")
+                message = say(SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_CONFLICT, check.conflict.toString()))
                 continue
             }
             val question = check.question
@@ -133,14 +171,19 @@ object ComposeStackUseCase {
                             ChoiceRowContract(
                                 it.name,
                                 it.title,
-                                if (it.suggested) "(suggested)" else "",
+                                if (it.suggested) SmithWordsConfig.say(JETBRAINS_ADDCHOICES_SUGGESTED) else "",
                                 it.description,
                             )
                         }
                 val answer =
                     ports.prompt.pickOne(
                         "$TITLE: ${question.axis}",
-                        "${question.choice} needs an answer on the ${question.axis} axis. ${question.about} The suggested answer is first.",
+                        SmithWordsConfig.say(
+                            JETBRAINS_COMPOSESTACK_NEEDS_AN_ANSWER_ON_THE,
+                            question.choice.toString(),
+                            question.axis.toString(),
+                            question.about.toString(),
+                        ),
                         rows,
                     )
                 val asked =
@@ -151,7 +194,20 @@ object ComposeStackUseCase {
                         }
                     }
                 if (asked != null) ticked = ticked + asked.id
-                message = say(if (asked == null) "${question.choice} still needs a choice on the ${question.axis} axis." else "")
+                message =
+                    say(
+                        if (asked ==
+                            null
+                        ) {
+                            SmithWordsConfig.say(
+                                JETBRAINS_COMPOSESTACK_STILL_NEEDS_A_CHOICE_ON,
+                                question.choice.toString(),
+                                question.axis.toString(),
+                            )
+                        } else {
+                            ""
+                        },
+                    )
                 continue
             }
             if (!check.complete) {
@@ -173,28 +229,31 @@ object ComposeStackUseCase {
         // The name comes before the plan because the files of the plan depend on it (apps/<name>/).
         val existing = PortProjectsUseCase.list(ports).getOrDefault(emptyList()).map { it.name }
         val name =
-            ports.prompt.text("$TITLE: 2 of 3, name", "The name of the new project ($stackName). The files are named after it:") {
+            ports.prompt.text(
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_2_OF_3_NAME, TITLE.toString()),
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_THE_NAME_OF_THE_NEW, stackName.toString()),
+            ) {
                 ProjectNameValidator.problem(it, existing)
             } ?: return false
         val planned =
             read(ports, ComposeStackAlgorithm.arguments(check.language, check.selection, kind = "app", name = name)) ?: return false
         val plan = planned.plan
         if (plan == null || plan.argv.size < 2) {
-            ports.notice.warn("smith made no plan for these picks.")
+            ports.notice.warn(SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_SMITH_MADE_NO_PLAN_FOR))
             return false
         }
         val missing = ComposeStackAlgorithm.toolsToInstall(plan)
         val answer =
             ports.prompt.plan(
-                "$TITLE: 3 of 3, plan",
-                "Nothing is written yet. By default smith leaves the files uncommitted.",
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_3_OF_3_PLAN, TITLE.toString()),
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_NOTHING_IS_WRITTEN_YET_BY),
                 ComposeStackAlgorithm.describePlan(plan),
-                "Add the project",
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_ADD_THE_PROJECT),
                 offerCommit = true,
                 others =
                     listOfNotNull(
-                        if (missing.isNotEmpty()) "Install the tools first" else null,
-                        if (plan.recipeArgv.size > 1) "Keep it as a recipe" else null,
+                        if (missing.isNotEmpty()) SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_INSTALL_THE_TOOLS_FIRST) else null,
+                        if (plan.recipeArgv.size > 1) SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_KEEP_IT_AS_A_RECIPE) else null,
                     ),
             ) ?: return false
         val others = listOfNotNull(if (missing.isNotEmpty()) "tools" else null, if (plan.recipeArgv.size > 1) "recipe" else null)
@@ -207,10 +266,12 @@ object ComposeStackUseCase {
             "recipe" -> {
                 val done = ports.smith.run(plan.recipeArgv.drop(1), show = true)
                 if (!done.ok) {
-                    ports.notice.warn("Nothing was written. ${FailureTextMapper.describe(done)}")
+                    ports.notice.warn(
+                        SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_NOTHING_WAS_WRITTEN, FailureTextMapper.describe(done).toString()),
+                    )
                     return false
                 }
-                ports.notice.info(done.lines.lastOrNull() ?: "The recipe is written.")
+                ports.notice.info(done.lines.lastOrNull() ?: SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_THE_RECIPE_IS_WRITTEN))
                 return true
             }
         }
@@ -220,7 +281,9 @@ object ComposeStackUseCase {
         if (!done.ok) {
             val problem = FailureTextMapper.describe(done)
             val command = TaskCommandAlgorithm.display(listOf("smith") + args)
-            ports.notice.warn("Nothing was added. $problem The command was: $command")
+            ports.notice.warn(
+                SmithWordsConfig.say(JETBRAINS_COMPOSESTACK_NOTHING_WAS_ADDED_THE_COMMAND, problem.toString(), command.toString()),
+            )
             return false
         }
         val buttons =
@@ -228,12 +291,22 @@ object ComposeStackUseCase {
                 emptyList()
             } else {
                 listOf(
-                    NoticeButtonContract("Commit now", "Make one commit that Undo can revert; you choose the files first.") {
+                    NoticeButtonContract(
+                        SmithWordsConfig.say(JETBRAINS_ADDPROJECT_COMMIT_NOW),
+                        SmithWordsConfig.say(JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO),
+                    ) {
                         commitLater("add app $name")
                     },
                 )
             }
-        ports.notice.info("$name is added. ${if (answer.commit) COMMITTED else UNCOMMITTED}", buttons)
+        ports.notice.info(
+            SmithWordsConfig.say(
+                JETBRAINS_COMPOSESTACK_IS_ADDED,
+                name.toString(),
+                (if (answer.commit) COMMITTED else UNCOMMITTED).toString(),
+            ),
+            buttons,
+        )
         return true
     }
 }

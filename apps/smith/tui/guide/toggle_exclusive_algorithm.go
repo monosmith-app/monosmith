@@ -1,7 +1,7 @@
 package guide
 
 import (
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // ToggleOption flips the mark of option i in a multiple choice and keeps the

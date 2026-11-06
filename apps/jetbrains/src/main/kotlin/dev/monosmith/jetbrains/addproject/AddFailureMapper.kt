@@ -1,10 +1,18 @@
 package dev.monosmith.jetbrains.addproject
 
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_A_CHECK_OF_SMITH_DOCTOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_IT_WAS_COMMITTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_JAVA_JDK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOTHING_WAS_COMMITTED_THE_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_NET_SDK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_PROJECT_WAS_CREATED_BUT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
+
 /** Reads the output of a failed `smith add` to tell a project that stays on disk from a plain refusal. */
 object AddFailureMapper {
     private val titles =
         mapOf(
-            "dotnet" to "the .NET SDK",
+            "dotnet" to say(JETBRAINS_ADDPROJECT_THE_NET_SDK),
             "go" to "Go",
             "node" to "Node.js",
             "npm" to "Node.js",
@@ -14,8 +22,8 @@ object AddFailureMapper {
             "pip" to "Python",
             "cargo" to "Rust",
             "rustc" to "Rust",
-            "java" to "Java (JDK)",
-            "javac" to "Java (JDK)",
+            "java" to say(JETBRAINS_ADDPROJECT_JAVA_JDK),
+            "javac" to say(JETBRAINS_ADDPROJECT_JAVA_JDK),
             "gradle" to "Gradle",
             "mvn" to "Maven",
             "flutter" to "Flutter",
@@ -97,13 +105,19 @@ object AddFailureMapper {
     /** The text of the notice for a failing project: what was made, what could not be checked and why, and whether the commit happened. */
     fun describe(failure: DoctorFailureContract): String {
         val files = if (failure.files > 0) " (${failure.files} files)" else ""
-        val why = if (failure.reasons.isEmpty()) "a check of smith doctor fails" else failure.reasons.joinToString("; ")
+        val why = if (failure.reasons.isEmpty()) say(JETBRAINS_ADDPROJECT_A_CHECK_OF_SMITH_DOCTOR) else failure.reasons.joinToString("; ")
         val commit =
             if (failure.committed) {
-                "It was committed."
+                say(JETBRAINS_ADDPROJECT_IT_WAS_COMMITTED)
             } else {
-                "Nothing was committed: the files are in your work tree, so the Commit window shows them."
+                say(JETBRAINS_ADDPROJECT_NOTHING_WAS_COMMITTED_THE_FILES)
             }
-        return "The project ${failure.name} was created$files, but smith could not finish checking it: $why. $commit"
+        return say(
+            JETBRAINS_ADDPROJECT_THE_PROJECT_WAS_CREATED_BUT,
+            failure.name.toString(),
+            files.toString(),
+            why.toString(),
+            commit.toString(),
+        )
     }
 }

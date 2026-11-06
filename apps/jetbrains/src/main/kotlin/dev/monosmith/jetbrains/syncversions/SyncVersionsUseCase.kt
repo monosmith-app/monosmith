@@ -6,6 +6,21 @@ import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_PROJECTS_ON_AN_OLDER_VERSION
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_PROJECTS_ON_A_NEWER_VERSION
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_THE_VERSION_THE_PACKAGE_MANAGER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_MONOSMITH_SYNC_DEPENDENCY_VERSIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_MONOSMITH_SYNC_DEPENDENCY_VERSIONS_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_MONOSMITH_WHICH_VERSION_WINS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_NOTHING_WAS_CHANGED_YET_THIS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_THE_VERSIONS_ARE_IN_SYNC
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_WHEN_PROJECTS_DECLARE_A_DEPENDENCY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SYNCVERSIONS_WRITE_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_VERSION_HIGHEST_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_VERSION_INSTALLED_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_VERSION_LOWEST_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -18,12 +33,22 @@ object SyncVersionsUseCase {
         listOf(
             ChoiceRowContract(
                 "installed",
-                "The installed version (smith's pick)",
-                "(default)",
-                "The version the package manager has installed.",
+                say(RESULTDIALOG_VERSION_INSTALLED_LABEL),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                say(JETBRAINS_DEPENDENCIES_THE_VERSION_THE_PACKAGE_MANAGER),
             ),
-            ChoiceRowContract("highest", "The highest declared", "", "Projects on an older version move up."),
-            ChoiceRowContract("lowest", "The lowest declared", "", "Projects on a newer version move down."),
+            ChoiceRowContract(
+                "highest",
+                say(RESULTDIALOG_VERSION_HIGHEST_LABEL),
+                "",
+                say(JETBRAINS_DEPENDENCIES_PROJECTS_ON_AN_OLDER_VERSION),
+            ),
+            ChoiceRowContract(
+                "lowest",
+                say(RESULTDIALOG_VERSION_LOWEST_LABEL),
+                "",
+                say(JETBRAINS_DEPENDENCIES_PROJECTS_ON_A_NEWER_VERSION),
+            ),
         )
 
     /** The arguments of `smith sync`; [apply] false makes the plan. */
@@ -36,26 +61,26 @@ object SyncVersionsUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: sync dependency versions") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_SYNCVERSIONS_MONOSMITH_SYNC_DEPENDENCY_VERSIONS)) {
         val rule =
             PromptClient
                 .pickOne(
                     ide,
-                    "MonoSmith: which version wins?",
-                    "When projects declare a dependency at different versions, which one should every project use? The first answer is the default.",
+                    say(JETBRAINS_SYNCVERSIONS_MONOSMITH_WHICH_VERSION_WINS),
+                    say(JETBRAINS_SYNCVERSIONS_WHEN_PROJECTS_DECLARE_A_DEPENDENCY),
                     ruleRows,
                 )?.name ?: return@start
         PlanThenApplyUseCase.run(
             ide,
             root,
             PlanStepContract(
-                title = "MonoSmith: sync dependency versions ($rule)?",
+                title = say(JETBRAINS_SYNCVERSIONS_MONOSMITH_SYNC_DEPENDENCY_VERSIONS_2, rule.toString()),
                 planArgs = arguments(rule, apply = false),
-                header = "Nothing was changed yet. This is the plan: every project that disagrees moves to one version.",
-                okText = "Write it",
+                header = say(JETBRAINS_SYNCVERSIONS_NOTHING_WAS_CHANGED_YET_THIS),
+                okText = say(JETBRAINS_SYNCVERSIONS_WRITE_IT),
                 offerCommit = true,
                 apply = { arguments(rule, apply = true) },
-                done = "The versions are in sync",
+                done = say(JETBRAINS_SYNCVERSIONS_THE_VERSIONS_ARE_IN_SYNC),
                 operation = "sync",
             ),
         )

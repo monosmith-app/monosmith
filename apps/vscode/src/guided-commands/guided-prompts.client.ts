@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { GuidedOutcome, ResolvedStep } from './guided-command.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks one step with the editor's own controls: an input box (starting on the value smith or the
@@ -10,12 +11,12 @@ import type { GuidedOutcome, ResolvedStep } from './guided-command.contract.ts'
 export async function askGuidedStep (step: ResolvedStep): Promise<string | string[] | undefined> {
   switch (step.kind) {
     case 'text': {
-      const typed = await vscode.window.showInputBox({ title: step.title, prompt: step.prompt, placeHolder: step.placeholder, value: step.value, validateInput: (value) => value.trim() === '' && step.optional === true ? undefined : step.validate?.(value) ?? (value.trim() === '' ? 'Write an answer, or press Escape to cancel.' : undefined) })
+      const typed = await vscode.window.showInputBox({ title: step.title, prompt: step.prompt, placeHolder: step.placeholder, value: step.value, validateInput: (value) => value.trim() === '' && step.optional === true ? undefined : step.validate?.(value) ?? (value.trim() === '' ? say('vscode.guided-commands.write-an-answer-or-press-escape') : undefined) })
 
       return typed?.trim()
     }
     case 'pick': {
-      const picked = await vscode.window.showQuickPick(step.options.map((option) => ({ label: option.label, description: option.description, value: option.value })), { title: step.title, placeHolder: step.placeholder ?? 'Pick one', matchOnDescription: true })
+      const picked = await vscode.window.showQuickPick(step.options.map((option) => ({ label: option.label, description: option.description, value: option.value })), { title: step.title, placeHolder: step.placeholder ?? say('vscode.guided-commands.pick-one'), matchOnDescription: true })
 
       return picked?.value
     }
@@ -23,7 +24,7 @@ export async function askGuidedStep (step: ResolvedStep): Promise<string | strin
       const picked = await vscode.window.showQuickPick(step.options.map((option) => ({ label: option.label, description: option.description, value: option.value })), { title: step.title, placeHolder: step.placeholder, canPickMany: true, matchOnDescription: true })
       if (picked === undefined) return undefined
       if (picked.length === 0) {
-        void vscode.window.showInformationMessage('MonoSmith: nothing was ticked, so nothing changes.')
+        void vscode.window.showInformationMessage(say('vscode.guided-commands.monosmith-nothing-was-ticked-so-nothing'))
 
         return undefined
       }
@@ -31,7 +32,7 @@ export async function askGuidedStep (step: ResolvedStep): Promise<string | strin
       return picked.map((item) => item.value)
     }
     case 'file': {
-      const files = await vscode.window.showOpenDialog({ title: step.title, canSelectMany: false, filters: { Images: ['png'] }, openLabel: 'Use this file' })
+      const files = await vscode.window.showOpenDialog({ title: step.title, canSelectMany: false, filters: { Images: ['png'] }, openLabel: say('vscode.guided-commands.use-this-file') })
 
       return files?.[0]?.fsPath
     }
@@ -59,11 +60,11 @@ export function tellGuidedOutcome (title: string, outcome: GuidedOutcome, onOutp
   switch (outcome.kind) {
     case 'done': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage(`MonoSmith: ${title.replace(/…$/, '')}: done. ${outcome.lines.at(-1) ?? ''}`.trim())
+      void vscode.window.showInformationMessage(say('vscode.guided-commands.monosmith-done', { replace: title.replace(/…$/, ''), part: outcome.lines.at(-1) ?? '' }).trim())
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: ${title.replace(/…$/, '')}: nothing changed. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.guided-commands.monosmith-nothing-changed', { replace: title.replace(/…$/, ''), message: outcome.message }))
       break
     }
     case 'shown':
@@ -78,5 +79,5 @@ export function tellGuidedOutcome (title: string, outcome: GuidedOutcome, onOutp
  * @param reason - smith's words for why
  */
 export function tellDivergencesFailure (reason: string): void {
-  void vscode.window.showWarningMessage(`MonoSmith: smith could not list the divergences. ${reason}`)
+  void vscode.window.showWarningMessage(say('vscode.guided-commands.monosmith-smith-could-not-list-the', { reason }))
 }

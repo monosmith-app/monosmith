@@ -7,6 +7,9 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_WORKSPACEREPORT_MONOSMITH_REPORT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_WORKSPACEREPORT_THE_REPORT_WAS_NOT_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -26,7 +29,7 @@ object WriteReportUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: report") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_WORKSPACEREPORT_MONOSMITH_REPORT)) {
         val file =
             reportFile(Path.of(System.getProperty("java.io.tmpdir")), root.fileName?.toString().orEmpty(), System.currentTimeMillis())
         run(IdePortsClient.of(ide, root), file) { BrowserUtil.browse(it.toUri()) }
@@ -45,7 +48,7 @@ object WriteReportUseCase {
     ): Boolean {
         val done = ports.smith.run(listOf("report", SmithFlagsConfig.OUTPUT, file.toString()))
         if (!done.ok) {
-            ports.notice.warn("The report was not written. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_WORKSPACEREPORT_THE_REPORT_WAS_NOT_WRITTEN, FailureTextMapper.describe(done).toString()))
             return false
         }
         open(file)

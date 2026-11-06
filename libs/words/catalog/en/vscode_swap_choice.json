@@ -1,0 +1,22 @@
+{
+  "vscode.swap-choice.swapping-a-choice": "swapping a choice",
+  "vscode.swap-choice.monosmith-swapping-in-smith-installs-and": "MonoSmith: swapping in {name}… smith installs and tests the project.",
+  "vscode.swap-choice.smith-printed-its-choices-in-a": "smith printed its choices in a form this editor does not read. Update the extension, or run smith swap in a terminal.",
+  "vscode.swap-choice.monosmith-swap-a-choice": "MonoSmith: Swap a choice",
+  "vscode.swap-choice.the-project-whose-decision-changes": "The project whose decision changes",
+  "vscode.swap-choice.monosmith-has-no-question-with-more": "MonoSmith: {label} has no question with more than one answer. smith choices lists what can change.",
+  "vscode.swap-choice.2-3-which-decision": "{title} (2/3): which decision?",
+  "vscode.swap-choice.the-test-runner-the-linter-the": "The test runner, the linter, the style",
+  "vscode.swap-choice.3-3-replace-it-with": "{title} (3/3): replace it with?",
+  "vscode.swap-choice.the-answer-the-project-moves-to": "The answer the project moves to",
+  "vscode.swap-choice.swap-and-commit-so-undo-works": "Swap and commit (so Undo works)",
+  "vscode.swap-choice.nothing-was-changed-yet-smith-removes": "{plan}\n\nNothing was changed yet. smith removes what the old choice wrote, writes the new one, installs the packages and runs the project's build and tests. By default smith leaves the files uncommitted: review them with git. The commit button makes it one commit that Undo can revert.",
+  "vscode.swap-choice.thing-left-to-do-by-hand": "{length} thing{part} left to do by hand: see the output. ",
+  "vscode.swap-choice.monosmith-now-uses": "MonoSmith: {project} now uses {choice}. {part}{part2}",
+  "vscode.swap-choice.monosmith-nothing-was-swapped": "MonoSmith: nothing was swapped. {message}",
+  "vscode.swap-choice.monosmith-move-to": "MonoSmith: move {project} to {choice} ({axis})?",
+  "vscode.swap-choice.is": " is",
+  "vscode.swap-choice.s-are": "s are",
+  "vscode.swap-choice.swap": "Swap",
+  "vscode.swap-choice.left-to-do-by-hand": "Left to do by hand"
+}

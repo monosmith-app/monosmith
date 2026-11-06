@@ -1,0 +1,4 @@
+{
+  "keys": ["cmd.add.title", "cmd.remove.title"],
+  "prefixes": ["vscode."]
+}

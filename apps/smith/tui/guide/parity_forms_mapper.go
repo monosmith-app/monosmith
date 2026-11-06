@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // The titles of the forms that change the environments of a web app.
