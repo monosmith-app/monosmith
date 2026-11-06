@@ -1,4 +1,5 @@
 import type { RunEvent } from './run-event.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * The line an event adds to the output panel, or undefined for an event that
@@ -8,7 +9,7 @@ import type { RunEvent } from './run-event.contract.ts'
 export function describeEvent (event: RunEvent): string | undefined {
   switch (event.event) {
     case 'run.started': {
-      return `$ ${event.command ?? 'smith run'}`
+      return `$ ${event.command ?? say('vscode.main.smith-run')}`
     }
     case 'task.output': {
       return `${event.task ?? ''} | ${event.line ?? ''}`
@@ -23,7 +24,7 @@ export function describeEvent (event: RunEvent): string | undefined {
       const s = event.summary
       const counts = s === undefined ? '' : `: ${s.passed} passed, ${s.cached} cached, ${s.failed} failed, ${s.skipped} skipped`
 
-      return `${event.ok === true ? 'Run finished' : 'Run failed'}${counts}`
+      return `${say(event.ok === true ? 'vscode.task-run.run-finished' : 'vscode.task-run.run-failed')}${counts}`
     }
     default: {
       return undefined

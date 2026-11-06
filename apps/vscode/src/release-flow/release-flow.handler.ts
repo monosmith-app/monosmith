@@ -3,6 +3,7 @@ import type { CommandHost } from '../command-host/index.ts'
 import { chooseForced } from './forced-release.client.ts'
 import { chooseBump, chooseHold, confirmRelease, tellReleaseOutcome } from './release-prompts.client.ts'
 import { releaseWorkspace } from './release-workspace.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Releases the workspace: the plan, the packages to hold back, the bumps to change, then the last question.
@@ -14,7 +15,7 @@ export async function releaseHere (host: CommandHost, argument: unknown, release
   const state = await host.folderFor(argument)
   if (state === undefined) return
   if (state.location === undefined) {
-    void vscode.window.showWarningMessage(`MonoSmith: smith was not found for ${state.name}, so nothing can be released. Install smith, then run "MonoSmith: Release…" again.`)
+    void vscode.window.showWarningMessage(say('vscode.release-flow.monosmith-smith-was-not-found-for', { name: state.name }))
 
     return
   }
@@ -23,7 +24,7 @@ export async function releaseHere (host: CommandHost, argument: unknown, release
   const outcome = await releaseWorkspace({
     run:   host.smithIn(state),
     apply: async (args) => await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: releasing ${state.name}… smith tags and publishes.` },
+      { location: vscode.ProgressLocation.Notification, title: say('vscode.release-flow.monosmith-releasing-smith-tags-and-publishes', { name: state.name }) },
       async () => await host.smithIn(state, true, 1_800_000)(args),
     ),
     chooseHold,

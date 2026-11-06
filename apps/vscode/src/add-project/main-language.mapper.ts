@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 /** The language most projects of the workspace use, and the words that say why it comes first. */
 export interface MainLanguage {
   language: string
@@ -22,7 +23,7 @@ export function mainLanguage (projects: ReadonlyArray<{ language: string }>, fit
     if (count > 0 && count > (counts.get(best ?? '') ?? 0)) best = language
   }
 
-  return best === undefined ? undefined : { language: best, why: `Preselected: ${counts.get(best)} of the ${projects.length} projects here use ${best}.` }
+  return best === undefined ? undefined : { language: best, why: say('vscode.add-project.preselected-of-the-projects-here-use', { count: String(counts.get(best)), total: projects.length, best }) }
 }
 
 /**

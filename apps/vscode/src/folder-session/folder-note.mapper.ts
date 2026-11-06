@@ -1,4 +1,5 @@
 import type { FolderState } from './folder-state.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * A few words on a folder that is not ready, for its row in a multi-root view.
@@ -7,16 +8,16 @@ import type { FolderState } from './folder-state.contract.ts'
 export function describeFolderNote (folder: Pick<FolderState, 'phase' | 'error'>): string {
   switch (folder.phase) {
     case 'starting': {
-      return 'starting smith…'
+      return say('vscode.folder-session.starting-smith')
     }
     case 'missing': {
-      return 'smith not found'
+      return say('vscode.folder-session.smith-not-found')
     }
     case 'untrusted': {
-      return 'workspace not trusted'
+      return say('vscode.folder-session.workspace-not-trusted')
     }
     case 'failed': {
-      return folder.error === undefined ? 'smith failed' : `smith failed: ${folder.error.split('\n', 1)[0]}`
+      return folder.error === undefined ? say('vscode.folder-session.smith-failed') : say('vscode.folder-session.smith-failed-2', { item: folder.error.split('\n', 1)[0] })
     }
     case 'ready': {
       return ''

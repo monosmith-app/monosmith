@@ -7,6 +7,22 @@ import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_IS_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_LEAVE_IT_TO_THE_USERS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_MONOSMITH_NEW_RECIPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_NO_RECIPE_WAS_WRITTEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_PICK_THE_PLUGIN_THE_RECIPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_SMITH_KNOWS_NO_PLUGIN_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_SMITH_PRINTED_ITS_LEVELS_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_SMITH_RUNS_THIS_COMMAND_AND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_THE_FIRST_VERSION_OF_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_THE_NAME_OF_THE_RECIPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_THE_RECIPE_FIXES_NO_PLUGIN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_THE_RECIPE_THIS_ONE_EXTENDS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_TICK_THE_PLUGINS_THE_RECIPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWRECIPE_WRITE_THE_RECIPE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -16,7 +32,7 @@ import java.nio.file.Path
  * and only on a yes smith runs it. A level the users of the recipe choose is left out.
  */
 object NewRecipeUseCase {
-    private const val TITLE = "MonoSmith: new recipe"
+    private val TITLE = say(JETBRAINS_NEWRECIPE_MONOSMITH_NEW_RECIPE)
     private const val LEAVE = "\u0000leave"
 
     /** Starts the flow in a background task. */
@@ -33,34 +49,34 @@ object NewRecipeUseCase {
     fun run(ports: FlowPortsContract): Boolean {
         val listed = ports.smith.run(listOf("recipe", "new", "--list-levels", "--json"))
         if (!listed.ok) {
-            ports.notice.warn("No recipe was written. ${FailureTextMapper.describe(listed)}")
+            ports.notice.warn(say(JETBRAINS_NEWRECIPE_NO_RECIPE_WAS_WRITTEN, FailureTextMapper.describe(listed).toString()))
             return false
         }
         val levels =
             runCatching { RecipeLevelsMapper.toLevels(listed.stdout) }
                 .getOrElse {
                     ports.notice.warn(
-                        "smith printed its levels in a form this plugin does not read. Update the plugin, or run smith recipe new in a terminal.",
+                        say(JETBRAINS_NEWRECIPE_SMITH_PRINTED_ITS_LEVELS_IN),
                     )
                     return false
                 }
         if (levels.levels.isEmpty()) {
-            ports.notice.warn("smith knows no plugin a recipe can fix. Update smith, or run smith recipe new in a terminal.")
+            ports.notice.warn(say(JETBRAINS_NEWRECIPE_SMITH_KNOWS_NO_PLUGIN_A))
             return false
         }
 
         val name =
-            ports.prompt.text("$TITLE: name", "The name of the recipe (for example team):", problem = RecipeLevelsMapper::nameProblem)
+            ports.prompt.text("$TITLE: name", say(JETBRAINS_NEWRECIPE_THE_NAME_OF_THE_RECIPE), problem = RecipeLevelsMapper::nameProblem)
                 ?: return false
         val version =
             ports.prompt.text(
                 "$TITLE: version",
-                "The first version of the recipe (empty takes 0.1.0):",
+                say(JETBRAINS_NEWRECIPE_THE_FIRST_VERSION_OF_THE),
                 "0.1.0",
                 RecipeLevelsMapper::versionProblem,
             )
                 ?: return false
-        val parent = ports.prompt.text("$TITLE: parent", "The recipe this one extends (empty for none):") ?: return false
+        val parent = ports.prompt.text("$TITLE: parent", say(JETBRAINS_NEWRECIPE_THE_RECIPE_THIS_ONE_EXTENDS)) ?: return false
         val fixed = linkedMapOf<String, List<String>>()
         var language = ""
         for (level in levels.levels) {
@@ -71,7 +87,7 @@ object NewRecipeUseCase {
                 if (level.additive) {
                     ports.prompt.pickMany(
                         "$TITLE: ${level.level}",
-                        "Tick the plugins the recipe fixes at the ${level.level} level. Tick none to leave it to the users of the recipe.",
+                        say(JETBRAINS_NEWRECIPE_TICK_THE_PLUGINS_THE_RECIPE, level.level.toString()),
                         rows,
                     )
                         ?: return false
@@ -79,14 +95,14 @@ object NewRecipeUseCase {
                     val leave =
                         ChoiceRowContract(
                             LEAVE,
-                            "Leave it to the users of the recipe",
-                            "(default)",
-                            "The recipe fixes no plugin at the ${level.level} level.",
+                            say(JETBRAINS_NEWRECIPE_LEAVE_IT_TO_THE_USERS),
+                            say(JETBRAINS_ADDCHOICES_DEFAULT),
+                            say(JETBRAINS_NEWRECIPE_THE_RECIPE_FIXES_NO_PLUGIN, level.level.toString()),
                         )
                     val answer =
                         ports.prompt.pickOne(
                             "$TITLE: ${level.level}",
-                            "Pick the plugin the recipe fixes at the ${level.level} level.",
+                            say(JETBRAINS_NEWRECIPE_PICK_THE_PLUGIN_THE_RECIPE, level.level.toString()),
                             listOf(leave) + rows,
                         )
                             ?: return false
@@ -99,18 +115,18 @@ object NewRecipeUseCase {
         val args = RecipeLevelsMapper.arguments(request)
         ports.prompt.plan(
             "$TITLE: write ${RecipeLevelsMapper.file(request)}?",
-            "smith runs this command and writes ${RecipeLevelsMapper.file(request)} in the workspace folder. Nothing is committed.",
+            say(JETBRAINS_NEWRECIPE_SMITH_RUNS_THIS_COMMAND_AND, RecipeLevelsMapper.file(request).toString()),
             TaskCommandAlgorithm.display(listOf("smith") + args),
-            "Write the recipe",
+            say(JETBRAINS_NEWRECIPE_WRITE_THE_RECIPE),
             offerCommit = false,
         ) ?: return false
         val done = ports.smith.run(args, show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("No recipe was written. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_NEWRECIPE_NO_RECIPE_WAS_WRITTEN, FailureTextMapper.describe(done).toString()))
             return false
         }
-        ports.notice.info("${RecipeLevelsMapper.file(request)} is written.")
+        ports.notice.info(say(JETBRAINS_NEWRECIPE_IS_WRITTEN, RecipeLevelsMapper.file(request).toString()))
         return true
     }
 }

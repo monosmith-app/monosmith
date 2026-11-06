@@ -1,6 +1,7 @@
 import type { CommandHost } from '../command-host/index.ts'
 import { confirmLauncher, tellLauncherOutcome } from './launcher-prompts.client.ts'
 import { writeLauncher } from './write-launcher.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Writes the launcher (`smith bootstrap`) that makes a laptop and CI run the same smith.
@@ -9,7 +10,7 @@ import { writeLauncher } from './write-launcher.use-case.ts'
  */
 export async function bootstrapHere (host: CommandHost, argument: unknown): Promise<void> {
   const state = await host.folderFor(argument)
-  if (state?.location === undefined || !host.mayWrite('the smith launcher')) return
+  if (state?.location === undefined || !host.mayWrite(say('vscode.bootstrap-launcher.the-smith-launcher'))) return
   const outcome = await writeLauncher({ run: host.smithIn(state), confirm: async (plan) => await confirmLauncher(state.name, plan) })
   host.report('launcher', state, outcome)
   tellLauncherOutcome(outcome)

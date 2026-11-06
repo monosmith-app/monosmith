@@ -9,6 +9,7 @@ import type { GuidedCommand } from './guided-command.contract.ts'
 import { askGuidedStep, confirmGuided, tellDivergencesFailure, tellGuidedOutcome } from './guided-prompts.client.ts'
 import { parseWebApps } from './guided-sources.mapper.ts'
 import { runGuidedCommand } from './run-guided-command.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Runs a command of smith that has a screen of its own (environments, cache, pipeline...): asks, shows the output or the plan, and changes nothing before a yes.
@@ -48,7 +49,7 @@ export async function showDivergences (host: CommandHost, showPage: (name: strin
 
     return
   }
-  await showPage('divergences.md', toTextDocument('Divergences from smith\'s defaults', result.stdout))
+  await showPage('divergences.md', toTextDocument(say('vscode.guided-commands.divergences-from-smith-s-defaults'), result.stdout))
 }
 
 /**

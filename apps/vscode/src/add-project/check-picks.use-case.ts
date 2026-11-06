@@ -2,9 +2,10 @@ import type { SmithRun } from '../smith-run/index.ts'
 import { longFlag } from '../smith-flags/index.ts'
 import type { AddOptions } from './add-options.contract.ts'
 import { fitsKind } from './add-options.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What a layer holds, for the sentence that asks for one (the words of the terminal). */
-const LAYER_WORDS: Record<string, string> = { framework: 'a framework', shell: 'a desktop shell', host: 'a cloud host' }
+const LAYER_WORDS: Record<string, string> = { framework: 'a framework', shell: say('guide.add_project_picks.layer.shell'), host: say('guide.add_project_picks.layer.host') }
 
 /** What the check of the picks is asked about. */
 export interface PicksAsked {
@@ -73,5 +74,5 @@ export async function checkPicks (run: (args: string[]) => Promise<SmithRun>, op
   const have = options.choices.filter((choice) => (choice.language === undefined || choice.language === asked.language) && (choice.layer ?? choice.axis) === layer && fitsKind(choice, asked.role))
   const ticked = have.some((choice) => asked.picks.includes(choice.name))
 
-  return ticked ? '' : `this kind of project needs ${LAYER_WORDS[layer] ?? `a ${layer}`}: tick one of ${have.map((choice) => choice.name).join(', ')}, or untick everything`
+  return ticked ? '' : say('vscode.add-project.this-kind-of-project-needs-tick', { part: LAYER_WORDS[layer] ?? `a ${layer}`, join: have.map((choice) => choice.name).join(', ') })
 }

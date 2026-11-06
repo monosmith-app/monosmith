@@ -1,0 +1,23 @@
+{
+  "jetbrains.toolwindow.affected-only": "Affected only",
+  "jetbrains.toolwindow.refresh": "Refresh",
+  "jetbrains.toolwindow.read-the-projects-the-updates": "Read the projects, the updates, the release plan and the health of the workspace again",
+  "jetbrains.toolwindow.add-library": "Add library…",
+  "jetbrains.toolwindow.install-package": "Install package…",
+  "jetbrains.toolwindow.unlink-library": "Unlink library…",
+  "jetbrains.toolwindow.make-app-library-or-package": "Make app, library or package…",
+  "jetbrains.toolwindow.run-task": "Run task",
+  "jetbrains.toolwindow.fix-this-check": "Fix this check: {description}",
+  "jetbrains.toolwindow.no-smith-toml-in-this": "No smith.toml in this project",
+  "jetbrains.toolwindow.smith-failed": "smith failed: {message}",
+  "jetbrains.toolwindow.add-your-first-project": "Add your first project",
+  "jetbrains.toolwindow.no-project-matches-the-filter": "No project matches the filter.",
+  "jetbrains.toolwindow.new-project": "New project…",
+  "jetbrains.toolwindow.running-doctor": "Running doctor…",
+  "jetbrains.toolwindow.reading-the-updates": "Reading the updates…",
+  "jetbrains.toolwindow.update-dependencies": "Update dependencies…",
+  "jetbrains.toolwindow.align-versions": "Align versions…",
+  "jetbrains.toolwindow.tools-with-a-newer-version": "Tools with a newer version ({size})",
+  "jetbrains.toolwindow.reading-the-release-plan": "Reading the release plan…",
+  "jetbrains.toolwindow.release-hold-bump-force": "Release… (hold, bump, force)"
+}

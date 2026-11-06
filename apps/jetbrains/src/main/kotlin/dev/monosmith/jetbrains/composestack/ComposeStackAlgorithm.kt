@@ -1,6 +1,14 @@
 package dev.monosmith.jetbrains.composestack
 
 import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMPOSER_PLAN_WRITES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_CANNOT_BE_USED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_IT_NEEDS_THESE_TOOLS_ON
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NOT_CHECKED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_NOT_PART_OF_ONE_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_RUN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMPOSESTACK_THE_CHOICE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** The pure steps of composing a stack: the arguments, the words of a plan, and the radio behaviour of the picks. */
 object ComposeStackAlgorithm {
@@ -25,7 +33,7 @@ object ComposeStackAlgorithm {
 
     /** One line for a tool of the plan: the name, whether it is there and which pick needs it, and the command that installs it when it is not. */
     fun describeTool(tool: ComposeToolContract): String {
-        val state = tool.state.ifEmpty { "not checked" }
+        val state = tool.state.ifEmpty { say(JETBRAINS_COMPOSESTACK_NOT_CHECKED) }
         val line = "${tool.title} ($state${if (tool.choice.isEmpty()) "" else ", for ${tool.choice}"})"
         return if (tool.state == "missing" || tool.state == "outdated") "$line: ${tool.command}" else line
     }
@@ -39,14 +47,14 @@ object ComposeStackAlgorithm {
 
     /** Words the plan for the confirmation: the command, the files, the tools and the notes. */
     fun describePlan(plan: ComposePlanContract): String {
-        val lines = mutableListOf("Run: ${plan.command}", "")
+        val lines = mutableListOf(say(JETBRAINS_COMPOSESTACK_RUN, plan.command.toString()), "")
         if (plan.files.isNotEmpty()) {
-            lines.add("It writes:")
+            lines.add(say(COMPOSER_PLAN_WRITES))
             plan.files.forEach { lines.add("  ${it.action} ${it.path}${if (it.note.isEmpty()) "" else " (${it.note})"}") }
             lines.add("")
         }
         if (plan.tools.isNotEmpty()) {
-            lines.add("It needs these tools on this computer:")
+            lines.add(say(JETBRAINS_COMPOSESTACK_IT_NEEDS_THESE_TOOLS_ON))
             plan.tools.forEach { lines.add("  ${describeTool(it)}") }
             lines.add("")
         }
@@ -65,7 +73,7 @@ object ComposeStackAlgorithm {
             if (item.kind == "choice" && item.axis.isNotEmpty() && item.axis != item.layer &&
                 !item.many
             ) {
-                " (the ${item.axis} choice)"
+                say(JETBRAINS_COMPOSESTACK_THE_CHOICE, item.axis.toString())
             } else {
                 ""
             }
@@ -77,8 +85,8 @@ object ComposeStackAlgorithm {
             } else {
                 ""
             }
-        val problem = if (item.problem.isEmpty()) "" else " Cannot be used: ${item.problem}."
-        val route = if (item.route.isEmpty()) "" else " Not part of one project: turn it on with ${item.route}."
+        val problem = if (item.problem.isEmpty()) "" else say(JETBRAINS_COMPOSESTACK_CANNOT_BE_USED, item.problem.toString())
+        val route = if (item.route.isEmpty()) "" else say(JETBRAINS_COMPOSESTACK_NOT_PART_OF_ONE_PROJECT, item.route.toString())
         return Triple(
             "${item.title}$mark",
             "$where${item.layer}$slot",

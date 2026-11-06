@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { TryOutcome } from './try-command.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks which smith command to try.
@@ -7,9 +8,9 @@ import type { TryOutcome } from './try-command.use-case.ts'
  */
 export async function askTryCommand (): Promise<string[] | undefined> {
   const text = await vscode.window.showInputBox({
-    title:       'MonoSmith: try a command in a copy',
-    prompt:      'Which smith command? It runs in a temporary copy first (add, remove, up, upgrade, derive, kind, eject, sync, bootstrap).',
-    placeHolder: 'add package billing',
+    title:       say('vscode.try-command.monosmith-try-a-command-in-a'),
+    prompt:      say('vscode.try-command.which-smith-command-it-runs-in'),
+    placeHolder: say('guide.actions.add_package_billing'),
   })
   const words = text?.trim().split(/\s+/).filter(Boolean)
 
@@ -22,9 +23,9 @@ export async function askTryCommand (): Promise<string[] | undefined> {
  * @returns whether the person agreed
  */
 export async function offerTryApply (command: string[]): Promise<boolean> {
-  const choice = await vscode.window.showInformationMessage(`MonoSmith: the try of "smith ${command.join(' ')}" passed. Run it for real?`, { modal: true }, 'Run it')
+  const choice = await vscode.window.showInformationMessage(say('vscode.try-command.monosmith-the-try-of-smith-passed', { join: command.join(' ') }), { modal: true }, say('vscode.compose-stack.run-it'))
 
-  return choice === 'Run it'
+  return choice === say('vscode.compose-stack.run-it')
 }
 
 /**
@@ -34,12 +35,12 @@ export async function offerTryApply (command: string[]): Promise<boolean> {
 export function tellTryOutcome (outcome: TryOutcome): void {
   switch (outcome.kind) {
     case 'tried': {
-      if (outcome.applied) void vscode.window.showInformationMessage('MonoSmith: the command ran for real.')
-      else if (!outcome.passed) void vscode.window.showWarningMessage('MonoSmith: the try failed in the copy. Your files were not touched. The page says where.')
+      if (outcome.applied) void vscode.window.showInformationMessage(say('vscode.try-command.monosmith-the-command-ran-for-real'))
+      else if (!outcome.passed) void vscode.window.showWarningMessage(say('vscode.try-command.monosmith-the-try-failed-in-the'))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: smith could not try that. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.try-command.monosmith-smith-could-not-try-that', { message: outcome.message }))
       break
     }
     case 'cancelled': {

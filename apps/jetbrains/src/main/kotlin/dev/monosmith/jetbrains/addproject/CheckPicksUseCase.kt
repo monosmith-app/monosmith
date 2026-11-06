@@ -3,6 +3,11 @@ package dev.monosmith.jetbrains.addproject
 import dev.monosmith.jetbrains.flowports.SmithPort
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_PICKS_LAYER_FRAMEWORK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_PICKS_LAYER_HOST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_PICKS_LAYER_SHELL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ADD_PROJECT_PICKS_UNTICK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * Checks the ticked choices before the lists are left, as the terminal form does. smith checks the set
@@ -12,7 +17,12 @@ import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
  * choices of that layer that fit the kind are named. Nothing ticked is fine: the stack's defaults are used.
  */
 object CheckPicksUseCase {
-    private val layerWords = mapOf("framework" to "a framework", "shell" to "a desktop shell", "host" to "a cloud host")
+    private val layerWords =
+        mapOf(
+            "framework" to say(GUIDE_ADD_PROJECT_PICKS_LAYER_FRAMEWORK),
+            "shell" to say(GUIDE_ADD_PROJECT_PICKS_LAYER_SHELL),
+            "host" to say(GUIDE_ADD_PROJECT_PICKS_LAYER_HOST),
+        )
 
     /**
      * Turns a sentence of `smith add` (which talks of `--with`) into one for a list where nothing is typed
@@ -21,7 +31,8 @@ object CheckPicksUseCase {
      * @param text what smith said is missing
      * @return the sentence without flags
      */
-    fun plainWords(text: String): String = text.replace(" to --with", "").replace("give no --with to start", "untick everything to start")
+    fun plainWords(text: String): String =
+        text.replace(" to --with", "").replace("give no --with to start", say(GUIDE_ADD_PROJECT_PICKS_UNTICK))
 
     /**
      * @param smith runs smith in the workspace folder

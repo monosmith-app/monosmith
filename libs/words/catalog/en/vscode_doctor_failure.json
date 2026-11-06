@@ -1,0 +1,13 @@
+{
+  "vscode.doctor-failure.monosmith-was-written-and-smith-doctor": "MonoSmith: {name} was written, and smith doctor found a problem with it. smith's steps:",
+  "vscode.doctor-failure.open-health": "Open Health",
+  "vscode.doctor-failure.commit-anyway": "Commit anyway",
+  "vscode.doctor-failure.keep-uncommitted": "Keep uncommitted",
+  "vscode.doctor-failure.commit-anyway-makes-one-commit-that": " Commit anyway makes one commit that Undo can revert.",
+  "vscode.doctor-failure.install-tools-fetches-what-is-missing": "{describeDoctorFailure} Install tools fetches what is missing. Open Health lists every check.{part}",
+  "vscode.doctor-failure.install-the-tools-the-project-needs": "Install the tools the project needs, with smith tools install.",
+  "vscode.doctor-failure.open-the-health-view-it-lists": "Open the Health view: it lists every check and its remedy.",
+  "vscode.doctor-failure.commit-the-files-now-although-a": "Commit the files now, although a check fails. It is one commit that Undo can revert.",
+  "vscode.doctor-failure.leave-the-files-uncommitted-review-them": "Leave the files uncommitted: review them with git, and commit when you decide.",
+  "vscode.doctor-failure.monosmith-is-left-uncommitted-smith-remembers": "MonoSmith: {name} is left uncommitted. smith remembers its files. Commit them when you decide: run \"MonoSmith: Commit the changes…\"."
+}

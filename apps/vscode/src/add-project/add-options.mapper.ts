@@ -1,8 +1,9 @@
 import type { ChoiceOption, KindOption, StackOption } from './add-options.contract.ts'
+import { say } from '../words/index.ts'
 
 function records (json: string): Array<Record<string, unknown>> {
   const value: unknown = JSON.parse(json)
-  if (!Array.isArray(value)) throw new TypeError('smith printed no list')
+  if (!Array.isArray(value)) throw new TypeError(say('vscode.add-project.smith-printed-no-list'))
 
   return value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
 }

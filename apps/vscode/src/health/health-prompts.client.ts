@@ -1,9 +1,10 @@
 import * as vscode from 'vscode'
 import type { FixPreview } from './fix-preview.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** Says smith is not running, so the doctor has nothing to check. */
 export function tellNothingToCheck (): void {
-  void vscode.window.showInformationMessage('MonoSmith: smith is not running, so there is nothing to check.')
+  void vscode.window.showInformationMessage(say('vscode.health.monosmith-smith-is-not-running-so'))
 }
 
 /**
@@ -14,12 +15,12 @@ export function tellNothingToCheck (): void {
  */
 export function tellDoctorSummary (message: string, problems: boolean, showOutput: () => void): void {
   const show = problems ? vscode.window.showWarningMessage : vscode.window.showInformationMessage
-  void show(`MonoSmith: ${message}`, 'Show output').then((choice) => { if (choice === 'Show output') showOutput() })
+  void show(say('vscode.compose-stack.monosmith', { message }), say('vscode.health.show-output')).then((choice) => { if (choice === say('vscode.health.show-output')) showOutput() })
 }
 
 /** Says the doctor proposes no fix. */
 export function tellNoFix (): void {
-  void vscode.window.showInformationMessage('MonoSmith: doctor proposes no fix. The remedies listed under a check say what to do by hand.')
+  void vscode.window.showInformationMessage(say('vscode.health.monosmith-doctor-proposes-no-fix-the'))
 }
 
 /**
@@ -30,12 +31,12 @@ export function tellNoFix (): void {
  */
 export async function confirmApplyFixes (preview: FixPreview, folderName: string | undefined): Promise<boolean> {
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: apply ${preview.titles.length} ${preview.titles.length === 1 ? 'fix' : 'fixes'}${folderName === undefined ? '' : ` in ${folderName}`}?`,
-    { modal: true, detail: `${preview.text}\n\nThe files are changed as shown. Review them with git afterwards.` },
-    'Apply fixes',
+    say('vscode.health.monosmith-apply', { length: preview.titles.length, part: say(preview.titles.length === 1 ? 'vscode.health.fix' : 'vscode.health.fixes'), part2: folderName === undefined ? '' : say('vscode.health.in', { folderName }) }),
+    { modal: true, detail: say('vscode.health.the-files-are-changed-as-shown', { text: preview.text }) },
+    say('vscode.health.apply-fixes'),
   )
 
-  return choice === 'Apply fixes'
+  return choice === say('vscode.health.apply-fixes')
 }
 
 /**
@@ -44,16 +45,16 @@ export async function confirmApplyFixes (preview: FixPreview, folderName: string
  * @param folderName - the folder, when several run smith; undefined otherwise
  */
 export function tellFixesApplied (outcome: string, folderName: string | undefined): void {
-  if (outcome === 'fixed') void vscode.window.showInformationMessage(`MonoSmith: the fixes were applied${folderName === undefined ? '' : ` in ${folderName}`}.`)
-  else if (outcome === 'incomplete') void vscode.window.showInformationMessage('MonoSmith: the fixes were applied. Some checks still fail and need their remedy by hand; the Health view lists them.')
+  if (outcome === 'fixed') void vscode.window.showInformationMessage(say('vscode.health.monosmith-the-fixes-were-applied', { part: folderName === undefined ? '' : say('vscode.health.in', { folderName }) }))
+  else if (outcome === 'incomplete') void vscode.window.showInformationMessage(say('vscode.health.monosmith-the-fixes-were-applied-some'))
 }
 
 /** Says a Health row must be chosen first. */
 export function tellChooseCheck (): void {
-  void vscode.window.showInformationMessage('MonoSmith: choose a check in the Health view first.')
+  void vscode.window.showInformationMessage(say('vscode.health.monosmith-choose-a-check-in-the'))
 }
 
 /** Says the check of a Health row passes now. */
 export function tellCheckPasses (): void {
-  void vscode.window.showInformationMessage('MonoSmith: that check passes now. Refresh the Health view.')
+  void vscode.window.showInformationMessage(say('vscode.health.monosmith-that-check-passes-now-refresh'))
 }

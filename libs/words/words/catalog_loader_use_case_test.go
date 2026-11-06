@@ -6,6 +6,14 @@ import (
 )
 
 func TestALocaleTagChoosesItsLanguageThenEnglish(t *testing.T) {
+	// The real pt-BR catalogue would win over the stand-in pt one, so set it aside.
+	kept, hadPtBR := catalogs["pt-BR"]
+	delete(catalogs, "pt-BR")
+	defer func() {
+		if hadPtBR {
+			catalogs["pt-BR"] = kept
+		}
+	}()
 	catalogs["pt"] = map[string]string{}
 	defer delete(catalogs, "pt")
 	for tag, want := range map[string]string{"pt-BR": "pt", "pt_BR.UTF-8": "pt", "pt": "pt", "de": "en", "": "en", "C": "en"} {

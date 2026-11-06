@@ -9,6 +9,32 @@ import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_ALIGN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_CHOOSE_THE_PACKAGES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_DEPENDENCIES_ARE_UPDATED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_EVERY_DEPENDENCY_IS_UP_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_EVERY_PATCH_AND_MINOR_UPDATE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_MONOSMITH_ALIGN_DEPENDENCY_VERSIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_MONOSMITH_ALIGN_THE_VERSIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_MONOSMITH_UPDATE_DEPENDENCIES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_NEWER_TOOLS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_NOTHING_WAS_CHANGED_YET_EVERY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_NOTHING_WAS_CHANGED_YET_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_NOTHING_WAS_UPDATED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_PICK_AMONG_UPDATES_GROUPED_BY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_PROJECTS_ON_AN_OLDER_VERSION
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_PROJECTS_ON_A_NEWER_VERSION
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_THE_RISK_IS_LOW_FIXES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_THE_VERSIONS_ARE_ALIGNED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_THE_VERSION_THE_PACKAGE_MANAGER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_TICK_WHAT_TO_UPDATE_A
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_UPDATE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEPENDENCIES_WHEN_PROJECTS_DECLARE_A_DEPENDENCY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_VERSION_HIGHEST_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_VERSION_INSTALLED_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.RESULTDIALOG_VERSION_LOWEST_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -18,7 +44,7 @@ import java.nio.file.Path
  * pick of its own because `--major` lets it through. smith commits only when the box is ticked.
  */
 object UpdateDependenciesUseCase {
-    private const val TITLE = "MonoSmith: update dependencies"
+    private val TITLE = say(JETBRAINS_DEPENDENCIES_MONOSMITH_UPDATE_DEPENDENCIES)
     private const val SAFE = "safe"
     private const val CHOOSE = "choose"
 
@@ -27,12 +53,22 @@ object UpdateDependenciesUseCase {
         listOf(
             ChoiceRowContract(
                 "installed",
-                "The installed version (smith's pick)",
-                "(default)",
-                "The version the package manager has installed.",
+                say(RESULTDIALOG_VERSION_INSTALLED_LABEL),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                say(JETBRAINS_DEPENDENCIES_THE_VERSION_THE_PACKAGE_MANAGER),
             ),
-            ChoiceRowContract("highest", "The highest declared", "", "Projects on an older version move up."),
-            ChoiceRowContract("lowest", "The lowest declared", "", "Projects on a newer version move down."),
+            ChoiceRowContract(
+                "highest",
+                say(RESULTDIALOG_VERSION_HIGHEST_LABEL),
+                "",
+                say(JETBRAINS_DEPENDENCIES_PROJECTS_ON_AN_OLDER_VERSION),
+            ),
+            ChoiceRowContract(
+                "lowest",
+                say(RESULTDIALOG_VERSION_LOWEST_LABEL),
+                "",
+                say(JETBRAINS_DEPENDENCIES_PROJECTS_ON_A_NEWER_VERSION),
+            ),
         )
 
     /** Reads what `smith up --json` says, for a view. Blocks: call it off the UI thread. */
@@ -52,7 +88,7 @@ object UpdateDependenciesUseCase {
     fun startAlign(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: align dependency versions") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_DEPENDENCIES_MONOSMITH_ALIGN_DEPENDENCY_VERSIONS)) {
         align(IdePortsClient.of(ide, root)) { CommitChangesUseCase.start(ide, root, it) }
     }
 
@@ -65,9 +101,14 @@ object UpdateDependenciesUseCase {
         ports: FlowPortsContract,
         commitLater: (String) -> Unit,
     ): Boolean {
-        val report = read(ports).getOrElse { return false.also { _ -> ports.notice.warn("Nothing was updated. ${it.message}") } }
+        val report =
+            read(ports).getOrElse {
+                return false.also { _ ->
+                    ports.notice.warn(say(JETBRAINS_DEPENDENCIES_NOTHING_WAS_UPDATED, it.message.toString()))
+                }
+            }
         if (report.updates.isEmpty()) {
-            ports.notice.info("Every dependency is up to date." + tools(report))
+            ports.notice.info(say(JETBRAINS_DEPENDENCIES_EVERY_DEPENDENCY_IS_UP_TO) + tools(report))
             return false
         }
         val safe = report.updates.filter { it.level != "major" }
@@ -76,18 +117,18 @@ object UpdateDependenciesUseCase {
             rows.add(
                 ChoiceRowContract(
                     SAFE,
-                    "Every patch and minor update (${safe.size})",
-                    "(default)",
-                    "The risk is low: fixes and new features, no breaking change.",
+                    say(JETBRAINS_DEPENDENCIES_EVERY_PATCH_AND_MINOR_UPDATE, safe.size.toString()),
+                    say(JETBRAINS_ADDCHOICES_DEFAULT),
+                    say(JETBRAINS_DEPENDENCIES_THE_RISK_IS_LOW_FIXES),
                 ),
             )
         }
         rows.add(
             ChoiceRowContract(
                 CHOOSE,
-                "Choose the packages…",
+                say(JETBRAINS_DEPENDENCIES_CHOOSE_THE_PACKAGES),
                 "",
-                "Pick among ${report.updates.size} updates, grouped by risk. Major updates are never ticked.",
+                say(JETBRAINS_DEPENDENCIES_PICK_AMONG_UPDATES_GROUPED_BY, report.updates.size.toString()),
             ),
         )
         val way =
@@ -107,7 +148,7 @@ object UpdateDependenciesUseCase {
                 val names =
                     ports.prompt.pickMany(
                         TITLE,
-                        "Tick what to update. A major update may break your code.",
+                        say(JETBRAINS_DEPENDENCIES_TICK_WHAT_TO_UPDATE_A),
                         UpdatesJsonMapper.rows(report.updates),
                     )
                         ?: return false
@@ -122,11 +163,11 @@ object UpdateDependenciesUseCase {
                 title = "$TITLE?",
                 planArgs = null,
                 fixedPlan = UpdatesJsonMapper.describe(picked) + "\n\nsmith ${args.joinToString(" ")}",
-                header = "Nothing was changed yet. smith edits the manifests and installs. By default smith leaves the files uncommitted.",
-                okText = "Update",
+                header = say(JETBRAINS_DEPENDENCIES_NOTHING_WAS_CHANGED_YET_SMITH),
+                okText = say(JETBRAINS_DEPENDENCIES_UPDATE),
                 offerCommit = true,
                 apply = { args },
-                done = "${picked.size} dependencies are updated",
+                done = say(JETBRAINS_DEPENDENCIES_DEPENDENCIES_ARE_UPDATED, picked.size.toString()),
                 operation = "up",
             ),
             commitLater,
@@ -145,21 +186,21 @@ object UpdateDependenciesUseCase {
         val rule =
             ports.prompt
                 .pickOne(
-                    "MonoSmith: align dependency versions",
-                    "When projects declare a dependency at different versions, which one wins? The first answer is the default.",
+                    say(JETBRAINS_DEPENDENCIES_MONOSMITH_ALIGN_DEPENDENCY_VERSIONS),
+                    say(JETBRAINS_DEPENDENCIES_WHEN_PROJECTS_DECLARE_A_DEPENDENCY),
                     ruleRows,
                 )?.name
                 ?: return false
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
-                title = "MonoSmith: align the versions ($rule)?",
+                title = say(JETBRAINS_DEPENDENCIES_MONOSMITH_ALIGN_THE_VERSIONS, rule.toString()),
                 planArgs = UpdatesJsonMapper.alignArguments(rule, apply = false),
-                header = "Nothing was changed yet. Every project that disagrees moves to one version.",
-                okText = "Align",
+                header = say(JETBRAINS_DEPENDENCIES_NOTHING_WAS_CHANGED_YET_EVERY),
+                okText = say(JETBRAINS_DEPENDENCIES_ALIGN),
                 offerCommit = true,
                 apply = { UpdatesJsonMapper.alignArguments(rule, apply = true) },
-                done = "The versions are aligned",
+                done = say(JETBRAINS_DEPENDENCIES_THE_VERSIONS_ARE_ALIGNED),
                 operation = "up align",
             ),
             commitLater,
@@ -167,5 +208,16 @@ object UpdateDependenciesUseCase {
     }
 
     private fun tools(report: UpdatesReportContract): String =
-        if (report.tools.isEmpty()) "" else " Newer tools: ${report.tools.joinToString(", ") { "${it.name} ${it.pinned} → ${it.latest}" }}."
+        if (report.tools.isEmpty()) {
+            ""
+        } else {
+            say(
+                JETBRAINS_DEPENDENCIES_NEWER_TOOLS,
+                (
+                    report.tools.joinToString(", ") {
+                        "${it.name} ${it.pinned} → ${it.latest}"
+                    }
+                ).toString(),
+            )
+        }
 }

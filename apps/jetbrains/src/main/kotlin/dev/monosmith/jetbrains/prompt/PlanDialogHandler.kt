@@ -8,6 +8,8 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
+import dev.monosmith.jetbrains.words.SmithWordsConfig.DIALOG_COMMIT_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.Font
@@ -86,6 +88,6 @@ class PlanDialogHandler(
     /** The text of the commit box, shared with the flows that tell the person what it did. */
     companion object {
         /** The words of the unticked commit box. */
-        const val COMMIT_LABEL = "Commit this change so it can be undone"
+        val COMMIT_LABEL = say(DIALOG_COMMIT_LABEL)
     }
 }

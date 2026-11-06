@@ -6,6 +6,14 @@ import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.taskrun.RunSmithCommandUseCase
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMMANDS_GROUP_START
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEVSERVERS_MONOSMITH_DEV_SERVERS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEVSERVERS_NO_PROJECT_HAS_A_START
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEVSERVERS_NO_SERVER_WAS_STARTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEVSERVERS_RUNS_ITS_START_TASK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEVSERVERS_SMITH_DEV
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DEVSERVERS_TICK_THE_PROJECTS_TO_START
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
 import java.nio.file.Path
@@ -23,7 +31,7 @@ object DevServersUseCase {
                 it.name,
                 it.name,
                 "${it.kind} · ${it.language}",
-                "Runs its start task.",
+                say(JETBRAINS_DEVSERVERS_RUNS_ITS_START_TASK),
             )
         }
 
@@ -37,24 +45,30 @@ object DevServersUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: dev servers") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_DEVSERVERS_MONOSMITH_DEV_SERVERS)) {
         val projects =
             ListProjectsUseCase
                 .list(
                     root,
-                ).getOrElse { return@start NoticeClient.warn(ide, "No server was started. ${it.message}") }
+                ).getOrElse { return@start NoticeClient.warn(ide, say(JETBRAINS_DEVSERVERS_NO_SERVER_WAS_STARTED, it.message.toString())) }
         val rows = rows(projects)
-        if (rows.isEmpty()) return@start NoticeClient.info(ide, "No project has a start task.")
+        if (rows.isEmpty()) return@start NoticeClient.info(ide, say(JETBRAINS_DEVSERVERS_NO_PROJECT_HAS_A_START))
         val names =
             PromptClient.pickMany(
                 ide,
-                "MonoSmith: dev servers",
-                "Tick the projects to start. Each runs in the Run window; its Stop button stops it.",
+                say(JETBRAINS_DEVSERVERS_MONOSMITH_DEV_SERVERS),
+                say(JETBRAINS_DEVSERVERS_TICK_THE_PROJECTS_TO_START),
                 rows,
-                "Start",
+                say(COMMANDS_GROUP_START),
             )
                 ?: return@start
         if (names.isEmpty()) return@start
-        PromptClient.onUi { RunSmithCommandUseCase.run(ide, root, "smith dev ${names.joinToString(" ")}") { arguments(it, names) } }
+        PromptClient.onUi {
+            RunSmithCommandUseCase.run(
+                ide,
+                root,
+                say(JETBRAINS_DEVSERVERS_SMITH_DEV, names.joinToString(" ").toString()),
+            ) { arguments(it, names) }
+        }
     }
 }

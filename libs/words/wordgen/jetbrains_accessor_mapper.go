@@ -14,7 +14,10 @@ const kotlinSay = `    /**
      * @param values the value of each placeholder, in the order the constant lists.
      * @return the text; the key itself when the bundle lacks it.
      */
-    fun say(key: String, vararg values: Any): String {
+    fun say(
+        key: String,
+        vararg values: Any,
+    ): String {
         val bundle = ResourceBundle.getBundle(BUNDLE)
         if (!bundle.containsKey(key)) return key
         val text = bundle.getString(key)

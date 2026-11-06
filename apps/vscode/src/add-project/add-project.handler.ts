@@ -7,6 +7,7 @@ import { addProject } from './add-project.use-case.ts'
 import { askAddRequest, confirmAddPlan, tellAddOutcome } from './add-prompts.client.ts'
 import { checkPicks } from './check-picks.use-case.ts'
 import { outcomeWords } from './outcome-words.mapper.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks what to add, shows the plan of `smith add --dry-run`, and adds on a yes.
@@ -15,12 +16,12 @@ import { outcomeWords } from './outcome-words.mapper.ts'
  */
 export async function addProjectHere (host: CommandHost, argument: unknown): Promise<void> {
   const state = await host.folderFor(argument)
-  if (state?.location === undefined || !host.mayWrite('adding a project')) return
+  if (state?.location === undefined || !host.mayWrite(say('vscode.add-project.adding-a-project'))) return
   host.showOutput()
   const outcome = await addProject({
     run:   host.smithIn(state),
     apply: async (args) => await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding to ${state.name}… smith installs and tests the new project.` },
+      { location: vscode.ProgressLocation.Notification, title: say('vscode.add-project.monosmith-adding-to-smith-installs-and', { name: state.name }) },
       async () => await host.smithIn(state, true, 600_000)(args),
     ),
     ask: async (options) => {
@@ -30,7 +31,7 @@ export async function addProjectHere (host: CommandHost, argument: unknown): Pro
     },
     confirm: confirmAddPlan,
   })
-  host.note(`MonoSmith: add in ${state.name}: ${outcomeWords(outcome)}`)
+  host.note(say('vscode.add-project.monosmith-add-in', { name: state.name, outcomeWords: outcomeWords(outcome) }))
   if (outcome.kind === 'composing') {
     await vscode.commands.executeCommand('monosmith.composeStack', argument)
 

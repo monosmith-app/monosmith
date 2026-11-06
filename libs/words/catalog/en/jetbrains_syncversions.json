@@ -1,0 +1,9 @@
+{
+  "jetbrains.syncversions.monosmith-sync-dependency-versions": "MonoSmith: sync dependency versions",
+  "jetbrains.syncversions.monosmith-which-version-wins": "MonoSmith: which version wins?",
+  "jetbrains.syncversions.when-projects-declare-a-dependency": "When projects declare a dependency at different versions, which one should every project use? The first answer is the default.",
+  "jetbrains.syncversions.monosmith-sync-dependency-versions-2": "MonoSmith: sync dependency versions ({rule})?",
+  "jetbrains.syncversions.nothing-was-changed-yet-this": "Nothing was changed yet. This is the plan: every project that disagrees moves to one version.",
+  "jetbrains.syncversions.write-it": "Write it",
+  "jetbrains.syncversions.the-versions-are-in-sync": "The versions are in sync"
+}

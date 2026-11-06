@@ -2,6 +2,17 @@ package dev.monosmith.jetbrains.addchoices
 
 import dev.monosmith.jetbrains.flowports.PromptPort
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.DIALOG_BUTTON_CANCEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_ADD_NOTHING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_CHOOSE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_GO_BACK_TO_THE_QUESTIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_MONOSMITH_ADD_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_MONOSMITH_ADD_PROJECT_CHECK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_NEEDS_AN_ANSWER_ON_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_PICK_AGAIN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_PICK_ONE_THE_FIRST_ANSWER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_TICK_WHAT_THE_PROJECT_USES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * Asks the choices of a new project, axis by axis. What the first questions settled is kept and not
@@ -38,13 +49,18 @@ object PickChoicesUseCase {
             if (problem.isEmpty()) return picked
             val again =
                 prompt.pickOne(
-                    "MonoSmith: Add project: check",
+                    say(JETBRAINS_ADDCHOICES_MONOSMITH_ADD_PROJECT_CHECK),
                     problem,
                     listOf(
-                        ChoiceRowContract(AGAIN, "Pick again", "", "Go back to the questions."),
-                        ChoiceRowContract(CANCEL, "Cancel", "", "Add nothing."),
+                        ChoiceRowContract(
+                            AGAIN,
+                            say(JETBRAINS_ADDCHOICES_PICK_AGAIN),
+                            "",
+                            say(JETBRAINS_ADDCHOICES_GO_BACK_TO_THE_QUESTIONS),
+                        ),
+                        ChoiceRowContract(CANCEL, say(DIALOG_BUTTON_CANCEL), "", say(JETBRAINS_ADDCHOICES_ADD_NOTHING)),
                     ),
-                    "Choose",
+                    say(JETBRAINS_ADDCHOICES_CHOOSE),
                 )
             if (again?.name != AGAIN) return null
         }
@@ -73,15 +89,18 @@ object PickChoicesUseCase {
         for (axis in axes) {
             if (axis.axis in settled) continue
             val layer = (ofLayers[axis.axis] ?: axis.axis).lowercase()
-            val title = "MonoSmith: Add project: $layer"
+            val title = say(JETBRAINS_ADDCHOICES_MONOSMITH_ADD_PROJECT, layer.toString())
             val gloss = GlossaryAlgorithm.line(axis.axis, ofLayers, about)
             if (axis.axis in asked) {
                 val needing = chosen().filter { axis.axis in it.needs }
                 if (needing.isEmpty()) continue
                 val header =
                     GlossaryAlgorithm.withLine(
-                        "${needing.joinToString(", ") { it.label }} needs an answer on the $layer axis. smith never picks it. " +
-                            "The suggested answer is first.",
+                        say(
+                            JETBRAINS_ADDCHOICES_NEEDS_AN_ANSWER_ON_THE,
+                            (needing.joinToString(", ") { it.label }).toString(),
+                            layer.toString(),
+                        ),
                         gloss,
                     )
                 val rows = ChoiceRowsAlgorithm.askedRows(axis.choices, chosen())
@@ -89,13 +108,17 @@ object PickChoicesUseCase {
             } else if (axis.many) {
                 val rows = ChoiceRowsAlgorithm.manyChoiceRows(axis, chosen(), ofLayers)
                 picked.addAll(
-                    prompt.pickMany(title, GlossaryAlgorithm.withLine("Tick what the project uses. The defaults are ticked.", gloss), rows)
+                    prompt.pickMany(title, GlossaryAlgorithm.withLine(say(JETBRAINS_ADDCHOICES_TICK_WHAT_THE_PROJECT_USES), gloss), rows)
                         ?: return null,
                 )
             } else {
                 val rows = ChoiceRowsAlgorithm.singleChoiceRows(axis, chosen(), outcomeId, ofLayers)
                 val answer =
-                    prompt.pickOne(title, GlossaryAlgorithm.withLine("Pick one $layer. The first answer is the default.", gloss), rows)
+                    prompt.pickOne(
+                        title,
+                        GlossaryAlgorithm.withLine(say(JETBRAINS_ADDCHOICES_PICK_ONE_THE_FIRST_ANSWER, layer.toString()), gloss),
+                        rows,
+                    )
                         ?: return null
                 if (answer.name.isNotEmpty()) picked.add(answer.name)
             }

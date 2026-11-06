@@ -52,6 +52,7 @@ import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapsh
 import { findSmithRoots, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged } from './workspace-folders/index.ts'
 import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter, type WebAppEnvironments } from './workspace-view/index.ts'
 import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
+import { say } from './words/index.ts'
 
 const INSTALL_COMMAND = 'npm i -D monosmith'
 const UPDATE_COMMAND = 'npm i -D monosmith@latest'
@@ -135,7 +136,7 @@ const stopFolder = registry.stop
  * @param context - the extension's lifetime
  */
 export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
-  const output = vscode.window.createOutputChannel('MonoSmith')
+  const output = vscode.window.createOutputChannel(say('vscode.package.display-name'))
   const statuses = new Map<string, TaskStatusStore>()
   const watchers = new Map<string, { coalescer: RefreshCoalescer, watcher: vscode.Disposable }>()
   const generations = new Map<string, number>()
@@ -179,8 +180,8 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const note = (message: string): void => { output.appendLine(message) }
   const fail = (error: unknown): void => {
     const message = error instanceof Error ? error.message : String(error)
-    note(`MonoSmith: ${message}`)
-    void vscode.window.showErrorMessage(`MonoSmith: ${message}`, 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
+    note(say('vscode.compose-stack.monosmith', { message }))
+    void vscode.window.showErrorMessage(say('vscode.compose-stack.monosmith', { message }), say('vscode.health.show-output')).then((choice) => { if (choice === say('vscode.health.show-output')) output.show() })
   }
 
   const paint = (): void => {
@@ -242,9 +243,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     })
     if (warning === undefined || !warned.firstTime('skew')) return
     note(warning)
-    const copy = `Copy "${UPDATE_COMMAND}"`
-    const choice = await vscode.window.showWarningMessage(warning, 'Open settings', copy)
-    if (choice === 'Open settings') await vscode.commands.executeCommand('monosmith.openSettings')
+    const copy = say('vscode.main.copy', { updateCommand: UPDATE_COMMAND })
+    const choice = await vscode.window.showWarningMessage(warning, say('vscode.main.open-settings'), copy)
+    if (choice === say('vscode.main.open-settings')) await vscode.commands.executeCommand('monosmith.openSettings')
     else if (choice === copy) await vscode.env.clipboard.writeText(UPDATE_COMMAND)
   }
 
@@ -274,7 +275,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       }
     } catch (error) {
       if (stale()) return
-      if (quiet) note(`MonoSmith: could not refresh ${state.name}: ${error instanceof Error ? error.message : String(error)}`)
+      if (quiet) note(say('vscode.main.monosmith-could-not-refresh', { name: state.name, part: error instanceof Error ? error.message : String(error) }))
       else fail(error)
     }
     sync()
@@ -316,8 +317,8 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       return
     }
     Object.assign(state, outcome)
-    if (outcome.phase === 'failed') note(`MonoSmith: smith could not start in ${state.name}: ${outcome.error ?? ''}`)
-    if (outcome.session?.protocol === 'newer') note('smith speaks a newer protocol than this extension knows; it keeps working with what it knows.')
+    if (outcome.phase === 'failed') note(say('vscode.main.monosmith-smith-could-not-start-in', { name: state.name, part: outcome.error ?? '' }))
+    if (outcome.session?.protocol === 'newer') note(say('vscode.main.smith-speaks-a-newer-protocol-than'))
     sync()
     if (outcome.phase !== 'ready') {
       return
@@ -331,17 +332,17 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const handleExit = (root: string, exit: SmithExit): void => {
     const state = folders.get(root)
     if (state === undefined) return
-    const why = exit.signal === null ? `exit code ${String(exit.code)}` : `signal ${exit.signal}`
-    Object.assign(state, { phase: 'failed', session: undefined, error: `smith serve ended (${why})${exit.stderr === '' ? '' : `: ${exit.stderr.split('\n').at(-1) ?? ''}`}` })
-    note(`MonoSmith: smith serve ended in ${state.name} (${why}).`)
+    const why = exit.signal === null ? say('vscode.main.exit-code', { code: String(exit.code) }) : `signal ${exit.signal}`
+    Object.assign(state, { phase: 'failed', session: undefined, error: say('vscode.main.smith-serve-ended', { why, part: exit.stderr === '' ? '' : `: ${exit.stderr.split('\n').at(-1) ?? ''}` }) })
+    note(say('vscode.main.monosmith-smith-serve-ended-in', { name: state.name, why }))
     if (activeRun?.root === root) {
       activeRun = undefined
       void setContextKey('monosmith.running', false)
     }
     sync()
-    void vscode.window.showErrorMessage(`MonoSmith: smith stopped unexpectedly in ${state.name} (${why}).`, 'Restart', 'Show output').then((choice) => {
-      if (choice === 'Restart') void connect(root)
-      else if (choice === 'Show output') output.show()
+    void vscode.window.showErrorMessage(say('vscode.main.monosmith-smith-stopped-unexpectedly-in', { name: state.name, why }), say('vscode.main.restart'), say('vscode.health.show-output')).then((choice) => {
+      if (choice === say('vscode.main.restart')) void connect(root)
+      else if (choice === say('vscode.health.show-output')) output.show()
     })
   }
 
@@ -439,25 +440,25 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
   const run = async (root: string, plan: RunPlan | undefined, confirm = false): Promise<void> => {
     if (plan === undefined) {
-      void vscode.window.showInformationMessage('MonoSmith: there is nothing to run there.')
+      void vscode.window.showInformationMessage(say('vscode.main.monosmith-there-is-nothing-to-run'))
 
       return
     }
     if (!isWorkspaceTrusted()) {
-      const choice = await vscode.window.showWarningMessage('MonoSmith: running tasks needs a trusted workspace; they execute code from it.', 'Manage Workspace Trust')
+      const choice = await vscode.window.showWarningMessage(say('vscode.main.monosmith-running-tasks-needs-a-trusted'), say('vscode.main.manage-workspace-trust'))
       if (choice !== undefined) await vscode.commands.executeCommand('workbench.trust.manage')
 
       return
     }
     if (activeRun !== undefined) {
-      void vscode.window.showWarningMessage('MonoSmith: a run is already in progress.')
+      void vscode.window.showWarningMessage(say('vscode.main.monosmith-a-run-is-already-in'))
 
       return
     }
     const label = describePlan(plan)
     if (confirm) {
-      const choice = await vscode.window.showWarningMessage(`MonoSmith: run ${label}?`, { modal: true }, 'Run')
-      if (choice !== 'Run') return
+      const choice = await vscode.window.showWarningMessage(say('vscode.main.monosmith-run', { label }), { modal: true }, say('commands.view.run.title'))
+      if (choice !== say('commands.view.run.title')) return
     }
     const state = folders.get(root)
     if (state === undefined) return
@@ -473,7 +474,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     output.show(true)
     const store = statusOf(root)
     try {
-      let command = 'smith run'
+      let command = say('vscode.main.smith-run')
       const result = await runTasks(session.connection, { ...plan, runId }, (event) => {
         store.apply(event)
         const line = describeEvent(event)
@@ -481,9 +482,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         if (event.event === 'run.started') command = event.command ?? command
         keepOutput(root, event, command)
       })
-      if (!result.ok) void vscode.window.showWarningMessage(`MonoSmith: ${label} did not pass. See the output.`, 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
+      if (!result.ok) void vscode.window.showWarningMessage(say('vscode.main.monosmith-did-not-pass-see-the', { label }), say('vscode.health.show-output')).then((choice) => { if (choice === say('vscode.health.show-output')) output.show() })
     } catch (error) {
-      note(`MonoSmith: ${error instanceof Error ? error.message : String(error)}`)
+      note(say('vscode.commit-changes.monosmith', { part: error instanceof Error ? error.message : String(error) }))
     } finally {
       activeRun = undefined
       void setContextKey('monosmith.running', false)
@@ -535,12 +536,12 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
   const health = createListView({
     id:    'monosmith.health',
-    title: 'Health',
+    title: say('commands.section.health'),
     load:  async () => {
       fixableRoots.clear()
       deriveReports.clear()
 
-      return await loadAcross(ready, 'smith is not running, so there is nothing to check.', async (state, connection) => {
+      return await loadAcross(ready, say('vscode.main.smith-is-not-running-so-there'), async (state, connection) => {
         const reading: HealthReading = await readHealth(connection)
         if (reading.preview !== undefined) fixableRoots.add(state.root)
 
@@ -560,13 +561,13 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const deriveView: DeriveView = { reports: deriveReports, reload: healthView.reload }
   const dependencies = createListView({
     id:    'monosmith.dependencies',
-    title: 'Dependencies',
-    load:  async () => await loadAcross(ready, 'smith is not running, so dependencies cannot be read.', async (_state, connection) => toDependencyRows(await readUpdates(connection))),
+    title: say('commands.view.deps.title'),
+    load:  async () => await loadAcross(ready, say('vscode.main.smith-is-not-running-so-dependencies'), async (_state, connection) => toDependencyRows(await readUpdates(connection))),
   })
   const release = createListView({
     id:    'monosmith.release',
-    title: 'Release Preview',
-    load:  async () => await loadAcross(ready, 'smith is not running, so there is no release to preview.', async (state, connection) => {
+    title: say('vscode.view.release.name'),
+    load:  async () => await loadAcross(ready, say('vscode.main.smith-is-not-running-so-there-2'), async (state, connection) => {
       const preview = await readReleasePreview(connection)
       if ((preview.results ?? []).length > 0 || preview.error !== undefined) return toReleaseRows(preview)
       const said = await smithIn(state, false)(['release', '--dry-run'])
@@ -584,7 +585,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
   const copyInstallCommand = async (): Promise<void> => {
     await vscode.env.clipboard.writeText(INSTALL_COMMAND)
-    void vscode.window.showInformationMessage(`MonoSmith: copied "${INSTALL_COMMAND}". Run it in the workspace, then retry.`)
+    void vscode.window.showInformationMessage(say('vscode.main.monosmith-copied-run-it-in-the', { installCommand: INSTALL_COMMAND }))
   }
 
   const command = <T = TreeNode>(id: string, action: (node?: T) => Promise<void>): vscode.Disposable => vscode.commands.registerCommand(id, async (node?: T) => {
@@ -654,7 +655,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command('monosmith.runAll', async () => { await runAcross('all') }),
     command('monosmith.rerunLast', async () => {
       const last = lastRun.last()
-      if (last === undefined) void vscode.window.showInformationMessage('MonoSmith: nothing has run yet.')
+      if (last === undefined) void vscode.window.showInformationMessage(say('vscode.main.monosmith-nothing-has-run-yet'))
       else await run(last.root, last.plan)
     }),
     command('monosmith.cancelRun', cancel),
@@ -712,7 +713,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       if (target?.kind !== 'task' || target.project === undefined || target.task === undefined) return
       const task = `${target.project}:${target.task}`
       if (logs.has(logKey(target.root, task))) await logDocs.open(target.root, task)
-      else void vscode.window.showInformationMessage(`MonoSmith: ${task} has not run since the editor started, so there is no output to show.`)
+      else void vscode.window.showInformationMessage(say('vscode.main.monosmith-has-not-run-since-the', { task }))
     }),
     command('monosmith.clearProblems', async () => {
       diagnostics.clearAll()

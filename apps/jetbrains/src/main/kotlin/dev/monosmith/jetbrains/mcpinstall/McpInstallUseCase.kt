@@ -7,6 +7,17 @@ import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_PARITY_FORMS_CLAUDE_CODE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_PARITY_FORMS_VS_CODE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_AGENTFILE_WRITE_THE_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_MONOSMITH_CONNECT_AN_ASSISTANT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_NOTHING_WAS_WRITTEN_YET
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_SMITH_IS_CONNECTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_SMITH_IT_WRITES_THE_FILE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_TICK_THE_ASSISTANTS_TO_CONNECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_WRITES_MCP_JSON
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_MCPINSTALL_WRITES_VSCODE_MCP_JSON
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -16,13 +27,13 @@ import java.nio.file.Path
  * `--commit` here, so nothing is committed.
  */
 object McpInstallUseCase {
-    private const val TITLE = "MonoSmith: connect an assistant"
+    private val TITLE = say(JETBRAINS_MCPINSTALL_MONOSMITH_CONNECT_AN_ASSISTANT)
 
     /** The two assistants, both unticked: the person decides which files smith writes. */
     val rows =
         listOf(
-            ChoiceRowContract("--claude", "Claude Code", "", "Writes .mcp.json."),
-            ChoiceRowContract("--vscode", "VS Code", "", "Writes .vscode/mcp.json."),
+            ChoiceRowContract("--claude", say(GUIDE_PARITY_FORMS_CLAUDE_CODE), "", say(JETBRAINS_MCPINSTALL_WRITES_MCP_JSON)),
+            ChoiceRowContract("--vscode", say(GUIDE_PARITY_FORMS_VS_CODE), "", say(JETBRAINS_MCPINSTALL_WRITES_VSCODE_MCP_JSON)),
         )
 
     /** Starts the flow in a background task. */
@@ -35,24 +46,22 @@ object McpInstallUseCase {
      * @return true when smith wrote the files
      */
     fun run(ports: FlowPortsContract): Boolean {
-        val flags = ports.prompt.pickMany(TITLE, "Tick the assistants to connect.", rows, "Next")
+        val flags = ports.prompt.pickMany(TITLE, say(JETBRAINS_MCPINSTALL_TICK_THE_ASSISTANTS_TO_CONNECT), rows, "Next")
         if (flags.isNullOrEmpty()) return false
         val args = listOf("mcp", "install") + flags
         val plan =
-            "smith ${args.joinToString(" ")}\n\n" +
-                "It writes the file that lets the assistant start smith's MCP server, merges into a file that exists " +
-                "and keeps your other servers."
+            say(JETBRAINS_MCPINSTALL_SMITH_IT_WRITES_THE_FILE, args.joinToString(" ").toString())
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(
                 title = "$TITLE?",
                 planArgs = null,
                 fixedPlan = plan,
-                header = "Nothing was written yet.",
-                okText = "Write the files",
+                header = say(JETBRAINS_MCPINSTALL_NOTHING_WAS_WRITTEN_YET),
+                okText = say(JETBRAINS_AGENTFILE_WRITE_THE_FILES),
                 offerCommit = false,
                 apply = { args + "--yes" },
-                done = "smith is connected",
+                done = say(JETBRAINS_MCPINSTALL_SMITH_IS_CONNECTED),
             ),
         ) {}
     }

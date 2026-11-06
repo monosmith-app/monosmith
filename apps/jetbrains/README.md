@@ -100,6 +100,14 @@ Nothing publishes this plugin to the JetBrains Marketplace; it needs a Marketpla
 signing certificate, and deciding to publish is the owner's. The project is a Kotlin `app` of
 the workspace, so `smith release` does not release it.
 
+## Where the texts live
+
+Every text of the plugin comes from the shared catalogue in `libs/words` ([ADR 0089](../../docs/architecture/decisions/0089-one-text-catalogue-for-every-interface.md)).
+Edit `libs/words/catalog/en/jetbrains_*.json` (keys `jetbrains.<area>.<what>`), or a shared key claimed in `libs/words/surface/jetbrains.json`.
+Then run `go run ./wordgen -surface jetbrains` in `libs/words`. It writes `src/main/resources/messages.properties` and `words/SmithWordsConfig.kt`.
+Do not edit those two files by hand. `plugin.xml` reads the bundle through `<resource-bundle>` (keys `action.<id>.text`, `action.<id>.description`, `group.<id>.text`).
+Kotlin code calls `say(KEY, values)` from `SmithWordsConfig`. A Go test (`libs/words/words/jetbrains_literals_validator_test.go`) fails on a new raw sentence.
+
 ## Layout
 
 Slices under `src/main/kotlin/dev/monosmith/jetbrains/`, named `<Name><Role>` as `smith slices check --lang jvm`

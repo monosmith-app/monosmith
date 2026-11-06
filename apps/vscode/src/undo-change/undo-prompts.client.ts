@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { UndoOutcome } from './undo-change.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Shows what undoing would revert and asks.
@@ -9,12 +10,12 @@ import type { UndoOutcome } from './undo-change.use-case.ts'
  */
 export async function confirmUndo (plan: string, folder: string): Promise<boolean> {
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: undo the last change in ${folder}?`,
-    { modal: true, detail: `${plan}\n\nsmith reverts it with git revert: a new commit, and your history stays.` },
-    'Undo',
+    say('vscode.undo-change.monosmith-undo-the-last-change-in', { folder }),
+    { modal: true, detail: say('vscode.undo-change.smith-reverts-it-with-git-revert', { plan }) },
+    say('vscode.undo-change.undo'),
   )
 
-  return choice === 'Undo'
+  return choice === say('vscode.undo-change.undo')
 }
 
 /**
@@ -24,11 +25,11 @@ export async function confirmUndo (plan: string, folder: string): Promise<boolea
 export function tellUndoOutcome (outcome: UndoOutcome): void {
   switch (outcome.kind) {
     case 'undone': {
-      void vscode.window.showInformationMessage('MonoSmith: the last change is reverted in a new commit.')
+      void vscode.window.showInformationMessage(say('vscode.undo-change.monosmith-the-last-change-is-reverted'))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was undone. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.undo-change.monosmith-nothing-was-undone', { message: outcome.message }))
       break
     }
     case 'declined': {

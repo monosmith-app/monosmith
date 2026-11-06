@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 import { isHeldBack } from './derive-arguments.mapper.ts'
 import type { DeriveReport } from './derive-report.contract.ts'
 import { fixFor } from './derive-tree.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** The Problems panel entries for derived files that need action. */
 export interface DeriveDiagnostics extends vscode.Disposable {
@@ -18,7 +19,7 @@ export interface DeriveDiagnostics extends vscode.Disposable {
 
 /** Creates the `smith derive` collection of the Problems panel. */
 export function createDeriveDiagnostics (): DeriveDiagnostics {
-  const collection = vscode.languages.createDiagnosticCollection('smith derive')
+  const collection = vscode.languages.createDiagnosticCollection(say('vscode.derive-files.smith-derive'))
   const byRoot = new Map<string, vscode.Uri[]>()
   const clearRoot = (root: string): void => {
     const previous = byRoot.get(root) ?? []
@@ -34,10 +35,10 @@ export function createDeriveDiagnostics (): DeriveDiagnostics {
         const uri = vscode.Uri.file(join(root, file.path))
         const diagnostic = new vscode.Diagnostic(
           new vscode.Range(0, 0, 0, 0),
-          `This derived file is ${file.status}${file.detail === '' ? '' : `: ${file.detail}`}. ${fixFor(file.status)}`,
+          say('vscode.derive-files.this-derived-file-is', { status: file.status, part: file.detail === '' ? '' : `: ${file.detail}`, fixFor: fixFor(file.status) }),
           isHeldBack(file.status) ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Information,
         )
-        diagnostic.source = 'smith derive'
+        diagnostic.source = say('vscode.derive-files.smith-derive')
         diagnostic.code = file.status
         collection.set(uri, [diagnostic])
         uris.push(uri)

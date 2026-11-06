@@ -2,8 +2,9 @@ import * as vscode from 'vscode'
 import { showNotice } from '../notice-buttons/index.ts'
 import { forcedConsequences } from './forced-release.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: Release'
+const TITLE = say('vscode.release-flow.monosmith-release')
 
 /**
  * Shows the plan in a modal and asks which packages to hold back. Nothing is held by default.
@@ -12,16 +13,16 @@ const TITLE = 'MonoSmith: Release'
  * @returns the names to hold back (maybe none), or undefined when the person cancels
  */
 export async function chooseHold (plan: string, packages: PlannedPackage[]): Promise<string[] | undefined> {
-  const next = 'Continue'
+  const next = say('vscode.release-flow.continue')
   const seen = await vscode.window.showInformationMessage(
-    'MonoSmith: this is what a release would do now.',
-    { modal: true, detail: `${plan}\n\nNothing is published yet. Next you can hold packages back and change a bump. After that comes the last question.` },
+    say('vscode.release-flow.monosmith-this-is-what-a-release'),
+    { modal: true, detail: say('vscode.release-flow.nothing-is-published-yet-next-you', { plan }) },
     next,
   )
   if (seen !== next) return undefined
   const picked = await vscode.window.showQuickPick(
-    packages.map((item) => ({ label: item.name, description: `${item.current ?? 'new'} → ${item.next} · ${item.level}`, detail: 'Hold it back: it does not release this time. A package that releases only because of it is held back too.' })),
-    { title: `${TITLE}: hold packages back?`, placeHolder: 'Tick the packages that must not release this time. Enter with nothing ticked releases them all.', canPickMany: true, ignoreFocusOut: true },
+    packages.map((item) => ({ label: item.name, description: `${item.current ?? 'new'} → ${item.next} · ${item.level}`, detail: say('vscode.release-flow.hold-it-back-it-does-not') })),
+    { title: say('vscode.release-flow.hold-packages-back', { title: TITLE }), placeHolder: say('vscode.release-flow.tick-the-packages-that-must-not'), canPickMany: true, ignoreFocusOut: true },
   )
 
   return picked?.map((item) => item.label)
@@ -38,23 +39,23 @@ export async function chooseBump (packages: PlannedPackage[]): Promise<string[] 
   const releasable = packages.filter((item) => item.current !== undefined)
   if (releasable.length === 0) return []
   for (;;) {
-    const done = '$(check) Keep the bumps as they are'
+    const done = say('vscode.release-flow.keep-the-bumps-as-they-are')
     const picked = await vscode.window.showQuickPick(
       [
-        { label: done, description: bumps.size === 0 ? 'the commits decide the levels' : `${bumps.size} changed`, name: '' },
-        ...releasable.map((item) => ({ label: item.name, description: `${item.current ?? ''} → ${item.next} · ${bumps.get(item.name) ?? item.level}${bumps.has(item.name) ? ' (changed)' : ''}`, detail: 'Change its bump: a request, not an inference. On a 0.x package, major gives 1.0.0.', name: item.name })),
+        { label: done, description: bumps.size === 0 ? say('vscode.release-flow.the-commits-decide-the-levels') : `${bumps.size} changed`, name: '' },
+        ...releasable.map((item) => ({ label: item.name, description: `${item.current ?? ''} → ${item.next} · ${bumps.get(item.name) ?? item.level}${bumps.has(item.name) ? say('vscode.release-flow.changed') : ''}`, detail: say('vscode.release-flow.change-its-bump-a-request-not'), name: item.name })),
       ],
-      { title: `${TITLE}: change a bump?`, placeHolder: 'Pick a package to change its level, or keep them all.', ignoreFocusOut: true },
+      { title: say('vscode.release-flow.change-a-bump', { title: TITLE }), placeHolder: say('vscode.release-flow.pick-a-package-to-change-its'), ignoreFocusOut: true },
     )
     if (picked === undefined) return undefined
     if (picked.name === '') return [...bumps].map(([name, level]) => `${name}=${level}`)
     const level = await vscode.window.showQuickPick(
       [
-        { label: 'patch', detail: 'A fix: 1.2.3 → 1.2.4.' },
-        { label: 'minor', detail: 'A new feature: 1.2.3 → 1.3.0.' },
-        { label: 'major', detail: 'A breaking change: 1.2.3 → 2.0.0.' },
+        { label: 'patch', detail: say('vscode.release-flow.a-fix-1-2-3-1') },
+        { label: 'minor', detail: say('vscode.release-flow.a-new-feature-1-2-3') },
+        { label: 'major', detail: say('vscode.release-flow.a-breaking-change-1-2-3') },
       ],
-      { title: `${TITLE}: which level for ${picked.name}?`, ignoreFocusOut: true },
+      { title: say('vscode.release-flow.which-level-for', { title: TITLE, name: picked.name }), ignoreFocusOut: true },
     )
     if (level === undefined) return undefined
     bumps.set(picked.name, level.label)
@@ -68,12 +69,12 @@ export async function chooseBump (packages: PlannedPackage[]): Promise<string[] 
  * @returns true on a yes
  */
 export async function confirmRelease (plan: string, choices: ReleaseChoices): Promise<boolean> {
-  const go = 'Release now'
-  const held = choices.hold.length === 0 ? '' : `\nHeld back: ${choices.hold.join(', ')}.`
-  const bumped = choices.bump.length === 0 ? '' : `\nChanged bumps: ${choices.bump.join(', ')}.`
+  const go = say('vscode.release-flow.release-now')
+  const held = choices.hold.length === 0 ? '' : say('vscode.release-flow.held-back', { join: choices.hold.join(', ') })
+  const bumped = choices.bump.length === 0 ? '' : say('vscode.release-flow.changed-bumps', { join: choices.bump.join(', ') })
   const choice = await vscode.window.showWarningMessage(
-    'MonoSmith: release now?',
-    { modal: true, detail: `${plan}${held}${bumped}${forcedConsequences(choices.forced ?? [])}\n\nThis cannot be undone. smith creates the tags, pushes them and publishes the packages to the registries. Undo does not revert it.` },
+    say('vscode.release-flow.monosmith-release-now'),
+    { modal: true, detail: say('vscode.release-flow.this-cannot-be-undone-smith-creates', { plan, held, bumped, forcedConsequences: forcedConsequences(choices.forced ?? []) }) },
     go,
   )
 
@@ -89,7 +90,7 @@ export function tellReleaseOutcome (outcome: ReleaseOutcome, onOutput: (line: st
   switch (outcome.kind) {
     case 'released': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage(`MonoSmith: ${outcome.lines.at(-1) ?? 'the release is done.'}`)
+      void vscode.window.showInformationMessage(say('vscode.commit-changes.monosmith', { part: outcome.lines.at(-1) ?? say('vscode.release-flow.the-release-is-done') }))
       break
     }
     case 'nothing': {
@@ -98,7 +99,7 @@ export function tellReleaseOutcome (outcome: ReleaseOutcome, onOutput: (line: st
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was released. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.release-flow.monosmith-nothing-was-released', { message: outcome.message }))
       break
     }
     case 'cancelled': {
@@ -115,18 +116,18 @@ export function tellReleaseOutcome (outcome: ReleaseOutcome, onOutput: (line: st
  * @param unchanged - the packages no commit releases
  */
 async function tellNothingToRelease (lines: readonly string[], unchanged: readonly string[]): Promise<void> {
-  const preview = 'Open Preview'
-  const forced = 'Without a commit…'
-  const first = lines.find((line) => line.startsWith('Nothing to release')) ?? 'Nothing to release.'
+  const preview = say('vscode.release-flow.open-preview')
+  const forced = say('vscode.release-flow.without-a-commit')
+  const first = lines.find((line) => line.startsWith(say('releaseview.nothing'))) ?? say('vscode.release-flow.nothing-to-release')
   const why = unchanged.length > 0
-    ? `No commit releases ${unchanged.join(', ')}. "Without a commit…" releases one anyway: the same code under a new version.`
-    : 'A package releases when a commit since its last tag asks for it.'
+    ? say('vscode.release-flow.no-commit-releases-without-a-commit', { join: unchanged.join(', ') })
+    : say('vscode.release-flow.a-package-releases-when-a-commit')
   const choice = await showNotice(
     'info',
-    `MonoSmith: ${first} ${why} "Open Preview" opens the Release Preview, which says why.`,
+    say('vscode.release-flow.monosmith-open-preview-opens-the-release', { first, why }),
     [
-      { label: preview, detail: 'Open the Release Preview view: it says why nothing releases and what to do.' },
-      ...(unchanged.length > 0 ? [{ label: forced, detail: 'Choose a package to release although no commit releases it. It creates a tag at HEAD, publishes, and cannot be undone.' }] : []),
+      { label: preview, detail: say('vscode.release-flow.open-the-release-preview-view-it') },
+      ...(unchanged.length > 0 ? [{ label: forced, detail: say('vscode.release-flow.choose-a-package-to-release-although') }] : []),
     ],
   )
   if (choice === preview) await vscode.commands.executeCommand('monosmith.release.focus')

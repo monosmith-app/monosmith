@@ -1,6 +1,7 @@
 import type { ListNode, ListResult } from '../list-view/index.ts'
 import type { DoctorFinding, DoctorReport } from './doctor-report.contract.ts'
 import type { FixPreview } from './fix-preview.mapper.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Lays a doctor report out as rows: the failed checks first, then the
@@ -15,17 +16,17 @@ export function toHealthRows (report: DoctorReport, preview?: FixPreview): ListR
   const failed = problems.filter((finding) => finding.warning !== true)
   const warnings = problems.filter((finding) => finding.warning === true)
   const passed = findings.filter((finding) => finding.ok)
-  if (findings.length === 0) return { nodes: [], message: 'smith reported no checks.' }
+  if (findings.length === 0) return { nodes: [], message: say('vscode.health.smith-reported-no-checks') }
 
   const nodes: ListNode[] = [
-    ...(problems.length === 0 ? [{ id: 'health:ok', label: `All ${passed.length} checks passed`, icon: 'pass', color: 'charts.green' }] : []),
+    ...(problems.length === 0 ? [{ id: 'health:ok', label: say('vscode.health.all-checks-passed', { length: passed.length }), icon: 'pass', color: 'charts.green' }] : []),
     ...failed.map((finding, index) => toProblemRow(finding, `failed:${index}`, 'error', 'charts.red')),
     ...warnings.map((finding, index) => toProblemRow(finding, `warning:${index}`, 'warning', 'charts.yellow')),
     ...(preview === undefined
       ? []
       : [{
           id:          'health:fixes',
-          label:       'Fixes available',
+          label:       say('vscode.health.fixes-available'),
           description: String(preview.titles.length),
           icon:        'wrench',
           expanded:    true,
@@ -34,7 +35,7 @@ export function toHealthRows (report: DoctorReport, preview?: FixPreview): ListR
     ...(passed.length > 0 && problems.length > 0
       ? [{
           id:          'health:passed',
-          label:       'Passed',
+          label:       say('vscode.health.passed'),
           description: String(passed.length),
           icon:        'pass',
           children:    passed.map((finding, index) => ({ id: `health:passed:${index}`, label: finding.check, icon: 'pass', color: 'charts.green' })),
@@ -50,17 +51,17 @@ function toProblemRow (finding: DoctorFinding, id: string, icon: string, color: 
   const remedy = finding.remedy?.trim()
   const children: ListNode[] = [
     ...(detail === undefined || detail === '' ? [] : [{ id: `${id}:problem`, label: firstClause(detail), icon: 'info', tooltip: detail }]),
-    ...(remedy === undefined || remedy === '' ? [] : [{ id: `${id}:remedy`, label: firstClause(remedy), icon: 'lightbulb', tooltip: `Fix: ${remedy}` }]),
+    ...(remedy === undefined || remedy === '' ? [] : [{ id: `${id}:remedy`, label: firstClause(remedy), icon: 'lightbulb', tooltip: say('vscode.health.fix-2', { remedy }) }]),
     // A fix runs in the editor: smith shows what it would change and asks first, so no remedy has to be typed into a terminal.
     ...(finding.fix === undefined
       ? []
       : [{
           id:      `${id}:fix`,
-          label:   `Fix: ${finding.fix.description}`,
+          label:   say('vscode.health.fix-3', { description: finding.fix.description }),
           icon:    'wrench',
           context: 'health.fix',
           data:    finding.check,
-          tooltip: 'Shows what it changes and asks before it applies anything.',
+          tooltip: say('vscode.health.shows-what-it-changes-and-asks'),
         }]),
   ]
 
@@ -70,7 +71,7 @@ function toProblemRow (finding: DoctorFinding, id: string, icon: string, color: 
     icon,
     color,
     expanded: true,
-    tooltip:  [finding.check, detail, remedy === undefined ? undefined : `Fix: ${remedy}`].filter(Boolean).join('\n'),
+    tooltip:  [finding.check, detail, remedy === undefined ? undefined : say('vscode.health.fix-2', { remedy })].filter(Boolean).join('\n'),
     children,
   }
 }
@@ -81,7 +82,7 @@ function firstClause (text: string): string {
 }
 
 function summarize (failed: number, warnings: number): string {
-  if (failed === 0 && warnings === 0) return 'all passed'
+  if (failed === 0 && warnings === 0) return say('doctor.group.passed')
 
-  return [failed > 0 ? `${failed} failed` : '', warnings > 0 ? `${warnings} ${warnings === 1 ? 'warning' : 'warnings'}` : ''].filter(Boolean).join(', ')
+  return [failed > 0 ? `${failed} failed` : '', warnings > 0 ? `${warnings} ${say(warnings === 1 ? 'vscode.health.warning' : 'vscode.health.warnings')}` : ''].filter(Boolean).join(', ')
 }

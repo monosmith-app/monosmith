@@ -1,4 +1,5 @@
 import type { ViewState } from '../folder-session/index.ts'
+import { say } from '../words/index.ts'
 
 /** One entry of the menu the status bar item opens. */
 export interface MenuEntry {
@@ -24,47 +25,47 @@ export interface MenuState {
  */
 export function statusMenuEntries (state: MenuState): MenuEntry[] {
   const tail = [
-    { label: '$(output) Open output', command: 'monosmith.showOutput' },
-    { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
+    { label: say('vscode.quick-pick.open-output'), command: 'monosmith.showOutput' },
+    { label: say('vscode.quick-pick.open-settings'), command: 'monosmith.openSettings' },
   ]
   if (state.view === 'adoptable') {
     return [
-      { label: '$(arrow-right) Convert it to MonoSmith', description: 'smith lists every change and asks first', command: 'monosmith.adopt.start' },
-      { label: '$(eye) See what would change', description: 'a report, no files changed', command: 'monosmith.adopt.preview' },
+      { label: say('vscode.quick-pick.convert-it-to-monosmith'), description: say('vscode.quick-pick.smith-lists-every-change-and-asks'), command: 'monosmith.adopt.start' },
+      { label: say('vscode.quick-pick.see-what-would-change'), description: say('vscode.quick-pick.a-report-no-files-changed'), command: 'monosmith.adopt.preview' },
       ...tail,
     ]
   }
   if (state.view === 'unrecognised') {
     return [
-      { label: '$(arrow-right) Bring this folder into MonoSmith', description: 'smith lists every change and asks first', command: 'monosmith.adopt.start' },
-      { label: '$(eye) See what would change', description: 'a report, no files changed', command: 'monosmith.adopt.preview' },
+      { label: say('vscode.quick-pick.bring-this-folder-into-monosmith'), description: say('vscode.quick-pick.smith-lists-every-change-and-asks'), command: 'monosmith.adopt.start' },
+      { label: say('vscode.quick-pick.see-what-would-change'), description: say('vscode.quick-pick.a-report-no-files-changed'), command: 'monosmith.adopt.preview' },
       ...tail,
     ]
   }
   if (state.view === 'empty') {
     return [
-      { label: '$(add) Create a new MonoSmith workspace', description: 'smith asks a few questions first', command: 'monosmith.new' },
+      { label: say('vscode.quick-pick.create-a-new-monosmith-workspace'), description: say('vscode.quick-pick.smith-asks-a-few-questions-first'), command: 'monosmith.new' },
       ...tail,
     ]
   }
 
   return [
-    ...(state.running ? [{ label: '$(debug-stop) Cancel run', command: 'monosmith.cancelRun' }] : []),
-    { label: '$(play) Run affected…', description: 'one task in the projects the changes affect', command: 'monosmith.runAffected' },
-    ...(state.hasLastRun ? [{ label: '$(debug-rerun) Re-run last', command: 'monosmith.rerunLast' }] : []),
+    ...(state.running ? [{ label: say('vscode.quick-pick.cancel-run'), command: 'monosmith.cancelRun' }] : []),
+    { label: say('vscode.quick-pick.run-affected'), description: say('vscode.quick-pick.one-task-in-the-projects-the'), command: 'monosmith.runAffected' },
+    ...(state.hasLastRun ? [{ label: say('vscode.quick-pick.re-run-last'), command: 'monosmith.rerunLast' }] : []),
     {
-      label:       '$(pulse) Run doctor',
-      description: state.failed > 0 ? `${state.failed} tasks failed in the last run` : 'check the workspace',
+      label:       say('vscode.quick-pick.run-doctor'),
+      description: state.failed > 0 ? say('vscode.quick-pick.tasks-failed-in-the-last-run', { failed: state.failed }) : say('vscode.quick-pick.check-the-workspace'),
       command:     'monosmith.doctor',
     },
-    { label: '$(refresh) Refresh', description: 'read the projects and what is affected again', command: 'monosmith.refresh' },
-    { label: '$(add) Add project…', description: 'smith shows the plan and asks first', command: 'monosmith.addProject' },
-    { label: '$(search) Compose a stack…', description: 'search frameworks, desktop shells and cloud hosts, then see the plan', command: 'monosmith.composeStack' },
-    { label: '$(package) Add dependency…', description: 'a library of this workspace, or a package from the registry', command: 'monosmith.addDependency' },
-    { label: '$(globe) Open report', description: 'one page: projects, health, derived files', command: 'monosmith.openReport' },
-    { label: '$(discard) Undo the last change', description: 'smith shows what it reverts and asks first', command: 'monosmith.undo' },
-    { label: '$(hubot) Talk to the MonoSmith agent', description: 'Claude Code with smith’s tools', command: 'monosmith.talkToAgent' },
-    { label: '$(output) Open output', command: 'monosmith.showOutput' },
-    { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
+    { label: say('vscode.quick-pick.refresh'), description: say('vscode.quick-pick.read-the-projects-and-what-is'), command: 'monosmith.refresh' },
+    { label: say('vscode.quick-pick.add-project'), description: say('vscode.quick-pick.smith-shows-the-plan-and-asks'), command: 'monosmith.addProject' },
+    { label: say('vscode.add-project.compose-a-stack'), description: say('vscode.quick-pick.search-frameworks-desktop-shells-and-cloud'), command: 'monosmith.composeStack' },
+    { label: say('vscode.quick-pick.add-dependency'), description: say('vscode.quick-pick.a-library-of-this-workspace-or'), command: 'monosmith.addDependency' },
+    { label: say('vscode.quick-pick.open-report'), description: say('vscode.quick-pick.one-page-projects-health-derived-files'), command: 'monosmith.openReport' },
+    { label: say('vscode.quick-pick.undo-the-last-change'), description: say('vscode.quick-pick.smith-shows-what-it-reverts-and'), command: 'monosmith.undo' },
+    { label: say('vscode.quick-pick.talk-to-the-monosmith-agent'), description: say('vscode.quick-pick.claude-code-with-smith-s-tools'), command: 'monosmith.talkToAgent' },
+    { label: say('vscode.quick-pick.open-output'), command: 'monosmith.showOutput' },
+    { label: say('vscode.quick-pick.open-settings'), command: 'monosmith.openSettings' },
   ]
 }

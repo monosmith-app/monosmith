@@ -8,6 +8,7 @@ import { folderOfFile, toFolderPath } from '../workspace-folders/index.ts'
 import { isWorkspaceTrusted } from '../workspace-trust/index.ts'
 import { pickFolder, tellNeedsTrust, tellNoFolder } from './command-host-prompts.client.ts'
 import type { CommandHost } from './command-host.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What the host needs from the extension that owns it. */
 export interface CommandHostDeps {
@@ -70,7 +71,7 @@ export function createCommandHost (deps: CommandHostDeps): CommandHost {
       return false
     },
     smithIn: (state, log = true, timeoutMs = 60_000) => async (args) => {
-      if (state.location === undefined) return { code: 1, stdout: '', stderr: '✖ smith was not found\n  → install smith in the workspace, or set monosmith.path\n' }
+      if (state.location === undefined) return { code: 1, stdout: '', stderr: say('vscode.command-host.smith-was-not-found-install-smith') }
       if (log) note(`$ smith ${args.join(' ')}${registry.states().length > 1 ? ` (${state.name})` : ''}`)
 
       return await deps.runSmith(state.location.executable, args, state.root, timeoutMs)
@@ -84,7 +85,7 @@ export function createCommandHost (deps: CommandHostDeps): CommandHost {
     showOutput:    deps.showOutput,
     refreshFolder: deps.refreshFolder,
     report:        (operation, state, outcome) => {
-      note(`MonoSmith: ${operation} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message ?? ''})` : ''}`)
+      note(say('vscode.command-host.monosmith-in', { operation, name: state.name, kind: outcome.kind, part: outcome.kind === 'refused' ? ` (${outcome.message ?? ''})` : '' }))
     },
   }
 }

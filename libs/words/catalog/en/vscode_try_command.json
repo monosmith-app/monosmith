@@ -1,0 +1,19 @@
+{
+  "vscode.try-command.running-a-command-for-real": "running a command for real",
+  "vscode.try-command.smith-printed-no-result": "smith printed no result",
+  "vscode.try-command.the-command-and-every-check-passed": "The command and every check passed in the copy. Your files were not touched.",
+  "vscode.try-command.something-failed-in-the-copy-your": "Something failed in the copy. Your files were not touched.",
+  "vscode.try-command.files-it-changed": "## Files it changed",
+  "vscode.try-command.none-were-asked-for": "None were asked for.",
+  "vscode.try-command.monosmith-try-a-command-in-a": "MonoSmith: try a command in a copy",
+  "vscode.try-command.which-smith-command-it-runs-in": "Which smith command? It runs in a temporary copy first (add, remove, up, upgrade, derive, kind, eject, sync, bootstrap).",
+  "vscode.try-command.monosmith-the-try-of-smith-passed": "MonoSmith: the try of \"smith {join}\" passed. Run it for real?",
+  "vscode.try-command.monosmith-the-command-ran-for-real": "MonoSmith: the command ran for real.",
+  "vscode.try-command.monosmith-the-try-failed-in-the": "MonoSmith: the try failed in the copy. Your files were not touched. The page says where.",
+  "vscode.try-command.monosmith-smith-could-not-try-that": "MonoSmith: smith could not try that. {message}",
+  "vscode.try-command.ran": "ran",
+  "vscode.try-command.passed": "passed",
+  "vscode.try-command.try-smith": "# Try: smith {join}",
+  "vscode.try-command.none": "None.",
+  "vscode.try-command.checks": "## Checks"
+}

@@ -11,6 +11,26 @@ import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.OutputConsoleStore
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.FIXWIZARD_STYLE_APPLY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_SUGGESTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_OPEN_HEALTH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_APPLY_THE_SAFE_FIXES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_DOCTOR_DID_NOT_RUN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_EACH_FIX_IS_SHOWN_AS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_MONOSMITH_APPLY_THE_SAFE_FIXES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_MONOSMITH_APPLY_THE_SAFE_FIXES_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_MONOSMITH_DOCTOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_MONOSMITH_FIX
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_MONOSMITH_FIX_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_NOTHING_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_OPEN_THE_HEALTH_TAB_EACH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_SMITH_HAS_NO_FIX_FOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_SMITH_HAS_NO_SAFE_FIX
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_THE_FIX_IS_APPLIED_ANOTHER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_THE_FIX_IS_APPLIED_REVIEW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_THE_SAFE_FIXES_ARE_APPLIED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_THIS_IS_WHAT_SMITH_WOULD
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /** Reads the health of the workspace (`smith doctor --json`), fixes a check with its plan shown, and applies the safe fixes. */
@@ -29,14 +49,15 @@ object HealthUseCase {
     fun runDoctor(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: doctor") {
-        val findings = read(root).getOrElse { return@start NoticeClient.warn(ide, "Doctor did not run. ${it.message}") }
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_HEALTH_MONOSMITH_DOCTOR)) {
+        val findings =
+            read(root).getOrElse { return@start NoticeClient.warn(ide, say(JETBRAINS_HEALTH_DOCTOR_DID_NOT_RUN, it.message.toString())) }
         val summary = DoctorReportJsonMapper.summarize(findings)
         val console = OutputConsoleStore.consoleFor(ide)
         summary.lines.forEach { console.print("$it\n", com.intellij.execution.ui.ConsoleViewContentType.NORMAL_OUTPUT) }
         val buttons =
             listOf(
-                NoticeButtonContract("Open Health", "Open the Health tab: each check with a fix has a Fix row.") {
+                NoticeButtonContract(say(JETBRAINS_ADDPROJECT_OPEN_HEALTH), say(JETBRAINS_HEALTH_OPEN_THE_HEALTH_TAB_EACH)) {
                     OutputConsoleStore.reveal(ide, "Health")
                 },
             )
@@ -54,7 +75,10 @@ object HealthUseCase {
         ide: Project,
         root: Path,
         finding: DoctorFindingContract,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: fix ${finding.check}") { runFix(IdePortsClient.of(ide, root), finding) }
+    ) = BackgroundFlowClient.start(
+        ide,
+        say(JETBRAINS_HEALTH_MONOSMITH_FIX, finding.check.toString()),
+    ) { runFix(IdePortsClient.of(ide, root), finding) }
 
     /**
      * Runs the fix of one check with the given ports.
@@ -67,7 +91,7 @@ object HealthUseCase {
     ): Boolean {
         val fix =
             finding.fix ?: run {
-                ports.notice.info("smith has no fix for this check. ${finding.remedy}")
+                ports.notice.info(say(JETBRAINS_HEALTH_SMITH_HAS_NO_FIX_FOR, finding.remedy.toString()))
                 return false
             }
         val answers = mutableListOf<Int>()
@@ -80,40 +104,41 @@ object HealthUseCase {
                         if (index ==
                             0
                         ) {
-                            "(suggested)"
+                            say(JETBRAINS_ADDCHOICES_SUGGESTED)
                         } else {
                             ""
                         },
                     )
                 }
-            val picked = ports.prompt.pickOne("MonoSmith: fix ${finding.check}", question.question, rows) ?: return false
+            val picked =
+                ports.prompt.pickOne(say(JETBRAINS_HEALTH_MONOSMITH_FIX, finding.check.toString()), question.question, rows) ?: return false
             answers.add(picked.name.toInt() + 1)
         }
         val review = ports.smith.run(FixReviewMapper.arguments(fix, answers, apply = false))
         val shown = FixReviewMapper.review(review.stdout)
         if (shown.isEmpty()) {
-            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(review)}")
+            ports.notice.warn(say(JETBRAINS_HEALTH_NOTHING_WAS_CHANGED, FailureTextMapper.describe(review).toString()))
             return false
         }
         ports.prompt.plan(
-            "MonoSmith: fix ${finding.check}?",
-            "${fix.description}. This is what smith would change. Nothing is changed until you apply it. Nothing is committed.",
+            say(JETBRAINS_HEALTH_MONOSMITH_FIX_2, finding.check.toString()),
+            say(JETBRAINS_HEALTH_THIS_IS_WHAT_SMITH_WOULD, fix.description.toString()),
             shown,
-            "Apply",
+            say(FIXWIZARD_STYLE_APPLY),
             offerCommit = false,
         ) ?: return false
         val done = ports.smith.run(FixReviewMapper.arguments(fix, answers, apply = true), show = true)
         ports.changed()
         val incomplete = FixReviewMapper.stillFailing(done.code, done.lines)
         if (!done.ok && !incomplete) {
-            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_HEALTH_NOTHING_WAS_CHANGED, FailureTextMapper.describe(done).toString()))
             return false
         }
         val said =
             if (incomplete) {
-                "The fix is applied. Another check still fails."
+                say(JETBRAINS_HEALTH_THE_FIX_IS_APPLIED_ANOTHER)
             } else {
-                "The fix is applied. Review it with the Commit window."
+                say(JETBRAINS_HEALTH_THE_FIX_IS_APPLIED_REVIEW)
             }
         ports.notice.info(said)
         return true
@@ -123,7 +148,7 @@ object HealthUseCase {
     fun fixSafe(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: apply the safe fixes") { runFixSafe(IdePortsClient.of(ide, root)) }
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_HEALTH_MONOSMITH_APPLY_THE_SAFE_FIXES)) { runFixSafe(IdePortsClient.of(ide, root)) }
 
     /**
      * Runs the safe fixes with the given ports.
@@ -134,19 +159,19 @@ object HealthUseCase {
         val review = ports.smith.run(listOf("doctor", "--fix"))
         val shown = FixReviewMapper.review(review.stdout)
         if (shown.isEmpty()) {
-            ports.notice.info("smith has no safe fix to apply. ${FailureTextMapper.describe(review)}")
+            ports.notice.info(say(JETBRAINS_HEALTH_SMITH_HAS_NO_SAFE_FIX, FailureTextMapper.describe(review).toString()))
             return false
         }
         ports.prompt.plan(
-            "MonoSmith: apply the safe fixes?",
-            "Each fix is shown as a diff. Nothing is changed until you apply. A fix with a question has its own Fix row in the Health tab. Nothing is committed.",
+            say(JETBRAINS_HEALTH_MONOSMITH_APPLY_THE_SAFE_FIXES_2),
+            say(JETBRAINS_HEALTH_EACH_FIX_IS_SHOWN_AS),
             shown,
-            "Apply the safe fixes",
+            say(JETBRAINS_HEALTH_APPLY_THE_SAFE_FIXES),
             offerCommit = false,
         ) ?: return false
         ports.smith.run(listOf("doctor", "--fix", "--yes"), show = true)
         ports.changed()
-        ports.notice.info("The safe fixes are applied. Review them with the Commit window.")
+        ports.notice.info(say(JETBRAINS_HEALTH_THE_SAFE_FIXES_ARE_APPLIED))
         return true
     }
 }

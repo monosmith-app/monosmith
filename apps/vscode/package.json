@@ -1,7 +1,7 @@
 {
   "name": "monosmith-vscode",
-  "displayName": "MonoSmith",
-  "description": "Run the tasks of a MonoSmith workspace from VS Code: projects and what the changes affect, health, dependencies, release preview, failures in the Problems panel.",
+  "displayName": "%vscode.package.display-name%",
+  "description": "%vscode.package.description%",
   "publisher": "monosmith",
   "version": "0.0.0",
   "license": "MIT",
@@ -61,14 +61,14 @@
       "activitybar": [
         {
           "id": "monosmith",
-          "title": "MonoSmith",
+          "title": "%vscode.package.display-name%",
           "icon": "media/monosmith.svg"
         }
       ],
       "panel": [
         {
           "id": "monosmithHealth",
-          "title": "MonoSmith Health",
+          "title": "%vscode.view-container.monosmith-health.title%",
           "icon": "media/monosmith.svg"
         }
       ]
@@ -77,26 +77,26 @@
       "monosmithHealth": [
         {
           "id": "monosmith.health",
-          "name": "Health",
+          "name": "%commands.section.health%",
           "when": "monosmith.state == ready"
         }
       ],
       "monosmith": [
         {
           "id": "monosmith.projects",
-          "name": "Projects",
+          "name": "%commands.view.projects.title%",
           "initialSize": 3
         },
         {
           "id": "monosmith.dependencies",
-          "name": "Dependencies",
+          "name": "%commands.view.deps.title%",
           "when": "monosmith.state == ready",
           "visibility": "collapsed",
           "initialSize": 2
         },
         {
           "id": "monosmith.release",
-          "name": "Release Preview",
+          "name": "%vscode.view.release.name%",
           "when": "monosmith.state == ready",
           "visibility": "collapsed",
           "initialSize": 2
@@ -106,532 +106,532 @@
     "commands": [
       {
         "command": "monosmith.refresh",
-        "title": "Refresh",
-        "category": "MonoSmith",
+        "title": "%vscode.command.refresh.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(refresh)"
       },
       {
         "command": "monosmith.runTask",
-        "title": "Run Task",
-        "category": "MonoSmith",
+        "title": "%vscode.command.run-task.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(play)"
       },
       {
         "command": "monosmith.runSelected",
-        "title": "Run Focused Task",
-        "category": "MonoSmith",
+        "title": "%vscode.command.run-selected.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(play)"
       },
       {
         "command": "monosmith.runAllTasks",
-        "title": "Run All Tasks",
-        "category": "MonoSmith",
+        "title": "%vscode.command.run-all-tasks.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(run-all)"
       },
       {
         "command": "monosmith.runAffected",
-        "title": "Run Affected",
-        "category": "MonoSmith",
+        "title": "%vscode.command.run-affected.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(target)"
       },
       {
         "command": "monosmith.runAll",
-        "title": "Run Task in All Projects",
-        "category": "MonoSmith",
+        "title": "%vscode.command.run-all.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(run-all)"
       },
       {
         "command": "monosmith.rerunLast",
-        "title": "Re-run Last",
-        "category": "MonoSmith",
+        "title": "%vscode.command.rerun-last.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(debug-rerun)",
         "enablement": "monosmith.hasLastRun && !monosmith.running"
       },
       {
         "command": "monosmith.cancelRun",
-        "title": "Cancel Run",
-        "category": "MonoSmith",
+        "title": "%vscode.command.cancel-run.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(debug-stop)",
         "enablement": "monosmith.running"
       },
       {
         "command": "monosmith.doctor",
-        "title": "Run Doctor",
-        "category": "MonoSmith",
+        "title": "%vscode.command.doctor.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(pulse)"
       },
       {
         "command": "monosmith.restart",
-        "title": "Restart smith",
-        "category": "MonoSmith",
+        "title": "%vscode.command.restart.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(debug-restart)"
       },
       {
         "command": "monosmith.showMenu",
-        "title": "Show Menu",
-        "category": "MonoSmith"
+        "title": "%vscode.command.show-menu.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.showOutput",
-        "title": "Show Output",
-        "category": "MonoSmith"
+        "title": "%vscode.command.show-output.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.openSettings",
-        "title": "Open Settings",
-        "category": "MonoSmith",
+        "title": "%vscode.command.open-settings.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(gear)"
       },
       {
         "command": "monosmith.copyInstallCommand",
-        "title": "Copy Install Command",
-        "category": "MonoSmith"
+        "title": "%vscode.command.copy-install-command.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.filter",
-        "title": "Filter Projects…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.filter.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(search)"
       },
       {
         "command": "monosmith.clearFilter",
-        "title": "Clear Filter",
-        "category": "MonoSmith",
+        "title": "%vscode.command.clear-filter.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(clear-all)"
       },
       {
         "command": "monosmith.affectedOnly.on",
-        "title": "Show Affected Only",
-        "category": "MonoSmith",
+        "title": "%vscode.command.affected-only-on.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(filter)"
       },
       {
         "command": "monosmith.affectedOnly.off",
-        "title": "Show All Projects",
-        "category": "MonoSmith",
+        "title": "%vscode.command.affected-only-off.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(filter-filled)"
       },
       {
         "command": "monosmith.showTaskOutput",
-        "title": "Show Task Output",
-        "category": "MonoSmith",
+        "title": "%vscode.command.show-task-output.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(output)"
       },
       {
         "command": "monosmith.clearProblems",
-        "title": "Clear Problems",
-        "category": "MonoSmith"
+        "title": "%vscode.command.clear-problems.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.explainProject",
-        "title": "Explain Project",
-        "category": "MonoSmith",
+        "title": "%vscode.command.explain-project.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(info)"
       },
       {
         "command": "monosmith.showGraph",
-        "title": "Show Project Graph",
-        "category": "MonoSmith",
+        "title": "%vscode.command.show-graph.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(type-hierarchy)"
       },
       {
         "command": "monosmith.health.refresh",
-        "title": "Refresh Health",
-        "category": "MonoSmith",
+        "title": "%vscode.command.health-refresh.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(refresh)"
       },
       {
         "command": "monosmith.health.fix",
-        "title": "Fix Health Problems…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.health-fix.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(wrench)"
       },
       {
         "command": "monosmith.dependencies.refresh",
-        "title": "Refresh Dependencies",
-        "category": "MonoSmith",
+        "title": "%vscode.command.dependencies-refresh.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(refresh)"
       },
       {
         "command": "monosmith.dependencies.up",
-        "title": "Run smith up…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.dependencies-up.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(terminal)"
       },
       {
         "command": "monosmith.dependencies.update",
-        "title": "Update Dependency…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.dependencies-update.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(arrow-up)"
       },
       {
         "command": "monosmith.release.refresh",
-        "title": "Refresh Release Preview",
-        "category": "MonoSmith",
+        "title": "%vscode.command.release-refresh.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(refresh)"
       },
       {
         "command": "monosmith.openWalkthrough",
-        "title": "Open Getting Started",
-        "category": "MonoSmith"
+        "title": "%vscode.command.open-walkthrough.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.new",
-        "title": "Create a New MonoSmith Workspace",
-        "category": "MonoSmith"
+        "title": "%vscode.command.new.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.adopt.start",
-        "title": "Convert This Folder to MonoSmith",
-        "category": "MonoSmith"
+        "title": "%vscode.command.adopt-start.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.adopt.preview",
-        "title": "See What Converting Would Change",
-        "category": "MonoSmith"
+        "title": "%vscode.command.adopt-preview.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.convert.choose",
-        "title": "Convert an Nx or Turborepo Workspace with Your Choices",
-        "category": "MonoSmith"
+        "title": "%vscode.command.convert-choose.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.installAgent",
-        "title": "Install the MCP server and agent",
-        "category": "MonoSmith",
+        "title": "%vscode.command.install-agent.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(hubot)"
       },
       {
         "command": "monosmith.installMcp",
-        "title": "Install the MCP server only",
-        "category": "MonoSmith"
+        "title": "%vscode.command.install-mcp.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.talkToAgent",
-        "title": "Talk to the MonoSmith agent",
-        "category": "MonoSmith",
+        "title": "%vscode.command.talk-to-agent.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(hubot)"
       },
       {
         "command": "monosmith.agentFile",
-        "title": "Write AGENTS.md for AI agents",
-        "category": "MonoSmith",
+        "title": "%vscode.command.agent-file.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(file-text)"
       },
       {
         "command": "monosmith.addProject",
-        "title": "Add Project…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.add-project.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(add)"
       },
       {
         "command": "monosmith.composeStack",
-        "title": "Compose a Stack…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.compose-stack.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(search)"
       },
       {
         "command": "monosmith.addDependency",
-        "title": "Add Dependency…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.add-dependency.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(package)"
       },
       {
         "command": "monosmith.syncVersions",
-        "title": "Sync Dependency Versions…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.sync-versions.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(sync)"
       },
       {
         "command": "monosmith.release",
-        "title": "Release…",
-        "category": "MonoSmith",
+        "title": "%commands.rel.release.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(rocket)"
       },
       {
         "command": "monosmith.commit",
-        "title": "Commit the Changes…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.commit.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(git-commit)"
       },
       {
         "command": "monosmith.addLibrary",
-        "title": "Add a Library to a Project…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.add-library.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(add)"
       },
       {
         "command": "monosmith.installPackage",
-        "title": "Install a Package in a Project…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.install-package.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(package)"
       },
       {
         "command": "monosmith.removeProject",
-        "title": "Remove a Project…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.remove-project.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(trash)"
       },
       {
         "command": "monosmith.changeKind",
-        "title": "Make a Project an App, Library or Package…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.change-kind.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(symbol-class)"
       },
       {
         "command": "monosmith.unlinkLibrary",
-        "title": "Unlink a Library from a Project…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.unlink-library.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(debug-disconnect)"
       },
       {
         "command": "monosmith.undo",
-        "title": "Undo the Last Change…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.undo.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(discard)"
       },
       {
         "command": "monosmith.swap",
-        "title": "Swap a Choice of a Project…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.swap.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(arrow-swap)"
       },
       {
         "command": "monosmith.newRecipe",
-        "title": "New Recipe…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.new-recipe.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(book)"
       },
       {
         "command": "monosmith.divergences",
-        "title": "Show Divergences from the Defaults",
-        "category": "MonoSmith",
+        "title": "%vscode.command.divergences.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(git-compare)"
       },
       {
         "command": "monosmith.try",
-        "title": "Try a Command in a Copy…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.try.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(beaker)"
       },
       {
         "command": "monosmith.bootstrap",
-        "title": "Write the smith Launcher…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.bootstrap.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(rocket)"
       },
       {
         "command": "monosmith.installTools",
-        "title": "Install the Tools the Workspace Needs…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.install-tools.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(tools)"
       },
       {
         "command": "monosmith.openReport",
-        "title": "Open Report",
-        "category": "MonoSmith",
+        "title": "%vscode.command.open-report.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(globe)"
       },
       {
         "command": "monosmith.why",
-        "title": "Why…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.why.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(question)"
       },
       {
         "command": "monosmith.health.fixFinding",
-        "title": "Fix This Check",
-        "category": "MonoSmith",
+        "title": "%vscode.command.health-fix-finding.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(wrench)"
       },
       {
         "command": "monosmith.derive.explain",
-        "title": "Explain Derived File",
-        "category": "MonoSmith",
+        "title": "%vscode.command.derive-explain.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(info)"
       },
       {
         "command": "monosmith.derive.apply",
-        "title": "Apply Derived File",
-        "category": "MonoSmith",
+        "title": "%vscode.command.derive-apply.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(check)"
       },
       {
         "command": "monosmith.derive.adopt",
-        "title": "Adopt Edit of Derived File",
-        "category": "MonoSmith"
+        "title": "%vscode.command.derive-adopt.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.derive.eject",
-        "title": "Eject Derived File (Own It)",
-        "category": "MonoSmith"
+        "title": "%vscode.command.derive-eject.title%",
+        "category": "%vscode.package.display-name%"
       },
       {
         "command": "monosmith.environmentsList",
-        "title": "Environments of the Web Apps",
-        "category": "MonoSmith",
+        "title": "%vscode.command.environments-list.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(list-tree)"
       },
       {
         "command": "monosmith.environmentsAdd",
-        "title": "Add Environments to a Web App…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.environments-add.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(add)"
       },
       {
         "command": "monosmith.environmentsRemove",
-        "title": "Remove Environments from a Web App…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.environments-remove.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(remove)"
       },
       {
         "command": "monosmith.cacheStatus",
-        "title": "Cache: Status",
-        "category": "MonoSmith",
+        "title": "%vscode.command.cache-status.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(database)"
       },
       {
         "command": "monosmith.cacheVerify",
-        "title": "Cache: Check for Damage",
-        "category": "MonoSmith",
+        "title": "%vscode.command.cache-verify.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(search)"
       },
       {
         "command": "monosmith.cacheRepair",
-        "title": "Cache: Remove What Is Broken…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.cache-repair.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(wrench)"
       },
       {
         "command": "monosmith.cachePrune",
-        "title": "Cache: Trim to Its Limit…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.cache-prune.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(trash)"
       },
       {
         "command": "monosmith.cacheClear",
-        "title": "Cache: Delete It All…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.cache-clear.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(trash)"
       },
       {
         "command": "monosmith.copies",
-        "title": "Copies Between Projects",
-        "category": "MonoSmith",
+        "title": "%vscode.command.copies.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(files)"
       },
       {
         "command": "monosmith.toolsList",
-        "title": "Tools the Workspace Needs",
-        "category": "MonoSmith",
+        "title": "%vscode.command.tools-list.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(tools)"
       },
       {
         "command": "monosmith.whyMiss",
-        "title": "Why Would a Task Run Again?…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.why-miss.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(question)"
       },
       {
         "command": "monosmith.pipeline",
-        "title": "Add a Ready-Made Pipeline…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.pipeline.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(rocket)"
       },
       {
         "command": "monosmith.tauriIcon",
-        "title": "Make the Icons of a Tauri App…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.tauri-icon.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(symbol-color)"
       },
       {
         "command": "monosmith.dockerDescriptionPreview",
-        "title": "Docker Hub Descriptions: Name the Repositories",
-        "category": "MonoSmith",
+        "title": "%vscode.command.docker-description-preview.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(package)"
       },
       {
         "command": "monosmith.dockerDescription",
-        "title": "Set the Docker Hub Descriptions…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.docker-description.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(package)"
       },
       {
         "command": "monosmith.mcpInstall",
-        "title": "Connect smith to a Coding Assistant…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.mcp-install.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(plug)"
       },
       {
         "command": "monosmith.info",
-        "title": "Info: the Installed smith and the Settings",
-        "category": "MonoSmith",
+        "title": "%vscode.command.info.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(info)"
       },
       {
         "command": "monosmith.ciGenerate",
-        "title": "Regenerate the CI Pipelines…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.ci-generate.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(sync)"
       },
       {
         "command": "monosmith.deriveCheck",
-        "title": "Derived Files: Check Them",
-        "category": "MonoSmith",
+        "title": "%vscode.command.derive-check.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(checklist)"
       },
       {
         "command": "monosmith.derivePreview",
-        "title": "Derived Files: Preview the Update",
-        "category": "MonoSmith",
+        "title": "%vscode.command.derive-preview.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(diff)"
       },
       {
         "command": "monosmith.deriveUpdate",
-        "title": "Derived Files: Update Them…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.derive-update.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(edit)"
       },
       {
         "command": "monosmith.configSet",
-        "title": "Change a Setting of smith.toml…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.config-set.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(settings-gear)"
       },
       {
         "command": "monosmith.configUnset",
-        "title": "Reset a Setting of smith.toml to Its Default…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.config-unset.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(discard)"
       },
       {
         "command": "monosmith.pluginEnable",
-        "title": "Turn a Plugin On…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.plugin-enable.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(extensions)"
       },
       {
         "command": "monosmith.pluginDisable",
-        "title": "Turn a Plugin Off…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.plugin-disable.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(extensions)"
       },
       {
         "command": "monosmith.architecture",
-        "title": "Choose the Architecture of the Workspace…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.architecture.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(layers)"
       },
       {
         "command": "monosmith.tauriAdd",
-        "title": "Make an App a Tauri Desktop App…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.tauri-add.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(device-desktop)"
       },
       {
         "command": "monosmith.pluginInstall",
-        "title": "Install a Plugin from the Marketplace…",
-        "category": "MonoSmith",
+        "title": "%vscode.command.plugin-install.title%",
+        "category": "%vscode.package.display-name%",
         "icon": "$(cloud-download)"
       }
     ],
@@ -1472,45 +1472,45 @@
       ]
     },
     "configuration": {
-      "title": "MonoSmith",
+      "title": "%vscode.package.display-name%",
       "properties": {
         "monosmith.path": {
           "type": "string",
           "default": "",
-          "description": "The smith executable to use. Empty: the workspace's own (node_modules/.bin, .smith/bin; only in a trusted workspace), then the PATH."
+          "description": "%vscode.setting.path.description%"
         },
         "monosmith.run.bail": {
           "type": "boolean",
           "default": false,
-          "description": "Stop a run at the first failed task."
+          "description": "%vscode.setting.run-bail.description%"
         },
         "monosmith.run.noCache": {
           "type": "boolean",
           "default": false,
-          "description": "Run tasks again even when their result is in the cache."
+          "description": "%vscode.setting.run-no-cache.description%"
         },
         "monosmith.refresh.auto": {
           "type": "boolean",
           "default": true,
-          "description": "Refresh the projects and what is affected by themselves when smith.toml changes, the git branch changes, a file is saved or a run ends. Off: use the Refresh button."
+          "description": "%vscode.setting.refresh-auto.description%"
         },
         "monosmith.refresh.debounceMs": {
           "type": "integer",
           "default": 1500,
           "minimum": 100,
           "maximum": 30000,
-          "description": "How long to wait, in milliseconds, for a burst of changes to end before refreshing once."
+          "description": "%vscode.setting.refresh-debounce-ms.description%"
         },
         "monosmith.run.parallel": {
           "type": "integer",
           "default": 0,
           "minimum": 0,
-          "description": "How many tasks a run may run at once. 0: smith chooses (the number of CPUs)."
+          "description": "%vscode.setting.run-parallel.description%"
         },
         "monosmith.output.problems": {
           "type": "boolean",
           "default": true,
-          "description": "Put the failures found in task output (tsc, ESLint, go and the like) in the Problems panel."
+          "description": "%vscode.setting.output-problems.description%"
         }
       }
     },
@@ -1545,57 +1545,57 @@
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == adoptable && monosmith.repoKind == nx",
-        "contents": "This looks like an Nx workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
+        "contents": "%vscode.welcome.this-looks-like-an-nx-workspace%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == adoptable && monosmith.repoKind == turborepo",
-        "contents": "This looks like a Turborepo workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
+        "contents": "%vscode.welcome.this-looks-like-a-turborepo-workspace%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == adoptable && monosmith.repoKind == repository",
-        "contents": "This looks like a repository with several projects.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
+        "contents": "%vscode.welcome.this-looks-like-a-repository-with%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == ready && monosmith.noProjects",
-        "contents": "This workspace has no projects yet.\n[Add your first project](command:monosmith.addProject)\nsmith asks what you are building, shows the plan, and writes nothing until you say yes."
+        "contents": "%vscode.welcome.this-workspace-has-no-projects-yet%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == starting",
-        "contents": "Starting smith…\n[Show log](command:monosmith.showOutput)"
+        "contents": "%vscode.welcome.starting-smith-show-log-command-monosmith%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == missing",
-        "contents": "smith was not found.\nMonoSmith runs the smith your team installed, so the editor, the terminal and CI agree. Install it in the workspace, put it on the PATH, or set monosmith.path.\n[Copy install command](command:monosmith.copyInstallCommand)\n[Open settings](command:monosmith.openSettings)\n[Retry](command:monosmith.refresh)\n[Show log](command:monosmith.showOutput)"
+        "contents": "%vscode.welcome.smith-was-not-found-monosmith-runs%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == failed",
-        "contents": "smith could not start, or it stopped.\n[Restart smith](command:monosmith.restart)\nSee the [log](command:monosmith.showOutput), or check the [settings](command:monosmith.openSettings)."
+        "contents": "%vscode.welcome.smith-could-not-start-or-it%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == untrusted",
-        "contents": "This workspace is not trusted.\nMonoSmith does not run the smith inside an untrusted workspace (node_modules/.bin, .smith/bin), and it does not run tasks there. Trust the workspace, or use a smith from the monosmith.path user setting or the PATH.\n[Manage Workspace Trust](command:workbench.trust.manage)\n[Open settings](command:monosmith.openSettings)\n[Retry](command:monosmith.refresh)"
+        "contents": "%vscode.welcome.this-workspace-is-not-trusted-monosmith%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == empty",
-        "contents": "This folder is empty.\nMonoSmith can start a workspace here. It asks how you want to set it up (the defaults, or customise), shows what smith will create, and writes nothing until you say yes.\n[Create a new MonoSmith workspace](command:monosmith.new)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+        "contents": "%vscode.welcome.this-folder-is-empty-monosmith-can%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == unrecognised",
-        "contents": "This folder is not a MonoSmith workspace yet.\nsmith found no monorepo tool here. It can still bring the folder in: it lists every change and asks before it makes any, and your files stay where they are.\n[Bring this folder into MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
+        "contents": "%vscode.welcome.this-folder-is-not-a-monosmith%"
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == nofolder",
-        "contents": "No folder is open.\n[Open Folder](command:workbench.action.files.openFolder)"
+        "contents": "%vscode.welcome.no-folder-is-open-open-folder%"
       }
     ],
     "taskDefinitions": [
@@ -1607,28 +1607,28 @@
         "properties": {
           "task": {
             "type": "string",
-            "description": "The task to run, such as build, test or lint."
+            "description": "%vscode.task.task.description%"
           },
           "project": {
             "type": "string",
-            "description": "The projects to run it in: names, globs, kind:app, lang:go. Every project that has the task when empty."
+            "description": "%vscode.task.project.description%"
           },
           "affected": {
             "type": "boolean",
-            "description": "Only the projects the changes affect."
+            "description": "%vscode.task.affected.description%"
           },
           "bail": {
             "type": "boolean",
-            "description": "Stop starting tasks after the first failure."
+            "description": "%vscode.task.bail.description%"
           },
           "noCache": {
             "type": "boolean",
-            "description": "Run the tasks even when their result is in the cache."
+            "description": "%vscode.task.no-cache.description%"
           },
           "parallel": {
             "type": "integer",
             "minimum": 1,
-            "description": "How many tasks to run at once."
+            "description": "%vscode.task.parallel.description%"
           }
         }
       }
@@ -1636,7 +1636,7 @@
     "problemMatchers": [
       {
         "name": "smith",
-        "label": "smith: path:line:col: message (go, gcc, ruff, mypy)",
+        "label": "%vscode.problem-matcher.smith.label%",
         "owner": "smith",
         "source": "smith",
         "fileLocation": [
@@ -1654,7 +1654,7 @@
       },
       {
         "name": "smith-tsc",
-        "label": "smith: tsc output",
+        "label": "%vscode.problem-matcher.smith-tsc.label%",
         "owner": "smith",
         "source": "tsc",
         "fileLocation": [
@@ -1673,7 +1673,7 @@
       },
       {
         "name": "smith-eslint",
-        "label": "smith: ESLint stylish output",
+        "label": "%vscode.problem-matcher.smith-eslint.label%",
         "owner": "smith",
         "source": "eslint",
         "fileLocation": [
@@ -1700,13 +1700,13 @@
     "walkthroughs": [
       {
         "id": "monosmith.start",
-        "title": "Get started with MonoSmith",
-        "description": "Run the tasks of your workspace, see what the changes affect and keep it healthy.",
+        "title": "%vscode.walkthrough.title%",
+        "description": "%vscode.walkthrough.description%",
         "steps": [
           {
             "id": "monosmith.start.smith",
-            "title": "Have smith in the workspace",
-            "description": "MonoSmith runs the smith your team installed, so the editor, the terminal and CI agree. Install it in the workspace or put it on the PATH.\n[Copy the install command](command:monosmith.copyInstallCommand)\n[Choose another smith](command:monosmith.openSettings)",
+            "title": "%vscode.walkthrough.monosmith-start-smith.title%",
+            "description": "%vscode.walkthrough.monosmith-start-smith.description%",
             "media": {
               "markdown": "media/walkthrough/smith.md"
             },
@@ -1716,8 +1716,8 @@
           },
           {
             "id": "monosmith.start.projects",
-            "title": "See your projects",
-            "description": "The MonoSmith view lists the apps, libs and packages of the workspace, with their tasks. A dot marks a project the changes affect.\n[Open the MonoSmith view](command:workbench.view.extension.monosmith)",
+            "title": "%vscode.walkthrough.monosmith-start-projects.title%",
+            "description": "%vscode.walkthrough.monosmith-start-projects.description%",
             "media": {
               "markdown": "media/walkthrough/projects.md"
             },
@@ -1727,8 +1727,8 @@
           },
           {
             "id": "monosmith.start.run",
-            "title": "Run a task",
-            "description": "Press Enter on a task, or pick one from the palette. The output streams as it happens, and what failed lands in the Problems panel.\n[Run a task](command:monosmith.runTask)",
+            "title": "%vscode.walkthrough.monosmith-start-run.title%",
+            "description": "%vscode.walkthrough.monosmith-start-run.description%",
             "media": {
               "markdown": "media/walkthrough/run.md"
             },
@@ -1739,8 +1739,8 @@
           },
           {
             "id": "monosmith.start.affected",
-            "title": "Run only what changed",
-            "description": "Run one task in the projects the changes affect: the rest is not touched, and what did not change comes from the cache.\n[Run affected](command:monosmith.runAffected)",
+            "title": "%vscode.walkthrough.monosmith-start-affected.title%",
+            "description": "%vscode.walkthrough.monosmith-start-affected.description%",
             "media": {
               "markdown": "media/walkthrough/affected.md"
             },
@@ -1750,8 +1750,8 @@
           },
           {
             "id": "monosmith.start.health",
-            "title": "Check the health of the workspace",
-            "description": "The Health view lists the checks that failed with the remedy, and applies the fixes smith proposes after you have seen them. Dependencies and Release Preview are beside it.\n[Open the Health view](command:monosmith.health.focus)",
+            "title": "%vscode.walkthrough.monosmith-start-health.title%",
+            "description": "%vscode.walkthrough.monosmith-start-health.description%",
             "media": {
               "markdown": "media/walkthrough/health.md"
             },
@@ -1761,8 +1761,8 @@
           },
           {
             "id": "monosmith.start.tasks",
-            "title": "Use it from tasks.json and the keyboard",
-            "description": "Tasks of type \"smith\" appear in Run Task and in tasks.json. Ctrl+Alt+M then T, A, R or C runs, runs affected, re-runs and cancels.\n[Open the settings](command:monosmith.openSettings)",
+            "title": "%vscode.walkthrough.monosmith-start-tasks.title%",
+            "description": "%vscode.walkthrough.monosmith-start-tasks.description%",
             "media": {
               "markdown": "media/walkthrough/keyboard.md"
             }
@@ -1776,7 +1776,7 @@
     "stack": "vscode-extension"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/apps/vscode/main.js && node -e \"const fs=require('node:fs');fs.cpSync('media','../../dist/apps/vscode/media',{recursive:true,filter:(f)=>!/screenshot-/.test(f)});fs.cpSync('CHANGELOG.md','../../dist/apps/vscode/CHANGELOG.md')\"",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/apps/vscode/main.js && node -e \"const fs=require('node:fs');fs.cpSync('media','../../dist/apps/vscode/media',{recursive:true,filter:(f)=>!/screenshot-/.test(f)});fs.cpSync('CHANGELOG.md','../../dist/apps/vscode/CHANGELOG.md');for(const f of fs.readdirSync('.'))if(f.startsWith('package.nls')&&f.endsWith('.json'))fs.cpSync(f,'../../dist/apps/vscode/'+f)\"",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p integration/tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
@@ -1785,7 +1785,7 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "In a workspace that is not trusted, MonoSmith does not run the smith inside the workspace (node_modules/.bin or .smith/bin) and does not run tasks. It shows the projects with the smith from your monosmith.path user setting or the PATH.",
+      "description": "%vscode.untrusted-workspace.description%",
       "restrictedConfigurations": [
         "monosmith.path"
       ]

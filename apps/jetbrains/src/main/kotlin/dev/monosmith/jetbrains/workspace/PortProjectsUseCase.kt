@@ -3,6 +3,9 @@ package dev.monosmith.jetbrains.workspace
 import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_ACTIONS_WHICH_PROJECT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_WORKSPACE_MONOSMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * Reads and picks the projects of the workspace through the ports of a flow, so a flow that needs a
@@ -38,7 +41,12 @@ object PortProjectsUseCase {
         title: String,
     ): SmithProjectContract? {
         val rows = projects.map { ChoiceRowContract(it.name, it.name, "${it.kind} · ${it.language}") }
-        val answer = ports.prompt.pickOne("MonoSmith: $title", "Which project?", rows) ?: return null
+        val answer =
+            ports.prompt.pickOne(
+                say(JETBRAINS_WORKSPACE_MONOSMITH, title.toString()),
+                say(GUIDE_ACTIONS_WHICH_PROJECT),
+                rows,
+            ) ?: return null
         return projects.first { it.name == answer.name }
     }
 }

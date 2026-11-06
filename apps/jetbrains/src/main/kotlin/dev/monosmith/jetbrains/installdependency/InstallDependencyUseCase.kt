@@ -7,6 +7,33 @@ import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_ADD_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_ADD_A_DEPENDENCY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_A_PACKAGE_FROM_THE_REGISTRY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_DOWNLOADED_FROM_THE_LANGUAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_FOLLOW_THE_WORKSPACE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_LIBRARIES_MAY_USE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_LINKED_NOTHING_IS_DOWNLOADED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_MONOSMITH_ADD_A_DEPENDENCY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_NOTHING_WAS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_NO_LIBRARY_OF_THIS_WORKSPACE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_PACKAGE_NAMES_SEPARATED_BY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_SMITH_RUNS_THIS_COMMAND_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_THE_DEPENDENCY_IS_ADDED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_THE_DEPENDENCY_IS_ADDED_NOT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_TYPE_AT_LEAST_ONE_PACKAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_USES_THE_CODE_OF_ANOTHER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_WHAT_DO_YOU_ADD_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_WHICH_LIBRARY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLDEPENDENCY_WHICH_VERSION_OF_DOES_ASK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.PACKAGEPROMPT_RANGE_ANY_LABEL
+import dev.monosmith.jetbrains.words.SmithWordsConfig.PACKAGEPROMPT_RANGE_ANY_MEANING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.PACKAGEPROMPT_RANGE_FOLLOW_MEANING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.PACKAGEPROMPT_SOURCE_WORKSPACE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.PortProjectsUseCase
 import java.nio.file.Path
 
@@ -16,7 +43,7 @@ import java.nio.file.Path
  * line is shown before it runs. smith never commits here.
  */
 object InstallDependencyUseCase {
-    private const val TITLE = "MonoSmith: add a dependency"
+    private val TITLE = say(JETBRAINS_INSTALLDEPENDENCY_MONOSMITH_ADD_A_DEPENDENCY)
 
     /**
      * Starts the flow in a background task.
@@ -45,52 +72,70 @@ object InstallDependencyUseCase {
     ): Boolean {
         val nodes =
             PortProjectsUseCase.list(ports).getOrElse {
-                ports.notice.warn("Nothing was added. ${it.message}")
+                ports.notice.warn(say(JETBRAINS_INSTALLDEPENDENCY_NOTHING_WAS_ADDED, it.message.toString()))
                 return false
             }
         val target =
             if (project != null) {
                 nodes.firstOrNull { it.name == project } ?: return false
             } else {
-                PortProjectsUseCase.pick(ports, nodes, "add a dependency") ?: return false
+                PortProjectsUseCase.pick(ports, nodes, say(JETBRAINS_INSTALLDEPENDENCY_ADD_A_DEPENDENCY)) ?: return false
             }
         val source = only ?: askSource(ports, target.name) ?: return false
         val args =
             if (source == "registry") {
                 val typed =
-                    ports.prompt.text("$TITLE: packages", "Package names, separated by spaces (for example zod react@19):") {
-                        if (InstallArgumentsAlgorithm.parsePackages(it).isEmpty()) "Type at least one package." else null
+                    ports.prompt.text("$TITLE: packages", say(JETBRAINS_INSTALLDEPENDENCY_PACKAGE_NAMES_SEPARATED_BY)) {
+                        if (InstallArgumentsAlgorithm
+                                .parsePackages(
+                                    it,
+                                ).isEmpty()
+                        ) {
+                            say(JETBRAINS_INSTALLDEPENDENCY_TYPE_AT_LEAST_ONE_PACKAGE)
+                        } else {
+                            null
+                        }
                     } ?: return false
                 InstallArgumentsAlgorithm.registry(target.name, InstallArgumentsAlgorithm.parsePackages(typed), dev = false)
             } else {
                 val libraries = LinkableLibrariesPolicy.linkable(nodes, target.name)
                 if (libraries.isEmpty()) {
                     ports.notice.warn(
-                        "No library of this workspace can be linked to ${target.name}. A library must be a lib or a package, " +
-                            "in the same language, and must not already depend on ${target.name}.",
+                        say(JETBRAINS_INSTALLDEPENDENCY_NO_LIBRARY_OF_THIS_WORKSPACE, target.name.toString()),
                     )
                     return false
                 }
                 val rows = libraries.map { ChoiceRowContract(it.name, it.name, "${it.kind} · ${it.language}") }
-                val library = ports.prompt.pickOne("$TITLE: which library?", "Libraries ${target.name} may use.", rows) ?: return false
+                val library =
+                    ports.prompt.pickOne(
+                        say(JETBRAINS_INSTALLDEPENDENCY_WHICH_LIBRARY, TITLE.toString()),
+                        say(JETBRAINS_INSTALLDEPENDENCY_LIBRARIES_MAY_USE, target.name.toString()),
+                        rows,
+                    ) ?: return false
                 val range = if (target.language == "node") askRange(ports, target.name, library.name) ?: return false else null
                 InstallArgumentsAlgorithm.library(target.name, library.name, range.takeUnless { it == "follow" })
             }
         val shown = TaskCommandAlgorithm.display(listOf("smith") + args)
         val answer =
-            ports.prompt.plan(TITLE, "smith runs this command. It commits only if you tick the box.", shown, "Add it", offerCommit = true)
+            ports.prompt.plan(
+                TITLE,
+                say(JETBRAINS_INSTALLDEPENDENCY_SMITH_RUNS_THIS_COMMAND_IT),
+                shown,
+                say(JETBRAINS_ADOPTFOLDER_ADD_IT),
+                offerCommit = true,
+            )
                 ?: return false
         val done = ports.smith.run(if (answer.commit) args + "--commit" else args, show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_ADDPROJECT_NOTHING_WAS_ADDED, FailureTextMapper.describe(done).toString()))
             return false
         }
         ports.notice.info(
             if (answer.commit) {
-                "The dependency is added. Committed as one change: Undo reverts it."
+                say(JETBRAINS_INSTALLDEPENDENCY_THE_DEPENDENCY_IS_ADDED)
             } else {
-                "The dependency is added. Not committed: review it with the Commit window."
+                say(JETBRAINS_INSTALLDEPENDENCY_THE_DEPENDENCY_IS_ADDED_NOT)
             },
         )
         return true
@@ -102,20 +147,20 @@ object InstallDependencyUseCase {
     ): String? =
         ports.prompt
             .pickOne(
-                "$TITLE: what do you add to $project?",
-                "The first answer is the default.",
+                say(JETBRAINS_INSTALLDEPENDENCY_WHAT_DO_YOU_ADD_TO, TITLE.toString(), project.toString()),
+                say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE),
                 listOf(
                     ChoiceRowContract(
                         "registry",
-                        "A package from the registry",
-                        "(default)",
-                        "Downloaded from the language registry (npm, PyPI, crates.io...), a copy outside this workspace.",
+                        say(JETBRAINS_INSTALLDEPENDENCY_A_PACKAGE_FROM_THE_REGISTRY),
+                        say(JETBRAINS_ADDCHOICES_DEFAULT),
+                        say(JETBRAINS_INSTALLDEPENDENCY_DOWNLOADED_FROM_THE_LANGUAGE),
                     ),
                     ChoiceRowContract(
                         "workspace",
-                        "A library of this workspace",
-                        "linked, nothing is downloaded",
-                        "$project uses the code of another project here, always its current copy.",
+                        say(PACKAGEPROMPT_SOURCE_WORKSPACE),
+                        say(JETBRAINS_INSTALLDEPENDENCY_LINKED_NOTHING_IS_DOWNLOADED),
+                        say(JETBRAINS_INSTALLDEPENDENCY_USES_THE_CODE_OF_ANOTHER, project.toString()),
                     ),
                 ),
             )?.name
@@ -127,20 +172,20 @@ object InstallDependencyUseCase {
     ): String? =
         ports.prompt
             .pickOne(
-                "$TITLE: which version of $library does $project ask for?",
-                "The first answer is the default.",
+                say(JETBRAINS_INSTALLDEPENDENCY_WHICH_VERSION_OF_DOES_ASK, TITLE.toString(), library.toString(), project.toString()),
+                say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE),
                 listOf(
                     ChoiceRowContract(
                         "follow",
-                        "Follow the workspace",
-                        "(default)",
-                        "Use the range the workspace already uses for its own libraries. When it has none yet, smith writes * and says so.",
+                        say(JETBRAINS_INSTALLDEPENDENCY_FOLLOW_THE_WORKSPACE),
+                        say(JETBRAINS_ADDCHOICES_DEFAULT),
+                        say(PACKAGEPROMPT_RANGE_FOLLOW_MEANING),
                     ),
                     ChoiceRowContract(
                         "*",
-                        "Any version (*)",
+                        say(PACKAGEPROMPT_RANGE_ANY_LABEL),
                         "",
-                        "npm uses the library of this workspace whatever its version. You never edit the line when the library changes.",
+                        say(PACKAGEPROMPT_RANGE_ANY_MEANING),
                     ),
                 ),
             )?.name

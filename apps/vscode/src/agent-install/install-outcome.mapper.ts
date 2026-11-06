@@ -1,7 +1,8 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import type { InstallOutcome, InstallPreview } from './install-run.contract.ts'
+import { say } from '../words/index.ts'
 
-const NO_TERMINAL = 'there is no terminal to ask on'
+const NO_TERMINAL = say('vscode.agent-install.there-is-no-terminal-to-ask')
 
 /** The `● Add .mcp.json` lines of smith's output: what each file would get. */
 function actionLines (stdout: string): string[] {

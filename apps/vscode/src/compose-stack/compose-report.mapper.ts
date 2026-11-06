@@ -1,5 +1,6 @@
 import type { ComposeCheck, ComposeItem, ComposeLayer, ComposePlan, ComposeQuestion, ComposeReport, ComposeTool } from './compose-stack.contract.ts'
 import { longFlag } from '../smith-flags/index.ts'
+import { say } from '../words/index.ts'
 
 type Json = Record<string, unknown>
 
@@ -70,7 +71,7 @@ function readPlan (value: unknown): ComposePlan | undefined {
  */
 export function parseReport (json: string): ComposeReport {
   const value: unknown = JSON.parse(json)
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError('smith printed no catalogue')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError(say('vscode.add-project.smith-printed-no-catalogue'))
   const root = value as Json
   const layers: ComposeLayer[] = records(root.layers).map((l) => ({ id: text(l.id), title: text(l.title), about: text(l.about) }))
   const items: ComposeItem[] = records(root.items)
@@ -119,8 +120,8 @@ export function composeArguments (request: { language?: string, picks: readonly 
  * @returns "Node.js (installed, for node)" or "the Tauri system libraries (missing, for tauri): smith tools install tauri-linux-libs"
  */
 export function describeTool (tool: ComposeTool): string {
-  const state = tool.state === '' ? 'not checked' : tool.state
-  const line = `${tool.title} (${state}${tool.choice === '' ? '' : `, for ${tool.choice}`})`
+  const state = tool.state === '' ? say('vscode.compose-stack.not-checked') : tool.state
+  const line = `${tool.title} (${state}${tool.choice === '' ? '' : say('vscode.compose-stack.for', { choice: tool.choice })})`
 
   return tool.state === 'missing' || tool.state === 'outdated' ? `${line}: ${tool.command}` : line
 }
@@ -140,14 +141,14 @@ export function toolsToInstall (plan: ComposePlan): ComposeTool[] {
  * @returns the text shown in the dialog
  */
 export function describePlan (plan: ComposePlan): string {
-  const lines = [`Run: ${plan.command}`, '']
+  const lines = [say('vscode.compose-stack.run', { command: plan.command }), '']
   if (plan.files.length > 0) {
     lines.push('It writes:')
     for (const f of plan.files) lines.push(`  ${f.action} ${f.path}${f.note === '' ? '' : ` (${f.note})`}`)
     lines.push('')
   }
   if (plan.tools.length > 0) {
-    lines.push('It needs these tools on this computer:')
+    lines.push(say('vscode.compose-stack.it-needs-these-tools-on-this'))
     for (const t of plan.tools) lines.push(`  ${describeTool(t)}`)
     lines.push('')
   }
@@ -162,12 +163,12 @@ export function describePlan (plan: ComposePlan): string {
  * @returns the label, description and detail of the pick; detail holds the aliases, so typing "desktop" finds Electron
  */
 export function pickLabels (item: ComposeItem): { label: string, description: string, detail: string } {
-  const where = item.language === '' || item.kind === 'language' ? '' : `${item.language} · `
+  const where = item.language === '' || item.kind === say('vscode.compose-stack.language') ? '' : `${item.language} · `
   // Electron sits on the shell layer but answers the framework question; say so, so the conflict message reads the same.
   const slot = item.kind === 'choice' && item.axis !== '' && item.axis !== item.layer && !item.many ? ` (the ${item.axis} choice)` : ''
   const mark = item.isDefault ? ' (default)' : (item.suggested ? ' (suggested)' : '')
-  const problem = item.problem === '' ? '' : ` Cannot be used: ${item.problem}.`
-  const route = item.route === '' ? '' : ` Not part of one project: turn it on with ${item.route}.`
+  const problem = item.problem === '' ? '' : say('vscode.compose-stack.cannot-be-used', { problem: item.problem })
+  const route = item.route === '' ? '' : say('vscode.compose-stack.not-part-of-one-project-turn', { route: item.route })
 
   return {
     label:       `${item.title}${mark}`,
@@ -196,7 +197,7 @@ export function tickedTitles (items: readonly ComposeItem[], ids: readonly strin
  */
 export function stackSummary (items: readonly ComposeItem[], language: string, picks: readonly string[]): string {
   const titles = picks.map((name) => items.find((item) => item.kind === 'choice' && item.name === name && item.language === language)?.title ?? name)
-  const lang = items.find((item) => item.kind === 'language' && item.name === language)?.title ?? language
+  const lang = items.find((item) => item.kind === say('vscode.compose-stack.language') && item.name === language)?.title ?? language
 
   return `${titles.join(' + ')}${lang === '' ? '' : ` (${lang})`}`
 }
@@ -218,17 +219,17 @@ export function settleRivals (items: readonly ComposeItem[], previous: readonly 
   const notes: string[] = []
   for (const id of fresh) {
     const pick = byId.get(id)
-    const isLanguage = pick?.kind === 'language'
+    const isLanguage = pick?.kind === say('vscode.compose-stack.language')
     if (pick === undefined || (!isLanguage && (pick.kind !== 'choice' || pick.axis === ''))) continue
     const rivals = chosen.filter((other) => {
       const item = byId.get(other)
       const later = fresh.slice(fresh.indexOf(id) + 1).includes(other)
       if (other === id || later || item === undefined || dropped.has(other)) return false
 
-      return isLanguage ? item.kind === 'language' : item.kind === 'choice' && item.axis === pick.axis && item.language === pick.language && !(item.many && pick.many)
+      return isLanguage ? item.kind === say('vscode.compose-stack.language') : item.kind === 'choice' && item.axis === pick.axis && item.language === pick.language && !(item.many && pick.many)
     })
     for (const rival of rivals) dropped.add(rival)
-    if (rivals.length > 0) notes.push(`${pick.title} replaces ${rivals.map((other) => byId.get(other)?.title ?? other).join(' and ')}: a project has one ${isLanguage ? 'language' : pick.axis}.`)
+    if (rivals.length > 0) notes.push(say('vscode.compose-stack.replaces-a-project-has-one', { title: pick.title, join: rivals.map((other) => byId.get(other)?.title ?? other).join(' and '), part: isLanguage ? say('vscode.compose-stack.language') : pick.axis }))
   }
 
   return { ids: chosen.filter((id) => !dropped.has(id)), note: notes.join(' ') }

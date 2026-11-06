@@ -1,6 +1,13 @@
 package dev.monosmith.jetbrains.releaseflow
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_CHANNEL_ITS_VERSIONS_ARE_PRERELEASES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_CHANNEL_STABLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NOTHING_TO_RELEASE_A_PACKAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_IT_RELEASE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_RELEASEFLOW_THE_PLAN_STOPPED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * One package a release would publish, with why.
@@ -74,18 +81,24 @@ object ReleasePreviewMapper {
     /** The rows of the Release view. Each package has its reason and commits under it. */
     fun rows(preview: ReleasePreviewContract): List<ReleaseRowContract> {
         val rows = mutableListOf<ReleaseRowContract>()
-        if (preview.error.isNotEmpty()) rows.add(ReleaseRowContract("The plan stopped: ${preview.error}"))
+        if (preview.error.isNotEmpty()) rows.add(ReleaseRowContract(say(JETBRAINS_RELEASEFLOW_THE_PLAN_STOPPED, preview.error.toString())))
         rows.add(
             ReleaseRowContract(
-                if (preview.channel.isEmpty()) "Channel: stable" else "Channel: ${preview.channel} (its versions are prereleases)",
+                if (preview.channel.isEmpty()) {
+                    say(
+                        JETBRAINS_RELEASEFLOW_CHANNEL_STABLE,
+                    )
+                } else {
+                    say(JETBRAINS_RELEASEFLOW_CHANNEL_ITS_VERSIONS_ARE_PRERELEASES, preview.channel.toString())
+                },
             ),
         )
         if (preview.results.isEmpty()) {
             rows.add(
                 ReleaseRowContract(
-                    "Nothing to release: a package releases when a commit since its last tag asks for it.",
+                    say(JETBRAINS_RELEASEFLOW_NOTHING_TO_RELEASE_A_PACKAGE),
                     preview.unchanged.map {
-                        "$it: no commit releases it. Release… can release it anyway (the same code under a new version)."
+                        say(JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES_IT_RELEASE, it.toString())
                     },
                 ),
             )
@@ -97,7 +110,7 @@ object ReleasePreviewMapper {
             rows.add(ReleaseRowContract(head, listOfNotNull(it.reason.ifEmpty { null }, it.error.ifEmpty { null }) + it.commits))
         }
         if (preview.results.isNotEmpty() && preview.unchanged.isNotEmpty()) {
-            rows.add(ReleaseRowContract("No commit releases: ${preview.unchanged.joinToString(", ")}"))
+            rows.add(ReleaseRowContract(say(JETBRAINS_RELEASEFLOW_NO_COMMIT_RELEASES, preview.unchanged.joinToString(", ").toString())))
         }
         return rows
     }

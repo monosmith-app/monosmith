@@ -1,4 +1,5 @@
 import type { SmithRun } from './smith-run.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Takes the `✖` out of smith's problem so it reads as a sentence, and keeps the way-outs.
@@ -10,7 +11,7 @@ export function sayProblem (stderr: string): string {
   const [first = '', ...rest] = lines
   const problem = first.replace(/^✖\s*/, '')
 
-  return [problem, ...rest.map((line) => line.replace(/^→\s*/, 'Try: '))].join(' ')
+  return [problem, ...rest.map((line) => line.replace(/^→\s*/, () => say('vscode.smith-run.try')))].join(' ')
 }
 
 /**
@@ -22,5 +23,5 @@ export function sayProblem (stderr: string): string {
 export function describeFailure (run: SmithRun): string {
   const message = sayProblem(run.stderr.trim() === '' ? run.stdout : run.stderr)
 
-  return message === '' ? `smith stopped with exit code ${run.code}` : message
+  return message === '' ? say('vscode.agent-install.smith-stopped-with-exit-code', { code: run.code }) : message
 }

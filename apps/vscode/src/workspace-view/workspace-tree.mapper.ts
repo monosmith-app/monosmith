@@ -1,5 +1,6 @@
 import type { TaskResult } from '../task-run/index.ts'
 import type { WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
+import { say } from '../words/index.ts'
 
 /** One row of the MonoSmith view. */
 export interface TreeNode {
@@ -132,14 +133,14 @@ function agentRow (folder: TreeFolder, narrowed: boolean): TreeNode[] {
   return [{
     id:          `agent:${folder.root}`,
     kind:        'action',
-    label:       'Add the MonoSmith agent',
+    label:       say('vscode.workspace-view.add-the-monosmith-agent'),
     icon:        'hubot',
     description: '',
     root:        folder.root,
     projects:    [],
     command:     'monosmith.installAgent',
-    spoken:      'Add the MonoSmith agent and smith’s MCP server to this folder',
-    tooltip:     'Writes .claude/agents/smith.md, .mcp.json and .vscode/mcp.json. It shows the files first and asks.',
+    spoken:      say('vscode.workspace-view.add-the-monosmith-agent-and-smith'),
+    tooltip:     say('vscode.workspace-view.writes-claude-agents-smith-md-mcp'),
     children:    [],
   }]
 }
@@ -163,10 +164,10 @@ export function describeAffected (folders: readonly TreeFolder[]): string {
  */
 export function describeFilter (filter: ViewFilter, shown: number): string | undefined {
   const text = filter.text.trim()
-  const parts = [filter.affectedOnly ? 'affected only' : '', text === '' ? '' : `“${text}”`].filter(Boolean)
+  const parts = [filter.affectedOnly ? say('vscode.workspace-view.affected-only') : '', text === '' ? '' : `“${text}”`].filter(Boolean)
   if (parts.length === 0) return undefined
 
-  return shown === 0 ? `No project matches: ${parts.join(', ')}.` : `Showing ${parts.join(', ')}.`
+  return say(shown === 0 ? 'vscode.workspace-view.no-project-matches' : 'vscode.workspace-view.showing', { join: parts.join(', ') })
 }
 
 /** How many project rows a tree holds. */
@@ -212,7 +213,7 @@ function toGroups (root: string, snapshot: WorkspaceSnapshot, factsOf: (root: st
 
 function toProject (root: string, project: WorkspaceProject, tasks: readonly string[], shown: { affected: boolean, dot: boolean, reveal: boolean }, factsOf: (root: string, task: string) => TaskFacts | undefined): TreeNode {
   const language = project.language === '' ? 'project' : project.language
-  const taskCount = `${project.tasks.length} ${project.tasks.length === 1 ? 'task' : 'tasks'}`
+  const taskCount = `${project.tasks.length} ${say(project.tasks.length === 1 ? 'vscode.status-bar.task' : 'vscode.status-bar.tasks')}`
 
   return {
     id:          `project:${root}:${project.name}`,
@@ -226,13 +227,13 @@ function toProject (root: string, project: WorkspaceProject, tasks: readonly str
     affected:    shown.affected,
     dot:         shown.dot,
     reveal:      shown.reveal,
-    spoken:      `${project.name}, ${language}, ${shown.affected ? 'affected by the changes' : 'not affected'}, ${taskCount}`,
+    spoken:      `${project.name}, ${language}, ${say(shown.affected ? 'vscode.workspace-view.affected-by-the-changes-2' : 'vscode.workspace-view.not-affected')}, ${taskCount}`,
     tooltip:     [
       project.name,
       `${project.kind}${project.language === '' ? '' : `, ${project.language}`}`,
       project.dir,
-      shown.affected ? 'Affected by the changes.' : 'Not affected by the changes.',
-      project.tasks.length > 0 ? 'Run all its tasks from the context menu.' : '',
+      say(shown.affected ? 'vscode.workspace-view.affected-by-the-changes-3' : 'vscode.workspace-view.not-affected-by-the-changes'),
+      project.tasks.length > 0 ? say('vscode.workspace-view.run-all-its-tasks-from-the') : '',
     ].filter(Boolean).join('\n'),
     children: tasks.map((task) => toTask(root, project.name, task, factsOf(root, `${project.name}:${task}`))),
   }
@@ -252,26 +253,26 @@ function withEnvironments (node: TreeNode, app: WebAppEnvironments | undefined):
     id:          `environment:${root}:${project}:${env.name}`,
     kind:        'environment',
     label:       env.name,
-    description: env.name === app.default ? 'default: smith run build' : (env.task === '' ? '' : `smith run ${env.task}`),
+    description: env.name === app.default ? say('vscode.workspace-view.default-smith-run-build') : (env.task === '' ? '' : say('vscode.workspace-view.smith-run', { task: env.task })),
     icon:        'globe',
     root,
     projects:    [project],
     project,
-    spoken:      `${project} environment ${env.name}${env.name === app.default ? ', the one smith run build builds' : ''}`,
-    tooltip:     `${env.name}${env.name === app.default ? ' (the default: CI and releases build this one)' : ''}. Remove it with the minus button; its .env file stays.`,
+    spoken:      `${project} environment ${env.name}${env.name === app.default ? say('vscode.workspace-view.the-one-smith-run-build-builds') : ''}`,
+    tooltip:     say('vscode.workspace-view.remove-it-with-the-minus-button', { name: env.name, part: env.name === app.default ? say('vscode.workspace-view.the-default-ci-and-releases-build') : '' }),
     children:    [],
   }))
   const section: TreeNode = {
     id:          `environments:${root}:${project}`,
     kind:        'environments',
-    label:       'Environments',
+    label:       say('vscode.workspace-view.environments'),
     description: app.environments.map((env) => env.name).join(', '),
     icon:        'symbol-enum',
     root,
     projects:    [project],
     project,
     spoken:      `${project} environments: ${app.environments.map((env) => env.name).join(', ')}`,
-    tooltip:     `The environments ${project} is built for. Add one with the plus button.`,
+    tooltip:     say('vscode.workspace-view.the-environments-is-built-for-add', { project }),
     children:    rows,
   }
 
@@ -291,8 +292,8 @@ function toTask (root: string, project: string, task: string, facts: TaskFacts |
     task,
     ...(facts !== undefined && { status: facts.status }),
     ...(facts?.hasLog === true && { hasLog: true }),
-    spoken:      `${project} ${task}, ${spokenResult(facts)}. Press Enter to run.`,
-    tooltip:     [`${project}:${task}`, ...tooltipResult(facts), 'Press Enter to run.'].join('\n'),
+    spoken:      say('vscode.workspace-view.press-enter-to-run', { project, task, spokenResult: spokenResult(facts) }),
+    tooltip:     [`${project}:${task}`, ...tooltipResult(facts), say('vscode.workspace-view.press-enter-to-run-2')].join('\n'),
     children:    [],
   }
 }
@@ -315,26 +316,26 @@ function describeResult (facts: TaskFacts | undefined): string {
 }
 
 function spokenResult (facts: TaskFacts | undefined): string {
-  if (facts === undefined) return 'not run yet'
+  if (facts === undefined) return say('vscode.workspace-view.not-run-yet')
   const took = (facts.durationMs ?? 0) > 0 ? ` in ${formatDuration(facts.durationMs ?? 0)}` : ''
 
   return `${facts.status}${took}${facts.reason === undefined ? '' : `, ${facts.reason}`}`
 }
 
 function tooltipResult (facts: TaskFacts | undefined): string[] {
-  if (facts === undefined) return ['Not run yet.']
+  if (facts === undefined) return [say('vscode.workspace-view.not-run-yet-2')]
   const took = (facts.durationMs ?? 0) > 0 ? ` in ${formatDuration(facts.durationMs ?? 0)}` : ''
   const headline: Record<TaskResult['status'], string> = {
-    queued:  'Waiting to run.',
-    running: 'Running.',
-    passed:  `Passed${took}.`,
-    failed:  `Failed${took}.`,
-    cached:  'Cache hit: the result came from the cache, nothing ran.',
-    skipped: 'Skipped.',
+    queued:  say('vscode.workspace-view.waiting-to-run'),
+    running: say('vscode.workspace-view.running'),
+    passed:  say('vscode.workspace-view.passed', { took }),
+    failed:  say('vscode.workspace-view.failed', { took }),
+    cached:  say('vscode.workspace-view.cache-hit-the-result-came-from'),
+    skipped: say('vscode.workspace-view.skipped'),
   }
-  const when = facts.time === undefined || Number.isNaN(Date.parse(facts.time)) ? [] : [`Last run: ${new Date(facts.time).toLocaleString()}.`]
+  const when = facts.time === undefined || Number.isNaN(Date.parse(facts.time)) ? [] : [say('vscode.workspace-view.last-run', { toLocaleString: new Date(facts.time).toLocaleString() })]
 
-  return [headline[facts.status], ...(facts.reason === undefined ? [] : [`Reason: ${facts.reason}.`]), ...when, ...(facts.hasLog === true ? ['Its output is kept: use Show Output.'] : [])]
+  return [headline[facts.status], ...(facts.reason === undefined ? [] : [say('vscode.workspace-view.reason', { reason: facts.reason })]), ...when, ...(facts.hasLog === true ? [say('vscode.workspace-view.its-output-is-kept-use-show')] : [])]
 }
 
 /** `850ms`, `1.2s`, `2m 05s`. */

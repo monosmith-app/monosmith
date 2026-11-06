@@ -5,6 +5,14 @@ import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_MONOSMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_MONOSMITH_WHY_WOULD_A_TASK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_MONOSMITH_WHY_WOULD_A_TASK_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_SMITH_COULD_NOT_SHOW
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_THE_PROJECT_AND_THE_TASK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_WHY_WOULD_RUN_AGAIN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_READCOMMANDS_WRITE_PROJECT_TASK_FOR_EXAMPLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -22,13 +30,16 @@ object ReadSmithCommandUseCase {
         root: Path,
         what: String,
         args: List<String>,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: $what") { run(IdePortsClient.of(ide, root), what, args) }
+    ) = BackgroundFlowClient.start(
+        ide,
+        say(JETBRAINS_READCOMMANDS_MONOSMITH, what.toString()),
+    ) { run(IdePortsClient.of(ide, root), what, args) }
 
     /** Starts "why would a task run again?", which asks for the project and the task first. */
     fun startWhyMiss(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: why would a task run again") { whyMiss(IdePortsClient.of(ide, root)) }
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_READCOMMANDS_MONOSMITH_WHY_WOULD_A_TASK)) { whyMiss(IdePortsClient.of(ide, root)) }
 
     /**
      * Runs a command that reads and shows its output in the Output tab.
@@ -44,7 +55,9 @@ object ReadSmithCommandUseCase {
     ): Boolean {
         val done = ports.smith.run(args, show = true)
         if (!done.ok) {
-            ports.notice.warn("smith could not show $what. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(
+                say(JETBRAINS_READCOMMANDS_SMITH_COULD_NOT_SHOW, what.toString(), FailureTextMapper.describe(done).toString()),
+            )
             return false
         }
         return true
@@ -58,9 +71,9 @@ object ReadSmithCommandUseCase {
     fun whyMiss(ports: FlowPortsContract): Boolean {
         val target =
             ports.prompt.text(
-                "MonoSmith: why would a task run again?",
-                "The project and the task, as project:task (for example web:build):",
-            ) { if (taskName.matches(it)) null else "Write project:task, for example web:build." } ?: return false
-        return run(ports, "why $target would run again", listOf("why-miss", target))
+                say(JETBRAINS_READCOMMANDS_MONOSMITH_WHY_WOULD_A_TASK_2),
+                say(JETBRAINS_READCOMMANDS_THE_PROJECT_AND_THE_TASK),
+            ) { if (taskName.matches(it)) null else say(JETBRAINS_READCOMMANDS_WRITE_PROJECT_TASK_FOR_EXAMPLE) } ?: return false
+        return run(ports, say(JETBRAINS_READCOMMANDS_WHY_WOULD_RUN_AGAIN, target.toString()), listOf("why-miss", target))
     }
 }

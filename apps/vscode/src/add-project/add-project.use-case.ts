@@ -6,6 +6,7 @@ import { parseNeededTools } from './add-needed-tools.mapper.ts'
 import { parseChoices, parseKinds, parseStacks } from './add-options.mapper.ts'
 import { fitOutcomes, parseOutcomes } from './add-outcomes.mapper.ts'
 import { choicesInWords } from './add-choice-rows.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** What adding a project needs from the editor. */
 export interface AddDeps {
@@ -34,7 +35,7 @@ async function readOptions (run: AddDeps['run']): Promise<AddOptions | string> {
 
     return { kinds: kindList, choices: parseChoices(choices.stdout), stacks: parseStacks(stacks.stdout), outcomes: fitOutcomes(listed.outcomes, kindList), languages: listed.languages, layers: listed.layers }
   } catch {
-    return 'smith printed kinds, choices or stacks in a form this editor does not read. Update the extension, or run smith add in a terminal.'
+    return say('vscode.add-project.smith-printed-kinds-choices-or-stacks')
   }
 }
 
@@ -58,7 +59,7 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
   if (plan.code !== 0) return { kind: 'refused', message: describeFailure(plan) }
 
   // The dialog already says that nothing was changed: the closing "Dry run" line is left out.
-  const planText = plan.stdout.split(/\r?\n/).filter((line) => line.trim() !== 'Dry run: nothing was changed.').join('\n').trim()
+  const planText = plan.stdout.split(/\r?\n/).filter((line) => line.trim() !== say('vscode.add-project.dry-run-nothing-was-changed')).join('\n').trim()
   const answer = await deps.confirm(request, planText, followsSiblings(plan.stdout), choicesInWords(request, options))
   if (answer === 'cancel') return { kind: 'cancelled' }
 

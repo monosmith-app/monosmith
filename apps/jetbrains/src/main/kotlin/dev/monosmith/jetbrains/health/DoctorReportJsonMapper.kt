@@ -1,5 +1,8 @@
 package dev.monosmith.jetbrains.health
 
+import dev.monosmith.jetbrains.words.SmithWordsConfig
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_DOCTOR_ALL_CHECKS_PASSED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_DOCTOR_FAILED_WARNINGS_PASSED
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper as Json
 
 /** Reads `smith doctor --json` and counts its checks. */
@@ -51,8 +54,13 @@ object DoctorReportJsonMapper {
     /** One sentence for a notification. */
     fun say(summary: DoctorSummaryContract): String =
         if (summary.failed == 0 && summary.warnings == 0) {
-            "Doctor: all ${summary.passed} checks passed."
+            SmithWordsConfig.say(JETBRAINS_HEALTH_DOCTOR_ALL_CHECKS_PASSED, summary.passed.toString())
         } else {
-            "Doctor: ${summary.failed} failed, ${summary.warnings} warnings, ${summary.passed} passed."
+            SmithWordsConfig.say(
+                JETBRAINS_HEALTH_DOCTOR_FAILED_WARNINGS_PASSED,
+                summary.failed.toString(),
+                summary.warnings.toString(),
+                summary.passed.toString(),
+            )
         }
 }

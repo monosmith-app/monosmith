@@ -4,8 +4,9 @@ import { askCustomAnswers } from './custom-answers.use-case.ts'
 import type { SmithQuestion } from '../smith-questions/index.ts'
 import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import type { SetupWay } from './new-workspace.use-case.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: New workspace'
+const TITLE = say('vscode.new-workspace.monosmith-new-workspace')
 
 /**
  * Asks "How do you want to set it up?", with what the defaults choose in front
@@ -16,11 +17,11 @@ const TITLE = 'MonoSmith: New workspace'
 export async function askSetupWay (defaults: readonly string[]): Promise<SetupWay | undefined> {
   const picked = await vscode.window.showQuickPick(
     [
-      { label: '$(star) Start with the defaults', description: 'asks only the name', detail: `Chooses: ${defaults.join(' · ')}. You can change each one later.`, way: 'defaults' as const },
-      { label: '$(settings-gear) Customise', description: 'CI, language, code layout, agent files, dev container, first commit', detail: 'Asks each question, with the defaults ticked.', way: 'customise' as const },
-      { label: '$(terminal) Answer in a terminal', description: 'smith new --here asks its own questions', detail: 'Nothing is written before smith lists the files and you agree.', way: 'terminal' as const },
+      { label: say('vscode.new-workspace.start-with-the-defaults'), description: say('vscode.new-workspace.asks-only-the-name'), detail: say('vscode.new-workspace.chooses-you-can-change-each-one', { join: defaults.join(' · ') }), way: 'defaults' as const },
+      { label: say('vscode.new-workspace.customise'), description: say('vscode.new-workspace.ci-language-code-layout-agent-files'), detail: say('vscode.new-workspace.asks-each-question-with-the-defaults'), way: 'customise' as const },
+      { label: say('vscode.new-workspace.answer-in-a-terminal'), description: say('vscode.new-workspace.smith-new-here-asks-its-own'), detail: say('vscode.new-workspace.nothing-is-written-before-smith-lists'), way: 'terminal' as const },
     ],
-    { title: `${TITLE}: how do you want to set it up?`, placeHolder: 'Nothing is written until you have seen the list of files and said yes' },
+    { title: say('vscode.add-project.how-do-you-want-to-set', { title: TITLE }), placeHolder: say('vscode.new-workspace.nothing-is-written-until-you-have') },
   )
 
   return picked?.way
@@ -35,7 +36,7 @@ export async function askSetupWay (defaults: readonly string[]): Promise<SetupWa
 export async function askWorkspaceName (folderName: string): Promise<string | undefined> {
   return await vscode.window.showInputBox({
     title:         `${TITLE}: name`,
-    prompt:        `smith names the workspace after this folder, "${folderName}", unless you type another name here (kebab-case).`,
+    prompt:        say('vscode.new-workspace.smith-names-the-workspace-after-this', { folderName }),
     value:         folderName,
     validateInput: (value) => checkProjectName(value),
   })
@@ -58,7 +59,7 @@ export async function pickQuestion (question: SmithQuestion, current: readonly s
   if (picked === undefined) return undefined
   const values = Array.isArray(picked) ? picked.map((item) => item.value) : [picked.value]
   if (values.length === 0) {
-    void vscode.window.showWarningMessage('MonoSmith: pick at least one answer. The workspace was not created.')
+    void vscode.window.showWarningMessage(say('vscode.new-workspace.monosmith-pick-at-least-one-answer'))
 
     return undefined
   }
@@ -68,7 +69,7 @@ export async function pickQuestion (question: SmithQuestion, current: readonly s
 
 async function pickYesNo (title: string, yes: string, no: string, current: boolean): Promise<boolean | undefined> {
   const picked = await vscode.window.showQuickPick(
-    [{ label: `Yes${current ? ' (default)' : ''}`, description: yes, value: true }, { label: `No${current ? '' : ' (default)'}`, description: no, value: false }],
+    [{ label: say('vscode.new-workspace.yes-2', { part: current ? say('vscode.add-project.default-2') : '' }), description: yes, value: true }, { label: say('vscode.new-workspace.no-2', { part: current ? '' : say('vscode.add-project.default-2') }), description: no, value: false }],
     { title: `${TITLE}: ${title}` },
   )
 
@@ -86,7 +87,7 @@ async function pickYesNo (title: string, yes: string, no: string, current: boole
 export async function askCustomChoices (start: NewWorkspaceChoices, questions: readonly SmithQuestion[]): Promise<NewWorkspaceChoices | undefined> {
   const answered = await askCustomAnswers(questions, start, pickQuestion)
   if (answered === undefined) return undefined
-  const commit = await pickYesNo('make the first commit?', 'smith commits its own files as the first commit', 'smith writes the files and commits nothing', start.commit)
+  const commit = await pickYesNo(say('vscode.new-workspace.make-the-first-commit'), say('vscode.new-workspace.smith-commits-its-own-files-as'), say('vscode.new-workspace.smith-writes-the-files-and-commits'), start.commit)
 
   return commit === undefined ? undefined : { ...answered, commit }
 }
@@ -99,12 +100,12 @@ export async function askCustomChoices (start: NewWorkspaceChoices, questions: r
  * @returns true when the person agrees
  */
 export async function confirmNewWorkspace (summary: readonly string[], plan: string): Promise<boolean> {
-  const create = 'Create the workspace'
-  const open = 'Open the list of files'
+  const create = say('vscode.new-workspace.create-the-workspace')
+  const open = say('vscode.new-workspace.open-the-list-of-files')
   for (;;) {
     const choice = await vscode.window.showInformationMessage(
-      'MonoSmith: this is what smith will create here.',
-      { modal: true, detail: `${summary.join('\n')}\n\nNothing was written yet. The list of files is one click away.` },
+      say('vscode.new-workspace.monosmith-this-is-what-smith-will'),
+      { modal: true, detail: say('vscode.new-workspace.nothing-was-written-yet-the-list', { join: summary.join('\n') }) },
       create,
       open,
     )
@@ -123,11 +124,11 @@ export function tellNewWorkspaceOutcome (outcome: NewWorkspaceOutcome, onOutput:
   switch (outcome.kind) {
     case 'created': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage(`MonoSmith: the workspace ${outcome.name} is created. ${outcome.committed ? 'smith made the first commit of its own files.' : 'Nothing was committed: review the files with git.'} Add your first project from the Projects view.`)
+      void vscode.window.showInformationMessage(say('vscode.new-workspace.monosmith-the-workspace-is-created-add', { name: outcome.name, part: say(outcome.committed ? 'vscode.new-workspace.smith-made-the-first-commit-of' : 'vscode.convert-workspace.nothing-was-committed-review-the-files') }))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was created. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.new-workspace.monosmith-nothing-was-created', { message: outcome.message }))
       break
     }
     case 'terminal':

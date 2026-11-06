@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { SyncOutcome, SyncRule } from './sync-versions.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks which version wins when projects declare a dependency at different
@@ -8,10 +9,10 @@ import type { SyncOutcome, SyncRule } from './sync-versions.use-case.ts'
  */
 export async function chooseSyncRule (): Promise<SyncRule | undefined> {
   const picked = await vscode.window.showQuickPick<vscode.QuickPickItem & { rule: SyncRule }>([
-    { label: 'The installed version (smith\'s pick)', detail: 'the version the package manager has installed', rule: 'installed' },
-    { label: 'The highest declared', detail: 'projects on an older version move up', rule: 'highest' },
-    { label: 'The lowest declared', detail: 'projects on a newer version move down', rule: 'lowest' },
-  ], { title: 'MonoSmith: which version wins?', placeHolder: 'You see the plan before anything is written. One dependency at a time: smith sync --to <name>=<version>.' })
+    { label: say('resultdialog.version.installed.label'), detail: say('vscode.sync-versions.the-version-the-package-manager-has'), rule: 'installed' },
+    { label: say('resultdialog.version.highest.label'), detail: say('resultdialog.version.highest.hint'), rule: 'highest' },
+    { label: say('resultdialog.version.lowest.label'), detail: say('resultdialog.version.lowest.hint'), rule: 'lowest' },
+  ], { title: say('vscode.sync-versions.monosmith-which-version-wins'), placeHolder: say('resultdialog.foot.version') })
 
   return picked?.rule
 }
@@ -24,12 +25,12 @@ export async function chooseSyncRule (): Promise<SyncRule | undefined> {
  */
 export async function confirmSync (plan: string, rule: SyncRule): Promise<boolean> {
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: write these versions (${rule} wins)?`,
-    { modal: true, detail: `${plan}\n\nNothing is committed.` },
-    'Write them',
+    say('vscode.sync-versions.monosmith-write-these-versions-wins', { rule }),
+    { modal: true, detail: say('vscode.sync-versions.nothing-is-committed', { plan }) },
+    say('vscode.sync-versions.write-them'),
   )
 
-  return choice === 'Write them'
+  return choice === say('vscode.sync-versions.write-them')
 }
 
 /**
@@ -39,11 +40,11 @@ export async function confirmSync (plan: string, rule: SyncRule): Promise<boolea
 export function tellSyncOutcome (outcome: SyncOutcome): void {
   switch (outcome.kind) {
     case 'synced': {
-      void vscode.window.showInformationMessage('MonoSmith: the versions are written. Nothing is committed: review the change with git.')
+      void vscode.window.showInformationMessage(say('vscode.sync-versions.monosmith-the-versions-are-written-nothing'))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was synced. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.sync-versions.monosmith-nothing-was-synced', { message: outcome.message }))
       break
     }
     case 'declined': {

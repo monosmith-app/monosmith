@@ -1,0 +1,7 @@
+{
+  "vscode.smith-client.smith-serve-ended": "smith serve ended",
+  "vscode.smith-client.smith-serve-failed-the-request": "smith serve failed the request",
+  "vscode.smith-client.smith-serve-ended-2": "smith serve ended: {trim}",
+  "vscode.smith-client.smith-speaks-protocol-older-than-this": "smith {version} speaks protocol {protocolVersion}, older than this extension supports. Upgrade smith.",
+  "vscode.smith-client.smith-serve-ended-before-it-answered": "smith serve ended before it answered: {said}"
+}

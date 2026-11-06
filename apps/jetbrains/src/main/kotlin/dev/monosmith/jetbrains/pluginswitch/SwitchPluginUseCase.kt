@@ -7,6 +7,26 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLANAPPLY_COMMIT_CHANGES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINMARKET_MONOSMITH_PLUGINS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINMARKET_SMITH_PRINTED_THE_PLUGINS_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_IS_COMMITTED_AS_ONE_CHANGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_IS_NOT_COMMITTED_REVIEW_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_NOTHING_WAS_CHANGED_THESE_PROJECTS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_NO_PLUGIN_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_PICK_A_BUILT_IN_PLUGIN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_SMITH_COUNTS_THE_PROJECTS_FINDS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_SMITH_LISTS_NO_BUILT_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_SWITCHING_OFF_HIDES_PROJECTS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_THE_PROJECTS_FINDS_APPEAR_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_TURN_A_PLUGIN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_TURN_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_TURN_IT_OFF_ANYWAY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_TURN_OFF_ANYWAY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_WAS_NOT_TURNED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLUGINSWITCH_WAS_NOT_TURNED_OFF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -16,8 +36,8 @@ import java.nio.file.Path
  * asks again; only a second yes runs `--force`. smith never commits here.
  */
 object SwitchPluginUseCase {
-    private const val TITLE = "MonoSmith: plugins"
-    private const val HIDES_PROJECTS = "switching off hides projects"
+    private val TITLE = say(JETBRAINS_PLUGINMARKET_MONOSMITH_PLUGINS)
+    private val HIDES_PROJECTS = say(JETBRAINS_PLUGINSWITCH_SWITCHING_OFF_HIDES_PROJECTS)
 
     /** Starts the flow in a background task; [on] true turns a plugin on, false turns one off. */
     fun start(
@@ -37,52 +57,61 @@ object SwitchPluginUseCase {
     ): Boolean {
         val listed = ports.smith.run(listOf("plugin", "list", "--json"))
         if (!listed.ok) {
-            ports.notice.warn("No plugin was changed. ${FailureTextMapper.describe(listed)}")
+            ports.notice.warn(say(JETBRAINS_PLUGINSWITCH_NO_PLUGIN_WAS_CHANGED, FailureTextMapper.describe(listed).toString()))
             return false
         }
         val plugins =
             runCatching { BuiltinPluginsMapper.toPlugins(listed.stdout) }.getOrElse {
-                ports.notice.warn("smith printed the plugins in a form this plugin does not read. Update the plugin.")
+                ports.notice.warn(say(JETBRAINS_PLUGINMARKET_SMITH_PRINTED_THE_PLUGINS_IN))
                 return false
             }
         if (plugins.isEmpty()) {
-            ports.notice.info("smith lists no built-in plugin.")
+            ports.notice.info(say(JETBRAINS_PLUGINSWITCH_SMITH_LISTS_NO_BUILT_IN))
             return false
         }
         val word = if (on) "on" else "off"
         val name =
-            ports.prompt.pickOne("$TITLE: turn a plugin $word", "Pick a built-in plugin.", BuiltinPluginsMapper.rows(plugins))?.name
+            ports.prompt
+                .pickOne(
+                    say(JETBRAINS_PLUGINSWITCH_TURN_A_PLUGIN, TITLE.toString(), word.toString()),
+                    say(JETBRAINS_PLUGINSWITCH_PICK_A_BUILT_IN_PLUGIN),
+                    BuiltinPluginsMapper.rows(plugins),
+                )?.name
                 ?: return false
         val args = listOf("plugin", if (on) "enable" else "disable", name)
         val answer =
             ports.prompt.plan(
                 "$TITLE: turn $name $word?",
                 if (on) {
-                    "The projects $name finds appear in smith. Nothing is written until you answer."
+                    say(JETBRAINS_PLUGINSWITCH_THE_PROJECTS_FINDS_APPEAR_IN, name.toString())
                 } else {
-                    "smith counts the projects $name finds first. If there are any, it stops and names them. Nothing is written until you answer."
+                    say(JETBRAINS_PLUGINSWITCH_SMITH_COUNTS_THE_PROJECTS_FINDS, name.toString())
                 },
                 "smith ${args.joinToString(" ")}",
-                "Turn it $word",
+                say(JETBRAINS_PLUGINSWITCH_TURN_IT, word.toString()),
                 offerCommit = true,
             ) ?: return false
         val commit = if (answer.commit) listOf("--commit") else emptyList()
         val first = ports.smith.run(args + commit, show = true)
         if (first.ok) return done(ports, name, word, answer.commit, commitLater)
         if (on || !first.stderr.contains(HIDES_PROJECTS)) {
-            ports.notice.warn("$name was not turned $word. ${FailureTextMapper.describe(first)}")
+            ports.notice.warn(
+                say(JETBRAINS_PLUGINSWITCH_WAS_NOT_TURNED, name.toString(), word.toString(), FailureTextMapper.describe(first).toString()),
+            )
             return false
         }
         ports.prompt.plan(
-            "$TITLE: turn $name off anyway?",
-            "Nothing was changed. These projects disappear from smith until you turn $name on again.",
+            say(JETBRAINS_PLUGINSWITCH_TURN_OFF_ANYWAY, TITLE.toString(), name.toString()),
+            say(JETBRAINS_PLUGINSWITCH_NOTHING_WAS_CHANGED_THESE_PROJECTS, name.toString()),
             first.stderr.trim(),
-            "Turn it off anyway",
+            say(JETBRAINS_PLUGINSWITCH_TURN_IT_OFF_ANYWAY),
             offerCommit = false,
         ) ?: return false
         val forced = ports.smith.run(args + "--force" + commit, show = true)
         if (!forced.ok) {
-            ports.notice.warn("$name was not turned off. ${FailureTextMapper.describe(forced)}")
+            ports.notice.warn(
+                say(JETBRAINS_PLUGINSWITCH_WAS_NOT_TURNED_OFF, name.toString(), FailureTextMapper.describe(forced).toString()),
+            )
             return false
         }
         return done(ports, name, word, answer.commit, commitLater)
@@ -97,13 +126,13 @@ object SwitchPluginUseCase {
     ): Boolean {
         ports.changed()
         if (committed) {
-            ports.notice.info("$name is $word. Committed as one change: Undo reverts it.")
+            ports.notice.info(say(JETBRAINS_PLUGINSWITCH_IS_COMMITTED_AS_ONE_CHANGE, name.toString(), word.toString()))
         } else {
             val button =
-                NoticeButtonContract("Commit changes…", "Make one commit that Undo can revert; you choose the files first.") {
+                NoticeButtonContract(say(JETBRAINS_PLANAPPLY_COMMIT_CHANGES), say(JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO)) {
                     commitLater("turn $name $word")
                 }
-            ports.notice.info("$name is $word. Not committed: review it with the Commit window, or commit it now.", listOf(button))
+            ports.notice.info(say(JETBRAINS_PLUGINSWITCH_IS_NOT_COMMITTED_REVIEW_IT, name.toString(), word.toString()), listOf(button))
         }
         return true
     }

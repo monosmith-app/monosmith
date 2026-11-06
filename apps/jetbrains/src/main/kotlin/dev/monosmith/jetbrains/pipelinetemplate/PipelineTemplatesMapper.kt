@@ -2,6 +2,8 @@ package dev.monosmith.jetbrains.pipelinetemplate
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_PARITY_FORMS_ASKS_FOR_THE_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * One ready-made pipeline of `smith pipeline`.
@@ -47,7 +49,7 @@ object PipelineTemplatesMapper {
                 it.name,
                 it.name,
                 if (it.providers.isEmpty()) "" else "[${it.providers}]",
-                it.description + if (it.needsApp) " (asks for the app)" else "",
+                it.description + if (it.needsApp) say(GUIDE_PARITY_FORMS_ASKS_FOR_THE_APP) else "",
             )
         }
 

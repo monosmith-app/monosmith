@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 /** What `smith doctor --fix` proposes, before anything is written. */
 export interface FixPreview {
   /** One line per fix, such as `ignore the cache directory`. */
@@ -21,7 +22,7 @@ export function parseFixPreview (message: string): FixPreview | undefined {
   const lines = message.split(/\r?\n/)
   const first = lines.findIndex((line) => MARKER.test(line))
   if (first === -1) return undefined
-  const end = lines.findIndex((line, index) => index > first && line.startsWith('Pass --yes'))
+  const end = lines.findIndex((line, index) => index > first && line.startsWith(say('vscode.health.pass-yes')))
   const block = lines.slice(first, end === -1 ? undefined : end)
   const titles = block.flatMap((line) => MARKER.exec(line)?.[1] ?? [])
 

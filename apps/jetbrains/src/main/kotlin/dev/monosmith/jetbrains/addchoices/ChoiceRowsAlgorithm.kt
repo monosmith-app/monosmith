@@ -1,6 +1,15 @@
 package dev.monosmith.jetbrains.addchoices
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_BUILT_FROM_THE_STACK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_BUILT_WITH_THE_DEFAULT_CHOICES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT_NOTHING_EXTRA
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_LEAVE_OUT_THE_YOU_CAN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_NONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_SUGGESTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_YOUR_CHOICES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** The questions of the choices of a new project, built from the catalogue of `smith choices --json`. No name is known here. */
 object ChoiceRowsAlgorithm {
@@ -78,7 +87,7 @@ object ChoiceRowsAlgorithm {
                     label = it.label,
                     description =
                         listOf(
-                            if (it.isDefault) "(default)" else "",
+                            if (it.isDefault) say(JETBRAINS_ADDCHOICES_DEFAULT) else "",
                             if (it.requires.isEmpty()) "" else "needs ${it.requires.joinToString(", ")}",
                         ).filter(String::isNotEmpty)
                             .joinToString(" "),
@@ -87,7 +96,14 @@ object ChoiceRowsAlgorithm {
             }
         if (fits.any { it.isDefault }) return rows
         val layer = (ofLayers[axis.axis] ?: axis.axis).lowercase()
-        return listOf(ChoiceRowContract("", "None", "(default) nothing extra", "Leave out the $layer: you can add one later.")) + rows
+        return listOf(
+            ChoiceRowContract(
+                "",
+                say(JETBRAINS_ADDCHOICES_NONE),
+                say(JETBRAINS_ADDCHOICES_DEFAULT_NOTHING_EXTRA),
+                say(JETBRAINS_ADDCHOICES_LEAVE_OUT_THE_YOU_CAN, layer.toString()),
+            ),
+        ) + rows
     }
 
     /**
@@ -107,7 +123,7 @@ object ChoiceRowsAlgorithm {
                 label = it.label,
                 description =
                     listOf(
-                        if (it.isDefault) "(default)" else "",
+                        if (it.isDefault) say(JETBRAINS_ADDCHOICES_DEFAULT) else "",
                         layer,
                         if (it.requires.isEmpty()) "" else "needs ${it.requires.joinToString(", ")}",
                     ).filter(String::isNotEmpty)
@@ -128,7 +144,7 @@ object ChoiceRowsAlgorithm {
         choices
             .filter { goesWith(it, picked) }
             .sortedByDescending { it.suggested }
-            .map { ChoiceRowContract(it.name, it.name, if (it.suggested) "(suggested)" else "", it.description) }
+            .map { ChoiceRowContract(it.name, it.name, if (it.suggested) say(JETBRAINS_ADDCHOICES_SUGGESTED) else "", it.description) }
 
     /**
      * Says the choices of a request in words, and which of them the catalogue marks as the default, so a
@@ -144,10 +160,10 @@ object ChoiceRowsAlgorithm {
         choices: List<ChoiceOptionContract>,
         ofLayers: Map<String, String> = emptyMap(),
     ): String {
-        if (stack != null) return "Built from the stack $stack."
+        if (stack != null) return say(JETBRAINS_ADDCHOICES_BUILT_FROM_THE_STACK, stack.toString())
         val axes = byAxis(choices, language)
         val chosen = named.mapNotNull { name -> axes.flatMap { it.choices }.firstOrNull { it.name == name } }
-        if (chosen.isEmpty()) return "Built with the default choices of $language: nothing extra was chosen."
+        if (chosen.isEmpty()) return say(JETBRAINS_ADDCHOICES_BUILT_WITH_THE_DEFAULT_CHOICES, language.toString())
         val asked = askedAxes(choices, language)
         val taken = chosen.map { it.axis }.toSet()
         val without =
@@ -155,6 +171,10 @@ object ChoiceRowsAlgorithm {
                 .filter { axis -> !axis.many && axis.axis !in asked && axis.axis !in taken && axis.choices.none { it.isDefault } }
                 .map { "no ${(ofLayers[it.axis] ?: it.axis).lowercase()}" }
         val list = chosen.joinToString(", ") { "${it.label}${if (it.isDefault) " (default)" else ""}" }
-        return "Your choices: $list${if (without.isEmpty()) "" else "; ${without.joinToString(", ")}"}."
+        return say(
+            JETBRAINS_ADDCHOICES_YOUR_CHOICES,
+            list.toString(),
+            (if (without.isEmpty()) "" else "; ${without.joinToString(", ")}").toString(),
+        )
     }
 }

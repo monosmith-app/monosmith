@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 /** A project that smith wrote and then found failing its own `smith doctor` checks. */
 export interface DoctorFailure {
   /** The project. */
@@ -22,12 +23,10 @@ export interface DoctorFailure {
  */
 export function describeDoctorFailure (failure: DoctorFailure): string {
   const files = failure.files > 0 ? ` (${failure.files} files)` : ''
-  const why = failure.reasons.length === 0 ? 'a check of smith doctor fails' : failure.reasons.join('; ')
-  const commit = failure.committed
-    ? 'It was committed.'
-    : 'Nothing was committed: the files are in your work tree, so Source Control shows them as changes.'
+  const why = failure.reasons.length === 0 ? say('vscode.smith-run.a-check-of-smith-doctor-fails') : failure.reasons.join('; ')
+  const commit = say(failure.committed ? 'vscode.smith-run.it-was-committed' : 'vscode.smith-run.nothing-was-committed-the-files-are')
 
-  return `MonoSmith: the project ${failure.name} was created${files}, but smith could not finish checking it: ${why}. ${commit}`
+  return say('vscode.smith-run.monosmith-the-project-was-created-but', { name: failure.name, files, why, commit })
 }
 
 /**
@@ -42,7 +41,7 @@ export function parseDoctorFailure (output: string): DoctorFailure | undefined {
   if (name === undefined) return undefined
 
   const lines = output.split(/\r?\n/)
-  const start = lines.findIndex((line) => line.startsWith(`The new project ${name} fails smith doctor`))
+  const start = lines.findIndex((line) => line.startsWith(say('vscode.smith-run.the-new-project-fails-smith-doctor', { name })))
   const rest = start === -1 ? [] : lines.slice(start)
   const block: string[] = []
   for (const line of rest) {

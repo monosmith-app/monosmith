@@ -2,8 +2,9 @@ import * as vscode from 'vscode'
 import { parsePackages } from './install-arguments.mapper.ts'
 import type { InstallOutcome, InstallRequest, LinkNode } from './install-request.contract.ts'
 import { linkableLibraries } from './linkable-libraries.policy.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: add a dependency'
+const TITLE = say('vscode.install-dependency.monosmith-add-a-dependency')
 
 /**
  * Asks what to add. The first question is the one that matters: a library of this workspace or a package from
@@ -14,40 +15,40 @@ const TITLE = 'MonoSmith: add a dependency'
  * @returns the request, or undefined when the person pressed Escape
  */
 export async function askInstallRequest (nodes: readonly LinkNode[], preselected?: string, only?: 'workspace' | 'registry'): Promise<InstallRequest | undefined> {
-  const pickedProject = preselected === undefined ? await vscode.window.showQuickPick(nodes.map((node) => ({ label: node.name, description: `${node.kind} · ${node.language}` })), { title: `${TITLE} (1/3): which project?` }) : undefined
+  const pickedProject = preselected === undefined ? await vscode.window.showQuickPick(nodes.map((node) => ({ label: node.name, description: `${node.kind} · ${node.language}` })), { title: say('vscode.install-dependency.1-3-which-project', { title: TITLE }) }) : undefined
   const project = preselected ?? pickedProject?.label
   if (project === undefined) return undefined
   const source = only === undefined
     ? await vscode.window.showQuickPick(
         [
-          { label: 'A library of this workspace', description: 'linked, nothing is downloaded', detail: `${project} uses the code of another project here, always its current copy.`, value: 'workspace' as const },
-          { label: 'A package from the registry', description: '(default)', detail: 'Downloaded from the language registry (npm, PyPI, crates.io…), a copy outside this workspace.', value: 'registry' as const },
+          { label: say('packageprompt.source.workspace'), description: say('vscode.install-dependency.linked-nothing-is-downloaded'), detail: say('vscode.install-dependency.uses-the-code-of-another-project', { project }), value: 'workspace' as const },
+          { label: say('vscode.install-dependency.a-package-from-the-registry'), description: '(default)', detail: say('vscode.install-dependency.downloaded-from-the-language-registry-npm'), value: 'registry' as const },
         ],
-        { title: `${TITLE} (2/3): what do you add to ${project}?` },
+        { title: say('vscode.install-dependency.2-3-what-do-you-add', { title: TITLE, project }) },
       )
     : { value: only }
   if (source === undefined) return undefined
   if (source.value === 'registry') {
-    const typed = await vscode.window.showInputBox({ title: `${TITLE} (3/3): packages`, prompt: 'Package names, separated by spaces', placeHolder: 'zod  react@19', validateInput: (value) => parsePackages(value).length === 0 ? 'Type at least one package.' : undefined })
+    const typed = await vscode.window.showInputBox({ title: `${TITLE} (3/3): packages`, prompt: say('vscode.install-dependency.package-names-separated-by-spaces'), placeHolder: 'zod  react@19', validateInput: (value) => parsePackages(value).length === 0 ? say('vscode.install-dependency.type-at-least-one-package') : undefined })
 
     return typed === undefined ? undefined : { project, source: 'registry', packages: parsePackages(typed), dev: false }
   }
   const libraries = linkableLibraries(nodes, project)
   if (libraries.length === 0) {
-    void vscode.window.showWarningMessage(`MonoSmith: no library of this workspace can be linked to ${project}. A library must be a lib or a package, in the same language, and must not already depend on ${project}.`)
+    void vscode.window.showWarningMessage(say('vscode.install-dependency.monosmith-no-library-of-this-workspace', { project, project2: project }))
 
     return undefined
   }
-  const library = await vscode.window.showQuickPick(libraries.map((node) => ({ label: node.name, description: `${node.kind} · ${node.language}` })), { title: `${TITLE} (3/3): which library?` })
+  const library = await vscode.window.showQuickPick(libraries.map((node) => ({ label: node.name, description: `${node.kind} · ${node.language}` })), { title: say('vscode.install-dependency.3-3-which-library', { title: TITLE }) })
   if (library === undefined) return undefined
   const language = nodes.find((node) => node.name === project)?.language
   if (language !== 'node') return { project, source: 'workspace', library: library.label, packages: [], dev: false }
   const range = await vscode.window.showQuickPick(
     [
-      { label: 'Follow the workspace', description: '(default)', detail: 'Use the range the workspace already uses for its own libraries. When it has none yet, smith writes * and says so.', value: undefined },
-      { label: 'Any version (*)', detail: 'npm uses the library of this workspace whatever its version. You never edit the line when the library changes.', value: '*' },
+      { label: say('vscode.install-dependency.follow-the-workspace'), description: '(default)', detail: say('packageprompt.range.follow.meaning'), value: undefined },
+      { label: say('packageprompt.range.any.label'), detail: say('vscode.install-dependency.npm-uses-the-library-of-this'), value: '*' },
     ],
-    { title: `${TITLE}: which version of ${library.label} does ${project} ask for?` },
+    { title: say('vscode.install-dependency.which-version-of-does-ask-for', { title: TITLE, label: library.label, project }) },
   )
 
   return range === undefined ? undefined : { project, source: 'workspace', library: library.label, ...(range.value !== undefined && { range: range.value }), packages: [], dev: false }
@@ -62,11 +63,11 @@ export function tellDependencyOutcome (outcome: InstallOutcome, onOutput: (line:
   switch (outcome.kind) {
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage('MonoSmith: the dependency is added. Not committed unless you ticked the box: review with git status, or use Commit Changes.')
+      void vscode.window.showInformationMessage(say('vscode.install-dependency.monosmith-the-dependency-is-added-not'))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was added. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.add-project.monosmith-nothing-was-added', { message: outcome.message }))
       break
     }
     case 'cancelled': {

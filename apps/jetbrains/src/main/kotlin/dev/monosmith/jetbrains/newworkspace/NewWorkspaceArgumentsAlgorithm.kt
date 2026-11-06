@@ -2,6 +2,18 @@ package dev.monosmith.jetbrains.newworkspace
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_AGENT_FILES_FOR_CLAUDE_CODE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_CI
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_CODE_LAYOUT_SMITH_CHECKS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_DEV_CONTAINER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_FIRST_COMMIT_OF_SMITH_S
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_MAIN_LANGUAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_NAME
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_NO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_TESTS_AND_LINT_FOR_NODE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_NEWWORKSPACE_YES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * What the person decides about a new workspace: the questions of `smith new`, one field each.
@@ -52,8 +64,8 @@ object NewWorkspaceArgumentsAlgorithm {
     ): List<ChoiceRowContract> {
         val rows =
             listOf(
-                ChoiceRowContract("yes", "Yes", if (defaultYes) "(default)" else "", yes),
-                ChoiceRowContract("no", "No", if (defaultYes) "" else "(default)", no),
+                ChoiceRowContract("yes", say(JETBRAINS_NEWWORKSPACE_YES), if (defaultYes) say(JETBRAINS_ADDCHOICES_DEFAULT) else "", yes),
+                ChoiceRowContract("no", say(JETBRAINS_NEWWORKSPACE_NO), if (defaultYes) "" else say(JETBRAINS_ADDCHOICES_DEFAULT), no),
             )
         return if (defaultYes) rows else rows.reversed()
     }
@@ -97,24 +109,36 @@ object NewWorkspaceArgumentsAlgorithm {
     ): List<String> {
         fun q(key: String) = questions.firstOrNull { it.key == key }
         return listOf(
-            "Name: ${choices.name}${if (choices.name == folderName) " (the name of this folder)" else ""}",
-            "CI: ${choices.ci.joinToString(", ") { NewQuestionsMapper.labelOf(q("ci"), it) }}",
-            "Main language: ${NewQuestionsMapper.labelOf(q("language"), choices.language)}",
+            say(
+                JETBRAINS_NEWWORKSPACE_NAME,
+                choices.name.toString(),
+                (if (choices.name == folderName) " (the name of this folder)" else "").toString(),
+            ),
+            say(JETBRAINS_NEWWORKSPACE_CI, (choices.ci.joinToString(", ") { NewQuestionsMapper.labelOf(q("ci"), it) }).toString()),
+            say(JETBRAINS_NEWWORKSPACE_MAIN_LANGUAGE, NewQuestionsMapper.labelOf(q("language"), choices.language).toString()),
         ) +
             (
                 if (choices.language ==
                     "node"
                 ) {
-                    listOf("Tests and lint for Node projects: ${NewQuestionsMapper.labelOf(q("node-stack"), choices.nodeStack)}")
+                    listOf(
+                        say(
+                            JETBRAINS_NEWWORKSPACE_TESTS_AND_LINT_FOR_NODE,
+                            NewQuestionsMapper.labelOf(q("node-stack"), choices.nodeStack).toString(),
+                        ),
+                    )
                 } else {
                     emptyList()
                 }
             ) +
             listOf(
-                "Code layout smith checks: ${choices.architecture}",
-                "Agent files for Claude Code: ${if (choices.agent) "yes" else "no"}",
-                "Dev container: ${if (choices.devcontainer) "yes" else "no"}",
-                "First commit of smith's own files: ${if (choices.commit) "yes, smith makes it" else "no, the files stay uncommitted"}",
+                say(JETBRAINS_NEWWORKSPACE_CODE_LAYOUT_SMITH_CHECKS, choices.architecture.toString()),
+                say(JETBRAINS_NEWWORKSPACE_AGENT_FILES_FOR_CLAUDE_CODE, (if (choices.agent) "yes" else "no").toString()),
+                say(JETBRAINS_NEWWORKSPACE_DEV_CONTAINER, (if (choices.devcontainer) "yes" else "no").toString()),
+                say(
+                    JETBRAINS_NEWWORKSPACE_FIRST_COMMIT_OF_SMITH_S,
+                    (if (choices.commit) "yes, smith makes it" else "no, the files stay uncommitted").toString(),
+                ),
             )
     }
 }

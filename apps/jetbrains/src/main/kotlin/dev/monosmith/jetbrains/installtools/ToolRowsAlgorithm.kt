@@ -1,6 +1,15 @@
 package dev.monosmith.jetbrains.installtools
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_IT_NEEDS_ADMINISTRATOR_RIGHTS_AND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_RUNS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_SKIP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_SMITH_RUNS_THE_COMMAND_AND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_SMITH_SHOWS_THE_COMMAND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.TOOLSDIALOG_ANSWER_MYSELF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.TOOLSDIALOG_ANSWER_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** The lines of the questions about a tool, built from the options smith offers. */
 object ToolRowsAlgorithm {
@@ -16,12 +25,13 @@ object ToolRowsAlgorithm {
     /** The lines of "how do you want to get this tool?": the marked default first, each with its command and consequence. */
     fun wayRows(plan: ToolPlanContract): List<ChoiceRowContract> =
         plan.options.sortedByDescending { it.value == plan.default }.map { option ->
-            val command = if (option.command.isEmpty()) "" else "Runs: ${option.command.joinToString(" ")}. "
-            val admin = if (option.admin) "It needs administrator rights, and smith asks again before it runs. " else ""
+            val command =
+                if (option.command.isEmpty()) "" else say(JETBRAINS_INSTALLTOOLS_RUNS, option.command.joinToString(" ").toString())
+            val admin = if (option.admin) say(JETBRAINS_INSTALLTOOLS_IT_NEEDS_ADMINISTRATOR_RIGHTS_AND) else ""
             ChoiceRowContract(
                 name = option.value,
                 label = option.label,
-                description = if (option.value == plan.default) "(default)" else "",
+                description = if (option.value == plan.default) say(JETBRAINS_ADDCHOICES_DEFAULT) else "",
                 detail = "$command$admin${option.hint}${if (option.note.isEmpty()) "" else " ${option.note}"}",
             )
         }
@@ -32,9 +42,19 @@ object ToolRowsAlgorithm {
         option: ToolOptionContract,
     ): List<ChoiceRowContract> =
         listOf(
-            ChoiceRowContract(SKIP, "Skip ${plan.title}", "(default)", plan.consequence),
-            ChoiceRowContract(MYSELF, "I will run it myself", "", "smith shows the command: ${option.command.joinToString(" ")}"),
-            ChoiceRowContract(RUN_IT, "Let smith run it", "", "smith runs the command and the system asks for your password or approval."),
+            ChoiceRowContract(
+                SKIP,
+                say(JETBRAINS_INSTALLTOOLS_SKIP, plan.title.toString()),
+                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                plan.consequence,
+            ),
+            ChoiceRowContract(
+                MYSELF,
+                say(TOOLSDIALOG_ANSWER_MYSELF),
+                "",
+                say(JETBRAINS_INSTALLTOOLS_SMITH_SHOWS_THE_COMMAND, option.command.joinToString(" ").toString()),
+            ),
+            ChoiceRowContract(RUN_IT, say(TOOLSDIALOG_ANSWER_SMITH), "", say(JETBRAINS_INSTALLTOOLS_SMITH_RUNS_THE_COMMAND_AND)),
         )
 
     /** Every install command that would work, then the official page, one per line. */

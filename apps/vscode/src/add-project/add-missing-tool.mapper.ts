@@ -1,8 +1,9 @@
 import type { MissingTool } from './add-options.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What a person calls the programs smith checks for. */
 const TITLES: Record<string, string> = {
-  dotnet:  'the .NET SDK',
+  dotnet:  say('vscode.add-project.the-net-sdk'),
   go:      'Go',
   node:    'Node.js',
   npm:     'Node.js',

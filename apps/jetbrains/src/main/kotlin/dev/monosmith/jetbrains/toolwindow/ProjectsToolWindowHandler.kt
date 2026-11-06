@@ -30,6 +30,20 @@ import dev.monosmith.jetbrains.smithrun.SmithRunClient
 import dev.monosmith.jetbrains.smithversion.SmithPresenceUseCase
 import dev.monosmith.jetbrains.swapchoice.SwapChoiceUseCase
 import dev.monosmith.jetbrains.taskrun.RunTaskUseCase
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMMANDS_GROUP_RELEASE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMMANDS_PROJ_SWAP_TITLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.COMMANDS_VIEW_DEPS_TITLE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.DASHBOARD_ROW_HEALTH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.DASHBOARD_ROW_PROJECTS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_ADD_LIBRARY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_AFFECTED_ONLY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_INSTALL_PACKAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_MAKE_APP_LIBRARY_OR_PACKAGE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_READ_THE_PROJECTS_THE_UPDATES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_REFRESH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_RUN_TASK
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_UNLINK_LIBRARY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import dev.monosmith.jetbrains.workspace.AffectedJsonMapper
 import dev.monosmith.jetbrains.workspace.FindWorkspaceRootUseCase
 import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
@@ -72,7 +86,7 @@ class ProjectsToolWindowHandler :
         val release: Tree = Tree(),
         val health: Tree = Tree(),
         val filter: SearchTextField = SearchTextField(),
-        val affectedOnly: JBCheckBox = JBCheckBox("Affected only"),
+        val affectedOnly: JBCheckBox = JBCheckBox(say(JETBRAINS_TOOLWINDOW_AFFECTED_ONLY)),
     ) {
         var listed: Result<List<SmithProjectContract>>? = null
         var affected: Set<String> = emptySet()
@@ -96,10 +110,10 @@ class ProjectsToolWindowHandler :
                 add(top, BorderLayout.NORTH)
                 add(JBScrollPane(views.projects), BorderLayout.CENTER)
             }
-        toolWindow.contentManager.addContent(factory.createContent(projectsPanel, "Projects", false))
-        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.deps), "Dependencies", false))
-        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.release), "Release", false))
-        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.health), "Health", false))
+        toolWindow.contentManager.addContent(factory.createContent(projectsPanel, say(DASHBOARD_ROW_PROJECTS), false))
+        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.deps), say(COMMANDS_VIEW_DEPS_TITLE), false))
+        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.release), say(COMMANDS_GROUP_RELEASE), false))
+        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.health), say(DASHBOARD_ROW_HEALTH), false))
         toolWindow.contentManager.addContent(
             factory.createContent(OutputConsoleStore.consoleFor(project).component, OutputConsoleStore.TAB_TITLE, false),
         )
@@ -131,8 +145,8 @@ class ProjectsToolWindowHandler :
         toolWindow.setTitleActions(
             listOf<AnAction>(
                 object : DumbAwareAction(
-                    "Refresh",
-                    "Read the projects, the updates, the release plan and the health of the workspace again",
+                    say(JETBRAINS_TOOLWINDOW_REFRESH),
+                    say(JETBRAINS_TOOLWINDOW_READ_THE_PROJECTS_THE_UPDATES),
                     AllIcons.Actions.Refresh,
                 ) {
                     override fun actionPerformed(event: AnActionEvent) = reload()
@@ -280,17 +294,17 @@ class ProjectsToolWindowHandler :
             label: String,
             action: () -> Unit,
         ) = menu.add(JMenuItem(label).apply { addActionListener { action() } })
-        item("Add library…") { InstallDependencyUseCase.start(ide, root, name, "workspace") }
-        item("Install package…") { InstallDependencyUseCase.start(ide, root, name, "registry") }
-        item("Unlink library…") { ProjectActionsUseCase.unlink(ide, root, name) }
-        item("Swap a choice…") { SwapChoiceUseCase.start(ide, root, name) }
-        item("Make app, library or package…") { ProjectActionsUseCase.changeKind(ide, root, name) }
+        item(say(JETBRAINS_TOOLWINDOW_ADD_LIBRARY)) { InstallDependencyUseCase.start(ide, root, name, "workspace") }
+        item(say(JETBRAINS_TOOLWINDOW_INSTALL_PACKAGE)) { InstallDependencyUseCase.start(ide, root, name, "registry") }
+        item(say(JETBRAINS_TOOLWINDOW_UNLINK_LIBRARY)) { ProjectActionsUseCase.unlink(ide, root, name) }
+        item(say(COMMANDS_PROJ_SWAP_TITLE)) { SwapChoiceUseCase.start(ide, root, name) }
+        item(say(JETBRAINS_TOOLWINDOW_MAKE_APP_LIBRARY_OR_PACKAGE)) { ProjectActionsUseCase.changeKind(ide, root, name) }
         item("Remove…") { ProjectActionsUseCase.remove(ide, root, name) }
         menu.addSeparator()
         item("Why…") { WorkspaceToolsUseCase.why(ide, root, name) }
         item("Explain") { WorkspaceToolsUseCase.explain(ide, root, name) }
         if (row.project.tasks.isNotEmpty()) {
-            val run = JMenu("Run task")
+            val run = JMenu(say(JETBRAINS_TOOLWINDOW_RUN_TASK))
             row.project.tasks.forEach { task ->
                 run.add(JMenuItem(task).apply { addActionListener { RunTaskUseCase.run(ide, root, name, task) } })
             }

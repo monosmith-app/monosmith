@@ -2,6 +2,18 @@ package dev.monosmith.jetbrains.adoptfolder
 
 import dev.monosmith.jetbrains.jsonread.JsonFieldsMapper
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_SUGGESTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_ANOTHER_FOLDER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_A_FOLDER_THAT_STARTS_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_IS_NOT_A_FOLDER_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_IT_IS_THE_REPOSITORY_ROOT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_IT_LEAVES_THE_REPOSITORY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_IT_MUST_BE_RELATIVE_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_MUST_BE_LOWERCASE_LETTERS_AND
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_NO_LEAVE_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_THE_PROJECT_STAYS_AT_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_USE_LETTERS_DIGITS_DOT_HYPHEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /**
  * The one project a plain repository keeps at its root, where smith cannot manage it: it has to move
@@ -80,7 +92,10 @@ object AdoptReportMapper {
             "packages",
             "libs",
         ).map { MoveChoiceContract(it, "$it/${project.name}", "$it/${project.name}", it == suggested) } +
-            listOf(MoveChoiceContract("other", "another folder", "", false), MoveChoiceContract("none", "no, leave it", "", false))
+            listOf(
+                MoveChoiceContract("other", say(JETBRAINS_ADOPTFOLDER_ANOTHER_FOLDER), "", false),
+                MoveChoiceContract("none", say(JETBRAINS_ADOPTFOLDER_NO_LEAVE_IT), "", false),
+            )
     }
 
     /** The lines of the move question; the suggested answer is first and marked. */
@@ -89,11 +104,11 @@ object AdoptReportMapper {
             ChoiceRowContract(
                 it.key,
                 it.label,
-                if (it.suggested) "(suggested)" else "",
+                if (it.suggested) say(JETBRAINS_ADDCHOICES_SUGGESTED) else "",
                 if (it.key ==
                     "none"
                 ) {
-                    "The project stays at the root; smith cannot manage it there."
+                    say(JETBRAINS_ADOPTFOLDER_THE_PROJECT_STAYS_AT_THE)
                 } else {
                     ""
                 },
@@ -105,21 +120,21 @@ object AdoptReportMapper {
         if (name.length <= 50 && namePattern.matches(name)) {
             null
         } else {
-            "\"$name\" must be lowercase letters and digits with words joined by single hyphens, starting with a letter (for example web-app)."
+            say(JETBRAINS_ADOPTFOLDER_MUST_BE_LOWERCASE_LETTERS_AND, name.toString())
         }
 
     /** Checks a folder typed relative to the repository root: the cleaned folder, or a sentence saying why it cannot be used. */
     fun folderOrProblem(folder: String): Pair<String?, String?> {
         val raw = folder.trim().replace('\\', '/')
 
-        fun bad(why: String) = null to "\"$folder\" is not a folder smith can move the project into: $why."
-        if (raw in listOf("", ".", "./")) return bad("it is the repository root, where the project is already")
-        if (raw.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(raw)) return bad("it must be relative to the repository root")
+        fun bad(why: String) = null to say(JETBRAINS_ADOPTFOLDER_IS_NOT_A_FOLDER_SMITH, folder.toString(), why.toString())
+        if (raw in listOf("", ".", "./")) return bad(say(JETBRAINS_ADOPTFOLDER_IT_IS_THE_REPOSITORY_ROOT))
+        if (raw.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(raw)) return bad(say(JETBRAINS_ADOPTFOLDER_IT_MUST_BE_RELATIVE_TO))
         val segments = raw.split("/").filter { it.isNotEmpty() && it != "." }
         for (segment in segments) {
-            if (segment == "..") return bad("it leaves the repository")
-            if (segment.startsWith(".")) return bad("a folder that starts with a dot is for tools")
-            if (!segmentPattern.matches(segment)) return bad("use letters, digits, dot, hyphen and underscore")
+            if (segment == "..") return bad(say(JETBRAINS_ADOPTFOLDER_IT_LEAVES_THE_REPOSITORY))
+            if (segment.startsWith(".")) return bad(say(JETBRAINS_ADOPTFOLDER_A_FOLDER_THAT_STARTS_WITH))
+            if (!segmentPattern.matches(segment)) return bad(say(JETBRAINS_ADOPTFOLDER_USE_LETTERS_DIGITS_DOT_HYPHEN))
         }
         return segments.joinToString("/") to null
     }

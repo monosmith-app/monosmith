@@ -4,6 +4,7 @@ import { pickNewQuestion } from '../new-workspace/index.ts'
 import { smithForTerminal } from '../smith-terminal/index.ts'
 import { askConvertCommit, confirmConvert, tellConvertOutcome, tellNoConvertible } from './convert-prompts.client.ts'
 import { convertWorkspace } from './convert-workspace.use-case.ts'
+import { say } from '../words/index.ts'
 
 /** A folder that looks like a repository smith can bring in. */
 export interface ConvertOffer {
@@ -34,7 +35,7 @@ export async function convertChoices (host: CommandHost, offers: readonly Conver
   const outcome = await convertWorkspace({
     run:   inFolder,
     apply: async (args) => await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: converting ${chosen.name}…` },
+      { location: vscode.ProgressLocation.Notification, title: say('vscode.convert-workspace.monosmith-converting', { name: chosen.name }) },
       async () => await inFolder(args),
     ),
     pick:      pickNewQuestion,

@@ -5,6 +5,7 @@ import { showInsight, type InsightRow } from '../project-insight/index.ts'
 import type { InsightDocuments } from '../project-insight/index.ts'
 import { pickTask } from '../quick-pick/index.ts'
 import { readFileWhy, readSettingWhy, readTaskWhy } from './read-why.use-case.ts'
+import { say } from '../words/index.ts'
 
 /** The parts of a row of the Projects view that a why command reads. */
 interface WhyRow extends InsightRow {
@@ -29,12 +30,12 @@ export async function showWhy (host: CommandHost, insight: InsightDocuments, arg
   const file = host.fileTarget(argument)
   // A file given by the explorer or the editor menu is answered at once; from the palette the person says what to ask about.
   const kinds = [
-    ...(file === undefined ? [] : [{ label: '$(file) This file', description: file.file, pick: 'file' as const }]),
-    { label: '$(package) A project', description: 'how its tasks resolved and where each setting came from', pick: 'project' as const },
-    { label: '$(play) A task', description: 'why it runs again instead of coming from the cache', pick: 'task' as const },
-    { label: '$(settings-gear) A setting', description: 'why a setting of smith.toml has its value, and why its default is what it is', pick: 'setting' as const },
+    ...(file === undefined ? [] : [{ label: say('vscode.why.this-file-2'), description: file.file, pick: 'file' as const }]),
+    { label: say('vscode.why.a-project'), description: say('vscode.why.how-its-tasks-resolved-and-where'), pick: 'project' as const },
+    { label: say('vscode.why.a-task'), description: say('vscode.why.why-it-runs-again-instead-of'), pick: 'task' as const },
+    { label: say('vscode.why.a-setting'), description: say('vscode.why.why-a-setting-of-smith-toml'), pick: 'setting' as const },
   ]
-  const chosen = argument instanceof vscode.Uri ? undefined : await vscode.window.showQuickPick(kinds, { title: 'MonoSmith: Why', placeHolder: 'What do you want to know about?' })
+  const chosen = argument instanceof vscode.Uri ? undefined : await vscode.window.showQuickPick(kinds, { title: say('vscode.why.monosmith-why'), placeHolder: say('vscode.why.what-do-you-want-to-know') })
   switch (argument instanceof vscode.Uri ? 'file' : chosen?.pick) {
     case 'file': {
       if (file !== undefined) await insight.show(`${basename(file.file)}-why.md`, await readFileWhy(host.smithIn(file.state), file.file))
@@ -46,14 +47,14 @@ export async function showWhy (host: CommandHost, insight: InsightDocuments, arg
     }
     case 'setting': {
       const state = await host.folderFor(argument)
-      const setting = state === undefined ? undefined : await vscode.window.showInputBox({ title: 'MonoSmith: Why', prompt: 'Which setting of smith.toml?', placeHolder: 'workspace.commit_operations' })
+      const setting = state === undefined ? undefined : await vscode.window.showInputBox({ title: say('vscode.why.monosmith-why'), prompt: say('vscode.why.which-setting-of-smith-toml'), placeHolder: 'workspace.commit_operations' })
       if (state !== undefined && setting !== undefined && setting.trim() !== '') await insight.show(`${setting.trim()}-why.md`, await readSettingWhy(host.smithIn(state), setting.trim()))
       break
     }
     case 'task': {
       const picked = await pickTask(host.readyWorkspaces())
       if (picked?.target.kind === 'task') await whyTask(picked.root, picked.target.project, picked.target.task)
-      else if (picked !== undefined) void vscode.window.showInformationMessage('MonoSmith: choose one task of a project, not all of its tasks.')
+      else if (picked !== undefined) void vscode.window.showInformationMessage(say('vscode.why.monosmith-choose-one-task-of-a'))
       break
     }
     default: {

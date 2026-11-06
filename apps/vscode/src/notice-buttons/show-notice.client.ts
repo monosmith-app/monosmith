@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { MORE_LABEL, splitNoticeButtons, type NoticeButton } from './notice-buttons.mapper.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Shows a notification with at most three buttons. Buttons beyond that sit
@@ -16,7 +17,7 @@ export async function showNotice (severity: 'info' | 'warning', message: string,
   if (choice !== MORE_LABEL) return choice
   const picked = await vscode.window.showQuickPick(
     more.map((button) => ({ label: button.label, detail: button.detail ?? '' })),
-    { title: 'MonoSmith: more choices', placeHolder: message, ignoreFocusOut: true },
+    { title: say('vscode.notice-buttons.monosmith-more-choices'), placeHolder: message, ignoreFocusOut: true },
   )
 
   return picked?.label

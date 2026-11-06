@@ -1,7 +1,8 @@
 import * as vscode from 'vscode'
 import type { ConvertOutcome } from './convert-workspace.contract.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: convert this workspace'
+const TITLE = say('vscode.convert-workspace.monosmith-convert-this-workspace')
 
 /**
  * Asks the unticked "Commit this change so it can be undone" box. Nothing is changed.
@@ -9,8 +10,8 @@ const TITLE = 'MonoSmith: convert this workspace'
  */
 export async function askConvertCommit (): Promise<boolean | undefined> {
   const ticked = await vscode.window.showQuickPick(
-    [{ label: 'Commit this change so it can be undone', description: 'unticked: smith commits nothing unless you tick this', picked: false }],
-    { title: `${TITLE}: commit?`, canPickMany: true, placeHolder: 'Enter with nothing ticked leaves the change uncommitted' },
+    [{ label: say('dialog.commit.label'), description: say('vscode.adopt-offer.unticked-smith-commits-nothing-unless-you'), picked: false }],
+    { title: `${TITLE}: commit?`, canPickMany: true, placeHolder: say('vscode.adopt-offer.enter-with-nothing-ticked-leaves-the') },
   )
 
   return ticked === undefined ? undefined : ticked.length > 0
@@ -22,12 +23,12 @@ export async function askConvertCommit (): Promise<boolean | undefined> {
  * @returns true when the person agrees
  */
 export async function confirmConvert (plan: string): Promise<boolean> {
-  const convert = 'Convert'
-  const open = 'Open the plan'
+  const convert = say('vscode.convert-workspace.convert')
+  const open = say('vscode.add-project.open-the-plan')
   for (;;) {
     const choice = await vscode.window.showWarningMessage(
       `${TITLE}?`,
-      { modal: true, detail: 'Nothing was changed yet. The plan lists the files smith deletes and the changes it makes. It is one click away.' },
+      { modal: true, detail: say('vscode.convert-workspace.nothing-was-changed-yet-the-plan') },
       convert,
       open,
     )
@@ -46,11 +47,11 @@ export function tellConvertOutcome (outcome: ConvertOutcome, onOutput: (line: st
   switch (outcome.kind) {
     case 'converted': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage(`MonoSmith: the workspace is converted. ${outcome.committed ? 'smith committed it as one change that Undo reverts.' : 'Nothing was committed: review the files with git.'}`)
+      void vscode.window.showInformationMessage(say('vscode.convert-workspace.monosmith-the-workspace-is-converted', { part: say(outcome.committed ? 'vscode.convert-workspace.smith-committed-it-as-one-change' : 'vscode.convert-workspace.nothing-was-committed-review-the-files') }))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was changed. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.convert-workspace.monosmith-nothing-was-changed', { message: outcome.message }))
       break
     }
     case 'cancelled': {
@@ -61,5 +62,5 @@ export function tellConvertOutcome (outcome: ConvertOutcome, onOutput: (line: st
 
 /** Says no Nx or Turborepo workspace is open. */
 export function tellNoConvertible (): void {
-  void vscode.window.showInformationMessage('MonoSmith: no Nx or Turborepo workspace is open here. "Convert This Folder to MonoSmith" brings in any other repository.')
+  void vscode.window.showInformationMessage(say('vscode.convert-workspace.monosmith-no-nx-or-turborepo-workspace'))
 }

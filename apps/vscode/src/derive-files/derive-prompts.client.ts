@@ -1,11 +1,12 @@
 import * as vscode from 'vscode'
 import type { DeriveAction } from './derive-report.contract.ts'
+import { say } from '../words/index.ts'
 
 const WORDS: Record<'apply' | 'replace' | 'adopt' | 'eject', { button: string, effect: string }> = {
-  apply:   { button: 'Apply', effect: 'smith writes every derived file that is stale or missing and records it in smith.lock. It leaves the files someone edited alone.' },
-  replace: { button: 'Overwrite', effect: 'smith overwrites the file with the derived content. Your edit is lost; git can bring it back.' },
-  adopt:   { button: 'Adopt', effect: 'smith keeps your edit as the new baseline. This works for a file smith owns by keys that still has every derived key. If the inputs change later, the file is in drift again.' },
-  eject:   { button: 'Eject', effect: 'The file becomes yours. smith writes "you" as its owner in smith.lock and never touches it again.' },
+  apply:   { button: say('vscode.derive-files.apply'), effect: say('vscode.derive-files.smith-writes-every-derived-file-that') },
+  replace: { button: say('vscode.derive-files.overwrite'), effect: say('vscode.derive-files.smith-overwrites-the-file-with-the') },
+  adopt:   { button: say('vscode.derive-files.adopt'), effect: say('vscode.derive-files.smith-keeps-your-edit-as-the') },
+  eject:   { button: say('vscode.derive-files.eject'), effect: say('vscode.derive-files.the-file-becomes-yours-smith-writes') },
 }
 
 /**
@@ -16,12 +17,12 @@ const WORDS: Record<'apply' | 'replace' | 'adopt' | 'eject', { button: string, e
  */
 export async function confirmDeriveChange (action: 'apply' | 'replace' | 'adopt' | 'eject', file: string | undefined): Promise<'yes' | 'yes-commit' | 'explain' | 'preview' | 'no'> {
   const words = WORDS[action]
-  const explain = 'Explain first'
-  const preview = 'Preview'
-  const commit = `${words.button} and commit (so Undo works)`
+  const explain = say('vscode.derive-files.explain-first')
+  const preview = say('vscode.derive-files.preview')
+  const commit = say('vscode.derive-files.and-commit-so-undo-works', { button: words.button })
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: ${words.button.toLowerCase()} ${file ?? 'the derived files'}?`,
-    { modal: true, detail: `${words.effect}\n\nBy default smith leaves the files uncommitted: review them with git. The commit button makes it one commit that Undo can revert.` },
+    say('vscode.derive-files.monosmith', { toLowerCase: words.button.toLowerCase(), part: file ?? say('vscode.derive-files.the-derived-files') }),
+    { modal: true, detail: say('vscode.derive-files.by-default-smith-leaves-the-files', { effect: words.effect }) },
     words.button,
     commit,
     file === undefined ? preview : explain,
@@ -42,15 +43,15 @@ export async function confirmDeriveChange (action: 'apply' | 'replace' | 'adopt'
  */
 export function tellDeriveChange (action: Exclude<DeriveAction, 'check' | 'explain'>, file: string | undefined, ok: boolean, message: string): void {
   if (ok) {
-    void vscode.window.showInformationMessage(`MonoSmith: ${file ?? 'the derived files'} ${action === 'eject' ? 'is now yours' : (action === 'adopt' ? 'keeps your edit' : 'is written')}. Commit it together with smith.lock.`)
+    void vscode.window.showInformationMessage(say('vscode.derive-files.monosmith-commit-it-together-with-smith', { part: file ?? say('vscode.derive-files.the-derived-files'), part2: action === 'eject' ? say('vscode.derive-files.is-now-yours') : (say(action === 'adopt' ? 'vscode.derive-files.keeps-your-edit' : 'vscode.derive-files.is-written')) }))
   } else {
-    void vscode.window.showWarningMessage(`MonoSmith: nothing was changed. ${message}`)
+    void vscode.window.showWarningMessage(say('vscode.convert-workspace.monosmith-nothing-was-changed', { message }))
   }
 }
 
 /** Says a derived file must be chosen first. */
 export function tellChooseDerivedFile (): void {
-  void vscode.window.showInformationMessage('MonoSmith: choose a derived file first. Right-click it in the Health view, or open it in the editor and run the command again.')
+  void vscode.window.showInformationMessage(say('vscode.derive-files.monosmith-choose-a-derived-file-first'))
 }
 
 /**
@@ -58,5 +59,5 @@ export function tellChooseDerivedFile (): void {
  * @param file - the file, relative to its folder
  */
 export function tellNothingToWrite (file: string): void {
-  void vscode.window.showInformationMessage(`MonoSmith: smith has nothing to write for ${file}. Refresh the Health view to read the derived files again.`)
+  void vscode.window.showInformationMessage(say('vscode.derive-files.monosmith-smith-has-nothing-to-write', { file }))
 }

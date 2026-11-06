@@ -1,8 +1,9 @@
 import * as vscode from 'vscode'
 import { choicesByAxis, type ChoiceOption } from '../add-project/index.ts'
 import type { SwapAnswer, SwapOutcome, SwapRequest } from './swap-choice.contract.ts'
+import { say } from '../words/index.ts'
 
-const TITLE = 'MonoSmith: Swap a choice'
+const TITLE = say('vscode.swap-choice.monosmith-swap-a-choice')
 
 /**
  * Asks what to swap with quick picks: the project (unless it is given), the
@@ -14,21 +15,21 @@ const TITLE = 'MonoSmith: Swap a choice'
  */
 export async function askSwapRequest (choices: readonly ChoiceOption[], projects: ReadonlyArray<{ name: string, language: string }>, project?: string): Promise<SwapRequest | undefined> {
   const target = project === undefined
-    ? await vscode.window.showQuickPick(projects.map((item) => ({ label: item.name, description: item.language })), { title: `${TITLE} (1/3): which project?`, placeHolder: 'The project whose decision changes' })
+    ? await vscode.window.showQuickPick(projects.map((item) => ({ label: item.name, description: item.language })), { title: say('vscode.install-dependency.1-3-which-project', { title: TITLE }), placeHolder: say('vscode.swap-choice.the-project-whose-decision-changes') })
     : { label: project, description: projects.find((item) => item.name === project)?.language ?? '' }
   if (target === undefined) return undefined
 
   const axes = choicesByAxis(choices, target.description).filter((axis) => axis.choices.length > 1)
   if (axes.length === 0) {
-    void vscode.window.showInformationMessage(`MonoSmith: ${target.label} has no question with more than one answer. smith choices lists what can change.`)
+    void vscode.window.showInformationMessage(say('vscode.swap-choice.monosmith-has-no-question-with-more', { label: target.label }))
 
     return undefined
   }
-  const axis = await vscode.window.showQuickPick(axes.map((item) => ({ label: item.axis, description: item.choices.map((choice) => choice.name).join(', ') })), { title: `${TITLE} (2/3): which decision?`, placeHolder: 'The test runner, the linter, the style' })
+  const axis = await vscode.window.showQuickPick(axes.map((item) => ({ label: item.axis, description: item.choices.map((choice) => choice.name).join(', ') })), { title: say('vscode.swap-choice.2-3-which-decision', { title: TITLE }), placeHolder: say('vscode.swap-choice.the-test-runner-the-linter-the') })
   if (axis === undefined) return undefined
 
   const chosen = axes.find((item) => item.axis === axis.label)?.choices ?? []
-  const choice = await vscode.window.showQuickPick(chosen.map((item) => ({ label: item.name, description: item.description })), { title: `${TITLE} (3/3): replace it with?`, placeHolder: 'The answer the project moves to' })
+  const choice = await vscode.window.showQuickPick(chosen.map((item) => ({ label: item.name, description: item.description })), { title: say('vscode.swap-choice.3-3-replace-it-with', { title: TITLE }), placeHolder: say('vscode.swap-choice.the-answer-the-project-moves-to') })
 
   return choice === undefined ? undefined : { project: target.label, axis: axis.label, choice: choice.label }
 }
@@ -41,13 +42,13 @@ export async function askSwapRequest (choices: readonly ChoiceOption[], projects
  * @returns `swap`, `swap-commit` or `cancel`
  */
 export async function confirmSwapPlan (request: SwapRequest, plan: string): Promise<SwapAnswer> {
-  const swap = 'Swap'
-  const commit = 'Swap and commit (so Undo works)'
-  const open = 'Open the plan'
+  const swap = say('vscode.swap-choice.swap')
+  const commit = say('vscode.swap-choice.swap-and-commit-so-undo-works')
+  const open = say('vscode.add-project.open-the-plan')
   for (;;) {
     const choice = await vscode.window.showInformationMessage(
-      `MonoSmith: move ${request.project} to ${request.choice} (${request.axis})?`,
-      { modal: true, detail: `${plan}\n\nNothing was changed yet. smith removes what the old choice wrote, writes the new one, installs the packages and runs the project's build and tests. By default smith leaves the files uncommitted: review them with git. The commit button makes it one commit that Undo can revert.` },
+      say('vscode.swap-choice.monosmith-move-to', { project: request.project, choice: request.choice, axis: request.axis }),
+      { modal: true, detail: say('vscode.swap-choice.nothing-was-changed-yet-smith-removes', { plan }) },
       swap,
       commit,
       open,
@@ -63,6 +64,13 @@ export async function confirmSwapPlan (request: SwapRequest, plan: string): Prom
   }
 }
 
+/** The sentence that counts what smith leaves to do by hand: nothing, one thing or several. */
+function leftToDo (count: number): string {
+  if (count === 0) return ''
+
+  return say('vscode.swap-choice.thing-left-to-do-by-hand', { length: count, part: say(count === 1 ? 'vscode.swap-choice.is' : 'vscode.swap-choice.s-are') })
+}
+
 /**
  * Says how swapping ended, and offers Undo after a committed success. It does not wait for the person to read it.
  * @param outcome - what `swapChoice` returned
@@ -72,10 +80,10 @@ export function tellSwapOutcome (outcome: SwapOutcome, onOutput: (line: string) 
   switch (outcome.kind) {
     case 'swapped': {
       for (const line of outcome.lines) onOutput(line)
-      const undo = 'Undo'
-      const left = outcome.lines.filter((line) => line.startsWith('Left to do by hand'))
+      const undo = say('vscode.undo-change.undo')
+      const left = outcome.lines.filter((line) => line.startsWith(say('vscode.swap-choice.left-to-do-by-hand')))
       void vscode.window.showInformationMessage(
-        `MonoSmith: ${outcome.request.project} now uses ${outcome.request.choice}. ${left.length > 0 ? `${left.length} thing${left.length === 1 ? ' is' : 's are'} left to do by hand: see the output. ` : ''}${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status.'}`,
+        say('vscode.swap-choice.monosmith-now-uses', { project: outcome.request.project, choice: outcome.request.choice, part: leftToDo(left.length), part2: say(outcome.committed ? 'vscode.add-project.committed-as-one-change-undo-reverts' : 'vscode.compose-stack.not-committed-review-with-git-status') }),
         ...(outcome.committed ? [undo] : []),
       ).then(async (choice) => {
         if (choice === undo) await vscode.commands.executeCommand('monosmith.undo')
@@ -83,7 +91,7 @@ export function tellSwapOutcome (outcome: SwapOutcome, onOutput: (line: string) 
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was swapped. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.swap-choice.monosmith-nothing-was-swapped', { message: outcome.message }))
       break
     }
     case 'cancelled': {

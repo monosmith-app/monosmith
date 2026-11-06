@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 /** One thing a notification can do: a short verb on the button, the long words in `detail`. */
 export interface NoticeButton {
   /** The verb on the button ("Install tools"): short, because the notification cuts what does not fit. */
@@ -7,7 +8,7 @@ export interface NoticeButton {
 }
 
 /** The label of the button that opens the rest of the buttons. */
-export const MORE_LABEL = 'More…'
+export const MORE_LABEL = say('vscode.notice-buttons.more')
 
 /**
  * Splits the buttons of a notification: it shows at most `limit` of them, and the

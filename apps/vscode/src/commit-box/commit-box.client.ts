@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { say } from '../words/index.ts'
 
 /**
  * Asks the unticked "Commit this change so it can be undone" box before the confirmation. smith
@@ -8,8 +9,8 @@ import * as vscode from 'vscode'
  */
 export async function askCommitBox (title: string): Promise<boolean | undefined> {
   const ticked = await vscode.window.showQuickPick(
-    [{ label: 'Commit this change so it can be undone', description: 'unticked: smith commits nothing unless you tick this', picked: false }],
-    { title: `MonoSmith: ${title.replace(/…$/, '')}: commit?`, canPickMany: true, placeHolder: 'Enter with nothing ticked leaves the change uncommitted' },
+    [{ label: say('dialog.commit.label'), description: say('vscode.adopt-offer.unticked-smith-commits-nothing-unless-you'), picked: false }],
+    { title: say('vscode.commit-box.monosmith-commit', { replace: title.replace(/…$/, '') }), canPickMany: true, placeHolder: say('vscode.adopt-offer.enter-with-nothing-ticked-leaves-the') },
   )
 
   return ticked === undefined ? undefined : ticked.length > 0

@@ -1,15 +1,20 @@
 package dev.monosmith.jetbrains.projectactions
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CODE_PUBLISHED_TO_A_REGISTRY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_CODE_THE_OTHER_PROJECTS_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_SOMETHING_YOU_RUN_OR_DEPLOY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PROJECTACTIONS_AN_APP
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** The command lines and the questions of the actions on one project: remove, change the kind, unlink. */
 object ProjectActionArgumentsAlgorithm {
     /** The kinds of a project in the order app, lib, package, each with what it means. */
     val kindWords =
         mapOf(
-            "app" to "Something you run or deploy. Other projects do not import it.",
-            "lib" to "Code the other projects of this workspace import. It is not published.",
-            "package" to "Code published to a registry on release, for other people to install.",
+            "app" to say(JETBRAINS_ADDPROJECT_SOMETHING_YOU_RUN_OR_DEPLOY),
+            "lib" to say(JETBRAINS_ADDPROJECT_CODE_THE_OTHER_PROJECTS_OF),
+            "package" to say(JETBRAINS_ADDPROJECT_CODE_PUBLISHED_TO_A_REGISTRY),
         )
 
     /** The plan of removing a project. */
@@ -46,5 +51,5 @@ object ProjectActionArgumentsAlgorithm {
         otherKinds(current).map { ChoiceRowContract(it, it, "", kindWords.getValue(it)) }
 
     /** The word for a kind with its article: "an app", "a lib". */
-    fun withArticle(kind: String): String = if (kind == "app") "an app" else "a $kind"
+    fun withArticle(kind: String): String = if (kind == "app") say(JETBRAINS_PROJECTACTIONS_AN_APP) else "a $kind"
 }

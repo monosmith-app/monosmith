@@ -9,6 +9,22 @@ import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_CHANGE_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_GO_BACK_TO_THE_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_IT_IS_SET_TO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_MONOSMITH_SETTINGS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_NOTHING_WAS_CHANGED_YET_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_NO_SETTING_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_NO_SETTING_WAS_CHANGED_THIS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_PICK_A_SETTING_TYPE_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_REMOVE_THE_LINE_FROM_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_RESET_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_SMITH_PRINTED_ITS_SETTINGS_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_THE_CURRENT_VALUE_IS_FIRST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_TYPE_A_VALUE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SETTINGS_WRITE_A_NEW_VALUE_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -18,7 +34,7 @@ import java.nio.file.Path
  * `unset`), shown first. smith never commits here.
  */
 object EditSettingsUseCase {
-    private const val TITLE = "MonoSmith: settings"
+    private val TITLE = say(JETBRAINS_SETTINGS_MONOSMITH_SETTINGS)
     private const val CHANGE = "change"
     private const val RESET = "reset"
 
@@ -46,19 +62,19 @@ object EditSettingsUseCase {
     ): Boolean {
         val listed = ports.smith.run(listOf("config", "list", "--json"))
         if (!listed.ok) {
-            ports.notice.warn("No setting was changed. ${FailureTextMapper.describe(listed)}")
+            ports.notice.warn(say(JETBRAINS_SETTINGS_NO_SETTING_WAS_CHANGED, FailureTextMapper.describe(listed).toString()))
             return false
         }
         val settings =
             runCatching { SettingsJsonMapper.toSettings(listed.stdout) }.getOrElse {
-                ports.notice.warn("smith printed its settings in a form this plugin does not read. Update the plugin.")
+                ports.notice.warn(say(JETBRAINS_SETTINGS_SMITH_PRINTED_ITS_SETTINGS_IN))
                 return false
             }
         val picked = only ?: askSetting(ports, settings) ?: return false
         val path = picked
         val setting = settings.firstOrNull { it.path == path }
         if (setting == null) {
-            ports.notice.warn("No setting was changed. This smith has no setting $path. Update smith.")
+            ports.notice.warn(say(JETBRAINS_SETTINGS_NO_SETTING_WAS_CHANGED_THIS, path.toString()))
             return false
         }
         val words = SettingsJsonMapper.words(setting)
@@ -67,10 +83,24 @@ object EditSettingsUseCase {
                 ports.prompt
                     .pickOne(
                         "$TITLE: ${setting.path}",
-                        "${if (words.isEmpty()) "" else "$words\n"}It is set to ${SettingsJsonMapper.shown(setting)}.",
+                        say(
+                            JETBRAINS_SETTINGS_IT_IS_SET_TO,
+                            (if (words.isEmpty()) "" else "$words\n").toString(),
+                            SettingsJsonMapper.shown(setting).toString(),
+                        ),
                         listOf(
-                            ChoiceRowContract(CHANGE, "Change it", "(default)", "Write a new value in smith.toml."),
-                            ChoiceRowContract(RESET, "Go back to the default", "", "Remove the line from smith.toml."),
+                            ChoiceRowContract(
+                                CHANGE,
+                                say(JETBRAINS_SETTINGS_CHANGE_IT),
+                                say(JETBRAINS_ADDCHOICES_DEFAULT),
+                                say(JETBRAINS_SETTINGS_WRITE_A_NEW_VALUE_IN),
+                            ),
+                            ChoiceRowContract(
+                                RESET,
+                                say(JETBRAINS_SETTINGS_GO_BACK_TO_THE_DEFAULT),
+                                "",
+                                say(JETBRAINS_SETTINGS_REMOVE_THE_LINE_FROM_SMITH),
+                            ),
                         ),
                     )?.name ?: return false
             } else {
@@ -89,8 +119,8 @@ object EditSettingsUseCase {
                 title = "$TITLE: ${setting.path}?",
                 planArgs = null,
                 fixedPlan = "smith ${args.joinToString(" ")}",
-                header = "${if (words.isEmpty()) "" else "$words\n\n"}Nothing was changed yet. smith edits smith.toml.",
-                okText = if (action == RESET) "Reset it" else "Change it",
+                header = say(JETBRAINS_SETTINGS_NOTHING_WAS_CHANGED_YET_SMITH, (if (words.isEmpty()) "" else "$words\n\n").toString()),
+                okText = if (action == RESET) say(JETBRAINS_SETTINGS_RESET_IT) else say(JETBRAINS_SETTINGS_CHANGE_IT),
                 offerCommit = true,
                 apply = { args },
                 done = "${setting.path} is ${if (action == RESET) "back to its default" else "changed"}",
@@ -110,7 +140,7 @@ object EditSettingsUseCase {
                 ports.prompt
                     .pickOne(
                         "$TITLE: ${setting.path}",
-                        "$words\nThe current value is first.",
+                        say(JETBRAINS_SETTINGS_THE_CURRENT_VALUE_IS_FIRST, words.toString()),
                         SettingsJsonMapper.enumRows(setting),
                     )?.name
             }
@@ -119,7 +149,7 @@ object EditSettingsUseCase {
                 ports.prompt
                     .pickOne(
                         "$TITLE: ${setting.path}",
-                        "$words\nThe current value is first.",
+                        say(JETBRAINS_SETTINGS_THE_CURRENT_VALUE_IS_FIRST, words.toString()),
                         SettingsJsonMapper.booleanRows(setting),
                     )?.name
             }
@@ -129,12 +159,12 @@ object EditSettingsUseCase {
                     "$TITLE: ${setting.path}",
                     "$words\n${if (setting.type == "array") "Values, separated by commas:" else "The new value:"}",
                     SettingsJsonMapper.shown(setting),
-                ) { if (it.isEmpty()) "Type a value." else null }
+                ) { if (it.isEmpty()) say(JETBRAINS_SETTINGS_TYPE_A_VALUE) else null }
             }
         }
 
     private fun askSetting(
         ports: FlowPortsContract,
         settings: List<SettingContract>,
-    ): String? = ports.prompt.pickOne(TITLE, "Pick a setting. Type in the box to narrow the list.", SettingsJsonMapper.rows(settings))?.name
+    ): String? = ports.prompt.pickOne(TITLE, say(JETBRAINS_SETTINGS_PICK_A_SETTING_TYPE_IN), SettingsJsonMapper.rows(settings))?.name
 }

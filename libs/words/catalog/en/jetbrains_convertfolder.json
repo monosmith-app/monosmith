@@ -1,0 +1,8 @@
+{
+  "jetbrains.convertfolder.monosmith-convert-this-workspace": "MonoSmith: convert this workspace",
+  "jetbrains.convertfolder.nothing-was-changed-update-smith": "Nothing was changed. {failureTextMapper} Update smith.",
+  "jetbrains.convertfolder.smith-printed-the-questions-of": "smith printed the questions of convert in a form this plugin does not read. Update the plugin.",
+  "jetbrains.convertfolder.the-first-answer-changes-the": "The first answer changes the least.",
+  "jetbrains.convertfolder.nothing-was-changed-yet-the": "Nothing was changed yet. The plan lists the files smith deletes and the changes it makes.",
+  "jetbrains.convertfolder.the-workspace-is-converted": "The workspace is converted"
+}

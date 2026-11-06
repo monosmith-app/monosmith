@@ -2,6 +2,10 @@ package dev.monosmith.jetbrains.swapchoice
 
 import dev.monosmith.jetbrains.addchoices.AxisGroupContract
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SWAPCHOICE_ONE_ANSWER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_SWAPCHOICE_SEVERAL_CAN_BE_USED_AT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 
 /** The command lines and the lists of swapping one choice of a project (its test runner, its style). */
 object SwapArgumentsAlgorithm {
@@ -23,11 +27,18 @@ object SwapArgumentsAlgorithm {
                 it.axis,
                 ofLayers[it.axis] ?: it.axis,
                 "${it.choices.size} answers",
-                if (it.many) "Several can be used at once." else "One answer.",
+                if (it.many) say(JETBRAINS_SWAPCHOICE_SEVERAL_CAN_BE_USED_AT) else say(JETBRAINS_SWAPCHOICE_ONE_ANSWER),
             )
         }
 
     /** The lines of "which answer?": the default is marked. */
     fun choiceRows(axis: AxisGroupContract): List<ChoiceRowContract> =
-        axis.choices.map { ChoiceRowContract(it.name, it.label, if (it.isDefault) "(default)" else "", it.description) }
+        axis.choices.map {
+            ChoiceRowContract(
+                it.name,
+                it.label,
+                if (it.isDefault) say(JETBRAINS_ADDCHOICES_DEFAULT) else "",
+                it.description,
+            )
+        }
 }

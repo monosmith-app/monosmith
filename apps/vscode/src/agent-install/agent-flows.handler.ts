@@ -12,6 +12,7 @@ import { installAgent } from './install-agent.use-case.ts'
 import type { InstallScope } from './install-run.contract.ts'
 import { optOutOfAgent } from './opt-out-agent.use-case.ts'
 import { talkToAgent } from './talk-to-agent.use-case.ts'
+import { say } from '../words/index.ts'
 
 const AGENT_ASKED_KEY = 'monosmith.agentOffered'
 const AGENT_FILE = join('.claude', 'agents', 'smith.md')
@@ -71,7 +72,7 @@ export function createAgentFlows (host: CommandHost, deps: AgentFlowsDeps): Agen
       run:     async (args) => await runSmith(location.executable, args, state.root),
       confirm: async (preview) => await confirmInstall(preview, scope, state.name),
     }, scope, confirmed)
-    host.note(`MonoSmith: install ${scope} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    host.note(say('vscode.agent-install.monosmith-install-in', { scope, name: state.name, kind: outcome.kind, part: outcome.kind === 'refused' ? ` (${outcome.message})` : '' }))
     tellInstallOutcome(outcome, scope, state.root)
     if (outcome.kind === 'written' || outcome.kind === 'current') await checkAgentFiles(state, false)
 
@@ -84,7 +85,7 @@ export function createAgentFlows (host: CommandHost, deps: AgentFlowsDeps): Agen
     try {
       agentFiles.set(state.root, judgeAgentFiles(await runDoctor(session.connection)))
     } catch (error) {
-      host.note(`MonoSmith: could not read the agent files check of ${state.name}: ${error instanceof Error ? error.message : String(error)}`)
+      host.note(say('vscode.agent-install.monosmith-could-not-read-the-agent', { name: state.name, part: error instanceof Error ? error.message : String(error) }))
 
       return
     }

@@ -9,6 +9,15 @@ import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.ADOPT_REVIEW_CONVERT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CONVERTFOLDER_MONOSMITH_CONVERT_THIS_WORKSPACE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CONVERTFOLDER_NOTHING_WAS_CHANGED_UPDATE_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CONVERTFOLDER_NOTHING_WAS_CHANGED_YET_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CONVERTFOLDER_SMITH_PRINTED_THE_QUESTIONS_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CONVERTFOLDER_THE_FIRST_ANSWER_CHANGES_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CONVERTFOLDER_THE_WORKSPACE_IS_CONVERTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -18,7 +27,7 @@ import java.nio.file.Path
  * them. smith commits only when the box is ticked.
  */
 object ConvertFolderUseCase {
-    private const val TITLE = "MonoSmith: convert this workspace"
+    private val TITLE = say(JETBRAINS_CONVERTFOLDER_MONOSMITH_CONVERT_THIS_WORKSPACE)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -35,18 +44,25 @@ object ConvertFolderUseCase {
     ): Boolean {
         val listed = ports.smith.run(listOf("convert", "--questions", "--json"))
         if (!listed.ok) {
-            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(listed)} Update smith.")
+            ports.notice.warn(say(JETBRAINS_CONVERTFOLDER_NOTHING_WAS_CHANGED_UPDATE_SMITH, FailureTextMapper.describe(listed).toString()))
             return false
         }
         val questions =
             runCatching { NewQuestionsMapper.toQuestions(listed.stdout) }.getOrElse {
-                ports.notice.warn("smith printed the questions of convert in a form this plugin does not read. Update the plugin.")
+                ports.notice.warn(say(JETBRAINS_CONVERTFOLDER_SMITH_PRINTED_THE_QUESTIONS_OF))
                 return false
             }
         val answers = mutableMapOf<String, String>()
         for (question in questions) {
             if (question.options.isEmpty() || !NewQuestionsMapper.applies(question, answers)) continue
-            val header = if (question.key == "level") "The first answer changes the least." else "The first answer is the default."
+            val header =
+                if (question.key ==
+                    "level"
+                ) {
+                    say(JETBRAINS_CONVERTFOLDER_THE_FIRST_ANSWER_CHANGES_THE)
+                } else {
+                    say(JETBRAINS_ADDPROJECT_THE_FIRST_ANSWER_IS_THE)
+                }
             answers[question.key] =
                 ports.prompt.pickOne("$TITLE: ${question.key}", "${question.prompt}\n$header", NewQuestionsMapper.rows(question))?.name
                     ?: return false
@@ -65,11 +81,11 @@ object ConvertFolderUseCase {
             PlanStepContract(
                 title = "$TITLE?",
                 planArgs = ConvertArgumentsAlgorithm.arguments(chosen, apply = false),
-                header = "Nothing was changed yet. The plan lists the files smith deletes and the changes it makes.",
-                okText = "Convert",
+                header = say(JETBRAINS_CONVERTFOLDER_NOTHING_WAS_CHANGED_YET_THE),
+                okText = say(ADOPT_REVIEW_CONVERT),
                 offerCommit = true,
                 apply = { ConvertArgumentsAlgorithm.arguments(chosen, apply = true) },
-                done = "The workspace is converted",
+                done = say(JETBRAINS_CONVERTFOLDER_THE_WORKSPACE_IS_CONVERTED),
                 operation = "convert",
             ),
             commitLater,

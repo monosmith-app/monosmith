@@ -7,6 +7,13 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_COMMITTED_AS_ONE_CHANGE_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDPROJECT_NOT_COMMITTED_REVIEW_IT_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_HEALTH_NOTHING_WAS_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLANAPPLY_COMMIT_CHANGES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_PLANAPPLY_NOTHING_IS_COMMITTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -50,7 +57,7 @@ object PlanThenApplyUseCase {
             } else {
                 val planned = ports.smith.run(step.planArgs)
                 if (!planned.ok) {
-                    ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(planned)}")
+                    ports.notice.warn(say(JETBRAINS_HEALTH_NOTHING_WAS_CHANGED, FailureTextMapper.describe(planned).toString()))
                     return false
                 }
                 planned.stdout.trim()
@@ -61,7 +68,7 @@ object PlanThenApplyUseCase {
         val done = ports.smith.run(if (committed) args + "--commit" else args, show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_HEALTH_NOTHING_WAS_CHANGED, FailureTextMapper.describe(done).toString()))
             return false
         }
         val buttons =
@@ -69,16 +76,16 @@ object PlanThenApplyUseCase {
                 emptyList()
             } else {
                 listOf(
-                    NoticeButtonContract("Commit changes…", "Make one commit that Undo can revert; you choose the files first.") {
+                    NoticeButtonContract(say(JETBRAINS_PLANAPPLY_COMMIT_CHANGES), say(JETBRAINS_ADDPROJECT_MAKE_ONE_COMMIT_THAT_UNDO)) {
                         commitLater(step.operation)
                     },
                 )
             }
         val tail =
             when {
-                committed -> "Committed as one change: Undo reverts it."
-                step.offerCommit -> "Not committed: review it with the Commit window, or commit it now."
-                else -> "Nothing is committed."
+                committed -> say(JETBRAINS_ADDPROJECT_COMMITTED_AS_ONE_CHANGE_UNDO)
+                step.offerCommit -> say(JETBRAINS_ADDPROJECT_NOT_COMMITTED_REVIEW_IT_WITH)
+                else -> say(JETBRAINS_PLANAPPLY_NOTHING_IS_COMMITTED)
             }
         ports.notice.info("${step.done}. $tail", buttons)
         return true

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { LauncherOutcome } from './write-launcher.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks whether to write the launcher files.
@@ -9,12 +10,12 @@ import type { LauncherOutcome } from './write-launcher.use-case.ts'
  */
 export async function confirmLauncher (folder: string, plan: string): Promise<boolean> {
   const choice = await vscode.window.showInformationMessage(
-    `MonoSmith: write the smith launcher in ${folder}?`,
-    { modal: true, detail: `${plan}\n\nThey run the smith version that smith.toml pins, so a laptop and CI use the same one. A launcher that exists is replaced. Commit them.` },
-    'Write',
+    say('vscode.bootstrap-launcher.monosmith-write-the-smith-launcher-in', { folder }),
+    { modal: true, detail: say('vscode.bootstrap-launcher.they-run-the-smith-version-that', { plan }) },
+    say('vscode.agent-install.write'),
   )
 
-  return choice === 'Write'
+  return choice === say('vscode.agent-install.write')
 }
 
 /**
@@ -24,11 +25,11 @@ export async function confirmLauncher (folder: string, plan: string): Promise<bo
 export function tellLauncherOutcome (outcome: LauncherOutcome): void {
   switch (outcome.kind) {
     case 'written': {
-      void vscode.window.showInformationMessage('MonoSmith: the launcher is written in tools/smith. Commit it.')
+      void vscode.window.showInformationMessage(say('vscode.bootstrap-launcher.monosmith-the-launcher-is-written-in'))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: the launcher was not written. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.bootstrap-launcher.monosmith-the-launcher-was-not-written', { message: outcome.message }))
       break
     }
     case 'declined': {

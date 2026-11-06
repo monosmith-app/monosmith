@@ -6,6 +6,11 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_PARITY_FORMS_SET_THE_DESCRIPTIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DOCKERHUB_MONOSMITH_DOCKER_HUB_DESCRIPTIONS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DOCKERHUB_SMITH_CALLS_DOCKER_HUB_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DOCKERHUB_THE_DOCKER_HUB_DESCRIPTIONS_ARE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -14,7 +19,7 @@ import java.nio.file.Path
  * it, with the person's own login. Nothing in the workspace changes, so nothing is committed.
  */
 object DockerDescriptionUseCase {
-    private const val TITLE = "MonoSmith: Docker Hub descriptions"
+    private val TITLE = say(JETBRAINS_DOCKERHUB_MONOSMITH_DOCKER_HUB_DESCRIPTIONS)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -31,11 +36,11 @@ object DockerDescriptionUseCase {
             PlanStepContract(
                 title = "$TITLE?",
                 planArgs = listOf("docker", "description", "--dry-run"),
-                header = "smith calls Docker Hub with your login and replaces the description of each image. Nothing was called yet.",
-                okText = "Set the descriptions",
+                header = say(JETBRAINS_DOCKERHUB_SMITH_CALLS_DOCKER_HUB_WITH),
+                okText = say(GUIDE_PARITY_FORMS_SET_THE_DESCRIPTIONS),
                 offerCommit = false,
                 apply = { listOf("docker", "description") },
-                done = "The Docker Hub descriptions are set",
+                done = say(JETBRAINS_DOCKERHUB_THE_DOCKER_HUB_DESCRIPTIONS_ARE),
             ),
         ) {}
 }

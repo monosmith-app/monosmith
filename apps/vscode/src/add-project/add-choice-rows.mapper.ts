@@ -1,6 +1,7 @@
 import type { AddOptions, AddRequest, ChoiceOption } from './add-options.contract.ts'
 import { askedAxes, choicesByAxis } from './add-options.mapper.ts'
 import { wordsOf, type OutcomeItem } from './add-outcomes.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** One line of a single-choice list. An empty `name` is the line that leaves the axis out. */
 export interface ChoiceRow {
@@ -44,14 +45,14 @@ export function singleChoiceRows (axis: { axis: string, choices: readonly Choice
   const rows = fits.map((choice): ChoiceRow => ({
     name:        choice.name,
     label:       choice.title ?? choice.name,
-    description: `${choice.isDefault ? '(default) ' : ''}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
+    description: `${choice.isDefault ? say('vscode.add-project.default') : ''}${choice.requires.length > 0 ? say('vscode.add-project.needs', { join: choice.requires.join(', ') }) : ''}`.trim(),
     detail:      choice.description,
   }))
   const defaulted = rows.findIndex((_, index) => fits[index]?.isDefault)
   if (defaulted !== -1) return [...rows.slice(defaulted, defaulted + 1), ...rows.slice(0, defaulted), ...rows.slice(defaulted + 1)]
   const layer = (ofLayers[axis.axis] ?? axis.axis).toLowerCase()
 
-  return [{ name: '', label: 'None', description: '(default) nothing extra', detail: `Leave out the ${layer}: you can add one later.` }, ...rows]
+  return [{ name: '', label: say('vscode.add-project.none'), description: say('vscode.add-project.default-nothing-extra'), detail: say('vscode.add-project.leave-out-the-you-can-add', { layer }) }, ...rows]
 }
 
 /**
@@ -97,16 +98,16 @@ export function typedItem (items: readonly OutcomeItem[], typed: string): string
  * @returns one or two sentences; says so when nothing extra was chosen
  */
 export function choicesInWords (request: AddRequest, options: AddOptions): string {
-  if (request.stack !== undefined) return `Built from the stack ${request.stack}.`
+  if (request.stack !== undefined) return say('vscode.add-project.built-from-the-stack', { stack: request.stack })
   const axes = choicesByAxis(options.choices, request.language)
   const named = request.with.map((name) => axes.flatMap((axis) => axis.choices).find((choice) => choice.name === name)).filter((choice): choice is ChoiceOption => choice !== undefined)
-  if (named.length === 0) return `Built with the default choices of ${request.language}: nothing extra was chosen.`
+  if (named.length === 0) return say('vscode.add-project.built-with-the-default-choices-of', { language: request.language })
   const asked = askedAxes(options.choices, request.language)
   const taken = new Set(named.map((choice) => choice.axis))
   const without = axes
     .filter((axis) => !axis.many && !asked.includes(axis.axis) && !taken.has(axis.axis) && axis.choices.every((choice) => !choice.isDefault))
     .map((axis) => `no ${(options.layers[axis.axis] ?? axis.axis).toLowerCase()}`)
-  const chosen = named.map((choice) => `${choice.title ?? choice.name}${choice.isDefault ? ' (default)' : ''}`).join(', ')
+  const chosen = named.map((choice) => `${choice.title ?? choice.name}${choice.isDefault ? say('vscode.add-project.default-2') : ''}`).join(', ')
 
-  return `Your choices: ${chosen}${without.length > 0 ? `; ${without.join(', ')}` : ''}.`
+  return say('vscode.add-project.your-choices', { chosen, part: without.length > 0 ? `; ${without.join(', ')}` : '' })
 }

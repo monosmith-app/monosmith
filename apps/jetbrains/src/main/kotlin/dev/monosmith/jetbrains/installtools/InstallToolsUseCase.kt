@@ -6,6 +6,25 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.SmithRunContract
+import dev.monosmith.jetbrains.words.SmithWordsConfig.ADOPT_FOUND_CLOSE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_DERIVEFILES_DO_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_INSTALL_YOURSELF_THEN_RESTART_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_IS_INSTALLED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_IS_WITHOUT_IT_THE_FIRST
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_MONOSMITH_GET
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_MONOSMITH_INSTALL_THE_TOOLS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_MONOSMITH_INSTALL_YOURSELF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_MONOSMITH_NEEDS_ADMINISTRATOR_RIGHTS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_NEEDS_ADMINISTRATOR_RIGHTS_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_NOTHING_WAS_INSTALLED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_OPENED_INSTALL_THEN_RESTART_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_RUN_ONE_OF_THESE_THEN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_RUN_THIS_YOURSELF_THEN_RESTART
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_SKIPPED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_SMITH_TOOLS_INSTALL_PRINTED_SOMETHING
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_INSTALLTOOLS_THE_INSTALL_OF_DID_NOT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.TOOLSDIALOG_DONE_NONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -18,7 +37,7 @@ object InstallToolsUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: install the tools") { run(IdePortsClient.of(ide, root)) }
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_INSTALLTOOLS_MONOSMITH_INSTALL_THE_TOOLS)) { run(IdePortsClient.of(ide, root)) }
 
     /**
      * Runs the flow with the given ports.
@@ -28,23 +47,36 @@ object InstallToolsUseCase {
     fun run(ports: FlowPortsContract): Boolean {
         val planned = ports.smith.run(listOf("tools", "install", "--dry-run", "--json"))
         if (!planned.ok) {
-            ports.notice.warn("Nothing was installed. ${FailureTextMapper.describe(planned)}")
+            ports.notice.warn(say(JETBRAINS_INSTALLTOOLS_NOTHING_WAS_INSTALLED, FailureTextMapper.describe(planned).toString()))
             return false
         }
         val plans =
             runCatching { ToolPlansJsonMapper.toPlans(planned.stdout) }
                 .getOrElse {
-                    ports.notice.warn("smith tools install printed something that is not a plan.")
+                    ports.notice.warn(say(JETBRAINS_INSTALLTOOLS_SMITH_TOOLS_INSTALL_PRINTED_SOMETHING))
                     return false
                 }
         if (plans.isEmpty()) {
-            ports.notice.info("Every tool the workspace needs is installed.")
+            ports.notice.info(say(TOOLSDIALOG_DONE_NONE))
             return false
         }
         val told = mutableListOf<String>()
         for (plan in plans) {
-            val header = "${plan.title} is ${plan.state}. ${plan.why} Without it: ${plan.consequence}. The first answer is the default."
-            val way = ports.prompt.pickOne("MonoSmith: get ${plan.title}", header, ToolRowsAlgorithm.wayRows(plan), "Do it") ?: break
+            val header =
+                say(
+                    JETBRAINS_INSTALLTOOLS_IS_WITHOUT_IT_THE_FIRST,
+                    plan.title.toString(),
+                    plan.state.toString(),
+                    plan.why.toString(),
+                    plan.consequence.toString(),
+                )
+            val way =
+                ports.prompt.pickOne(
+                    say(JETBRAINS_INSTALLTOOLS_MONOSMITH_GET, plan.title.toString()),
+                    header,
+                    ToolRowsAlgorithm.wayRows(plan),
+                    say(JETBRAINS_DERIVEFILES_DO_IT),
+                ) ?: break
             told.add(carryOut(ports, plan, plan.options.first { it.value == way.name }))
         }
         ports.changed()
@@ -60,22 +92,22 @@ object InstallToolsUseCase {
         when (option.kind) {
             "page" -> {
                 ports.openUrl(plan.download)
-                "Opened ${plan.download}. Install ${plan.title}, then restart the IDE terminal."
+                say(JETBRAINS_INSTALLTOOLS_OPENED_INSTALL_THEN_RESTART_THE, plan.download.toString(), plan.title.toString())
             }
 
             "myself" -> {
                 ports.prompt.plan(
-                    "MonoSmith: install ${plan.title} yourself",
-                    "Run one of these, then restart the IDE terminal.",
+                    say(JETBRAINS_INSTALLTOOLS_MONOSMITH_INSTALL_YOURSELF, plan.title.toString()),
+                    say(JETBRAINS_INSTALLTOOLS_RUN_ONE_OF_THESE_THEN),
                     ToolRowsAlgorithm.commands(plan).joinToString("\n"),
-                    "Close",
+                    say(ADOPT_FOUND_CLOSE),
                     offerCommit = false,
                 )
-                "Install ${plan.title} yourself, then restart the IDE terminal."
+                say(JETBRAINS_INSTALLTOOLS_INSTALL_YOURSELF_THEN_RESTART_THE, plan.title.toString())
             }
 
             "skip" -> {
-                "Skipped ${plan.title}: ${plan.consequence}."
+                say(JETBRAINS_INSTALLTOOLS_SKIPPED, plan.title.toString(), plan.consequence.toString())
             }
 
             else -> {
@@ -91,18 +123,18 @@ object InstallToolsUseCase {
         val args = listOf("tools", "install", plan.name, "--manager", option.manager)
         val command = option.command.joinToString(" ")
         if (option.admin) {
-            val header = "$command needs administrator rights. smith never runs it without this second question."
+            val header = say(JETBRAINS_INSTALLTOOLS_NEEDS_ADMINISTRATOR_RIGHTS_SMITH, command.toString())
             val answer =
                 ports.prompt.pickOne(
-                    "MonoSmith: ${plan.title} needs administrator rights",
+                    say(JETBRAINS_INSTALLTOOLS_MONOSMITH_NEEDS_ADMINISTRATOR_RIGHTS, plan.title.toString()),
                     header,
                     ToolRowsAlgorithm.adminRows(plan, option),
-                    "Do it",
+                    say(JETBRAINS_DERIVEFILES_DO_IT),
                 )
             return when (answer?.name) {
                 ToolRowsAlgorithm.RUN_IT -> report(plan, ports.smith.run(args + "--with-admin", show = true))
-                ToolRowsAlgorithm.MYSELF -> "Run this yourself, then restart the IDE terminal: $command"
-                else -> "Skipped ${plan.title}: ${plan.consequence}."
+                ToolRowsAlgorithm.MYSELF -> say(JETBRAINS_INSTALLTOOLS_RUN_THIS_YOURSELF_THEN_RESTART, command.toString())
+                else -> say(JETBRAINS_INSTALLTOOLS_SKIPPED, plan.title.toString(), plan.consequence.toString())
             }
         }
         return report(plan, ports.smith.run(args, show = true))
@@ -112,5 +144,12 @@ object InstallToolsUseCase {
         plan: ToolPlanContract,
         run: SmithRunContract,
     ): String =
-        if (run.ok) "${plan.title} is installed." else "The install of ${plan.title} did not finish. ${FailureTextMapper.describe(run)}"
+        if (run.ok) {
+            say(
+                JETBRAINS_INSTALLTOOLS_IS_INSTALLED,
+                plan.title.toString(),
+            )
+        } else {
+            say(JETBRAINS_INSTALLTOOLS_THE_INSTALL_OF_DID_NOT, plan.title.toString(), FailureTextMapper.describe(run).toString())
+        }
 }

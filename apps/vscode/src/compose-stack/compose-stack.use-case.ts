@@ -1,6 +1,7 @@
 import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
 import { composeArguments, describePlan, parseReport, settleRivals, stackSummary, toolsToInstall } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposePlan, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What composing a stack needs from the editor. */
 export interface ComposeDeps {
@@ -31,7 +32,7 @@ async function read (deps: ComposeDeps, args: string[]): Promise<ComposeReport |
   try {
     return parseReport(result.stdout)
   } catch {
-    return 'smith printed its catalogue in a form this editor does not read. Update the extension, or run smith compose in a terminal.'
+    return say('vscode.compose-stack.smith-printed-its-catalogue-in-a')
   }
 }
 
@@ -66,32 +67,32 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
     if (chosen === undefined || chosen.length === 0) return { kind: 'cancelled' }
     const settled = settleRivals(first.items, ticked, chosen)
     ticked = settled.ids
-    const say = (text: string): string => [settled.note, text].filter((part) => part !== '').join(' ')
+    const withNote = (text: string): string => [settled.note, text].filter((part) => part !== '').join(' ')
     const { picks, language, plugins } = split(first.items, ticked)
-    for (const plugin of plugins) deps.tell(`${plugin.title} is not part of one project. Turn it on with: ${plugin.route}`)
+    for (const plugin of plugins) deps.tell(say('vscode.compose-stack.is-not-part-of-one-project', { title: plugin.title, route: plugin.route }))
     ticked = ticked.filter((id) => plugins.every((plugin) => plugin.id !== id))
     if (picks.length === 0) {
-      message = say('Tick at least one choice. To start from the defaults of the stack, pick the defaults in Add project.')
+      message = withNote(say('vscode.compose-stack.tick-at-least-one-choice'))
       continue
     }
 
     const checked = await read(deps, composeArguments({ language, picks }))
     if (typeof checked === 'string') return { kind: 'refused', message: checked }
     const check = checked.check
-    if (check === undefined) return { kind: 'refused', message: 'smith did not check the selection. Update smith, or run smith compose in a terminal.' }
+    if (check === undefined) return { kind: 'refused', message: say('vscode.compose-stack.smith-did-not-check-the-selection') }
     if (check.conflict !== '') {
-      message = say(`Conflict: ${check.conflict}`)
+      message = withNote(say('vscode.compose-stack.conflict', { conflict: check.conflict }))
       continue
     }
     if (check.question !== undefined) {
       const option = await deps.answer(check.question)
       const asked = option === undefined ? undefined : first.items.find((item) => item.kind === 'choice' && item.name === option.name && item.language === check.language)
       if (asked !== undefined) ticked = [...ticked, asked.id]
-      message = say(asked === undefined ? `${check.question.choice} still needs a choice on the ${check.question.axis} axis.` : '')
+      message = withNote(asked === undefined ? say('vscode.compose-stack.still-needs-a-choice-on-the', { choice: check.question.choice, axis: check.question.axis }) : '')
       continue
     }
     if (!check.complete) {
-      message = say(check.missing)
+      message = withNote(check.missing)
       continue
     }
 
@@ -105,7 +106,7 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
       const planned = await read(deps, composeArguments({ language: check.language, picks: check.selection, kind: 'app', name }))
       if (typeof planned === 'string') return { kind: 'refused', message: planned }
       plan = planned.plan
-      if (plan === undefined || plan.argv.length < 2) return { kind: 'refused', message: 'smith made no plan for these picks.' }
+      if (plan === undefined || plan.argv.length < 2) return { kind: 'refused', message: say('vscode.compose-stack.smith-made-no-plan-for-these') }
 
       answer = await deps.confirm(describePlan(plan), plan.recipeArgv.length > 1, toolsToInstall(plan).length > 0)
       // The tools flow asks its own questions; the plan is read again after it, so the states shown are current.
@@ -133,7 +134,7 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
         const everything = `${done.stdout}\n${done.stderr}`
         const failure = parseDoctorFailure(everything)
 
-        return failure === undefined ? { kind: 'refused', message: describeFailure(done) } : { kind: 'written', name, operation: `add app ${name}`, failure, lines: lines(everything) }
+        return failure === undefined ? { kind: 'refused', message: describeFailure(done) } : { kind: 'written', name, operation: say('vscode.compose-stack.add-app', { name }), failure, lines: lines(everything) }
       }
     }
   }

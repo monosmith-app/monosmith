@@ -10,6 +10,38 @@ import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.ADOPT_AGENT_DECLINE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.GUIDE_NEW_WORKSPACE_SETUP_QUESTION_AGENT_NAME
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADDCHOICES_DEFAULT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_ADD_A_GITATTRIBUTES_WITH_TEXT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_ADD_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_ADD_THEM
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_ADD_THE_MONOSMITH_AGENT_FILES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_BRING_IT_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_IS_AT_THE_ROOT_SMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_KEEP_MINE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_LEAVE_LINE_ENDINGS_ALONE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_LINE_ENDINGS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_MONOSMITH_BRING_THIS_FOLDER_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_NEVER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_NEXT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_NOTHING_WAS_ADOPTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_NOTHING_WAS_ADOPTED_2
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_NOTHING_WAS_CHANGED_YET_THIS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_RECORDS_AGENT_ENABLED_FALSE_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_REPLACE_IT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_SMITH_WRITES_ITS_OWN_YOURS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_SMITH_WRITES_NO_PIPELINE_FOR
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_THE_FIRST_ANSWER_IS_THE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_THE_FOLDER_FROM_THE_REPOSITORY
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_THE_FOLDER_IS_A_MONOSMITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_THE_NAME_IN
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_TICK_NONE_TO_WRITE_NO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_WHERE_DOES_GO
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_WRITES_CLAUDE_AGENTS_SMITH_MD
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_YOUR_PIPELINES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_ADOPTFOLDER_YOU_CAN_ADD_THEM_LATER
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -20,7 +52,7 @@ import java.nio.file.Path
  * asked twice; nothing is committed unless the box is ticked.
  */
 object AdoptFolderUseCase {
-    private const val TITLE = "MonoSmith: bring this folder in"
+    private val TITLE = say(JETBRAINS_ADOPTFOLDER_MONOSMITH_BRING_THIS_FOLDER_IN)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -38,11 +70,11 @@ object AdoptFolderUseCase {
         val found = ports.smith.run(listOf("adopt", "--dry-run", "--json"))
         val report =
             runCatching { AdoptReportMapper.toReport(found.stdout) }.getOrElse {
-                ports.notice.warn("Nothing was adopted. ${FailureTextMapper.describe(found)}")
+                ports.notice.warn(say(JETBRAINS_ADOPTFOLDER_NOTHING_WAS_ADOPTED, FailureTextMapper.describe(found).toString()))
                 return false
             }
         if (report.blockers.isNotEmpty()) {
-            ports.notice.warn("Nothing was adopted. ${report.blockers.first()}")
+            ports.notice.warn(say(JETBRAINS_ADOPTFOLDER_NOTHING_WAS_ADOPTED_2, report.blockers.first().toString()))
             return false
         }
         var move: String? = null
@@ -50,10 +82,10 @@ object AdoptFolderUseCase {
             val choice =
                 ports.prompt
                     .pickOne(
-                        "$TITLE: where does ${project.name} go?",
-                        "${project.manifest} is at the root. smith manages one folder per project and does not pick it for you. Move it into a folder of its own so smith can manage it?",
+                        say(JETBRAINS_ADOPTFOLDER_WHERE_DOES_GO, TITLE.toString(), project.name.toString()),
+                        say(JETBRAINS_ADOPTFOLDER_IS_AT_THE_ROOT_SMITH, project.manifest.toString()),
                         AdoptReportMapper.moveRows(project),
-                        "Next",
+                        say(JETBRAINS_ADOPTFOLDER_NEXT),
                     )?.name
                     ?: return false
             move = askMove(ports, project, choice) ?: return false
@@ -61,20 +93,30 @@ object AdoptFolderUseCase {
         val gitattributes =
             pick(
                 ports,
-                "line endings",
-                "Add a .gitattributes with * text=auto eol=lf, so every machine writes the same line endings? A repository that has one keeps it.",
-                yesRows("add", "skip", "Add it", "Leave line endings alone"),
+                say(JETBRAINS_ADOPTFOLDER_LINE_ENDINGS),
+                say(JETBRAINS_ADOPTFOLDER_ADD_A_GITATTRIBUTES_WITH_TEXT),
+                yesRows("add", "skip", say(JETBRAINS_ADOPTFOLDER_ADD_IT), say(JETBRAINS_ADOPTFOLDER_LEAVE_LINE_ENDINGS_ALONE)),
             )
                 ?: return false
         val agent =
             pick(
                 ports,
-                "agent files",
-                "Add the MonoSmith agent files, so Claude Code can work in this workspace through smith?",
+                say(GUIDE_NEW_WORKSPACE_SETUP_QUESTION_AGENT_NAME),
+                say(JETBRAINS_ADOPTFOLDER_ADD_THE_MONOSMITH_AGENT_FILES),
                 listOf(
-                    ChoiceRowContract("add", "Add them", "(default)", "Writes .claude/agents/smith.md and merges .mcp.json."),
-                    ChoiceRowContract("skip", "Not now", "", "You can add them later with smith agent install."),
-                    ChoiceRowContract("never", "Never", "", "Records [agent] enabled = false in smith.toml."),
+                    ChoiceRowContract(
+                        "add",
+                        say(JETBRAINS_ADOPTFOLDER_ADD_THEM),
+                        say(JETBRAINS_ADDCHOICES_DEFAULT),
+                        say(JETBRAINS_ADOPTFOLDER_WRITES_CLAUDE_AGENTS_SMITH_MD),
+                    ),
+                    ChoiceRowContract("skip", say(ADOPT_AGENT_DECLINE), "", say(JETBRAINS_ADOPTFOLDER_YOU_CAN_ADD_THEM_LATER)),
+                    ChoiceRowContract(
+                        "never",
+                        say(JETBRAINS_ADOPTFOLDER_NEVER),
+                        "",
+                        say(JETBRAINS_ADOPTFOLDER_RECORDS_AGENT_ENABLED_FALSE_IN),
+                    ),
                 ),
             ) ?: return false
         val providers = askProviders(ports) ?: return false
@@ -84,13 +126,23 @@ object AdoptFolderUseCase {
             } else {
                 pick(
                     ports,
-                    "your pipelines",
+                    say(JETBRAINS_ADOPTFOLDER_YOUR_PIPELINES),
                     "The repository already has a pipeline for ${report.providers.joinToString(
                         ", ",
                     )}. Replace it with smith's, or keep it?",
                     listOf(
-                        ChoiceRowContract("keep", "Keep mine", "(default)", "smith writes no pipeline for that provider."),
-                        ChoiceRowContract("replace", "Replace it", "", "smith writes its own; yours is kept as <file>.pre-smith."),
+                        ChoiceRowContract(
+                            "keep",
+                            say(JETBRAINS_ADOPTFOLDER_KEEP_MINE),
+                            say(JETBRAINS_ADDCHOICES_DEFAULT),
+                            say(JETBRAINS_ADOPTFOLDER_SMITH_WRITES_NO_PIPELINE_FOR),
+                        ),
+                        ChoiceRowContract(
+                            "replace",
+                            say(JETBRAINS_ADOPTFOLDER_REPLACE_IT),
+                            "",
+                            say(JETBRAINS_ADOPTFOLDER_SMITH_WRITES_ITS_OWN_YOURS),
+                        ),
                     ),
                 ) ?: return false
             }
@@ -100,11 +152,11 @@ object AdoptFolderUseCase {
             PlanStepContract(
                 title = "$TITLE?",
                 planArgs = plan,
-                header = "Nothing was changed yet. This is the plan with its diffs. smith writes smith.toml and the pipelines.",
-                okText = "Bring it in",
+                header = say(JETBRAINS_ADOPTFOLDER_NOTHING_WAS_CHANGED_YET_THIS),
+                okText = say(JETBRAINS_ADOPTFOLDER_BRING_IT_IN),
                 offerCommit = true,
                 apply = { AdoptReportMapper.initArguments(move, gitattributes, agent, providers, existing, apply = true) },
-                done = "The folder is a MonoSmith workspace",
+                done = say(JETBRAINS_ADOPTFOLDER_THE_FOLDER_IS_A_MONOSMITH),
                 operation = "adopt",
             ),
             commitLater,
@@ -116,14 +168,15 @@ object AdoptFolderUseCase {
         no: String,
         yesText: String,
         noText: String,
-    ) = listOf(ChoiceRowContract(yes, yesText, "(default)", ""), ChoiceRowContract(no, noText, "", ""))
+    ) = listOf(ChoiceRowContract(yes, yesText, say(JETBRAINS_ADDCHOICES_DEFAULT), ""), ChoiceRowContract(no, noText, "", ""))
 
     private fun pick(
         ports: FlowPortsContract,
         what: String,
         header: String,
         rows: List<ChoiceRowContract>,
-    ): String? = ports.prompt.pickOne("$TITLE: $what", "$header The first answer is the default.", rows, "Next")?.name
+    ): String? =
+        ports.prompt.pickOne("$TITLE: $what", say(JETBRAINS_ADOPTFOLDER_THE_FIRST_ANSWER_IS_THE, header.toString()), rows, "Next")?.name
 
     private fun askMove(
         ports: FlowPortsContract,
@@ -135,7 +188,14 @@ object AdoptFolderUseCase {
         val typed =
             ports.prompt.text(
                 "$TITLE: ${if (whole) "folder" else "name"}",
-                if (whole) "The folder, from the repository root (for example tools/${project.name}):" else "The name in $choice/:",
+                if (whole) {
+                    say(
+                        JETBRAINS_ADOPTFOLDER_THE_FOLDER_FROM_THE_REPOSITORY,
+                        project.name.toString(),
+                    )
+                } else {
+                    say(JETBRAINS_ADOPTFOLDER_THE_NAME_IN, choice.toString())
+                },
                 if (whole) "" else project.name,
             ) { if (whole) AdoptReportMapper.folderOrProblem(it).second else AdoptReportMapper.nameProblem(it) } ?: return null
         return if (whole) AdoptReportMapper.folderOrProblem(typed).first else "$choice/$typed"
@@ -145,6 +205,6 @@ object AdoptFolderUseCase {
         val listed = ports.smith.run(listOf("new", "--questions", "--json"))
         val question = runCatching { NewQuestionsMapper.toQuestions(listed.stdout).first { it.key == "ci" } }.getOrNull()
         val rows = question?.let { NewQuestionsMapper.rows(it) } ?: return emptyList()
-        return ports.prompt.pickMany("$TITLE: CI", "${question.prompt} Tick none to write no pipeline. The default is ticked.", rows)
+        return ports.prompt.pickMany("$TITLE: CI", say(JETBRAINS_ADOPTFOLDER_TICK_NONE_TO_WRITE_NO, question.prompt.toString()), rows)
     }
 }

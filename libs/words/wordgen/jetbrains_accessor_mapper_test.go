@@ -15,7 +15,7 @@ func TestKotlinHasATypedConstantPerKeyAndTheSayHelper(t *testing.T) {
 		"object SmithWordsConfig {",
 		"/** The key cmd.remove.title. Values: {0} is name, {1} is project. */\n    const val CMD_REMOVE_TITLE = \"cmd.remove.title\"",
 		"const val CMD_ITEMS_ONE = \"cmd.items.one\"",
-		"fun say(key: String, vararg values: Any): String",
+		"fun say(\n        key: String,\n        vararg values: Any,\n    ): String",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)

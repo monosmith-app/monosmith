@@ -1,4 +1,5 @@
 import type { LevelQuestion, RecipeLevel, RecipeLevels, RecipePlugin, RecipeRequest } from './new-recipe.contract.ts'
+import { say } from '../words/index.ts'
 
 type Json = Record<string, unknown>
 
@@ -25,7 +26,7 @@ function object (value: unknown): Json {
  */
 export function parseRecipeLevels (json: string): RecipeLevels {
   const value: unknown = JSON.parse(json)
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError('smith printed no levels')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError(say('vscode.new-recipe.smith-printed-no-levels'))
   const root = value as Json
   const levels: RecipeLevel[] = records(root.levels)
     .map((l) => ({
@@ -88,9 +89,9 @@ export function recipeArguments (request: RecipeRequest): string[] {
 
 /** Says what is wrong with the question the users read, or undefined when it is fine. */
 export function checkChoiceQuestion (question: string): string | undefined {
-  if (question.trim() === '') return 'Write the question the people who use the recipe read.'
+  if (question.trim() === '') return say('vscode.new-recipe.write-the-question-the-people-who')
 
-  return /[:\n]/.test(question) ? 'Write the question without a colon.' : undefined
+  return /[:\n]/.test(question) ? say('vscode.new-recipe.write-the-question-without-a-colon') : undefined
 }
 
 /**
@@ -99,9 +100,9 @@ export function checkChoiceQuestion (question: string): string | undefined {
  * @param taken - the answers already named for this choice
  */
 export function checkChoiceAnswer (answer: string, taken: string[]): string | undefined {
-  if (answer.trim() === '' || /[:=+,]/.test(answer)) return 'An answer is a word or two, without : = + or a comma.'
+  if (answer.trim() === '' || /[:=+,]/.test(answer)) return say('vscode.new-recipe.an-answer-is-a-word-or')
 
-  return taken.includes(answer.trim()) ? `Two answers are named "${answer.trim()}": each needs its own name.` : undefined
+  return taken.includes(answer.trim()) ? say('vscode.new-recipe.two-answers-are-named-each-needs', { trim: answer.trim() }) : undefined
 }
 
 /**
@@ -114,10 +115,10 @@ export function recipeFile (request: RecipeRequest): string {
 
 /** Says what is wrong with a recipe name, or undefined when it is fine. */
 export function checkRecipeName (name: string): string | undefined {
-  return NAME.test(name) ? undefined : 'Use lowercase words joined by dashes, for example "team" or "team-node". The name is the name of the recipe\'s releases.'
+  return NAME.test(name) ? undefined : say('vscode.new-recipe.use-lowercase-words-joined-by-dashes')
 }
 
 /** Says what is wrong with a version, or undefined when it is fine. Empty takes 0.1.0. */
 export function checkRecipeVersion (version: string): string | undefined {
-  return version === '' || VERSION.test(version) ? undefined : 'Use major.minor.patch, for example 0.1.0.'
+  return version === '' || VERSION.test(version) ? undefined : say('vscode.new-recipe.use-major-minor-patch-for-example')
 }

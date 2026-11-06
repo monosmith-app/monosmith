@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { FixFindingOutcome } from './fix-finding.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Asks one question of a fix. The first answer is marked as the suggested one.
@@ -10,7 +11,7 @@ import type { FixFindingOutcome } from './fix-finding.use-case.ts'
 export async function pickFixAnswer (question: string, labels: string[]): Promise<number | undefined> {
   const picked = await vscode.window.showQuickPick(
     labels.map((label, index) => ({ label: index === 0 ? `${label} (suggested)` : label, index })),
-    { title: 'MonoSmith: fix', placeHolder: question },
+    { title: say('vscode.health.monosmith-fix'), placeHolder: question },
   )
 
   return picked?.index
@@ -24,12 +25,12 @@ export async function pickFixAnswer (question: string, labels: string[]): Promis
  */
 export async function confirmFix (review: string, description: string): Promise<boolean> {
   const choice = await vscode.window.showWarningMessage(
-    `MonoSmith: ${description}?`,
-    { modal: true, detail: `${review}\n\nNothing is changed until you apply it. smith never commits unasked.` },
-    'Apply',
+    say('vscode.health.monosmith', { description }),
+    { modal: true, detail: say('vscode.health.nothing-is-changed-until-you-apply', { review }) },
+    say('fixwizard.style.apply'),
   )
 
-  return choice === 'Apply'
+  return choice === say('fixwizard.style.apply')
 }
 
 /**
@@ -39,15 +40,15 @@ export async function confirmFix (review: string, description: string): Promise<
 export function tellFixOutcome (outcome: FixFindingOutcome): void {
   switch (outcome.kind) {
     case 'fixed': {
-      void vscode.window.showInformationMessage(outcome.incomplete ? 'MonoSmith: the fix was applied. Other checks still fail; the Health view lists them.' : 'MonoSmith: the fix was applied.')
+      void vscode.window.showInformationMessage(say(outcome.incomplete ? 'vscode.health.monosmith-the-fix-was-applied-other' : 'vscode.health.monosmith-the-fix-was-applied'))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was fixed. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.health.monosmith-nothing-was-fixed', { message: outcome.message }))
       break
     }
     case 'nothing': {
-      void vscode.window.showInformationMessage('MonoSmith: this check has no fix. Its remedy says what to do.')
+      void vscode.window.showInformationMessage(say('vscode.health.monosmith-this-check-has-no-fix'))
       break
     }
     case 'declined': {

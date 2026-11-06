@@ -5,6 +5,14 @@ import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_COMMIT_EVERYTHING_GIT_SHOWS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_COMMIT_ONLY_THE_FILES_OF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_GIT_ALSO_SHOWS_OTHER_CHANGED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_MONOSMITH_COMMIT_THE_CHANGES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_NOTHING_WAS_COMMITTED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_SMITH_MAKES_ONE_COMMIT_THAT
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_COMMITCHANGES_THE_CHANGES_ARE_COMMITTED_AS
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -25,7 +33,7 @@ object CommitChangesUseCase {
         root: Path,
         operation: String = "",
         then: () -> Unit = {},
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: commit the changes") {
+    ) = BackgroundFlowClient.start(ide, say(JETBRAINS_COMMITCHANGES_MONOSMITH_COMMIT_THE_CHANGES)) {
         if (run(IdePortsClient.of(ide, root), operation)) then()
     }
 
@@ -41,30 +49,30 @@ object CommitChangesUseCase {
     ): Boolean {
         val plan = ports.smith.run(CommitPlanAlgorithm.arguments(operation, null))
         if (!plan.ok) {
-            ports.notice.warn("Nothing was committed. ${FailureTextMapper.describe(plan)}")
+            ports.notice.warn(say(JETBRAINS_COMMITCHANGES_NOTHING_WAS_COMMITTED, FailureTextMapper.describe(plan).toString()))
             return false
         }
         val read = CommitPlanAlgorithm.read(plan.stdout)
         val more = read.extras.size
-        val extras = if (more == 0) "" else " Git also shows $more other changed files; they stay out unless you pick all."
-        val header = "smith makes one commit that Undo can revert. Pick which files go in. Nothing is committed until you do.$extras"
+        val extras = if (more == 0) "" else say(JETBRAINS_COMMITCHANGES_GIT_ALSO_SHOWS_OTHER_CHANGED, more.toString())
+        val header = say(JETBRAINS_COMMITCHANGES_SMITH_MAKES_ONE_COMMIT_THAT, extras.toString())
         val answer =
             ports.prompt.plan(
-                "MonoSmith: commit the changes",
+                say(JETBRAINS_COMMITCHANGES_MONOSMITH_COMMIT_THE_CHANGES),
                 header,
                 read.text,
-                "Commit only the files of the operation",
+                say(JETBRAINS_COMMITCHANGES_COMMIT_ONLY_THE_FILES_OF),
                 offerCommit = false,
-                others = listOf("Commit everything git shows"),
+                others = listOf(say(JETBRAINS_COMMITCHANGES_COMMIT_EVERYTHING_GIT_SHOWS)),
             ) ?: return false
         val scope = if (answer.other == 0) "all" else "operation"
         val done = ports.smith.run(CommitPlanAlgorithm.arguments(operation, scope), show = true)
         ports.changed()
         if (!done.ok) {
-            ports.notice.warn("Nothing was committed. ${FailureTextMapper.describe(done)}")
+            ports.notice.warn(say(JETBRAINS_COMMITCHANGES_NOTHING_WAS_COMMITTED, FailureTextMapper.describe(done).toString()))
             return false
         }
-        ports.notice.info(done.lines.lastOrNull() ?: "The changes are committed as one change. Undo reverts it.")
+        ports.notice.info(done.lines.lastOrNull() ?: say(JETBRAINS_COMMITCHANGES_THE_CHANGES_ARE_COMMITTED_AS))
         return true
     }
 }

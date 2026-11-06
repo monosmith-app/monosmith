@@ -1,5 +1,6 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import type { ToolOption, ToolPlan } from './tool-plan.contract.ts'
+import { say } from '../words/index.ts'
 
 /** The answer to the administrator question. */
 export type AdminAnswer = 'myself' | 'run' | 'skip'
@@ -51,7 +52,7 @@ export async function installTools (deps: InstallToolsDeps): Promise<InstallTool
   try {
     plans = (JSON.parse(planned.stdout) as ToolPlan[] | null) ?? []
   } catch {
-    return { kind: 'refused', message: 'smith tools install printed something that is not a plan' }
+    return { kind: 'refused', message: say('vscode.install-tools.smith-tools-install-printed-something-that') }
   }
   if (plans.length === 0) return { kind: 'nothing' }
   const results: ToolResult[] = []
@@ -72,15 +73,15 @@ async function carryOut (deps: InstallToolsDeps, plan: ToolPlan, value: string):
     case 'page': {
       await deps.openPage(plan.download)
 
-      return done([`Opened ${plan.download}. Install ${plan.title}, then open a new terminal.`])
+      return done([say('vscode.install-tools.opened-install-then-open-a-new', { download: plan.download, title: plan.title })])
     }
     case 'myself': {
       await deps.showCommands(plan, commandsOf(plan))
 
-      return done([`Install ${plan.title} yourself, then open a new terminal.`])
+      return done([say('vscode.install-tools.install-yourself-then-open-a-new', { title: plan.title })])
     }
     case 'skip': {
-      return done([`Skipped ${plan.title}: ${plan.consequence}.`])
+      return done([say('vscode.install-tools.skipped', { title: plan.title, consequence: plan.consequence })])
     }
     default: {
       return await install(deps, plan, option)
@@ -104,12 +105,12 @@ async function install (deps: InstallToolsDeps, plan: ToolPlan, option: ToolOpti
     if (answer === 'run') {
       deps.runInTerminal([...args, '--with-admin'])
 
-      return done([`Running in the terminal: ${command}`])
+      return done([say('vscode.install-tools.running-in-the-terminal', { command })])
     }
 
-    return done([answer === 'myself' ? `Run this yourself, then open a new terminal: ${command}` : `Skipped ${plan.title}: ${plan.consequence}.`])
+    return done([answer === 'myself' ? say('vscode.install-tools.run-this-yourself-then-open-a', { command }) : say('vscode.install-tools.skipped', { title: plan.title, consequence: plan.consequence })])
   }
   const run = await deps.run(args)
 
-  return done(run.code === 0 ? run.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [`The install did not finish. ${describeFailure(run)}`])
+  return done(run.code === 0 ? run.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [say('vscode.install-tools.the-install-did-not-finish', { describeFailure: describeFailure(run) })])
 }

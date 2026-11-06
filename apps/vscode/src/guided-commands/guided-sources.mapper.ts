@@ -1,5 +1,6 @@
 import type { GuidedOption } from './guided-command.contract.ts'
 import { longFlag } from '../smith-flags/index.ts'
+import { say } from '../words/index.ts'
 
 /** A web app built once per environment, as `smith environments list --json` prints it. */
 export interface WebApp {
@@ -47,7 +48,7 @@ export function parseWebApps (json: string): WebApp[] {
 export function environmentsOfApp (app: WebApp): GuidedOption[] {
   return app.environments
     .filter((env) => env.name !== app.default)
-    .map((env) => ({ label: env.name, value: env.name, description: `built by smith run ${env.task}; its .env file stays` }))
+    .map((env) => ({ label: env.name, value: env.name, description: say('vscode.guided-commands.built-by-smith-run-its-env', { task: env.task }) }))
 }
 
 /**
@@ -147,7 +148,7 @@ export function parseArchitectures (text: string): GuidedOption[] {
   for (const line of text.split(/\r?\n/)) {
     const match = /^([ *]) ([a-z][a-z0-9-]*)(?= )/.exec(line)
     if (match === null) continue
-    options.push({ label: `${match[2]}${match[1] === '*' ? ' (in use)' : ''}`, value: match[2], description: line.slice(match[0].length).trim() })
+    options.push({ label: `${match[2]}${match[1] === '*' ? say('vscode.guided-commands.in-use') : ''}`, value: match[2], description: line.slice(match[0].length).trim() })
   }
 
   return options
@@ -163,7 +164,7 @@ export function parsePipelineTemplates (text: string): GuidedOption[] {
     const [first = '', providers = '', ...rest] = line.trim().split(/\s{2,}/)
     const name = /^[a-z][a-z0-9-]*/.exec(first)?.[0]
     if (name === undefined) continue
-    const needsApp = first.includes(longFlag.project) ? ' (asks for the app)' : ''
+    const needsApp = first.includes(longFlag.project) ? say('guide.parity_forms.asks_for_the_app') : ''
     options.push({ label: name, value: name, description: `${rest.join(' ')}${needsApp}${providers === '' ? '' : ` [${providers}]`}`.trim() })
   }
 

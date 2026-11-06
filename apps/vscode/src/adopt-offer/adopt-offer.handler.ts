@@ -5,6 +5,7 @@ import { openSmithTerminal, smithForTerminal } from '../smith-terminal/index.ts'
 import { toAdoptArguments, toMoveArguments, type AdoptAction } from './adopt-arguments.mapper.ts'
 import type { RepositoryOffer } from './repository-offer.contract.ts'
 import { askWhereToMove } from './where-to-move.client.ts'
+import { say } from '../words/index.ts'
 
 /** The folders without a smith.toml that smith can bring in. */
 export interface AdoptCandidates {
@@ -24,7 +25,7 @@ function offerUndoWhenDone (terminal: vscode.Terminal, what: string, subscriptio
     if (event.terminal !== terminal) return
     ended.dispose()
     if (event.exitCode !== 0) return
-    void vscode.window.showInformationMessage(`MonoSmith: ${what}. If it is not what you wanted, undo it in one step.`, 'Undo the last change').then(async (choice) => {
+    void vscode.window.showInformationMessage(say('vscode.adopt-offer.monosmith-if-it-is-not-what', { what }), say('commands.describe.undo.title')).then(async (choice) => {
       if (choice !== undefined) await vscode.commands.executeCommand('monosmith.undo')
     })
   })
@@ -43,7 +44,7 @@ function offerUndoWhenDone (terminal: vscode.Terminal, what: string, subscriptio
 export async function adopt (host: CommandHost, found: AdoptCandidates, subscriptions: vscode.Disposable[], action: AdoptAction): Promise<void> {
   const candidates = found.offers.length > 0
     ? found.offers.map((offer) => ({ root: offer.root, name: offer.name, why: `found ${offer.marker}`, project: offer.project }))
-    : found.blanks.filter((folder) => folder.kind === 'unrecognised').map((folder) => ({ root: folder.root, name: folder.name, why: 'no tool it recognises', project: undefined }))
+    : found.blanks.filter((folder) => folder.kind === 'unrecognised').map((folder) => ({ root: folder.root, name: folder.name, why: say('vscode.adopt-offer.no-tool-it-recognises'), project: undefined }))
   const chosen = await chooseFolder(candidates)
   if (chosen === undefined) return
   // One project at the root: ask where it goes (smith never picks), then run the step that does not ask again.
@@ -51,7 +52,7 @@ export async function adopt (host: CommandHost, found: AdoptCandidates, subscrip
   if (answer === undefined && action === 'start' && chosen.project !== undefined) return
   const executable = await smithForTerminal(chosen.root)
   if (executable === undefined) return
-  host.note(`MonoSmith: ${action === 'start' ? 'bringing' : 'previewing bringing'} ${chosen.name} into MonoSmith (${chosen.why}).`)
+  host.note(say('vscode.adopt-offer.monosmith-into-monosmith', { part: say(action === 'start' ? 'vscode.adopt-offer.bringing' : 'vscode.adopt-offer.previewing-bringing'), name: chosen.name, why: chosen.why }))
   const terminal = openSmithTerminal(executable, answer === undefined ? toAdoptArguments(action) : toMoveArguments(answer.dir, answer.commit), chosen.root)
   if (action === 'start' && (answer === undefined || answer.commit)) offerUndoWhenDone(terminal, `${chosen.name} is converted`, subscriptions)
 }

@@ -1,3 +1,4 @@
+import { say } from '../words/index.ts'
 /**
  * Lays any text smith printed out as a Markdown page with a title, for a plan or a list the person reads once.
  * @param title - the heading
@@ -14,5 +15,5 @@ export function toTextDocument (title: string, text: string): string {
  * @param text - what smith printed
  */
 export function toExplainDocument (file: string, text: string): string {
-  return [`# Derived file: ${file}`, '', '```diff', text.trimEnd(), '```', '', 'Apply, Adopt and Eject are in the context menu of the file in the Health view.', ''].join('\n')
+  return [say('vscode.derive-files.derived-file', { file }), '', '```diff', text.trimEnd(), '```', '', say('vscode.derive-files.apply-adopt-and-eject-are-in'), ''].join('\n')
 }

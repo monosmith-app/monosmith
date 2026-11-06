@@ -6,6 +6,11 @@ import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CIREGENERATE_MONOSMITH_REGENERATE_THE_CI_PIPELINES
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CIREGENERATE_REGENERATE
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CIREGENERATE_THE_CI_PIPELINES_ARE_REGENERATED
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_CIREGENERATE_THE_PLAN_IS_A_DIFF
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.file.Path
 
 /**
@@ -14,7 +19,7 @@ import java.nio.file.Path
  * `--commit` here, so nothing is committed.
  */
 object RegenerateCiUseCase {
-    private const val TITLE = "MonoSmith: regenerate the CI pipelines"
+    private val TITLE = say(JETBRAINS_CIREGENERATE_MONOSMITH_REGENERATE_THE_CI_PIPELINES)
 
     /** Starts the flow in a background task. */
     fun start(
@@ -32,12 +37,11 @@ object RegenerateCiUseCase {
                 title = "$TITLE?",
                 planArgs = listOf("ci", "generate", "--dry-run"),
                 header =
-                    "The plan is a diff of every file smith rewrites or deletes. " +
-                        "A pipeline of your own is not touched. Nothing was written yet.",
-                okText = "Regenerate",
+                    say(JETBRAINS_CIREGENERATE_THE_PLAN_IS_A_DIFF),
+                okText = say(JETBRAINS_CIREGENERATE_REGENERATE),
                 offerCommit = false,
                 apply = { listOf("ci", "generate", "--yes") },
-                done = "The CI pipelines are regenerated",
+                done = say(JETBRAINS_CIREGENERATE_THE_CI_PIPELINES_ARE_REGENERATED),
             ),
         ) {}
 }

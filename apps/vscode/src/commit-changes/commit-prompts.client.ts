@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { CommitChangesOutcome, CommitPlan, CommitScope } from './commit-changes.use-case.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Shows the files of the plan and asks which ones go into the commit. With other
@@ -10,22 +11,22 @@ import type { CommitChangesOutcome, CommitPlan, CommitScope } from './commit-cha
  */
 export async function chooseCommitScope (plan: CommitPlan): Promise<CommitScope | undefined> {
   if (plan.extras.length === 0) {
-    const commit = 'Commit these changes'
+    const commit = say('commands.describe.commit.title')
     const only = await vscode.window.showInformationMessage(
-      'MonoSmith: commit the changes of the last operation?',
-      { modal: true, detail: `${plan.text}\n\nIt is one commit that Undo can revert.` },
+      say('vscode.commit-changes.monosmith-commit-the-changes-of-the'),
+      { modal: true, detail: say('vscode.commit-changes.it-is-one-commit-that-undo', { text: plan.text }) },
       commit,
     )
 
     return only === commit ? 'operation' : undefined
   }
-  const only = 'Only the files the last operation changed'
-  const everything = `Everything git shows as changed (${plan.extras.length} more)`
+  const only = say('vscode.commit-changes.only-the-files-the-last-operation')
+  const everything = say('vscode.commit-changes.everything-git-shows-as-changed-more', { length: plan.extras.length })
   const choice = await vscode.window.showInformationMessage(
-    'MonoSmith: which files go into the commit?',
+    say('vscode.commit-changes.monosmith-which-files-go-into-the'),
     {
       modal:  true,
-      detail: `${plan.text}\n\nThe first choice leaves your own changes in the work tree. The second also takes these files:\n${plan.extras.map((file) => `  ${file}`).join('\n')}\n\nIt is one commit that Undo can revert.`,
+      detail: say('vscode.commit-changes.the-first-choice-leaves-your-own', { text: plan.text, join: plan.extras.map((file) => `  ${file}`).join('\n') }),
     },
     only,
     everything,
@@ -41,11 +42,11 @@ export async function chooseCommitScope (plan: CommitPlan): Promise<CommitScope 
 export function tellCommitOutcome (outcome: CommitChangesOutcome): void {
   switch (outcome.kind) {
     case 'committed': {
-      void vscode.window.showInformationMessage(`MonoSmith: ${outcome.lines.at(-1) ?? 'the changes are committed.'}`)
+      void vscode.window.showInformationMessage(say('vscode.commit-changes.monosmith', { part: outcome.lines.at(-1) ?? say('vscode.commit-changes.the-changes-are-committed') }))
       break
     }
     case 'refused': {
-      void vscode.window.showWarningMessage(`MonoSmith: nothing was committed. ${outcome.message}`)
+      void vscode.window.showWarningMessage(say('vscode.commit-changes.monosmith-nothing-was-committed', { message: outcome.message }))
       break
     }
     case 'declined': {
