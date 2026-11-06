@@ -1,6 +1,7 @@
 package releaseview
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"strconv"
 	"strings"
 
@@ -51,9 +52,9 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 				from = words.Say("releaseview.new")
 			}
 			selected := i == v.Cursor
-			cursor := "  "
+			cursor := choicerow.Cursor(th, false)
 			if selected {
-				cursor = th.Accent(th.Icons.Pointer + " ")
+				cursor = th.Accent(choicerow.Cursor(th, true))
 			}
 			rowOf[len(lines)] = i
 			lines = append(lines, cursor+pane.MiddleCell(item.Project, nameW+1)+from+" → "+th.Bold(item.Next)+"  "+levelMark(th, item.Level)+"  "+th.Muted(item.Reason))

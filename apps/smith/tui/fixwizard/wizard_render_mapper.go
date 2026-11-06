@@ -2,6 +2,7 @@ package fixwizard
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"strings"
 
@@ -157,10 +158,7 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 		if i == 0 {
 			label += words.Say("fixwizard.suggested")
 		}
-		mark := "  "
-		if i == w.cursor {
-			mark = "▸ "
-		}
+		mark := choicerow.Cursor(th, i == w.cursor)
 		optionRow = append(optionRow, len(rows))
 		// A long label wraps under its number, so no option is cut off.
 		for _, part := range pane.Wrap(mark+label, inner, 5) {

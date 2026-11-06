@@ -179,9 +179,9 @@ func shown(lines []string, text string) bool {
 // Row draws one selectable line: a pointer, an optional checkbox, the label
 // and a dimmed hint.
 func Row(th theme.Theme, selected bool, box, label, hint string) string {
-	cursor := "  "
+	cursor := choicerow.Cursor(th, false)
 	if selected {
-		cursor = th.Accent(th.Icons.Pointer + " ")
+		cursor = th.Accent(choicerow.Cursor(th, true))
 		label = th.Accent(label)
 	}
 	if hint != "" {

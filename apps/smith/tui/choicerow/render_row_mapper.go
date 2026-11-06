@@ -1,6 +1,11 @@
 package choicerow
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+import (
+	"strings"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+)
 
 // Box is the tick box of a row: "[x]" when checked, "[-]" when tri (some of
 // what the row stands for is ticked, or the row cannot be ticked), and "[ ]"
@@ -24,13 +29,20 @@ func Radio(th theme.Theme, on bool) string {
 	return "( )"
 }
 
+// Cursor is the mark in front of a row: the theme's pointer and a space when
+// selected, and blank cells of the same display width when not. Every list and
+// choice row takes its mark from here, so one theme setting changes them all.
+func Cursor(th theme.Theme, selected bool) string {
+	mark := th.Icons.Pointer + " "
+	if selected {
+		return mark
+	}
+	return strings.Repeat(" ", ansi.StringWidth(mark))
+}
+
 // Render is a row of a choice list: the cursor mark, the tick box and the
 // label. The cursor mark is the theme's pointer when selected, and blank
 // cells of the same width when not, so a selection never moves the box.
 func Render(th theme.Theme, label string, checked, selected, tri bool) string {
-	cursor := "  "
-	if selected {
-		cursor = th.Icons.Pointer + " "
-	}
-	return cursor + Box(checked, tri) + " " + label
+	return Cursor(th, selected) + Box(checked, tri) + " " + label
 }

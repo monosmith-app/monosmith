@@ -142,9 +142,9 @@ func (m Model) row(th theme.Theme, it compose.Item, selected, inStack bool) stri
 		text += " " + th.Warning(words.Say("composer.row.problem", "problem", it.Problem))
 	}
 	if selected {
-		return th.Selected("> " + text)
+		return th.Selected(choicerow.Cursor(th, true) + text)
 	}
-	return "  " + text
+	return choicerow.Cursor(th, false) + text
 }
 
 // isTicked reports whether the item is ticked.
@@ -219,9 +219,9 @@ func (m Model) questionBody(th theme.Theme, inner int) []string {
 			text += th.Muted("  " + o.Description)
 		}
 		if i == m.qcursor {
-			lines = append(lines, th.Selected("> "+text))
+			lines = append(lines, th.Selected(choicerow.Cursor(th, true)+text))
 		} else {
-			lines = append(lines, "  "+text)
+			lines = append(lines, choicerow.Cursor(th, false)+text)
 		}
 	}
 	return append(lines, "", th.Muted(words.Say("composer.question.keys")))

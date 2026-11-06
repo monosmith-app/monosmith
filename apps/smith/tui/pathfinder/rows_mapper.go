@@ -1,6 +1,7 @@
 package pathfinder
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
@@ -65,10 +66,10 @@ func (m Model) rowText(th theme.Theme, i int) string {
 	if r.kind == rowFolder {
 		name += "/"
 	}
-	pointer := "  "
+	pointer := choicerow.Cursor(th, false)
 	switch {
 	case i == m.cursor:
-		pointer, name = th.Accent(th.Icons.Pointer+" "), th.Accent(name)
+		pointer, name = th.Accent(choicerow.Cursor(th, true)), th.Accent(name)
 	case r.ignored:
 		name = th.Faint(name)
 	case r.kind == rowFolder:

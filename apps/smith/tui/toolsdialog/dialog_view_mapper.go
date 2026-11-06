@@ -1,6 +1,7 @@
 package toolsdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
@@ -71,12 +72,12 @@ func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 	lines = append(lines, words.Say("toolsdialog.pick.question"))
 	first = len(lines)
 	for i, o := range p.Options {
-		mark, label := "  ", o.Label
+		mark, label := choicerow.Cursor(th, false), o.Label
 		if o.Value == p.Default {
 			label += words.Say("toolsdialog.default")
 		}
 		if i == m.cursor {
-			mark, label = th.Accent("> "), th.Bold(label)
+			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 		}
 		lines = append(lines, mark+label)
 	}
@@ -111,12 +112,12 @@ func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) 
 	lines = append(lines, "")
 	first = len(lines)
 	for i, a := range adminAnswers() {
-		mark, label := "  ", a
+		mark, label := choicerow.Cursor(th, false), a
 		if i == 0 {
 			label += words.Say("toolsdialog.default")
 		}
 		if i == m.cursor {
-			mark, label = th.Accent("> "), th.Bold(label)
+			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 		}
 		lines = append(lines, mark+label)
 	}

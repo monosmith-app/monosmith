@@ -1,6 +1,7 @@
 package resultdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
@@ -54,9 +55,9 @@ func (m Model) body(th theme.Theme) (body []string, spans []span) {
 	}
 	body = append(body, "")
 	for i, c := range m.choices {
-		mark, label := "  ", c.label
+		mark, label := choicerow.Cursor(th, false), c.label
 		if i == m.cursor {
-			mark, label = th.Accent(th.Icons.Pointer+" "), th.Bold(label)
+			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 		}
 		from := len(body)
 		body = append(body, pane.Wrap(mark+label+"  "+th.Muted(c.hint), inner, 4)...)

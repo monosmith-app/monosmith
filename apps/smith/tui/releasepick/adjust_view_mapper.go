@@ -84,10 +84,10 @@ func (m Model) Lines(th theme.Theme) []string {
 	end := min(m.top+m.room, len(m.plan.Items))
 	for i := m.top; i < end; i++ {
 		it := m.plan.Items[i]
-		cursor := "  "
+		cursor := choicerow.Cursor(th, false)
 		line := m.rowText(it, now, nameW)
 		if i == m.cursor && m.focus < 0 {
-			cursor, line = th.Accent(th.Icons.Pointer+" "), th.Selected(pane.Fit(line, inner-2))
+			cursor, line = th.Accent(choicerow.Cursor(th, true)), th.Selected(pane.Fit(line, inner-2))
 		}
 		rows = append(rows, row(cursor+line))
 	}
