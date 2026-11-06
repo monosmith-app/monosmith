@@ -321,7 +321,7 @@ func TestTheTabStripKeepsEveryTabReachableAtTheNarrowestScreen(t *testing.T) {
 	for _, w := range []int{72, 80, 100} {
 		l, _ := newSettingsLab(t, w, 24)
 		strip := strings.Join(l.lines()[:4], "\n")
-		if !strings.Contains(strip, "Sett") && !(w < 100 && strings.Contains(strip, "›")) {
+		if !strings.Contains(strip, "Sett") && (w >= 100 || !strings.Contains(strip, "›")) {
 			t.Errorf("width %d: the Settings tab is not in the strip:\n%s", w, strip)
 		}
 	}

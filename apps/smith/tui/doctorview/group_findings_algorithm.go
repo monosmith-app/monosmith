@@ -17,7 +17,7 @@ import (
 // group the findings keep their order, so problems stay on top.
 func GroupByProject(findings []doctor.Finding, projects []ProjectRef) []Group {
 	byProject := map[string][]int{}
-	var workspace, unlisted []int
+	var workspace []int
 	var unlistedNames []string
 	listed := map[string]bool{}
 	for _, p := range projects {
@@ -38,7 +38,6 @@ func GroupByProject(findings []doctor.Finding, projects []ProjectRef) []Group {
 				unlistedNames = append(unlistedNames, name)
 			}
 			byProject[name] = append(byProject[name], i)
-			unlisted = append(unlisted, i)
 		}
 	}
 	sort.SliceStable(workspace, func(a, b int) bool {
