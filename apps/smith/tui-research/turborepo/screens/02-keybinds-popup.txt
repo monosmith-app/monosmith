@@ -1,0 +1,38 @@
+Tasks (/ - Search)    │  @play/app-a#dev > cache bypass, force executing a630b11829acc71a
+ »  @play/app-a#dev   │ cache bypass, force executing a630b11829acc71a
+ » •@play/lib-b#dev  e│ @play/app-a, @play/lib-b, @play/srv-c
+ » •@play/srv-c#dev li│t> @play/app-a@1.0.0 dev
+ ⨯ •@play/app-a#lint i│a>lnodeu-en"letai=0;console.log('app-a dev server on :3002');setInterval(()=>console.log('app-a request '+(
+ ✓  @play/srv-c#lint  │ ++i)),1000)"
+ ✓  @play/lib-b#lint  │ app-a dev server on :3002
+ ✓  @play/lib-b#build │ app-a req┌ Keybinds ───────────────────────────────────────────────────┐
+ ✓  @play/srv-c#build │ app-a req│                                                             │
+ ✓  @play/app-a#build │ app-a req│ l       - Toggle log panel                                  │
+                      │ app-a req│ m       - Toggle this help popup                            │
+                      │ app-a req│ ↑ or k  - Select previous task                              │
+                      │ app-a req│ ↓ or j  - Select next task                                  │
+                      │ app-a req│ h       - Show selected task logs full-screen (toggle)      │
+                      │ app-a req│ s       - Stream all task logs (toggle)                     │
+                      │ app-a req│ Shift+h - Toggle task list                                  │
+                      │ app-a req│ p       - Toggle pinned task selection                      │
+                      │ app-a req│ /       - Filter tasks to search term                       │
+                      │ app-a req│ ESC     - Clear filter                                      │
+                      │ app-a req│ i       - Interact with task                                │
+                      │          │ Ctrl+z  - Stop interacting with task                        │
+                      │          │ c       - Copy logs selection (Only when logs are selected) │
+                      │          │ u       - Scroll logs up                                    │
+                      │          │ d       - Scroll logs down                                  │
+                      │          │ Shift+u - Page logs up                                      │
+                      │          │ Shift+d - Page logs down                                    │
+                      │          │ Shift+c - Clear logs                                        │
+                      │          │ t       - Jump to top of logs                               │
+                      │          │ b       - Jump to bottom of logs                            │
+                      │          │                                                             │
+                      │          └─────────────────────────────────────────────────────────────┘
+                      │
+                      │
+                      │
+                      │
+                      │
+↑ ↓ - Select          │
+m - More binds        │    i - Interact   u/d - Scroll logs   U/D - Page logs   t/b - Jump to top/bottom

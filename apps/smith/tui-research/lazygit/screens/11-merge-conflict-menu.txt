@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Log────────────────────────────────────────────────────────────────────────────╮
+│(merging) gitplay → main                  ││* commit 71301b0 (feature/conflict)                                                 ▐
+╰──────────────────────────────────────────╯│| Author: Tester <a@b.c>                                                            ▐
+╭─[2]─Files - Worktr(only conflicting)─────╮│| Date:   18 seconds ago                                                            ▐
+│UU b.txt                                  ││|                                                                                   ▐
+│                                          ││|     fix: b on branch                                                              ▐
+│                                          ││|                                                                                   ▐
+│                                          ││* commit 65d7d4c                                                                    ▐
+│                                          ││| Author: Tester <a@b.c>                                                            ▐
+│                                          ││| Date:   19 seconds ago                                                            ▐
+│                                          ││|                                                                                   ▐
+│                                          ││|     feat: add four                                                                ▐
+│                                          ││|                                                                                   ▐
+╰───────────────────────────────────1 of 1─╯│* commit e0480b4                                                                    ▐
+╭─[3]─Local branches - Remotes - Tags──────╮│  Author: Tester <a@b.c>                                                            ▐
+│  * main           ╭─Conflicts!─────────────────────────────────────────────────────────────────────────────╮                   ▐
+│18s feature/conflic│  View conflicts                                                                        │                   ▐
+│18s feature/login  │a Abort the merge                                                                       │                   ▐
+│                   ╰─────────────────────────────────────────────────────────────────────────────────1 of 2─╯                   ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+╰───────────────────────────────────2 of 3─╯│                                                                                    │
+╭─[4]─Commits - Reflog─────────────────────╮│                                                                                    │
+│09797cc9 Te ○ feat: stage a file          ││                                                                                    │
+│e19db7df Te ○ fix: b on main              ││                                                                                    │
+│65d7d4c1 Te ○ feat: add four              ││                                                                                    │
+│e0480b44 Te ○ feat: initial files         ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 4─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─[5]─Stash────────────────────────────────╮╭─Command log────────────────────────────────────────────────────────────────────────╮
+│18s WIP on main: e19db7d fix: b on main   ││  git merge --no-edit feature/conflict                                              │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+View merge options: m | Execute: <enter> | Close/Cancel: <esc>                                                     Merging (Reset)

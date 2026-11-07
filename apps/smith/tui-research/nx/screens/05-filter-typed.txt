@@ -1,0 +1,38 @@
+
+ NX    3 build, lint, serve tasks, and 6 others they depend on                                                    Cache   Duration
+ │
+>│⠋    @play/app-a:serve                                                                                              - Continuous
+ │⠋    @play/lib-b:serve                                                                                              - Continuous
+ │⠋    @play/srv-c:serve                                                                                              - Continuous
+ │⠋    @play/app-a:build                                                                                            ...       4.9s
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ └
+  ✖    @play/app-a:lint                                                                                               -       1.4s
+  ✔    @play/lib-b:lint                                                                                               -       1.4s
+  ✔    @play/srv-c:lint                                                                                               -       1.4s
+  ✔    @play/lib-b:build                                                                                              -       5.8s
+  ✔    @play/srv-c:build                                                                                              -       3.6s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /   <enter> confirm, <esc> cancel                          or 2  show output: <enter>  filter: /  navigate: ↑ ↓  quit: q  help: ?

@@ -1,0 +1,38 @@
+                                             ┏  ●  @play/app-a:serve  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ↑
+ NX    3 build, lint, serve task   Duration  ┃                                                                                   ║
+ │                                           ┃  app-a request 18                                                                 ║
+>│⠇    @play/app-a:serve [1]     Continuous  ┃  app-a request 19                                                                 ║
+ │⠇    @play/lib-b:serve         Continuous  ┃  app-a request 20                                                                 ║
+ │⠇    @play/srv-c:serve         Continuous  ┃  app-a request 21                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 22                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 23                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 24                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 25                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 26                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 27                                                                 ║
+ └                                           ┃  app-a request 28                                                                 ║
+  ✖    @play/app-a:lint                1.9s  ┃  app-a request 29                                                                 ║
+  ✔    @play/srv-c:lint                1.7s  ┃  app-a request 30                                                                 ║
+  ✔    @play/lib-b:lint                1.8s  ┃  app-a request 31                                                                 ║
+  ✔    @play/lib-b:build               4.7s  ┃  app-a request 32                                                      -       4.7s
+  ✔    @play/srv-c:build                                                                                              -       3.5s
+  ✔    @play/app-a:build                                                                                              -       5.0s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 6/6 (42.6s)                                  pin output: 1 or 2  show output: <enter>  filter: /  navigate: ↑ ↓  quit: q  help: ?

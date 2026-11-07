@@ -1,0 +1,38 @@
+
+
+
+
+                                                                                                                      - Continuous
+ │⠸    @play/srv-c:serve                                                                                              - Continuous
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ │·    Waiting for task...
+ └
+  ✖    @play/app-a:lint                                                                                               -       1.4s
+  ✔    @play/lib-b:lint       ┌   NX   — exiting in 1...  ─────────────────────────────── (esc) ✕  ┐                  -       1.4s
+  ✔    @play/srv-c:lint       │                                                                    │                  -       1.4s
+  ✔    @play/lib-b:build      │  • Press q to exit immediately or any other key to keep the TUI    │                  -       5.8s
+  ✔    @play/srv-c:build      │  running and interactively explore the results.                    │                  -       3.6s
+  ✔    @play/app-a:build      │                                                                    │                  -       5.1s
+                              │  • Learn how to configure auto-exit and more in the docs:          │
+                              │  https://nx.dev/terminal-ui                                        │
+                              │                                                                    │
+                              └────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 6/6 (31.0s)                                  pin output: 1 or 2  show output: <enter>  filter: /  navigate: ↑ ↓  quit: q  help: ?

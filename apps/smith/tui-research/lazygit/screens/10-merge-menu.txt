@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Log────────────────────────────────────────────────────────────────────────────╮
+│gitplay → main                            ││* commit 71301b0 (feature/conflict)                                                 ▐
+╰──────────────────────────────────────────╯│| Author: Tester <a@b.c>                                                            ▐
+╭─[2]─Files - Worktrees - Submodules───────╮│| Date:   15 seconds ago                                                            ▐
+│                                          ││|                                                                                   ▐
+│                                          ││|     fix: b on branch                                                              ▐
+│                                          ││|                                                                                   ▐
+│                                          ││* commit 65d7d4c                                                                    ▐
+│                                          ││| Author: Tester <a@b.c>                                                            ▐
+│                                          ││| Date:   16 seconds ago                                                            ▐
+│                                          ││|                                                                                   ▐
+│                                          ││|     feat: add four                                                                ▐
+│                                          ││|                                                                                   ▐
+╰───────────────────────────────────0 of 0─╯│* commit e0480b4                                                                    ▐
+╭─[3]─Local branches╭─Merge──────────────────────────────────────────────────────────────────────────────────╮                   ▐
+│  * main           │m Regular merge (with merge commit)                                                     │                   ▐
+│9s  feature/conflic│f Regular merge (fast-forward)                                                          │                   ▐
+│9s  feature/login  │s Squash merge and leave uncommitted                                                    │                   ▐
+│                   │S Squash merge and commit                                                               │                   ▐
+│                   │  Cancel                                                                                │                   ▐
+│                   ╰─────────────────────────────────────────────────────────────────────────────────1 of 5─╯                   ▐
+│                   ╭────────────────────────────────────────────────────────────────────────────────────────╮                   ▐
+│                   │Merge 'feature/conflict' into 'main', creating a merge commit.                          │                   ▐
+╰───────────────────╰────────────────────────────────────────────────────────────────────────────────────────╯                   │
+╭─[4]─Commits - Reflog─────────────────────╮│                                                                                    │
+│09797cc9 Te ○ feat: stage a file          ││                                                                                    │
+│e19db7df Te ○ fix: b on main              ││                                                                                    │
+│65d7d4c1 Te ○ feat: add four              ││                                                                                    │
+│e0480b44 Te ○ feat: initial files         ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 4─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─[5]─Stash────────────────────────────────╮╭─Command log────────────────────────────────────────────────────────────────────────╮
+│9s WIP on main: e19db7d fix: b on main    ││ create mode 100644 untracked.txt                                                   │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+Execute: <enter> | Close/Cancel: <esc>                                                                  Donate Ask Question 0.66.2

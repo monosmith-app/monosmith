@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Staged changes─────────────────────────────────────────────────────────────────╮
+│gitplay → main                            ││diff --git a/a.txt b/a.txt                                                          ▐
+╰──────────────────────────────────────────╯│index f384549..ae9be42 100644                                                       ▐
+╭─[2]─Files - Worktrees - Submodules───────╮│--- a/a.txt                                                                         ▐
+│▼ /                                       ││+++ b/a.txt                                                                         ▐
+│  M  a.txt                                ││@@ -2,3 +2,4 @@ one                                                                 ▐
+│  ▼ src                                   ││ two                                                                                ▐
+│    M  main.go                            ││ three                                                                              ▐
+│  A  untracked.txt                        ││ four                                                                               ▐
+│                                          ││+edit again                                                                         ▐
+│                                          ││diff --git a/src/main.go b/src/main.go                                              ▐
+│                                          ││index 823aafd..effb1ea 100644                                                       ▐
+│                                          ││--- a/src/main.go                                                                   ▐
+╰───────────────────────────────────1 of 5─╯│+++ b/src/main.go                                                                   ▐
+╭─[3]─Local branches - Remotes - Tags──────╮│@@ -1 +1,2 @@                                                                       ▐
+│  * main                                  ││ package x                                                                          ▐
+│6s  feature/login       ╭─Error────────────────────────────────────────────────────────────────────────╮                        ▐
+│7s  feature/conflict    │fatal: 'origin' does not appear to be a git repository                        ▐                        ▐
+│                        │fatal: Could not read from remote repository.Please make sure you have the    ▐                        ▐
+│                        │correct access rights                                                         ▐                        ▐
+│                        │and the repository exists.                                                    │                        │
+│                        ╰──────────────────────────────────────────────────────────────────────────────╯                        │
+│                                          ││@@ -0,0 +1 @@                                                                       │
+╰───────────────────────────────────1 of 3─╯│+new                                                                                │
+╭─[4]─Commits - Reflog─────────────────────╮│                                                                                    │
+│119de6a7 Te ○ fix: b on main              ││                                                                                    │
+│177d34d6 Te ○ feat: add four              ││                                                                                    │
+│9d7b0b22 Te ○ feat: initial files         ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 3─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─[5]─Stash────────────────────────────────╮╭─Command log────────────────────────────────────────────────────────────────────────╮
+│6s WIP on main: 119de6a fix: b on main    ││and the repository exists.                                                          │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+Confirm: <enter> | Close/Cancel: <esc> | Copy to clipboard: <ctrl+o>                                    Donate Ask Question 0.66.2

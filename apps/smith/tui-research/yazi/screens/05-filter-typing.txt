@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples\yz
+   dockerplay │  docs                                                   │  main.go
+   gitplay    │  img                                                    │
+  yz        │ src                                                   │
+   yazi.cmd   │  big.bin                                                │
+               │  d╭───────────────────────────────────mgr.help───────────────────────────────────╮
+               │ 󰂺 R│                                                                              │
+               │    ├──────────────────────────────────────────────────────────────────────────────┤
+               │    │<Esc>               Exit visual mode, clear selection, or cancel search       │
+               │    │<C-[>               Exit visual mode, clear selection, or cancel search       │
+               │    │q                   Quit the process                                          │
+               │    │Q                   Quit without outputting cwd-file                          │
+               │    │<C-c>               Close the current tab, or quit if it's last               │
+               │    │<C-z>               Suspend the process                                       │
+               │    │k                   Previous file                                             │
+               │    │j                   Next file                                                 │
+               │    │<Up>                Previous file                                             │
+               │    │<Down>              Next file                                                 │
+               │    │gg                  Go to top                                                 │
+               │    │G                   Go to bottom                                              │
+               │    │<Home>              Go to top                                                 │
+               │    │<End>               Go to bottom                                              │
+               │    │<C-u>               Move cursor up half page                                  │
+               │    │<C-d>               Move cursor down half page                                │
+               │    │<C-b>               Move cursor up one page                                   │
+               │    │<C-f>               Move cursor down one page                                 │
+               │    │<S-PageUp>          Move cursor up half page                                  │
+               │    │<S-PageDown>        Move cursor down half page                                │
+               │    │<PageUp>            Move cursor up one page                                   │
+               │    ╰──────────────────────────────────────────────────────────────────────────────╯
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ NOR  0B  src                                                                                          50%   3/6  

@@ -1,0 +1,38 @@
+                                             ┏  ●  @play/app-a:serve  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ↑
+ NX    3 build, lint, serve task   Duration  ┃                                                                                   ║
+ │                                           ┃  app-a request 12                                                                 ║
+>│⠹    @play/app-a:serve [1]     Continuous  ┃  app-a request 13                                                                 ║
+ │⠹    @play/lib-b:serve         Continuous  ┃  app-a request 14                                                                 ║
+ │⠹    @play/srv-c:serve         Continuous  ┃  app-a request 15                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 16                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 17                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 17                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 18                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 19                                                                 ║
+ │·    Waiting for task...                   ┃  app-a request 20                                                                 ║
+ └                                           ┃  app-a request 21                                                                 █
+  ✖    @play/app-a:lint                1.9s  ┃  app-a request 22                                                                 █
+  ✔    @play/srv-c:lint                1.7s  ┃  app-a request 23                                                                 █
+  ✔    @play/lib-b:lint                1.8s  ┃  app-a request 24                                                                 █
+  ✔    @play/lib-b:build               4.7s  ┃  app-a request 25                                                                 █
+  ✔    @play/srv-c:build               3.5s  ┃  app-a request 26                                                                 █
+  ✔    @play/app-a:build               5.0s  ┃  app-a request 27                                                                 █
+                                             ┃  app-a request 28                                                                 █
+                                             ┃  app-a request 29                                                                 █
+                                             ┃  app-a request 30                                                                 █
+                                             ┃  app-a request 31                                                                 █
+                                             ┃  app-a request 32                                                                 █
+                                             ┃  app-a request 33                                                                 █
+                                             ┃  app-a request 34                                                                 █
+                                             ┃  app-a request 35                                                                 █
+                                             ┃  app-a request 36                                                                 █
+                                             ┃  app-a request 37                                                                 █
+                                             ┃  app-a request 38                                                                 █
+                                             ┃  app-a request 39                                                                 █
+                                             ┃  app-a request 40                                                                 █
+                                             ┃  app-a request 41                                                                 █
+                                             ┃  app-a request 42                                                                 █
+                                             ┃  █                                                                                █
+                                             ┃                                                                                   █
+                                             ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ↓
+ 6/6 (44.9s)                                               scroll: ↑ ↓  copy: c  search: /  full screen: <enter>  quit: q  help: ?

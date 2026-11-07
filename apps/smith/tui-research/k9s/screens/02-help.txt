@@ -1,0 +1,38 @@
+ Context: kind-tuires [RW]                         <esc> Back                                            ____  __ ________
+ Cluster: kind-tuires                                                                                   |    |/  /   __   \______
+ User:    kind-tuires                                                                                   |       /\____    /  ___/
+ K9s Rev: v0.51.0                                                                                       |    \   \  /    /\___  \
+ K8s Rev: v1.31.2                                                                                       |____|\__ \/____//____  /
+ CPU:     n/a                                                                                                    \/           \/
+ MEM:     n/a
+┌───────────────────────────────────────────────────────────── Help ─────────────────────────────────────────────────────────────┐
+│ RESOURCE                           GENERAL                                  NAVIGATION                       HOTKEYS           │
+│ <0>         all                    <ctrl-a>        Aliases                  <j>          Down                                  │
+│ <1>         demo                   <q>             Back                     <shift-g>    Goto Bottom                           │
+│ <2>         default                <esc>           Back/Clear               <g>          Goto Top                              │
+│ <a>         Attach                 <ctrl-u>        Command Clear            <[>          History Back                          │
+│ <c>         Copy                   <:cmd>          Command mode             <]>          History Forward                       │
+│ <n>         Copy Namespace         <tab>           Field Next               <->          Last Used Command                     │
+│ <ctrl-d>    Delete                 <backtab>       Field Previous           <h>          Left                                  │
+│ <d>         Describe               </term>         Filter mode              <ctrl-f>     Page Down                             │
+│ <e>         Edit                   <?>             Help                     <ctrl-b>     Page Up                               │
+│ <?>         Help                   <space>         Mark                     <l>          Right                                 │
+│ <shift-j>   Jump Owner             <ctrl-\>        Mark Clear               <k>          Up                                    │
+│ <ctrl-k>    Kill                   <ctrl-space>    Mark Range                                                                  │
+│ <l>         Logs                   <:q>            Quit                                                                        │
+│ <p>         Logs Previous          <ctrl-r>        Reload                                                                      │
+│ <shift-f>   Port-Forward           <ctrl-s>        Save                                                                        │
+│ <ctrl-r>    Refresh                <shift-right>   Select Next Column                                                          │
+│ <z>         Sanitize               <shift-left>    Select Previous Column                                                      │
+│ <i>         Set Image              <ctrl-g>        Toggle Crumbs                                                               │
+│ <s>         Shell                  <ctrl-e>        Toggle Header                                                               │
+│ <o>         Show Node                                                                                                          │
+│ <f>         Show PortForward                                                                                                   │
+│ <shift-a>   Sort Age                                                                                                           │
+│ <shift-n>   Sort Name                                                                                                          │
+│ <shift-o>   Sort Selected Column                                                                                               │
+│ <shift-s>   Sort Status                                                                                                        │
+│ <ctrl-z>    Toggle Faults                                                                                                      │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  <pod>   <help>
+

@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Stash──────────────────────────────────────────────────────────────────────────╮
+│gitplay → main                            ││stash@{0}: WIP on main: 83b0bb3 fix: b on main                                      ▐
+╰──────────────────────────────────────────╯│                                                                                    ▐
+╭─[2]─Files - Worktrees - Submodules───────╮│ a.txt       | 2 ++                                                                 ▐
+│▼ /                                       ││ src/main.go | 1 +                                                                  ▐
+│  M  a.txt                                ││ 2 files changed, 3 insertions(+)                                                   ▐
+│  ▼ src                                   ││                                                                                    ▐
+│    M  main.go                            ││diff --git a/a.txt b/a.txt                                                          ▐
+│  A  untracked.txt                        ││index f384549..b566061 100644                                                       ▐
+│                                          ││--- a/a.txt                                                                         ▐
+│                                          ││+++ b/a.txt                                                                         ▐
+╰───────────────────────────────────2 of 5─╯│@@ -2,3 +2,5 @@ one                                                                 ▐
+╭─[3]─Local branches - Remotes - Tags──────╮│ two                                                                                ▐
+│  * main                                  ││ three                                                                              ▐
+│47s feature/login                         ││ four                                                                               ▐
+│48s feature/conflict                      ││+five                                                                               ▐
+│                                          ││+six                                                                                ▐
+│                                          ││diff --git a/src/main.go b/src/main.go                                              ▐
+│                                          ││index 823aafd..a3d0821 100644                                                       ▐
+│                                          ││--- a/src/main.go                                                                   ▐
+╰───────────────────────────────────1 of 3─╯│+++ b/src/main.go                                                                   │
+╭─[4]─Commits - Reflog─────────────────────╮│@@ -1 +1,2 @@                                                                       │
+│83b0bb37 Te ○ fix: b on main              ││ package x                                                                          │
+│c86c2a5e Te ○ feat: add four              ││+func main() {}                                                                     │
+│6cc935ed Te ○ feat: initial files         ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 3─╯│                                                                                    │
+╭─[5]─Stash────────────────────────────────╮│                                                                                    │
+│44s WIP on main: 83b0bb3 fix: b on main   ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          │╰────────────────────────────────────────────────────────────────────────────────────╯
+│                                          │╭─Command log────────────────────────────────────────────────────────────────────────╮
+│                                          ││  git add -- .                                                                      │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+Apply: <space> | Pop: g | Drop: d | Keybindings: ?                                                      Donate Ask Question 0.66.2
