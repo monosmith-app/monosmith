@@ -20,7 +20,7 @@ func names(remote string) []string {
 func TestEachBackendNeedsItsOwnCredentials(t *testing.T) {
 	cases := map[string][]string{
 		"azblob://acme/smith-cache/main": {"SMITH_CACHE_KEY", "AZURE_STORAGE_SAS_TOKEN"},
-		"s3://acme/smith":                {"SMITH_CACHE_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"},
+		"s3://acme/smith":                {"SMITH_CACHE_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION", "AWS_ENDPOINT_URL_S3"},
 		"https://cache.acme.dev/smith":   {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
 		"http://localhost:9000/smith":    {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
 	}

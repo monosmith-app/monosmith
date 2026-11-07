@@ -502,7 +502,7 @@ start with `GITHUB_`. None is required, so a local run needs none.
 | `SPLIT_REPO_TOKEN` | pushing a project with `split_repo` to its mirror repository; a token with write access to that repository (see releasing.md) |
 | `SMITH_CACHE_KEY` | the remote cache (`[cache] remote`): the secret every object is signed with. Given to every step that runs tasks, with the backend's credentials below (see [The remote cache](#the-remote-cache)) |
 | `AZURE_STORAGE_SAS_TOKEN` | an `azblob://` remote cache: a SAS token for the container |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | an `s3://` remote cache |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL_S3` | an `s3://` remote cache; the endpoint only for an S3-compatible store such as Cloudflare R2 |
 | `SMITH_CACHE_TOKEN` | an `https://` remote cache whose server wants a bearer token |
 | `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it. Also installs from and publishes to a `github-packages` registry (given to setup too) |
 | the `token_env` of a `token` registry | installing from (given to setup too) and publishing to that private registry |
@@ -629,7 +629,7 @@ credentials follows from the remote's scheme:
 | `remote` | Secrets |
 |---|---|
 | `azblob://account/container/prefix` | `SMITH_CACHE_KEY`, `AZURE_STORAGE_SAS_TOKEN` |
-| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` |
+| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL_S3` (S3-compatible stores only) |
 | `https://host/path` | `SMITH_CACHE_KEY`, `SMITH_CACHE_TOKEN` (when the server wants one) |
 
 `smith ci check` lists them, in each provider's terms, and what each one is.
