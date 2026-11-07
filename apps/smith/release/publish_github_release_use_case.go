@@ -77,6 +77,10 @@ func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgra
 		return fmt.Errorf("GitHub Release %s: %w (re-run the release to finish it)", item.Tag, err)
 	}
 	res.GitHubRelease = out.URL
+	res.Attached = nil
+	for _, f := range files {
+		res.Attached = append(res.Attached, filepath.Base(f))
+	}
 	if out.Created {
 		say("created GitHub Release %s", out.URL)
 	}

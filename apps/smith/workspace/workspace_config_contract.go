@@ -260,6 +260,12 @@ func (c Config) AgentEnabled() bool { return c.Agent.Enabled == nil || *c.Agent.
 // Declared reports whether the table declares a project, one with a Root.
 func (o ProjectOverride) Declared() bool { return o.Root != "" }
 
+// DeploymentsOn reports whether a release records its registries as GitHub
+// deployments: on unless [release] github_deployments = false.
+func (r ReleaseSection) DeploymentsOn() bool {
+	return r.GitHubDeployments == nil || *r.GitHubDeployments
+}
+
 // ReleaseSection configures `smith release`.
 type ReleaseSection struct {
 	// Branch is the only branch a real release runs from. Default: main.
@@ -270,6 +276,10 @@ type ReleaseSection struct {
 	// release's commits as notes and an app's assets attached. Needs
 	// GITHUB_TOKEN (or GH_TOKEN). Default: false.
 	GitHubReleases bool `toml:"github_releases"`
+	// GitHubDeployments records each registry a release publishes to as a
+	// GitHub deployment (the repository's Deployments sidebar), on GitHub
+	// Actions only; needs the deployments: write permission. Default: true.
+	GitHubDeployments *bool `toml:"github_deployments"`
 	// TagFormat is the release tag prefix of every project that sets no
 	// tag_prefix (and no bare_tags), with {name} for the project's name and
 	// {scope} for [workspace] scope: "{scope}/{name}@" gives "@acme/kit@" for

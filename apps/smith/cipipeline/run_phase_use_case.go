@@ -386,6 +386,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 					log.say("GitHub Release for %s: %s", res.Project, res.GitHubRelease)
 				}
 			}
+			for _, line := range releasedSummary(report, log.icons, colourOn()) {
+				log.say("%s", line)
+			}
 			if len(after) > 0 {
 				for _, line := range stepTable("After the release", after, log.icons).Text("steps") {
 					log.say("%s", line)

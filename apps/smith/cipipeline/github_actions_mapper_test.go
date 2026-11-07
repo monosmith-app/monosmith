@@ -437,3 +437,17 @@ func TestTheNativeJobSignsInToAzureOnlyWhenItPublishes(t *testing.T) {
 		t.Errorf("a native job that publishes must sign in too:\n%s", gh)
 	}
 }
+
+func TestGitHubWorkflowGrantsDeploymentsOnlyWhenARegistryIsPublishedTo(t *testing.T) {
+	m := model()
+	if gh := RenderGitHub(m); strings.Contains(gh, "deployments: write") {
+		t.Errorf("a workspace that publishes to no registry must not ask for it:\n%s", gh)
+	}
+	m.Deployments = true
+	if gh := RenderGitHub(m); !strings.Contains(gh, "permissions:\n  contents: write\n  pull-requests: write\n  deployments: write\n") {
+		t.Errorf("the permission is missing:\n%s", gh)
+	}
+	if got := NewModel(Contributions{Deployments: true}, "1.0.0", "main"); !got.Deployments {
+		t.Error("the model carries the contribution")
+	}
+}

@@ -1190,6 +1190,65 @@ Before a real release smith refuses a shallow clone, a branch other than
 `[release] branch`, uncommitted changes, and a missing publish credential —
 before anything is tagged.
 
+## What was released
+
+After the result table, `smith release` and `smith ci release` print a block for each project that
+reached a target: the version step, then one line per target with its type, what went there and
+where. The block is outside the folded log, so it is the part of the output that stays on screen.
+Registry targets are grouped by registry, and the platforms are read from the file names (npm
+`cli-darwin-x64`, wheel tags, `.nupkg` runtime ids, gem platforms). Many files collapse to counts.
+
+```
+══ Released ════════════════════════════════════════════════
+smith 1.128.0 › 1.129.0 (minor)
+  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+               darwin x64 arm64 · linux x64 arm64 · win32 x64 arm64
+  PyPI       6 wheels (macOS, Linux, Windows x x64, arm64)    pypi.org
+  NuGet      monosmith + 6 platform packages    nuget.org
+               darwin x64 arm64 · linux x64 arm64 · windows x64 arm64
+  RubyGems   8 gems (macOS, Linux, Windows x x64, arm64)    rubygems.org
+  GitHub     release smith@1.129.0 with 17 files: 6 zips, 4 deb/rpm, checksums, SBOM, winget, brew, manifest
+  pub.dev    publish queued (pub.yml), not finished yet
+```
+
+The registry host is the default of the registry type. A registry that `smith.toml` names
+instead is not recorded in the report, so the line still shows the default host. A dry run, a
+failed project and a project that published nothing print no block. The `Published` column of the
+result table counts every target the same way: up to three are named (`npm, GitHub Release`), and
+four or more are counted first (`5 targets: npm, PyPI, NuGet, RubyGems, GitHub Release`).
+
+The pub.dev publish is queued, not waited for: the pub workflow (`pub.yml`) finishes it. Read its
+run for the result.
+
+The same block is written as Markdown to the job summary (GitHub `$GITHUB_STEP_SUMMARY`, Azure
+summary) and printed by `--format markdown`. The `--json` report holds the facts in a `targets`
+array in each result:
+
+```json
+{ "kind": "PyPI", "what": "6 wheels (macOS, Linux, Windows x x64, arm64)",
+  "platforms": ["darwin/x64", "darwin/arm64", "linux/x64", "linux/arm64", "windows/x64", "windows/arm64"],
+  "where": "pypi.org", "count": 6 }
+```
+
+`npm publish` prints a listing of the tarball (`npm notice Tarball Contents`, sizes, digests) and a
+probe for a version that is not published yet fails with `E404`. smith hides both: an `E404` probe
+is an answer, not an error, and the listing shows only with `smith release --verbose` or when the
+publish fails (then the failure message ends with npm's last lines).
+
+### GitHub deployments
+
+On GitHub Actions, after the release, smith records each registry it published to as a GitHub
+deployment: the environment is the registry (`npm`, `PyPI`, `NuGet`, `RubyGems`), the ref is the
+release tag, the description is `<package> <version>`, and a `success` status links to the package
+page (`npmjs.com/package/<name>/v/<version>`, `pypi.org/project/<name>/<version>`,
+`nuget.org/packages/<id>/<version>`, `rubygems.org/gems/<name>/versions/<version>`). The
+repository's Deployments sidebar then lists each registry with its version and a link. A registry
+that already had the version, a failed release, a local run and another CI record nothing.
+
+The call needs `deployments: write`. The generated GitHub workflow grants it when a project
+publishes to a registry. If GitHub refuses, smith prints one warning with the remedy and the
+release still passes. To switch it off, set `github_deployments = false` under `[release]`.
+
 ## The report
 
 Every run writes `.smith/release-report.json` (also printed by `--json`) and, on

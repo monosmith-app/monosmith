@@ -37,6 +37,8 @@ type ReportResult struct {
 	Publish   string   `json:"publish,omitempty"`
 	Registry  string   `json:"registry,omitempty"`
 	Pushed    bool     `json:"pushed"`
+	// Package is the name the package is published under at its registry.
+	Package string `json:"package,omitempty"`
 	// Assets are the files built for an app's release.
 	Assets []string `json:"assets,omitempty"`
 	// Packages are the npm packages, PyPI wheels, NuGet packages and gems an
@@ -62,6 +64,14 @@ type ReportResult struct {
 	Images []protocol.PublishedImage `json:"images,omitempty"`
 	// GitHubRelease is the URL of the tag's GitHub Release.
 	GitHubRelease string `json:"githubRelease,omitempty"`
+	// Attached are the names of the files the GitHub Release holds after this
+	// run, by kind for the summary.
+	Attached []string `json:"attached,omitempty"`
+	// PubExisting is the name@version pub.dev already had, so nothing was queued.
+	PubExisting string `json:"pubExisting,omitempty"`
+	// Targets are the places the release put the package, with what went there
+	// (see TargetsOf), for tools that read the report.
+	Targets []ReleasedTarget `json:"targets,omitempty"`
 	// PubDispatch names the pub.dev publish the release started (package,
 	// version and tag), which the pub workflow finishes.
 	PubDispatch string `json:"pubDispatch,omitempty"`
@@ -126,7 +136,7 @@ func (r Report) Markdown() string {
 			}
 		}
 		if res.PubDispatch != "" {
-			fmt.Fprintf(&b, "\nDispatched pub.dev publish for %s.\n", res.PubDispatch)
+			fmt.Fprintf(&b, "\nQueued the pub.dev publish for %s (%s). It is not finished yet.\n", res.PubDispatch, PubWorkflow)
 		}
 		if res.Mirror != "" {
 			verb := "Mirrored"
@@ -136,6 +146,7 @@ func (r Report) Markdown() string {
 			fmt.Fprintf(&b, "\n%s %s to %s\n", verb, res.Project, res.Mirror)
 		}
 	}
+	b.WriteString(r.SummaryMarkdown())
 	if len(r.Unchanged) > 0 {
 		fmt.Fprintf(&b, "\nUnchanged: %s\n", strings.Join(r.Unchanged, ", "))
 	}
