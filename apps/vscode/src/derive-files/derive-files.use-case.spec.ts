@@ -20,7 +20,7 @@ describe('explainDerivedFile', () => {
   })
 
   it('throws smith words with the fix when smith does not derive the file', async () => {
-    await expect(explainDerivedFile(async () => ({ code: 1, stdout: '', stderr: '✖ smith does not derive x.json\n  → smith derive --check lists the files it derives\n' }), 'x.json'))
+    await expect(explainDerivedFile(async () => ({ code: 1, stdout: '', stderr: '× smith does not derive x.json\n  → smith derive --check lists the files it derives\n' }), 'x.json'))
       .rejects.toThrow('smith does not derive x.json Try: smith derive --check lists the files it derives')
   })
 })
@@ -38,7 +38,7 @@ describe('changeDerivedFile', () => {
   })
 
   it('returns the words of smith when it refuses', async () => {
-    expect(await changeDerivedFile(async () => ({ code: 1, stdout: '', stderr: '✖ a.json cannot be adopted\n  → use --replace or --eject\n' }), 'adopt', 'a.json'))
+    expect(await changeDerivedFile(async () => ({ code: 1, stdout: '', stderr: '× a.json cannot be adopted\n  → use --replace or --eject\n' }), 'adopt', 'a.json'))
       .toEqual({ ok: false, message: 'a.json cannot be adopted Try: use --replace or --eject' })
   })
 })

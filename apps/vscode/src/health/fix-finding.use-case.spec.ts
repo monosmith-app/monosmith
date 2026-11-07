@@ -92,7 +92,7 @@ describe('fixFinding', () => {
   })
 
   it('says why when smith refuses', async () => {
-    const outcome = await fixFinding(deps({ run: async () => ({ code: 1, stdout: '', stderr: '✖ not here\n  → do this' }) }), defaults)
+    const outcome = await fixFinding(deps({ run: async () => ({ code: 1, stdout: '', stderr: '× not here\n  → do this' }) }), defaults)
 
     expect(outcome).toEqual({ kind: 'refused', message: 'not here Try: do this' })
   })

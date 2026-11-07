@@ -20,7 +20,7 @@ class ReadSmithCommandUseCaseTest {
 
     @Test
     fun aFailedReadingIsAWarningWithSmithsWords() {
-        fake.answers["cache status"] = fake.fail("✖ the cache folder cannot be read\n")
+        fake.answers["cache status"] = fake.fail("× the cache folder cannot be read\n")
         assertFalse(ReadSmithCommandUseCase.run(fake.ports, "the cache status", listOf("cache", "status")))
         assertEquals("smith could not show the cache status. the cache folder cannot be read", fake.warnings.single())
     }

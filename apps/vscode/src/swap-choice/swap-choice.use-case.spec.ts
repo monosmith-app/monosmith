@@ -73,7 +73,7 @@ describe('swapChoice', () => {
   })
 
   it('returns the words of smith when the plan is refused', async () => {
-    const f = fake([CHOICES, { code: 1, stdout: '', stderr: '✖ the project already uses vitest on the test axis\n' }], 'swap')
+    const f = fake([CHOICES, { code: 1, stdout: '', stderr: '× the project already uses vitest on the test axis\n' }], 'swap')
     expect(await swapChoice(f.deps)).toEqual({ kind: 'refused', message: 'the project already uses vitest on the test axis' })
     expect(f.applied).toEqual([])
   })

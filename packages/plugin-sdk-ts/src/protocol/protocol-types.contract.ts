@@ -733,6 +733,11 @@ export interface FixChoice {
 export interface FixChoiceOption {
   label: string
   fix: Fix
+  /**
+   * Disabled, when not empty, is the reason the option cannot be picked: an interface shows the
+   * option greyed with the reason, and picking it is an error.
+   */
+  disabled?: string
 }
 
 /** FixStep is a command to run in the workspace. */

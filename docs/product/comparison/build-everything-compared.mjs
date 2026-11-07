@@ -17,7 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const data = JSON.parse(readFileSync(join(here, 'features.json'), 'utf8'))
 const pagePath = join(here, 'everything-compared.md')
 
-const MARK = { Y: '✅', P: '◐', U: '❔', N: '❌', '-': '–' }
+const MARK = { Y: '✓', P: '◐', U: '❔', N: '×', '-': '–' }
 const HEAD = {
   nx: 'Nx', turborepo: 'Turbo', bazel: 'Bazel', pants: 'Pants', lerna: 'Lerna', rush: 'Rush', moon: 'moon',
   buck2: 'Buck2', gradle: 'Gradle', earthly: 'Earthly', lage: 'Lage', workspaces: 'JS pkg mgrs', cargo: 'Cargo', please: 'Please',
@@ -91,7 +91,7 @@ function tableBlock() {
       out.push(`| ${esc(r.label)} | **${MARK[r.s.m]}** | ${m.map((c) => MARK[c]).join(' | ')} | ${ev} |`)
     }
   }
-  out.push(`| **Score: rows marked ✅** (of ${data.rows.length}) | **${smithY}** | ${cols.join(' | ')} | ◐ ${smithP}, ❌ ${smithN} |`)
+  out.push(`| **Score: rows marked ✓** (of ${data.rows.length}) | **${smithY}** | ${cols.join(' | ')} | ◐ ${smithP}, × ${smithN} |`)
   out.push(`| **Rows marked ❔** (not verified, not counted as absent) | – | ${unk.join(' | ')} | |`)
   return out.join('\n')
 }
@@ -129,11 +129,11 @@ function replaceBlock(text, name, body) {
 const mode = process.argv[2]
 if (mode === '--report') {
   console.log('rows:', data.rows.length)
-  console.log('only-smith (smith ✅, every other cell ❌ ❔ –):', onlySmith().join(', '))
+  console.log('only-smith (smith ✓, every other cell × ❔ –):', onlySmith().join(', '))
   console.log('only-smith but searched too little to claim:', weakOnly().join(', '))
-  console.log('nearly-only (smith ✅, others at most ◐):', nearlyOnly().join(', '))
-  console.log('not-yet (smith ❌ or ◐, at least one tool ✅):', notYet().join(', '))
-  console.log('gaps without a rival ✅:', gapsWithoutRivals().join(', '))
+  console.log('nearly-only (smith ✓, others at most ◐):', nearlyOnly().join(', '))
+  console.log('not-yet (smith × or ◐, at least one tool ✓):', notYet().join(', '))
+  console.log('gaps without a rival ✓:', gapsWithoutRivals().join(', '))
   process.exit(0)
 }
 

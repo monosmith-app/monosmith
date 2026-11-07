@@ -80,7 +80,7 @@ class NewRecipeUseCaseTest {
 
     @Test
     fun anOldSmithThatCannotListTheLevelsWritesNothing() {
-        fake.answers["recipe new --list-levels --json"] = fake.fail("✖ unknown flag: --list-levels\n")
+        fake.answers["recipe new --list-levels --json"] = fake.fail("× unknown flag: --list-levels\n")
         assertFalse(NewRecipeUseCase.run(fake.ports))
         assertTrue(fake.warnings.single().startsWith("No recipe was written."))
     }
@@ -98,7 +98,7 @@ class NewRecipeUseCaseTest {
         fake.ones.add("node")
         fake.manies.add(emptyList())
         fake.plans.add(fake.yes())
-        fake.answers["recipe new --name team"] = fake.fail("✖ team.recipe.toml exists\n")
+        fake.answers["recipe new --name team"] = fake.fail("× team.recipe.toml exists\n")
         assertFalse(NewRecipeUseCase.run(fake.ports))
         assertEquals("No recipe was written. team.recipe.toml exists", fake.warnings.single())
     }

@@ -12,7 +12,7 @@ class SwitchPluginUseCaseTest {
         """[{"name":"node","source":"built-in","roles":["language","toolchain"]},""" +
             """{"name":"go","source":"built-in","roles":["language"]},{"name":"deploy","source":"installed","roles":["deploy"]}]"""
     private val hides =
-        "✖ switching off hides projects: node finds 2 projects (web, utils)\n" +
+        "× switching off hides projects: node finds 2 projects (web, utils)\n" +
             "  → smith plugin disable node --force switches it off anyway\n"
 
     init {
@@ -72,7 +72,7 @@ class SwitchPluginUseCaseTest {
 
     @Test
     fun anotherRefusalIsAWarningAndNeverForced() {
-        fake.answers["plugin disable node"] = fake.fail("✖ node is not a built-in plugin\n")
+        fake.answers["plugin disable node"] = fake.fail("× node is not a built-in plugin\n")
         fake.ones.add("node")
         fake.plans.add(fake.yes())
         assertFalse(SwitchPluginUseCase.run(fake.ports, on = false) {})

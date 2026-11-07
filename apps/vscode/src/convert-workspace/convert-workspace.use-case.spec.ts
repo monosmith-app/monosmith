@@ -85,7 +85,7 @@ describe('convertWorkspace', () => {
   })
 
   it('refuses, with the words of smith, a plan it cannot make', async () => {
-    const f = fake(new Map(), { run: async (args) => args.includes('--questions') ? OK(QUESTIONS) : { code: 1, stdout: '', stderr: '✖ the working tree has uncommitted changes\n' } })
+    const f = fake(new Map(), { run: async (args) => args.includes('--questions') ? OK(QUESTIONS) : { code: 1, stdout: '', stderr: '× the working tree has uncommitted changes\n' } })
     expect(await convertWorkspace(f.deps)).toMatchObject({ kind: 'refused', message: expect.stringContaining('uncommitted changes') })
     expect(f.applied).toEqual([])
   })

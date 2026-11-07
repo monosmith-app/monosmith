@@ -89,7 +89,7 @@ class InstallToolsUseCaseTest {
     @Test
     fun aFailedInstallIsToldAsPartOfTheAnswer() {
         fake.ones.add("install:winget")
-        fake.answers["tools install node --manager winget"] = fake.fail("✖ winget is not installed\n")
+        fake.answers["tools install node --manager winget"] = fake.fail("× winget is not installed\n")
         InstallToolsUseCase.run(fake.ports)
         assertTrue(fake.infos.single().startsWith("The install of Node.js did not finish. winget is not installed"))
     }

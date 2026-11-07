@@ -71,7 +71,7 @@ class RunAcrossTest {
 
     @Test
     fun aFailedTaskIsAWarningWithSmithsWords() {
-        fake.answers["run build"] = fake.fail("✖ build failed in web")
+        fake.answers["run build"] = fake.fail("× build failed in web")
         fake.ones.add("build")
         RunAcrossUseCase.run(fake.ports, projects, affected = false)
         assertEquals("build did not finish. build failed in web", fake.warnings.single())

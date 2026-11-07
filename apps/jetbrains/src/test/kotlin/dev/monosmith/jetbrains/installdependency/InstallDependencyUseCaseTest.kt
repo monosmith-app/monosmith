@@ -81,14 +81,14 @@ class InstallDependencyUseCaseTest {
         fake.ones.addAll(listOf("web", "registry"))
         fake.texts.add("zod")
         fake.plans.add(fake.yes())
-        fake.answers["install"] = fake.fail("✖ the registry cannot be reached\n")
+        fake.answers["install"] = fake.fail("× the registry cannot be reached\n")
         assertFalse(InstallDependencyUseCase.run(fake.ports))
         assertEquals("Nothing was added. the registry cannot be reached", fake.warnings.single())
     }
 
     @Test
     fun aListOfProjectsItCannotGetIsAWarning() {
-        fake.answers["projects --json"] = fake.fail("✖ smith.toml:3:9 is not valid\n")
+        fake.answers["projects --json"] = fake.fail("× smith.toml:3:9 is not valid\n")
         assertFalse(InstallDependencyUseCase.run(fake.ports))
         assertTrue(fake.warnings.single().startsWith("Nothing was added."))
     }

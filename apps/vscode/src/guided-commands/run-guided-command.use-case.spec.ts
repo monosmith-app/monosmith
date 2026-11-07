@@ -98,7 +98,7 @@ describe('the other commands', () => {
   })
 
   it('returns the words of smith when it refuses', async () => {
-    const f = fake([], true, { 'cache status': { code: 1, stdout: '', stderr: '✖ no cache here\n' } })
+    const f = fake([], true, { 'cache status': { code: 1, stdout: '', stderr: '× no cache here\n' } })
     expect(await runGuidedCommand(command('cacheStatus'), f.deps)).toEqual({ kind: 'refused', message: 'no cache here' })
   })
 
@@ -126,7 +126,7 @@ const SETTINGS = JSON.stringify([
 
 describe('the settings of smith.toml', () => {
   it('picks a setting, then a boolean from true and false with the current one marked, and writes it without --yes', async () => {
-    const f = fake(['ci.devcontainer', 'false'], true, { 'config list': ok(SETTINGS), 'config set': ok('✔ ci.devcontainer = false\n') })
+    const f = fake(['ci.devcontainer', 'false'], true, { 'config list': ok(SETTINGS), 'config set': ok('✓ ci.devcontainer = false\n') })
     expect(await runGuidedCommand(command('configSet'), f.deps)).toMatchObject({ kind: 'done' })
     expect(f.asked[1].kind).toBe('pick')
     expect(f.asked[1].options.map((o) => o.label)).toEqual(['true (current)', 'false'])

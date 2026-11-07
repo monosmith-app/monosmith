@@ -5,7 +5,7 @@ const STDOUT = [
   'Creating app web in apps/web/: a Tauri app',
   'Wrote 32 file(s)',
   'The new project web fails smith doctor:',
-  '  ✖ pkg-config does not find webkit2gtk-4.1',
+  '  × pkg-config does not find webkit2gtk-4.1',
   '      → run: sudo apt-get install libwebkit2gtk-4.1-dev',
   '        then open a new terminal',
   'Not committed: add app web was written, but its check failed, and nobody could choose. Run smith commit --only-operation.',
@@ -23,7 +23,7 @@ describe('parseDoctorFailure', () => {
   it('keeps the whole block of steps for the Output channel', () => {
     expect(found?.steps).toEqual([
       'The new project web fails smith doctor:',
-      '  ✖ pkg-config does not find webkit2gtk-4.1',
+      '  × pkg-config does not find webkit2gtk-4.1',
       '      → run: sudo apt-get install libwebkit2gtk-4.1-dev',
       '        then open a new terminal',
     ])
@@ -47,7 +47,7 @@ describe('parseDoctorFailure', () => {
   })
 
   it('leaves any other failure to the caller', () => {
-    expect(parseDoctorFailure('✖ the build failed\n')).toBeUndefined()
+    expect(parseDoctorFailure('× the build failed\n')).toBeUndefined()
     expect(parseDoctorFailure('dotnet is not installed or not on PATH')).toBeUndefined()
   })
 })

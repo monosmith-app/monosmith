@@ -25,11 +25,11 @@ its own page.
 - **What ❔ means now.** The documentation source was searched for the feature
   and its usual names, and it neither states the feature nor excludes it. The cell
   says what was searched. ❔ is not "absent", and it is not "unknown to me": it is
-  "not stated in the sources searched". A ❌ is used only where a documentation
+  "not stated in the sources searched". A × is used only where a documentation
   page says the feature is not provided, or documents a different mechanism
   for the same job and a full-text search found nothing; the cell or the page
   quotes it.
-- **CI generation is read narrowly.** ✅ means the tool writes pipeline files for
+- **CI generation is read narrowly.** ✓ means the tool writes pipeline files for
   you. ◐ means the documentation gives guides or recipes for running the tool in
   CI, but no generator was found.
 - **Versions move.** Nx, Turborepo, pnpm, moon and others change quickly, and
@@ -42,10 +42,10 @@ its own page.
 
 | Mark | Meaning |
 |---|---|
-| ✅ | The tool's documentation says it has the feature |
+| ✓ | The tool's documentation says it has the feature |
 | ◐ | Partly, experimental, or with a condition; the note says which |
 | ❔ | Not verified: searched in the tool's documentation source, and it neither states nor excludes the feature |
-| ❌ | Checked, and the feature is not provided; the tool page quotes why |
+| × | Checked, and the feature is not provided; the tool page quotes why |
 
 ### Status of each tool's repository
 
@@ -116,43 +116,43 @@ default branch.
 
 | Tool | Task graph | Affected only | Local cache | Remote cache | Remote execution |
 |---|---|---|---|---|---|
-| **MonoSmith** | ✅ in dependency order, from imports and shared schemas | ✅ `--affected`; everything when unsure | ✅ content-addressed | ✅ HTTP, S3, Azure Blob, signed | ❌ tasks run on one machine |
-| Nx | ✅ project and task graphs | ✅ `nx affected`, selected by task inputs | ✅ | ✅ Nx Cloud; a self-hosting guide exists | ◐ distributed task execution on Nx Cloud |
-| Turborepo | ✅ task ordering and parallelism | ✅ `--affected`, `--filter` by git range | ✅ `.turbo/cache` | ✅ Vercel Remote Cache by default; self-hostable | ❔ no mention in the documentation (searched "remote execution", "distributed") |
-| Bazel | ✅ dependency analysis | ◐ `bazel query` has `rdeps`; no changed-files selection found | ✅ disk cache and action cache | ✅ | ✅ |
-| Pants | ✅ dependency inference | ✅ `--changed-since` with `--changed-dependents` | ✅ | ✅ REAPI servers and cache-only servers | ✅ |
-| Lerna | ✅ dependency order | ✅ `--since` | ✅ | ✅ "can be shared with teammates and CI" | ◐ distributed task execution through Nx Cloud |
-| Rush | ✅ dependency order | ✅ incremental builds rebuild changed projects and their dependents, by file hashes against the last build (not a git range) | ✅ | ✅ Azure Blob, Amazon S3, plugins | ◐ "cobuilds" (experimental) share work between machines through the build cache |
-| moon | ✅ | ✅ `moon run --affected` | ✅ | ✅ a self-hosted Bazel-REAPI-compatible server, or a hosted service | ◐ README lists "action distribution" and says not all features are supported; no documentation page found |
-| Buck2 | ✅ single graph | ◐ `cquery`'s `rdeps` selects dependents; no changed-files command documented | ◐ artifacts in `buck-out`; the daemon keeps an in-memory cache | ✅ remote-execution action cache and CAS | ✅ "remote execution first" |
-| Gradle | ✅ projects built before their dependants | ◐ up-to-date checks skip unchanged tasks; no git-range selection found | ✅ build cache | ✅ HTTP build cache | ❔ no mention in the user guide (searched "remote execution", "distributed build") |
-| Earthly | ✅ targets form a build graph and run in parallel | ◐ "auto-skip" needs Earthly Cloud, which was shut down in 2025 | ✅ layer caching, cache mounts | ✅ `--remote-cache` (registry) | ◐ remote runners (BuildKit); the hosted Satellites were shut down |
-| Lage | ✅ `pipeline` in `lage.config.js` | ✅ `--since` | ✅ | ✅ Azure Blob and your own storage | ◐ "a single-node build orchestrator"; a BuildXL integration distributes builds |
-| npm workspaces | ◐ runs in the order of the root `package.json` | ❌ workspaces are selected by name or path only | ❌ `npm cache` holds downloaded packages | ❌ | ❌ |
-| pnpm workspaces | ✅ `tasks.dependsOn` in `pnpm-workspace.yaml` (pnpm 11 and 12 documentation) | ✅ `--filter "[origin/main]"` | ◐ `pnpm pipeline` caches tasks that declare `outputs` (experimental, v12.4 and newer) | ◐ a Turborepo-API server or `pnpr`, from v12.12 (experimental) | ❔ no mention (searched) |
-| Yarn workspaces | ✅ `foreach -t` topological | ✅ `--since` | ❌ the documented cache is for installed packages | ❌ | ❔ no mention (searched) |
-| Cargo workspaces | ✅ builds follow the dependency graph | ❔ no changed-since selection found | ✅ the target directory; dep-info files record what to rebuild | ◐ third-party `sccache` is documented | ❔ no mention (searched) |
-| Please | ✅ a build graph, with `plz query` | ✅ `plz query changes` against a revision | ✅ directory cache, on by default | ✅ HTTP cache | ◐ experimental, from v15 |
+| **MonoSmith** | ✓ in dependency order, from imports and shared schemas | ✓ `--affected`; everything when unsure | ✓ content-addressed | ✓ HTTP, S3, Azure Blob, signed | × tasks run on one machine |
+| Nx | ✓ project and task graphs | ✓ `nx affected`, selected by task inputs | ✓ | ✓ Nx Cloud; a self-hosting guide exists | ◐ distributed task execution on Nx Cloud |
+| Turborepo | ✓ task ordering and parallelism | ✓ `--affected`, `--filter` by git range | ✓ `.turbo/cache` | ✓ Vercel Remote Cache by default; self-hostable | ❔ no mention in the documentation (searched "remote execution", "distributed") |
+| Bazel | ✓ dependency analysis | ◐ `bazel query` has `rdeps`; no changed-files selection found | ✓ disk cache and action cache | ✓ | ✓ |
+| Pants | ✓ dependency inference | ✓ `--changed-since` with `--changed-dependents` | ✓ | ✓ REAPI servers and cache-only servers | ✓ |
+| Lerna | ✓ dependency order | ✓ `--since` | ✓ | ✓ "can be shared with teammates and CI" | ◐ distributed task execution through Nx Cloud |
+| Rush | ✓ dependency order | ✓ incremental builds rebuild changed projects and their dependents, by file hashes against the last build (not a git range) | ✓ | ✓ Azure Blob, Amazon S3, plugins | ◐ "cobuilds" (experimental) share work between machines through the build cache |
+| moon | ✓ | ✓ `moon run --affected` | ✓ | ✓ a self-hosted Bazel-REAPI-compatible server, or a hosted service | ◐ README lists "action distribution" and says not all features are supported; no documentation page found |
+| Buck2 | ✓ single graph | ◐ `cquery`'s `rdeps` selects dependents; no changed-files command documented | ◐ artifacts in `buck-out`; the daemon keeps an in-memory cache | ✓ remote-execution action cache and CAS | ✓ "remote execution first" |
+| Gradle | ✓ projects built before their dependants | ◐ up-to-date checks skip unchanged tasks; no git-range selection found | ✓ build cache | ✓ HTTP build cache | ❔ no mention in the user guide (searched "remote execution", "distributed build") |
+| Earthly | ✓ targets form a build graph and run in parallel | ◐ "auto-skip" needs Earthly Cloud, which was shut down in 2025 | ✓ layer caching, cache mounts | ✓ `--remote-cache` (registry) | ◐ remote runners (BuildKit); the hosted Satellites were shut down |
+| Lage | ✓ `pipeline` in `lage.config.js` | ✓ `--since` | ✓ | ✓ Azure Blob and your own storage | ◐ "a single-node build orchestrator"; a BuildXL integration distributes builds |
+| npm workspaces | ◐ runs in the order of the root `package.json` | × workspaces are selected by name or path only | × `npm cache` holds downloaded packages | × | × |
+| pnpm workspaces | ✓ `tasks.dependsOn` in `pnpm-workspace.yaml` (pnpm 11 and 12 documentation) | ✓ `--filter "[origin/main]"` | ◐ `pnpm pipeline` caches tasks that declare `outputs` (experimental, v12.4 and newer) | ◐ a Turborepo-API server or `pnpr`, from v12.12 (experimental) | ❔ no mention (searched) |
+| Yarn workspaces | ✓ `foreach -t` topological | ✓ `--since` | × the documented cache is for installed packages | × | ❔ no mention (searched) |
+| Cargo workspaces | ✓ builds follow the dependency graph | ❔ no changed-since selection found | ✓ the target directory; dep-info files record what to rebuild | ◐ third-party `sccache` is documented | ❔ no mention (searched) |
+| Please | ✓ a build graph, with `plz query` | ✓ `plz query changes` against a revision | ✓ directory cache, on by default | ✓ HTTP cache | ◐ experimental, from v15 |
 
 ## Table 3: shipping and keeping it healthy
 
 | Tool | CI pipeline generation | Release and versioning | Scaffolding | Dependency alignment | Health check | Editor or terminal UI | Plugin model |
 |---|---|---|---|---|---|---|---|
-| **MonoSmith** | ✅ GitHub Actions, Azure Pipelines, GitLab CI, CircleCI, Bitbucket Pipelines | ✅ conventional commits to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev and Maven repositories; Go modules and Packagist by tag | ✅ `smith add`, recipes | ✅ `smith sync`, `smith up` | ✅ `smith doctor`, with fixes | ✅ terminal UI, VS Code extension, MCP | ✅ out-of-process JSON-RPC over stdio: "any executable that speaks the protocol"; SDKs for Go, TypeScript and Python |
-| Nx | ✅ `nx g ci-workflow` for GitHub, GitLab, CircleCI, Azure and Bitbucket Pipelines | ✅ `nx release`: npm, crates.io, Docker | ✅ generators | ◐ docs recommend a single version policy; `@nx/dependency-checks` lint rule | ◐ `nx report`; a Conformance plugin is an Nx Enterprise feature; no doctor command found | ✅ Nx Console (VS Code, JetBrains) | ✅ plugins |
-| Turborepo | ◐ per-provider guides, no generator found | ◐ no turbo command; the guide uses Changesets | ✅ `turbo gen` | ◐ docs point to syncpack, manypkg, sherif or the package manager | ◐ `turbo boundaries` (experimental) checks workspace violations | ✅ Turborepo LSP (VS Code extension) and a terminal UI (`"ui": "tui"`) | ❔ none found (searched "plugin") |
-| Bazel | ◐ the FAQ says CI integrates by exit code; no generator | ❔ no release command found | ❔ none found | ◐ Minimal Version Selection picks one version per module | ❔ none found | ◐ IntelliJ plugin (FAQ) | ✅ extension language |
-| Pants | ◐ a CI page, an example workflow and an action; no generator | ◐ `pants publish` for Python distributions, Docker, Helm and Kubernetes (Python publish is experimental); version tags from git | ◐ `pants tailor` generates BUILD files, not project code | ◐ one lockfile per resolve | ◐ `pants tailor --check`; visibility rules validate dependencies | ❌ "We have not yet developed tight IDE integrations" | ✅ plugin API |
-| Lerna | ◐ CI workflow examples for distributed execution; no generator found | ✅ `lerna version` (including `--conventional-commits`) and `lerna publish` | ✅ `lerna init`, `lerna create` | ❔ none found | ◐ `lerna repair` updates configuration after an upgrade; no repository check found | ✅ Nx Console (VS Code, JetBrains) | ❔ none found |
-| Rush | ◐ a CI page and a bootstrap script; no generator | ✅ change files, version policies, `rush publish` | ◐ `rush init` writes config; adding a project is documented as manual steps | ✅ `rush check` | ◐ `rush check` and `rush scan` (phantom dependencies) | ◐ an MCP server; no editor extension found | ◐ plugins, which the plugin pages title "experimental" (cache providers are one use) |
-| moon | ◐ `moon ci` runs affected tasks; no pipeline files generated | ❌ the FAQ says moon does not version or publish packages | ✅ code generation | ❔ none found (searched) | ◐ `moon sync projects` repairs configuration "to help achieve a healthy repository state"; no read-only check found | ✅ VS Code extension ("early stages") and an MCP server | ◐ WASM plugins and extensions, which the pages call "still experimental" |
-| Buck2 | ❔ none found | ❔ none found | ◐ `buck2 init` creates a project | ❔ none found | ❔ none found | ◐ the Starlark library gives LSP and DAP bindings; no editor extension documented | ✅ rules are external to the binary, in Starlark |
-| Gradle | ◐ recipes for six CI systems; no generator | ◐ `maven-publish` and other publishing plugins; versioning is yours | ✅ `gradle init` | ✅ platforms and version alignment; version catalogs | ❔ none found | ✅ IDE integrations (Android Studio, IntelliJ IDEA, Eclipse Buildship) | ✅ plugins |
+| **MonoSmith** | ✓ GitHub Actions, Azure Pipelines, GitLab CI, CircleCI, Bitbucket Pipelines | ✓ conventional commits to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev and Maven repositories; Go modules and Packagist by tag | ✓ `smith add`, recipes | ✓ `smith sync`, `smith up` | ✓ `smith doctor`, with fixes | ✓ terminal UI, VS Code extension, MCP | ✓ out-of-process JSON-RPC over stdio: "any executable that speaks the protocol"; SDKs for Go, TypeScript and Python |
+| Nx | ✓ `nx g ci-workflow` for GitHub, GitLab, CircleCI, Azure and Bitbucket Pipelines | ✓ `nx release`: npm, crates.io, Docker | ✓ generators | ◐ docs recommend a single version policy; `@nx/dependency-checks` lint rule | ◐ `nx report`; a Conformance plugin is an Nx Enterprise feature; no doctor command found | ✓ Nx Console (VS Code, JetBrains) | ✓ plugins |
+| Turborepo | ◐ per-provider guides, no generator found | ◐ no turbo command; the guide uses Changesets | ✓ `turbo gen` | ◐ docs point to syncpack, manypkg, sherif or the package manager | ◐ `turbo boundaries` (experimental) checks workspace violations | ✓ Turborepo LSP (VS Code extension) and a terminal UI (`"ui": "tui"`) | ❔ none found (searched "plugin") |
+| Bazel | ◐ the FAQ says CI integrates by exit code; no generator | ❔ no release command found | ❔ none found | ◐ Minimal Version Selection picks one version per module | ❔ none found | ◐ IntelliJ plugin (FAQ) | ✓ extension language |
+| Pants | ◐ a CI page, an example workflow and an action; no generator | ◐ `pants publish` for Python distributions, Docker, Helm and Kubernetes (Python publish is experimental); version tags from git | ◐ `pants tailor` generates BUILD files, not project code | ◐ one lockfile per resolve | ◐ `pants tailor --check`; visibility rules validate dependencies | × "We have not yet developed tight IDE integrations" | ✓ plugin API |
+| Lerna | ◐ CI workflow examples for distributed execution; no generator found | ✓ `lerna version` (including `--conventional-commits`) and `lerna publish` | ✓ `lerna init`, `lerna create` | ❔ none found | ◐ `lerna repair` updates configuration after an upgrade; no repository check found | ✓ Nx Console (VS Code, JetBrains) | ❔ none found |
+| Rush | ◐ a CI page and a bootstrap script; no generator | ✓ change files, version policies, `rush publish` | ◐ `rush init` writes config; adding a project is documented as manual steps | ✓ `rush check` | ◐ `rush check` and `rush scan` (phantom dependencies) | ◐ an MCP server; no editor extension found | ◐ plugins, which the plugin pages title "experimental" (cache providers are one use) |
+| moon | ◐ `moon ci` runs affected tasks; no pipeline files generated | × the FAQ says moon does not version or publish packages | ✓ code generation | ❔ none found (searched) | ◐ `moon sync projects` repairs configuration "to help achieve a healthy repository state"; no read-only check found | ✓ VS Code extension ("early stages") and an MCP server | ◐ WASM plugins and extensions, which the pages call "still experimental" |
+| Buck2 | ❔ none found | ❔ none found | ◐ `buck2 init` creates a project | ❔ none found | ❔ none found | ◐ the Starlark library gives LSP and DAP bindings; no editor extension documented | ✓ rules are external to the binary, in Starlark |
+| Gradle | ◐ recipes for six CI systems; no generator | ◐ `maven-publish` and other publishing plugins; versioning is yours | ✓ `gradle init` | ✓ platforms and version alignment; version catalogs | ❔ none found | ✓ IDE integrations (Android Studio, IntelliJ IDEA, Eclipse Buildship) | ✓ plugins |
 | Earthly | ◐ CI integration guides | ❔ none found | ❔ none found | ❔ none found | ❔ none found | ◐ a VS Code extension for Earthfiles exists (its build is listed as an example) | ❔ none found |
 | Lage | ◐ log reporters for GitHub Actions and Azure DevOps; no generator | ❔ none found | ◐ `npx lage init` writes the config only | ❔ none found | ❔ none found | ❔ none found | ❔ task types (`npmScript`, `worker`) only; no plugin API found |
-| Workspaces (npm, pnpm, Yarn) | ◐ pnpm: `pnpm ci` is a clean install for CI; none generates pipelines | ◐ npm: `publish --workspaces`; pnpm: `pnpm version`, `pnpm change` (changesets format), `publish -r`; Yarn: an experimental release workflow | ◐ npm: `npm init -w`; pnpm and Yarn: none for workspaces found | ✅ pnpm catalogs; Yarn constraints and catalogs; npm: none found | ◐ `npm doctor` and `pnpm doctor` check the environment; Yarn constraints check the repository | ❔ none found | ◐ Yarn plugins; pnpm hooks (`.pnpmfile.mjs`); none found for npm |
-| Cargo workspaces | ◐ the Cargo book has CI samples for GitHub Actions, GitLab CI, sr.ht and CircleCI | ◐ `cargo publish --workspace` publishes all members; versions are yours | ✅ `cargo new`, `cargo init` | ✅ members inherit dependencies with `workspace = true` | ❔ none found | ❔ none found | ✅ third-party `cargo-*` subcommands |
-| Please | ◐ a codelab for GitHub Actions; no generator | ❔ none found | ◐ `plz init` writes `.plzconfig` and a wrapper | ❔ none found | ❔ none found | ✅ extensions for VS Code, IntelliJ, Neovim and a BUILD-file language server | ✅ plugins |
+| Workspaces (npm, pnpm, Yarn) | ◐ pnpm: `pnpm ci` is a clean install for CI; none generates pipelines | ◐ npm: `publish --workspaces`; pnpm: `pnpm version`, `pnpm change` (changesets format), `publish -r`; Yarn: an experimental release workflow | ◐ npm: `npm init -w`; pnpm and Yarn: none for workspaces found | ✓ pnpm catalogs; Yarn constraints and catalogs; npm: none found | ◐ `npm doctor` and `pnpm doctor` check the environment; Yarn constraints check the repository | ❔ none found | ◐ Yarn plugins; pnpm hooks (`.pnpmfile.mjs`); none found for npm |
+| Cargo workspaces | ◐ the Cargo book has CI samples for GitHub Actions, GitLab CI, sr.ht and CircleCI | ◐ `cargo publish --workspace` publishes all members; versions are yours | ✓ `cargo new`, `cargo init` | ✓ members inherit dependencies with `workspace = true` | ❔ none found | ❔ none found | ✓ third-party `cargo-*` subcommands |
+| Please | ◐ a codelab for GitHub Actions; no generator | ❔ none found | ◐ `plz init` writes `.plzconfig` and a wrapper | ❔ none found | ❔ none found | ✓ extensions for VS Code, IntelliJ, Neovim and a BUILD-file language server | ✓ plugins |
 
 ## Table 4: moving in, and what it costs
 
@@ -205,7 +205,7 @@ This revision (2026-10-25) replaces the first pass, which read the tools'
 documentation through a summarising fetch tool.
 
 **Cells.** The first revision's tables held 119 cells marked ❔. After reading the
-raw sources, 85 of them hold a checked fact (22 ✅, 49 ◐, 8 ❌ and 6 that became
+raw sources, 85 of them hold a checked fact (22 ✓, 49 ◐, 8 × and 6 that became
 plain text, such as a licence or what you write) and 34 remain ❔. Per tool, ❔
 cells before and after:
 
@@ -227,9 +227,9 @@ cells before and after:
 | Please | 10 | 3 |
 | "Others" row of Table 4 | 1 | 0 (the row now names what was found) |
 
-**Marks that moved.** Two ✅ were lowered, both for the tool's own experimental label: Rush's plugin
+**Marks that moved.** Two ✓ were lowered, both for the tool's own experimental label: Rush's plugin
 model (the pages on creating and using plugins are titled "experimental") and moon's
-plugin model ("our WASM plugin implementations are still experimental"), each now ◐. Seven ◐ became ✅ once the raw page said
+plugin model ("our WASM plugin implementations are still experimental"), each now ◐. Seven ◐ became ✓ once the raw page said
 more: Rush's affected builds and `rush check`, Lage's `--since`, pnpm's task graph
 (`tasks.dependsOn`), Cargo's build cache, Gradle's version alignment and the
 workspaces' alignment cell (pnpm catalogs and Yarn constraints).

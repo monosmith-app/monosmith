@@ -20,21 +20,21 @@ A language plugin written in Python, with no SDK and nothing but the standard li
 ```text
 $ smith plugin check docs/examples/plugins/python/plugin.cmd
 widget 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ a language plugin discovers projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ a language plugin discovers projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ shuts down when asked
 ```
 
 A workspace that names an external plugin does not start it until you have trusted it. Run on a plugin named in `smith.toml` and not yet trusted:
 
 ```text
 $ smith projects
-✖ the external plugin "widget" is not trusted yet, so smith did not start it
+× the external plugin "widget" is not trusted yet, so smith did not start it
   → run `smith plugin trust widget` to review it and trust it
   → run `smith plugin list` to see every external plugin and what it may see
 
@@ -104,23 +104,23 @@ Trusting a plugin is not sandboxing it. A trusted plugin runs with your privileg
 
 ## Compared with fourteen tools
 
-The marks follow the [comparison's legend](README.md#legend): ✅ the tool's documentation says it has it, ◐ partly or with a condition, ❔ not verified in the sources searched (not "absent"), ❌ checked and not provided. These rows are also in the [master table](everything-compared.md).
+The marks follow the [comparison's legend](README.md#legend): ✓ the tool's documentation says it has it, ◐ partly or with a condition, ❔ not verified in the sources searched (not "absent"), × checked and not provided. These rows are also in the [master table](everything-compared.md).
 
 **MonoSmith lets you write an extension in any language against a documented protocol, with published SDKs for Go, TypeScript, Python and C#, and the extension can add a language, a task, a scaffold, a CI step or a release target.** moon (any language that compiles to WASM) and Cargo (any program named `cargo-<name>`) are the nearest ideas, and each is credited below.
 
 | Row | **MonoSmith** | Nx | Turbo | Bazel | Pants | Lerna | Rush | moon | Buck2 | Gradle | Earthly | Lage | JS pkg mgrs | Cargo | Please |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Has a plugin model | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ◐ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ |
-| Extensions can add a new language | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ |
-| Extension written in any language | **✅** | ❌ | ❔ | ❌ | ❌ | ❔ | ❌ | ◐ | ❌ | ❌ | ❔ | ❔ | ❌ | ✅ | ❌ |
-| Each extension runs in its own process | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ |
-| Separate programs speaking a documented protocol | **✅** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ |
-| An SDK for writing extensions | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| A command that checks an extension | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Team presets as data (recipes) | **✅** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| A registry or catalogue | **❌** | ✅ | ❔ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Trust step and pins for repository-named extensions | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Integrity-checked or sandboxed | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Has a plugin model | **✓** | ✓ | ❔ | ✓ | ✓ | ❔ | ◐ | ◐ | ✓ | ✓ | ❔ | ❔ | ◐ | ✓ | ✓ |
+| Extensions can add a new language | **✓** | ✓ | ❔ | ✓ | ✓ | ❔ | ❔ | ◐ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ✓ |
+| Extension written in any language | **✓** | × | ❔ | × | × | ❔ | × | ◐ | × | × | ❔ | ❔ | × | ✓ | × |
+| Each extension runs in its own process | **✓** | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ |
+| Separate programs speaking a documented protocol | **✓** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ |
+| An SDK for writing extensions | **✓** | ✓ | ❔ | ✓ | ✓ | ❔ | ◐ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| A command that checks an extension | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Team presets as data (recipes) | **✓** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| A registry or catalogue | **×** | ✓ | ❔ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Trust step and pins for repository-named extensions | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Integrity-checked or sandboxed | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
 
 ### How each tool is extended
 

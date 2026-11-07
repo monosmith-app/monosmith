@@ -296,14 +296,14 @@ directory, so `["python", "plugin.py"]` does not work from there; use the launch
 ```text
 > smith plugin check .\node\plugin.cmd
 widget 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ a language plugin discovers projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ a language plugin discovers projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ shuts down when asked
 ```
 
 The same six lines for `python\plugin.cmd` and for the Go example. See

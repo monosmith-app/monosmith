@@ -32,7 +32,7 @@ class UndoChangeUseCaseTest {
 
     @Test
     fun smithRefusesWhenALaterChangeTouchesTheSameFilesAndTheWarningSaysWhy() {
-        fake.answers["undo --dry-run"] = fake.fail("✖ a later commit changes the same files\n→ undo that one first\n")
+        fake.answers["undo --dry-run"] = fake.fail("× a later commit changes the same files\n→ undo that one first\n")
         assertFalse(UndoChangeUseCase.run(fake.ports))
         assertEquals("Nothing was undone. a later commit changes the same files Try: undo that one first", fake.warnings.single())
         assertEquals(emptyList(), fake.plansSeen)
@@ -41,7 +41,7 @@ class UndoChangeUseCaseTest {
     @Test
     fun aFailedRevertIsAWarning() {
         fake.plans.add(fake.yes())
-        fake.answers["undo --yes"] = fake.fail("✖ the revert has a conflict\n")
+        fake.answers["undo --yes"] = fake.fail("× the revert has a conflict\n")
         assertFalse(UndoChangeUseCase.run(fake.ports))
         assertTrue(fake.warnings.single().startsWith("Nothing was undone."))
     }

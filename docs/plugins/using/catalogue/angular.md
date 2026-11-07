@@ -67,7 +67,7 @@ fails, and the message comes from the CLI, not from smith:
 
 ```text
 a-ng:build │ The Angular CLI requires a minimum Node.js version of v22.22.3 or v24.15.0 or v26.0.0.
-a-ng:build ✖ exited with code 3
+a-ng:build × exited with code 3
 ```
 
 ## Verified

@@ -58,7 +58,7 @@ object AddFailureMapper {
                     ?.groupValues
                     ?.get(1)
                     ?.toInt() ?: 0,
-            reasons = block.filter { it.trimStart().startsWith("✖") }.map { it.trimStart().removePrefix("✖").trim() },
+            reasons = block.filter { it.trimStart().startsWith("×") }.map { it.trimStart().removePrefix("×").trim() },
             committed = Regex("^Committed\\b", RegexOption.MULTILINE).containsMatchIn(output),
         )
     }

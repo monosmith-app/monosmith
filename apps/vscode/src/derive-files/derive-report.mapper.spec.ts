@@ -3,7 +3,7 @@ import { readDeriveReport } from './derive-report.mapper.ts'
 
 describe('readDeriveReport', () => {
   it('says the feature is off when smith.toml does not enable it', () => {
-    expect(readDeriveReport({ code: 1, stdout: '', stderr: '✖ derived files are off in this workspace\n  → set enabled = true under [derive] in smith.toml\n' })).toEqual({ state: 'off', files: [], total: 0 })
+    expect(readDeriveReport({ code: 1, stdout: '', stderr: '× derived files are off in this workspace\n  → set enabled = true under [derive] in smith.toml\n' })).toEqual({ state: 'off', files: [], total: 0 })
   })
 
   it('shows nothing for a smith that has no derive command', () => {
@@ -21,7 +21,7 @@ describe('readDeriveReport', () => {
       '5 derived files, 2 need action, 3 up to date or owned by you.',
       '',
     ].join('\n')
-    const report = readDeriveReport({ code: 1, stdout, stderr: '✖ 2 derived files are out of date\n' })
+    const report = readDeriveReport({ code: 1, stdout, stderr: '× 2 derived files are out of date\n' })
     expect(report.state).toBe('pending')
     expect(report.total).toBe(5)
     expect(report.files).toEqual([
@@ -31,13 +31,13 @@ describe('readDeriveReport', () => {
   })
 
   it('ignores a line of a status it does not know', () => {
-    const report = readDeriveReport({ code: 1, stdout: '  Unknown    a.json  (r)  x\n', stderr: '✖ 1 derived files are out of date\n  → run smith derive\n' })
+    const report = readDeriveReport({ code: 1, stdout: '  Unknown    a.json  (r)  x\n', stderr: '× 1 derived files are out of date\n  → run smith derive\n' })
     expect(report.state).toBe('failed')
     expect(report.message).toBe('1 derived files are out of date Try: run smith derive')
   })
 
   it('returns smith words when it fails', () => {
-    expect(readDeriveReport({ code: 1, stdout: '', stderr: '✖ smith.toml is not valid\n  → fix line 3\n' })).toMatchObject({ state: 'failed', message: 'smith.toml is not valid Try: fix line 3' })
+    expect(readDeriveReport({ code: 1, stdout: '', stderr: '× smith.toml is not valid\n  → fix line 3\n' })).toMatchObject({ state: 'failed', message: 'smith.toml is not valid Try: fix line 3' })
   })
 
   it('names the exit code when smith says nothing', () => {

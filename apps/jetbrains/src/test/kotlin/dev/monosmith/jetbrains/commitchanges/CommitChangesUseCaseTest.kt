@@ -51,7 +51,7 @@ class CommitChangesUseCaseTest {
 
     @Test
     fun aRefusedPlanIsAWarningWithSmithsWords() {
-        fake.answers["commit --dry-run"] = fake.fail("✖ there is nothing to commit\n")
+        fake.answers["commit --dry-run"] = fake.fail("× there is nothing to commit\n")
         assertFalse(CommitChangesUseCase.run(fake.ports))
         assertEquals("Nothing was committed. there is nothing to commit", fake.warnings.single())
     }
@@ -59,7 +59,7 @@ class CommitChangesUseCaseTest {
     @Test
     fun aFailedCommitIsAWarningAndStillTellsTheViewsTheTreeMayHaveChanged() {
         fake.plans.add(fake.yes())
-        fake.answers["commit --only-operation --yes"] = fake.fail("✖ git refused the commit\n")
+        fake.answers["commit --only-operation --yes"] = fake.fail("× git refused the commit\n")
         assertFalse(CommitChangesUseCase.run(fake.ports))
         assertTrue(fake.warnings.single().startsWith("Nothing was committed."))
         assertEquals(1, fake.changedCount)

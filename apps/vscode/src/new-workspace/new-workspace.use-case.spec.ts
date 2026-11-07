@@ -90,7 +90,7 @@ describe('createWorkspace', () => {
   })
 
   it('refuses, with the words of smith, a folder it cannot use, before anything is written', async () => {
-    const f = fake({ run: async () => ({ code: 1, stdout: '', stderr: '✖ this folder has files\n  → run smith adopt\n' }) })
+    const f = fake({ run: async () => ({ code: 1, stdout: '', stderr: '× this folder has files\n  → run smith adopt\n' }) })
     expect(await createWorkspace(f.deps)).toEqual({ kind: 'refused', message: 'this folder has files Try: run smith adopt' })
     expect(f.applied).toEqual([])
   })

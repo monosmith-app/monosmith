@@ -7,7 +7,7 @@ import (
 
 func TestErrorPrintsProblemThenEachRemedy(t *testing.T) {
 	got := New("no name", "smith new acme", "smith adopt").Error()
-	want := "✖ no name\n  → smith new acme\n  → smith adopt"
+	want := "× no name\n  → smith new acme\n  → smith adopt"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}

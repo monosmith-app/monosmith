@@ -163,7 +163,7 @@ The plugin reads no `[projects.<p>.settings.dotnet]` keys. `smith recipe check` 
 The pin label is `dotnet`, probed with `dotnet --version`. Real output with `[toolchains] dotnet = "9"` on a machine whose `dotnet --version` is 10.0.401:
 
 ```
-✖ dotnet matches the pinned version 9
+× dotnet matches the pinned version 9
     [toolchains] pins dotnet 9, but this machine runs 10.0.401: tasks cached on another version are misses, and results can differ from CI
     → install dotnet 9 (`mise use dotnet@9`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] dotnet
 ```
@@ -245,7 +245,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `registries/check_nuget_c
 Real, with an Azure Artifacts feed named in `smith.toml`:
 
 ```
-✖ nuget.config lists the feeds smith.toml names
+× nuget.config lists the feeds smith.toml names
     nuget.config does not match [registries] in smith.toml
     → run `smith doctor --fix`
 ! release tags are not behind the registry

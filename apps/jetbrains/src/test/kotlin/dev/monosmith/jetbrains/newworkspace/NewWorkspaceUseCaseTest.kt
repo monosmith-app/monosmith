@@ -49,7 +49,7 @@ class NewWorkspaceUseCaseTest {
 
     @Test
     fun anOldSmithThatCannotListItsQuestionsCreatesNothing() {
-        fake.answers["new --questions --json"] = fake.fail("✖ unknown flag: --questions")
+        fake.answers["new --questions --json"] = fake.fail("× unknown flag: --questions")
         assertFalse(NewWorkspaceUseCase.run(fake.ports, "acme"))
         assertTrue(fake.warnings.single().contains("Update smith"))
         assertEquals(1, fake.calls.size)

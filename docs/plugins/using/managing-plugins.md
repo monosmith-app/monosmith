@@ -116,19 +116,19 @@ smith plugin check go
 
 ```text
 go 1.62.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ plays a known role: toolchain
-  ✔ plays a known role: scaffold
-  ✔ a language plugin discovers projects
-  ✔ a scaffold generates projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ ci answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ plays a known role: toolchain
+  ✓ plays a known role: scaffold
+  ✓ a language plugin discovers projects
+  ✓ a scaffold generates projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ ci answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 The first argument is a **path** when a file by that name exists, otherwise a **name**, looked up
@@ -292,10 +292,10 @@ smith plugin check widget
 
 ```text
 widget 0.1.0
-  ✔ declares a concurrency the protocol defines
-  ✔ names itself
+  ✓ declares a concurrency the protocol defines
+  ✓ names itself
   ...
-  ✔ shuts down when asked
+  ✓ shuts down when asked
 ```
 
 Then name it, with or without a constraint, and use it:
@@ -361,7 +361,7 @@ smith projects
 ```
 
 ```text
-✖ the external plugin "widget" is not trusted yet, so smith did not start it
+× the external plugin "widget" is not trusted yet, so smith did not start it
   → run `smith plugin trust widget` to review it and trust it
   → run `smith plugin list` to see every external plugin and what it may see
 ```
@@ -397,7 +397,7 @@ its `sha256` and the file still has that digest. On your machine a pin on its ow
 plugin trusted. An unpinned plugin stops the job with the remedy:
 
 ```text
-✖ the external plugin "widget" is not pinned, so smith did not start it: in CI an external plugin runs only when smith.toml pins its sha256
+× the external plugin "widget" is not pinned, so smith did not start it: in CI an external plugin runs only when smith.toml pins its sha256
   → run `smith plugin trust widget --pin` on your machine and commit the sha256 it writes to smith.toml
 ```
 

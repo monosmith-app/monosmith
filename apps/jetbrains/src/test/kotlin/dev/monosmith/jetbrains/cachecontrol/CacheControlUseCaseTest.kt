@@ -48,7 +48,7 @@ class CacheControlUseCaseTest {
     @Test
     fun aFailedChangeIsAWarningWithSmithsWords() {
         fake.plans.add(fake.yes())
-        fake.answers["cache clear --yes"] = fake.fail("✖ the cache is in use\n")
+        fake.answers["cache clear --yes"] = fake.fail("× the cache is in use\n")
         assertFalse(CacheControlUseCase.run(fake.ports, CacheControlUseCase.Kind.CLEAR))
         assertEquals("Nothing was changed. the cache is in use", fake.warnings.single())
     }

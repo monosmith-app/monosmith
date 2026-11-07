@@ -208,7 +208,7 @@ The plugin reports the toolchain label `go` with the version from `go version`, 
 To pin it, put the version in `[toolchains]` (a prefix on dot boundaries). Real output with `go = "1.23"` on a machine running 1.27.0:
 
 ```
-✖ go matches the pinned version 1.23
+× go matches the pinned version 1.23
     [toolchains] pins go 1.23, but this machine runs 1.27.0: tasks cached on another version are misses, and results can differ from CI
     → install go 1.23 (`mise use go@1.23`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] go
 ```
@@ -311,11 +311,11 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 Real output after `go work edit -dropuse=./libs/util`:
 
 ```
-✖ go.work lists libs/util
+× go.work lists libs/util
     libs/util has a go.mod but go.work does not use it
     → run `go work use ./libs/util`
 
-19 passed, 1 failed, 0 warning(s)
+19 passed, 1 failed, 0 warnings
 1 fix(es) available: `smith doctor --fix`
 ```
 
@@ -335,8 +335,8 @@ Real: `smith install -p api github.com/pkg/errors@v0.9.1` printed `added github.
 
 ```
 Tools smith pins (informational):
-  Go               1.27 ✔ (latest 1.27.3)
-  golangci-lint    2.15.0 ✔ (latest 2.15.0)
+  Go               1.27 ✓ (latest 1.27.3)
+  golangci-lint    2.15.0 ✓ (latest 2.15.0)
 ```
 
 (Those figures are read from `go.dev/dl` and `proxy.golang.org` at run time; the plugin tolerates a failed lookup by leaving "latest" empty.)

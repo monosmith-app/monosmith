@@ -88,7 +88,7 @@ describe('installTools', () => {
 
   it('refuses with smith\'s words when the plan fails', async () => {
     const deps = fake([], []).deps
-    deps.run = async () => ({ code: 1, stdout: '', stderr: '✖ this folder is not a smith workspace yet\n  → smith adopt --dry-run\n' })
+    deps.run = async () => ({ code: 1, stdout: '', stderr: '× this folder is not a smith workspace yet\n  → smith adopt --dry-run\n' })
     expect(await installTools(deps)).toMatchObject({ kind: 'refused' })
   })
 })

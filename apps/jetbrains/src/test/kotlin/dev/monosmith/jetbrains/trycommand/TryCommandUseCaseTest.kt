@@ -54,7 +54,7 @@ class TryCommandUseCaseTest {
 
     @Test
     fun aTryThatSmithRefusedIsAWarningWithSmithsWords() {
-        fake.answers["try add lib utils --json"] = fake.fail("✖ this folder has no smith.toml\n")
+        fake.answers["try add lib utils --json"] = fake.fail("× this folder has no smith.toml\n")
         fake.texts.add("add lib utils")
         assertFalse(TryCommandUseCase.run(fake.ports))
         assertEquals("Nothing was tried. this folder has no smith.toml", fake.warnings.single())
@@ -69,7 +69,7 @@ class TryCommandUseCaseTest {
     @Test
     fun aFailedRealRunIsAWarning() {
         fake.answers["try add lib utils --json"] = fake.ok(passed)
-        fake.answers["try add lib utils --yes"] = fake.fail("✖ libs/utils exists\n")
+        fake.answers["try add lib utils --yes"] = fake.fail("× libs/utils exists\n")
         fake.texts.add("add lib utils")
         fake.plans.add(fake.yes())
         assertFalse(TryCommandUseCase.run(fake.ports))

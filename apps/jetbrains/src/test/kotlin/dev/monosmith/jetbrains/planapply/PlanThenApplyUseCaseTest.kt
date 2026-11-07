@@ -62,7 +62,7 @@ class PlanThenApplyUseCaseTest {
 
     @Test
     fun aRefusedPlanIsATextAndNoQuestion() {
-        fake.answers["remove web --dry-run"] = fake.fail("✖ the tree is not clean\n→ commit first\n")
+        fake.answers["remove web --dry-run"] = fake.fail("× the tree is not clean\n→ commit first\n")
         assertFalse(PlanThenApplyUseCase.run(fake.ports, step()) {})
         assertEquals("Nothing was changed. the tree is not clean Try: commit first", fake.warnings.single())
         assertEquals(emptyList(), fake.plansSeen)
@@ -70,7 +70,7 @@ class PlanThenApplyUseCaseTest {
 
     @Test
     fun aFailedChangeWarnsAndKeepsTheCommitBoxOut() {
-        fake.answers["remove web --keep-copy"] = fake.fail("✖ locked")
+        fake.answers["remove web --keep-copy"] = fake.fail("× locked")
         fake.plans.add(fake.yes(commit = true))
         assertFalse(PlanThenApplyUseCase.run(fake.ports, step()) {})
         assertTrue(fake.warnings.single().startsWith("Nothing was changed. locked"))

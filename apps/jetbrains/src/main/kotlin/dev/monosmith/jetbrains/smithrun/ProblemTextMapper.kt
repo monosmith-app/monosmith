@@ -11,7 +11,7 @@ object ProblemTextMapper {
         val lines =
             stderr
                 .lines()
-                .map { it.trim().removePrefix("✖").trim() }
+                .map { it.trim().removePrefix("×").trim() }
                 .filter { it.isNotEmpty() }
         val problem = lines.firstOrNull { !it.startsWith("→") }.orEmpty()
         val remedy = lines.firstOrNull { it.startsWith("→") }?.removePrefix("→")?.trim()

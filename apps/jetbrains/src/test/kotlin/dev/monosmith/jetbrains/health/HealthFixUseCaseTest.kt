@@ -53,7 +53,7 @@ class HealthFixUseCaseTest {
 
     @Test
     fun anEmptyReviewIsAWarningWithSmithsWords() {
-        fake.answers["doctor --fix --only"] = fake.fail("✖ this fix needs a terminal\n")
+        fake.answers["doctor --fix --only"] = fake.fail("× this fix needs a terminal\n")
         fake.ones.add("0")
         assertFalse(HealthUseCase.runFix(fake.ports, finding))
         assertEquals("Nothing was changed. this fix needs a terminal", fake.warnings.single())

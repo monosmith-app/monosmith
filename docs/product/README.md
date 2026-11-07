@@ -27,7 +27,7 @@ They make two promises.
   "not verified".
 - **Every claim about another tool comes from that tool's own documentation
   or repository.** Each comparison page ends with its sources and the date they
-  were read. A cell in the comparison tables is marked "absent" (❌) for a
+  were read. A cell in the comparison tables is marked "absent" (×) for a
   competitor only where a documentation page says so, or describes a
   different mechanism for the same job and a search found nothing else, and "not verified" (❔)
   where the sources were searched and say nothing either way.
