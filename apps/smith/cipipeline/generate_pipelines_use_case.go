@@ -93,6 +93,9 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 		if p.Release != nil && s.Config.Release.GitHubReleases {
 			c.Attest = true
 		}
+		if s.Config.Release.DeploymentsOn() && release.PublishesToRegistry(p) {
+			c.Deployments = true
+		}
 		if release.PubPackage(p) != "" && !release.PublishesToNoRegistry(p) {
 			c.Pub = true
 		}
@@ -119,6 +122,7 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Attest = m.Attest && cfg.CI.Attest != "off"
 	m.AttestOptional = cfg.CI.Attest == "optional"
 	m.ManualRelease = cfg.CI.ManualRelease
+	m.NativeOn, m.Triggers, m.Audit, m.AuditCron, m.PublishOn = cfg.CI.NativeOn, cfg.CI.Triggers, cfg.CI.Audit, cfg.CI.AuditCron, cfg.CI.PublishOn
 	m.ChannelBranches = nil
 	for _, c := range cfg.Release.Channels {
 		m.ChannelBranches = append(m.ChannelBranches, c.Branch)

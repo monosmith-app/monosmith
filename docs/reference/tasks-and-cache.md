@@ -283,7 +283,23 @@ off: nothing is shared unsigned.
 The generated pipelines pass the key and the backend's credentials to the steps
 that run tasks, and keep the cache read-only in pull requests; see
 [The remote cache](ci.md#the-remote-cache) in CI pipelines, with a worked Azure
-Blob example.
+Blob example. The generated pipelines also pass `AWS_ENDPOINT_URL_S3`, so an
+S3-compatible store works in CI as it does on a developer machine.
+
+**Example: Cloudflare R2.** R2 speaks the S3 protocol, so it needs no new
+setting. Make a bucket, then an R2 API token with object read and write on it.
+Set:
+
+```toml
+[cache]
+remote = "s3://smith-cache/shop"
+```
+
+and keep these as secrets: `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` (from the token), `AWS_REGION=auto` and
+`AWS_ENDPOINT_URL_S3=https://<account id>.r2.cloudflarestorage.com`. Use one
+prefix per project in a shared bucket (`shop`, `blog`). Check the current free
+allowance on Cloudflare's pricing page before you rely on it.
 
 `SMITH_CACHE_REMOTE` and `SMITH_CACHE_READ_ONLY=1` override the settings for
 one machine. The remote holds results only: which run was last (for

@@ -7,7 +7,7 @@ import (
 
 func TestTheNativeAndAssetsJobsRunOnAReleaseThatExistsEvenWhenALaterStepFails(t *testing.T) {
 	m := model()
-	m.Native = true
+	m.Native, m.NativeOn = true, NativeOnAlways
 	m.AssetPlatforms = []string{"linux-x64"}
 	m.Attest = true
 	out := RenderGitHub(m)

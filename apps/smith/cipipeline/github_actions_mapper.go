@@ -15,18 +15,14 @@ func RenderGitHub(m Model) string {
 	fmt.Fprintf(&b, `name: ci
 
 on:
-  push:
-    branches: [%[1]s]
-  pull_request:
-    branches: [%[1]s]
-%[4]s
+%[1]s%[4]s
 permissions:
   contents: write
   pull-requests: write
 %[2]s
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: %[6]s
 
 jobs:
   ci:
@@ -35,7 +31,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, strings.Join(m.TriggerBranches(), ", "), idToken(m), githubCIOutputs(m), githubAssetsDispatch(m), githubCIOnlyWithoutAssetsTag(m))
+`, githubTriggers(m), idToken(m), githubCIOutputs(m), githubAssetsDispatch(m), githubCIOnlyWithoutAssetsTag(m), githubCancelInProgress(m))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
@@ -49,13 +45,9 @@ jobs:
 	b.WriteString(slot("      ", "before-setup"))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
-	b.WriteString(`      - name: Audit
-        run: smith ci audit
-`)
+	b.WriteString(githubAuditStep(m))
 	b.WriteString(githubEnv("        ", m.TaskCredentials()))
-	b.WriteString(`      - name: Verify
-        run: smith ci verify
-`)
+	b.WriteString(githubVerifyStep(m))
 	b.WriteString(githubEnv("        ", m.TaskCredentials()))
 	b.WriteString(slot("      ", "after-verify"))
 	b.WriteString(`      - name: Release preview
@@ -66,16 +58,16 @@ jobs:
 `)
 	if m.Pack {
 		fmt.Fprintf(&b, `      - name: Pack
-        if: github.event_name == 'push' && github.ref_name == '%[1]s'
+        if: github.event_name == 'push' && %[1]s
         run: smith ci pack
 %[2]s      - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
-        if: github.event_name == 'push' && github.ref_name == '%[1]s'
+        if: github.event_name == 'push' && %[1]s
         with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
-`, m.ReleaseBranch, githubEnv("        ", m.TaskCredentials()))
+`, githubOnPublishBranches(m), githubEnv("        ", m.TaskCredentials()))
 	}
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
 	b.WriteString(githubAzureSignIn(m, "ci"))
@@ -103,11 +95,11 @@ jobs:
 			continueOnError = "        continue-on-error: true\n"
 		}
 		fmt.Fprintf(&b, `      - name: Attest build provenance
-        if: github.event_name == 'push' && github.ref_name == '%s' && hashFiles('dist/release/**') != ''
+        if: github.event_name == 'push' && %s && hashFiles('dist/release/**') != ''
 %s        uses: actions/attest-build-provenance@v3
         with:
           subject-path: dist/release/*/*
-`, m.ReleaseBranch, continueOnError)
+`, githubOnPublishBranches(m), continueOnError)
 	}
 	if m.Native {
 		b.WriteString(githubNativeJob(m))
@@ -174,7 +166,7 @@ func githubNativeJob(m Model) string {
 	fmt.Fprintf(&b, `
   native:
     needs: ci
-    if: ${{ always() && (needs.ci.result == 'success' || (%s && needs.ci.outputs.released == 'true')) }}
+    if: %s
     strategy:
       fail-fast: false
       matrix:
@@ -184,7 +176,7 @@ func githubNativeJob(m Model) string {
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, githubReleaseEvent(m), strings.Join(m.NativeRunners, ", "))
+`, githubNativeCondition(m), strings.Join(m.NativeRunners, ", "))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
@@ -234,6 +226,9 @@ func idToken(m Model) string {
 	}
 	if m.Attest {
 		b.WriteString("  attestations: write\n")
+	}
+	if m.Deployments {
+		b.WriteString("  deployments: write\n")
 	}
 	// Plugins add what their publishing needs: packages: write to push
 	// images to ghcr.io.

@@ -2,6 +2,7 @@ package release
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -31,7 +32,7 @@ func (r Report) Text() string {
 			fmt.Fprintf(&b, "Attached to GitHub Release %s: %s (sha256 %s)\n", res.Tag, f.Name, f.SHA256[:12])
 		}
 		if res.PubDispatch != "" {
-			fmt.Fprintf(&b, "Dispatched pub.dev publish for %s.\n", res.PubDispatch)
+			fmt.Fprintf(&b, "Queued the pub.dev publish for %s (%s). It is not finished yet.\n", res.PubDispatch, PubWorkflow)
 		}
 		if res.Mirror != "" {
 			verb := "Mirrored"
@@ -39,6 +40,12 @@ func (r Report) Text() string {
 				verb = "Would mirror"
 			}
 			fmt.Fprintf(&b, "%s %s to %s\n", verb, res.Project, res.Mirror)
+		}
+	}
+	if lines := r.SummaryLines(asciiWanted()); len(lines) > 0 {
+		b.WriteString("\n")
+		for _, line := range lines {
+			b.WriteString(line.Text + "\n")
 		}
 	}
 	if pending := r.PendingTags(); len(pending) > 0 {
@@ -67,3 +74,10 @@ func (r Report) Text() string {
 // PublishHintLine ends the report of a preview: it says how the release goes on.
 // The shell leaves it out, because its own screen has the button that releases.
 const PublishHintLine = "→ Push to the release branch and CI releases these; or run smith release here to publish them yourself."
+
+// asciiWanted reports whether the terminal needs the ASCII banner: the same
+// signals the TUI icon set reads (SMITH_ASCII=1, TERM=dumb or linux).
+func asciiWanted() bool {
+	term := os.Getenv("TERM")
+	return os.Getenv("SMITH_ASCII") == "1" || term == "dumb" || term == "linux"
+}

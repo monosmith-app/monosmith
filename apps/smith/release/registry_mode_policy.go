@@ -27,3 +27,18 @@ func PacksToRelease(p *projectgraph.Project) bool {
 func PackDir(project string) string {
 	return "dist/release/" + project + "/packages"
 }
+
+// PublishesToRegistry reports whether releasing the project sends it to a
+// package registry: a package its plugin publishes, or an app that ships as
+// npm, PyPI, NuGet or RubyGems packages. A tag-only project, a pack to a
+// GitHub Release and a native project (published by its own jobs) do not.
+func PublishesToRegistry(p *projectgraph.Project) bool {
+	if PublishesToNoRegistry(p) || Native(p) {
+		return false
+	}
+	if p.Kind == protocol.ProjectPackage {
+		return true
+	}
+	r := p.Release
+	return r != nil && (len(r.NPM) > 0 || r.PyPI != "" || r.NuGet != "" || r.RubyGems != "")
+}

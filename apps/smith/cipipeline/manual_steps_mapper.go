@@ -111,7 +111,7 @@ func cacheSteps(cfg workspace.Config) []string {
 	case strings.HasPrefix(remote, "azblob://"):
 		steps = append(steps, "remote cache (Azure Blob): create the container, then a SAS token scoped to it with read, write and create permission, and keep it as AZURE_STORAGE_SAS_TOKEN; a developer who only reads needs read permission alone")
 	case strings.HasPrefix(remote, "s3://"):
-		steps = append(steps, "remote cache (S3): AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY belong to an identity allowed to read and write the bucket; set AWS_REGION to its region")
+		steps = append(steps, "remote cache (S3): AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY belong to an identity allowed to read and write the bucket; set AWS_REGION to its region; for an S3-compatible store such as Cloudflare R2 also set AWS_ENDPOINT_URL_S3 to its endpoint and AWS_REGION to auto")
 	case strings.HasPrefix(remote, "https://"), strings.HasPrefix(remote, "http://"):
 		steps = append(steps, "remote cache (HTTP): the server must take PUT, GET and HEAD; if it needs a bearer token, keep it as SMITH_CACHE_TOKEN")
 	}

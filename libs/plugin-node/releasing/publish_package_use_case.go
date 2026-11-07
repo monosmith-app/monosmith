@@ -12,7 +12,6 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // npm is the command runner; tests replace it.
@@ -20,8 +19,8 @@ var npm = struct {
 	output func(dir string, argv []string) (string, error)
 	run    func(dir string, argv []string) error
 }{
-	output: func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) },
-	run:    func(dir string, argv []string) error { return toolrun.Run(dir, argv) },
+	output: quietOutput,
+	run:    quietRun,
 }
 
 // Publish publishes one package with npm, or a VS Code extension to the

@@ -116,6 +116,7 @@ func dispatchPub(s *session.Session, p *projectgraph.Project, item Item, res *Re
 	if has {
 		say("pub.dev already has %s %s", name, item.Next)
 		res.ExistingPackages = append(res.ExistingPackages, name+"@"+item.Next)
+		res.PubExisting = name + "@" + item.Next
 		return nil
 	}
 	commit := s.Git.TagCommit(item.Tag)
@@ -141,6 +142,6 @@ func dispatchPub(s *session.Session, p *projectgraph.Project, item Item, res *Re
 		return fmt.Errorf("starting %s on %s: %w (allow the workflow actions: write, then re-run the release)", PubWorkflow, tag, err)
 	}
 	res.PubDispatch = fmt.Sprintf("%s %s from %s", name, item.Next, tag)
-	say("dispatched pub.dev publish for %s %s (%s on %s)", name, item.Next, PubWorkflow, tag)
+	say("queued the pub.dev publish for %s %s (%s on %s), not finished yet", name, item.Next, PubWorkflow, tag)
 	return nil
 }

@@ -44,16 +44,73 @@ branches = ["main", "dev"]   # push and pull_request triggers; default: the rele
 
 The release branch is always one of them, even if the list leaves it out. It
 stays the only branch a release runs from: the pack, upload and release steps
-keep their condition on it, so a push to `dev` runs verify and nothing more.
+keep their condition on it, so a push to `dev` runs verify and nothing more
+(the native job runs there only with [`native_on = "main"` or `"always"`](#cost-controls)).
 Pull requests into any of the listed branches get the release preview comment.
 
 A [release channel](releasing.md#release-channels) adds its branch to the triggers and to the
 release step only: a push to the channel branch runs verify and `smith ci release`, which
-publishes the channel's prerelease versions. The sign-in steps (Azure, RubyGems) run there too, since the release publishes from the branch; pack and upload stay on the release
-branch. The preview comment on a pull request into a channel branch names the channel and shows
+publishes the channel's prerelease versions. The sign-in steps (Azure, RubyGems) run there too, since the release publishes from the branch; pack, upload, attest and the assets job stay on the release
+branch unless [`publish_on = "channels"`](#cost-controls) adds the channel branches. The preview comment on a pull request into a channel branch names the channel and shows
 the prerelease versions, because a pull request build plans for the branch it targets.
 `smith doctor` reports a pipeline that does not match the list, and
 `smith ci generate` rewrites it. GitLab, CircleCI and Bitbucket are not affected.
+
+## Cost controls
+
+A CI minute costs money on a private repository. These `[ci]` keys decide how many
+minutes a run uses. Each has a default that spends the least, and each is checked when
+smith reads `smith.toml`: an unknown value is an error that names the allowed values.
+
+```toml
+[ci]
+native_on = "release"                   # release (default) | main | always
+triggers = ["push", "pull_request"]     # the default: both; ["pull_request"] or ["push"] drop one
+audit = "always"                        # always (default) | main | schedule
+audit_cron = "0 6 * * 1"                # the schedule of audit = "schedule"; default: Mondays 06:00 UTC
+publish_on = "release"                  # release (default) | channels
+```
+
+**`native_on`** says when the native job runs.
+
+| Value | The native job runs |
+| --- | --- |
+| `release` (default) | only on a push to a release branch whose release step released a project (`released=true`) |
+| `main` | also on a push to, or a pull request into, a release branch when the ci job passed, and on a release |
+| `always` | after every successful ci job, and on a release even when a later step failed (the behaviour before this key) |
+
+A push to a branch that is not a release branch, and a pull request, run verify and nothing more
+by default. On Azure there is no output that says a release happened, so `release` runs the
+native job on every push to a release branch that passes the ci job. GitLab, CircleCI and
+Bitbucket always run their native job after the ci job: `native_on` does not apply, and
+`smith ci generate` says so.
+
+**Concurrency.** A newer run on the same ref cancels the older one, except on the release
+branch and the channel branches: a run that can release is never cancelled. This is not a
+key. It applies to GitHub only.
+
+**`triggers`** lists the events that start the GitHub and Azure pipelines. `["pull_request"]`
+runs CI on pull requests only. `["push"]` runs it on pushes only, and then there is no
+release preview comment, because the comment needs a pull request run. Without `push` nothing
+runs on the release branch, so nothing releases from it: use that only when releases start in
+another way. An empty list, an unknown name or a name twice is an error. GitLab, CircleCI and
+Bitbucket keep their own triggers: `triggers` does not apply, and `smith ci generate` says so,
+as it does for `branches`.
+
+**`audit`** says when `smith ci audit` runs. `always` runs it on every run. `main` runs it on
+a push to a release branch only. `schedule` adds a `schedule:` trigger with the cron of
+`audit_cron` (five fields, UTC) and runs the audit on that trigger and on a push to a release
+branch. A scheduled run only audits: the verify step is skipped, and so are the native and
+assets jobs. A skipped audit never blocks verify or the release. On Azure, `main` is the same
+condition. `schedule` does not apply there (the audit runs on every run), and the other
+providers always audit.
+
+**`publish_on`** says which branches pack apps, keep the packed apps, attest the release
+archives and build the release files in the assets job. `release` (default) is the release
+branch only. `channels` adds each [release channel](releasing.md#release-channels) branch, so
+a release from the channel branch gets the same files as one from the release branch. It
+applies to GitHub and Azure. A merge of a pull request is a push to the target branch, so
+"release on a merge into `main`" is a push to `main`: the two cannot be told apart.
 
 ## Sibling repositories
 
@@ -229,6 +286,31 @@ can run locally.
 On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,
 and each phase adds a line (passed or failed, and how long it took) and the
 release its report to the job summary. When a blocking setup or audit step fails, its whole captured output (the last 64 KB) is printed again in a log group named after the step, so a cause that scrolled past (such as pip's conflict report) is one click away; the error keeps its last 30 lines.
+
+### What `smith ci release` prints
+
+The banner and the plan are visible, the tool output is folded, then come the result table, the
+`Released` block (type, what, platforms and where of each target, see
+[Releasing](releasing.md#what-was-released)) and one closing line. The same block goes to the job
+summary. The `Published` column counts every target, and a pub.dev publish reads
+`pub.dev (queued)`: the workflow was started, not finished.
+
+```
+Project  Was      Now        Bump   Why             Published                                           Tag
+smith    1.128.0  › 1.129.0  minor  feat: add ...   6 targets: npm, PyPI, NuGet, RubyGems, GitHub ...   smith@1.129.0 (pushed)
+══ Released ════════════════════════════════════════════════
+smith 1.128.0 › 1.129.0 (minor)
+  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+  ...
+✓ Release passed in 3m 8s: 1 released (smith 1.129.0), 0 unchanged, 0 failed
+```
+
+### Deployments
+
+When a workspace publishes to a registry, the GitHub workflow gets `deployments: write`, and
+`smith ci release` records each registry as a GitHub deployment (the Deployments sidebar lists npm,
+PyPI, NuGet and RubyGems with the version and a link to the package page). A refusal only warns.
+Set `[release] github_deployments = false` to leave the permission out and record nothing.
 
 ## Packing
 
@@ -420,7 +502,7 @@ start with `GITHUB_`. None is required, so a local run needs none.
 | `SPLIT_REPO_TOKEN` | pushing a project with `split_repo` to its mirror repository; a token with write access to that repository (see releasing.md) |
 | `SMITH_CACHE_KEY` | the remote cache (`[cache] remote`): the secret every object is signed with. Given to every step that runs tasks, with the backend's credentials below (see [The remote cache](#the-remote-cache)) |
 | `AZURE_STORAGE_SAS_TOKEN` | an `azblob://` remote cache: a SAS token for the container |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | an `s3://` remote cache |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL_S3` | an `s3://` remote cache; the endpoint only for an S3-compatible store such as Cloudflare R2 |
 | `SMITH_CACHE_TOKEN` | an `https://` remote cache whose server wants a bearer token |
 | `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it. Also installs from and publishes to a `github-packages` registry (given to setup too) |
 | the `token_env` of a `token` registry | installing from (given to setup too) and publishing to that private registry |
@@ -547,7 +629,7 @@ credentials follows from the remote's scheme:
 | `remote` | Secrets |
 |---|---|
 | `azblob://account/container/prefix` | `SMITH_CACHE_KEY`, `AZURE_STORAGE_SAS_TOKEN` |
-| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` |
+| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL_S3` (S3-compatible stores only) |
 | `https://host/path` | `SMITH_CACHE_KEY`, `SMITH_CACHE_TOKEN` (when the server wants one) |
 
 `smith ci check` lists them, in each provider's terms, and what each one is.

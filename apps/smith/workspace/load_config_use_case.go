@@ -180,6 +180,9 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("%s: [ci] branches must not hold an empty branch name", FileName)
 		}
 	}
+	if err := validateCICost(cfg.CI); err != nil {
+		return err
+	}
 	if err := validateSiblingRepos(cfg); err != nil {
 		return err
 	}

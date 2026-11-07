@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -63,5 +64,23 @@ func TestAPackedPackageIsInTheJournalAndTheReport(t *testing.T) {
 	}
 	if !strings.Contains(report.Markdown(), "core-0.5.2.tgz") {
 		t.Fatalf("markdown: %s", report.Markdown())
+	}
+}
+
+func TestOnlyAPackageOrAppSentToARegistryPublishesToOne(t *testing.T) {
+	npmApp := projectWith(protocol.ProjectApp, nil)
+	npmApp.Release = &workspace.ProjectRelease{NPM: []string{"tool"}}
+	for name, c := range map[string]struct {
+		p    *projectgraph.Project
+		want bool
+	}{
+		"package":       {projectWith(protocol.ProjectPackage, nil), true},
+		"registry none": {projectWith(protocol.ProjectPackage, &protocol.Registries{NoPublish: true}), false},
+		"app":           {projectWith(protocol.ProjectApp, nil), false},
+		"app as npm":    {npmApp, true},
+	} {
+		if got := PublishesToRegistry(c.p); got != c.want {
+			t.Errorf("%s: %v", name, got)
+		}
 	}
 }
