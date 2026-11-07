@@ -146,11 +146,11 @@ A rehearsal prints, for each failure or warning, the reason and the fix:
 
 ```text
 Release rehearsal: asking 1 registry with read-only requests; nothing is published.
-✖ core: credential on pkgs.dev.azure.com
+× core: credential on pkgs.dev.azure.com
     SYSTEM_ACCESSTOKEN is not set, so @acme/core cannot be published to pkgs.dev.azure.com
     → map the pipeline token into the release step: env: SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-0 passed, 1 failed, 0 warning(s)
+0 passed, 1 failed, 0 warnings
 ```
 
 ## Exit codes

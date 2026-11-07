@@ -1,7 +1,11 @@
 {
-  "doctor.headline.failed": "{icon} {count} failed",
-  "doctor.headline.warnings": "{icon} {count} warning(s)",
-  "doctor.headline.passed": "{icon} Every check passed",
+  "doctor.filter.failed": "{icon} {count} failed",
+  "doctor.filter.warnings.one": "{icon} {count} warning",
+  "doctor.filter.warnings.other": "{icon} {count} warnings",
+  "doctor.filter.passed": "{icon} {count} passed",
+  "doctor.filter.none": "No checks match the filters. Turn one on ({failed}, {warnings} or {passed}).",
+  "doctor.summary.warnings.one": "{count} warning",
+  "doctor.summary.warnings.other": "{count} warnings",
   "doctor.waiting": "Running the health checks on {projects}…",
   "doctor.passed.line": "{count} checks passed",
   "doctor.passed.hint": "enter or p shows them",
@@ -14,10 +18,9 @@
   "doctor.file.removes": "removes {path}",
   "doctor.group.workspace": "workspace",
   "doctor.group.failed": "{count} failed",
-  "doctor.group.warnings": "{count} warning(s)",
+  "doctor.group.warnings.one": "{count} warning",
+  "doctor.group.warnings.other": "{count} warnings",
   "doctor.group.passed": "all passed",
-  "doctor.toggle.collapse": "collapse all (E)",
-  "doctor.toggle.expand": "expand all (E)",
   "doctor.fix.one": "Fix",
   "doctor.fix.all": "Fix all {count} projects"
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -242,7 +243,7 @@ func outcome(p *projectgraph.Project, supported bool, err error) error {
 }
 
 func report(log io.Writer, done string, res protocol.DependencyResult) {
-	line := "✔ " + done
+	line := marks.Passed + " " + done
 	if len(res.Files) > 0 {
 		line += " (" + strings.Join(res.Files, ", ") + ")"
 	}

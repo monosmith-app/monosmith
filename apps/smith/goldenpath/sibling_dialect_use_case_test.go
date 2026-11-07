@@ -93,7 +93,7 @@ func TestAddFollowsTheDialectOfSiblings(t *testing.T) {
 	if strings.Contains(manifest, "ts-jest") {
 		t.Errorf("the new package tests with ts-jest:\n%s", manifest)
 	}
-	if doctor := w.smith(true, "doctor"); strings.Contains(doctor, "delta") && strings.Contains(doctor, "✖") {
+	if doctor := w.smith(true, "doctor"); strings.Contains(doctor, "delta") && strings.Contains(doctor, "×") {
 		t.Errorf("doctor finds a problem with the new package:\n%s", doctor)
 	}
 

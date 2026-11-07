@@ -135,7 +135,7 @@ sequenceDiagram
   P-->>S: projects
   S->>T: npm run test --silent (argv, no shell)
   T-->>S: output lines
-  S-->>U: web:test ✔
+  S-->>U: web:test ✓
   S->>P: shutdown
 ```
 

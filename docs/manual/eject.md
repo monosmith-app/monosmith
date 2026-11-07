@@ -114,9 +114,9 @@ Copied the default of mypy to mypy.ini: it is yours now, and smith passes no con
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ smith has no default for <name>` | The name is not one of the tools in the table above. |
-| `✖ smith has no default for <tool> to copy: the repository already configures it, or no project uses it` | Nothing to eject: the file is yours already, or no project runs the tool. |
-| `✖ <file> exists already and differs from smith's default` | Edit the file, or pass `--force` to replace it with the default. |
+| `× smith has no default for <name>` | The name is not one of the tools in the table above. |
+| `× smith has no default for <tool> to copy: the repository already configures it, or no project uses it` | Nothing to eject: the file is yours already, or no project runs the tool. |
+| `× <file> exists already and differs from smith's default` | Edit the file, or pass `--force` to replace it with the default. |
 
 ## Related
 

@@ -86,11 +86,11 @@ smith boundaries
 ```
 
 ```text
-✖ web -> admin: web imports admin
+× web -> admin: web imports admin
     rule: projects matching "tag:ui" may not depend on "tag:server" (the browser must not pull in server code)
     → remove web's import of admin, or move what both need into a lib that neither depends back on; if the dependency is on purpose, add [[boundaries.exceptions]] with from = "web", to = "admin" and a reason to smith.toml
 
-1 error(s), 0 warning(s)
+1 error(s), 0 warnings
 ```
 
 ## Common errors

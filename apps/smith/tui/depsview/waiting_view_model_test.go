@@ -22,3 +22,14 @@ func TestWaitingForTheRegistriesShowsHowLongItHasTaken(t *testing.T) {
 		t.Fatalf("a wait of one second is not worth a number:\n%s", quick)
 	}
 }
+
+func TestTheRegistryWaitShowsASpinnerThatMoves(t *testing.T) {
+	a := strings.Join(render(Model{Waited: 5 * time.Second, Tick: 0}, 100, 20), "\n")
+	b := strings.Join(render(Model{Waited: 5 * time.Second, Tick: 1}, 100, 20), "\n")
+	if a == b {
+		t.Fatalf("the spinner does not move:\n%s", a)
+	}
+	if !strings.Contains(a, "5s") {
+		t.Fatalf("the seconds are missing:\n%s", a)
+	}
+}

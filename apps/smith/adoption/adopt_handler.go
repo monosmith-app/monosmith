@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
@@ -227,7 +228,7 @@ func printReport(w io.Writer, r Report) {
 		fmt.Fprintln(w)
 	}
 	for _, b := range r.Blockers {
-		printItem(w, "✖", b)
+		printItem(w, marks.Failed, b)
 	}
 	for _, x := range r.Warnings {
 		printItem(w, "!", x)
@@ -238,7 +239,7 @@ func printReport(w io.Writer, r Report) {
 	case len(r.Projects) == 0 && r.Adoptable():
 		fmt.Fprintln(w, "! no project to adopt yet: follow a step above, or run smith adopt --init to make an empty workspace and add projects with smith add")
 	case len(r.Blockers) == 0 && r.Adoptable():
-		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports")
+		fmt.Fprintln(w, marks.Passed+" nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports")
 	case r.Adoptable():
 		fmt.Fprintln(w, "Nothing blocks --init; the release blockers above need clearing before the first release.")
 	}

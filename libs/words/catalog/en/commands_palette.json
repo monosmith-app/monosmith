@@ -21,5 +21,9 @@
   "commands.scope.affected": " · affected projects",
   "commands.scope.only": " · the only project",
   "commands.scope.count": "{verb} · all {count} projects",
-  "commands.scope.all": " · all projects"
+  "commands.scope.all": " · all projects",
+  "commands.footer.editing.confirm": "confirm",
+  "commands.footer.editing.confirm.glyph": "Enter",
+  "commands.footer.editing.back": "back",
+  "commands.footer.editing.back.glyph": "Esc"
 }

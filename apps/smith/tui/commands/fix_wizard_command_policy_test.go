@@ -40,7 +40,7 @@ func TestTheFixKeysAreInTheHelpAndFooterOfDoctorWithTheirReasonsWhenRefused(t *t
 	for _, r := range HelpRows(State{View: TabDoctor, InWorkspace: true}, "Doctor") {
 		help += r.Title + "|" + r.Shortcut + "\n"
 	}
-	for _, want := range []string{"Fix this check: the wizard asks, shows what changes, then applies|f", "Fix with doctor…|F"} {
+	for _, want := range []string{"Fix this check: the wizard asks, shows what changes, then applies|f", "Fix what the check found…|F"} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("the help lacks %q:\n%s", want, help)
 		}

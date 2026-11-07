@@ -28,18 +28,30 @@ func TestShiftBBuildsEveryProjectAndBBuildsTheSelectedOne(t *testing.T) {
 	}
 }
 
-func TestOnHomeTheRunKeysCoverTheWholeWorkspaceAndSayWhichScope(t *testing.T) {
+func TestOnHomeTheLowerCaseRunKeysActOnTheSelectionAndTheCapitalsOnEveryProject(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.openTab("home")
 	footer := l.lines()[len(l.lines())-2]
-	if !strings.Contains(footer, "build all 3 (b)") || strings.Contains(footer, "build orders") {
+	if !strings.Contains(footer, "build orders (b)") || !strings.Contains(footer, "build all 3 (B)") {
 		t.Fatalf("the Home footer is %q", footer)
 	}
 	l.keys("b")
-	if got := l.lastStarted(); got != "run build" {
+	if got := l.lastStarted(); got != "run build -p orders" {
 		t.Fatalf("b on Home started %q", got)
 	}
-	l.has("Build · all 4 projects")
+	l.has("Build · orders")
+}
+
+func TestOnTheRunTabTheKeysKeepTheSameMeaning(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("b", "t")
+	if got := l.lastStarted(); got != "run test -p orders" {
+		t.Fatalf("t on the Run tab started %q", got)
+	}
+	l.keys("T")
+	if got := l.lastStarted(); got != "run test" {
+		t.Fatalf("T on the Run tab started %q", got)
+	}
 }
 
 func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {

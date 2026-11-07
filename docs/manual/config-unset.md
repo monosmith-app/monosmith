@@ -47,7 +47,7 @@ smith config unset ci.devcontainer
 ```
 
 ```text
-✔ ci.devcontainer removed: it has its default
+✓ ci.devcontainer removed: it has its default
 ```
 
 Removing the dev container setting means the default (`false`) applies, so the next

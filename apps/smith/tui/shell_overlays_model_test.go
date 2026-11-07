@@ -32,9 +32,9 @@ func (l *lab) toast(text string, level toast.Level) {
 }
 
 // TestOverlaysStayInsideTheFrameAtEverySize checks, for each layer drawn over
-// the screen, that the screen keeps its size and that the outer frame (its
-// left and right cells) is not touched on the content rows; a toast must
-// also leave the frame's bottom edge whole.
+// the screen, that the screen keeps its size and that the margins (the left and
+// right cells) are not touched on the content rows; a toast must also leave the
+// rule under the tabs whole.
 func TestOverlaysStayInsideTheFrameAtEverySize(t *testing.T) {
 	for _, sz := range [][2]int{{80, 24}, {140, 42}} {
 		w, h := sz[0], sz[1]
@@ -63,8 +63,8 @@ func TestOverlaysStayInsideTheFrameAtEverySize(t *testing.T) {
 			if strings.HasPrefix(name, "palette") {
 				continue
 			}
-			if y := lay.Footer.Y - 1; strings.Contains(name, "toast") && lines[y] != base[y] {
-				t.Errorf("%s at %dx%d: the frame's bottom edge changed:\n%s\nwas\n%s", name, w, h, lines[y], base[y])
+			if y := lay.Main.Y; strings.Contains(name, "toast") && lines[y] != base[y] {
+				t.Errorf("%s at %dx%d: the rule under the tabs changed:\n%s\nwas\n%s", name, w, h, lines[y], base[y])
 			}
 		}
 	}
@@ -83,13 +83,13 @@ func TestPaletteFitsInsideTheFrameAt80x24(t *testing.T) {
 func TestBehindAModalTheViewIsEmptiedSoNoHalfWordsShowAtItsEdges(t *testing.T) {
 	l := newLab(t, true, 140, 42)
 	l.openTab(commands.TabProjects)
-	l.has("language", "kind")
+	l.has("root", "affected")
 	l.keys("f1")
 	// The list and the detail are gone; the tabs and the frame stay.
-	l.hasNot("language", "Run build")
+	l.hasNot("root", "Run build")
 	l.has("Projects", "Keyboard shortcuts")
 	l.keys("esc")
-	l.has("language", "kind")
+	l.has("root", "affected")
 }
 
 func TestAToastSitsInsideTheContentAreaAndNeverOnTheFrame(t *testing.T) {
@@ -104,8 +104,8 @@ func TestAToastSitsInsideTheContentAreaAndNeverOnTheFrame(t *testing.T) {
 			}
 		}
 		lay := l.sh().lay()
-		if len(rows) != 1 || rows[0] < lay.Main.Y+1 || rows[0] >= lay.Footer.Y-1 {
-			t.Fatalf("%v: the toast is on rows %v, the content is %d..%d", sz, rows, lay.Main.Y+1, lay.Footer.Y-2)
+		if len(rows) != 1 || rows[0] < lay.Main.Y+1 || rows[0] >= lay.Footer.Y {
+			t.Fatalf("%v: the toast is on rows %v, the content is %d..%d", sz, rows, lay.Main.Y+1, lay.Footer.Y-1)
 		}
 	}
 }

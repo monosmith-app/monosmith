@@ -31,3 +31,14 @@ func TestCountPicksTheFormThatFitsN(t *testing.T) {
 		}
 	}
 }
+
+func TestCountFillsTheOtherPlaceholdersAndAMissingFormShowsItsKey(t *testing.T) {
+	catalogs["en"]["test.warn.one"] = "{count} warning in {where}"
+	defer delete(catalogs["en"], "test.warn.one")
+	if got := Count("test.warn", 1, "where", "web"); got != "1 warning in web" {
+		t.Errorf("Count = %q", got)
+	}
+	if got := Count("test.warn", 2); got != "test.warn.other" {
+		t.Errorf("a form the catalogue lacks says its key, got %q", got)
+	}
+}

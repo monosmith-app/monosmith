@@ -14,6 +14,9 @@ import (
 type HelpRow struct {
 	// Group is the menu the command sits in.
 	Group, Title, Shortcut string
+	// Disabled is why the key cannot run now ("" when it can): the row is muted
+	// and the reason follows it.
+	Disabled string
 }
 
 // Help lists every shortcut, grouped by menu, with the mouse equivalents. It
@@ -39,6 +42,11 @@ func (h Help) content(th theme.Theme, w int) []string {
 			}
 			out = append(out, th.Title(r.Group))
 			last = r.Group
+		}
+		if r.Disabled != "" {
+			out = append(out, th.Muted("  "+r.Title+" ("+r.Shortcut+")"))
+			out = append(out, pane.Wrap(th.Muted("    "+words.Say("dialog.help.disabled", "reason", r.Disabled)), w, 4)...)
+			continue
 		}
 		gap := w - 2 - pane.Width(r.Title) - pane.Width(r.Shortcut)
 		if gap < 2 {

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -116,7 +117,7 @@ func Choose(updates []Update, names []string) (chosen []Update, unknown []string
 // not be asked, and the pinned tools.
 func PrintUp(w io.Writer, r UpReport) {
 	if len(r.Updates) == 0 {
-		fmt.Fprintln(w, "✔ Every declared dependency is at its latest release.")
+		fmt.Fprintln(w, marks.Passed+" Every declared dependency is at its latest release.")
 	}
 	current := ""
 	for _, u := range r.Updates {
@@ -144,7 +145,7 @@ func PrintUp(w io.Writer, r UpReport) {
 			case t.Newer:
 				fmt.Fprintf(w, "  %-16s %s → %s available\n", t.Name, t.Pinned, t.Latest)
 			default:
-				fmt.Fprintf(w, "  %-16s %s ✔ (latest %s)\n", t.Name, t.Pinned, t.Latest)
+				fmt.Fprintf(w, "  %-16s %s ✓ (latest %s)\n", t.Name, t.Pinned, t.Latest)
 			}
 		}
 	}

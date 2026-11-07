@@ -47,7 +47,11 @@ func TestUndoShowsWhatItRevertsFirstAndRunsOnlyAfterYes(t *testing.T) {
 
 func TestUndoThatCannotRunTellsWhySmithRefused(t *testing.T) {
 	l := newHomeLab(t, 120, 40)
-	l.answers(map[string]sources.Captured{"undo --dry-run": {Text: "✖ smith has no operation to undo here\n  → set commit_operations = true under [workspace] in smith.toml"}})
+	// Commits are on here: the refusal is smith's own, not "undo is off".
+	sh := l.sh()
+	sh.commitOps = true
+	l.m = sh
+	l.answers(map[string]sources.Captured{"undo --dry-run": {Text: "× smith has no operation to undo here\n  → set commit_operations = true under [workspace] in smith.toml"}})
 	l.keys("ctrl+p").typeText("Undo the last").keys("enter")
 	l.has("Nothing to undo", "smith has no operation to undo here", "commit_operations = true", "OK")
 	l.keys("enter")
@@ -106,7 +110,7 @@ func TestEscOnThePlanOfAnAddGoesBackOneQuestion(t *testing.T) {
 func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T) {
 	l := newLab(t, true, 120, 40)
 	l.answers(map[string]sources.Captured{
-		"add app api --lang go --fresh --dry-run": {Text: "✖ svelte needs the node language\n  → pick a node project or another framework"},
+		"add app api --lang go --fresh --dry-run": {Text: "× svelte needs the node language\n  → pick a node project or another framework"},
 	})
 	l.keys("a").typeText("backend").keys("enter", "enter")
 	l.typeText("api").keys("enter", "down", "enter") // no choices for go, then the sibling question
@@ -316,7 +320,7 @@ func TestASwapSmithRefusesShowsItsReasonAndChangesNothing(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.answers(map[string]sources.Captured{
 		"choices --json":               {OK: true, Text: `[{"axis":"test","name":"jest","description":"Jest","language":"node"},{"axis":"test","name":"vitest","description":"Vitest","language":"node"}]`},
-		"swap web test jest --dry-run": {Text: "✖ web already uses jest"},
+		"swap web test jest --dry-run": {Text: "× web already uses jest"},
 	})
 	l.keys("ctrl+p").typeText("Swap a choice").keys("enter", "enter", "enter", "enter")
 	l.has("Cannot swap that", "web already uses jest")

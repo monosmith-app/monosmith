@@ -2,28 +2,37 @@ package commands
 
 import "testing"
 
-func TestRunKeysActOnTheSelectionOnlyOnProjects(t *testing.T) {
-	home := State{View: TabHome, InWorkspace: true, Project: "web", Projects: 23}
-	if got := home.RunProject(); got != "" {
-		t.Errorf("Home runs on %q, want the whole workspace", got)
+func TestRunKeysActOnTheSelectionOnEveryView(t *testing.T) {
+	for _, view := range []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease} {
+		s := State{View: view, InWorkspace: true, Project: "web", Projects: 23}
+		if got := s.RunProject(); got != "web" {
+			t.Errorf("%s runs on %q, want web", view, got)
+		}
 	}
-	projects := home
-	projects.View = TabProjects
-	if got := projects.RunProject(); got != "web" {
-		t.Errorf("Projects runs on %q, want web", got)
+	if got := (State{View: TabRun, InWorkspace: true, Projects: 23}).RunProject(); got != "" {
+		t.Errorf("with no selection a run covers the workspace, got %q", got)
 	}
 }
 
-func TestHomeKeysNameTheWholeWorkspace(t *testing.T) {
-	view, _ := Hints(State{View: TabHome, InWorkspace: true, Project: "web", Projects: 23})
-	for _, h := range view {
-		if h.Label == "build web" || h.Label == "test web" {
-			t.Errorf("Home hint %q names a hidden selection", h.Label)
+func TestTheCapitalKeysNameEveryProjectOnEveryView(t *testing.T) {
+	for _, view := range []string{TabHome, TabRun} {
+		s := State{View: view, InWorkspace: true, Project: "web", Projects: 23}
+		hints, _ := Hints(s)
+		var small, big bool
+		for _, h := range hints {
+			small = small || h.Label == "build web"
+			big = big || h.Label == "build all 23"
 		}
-	}
-	for _, e := range PaletteEntries(State{View: TabHome, InWorkspace: true, Project: "web", Projects: 23}) {
-		if e.ID == "run.build" && (e.Title != "Build all 23" || e.Hint != "smith run build") {
-			t.Errorf("Home palette build is %+v", e)
+		if !small || !big {
+			t.Errorf("%s: b is %v and B is %v in %+v", view, small, big, hints)
+		}
+		for _, e := range PaletteEntries(s) {
+			if e.ID == "run.build" && (e.Title != "Build web" || e.Hint != "smith run build -p web") {
+				t.Errorf("%s palette build is %+v", view, e)
+			}
+			if e.ID == "run.build-all" && e.Title != "Build all 23" {
+				t.Errorf("%s palette build all is %+v", view, e)
+			}
 		}
 	}
 }

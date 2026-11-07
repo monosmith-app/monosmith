@@ -64,25 +64,41 @@ func (s *Shell) moveSplit(dir int) {
 
 // splitMouse handles a press, a drag and a release on a divider. It reports
 // whether the event was taken, so the click does not reach the panel beneath.
+// Only a left-button motion or a release keeps a hold: any other event (a
+// motion with no button, a wheel step, a click elsewhere) means the release got
+// lost, so the hold ends there.
 func (s *Shell) splitMouse(e tea.MouseEvent) bool {
 	if s.splitBlocked() {
+		s.letGoSplit()
 		return false
 	}
 	switch {
 	case e.Action == tea.MouseActionPress && e.Button == tea.MouseButtonLeft:
+		s.letGoSplit()
 		next, ok := s.split.Press(s.spots(), e.X, e.Y)
 		s.split = next
 		return ok
-	case e.Action == tea.MouseActionMotion && s.split.Dragging != "":
+	case e.Action == tea.MouseActionMotion && e.Button == tea.MouseButtonLeft && s.split.Dragging != "":
 		s.split = s.split.Drag(s.spots(), e.X, e.Y)
 		s.applySplits()
 		return true
 	case e.Action == tea.MouseActionRelease && s.split.Dragging != "":
-		s.split, _ = s.split.Release()
-		s.keepSplits()
+		s.letGoSplit()
 		return true
 	}
+	s.letGoSplit()
 	return false
+}
+
+// letGoSplit ends a hold on a divider, wherever the pointer is, and keeps the
+// size it reached. It does nothing when no divider is held. A key, a resize, a
+// focus change and every mouse event that is not part of a drag call it.
+func (s *Shell) letGoSplit() {
+	if s.split.Dragging == "" {
+		return
+	}
+	s.split, _ = s.split.Release()
+	s.keepSplits()
 }
 
 // keepSplits gives the views the sizes and saves them, so the next start opens

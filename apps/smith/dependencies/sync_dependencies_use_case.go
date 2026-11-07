@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -189,9 +190,9 @@ func PrintSync(w io.Writer, r SyncReport, check bool) {
 		}
 	}
 	if len(r.Drift) == 0 {
-		fmt.Fprintln(w, "✔ Every project agrees on every shared dependency version.")
+		fmt.Fprintln(w, marks.Passed+" Every project agrees on every shared dependency version.")
 	} else if !check {
-		fmt.Fprintf(w, "✔ %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
+		fmt.Fprintf(w, marks.Passed+" %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
 	}
 	for _, p := range r.Unchecked {
 		fmt.Fprintf(w, "⊘ %s: not compared; its plugin does not list declarations\n", p)

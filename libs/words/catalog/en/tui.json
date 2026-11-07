@@ -13,7 +13,6 @@
   "tui.uninstall_details.the_workspace_root_package_json_at": "  the workspace root (package.json at the top)",
   "tui.uninstall_details.the_lock_file_changes_with_it": "The lock file changes with it. Nothing is committed unless you tick the box.",
   "tui.confirm_details.the_plan_is_not_loaded_open": "The plan is not loaded: open the Release view first ({shortcutOf}) to see the packages and versions.",
-  "tui.confirm_details.text": "  {project}  {from} → {next}",
   "tui.confirm_details.held_back_not_released": "Held back, not released: {list}",
   "tui.confirm_details.and_more": "  … and {value} more",
   "tui.format_ago.s_ago": "{int}s ago",

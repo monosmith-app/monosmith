@@ -33,7 +33,7 @@ func TestTheReleaseIsOneTableWithFailuresFirstThenReleasedInOrder(t *testing.T) 
 	got := strings.Join(table.render("packages", false), "\n")
 	for _, want := range []string{
 		"Project  Was", "Now", "Bump", "Why", "Published", "Tag", "Time",
-		"› 2.0.0  major  feat!: drop v1", "✗ failed",
+		"› 2.0.0  major  feat!: drop v1", "× failed",
 		"› 1.5.0  minor  feat: add search (+1 more)", "✓ npm, GitHub Release", "core@1.5.0 (pushed)", "12s",
 		"› 2.0.2  patch  dependency core 1.5.0", "✓ its tag",
 		"› 1.0.0  major  version() directive", "✓ nothing (no registry)", "tool@1.0.0 (local)",

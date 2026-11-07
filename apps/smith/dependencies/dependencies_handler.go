@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/internallink"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -210,8 +211,10 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 				enc.SetIndent("", "  ")
 				return enc.Encode(report)
 			}
-			PrintUp(out, report)
 			chosen := report.Updates
+			if len(names) == 0 || len(report.Updates) == 0 {
+				PrintUp(out, report)
+			}
 			switch {
 			case len(report.Updates) == 0:
 				return nil
@@ -221,6 +224,9 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 				if len(unknown) > 0 {
 					return fmt.Errorf("no update for %s", strings.Join(unknown, ", "))
 				}
+				// Named packages are the whole plan: the others are not listed, nor are the pinned tools.
+				PrintUp(out, UpReport{Updates: chosen})
+				fmt.Fprintln(out, "\n"+UpdateSummary(chosen))
 			case yes && !check:
 			case check || !interactive():
 				fmt.Fprintln(out, "\nReport only: pick with smith up in a terminal, name packages, or pass --yes.")
@@ -236,12 +242,6 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 				}
 			}
 			if check {
-				if len(names) > 0 {
-					fmt.Fprintln(out, "\nWould update:")
-					for _, u := range chosen {
-						fmt.Fprintf(out, "  %s %s -> %s (%s)\n", u.Name, u.Current, u.Latest, u.Level)
-					}
-				}
 				fmt.Fprintln(out, "Report only: nothing was changed.")
 				return nil
 			}
@@ -268,7 +268,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(out, "✔ %d updated (%s)\n", len(chosen), strings.Join(files, ", "))
+			fmt.Fprintf(out, marks.Passed+" %d updated (%s)\n", len(chosen), strings.Join(files, ", "))
 			return nil
 		},
 	}
@@ -380,9 +380,9 @@ func printSyncResult(w io.Writer, r SyncReport, check, dryRun bool) {
 		PrintSync(w, r, true)
 	case dryRun:
 	case len(r.Drift) == 0:
-		fmt.Fprintln(w, "✔ Every project agrees on every shared dependency version.")
+		fmt.Fprintln(w, marks.Passed+" Every project agrees on every shared dependency version.")
 	default:
-		fmt.Fprintf(w, "✔ %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
+		fmt.Fprintf(w, marks.Passed+" %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
 	}
 	if check || dryRun {
 		return

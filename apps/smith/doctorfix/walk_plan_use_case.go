@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -195,6 +196,9 @@ func pendingFor(o Options, p Planned, answers []int, question *protocol.FixChoic
 		return pending
 	}
 	for i, opt := range question.Options {
+		if opt.Disabled != "" {
+			continue
+		}
 		pending.Commands = append(pending.Commands, o.Command(p, append(append([]int(nil), answers...), i+1))+"   # "+opt.Label)
 	}
 	return pending
@@ -212,7 +216,7 @@ func applyOne(ctx context.Context, o Options, p Planned, res *Result) error {
 		return fmt.Errorf("%s: %w", p.Description, err)
 	}
 	res.Applied = append(res.Applied, p.Description)
-	fmt.Fprintf(o.Out, "✔ %s\n", p.Description)
+	fmt.Fprintf(o.Out, marks.Passed+" %s\n", p.Description)
 	return nil
 }
 
@@ -220,6 +224,10 @@ func applyOne(ctx context.Context, o Options, p Planned, res *Result) error {
 func pickOption(in *bufio.Reader, out io.Writer, q protocol.FixChoice) (int, error) {
 	fmt.Fprintf(out, "\n%s\n", q.Question)
 	for i, opt := range q.Options {
+		if opt.Disabled != "" {
+			fmt.Fprintf(out, "  %d) %s (disabled: %s)\n", i+1, opt.Label, opt.Disabled)
+			continue
+		}
 		fmt.Fprintf(out, "  %d) %s\n", i+1, opt.Label)
 	}
 	fmt.Fprint(out, "  0) skip this fix\nChoose: ")
@@ -231,6 +239,10 @@ func pickOption(in *bufio.Reader, out io.Writer, q protocol.FixChoice) (int, err
 	}
 	if err != nil || n < 1 || n > len(q.Options) {
 		fmt.Fprintf(out, "%q is not one of the options; skipped.\n", line)
+		return 0, errDeclined
+	}
+	if reason := q.Options[n-1].Disabled; reason != "" {
+		fmt.Fprintf(out, "Option %d is disabled (%s); skipped.\n", n, reason)
 		return 0, errDeclined
 	}
 	return n, nil

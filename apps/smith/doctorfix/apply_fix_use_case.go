@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -36,7 +37,7 @@ func (e *StepError) Unwrap() error { return e.Err }
 // Noter is an output that also wants the live detail of a fix: what it is
 // writing and each line a command prints. The terminal interface shows the last
 // one under its spinner. Apply and RunSteps tell it only when out is a Noter, so
-// the command line keeps its short "… step" and "✔ step" lines.
+// the command line keeps its short "… step" and "✓ step" lines.
 type Noter interface {
 	// Note receives one line of detail, without its line end.
 	Note(line string)
@@ -100,7 +101,7 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 		if err != nil {
 			return &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err, Output: tail(captured.String(), shownOutput)}
 		}
-		fmt.Fprintf(out, "✔ %s\n", stepName(step))
+		fmt.Fprintf(out, marks.Passed+" %s\n", stepName(step))
 	}
 	return nil
 }

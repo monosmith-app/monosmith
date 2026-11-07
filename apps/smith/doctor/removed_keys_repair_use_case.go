@@ -11,6 +11,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -67,7 +68,7 @@ func repairRemovedKeys(cmd *cobra.Command, asJSON, fix, yes bool) (bool, error) 
 // printRemovedKeysFinding prints the finding the way the full report does.
 func printRemovedKeysFinding(cmd *cobra.Command, f protocol.Finding) {
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "✖ %s\n    %s\n", Finding{Finding: f}.Title(), f.Detail)
+	fmt.Fprintf(out, marks.Failed+" %s\n    %s\n", Finding{Finding: f}.Title(), f.Detail)
 	for _, step := range strings.Split(f.Remedy, "\n") {
 		fmt.Fprintf(out, "    → %s\n", step)
 	}

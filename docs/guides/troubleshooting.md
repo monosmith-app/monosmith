@@ -15,7 +15,7 @@ version and workspace in use.
 ## smith says it cannot find the workspace
 
 ```text
-✖ this folder is not a smith workspace yet (there is no smith.toml); it already holds a repository
+× this folder is not a smith workspace yet (there is no smith.toml); it already holds a repository
   → smith adopt --dry-run shows what bringing it under smith involves
 ```
 

@@ -108,10 +108,11 @@ func TestALongLineWrapsOntoIndentedRowsAndIsNeverCut(t *testing.T) {
 }
 
 func TestTheStatusGlyphsOfTheOutputAreTheThemesOwn(t *testing.T) {
-	th := theme.Default()
-	rows := Rows(th, []string{"  ✖ web:build exited with code 1", "✔ 3/4 tasks succeeded in 1s"}, 60)
+	d := theme.Default()
+	th := theme.New(theme.Choice{Tokens: d.Tokens, Icons: theme.ASCII})
+	rows := Rows(th, []string{"  × web:build exited with code 1", "✓ 3/4 tasks succeeded in 1s"}, 60)
 	text := pane.Strip(strings.Join(rows, " "))
-	if strings.Contains(text, "✖") || strings.Contains(text, "✔") || !strings.Contains(text, th.Icons.Failed) {
+	if strings.Contains(text, "×") || strings.Contains(text, "✓") || !strings.Contains(text, th.Icons.Failed) {
 		t.Fatalf("%q", text)
 	}
 }

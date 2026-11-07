@@ -10,7 +10,7 @@ func TestTheStartScreenListsTheKeptRunsAndOpensTheChosenOne(t *testing.T) {
 	l := newLab(t, true, 100, 36)
 	l.next = failingRun()
 	l.keys("b")
-	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✔ 12ms"}}
+	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✓ 12ms"}}
 	l.keys("t")
 	l.keys("esc", "esc")
 	l.has("Recent runs", "smith run test", "passed", "smith run build", "failed", "just now")
@@ -35,7 +35,7 @@ func TestTheRunHeaderStepsThroughTheRunsWithTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 36)
 	l.next = failingRun()
 	l.keys("b")
-	l.next = &scripted{lines: []string{"kit:test ✔ 12ms"}}
+	l.next = &scripted{lines: []string{"kit:test ✓ 12ms"}}
 	l.keys("t")
 	l.has("‹ Start · run 2 of 2 · ‹ older  newer ›")
 	l.clickText("‹ older")

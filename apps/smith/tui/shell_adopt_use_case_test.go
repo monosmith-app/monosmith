@@ -102,7 +102,7 @@ func (f *adoptFake) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer)
 	f.mu.Unlock()
 	for _, s := range fix.Steps {
 		fmt.Fprintln(out, "… "+s.Description)
-		fmt.Fprintln(out, "✔ "+s.Description)
+		fmt.Fprintln(out, "✓ "+s.Description)
 	}
 	return nil
 }
@@ -311,6 +311,7 @@ func TestAClickOnTheBannerOpensTheWizard(t *testing.T) {
 	sh := l.sh()
 	in := sh.mainInner()
 	l.send(tea.MouseMsg{X: in.X + 2, Y: in.Y, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	l.send(letGo(in.X+2, in.Y))
 	if l.sh().adopt == nil {
 		t.Fatal("a click on the banner did nothing")
 	}

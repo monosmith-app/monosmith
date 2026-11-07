@@ -69,8 +69,8 @@ func (v Model) groupOpen(g Group) bool {
 	return v.All >= 0
 }
 
-// allOpen is whether every group shows its findings.
-func (v Model) allOpen() bool {
+// AllOpen is whether every group shows its findings.
+func (v Model) AllOpen() bool {
 	for _, g := range v.groups() {
 		if !v.groupOpen(g) {
 			return false
@@ -81,7 +81,7 @@ func (v Model) allOpen() bool {
 
 // ToggleAll opens every group, or closes them all when all are open.
 func (v Model) ToggleAll() Model {
-	close := v.allOpen()
+	close := v.AllOpen()
 	v.Folds, v.All = nil, 1
 	if close {
 		v.All = -1

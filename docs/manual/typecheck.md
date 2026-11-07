@@ -67,9 +67,9 @@ smith typecheck
 ```text
 web:typecheck ▶ npm run typecheck --silent
 ui:typecheck ▶ npm run typecheck --silent
-ui:typecheck ✔ 1.058s
-web:typecheck ✔ 1.058s
-✔ 2/2 tasks succeeded (0 from cache) in 1.063s
+ui:typecheck ✓ 1.058s
+web:typecheck ✓ 1.058s
+✓ 2/2 tasks succeeded (0 from cache) in 1.063s
 ```
 
 Only Node projects (`web`, `ui`) have the task in this workspace. With a type error in
@@ -77,9 +77,9 @@ Only Node projects (`web`, `ui`) have the task in this workspace. With a type er
 
 ```text
 ui:typecheck │ src/failing.spec.ts(1,1): error TS2593: Cannot find name 'test'. Do you need to install type definitions for a test runner? ...
-ui:typecheck ✖ exited with code 2
-  ✖ ui:typecheck exited with code 2
-✖ 1/2 tasks succeeded (1 from cache, 1.058s saved) in 931ms
+ui:typecheck × exited with code 2
+  × ui:typecheck exited with code 2
+× 1/2 tasks succeeded (1 from cache, 1.058s saved) in 931ms
 ```
 
 The exit code of smith is 1; `2` is the compiler's.
@@ -88,7 +88,7 @@ The exit code of smith is 1; `2` is the compiler's.
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ <project>:typecheck exited with code 2` | `tsc` found type errors; the VS Code extension also puts them in the Problems panel ([the extension](vscode.md)). |
+| `× <project>:typecheck exited with code 2` | `tsc` found type errors; the VS Code extension also puts them in the Problems panel ([the extension](vscode.md)). |
 
 ## Related
 

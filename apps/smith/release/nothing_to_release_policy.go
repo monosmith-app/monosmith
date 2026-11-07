@@ -3,8 +3,12 @@ package release
 import "strings"
 
 // FirstReleaseCommand is the commit that makes a first release, shown to the
-// person and never made by smith.
-const FirstReleaseCommand = `git commit --allow-empty -m "feat: first version"`
+// person. The shell makes it only after the person confirms it.
+const FirstReleaseCommand = `git commit --allow-empty -m "` + FirstReleaseMessage + `"`
+
+// FirstReleaseMessage is the message of the commit that starts the history of a
+// package that was never released.
+const FirstReleaseMessage = "feat: first version"
 
 // NothingToRelease is what to say when a release plan has no items. It tells a
 // workspace that has no package (apps and internal libraries never release), a

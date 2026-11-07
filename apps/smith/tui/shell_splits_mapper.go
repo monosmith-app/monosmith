@@ -16,16 +16,32 @@ func (s Shell) detailWidth() int {
 
 // splitBlocked is true while something covers the screen, so its dividers can
 // be neither seen nor moved.
-func (s Shell) splitBlocked() bool {
-	return !s.inWorkspace || s.belowMinimum() || s.compose != nil || s.tools != nil || s.result != nil ||
-		s.adopt != nil || s.fix != nil || s.pkg != nil || s.relpick != nil || s.confirm != nil || s.help != nil || s.palOpen
+func (s Shell) splitBlocked() bool { return !s.inWorkspace || s.overlaid() }
+
+// overlaid is true while a modal covers the screen, or the terminal is too
+// small to draw it.
+func (s Shell) overlaid() bool { return s.belowMinimum() || s.modalOpen() }
+
+// modalOpen is true while a blocking overlay is open: a dialog, a wizard, a
+// box or the palette. It is the one list of them. While it is true the mouse
+// acts only on the modal and the screen behind it is drawn dimmed.
+func (s Shell) modalOpen() bool {
+	return s.palOpen || s.help != nil || s.pkg != nil || s.relpick != nil || s.confirm != nil ||
+		s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil
 }
 
-// spots are the dividers of the open tab as drawn now, for the splitter.
+// spots are the dividers of the open tab that can be moved now, for the splitter.
 func (s Shell) spots() []splitter.Spot {
 	if s.splitBlocked() {
 		return nil
 	}
+	return s.dividers()
+}
+
+// dividers are the divisions of the open tab as drawn, whether or not they can
+// be moved now: the vertical line between a list and its detail, and the
+// horizontal lines between stacked panels.
+func (s Shell) dividers() []splitter.Spot {
 	var out []splitter.Spot
 	l := s.lay()
 	if l.HasDetail() {
@@ -55,10 +71,17 @@ func (s *Shell) applySplits() {
 	s.settings = s.settings.WithSizes(list, rows)
 }
 
-// paintSplits draws the selected or held divider over the screen rows.
+// paintSplits draws the selected or held divider, and the junctions that touch
+// it, over the screen rows.
 func (s Shell) paintSplits(rows []string) []string {
-	for _, p := range s.spots() {
+	spots := s.spots()
+	for _, p := range spots {
 		rows = splitter.Paint(s.th, rows, p, s.split.Look(p.ID))
+	}
+	// The junctions follow, so a tee over a lit divider is lit with it.
+	js := splitter.Junctions(spots, s.lay().Main.Y)
+	for _, p := range spots {
+		rows = splitter.PaintJunctions(s.th, rows, js, p, s.split.Look(p.ID))
 	}
 	return rows
 }

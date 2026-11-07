@@ -22,7 +22,7 @@ Python package). Paths in output are shortened.
   names another folder. Outside a workspace, a command that needs one fails with:
 
   ```text
-  ✖ there is no smith workspace here (no smith.toml in this folder or above it)
+  × there is no smith workspace here (no smith.toml in this folder or above it)
     → smith new <name> creates one
     → in an existing repository, smith adopt --dry-run brings it in
   ```
@@ -34,7 +34,7 @@ Python package). Paths in output are shortened.
   task, a refusal, an invalid flag or a blocker. There are no other codes. Pages list what
   makes a command exit 1.
 - **Errors.** Two shapes: `smith: <message>` for a plain error, and a block that starts with
-  `✖` followed by one or more `→` lines naming the remedy.
+  `×` followed by one or more `→` lines naming the remedy.
 - **smith asks, and never commits unasked.** A command that changes files prints a plan and, in a
   terminal, asks `Go ahead? [y/N]`; `--yes` answers it and `--dry-run` stops at the plan. A decision
   smith must not make for you (where to move a project, which files to commit, how to install a tool) is

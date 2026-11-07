@@ -37,9 +37,9 @@ func TestTheStepTimerTimesEachStepFromItsLinesAndPassesThemOn(t *testing.T) {
 		}
 	}
 	write("… build every project\n", 0)
-	write("✔ build every project\n", 9*time.Second)
+	write("✓ build every project\n", 9*time.Second)
 	write("… run every project's tests\n", time.Second)
-	write("✔ run every pro", 10*time.Second) // a line can arrive in pieces
+	write("✓ run every pro", 10*time.Second) // a line can arrive in pieces
 	write("ject's tests\n", 10*time.Second)
 	steps := timer.Steps()
 	if len(steps) != 2 || steps[0].Took != 9*time.Second || steps[1].Took != 20*time.Second {

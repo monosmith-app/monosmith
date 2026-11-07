@@ -142,7 +142,7 @@ smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin --trust
 A digest that does not match:
 
 ```text
-✖ the archive's sha256 is db7fb4c0...2204d, but --sha256 says abc
+× the archive's sha256 is db7fb4c0...2204d, but --sha256 says abc
   → nothing was installed: download the archive again, or check where the digest came from
 ```
 
@@ -150,11 +150,11 @@ A digest that does not match:
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ the archive's sha256 is X, but --sha256 says Y` (or `the release's ...sha256 says Y`) | The archive is not the one that was vouched for. Download it again; if it persists, do not install it. |
+| `× the archive's sha256 is X, but --sha256 says Y` (or `the release's ...sha256 says Y`) | The archive is not the one that was vouched for. Download it again; if it persists, do not install it. |
 | `the archive has no checksums.sha256, so nothing can be verified` | Not made by `smith plugin pack`. Ask the author for a packed archive. |
 | `the archive does not match its checksums.sha256: ...` | A file was added, removed or changed after packing. |
 | `unsafe entry name "..."` | The archive tries to write outside the plugin's folder. Do not use it. |
-| `✖ plugin already installed: <dir>; use --force to replace it` | A plugin of that name is there; `--force` replaces it. |
+| `× plugin already installed: <dir>; use --force to replace it` | A plugin of that name is there; `--force` replaces it. |
 | `the plugin has no program for this platform` | The archive was packed without a binary for your operating system and architecture. |
 | `release v1 has several plugin archives (...)` | Name one: `github:owner/repo@v1#<asset>`. |
 | `only https URLs are accepted (http only for localhost)` | Use an https link. |

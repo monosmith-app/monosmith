@@ -1,11 +1,11 @@
 // Package words is where every sentence, label and hint the interface shows
-// lives. A screen asks for its text by key (words.Say("doctor.headline.passed"))
+// lives. A screen asks for its text by key (words.Say("doctor.waiting"))
 // and never writes the text itself, so one place holds all the wording: to
 // reword the interface or translate it, change the catalog, not the code.
 //
 // The catalog is one JSON file per screen under catalog/<locale>/, each a flat
 // map from key to text. A key is the screen, then what the text is
-// (doctor.headline.failed). Text takes {name} placeholders, filled by name so a
+// (doctor.group.failed). Text takes {name} placeholders, filled by name so a
 // translation can put them in any order, and a count's plural forms are two
 // keys, key.one and key.other.
 //

@@ -10,7 +10,8 @@ import (
 
 // Model lists doctor's failing checks under a heading per group (the
 // workspace's first, then each project), failures before warnings; enter on a
-// heading folds or unfolds its group, E all of them, g turns the groups off;
+// heading folds or unfolds its group, E all of them, g turns the groups off,
+// x, w and p show or hide the failed checks, the warnings and the passed ones;
 // enter on a check expands it into its problem and remedy, and f opens the wizard of its fix
 // (see package fixwizard); Plan, FixFor and FixAll say which fixes there are.
 type Model struct {
@@ -38,6 +39,12 @@ type Model struct {
 	// ShowPassed lists the checks that passed; by default they are one
 	// collapsed line after the problems.
 	ShowPassed bool
+	// HideFailed and HideWarnings hide the checks of that state in every group;
+	// both are off by default, so every problem is listed (see Filter).
+	HideFailed, HideWarnings bool
+	// Under and Pressed are the filter button under the pointer and the one held
+	// down, set by the shell for drawing.
+	Under, Pressed Filter
 }
 
 // FromResult is the model for a finished check.
@@ -68,20 +75,18 @@ func (v Model) groups() []Group {
 	for _, g := range groups {
 		failuresFirst(v.Report.Findings, g.Indexes)
 	}
-	if v.ShowPassed {
-		return groups
-	}
-	// Passes are collapsed: only the problems are drawn.
+	// Only the checks the filters let through are drawn; a group with none is
+	// left out, and a heading still counts all of its checks.
 	var shown []Group
 	for _, g := range groups {
 		var keep []int
 		for _, i := range g.Indexes {
-			if !v.Report.Findings[i].OK {
+			if v.visible(v.Report.Findings[i]) {
 				keep = append(keep, i)
 			}
 		}
 		if len(keep) > 0 {
-			shown = append(shown, Group{Project: g.Project, Indexes: keep})
+			shown = append(shown, Group{Project: g.Project, Indexes: keep, Counted: g.Indexes})
 		}
 	}
 	return shown
@@ -115,6 +120,10 @@ func (v Model) Selected() (doctor.Finding, bool) {
 func (v Model) Update(key tea.KeyMsg) Model {
 	if v.Report == nil || len(v.Report.Findings) == 0 {
 		return v
+	}
+	if f := filterOfKey(key.String()); f != FilterNone {
+		// Before the empty check: with every check filtered out, the key is the way back.
+		return v.Toggle(f)
 	}
 	n := v.rows()
 	if n == 0 {
@@ -155,9 +164,6 @@ func (v Model) keyed(name string) Model {
 	case "E": // words:literal
 		v = v.ToggleAll()
 		v.Cursor, v.Open = 0, false
-	case "p":
-		v.ShowPassed, v.Open = !v.ShowPassed, false
-		v.Cursor = min(v.Cursor, max(v.rows()-1, 0))
 	case "g":
 		v.Grouped, v.Open = !v.Grouped, false
 		v.Cursor = v.firstFinding()

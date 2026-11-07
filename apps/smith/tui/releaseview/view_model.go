@@ -25,10 +25,18 @@ type Model struct {
 	Blockers []string
 	Warnings []string
 	Err      error
+	// Git is what the repository says about pushing the release.
+	Git GitState
 	// Cursor is the project selected in the plan, Open is true while its
 	// commits are shown.
 	Cursor int
 	Open   bool
+	// WhyOpen is true while the explanation of an empty plan is shown.
+	WhyOpen bool
+	// Button and FirstButton are the drawn buttons "Release now" and "Create the
+	// first release commit", set by the shell for drawing (their look depends on
+	// the pointer).
+	Button, FirstButton string
 }
 
 // Result is what planning the release found: the shell receives it as a message.
@@ -37,11 +45,12 @@ type Result struct {
 	Blockers []string
 	Warnings []string
 	Err      error
+	Git      GitState
 }
 
 // FromResult is the model for a planned release.
 func FromResult(r Result) Model {
-	return Model{Loaded: true, Plan: r.Plan, Blockers: r.Blockers, Warnings: r.Warnings, Err: r.Err}
+	return Model{Loaded: true, Plan: r.Plan, Blockers: r.Blockers, Warnings: r.Warnings, Err: r.Err, Git: r.Git}
 }
 
 // Update handles a key.
@@ -89,4 +98,21 @@ func (v Model) Selected() (release.Item, bool) {
 // CanRelease reports whether a release can be started from the plan.
 func (v Model) CanRelease() bool {
 	return v.Loaded && v.Err == nil && len(v.Blockers) == 0 && len(v.Plan.Items) > 0
+}
+
+// Empty reports whether the plan was read and no package releases.
+func (v Model) Empty() bool {
+	return v.Loaded && v.Err == nil && len(v.Blockers) == 0 && len(v.Plan.Items) == 0
+}
+
+// FirstRelease reports whether the plan is empty because a package was never
+// released: the first release commit then starts its history.
+func (v Model) FirstRelease() bool {
+	return v.Empty() && len(v.Plan.NeverReleased) > 0 && len(v.Plan.Held) == 0
+}
+
+// ToggleWhy opens or closes the explanation of an empty plan.
+func (v Model) ToggleWhy() Model {
+	v.WhyOpen = !v.WhyOpen
+	return v
 }

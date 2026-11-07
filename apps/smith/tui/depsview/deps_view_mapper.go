@@ -40,7 +40,9 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	case v.Err != nil:
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	case !v.Loaded:
-		return pane.Wrap(th.Muted(progress.Waiting(words.Say("depsview.waiting", "scope", inProjects(v.Projects)), v.Waited)+words.Say("depsview.waiting.more")), w, 0), rowOf
+		// A spinner and the seconds say the wait is alive and how long it has taken.
+		wait := th.Info(th.Spin(v.Tick)) + " " + th.Muted(progress.Waiting(words.Say("depsview.waiting", "scope", inProjects(v.Projects)), v.Waited))
+		return pane.Wrap(wait+th.Muted(words.Say("depsview.waiting.more")), w, 0), rowOf
 	}
 	var tail []string
 	tail = append(tail, "", th.Title(words.Say("depsview.policy.title")))

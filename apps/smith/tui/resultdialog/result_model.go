@@ -134,6 +134,44 @@ func NewWhichVersion(argv []string) Model {
 	return m
 }
 
+// NewCommitChoice builds the question that is asked once: should smith commit
+// each change it makes, so that it can be undone. Each choice says what it
+// writes and where; Esc cancels and nothing is saved.
+//
+// Parameters: pending is true when a change waits for the answer.
+// Returns: the dialog, on the first choice.
+func NewCommitChoice(pending bool) Model {
+	m := Model{title: words.Say("resultdialog.commit.title")}
+	m.facts = []Fact{{Info, words.Say("resultdialog.commit.fact")}}
+	cancel := choice{words.Say("resultdialog.commit.close.label"), words.Say("resultdialog.commit.close.hint"), Outcome{Done: true}}
+	if pending {
+		cancel = choice{words.Say("resultdialog.commit.cancel.label"), words.Say("resultdialog.commit.cancel.hint"), Outcome{Done: true, Note: words.Say("resultdialog.commit.cancel.note")}}
+	}
+	m.choices = []choice{
+		{words.Say("resultdialog.commit.yes.label"), words.Say("resultdialog.commit.yes.hint"), Outcome{CommitChoice: CommitYes}},
+		{words.Say("resultdialog.commit.no.label"), words.Say("resultdialog.commit.no.hint"), Outcome{CommitChoice: CommitNo}},
+		{words.Say("resultdialog.commit.ask.label"), words.Say("resultdialog.commit.ask.hint"), Outcome{CommitChoice: CommitAsk}},
+		cancel,
+	}
+	m.foot = words.Say("resultdialog.foot.commit")
+	return m
+}
+
+// NewUndoOff builds the notice for an undo asked while commits are off: it
+// says why there is nothing to undo, and a button opens the commit question.
+//
+// Returns: the dialog, on the first choice.
+func NewUndoOff() Model {
+	m := Model{title: words.Say("resultdialog.undooff.title")}
+	m.facts = []Fact{{Info, words.Say("resultdialog.undooff.fact")}}
+	m.choices = []choice{
+		{words.Say("resultdialog.undooff.open.label"), words.Say("resultdialog.undooff.open.hint"), Outcome{CommitChoice: CommitOpen}},
+		{words.Say("resultdialog.undooff.close.label"), words.Say("resultdialog.undooff.close.hint"), Outcome{Done: true}},
+	}
+	m.foot = words.Say("resultdialog.foot.undooff")
+	return m
+}
+
 // Place sizes the dialog for a screen of sw by sh cells.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 92)

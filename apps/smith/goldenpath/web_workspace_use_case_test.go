@@ -32,7 +32,7 @@ func TestWebWorkspace(t *testing.T) {
 	out := w.smith(true, "run", "lint", "typecheck", "test", "build")
 	for stack, tasks := range stacks {
 		for _, task := range tasks {
-			if want := stack + ":" + task + " ✔"; !strings.Contains(out, want) {
+			if want := stack + ":" + task + " ✓"; !strings.Contains(out, want) {
 				t.Fatalf("%s did not pass:\n%s", want, out)
 			}
 		}

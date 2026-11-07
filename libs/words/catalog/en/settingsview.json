@@ -89,7 +89,7 @@
   "settingsview.theme.light": "for a light background",
   "settingsview.theme.plain": "no colour: bold and reverse carry the meaning",
   "settingsview.icons.auto": "unicode, unless the terminal cannot draw it",
-  "settingsview.icons.unicode": "✔ ✖ ▲ ● ⚡ and a braille spinner",
+  "settingsview.icons.unicode": "✓ × ▲ ● ≈ and a braille spinner",
   "settingsview.icons.ascii": "[v] [x] [!] and a plain spinner, for terminals without unicode",
   "settingsview.row.off": "off",
   "settingsview.row.on": "on",

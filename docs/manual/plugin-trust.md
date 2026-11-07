@@ -89,9 +89,9 @@ Pinned sha256 f6967352942e34f139256eafee1da615931c1f0e0888ddecead3d9a38c15a239 i
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ refusing to trust a plugin without a terminal to ask in` | No one can answer. Read the plugin with `smith plugin list`, then run `smith plugin trust <name> --yes`. |
-| `✖ <name> is a built-in plugin: it is the smith binary itself, so there is nothing to trust` | Only external plugins are trusted. |
-| `✖ plugin "x" is not installed: no x/plugin.json in <dirs>; give its command in smith.toml, or install it there` | smith cannot find the plugin; check the name and `smith plugin list`. |
+| `× refusing to trust a plugin without a terminal to ask in` | No one can answer. Read the plugin with `smith plugin list`, then run `smith plugin trust <name> --yes`. |
+| `× <name> is a built-in plugin: it is the smith binary itself, so there is nothing to trust` | Only external plugins are trusted. |
+| `× plugin "x" is not installed: no x/plugin.json in <dirs>; give its command in smith.toml, or install it there` | smith cannot find the plugin; check the name and `smith plugin list`. |
 | `<name> was not trusted` | You answered no. |
 
 ## Related

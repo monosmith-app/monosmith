@@ -25,3 +25,21 @@ func Draw(th theme.Theme, done, total, width int, failed bool) string {
 	}
 	return fill + th.Faint(strings.Repeat(th.Icons.BarEmpty, barWidth-n)) + label
 }
+
+// DrawCancelled renders the bar of a run the person stopped: "████░░░░ 3/8 done,
+// 5 skipped". It never reads 100%, the fill is neutral (a stop is not a
+// failure), and the label says what was left undone.
+//
+// Parameters: th is the theme; done counts the tasks that ended with an
+// outcome of their own; skipped counts those that did not run or were
+// stopped; total is every task; width is the most cells the bar takes.
+// Returns: the bar with its label.
+func DrawCancelled(th theme.Theme, done, skipped, total, width int) string {
+	label := words.Say("progress.bar.cancelled", "done", done, "total", total, "skipped", skipped)
+	barWidth := width - len([]rune(label))
+	if barWidth < 4 {
+		return strings.TrimSpace(label)
+	}
+	n := min(Filled(done, total, barWidth), barWidth)
+	return th.Muted(strings.Repeat(th.Icons.Bar, n)) + th.Faint(strings.Repeat(th.Icons.BarEmpty, barWidth-n)) + label
+}

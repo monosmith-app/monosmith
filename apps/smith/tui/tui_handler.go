@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
@@ -90,7 +91,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	name := words.Say("tui.tui.no_workspace")
 	inside := false
 	enabled := pluginhost.BuiltinNames()
-	problem, commitOps := "", false
+	problem, commitOps, commitSet, workspaceRoot := "", false, false, ""
 	var environments []string
 	if root, err := workspace.FindRoot("."); err == nil {
 		cfg, err := workspace.Load(root)
@@ -101,6 +102,10 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		} else {
 			inside = true
 			commitOps = cfg.Workspace.CommitOperations
+			workspaceRoot = root
+			if _, set, err := configedit.Get(root, "workspace.commit_operations"); err == nil {
+				commitSet = set
+			}
 			environments = cfg.Workspace.Environments
 			name = cfg.Workspace.Name
 			if len(cfg.Plugins.Enabled) > 0 {
@@ -159,6 +164,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 		// The sizes of the panels are kept in the same file as the other choices.
 		Splits: prefs.Splits, SaveSplits: saveSplits,
+		CommitOperationsSet: commitSet, CommitChoice: prefs.CommitChoices[workspaceRoot], SaveCommitChoice: commitChoiceSaver(workspaceRoot),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
 	if note != "" {
@@ -182,7 +188,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	// termenv never ask the terminal: a terminal that ignores the query made
 	// the screen stay blank for five seconds.
 	lipgloss.SetHasDarkBackground(theme.DarkBackground(os.Getenv))
-	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion()).Run()
+	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithReportFocus()).Run()
 	if err != nil {
 		return Chosen{}, nil, err
 	}

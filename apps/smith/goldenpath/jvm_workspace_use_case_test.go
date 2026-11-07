@@ -40,7 +40,7 @@ func TestJvmWorkspace(t *testing.T) {
 		t.Fatal("a module dependency is a graph edge")
 	}
 	out := w.smith(true, "run", "lint", "test", "build")
-	for _, want := range []string{"api:build ✔", "core:test ✔", "api:test ✔", "core:lint ✔"} {
+	for _, want := range []string{"api:build ✓", "core:test ✓", "api:test ✓", "core:lint ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -60,7 +60,7 @@ func TestJvmWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "maven", "smith-e2e-jvm-core")); err != nil {
 		t.Error("the builds are under dist/maven")
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ Maven is installed") || !strings.Contains(out, "✔ every build writes to dist/") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ Maven is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "actions/setup-java") || !strings.Contains(ci, "MAVEN_REPOSITORY_URL") {

@@ -101,7 +101,7 @@ func (s Shell) failedArgv() []string {
 	}
 	var ids []string
 	for _, t := range s.run.Ordered() {
-		if t.Status == runview.Failed || t.Status == runview.Skipped {
+		if t.Status == runview.Failed || t.Status == runview.Skipped || t.Status == runview.Cancelled {
 			ids = append(ids, t.ID)
 		}
 	}
@@ -150,6 +150,9 @@ func (s Shell) runReasons() map[string]string {
 	if len(s.logLines()) == 0 {
 		r["run.copy-log"] = words.Say("tui.run_history.the_log_is_empty")
 	}
+	if s.runSel == "" && s.running() {
+		r["run.all-output"] = words.Say("tui.run_history.all_output_is_shown")
+	}
 	if s.runHome {
 		// The start screen lists the runs: the keys of a run's own view wait.
 		home := words.Say("tui.run_history.home")
@@ -161,6 +164,11 @@ func (s Shell) runReasons() map[string]string {
 		r["run.open-recent"] = view
 	}
 	return r
+}
+
+// runFailed is true when the run shown has ended with a task that failed.
+func (s Shell) runFailed() bool {
+	return s.run != nil && s.run.Finished && s.run.Counts().Failed > 0
 }
 
 // ExitSummary is the line printed in the scrollback when the interface ends: how

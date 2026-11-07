@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
@@ -77,7 +78,7 @@ func (v *verdicts) remember(key string, step protocol.Step, inputs taskcache.Key
 
 // replay says a step was skipped because its verdict holds.
 func replay(out io.Writer, step protocol.Step, since time.Time) {
-	fmt.Fprintf(out, "✓ %s: no change in %s since it passed on %s\n", step.Name, listFiles(step.CacheFiles), since.UTC().Format("2006-01-02"))
+	fmt.Fprintf(out, marks.Passed+" %s: no change in %s since it passed on %s\n", step.Name, listFiles(step.CacheFiles), since.UTC().Format("2006-01-02"))
 }
 
 func listFiles(files []string) string {

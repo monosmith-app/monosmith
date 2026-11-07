@@ -94,7 +94,7 @@ smith sync --check
 ```
 
 ```text
-✔ Every project agrees on every shared dependency version.
+✓ Every project agrees on every shared dependency version.
 ⊘ cpp: not compared; its plugin does not list declarations
 ```
 

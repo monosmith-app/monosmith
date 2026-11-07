@@ -177,7 +177,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 					replayTo = io.Discard
 				}
 				Replay(prefix, log, replayTo, &r.outMu, r.outputOf(t.ID))
-				r.say("%s ✔ from cache\n", t.ID)
+				r.say("%s ✓ from cache\n", t.ID)
 				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration}
 			}
 		}
@@ -207,7 +207,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	if t.Def.Serve != "" {
 		var err error
 		if app, err = r.startServe(ctx, t, key); err != nil {
-			r.say("%s ✖ %v\n", t.ID, err)
+			r.say("%s × %v\n", t.ID, err)
 			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error()}
 		}
 	}
@@ -228,7 +228,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			}
 		}
 		out.Release()
-		r.say("%s ✖ %s\n", t.ID, reason)
+		r.say("%s × %s\n", t.ID, reason)
 		if hint := FailureHint(out.log.String(), r.opts.Root); hint != "" {
 			r.say("%s → %s\n", t.ID, hint)
 		}
@@ -239,7 +239,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			r.say("%s ! not cached: %v\n", t.ID, err)
 		}
 	}
-	r.say("%s ✔ %s\n", t.ID, took.Round(time.Millisecond))
+	r.say("%s ✓ %s\n", t.ID, took.Round(time.Millisecond))
 	return Result{Task: t.ID, Status: Succeeded, Key: key, Duration: took}
 }
 

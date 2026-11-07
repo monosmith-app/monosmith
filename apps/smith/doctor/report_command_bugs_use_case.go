@@ -46,7 +46,7 @@ func ReportCommandBugs(s *session.Session, command string, out io.Writer) []Find
 // printFindings prints each finding with its remedy on an arrow line.
 func printFindings(out io.Writer, list []Finding) {
 	for _, f := range list {
-		fmt.Fprintf(out, "  ✖ %s\n", strings.TrimSpace(f.Located()+": "+f.Detail))
+		fmt.Fprintf(out, "  × %s\n", strings.TrimSpace(f.Located()+": "+f.Detail))
 		if f.Remedy != "" {
 			fmt.Fprintf(out, "      → %s\n", strings.ReplaceAll(f.Remedy, "\n", "\n        "))
 		}

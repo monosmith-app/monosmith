@@ -89,12 +89,12 @@ right. It was not built that way; "As built" below is what the shell is.
 │     ● kit          package │  [▶ Run build] [▶ Run all] [⟳ Affected] [⬇ Install…]       │ deps  kit, core    │
 │     ○ core         lib     │                                                           │ affected ● yes     │
 │ Plugins                    ├─ Output ───────────────────────────────────────────────── │ last   cached 2m   │
-│   node  dotnet  docker …   │ orders-api:build ✔ 4.1s  (cached)                         │                    │
+│   node  dotnet  docker …   │ orders-api:build ✓ 4.1s  (cached)                         │                    │
 │ Recipes                    │ kit:test        ▶ running  42/60                          │ Actions            │
 │   team 1.3.0               │ ...                                                       │ ▶ Run  ⟳ Why miss  │
 ├────────────────────────────┴───────────────────────────────────────────────────────────┴────────────────────┤
 │ b build  t test  l lint  c typecheck  w changed  d doctor            1-6 views  : palette  ? help  q quit │
-│ $ smith run build test -p orders-api --affected          ✔ 12 passed  ✖ 0  ⏱ 38s     main  smith 1.23  doctor ✔ │
+│ $ smith run build test -p orders-api --affected          ✓ 12 passed  × 0  ⏱ 38s     main  smith 1.23  doctor ✓ │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -115,10 +115,10 @@ right. It was not built that way; "As built" below is what the shell is.
 - **Status bar** (bottom): the exact command running or last run, the result,
   the workspace, the branch and the smith version.
 
-Panes can be resized by dragging their borders.
+Panes can be resized by dragging the divisions between them.
 **As built (the adaptive shell).** The navigator tree and the permanent
 inspector are gone. The screen is a header (workspace, branch, doctor's health
-as `✖2 ▲2`), the views as rounded tabs whose active tab opens into the pane
+as `×2 ▲2`), the views as rounded tabs whose active tab opens into the pane
 below, one content pane, the footer and the status bar. From 100 columns the
 pane is the list and, beside it, the detail of the selection (a project's
 tasks, dependencies and actions, a doctor finding's fix, a run's task); below,
@@ -128,15 +128,43 @@ one row on a terminal under 24 rows high (seven tabs fit the 72-column minimum b
 `Proj`, `Rel` and `Sett`, so they do not scroll there). Views implement a small `Page` (title, footer keys,
 update, view for a width and a height).
 
+**The main screen's frame.** The insets of the frame live in one place: `layout.Frame`
+(`MainFrame` for the list or the single pane, `DetailFrame` for the detail beside it:
+top 1 for the rule under the tabs, left and right 1 for the blank margin, bottom 0).
+`Rect.Inner` and `Layout.DetailInner` derive from it, so every pane, the mouse
+hit-tests, the selection regions, the scrollbar (the last content column) and the run
+and settings geometry follow one rule. A division is a `splitter.Spot`: a vertical
+`Column` between a list and its detail, or a horizontal `Row` between stacked panels,
+which runs edge to edge over the margins. `splitter.Junctions` lists the cells where
+divisions meet (`┬` on the rule, `├`, `┤`, `┼`); there is no bottom border, so no `┴`.
+`Shell.body` draws the rule, the margins and the divisions from the same spots the
+splitter grabs, so the glyph on screen and the grab area never differ, and a selected
+division is painted heavy on those cells.
+
+**Modals.** `Shell.modalOpen` is the one list of blocking overlays (the palette, help,
+package prompt, release picker, confirmation, fix wizard and its progress dialog,
+adopt, compose, tools and result dialogs); `overlaid` adds a terminal below the minimum
+size. While a modal is open the mouse goes only to it (`modalMouse`), the divisions
+and selection are blocked, and the render emptied the content area and drew every row of the screen
+through `Theme.Dim` before the dialog is drawn on top.
+
 **Pages.** Each page leads with its headline, then the detail.
 
-- **Home** is the first tab: one headline for the workspace's health ("2 checks
-  fail"), the one suggested next action with its key ("press d", "press w to
-  lint and test them", "all good: press b to build"; Enter or a click does it),
-  and the facts behind them: checks, projects affected, how the last run ended,
-  dependencies with newer releases (known once Deps has looked). Doctor starts in
-  the background with the shell, so the header badge is filled without opening
-  Doctor.
+- **Home** is the first tab: an attention queue. `dashboard.Queue` (a pure policy
+  over `dashboard.Facts`) lists only what applies, most urgent first: a failed run
+  (named by its task, with "See why"), broken setup, warning checks, changes not tested, a release that is ready, updates, and when
+  nothing applies "All good". Each item has a severity, a title, an optional detail
+  and buttons. The first item is drawn large and Enter runs its first button;
+  the others are one line with the buttons at the right. Every button comes from
+  `button.Render` and its click span from `button.Width`, so one row can hold
+  several buttons; `dashboard.Page` returns the lines and the click targets, and
+  the shell turns the targets into `hitSpan`s. The pointer cell goes in, so the
+  button under it is drawn in its hover state. Under the queue: the last three
+  runs (a click opens the run in the Run tab), the workspace line and the add
+  buttons. Doctor and the release plan start in the background with the shell
+  (`releaseLoading` stops a second git read when the Release tab opens), so the
+  header badge and the release item fill without opening a tab, and Home never
+  waits for either.
 - **Doctor** shows "2 failed · 2 warnings", then the failing checks as one line
   each (state, title); passed checks stay behind `p`. Beside the list, the detail
   tells the selected check in full (problem, remedy, fix: files as diffs, command
@@ -240,7 +268,7 @@ split by role: `shell_model.go` (state and queries), `shell_update_use_case.go`
 (`Update`, `handle`, `resize`), the key, mouse and run use cases, the mappers that
 draw, and `splits_repository.go` (the one file write). What needs no `Shell` lives
 in slices of its own that take plain values: `splitter` (dividers, their keys and
-spots), `runhistory` (the Run tab's history: ago text, header parts, recent rows,
+spots), `selection` (drag to select text: regions cut along the dividers, the text, the highlight), `runhistory` (the Run tab's history: ago text, header parts, recent rows,
 the rerun-failed line) and `commandtext` (the text a captured command printed).
 `apps/smith/tui/README.md` lists what is still a method on `Shell` and the next
 slice to cut.
@@ -275,7 +303,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | `Enter` | open, run or edit the selection | anywhere |
 | `Esc` | back, close, clear; never quits | anywhere |
 | `y` | copy the focused remedy, command, path or package | Projects, Run, Doctor, Deps |
-| `m` | turn the mouse off, so the terminal selects text (`Shift+drag` does too) | anywhere |
+| `m` | turn the mouse off, so the terminal selects text (`Shift+drag` does too; with the mouse on, a plain drag selects and copies inside one panel) | anywhere |
 | `:`, `Ctrl+P`, `/` | command palette | anywhere |
 | `?`, `F1` | help for the open view | anywhere |
 | `q` | quit when nothing runs | anywhere |
@@ -283,7 +311,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | `f` `x` `g` `p` `r` | Doctor: open the fix wizard for this check, for every fix that needs no decision, group by project, show passed, check again | Doctor |
 | `p` `n` `x` | Release: preview, notes, release (asks first) | Release |
 | `Space` `s` `a` `u` `v` | Deps: mark, mark the safe ones, mark all, update the marked, align versions | Deps |
-| `Enter` | Home: do the suggested next action | Home |
+| `Enter` | Home: run the first button of the first item of the queue | Home |
 | `f` `r` `R` `,` `.` `Y` | Run: follow or pause the log, run the shown run again, run the failed and skipped tasks again, show the previous or next run, copy the log shown | Run |
 
 | Mouse | Keyboard |
@@ -293,7 +321,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | Click a hint in the footer | the key it shows |
 | Drag a pane border to resize | not built |
 | Scroll the wheel in lists and logs | `PgUp` `PgDn` |
-| Hover is not tracked, so `Shift+drag` (`Option+drag` on macOS) selects text natively; `m` turns the mouse off | `y` copies the focused remedy, command, path or package |
+| A plain drag selects text inside one panel and copies it (the `selection` package); `Shift+drag` (`Option+drag` on macOS) selects across panels natively; `m` turns the mouse off | `y` copies the focused remedy, command, path or package |
 | Click a task in a run to show its log | `Enter` on the task |
 
 Focus is always visible. A run can be left in the background while another
@@ -305,9 +333,9 @@ Colours are **semantic tokens**, never raw values in components:
 
 | Token | Meaning | Also shown as |
 |---|---|---|
-| `success` | passed, cached, ready | ✔ |
+| `success` | passed, cached, ready | ✓ |
 | `warning` | needs attention, warning | ▲ |
-| `error` | failed, blocked | ✖ |
+| `error` | failed, blocked | × |
 | `info` | running, informational | ● ⟳ |
 | `muted` | skipped, disabled, secondary text | dim |
 | `accent` | selection, focus, the active tab | bold, reverse |
@@ -319,9 +347,10 @@ Colours are **semantic tokens**, never raw values in components:
   selection is bold and reverse video, and every state keeps its symbol and
   word.
 - Spacing is in cells: one-cell padding in panes, two-cell gaps between buttons.
-- Borders: one weight, rounded, for panes, dialogs and overlays. Only the colour
-  changes: the focused pane or the open dialog has the accent border, the others
-  the faint one.
+- Borders: dialogs and overlays have one weight, rounded, with the accent colour.
+  The main screen has no box: a faint rule under the tabs and faint divisions
+  between panels (see "The main screen's frame" below). A selected or dragged
+  division is drawn heavy in the accent.
 - Colour is for state (success, warning, error, info, muted) and for one accent:
   the active tab, the cursor and the focused border. Titles, key labels and
   actions are bold, not coloured. Paths are shortened in the middle, and prose

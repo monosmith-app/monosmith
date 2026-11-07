@@ -70,7 +70,7 @@ asks the person first, and passes `--yes` only after the person agreed. An edito
 | The agent file | `smith agent file --check`, then `smith agent file` | Text. `--check` fails when `AGENTS.md` or `CLAUDE.md` is missing or old. |
 | The release channel | `smith release --dry-run --json` (or `release.preview` over `serve`) | `channel` is set on a channel branch. The Markdown form starts with the notice. |
 
-A problem goes to standard error as `✖ what failed`, then a line `  → the fix` for each way out.
+A problem goes to standard error as `× what failed`, then a line `  → the fix` for each way out.
 Show both to the person.
 
 ## More commands the VS Code extension offers

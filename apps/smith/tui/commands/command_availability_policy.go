@@ -79,6 +79,9 @@ func ByKey(key string, s State) (c Command, reason string, ok bool) {
 			if !cmd.Visible(s) || (s.Editing && !cmd.WhileEditing) {
 				continue
 			}
+			if scoped && cmd.Yields && s.Reasons[cmd.ID] != "" {
+				continue
+			}
 			return cmd, cmd.Unavailable(s), true
 		}
 	}

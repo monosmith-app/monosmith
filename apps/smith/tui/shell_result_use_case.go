@@ -69,6 +69,8 @@ func (s *Shell) afterResult(out resultdialog.Outcome) tea.Cmd {
 		return cmd
 	}
 	switch {
+	case out.CommitChoice != "":
+		return s.afterCommitChoice(out.CommitChoice)
 	case out.Commit != nil:
 		s.result, s.resultKept = nil, nil
 		return s.execute(out.Commit, false)
@@ -85,7 +87,7 @@ func (s *Shell) afterResult(out resultdialog.Outcome) tea.Cmd {
 			return func() tea.Msg { return openedMsg{path: link, link: true, err: open(link)} }
 		}
 	case out.Done:
-		s.result, s.resultKept = nil, nil
+		s.result, s.resultKept, s.commitPending = nil, nil, nil
 		if out.Note != "" {
 			s.notify(out.Note, toast.Info)
 		}

@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/monosmith-app/monosmith/apps/smith/derive"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -62,7 +63,7 @@ fails. A short list means a tidy workspace. Derived files are listed only when
 // Print writes the divergences, grouped by kind.
 func Print(out io.Writer, list []Divergence) {
 	if len(list) == 0 {
-		fmt.Fprintln(out, "✓ No divergences: the workspace follows smith's defaults.")
+		fmt.Fprintln(out, marks.Passed+" No divergences: the workspace follows smith's defaults.")
 		return
 	}
 	noun := "places where this workspace made its own choice. None of them is"

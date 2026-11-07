@@ -75,8 +75,8 @@ smith build -p web
 
 ```text
 web:build ▶ npm run build --silent
-web:build ✔ 935ms
-✔ 1/1 tasks succeeded (0 from cache) in 959ms
+web:build ✓ 935ms
+✓ 1/1 tasks succeeded (0 from cache) in 959ms
 ```
 
 ```sh
@@ -84,7 +84,7 @@ smith build web
 ```
 
 ```text
-web:build ✔ from cache
+web:build ✓ from cache
 ...
 ```
 
@@ -100,7 +100,7 @@ smith build -p kind:package
 |---|---|
 | `no project matches "nope" (projects: ...)` | `smith projects` lists the names. |
 | `ui:build → the command tsc was not found: install it, ...` | Dependencies are not installed. `smith install`. |
-| `✖ web:build exited with code 2` | The compiler failed; read the lines above it. |
+| `× web:build exited with code 2` | The compiler failed; read the lines above it. |
 
 ## Related
 

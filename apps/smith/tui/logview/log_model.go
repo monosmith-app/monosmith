@@ -3,6 +3,7 @@ package logview
 import (
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -58,7 +59,7 @@ func (l Log) Toggle(total, h int) Log {
 // The status glyphs of smith's own output are drawn with the theme's icons,
 // which the terminal is known to draw one cell wide.
 func Rows(th theme.Theme, lines []string, w int) []string {
-	glyphs := strings.NewReplacer("✔", th.Icons.Passed, "✖", th.Icons.Failed)
+	glyphs := strings.NewReplacer(marks.Passed, th.Icons.Passed, marks.Failed, th.Icons.Failed)
 	out := make([]string, 0, len(lines))
 	for _, line := range lines {
 		styled := glyphs.Replace(Style(th, line))

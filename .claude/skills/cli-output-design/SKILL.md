@@ -6,7 +6,7 @@ description: Design what smith prints in a terminal or a CI log (pipeline steps,
 # Designing smith's text output
 
 The TUI set the visual language; a command line and a CI log use the same one in plain text. Read
-`apps/smith/tui/theme/icons_config.go` first: the symbols (`✓ ✗ ▲ ● ○ ⚡ ↷`, and the ASCII set
+`apps/smith/tui/theme/icons_config.go` first: the symbols (`✓ × ▲ ● ○ ≈ »`, and the ASCII set
 `[v] [x] [!] [~] [ ] [c] [-]`) are the single source. Do not invent new ones.
 
 ## What a reader wants
@@ -62,7 +62,7 @@ Rules:
 ```
 Project        Lint  Types  Tests         Time
 core           ✓     ✓      ✓ 42 passed   12s
-atlassian      ✓     ✓      ✗ 3 failed    41s
+atlassian      ✓     ✓      × 3 failed    41s
 logger         ✓     ✓      ○ none         -
 ```
 
@@ -96,7 +96,7 @@ logger   2.0.1  › 2.0.2  patch  dependency core 1.5.0       ✓ registry.npmjs
   The job-summary Markdown and the `::notice::` lines stay plain.
 - Palette: green = passed, released, a new version; yellow = warning, skipped, a change caused by
   a dependency or a directive, a minor bump; red = failed, a major bump; dim = unchanged, none,
-  not reached. A table cell takes the colour of its leading glyph (`✓ ✗ ▲ ↷ ○`) unless the row
+  not reached. A table cell takes the colour of its leading glyph (`✓ × ▲ » ○`) unless the row
   sets one.
 - A step that handles many projects prints ONE summary table (a row per project that did
   something, failures first), a compact line for the projects that did nothing (their names when

@@ -26,6 +26,7 @@ func mouseHelp() []string {
 		words.Say("tui.keys.mouse_help.tab"),
 		words.Say("tui.keys.mouse_help.action"),
 		words.Say("tui.keys.mouse_help.drag"),
+		words.Say("tui.keys.mouse_help.select"),
 		words.Say("tui.keys.mouse_help.wheel"),
 		words.Say("tui.keys.mouse_help.shift"),
 		words.Say("tui.keys.mouse_help.mouse"),
@@ -42,6 +43,9 @@ func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Ti
 
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
+	if s.dropSelection(name) {
+		return nil
+	}
 	switch {
 	case s.result != nil:
 		return s.resultKey(name)
@@ -108,6 +112,9 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 			return nil
 		}
 		return s.perform(c)
+	}
+	if cmd, ok := s.taskKey(name); ok {
+		return cmd
 	}
 	// j and k move as the arrows do, wherever the arrows would.
 	if (name == "j" || name == "k") && !s.editing() && !s.formOpen() {
@@ -185,6 +192,13 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 			return s.leaveForm()
 		}
 	}
+	if isFirstCommit(c.Argv) {
+		if out.Confirmed {
+			return s.firstCommit()
+		}
+		s.say(words.Say("tui.release_first.cancelled"))
+		return nil
+	}
 	if out.Confirmed {
 		s.addForm = nil
 		return s.execute(c.Final(), true)
@@ -227,6 +241,10 @@ func (s *Shell) activate(id string) tea.Cmd {
 	if reason := c.Unavailable(s.state()); reason != "" {
 		s.say(words.Say("tui.keys.is_unavailable", "title", c.Title, "reason", reason))
 		return nil
+	}
+	if c.Kind == commands.PaneKey && len(c.Keys) > 0 {
+		// A key the view handles itself (a filter button of Doctor): a click is that key.
+		return s.paneKey(pressedKey(c.Keys[0]))
 	}
 	return s.perform(c)
 }
@@ -279,10 +297,18 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 	case "log":
 		s.runSel, s.runHome = "", false
 		return s.gotoTab(commands.TabRun)
+	case "why-failed":
+		// The log of the task that failed, whatever the Run tab had selected.
+		s.runSel, s.runHome = s.firstFailed(), false
+		return s.gotoTab(commands.TabRun)
 	case "graph":
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)
 		}
+	case "release-why":
+		s.releaseWhy()
+	case "release-first":
+		s.askFirstCommit()
 	case "release-notes":
 		if s.release.CanRelease() {
 			return s.execute([]string{"release", "--dry-run", "--notes"}, false)
@@ -430,12 +456,14 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 	if id != s.tab {
 		// A result toast belongs to the screen it was raised on.
 		s.toast = s.toast.Dismiss()
+		s.pluginUndo = nil
 	}
 	if id == commands.TabGuide && s.tab != commands.TabGuide && s.inWorkspace {
 		// A form opened from a tab gives the person back to it when it ends or is cancelled.
 		s.formOrigin = s.tab
 	}
 	s.tab, s.detailOpen, s.zoom = id, false, false
+	s.selection = s.selection.Clear()
 	switch id {
 	case commands.TabDoctor:
 		if s.doctor.Report == nil && s.doctor.Err == nil && !s.doctor.Loading && s.sources.Doctor != nil {
@@ -448,13 +476,13 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		s.settings, cmd = s.settings.Open()
 		return cmd
 	case commands.TabRelease:
-		if !s.release.Loaded && s.sources.Release != nil {
-			load := s.sources.Release
-			return func() tea.Msg { return load() }
+		if !s.release.Loaded {
+			return s.loadRelease()
 		}
 	case commands.TabDeps:
 		if !s.deps.Loaded && s.sources.Deps != nil {
 			load := s.sources.Deps
+			s.depsLoading = true
 			return func() tea.Msg { return load() }
 		}
 	}
@@ -488,7 +516,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	switch s.tab {
 	case commands.TabHome:
 		if commands.NavNamed(name) == commands.NavConfirm {
-			if id := s.nextAction().CommandID; id != "" {
+			if id := s.homeCommand(); id != "" {
 				return s.activate(id)
 			}
 		}
@@ -702,6 +730,9 @@ func (s *Shell) reload() tea.Cmd {
 			s.doctor.Loading = true
 			cmds = append(cmds, func() tea.Msg { return load() })
 		}
+		// The release item of Home is read again too, in the background.
+		s.release = releaseview.Model{}
+		cmds = append(cmds, s.loadRelease())
 		return tea.Batch(cmds...)
 	case commands.TabDoctor:
 		s.doctor = doctorview.Model{}

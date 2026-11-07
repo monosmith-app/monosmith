@@ -13,7 +13,7 @@ func problemPanel(n int, expanded bool) Panel {
 		items = append(items, "project-"+string(rune('a'+i))+":build writes packages/x/dist but its task caches dist/packages/x: a cache hit would leave dist empty")
 	}
 	return Panel{
-		Sections: []Section{{Heading: "check", Rows: []Row{{"state", "failed"}}}, {Heading: "How to fix", Items: []string{"declare the outputs"}}},
+		Sections: []Section{{Heading: "check", Rows: []Row{{Label: "state", Value: "failed"}}}, {Heading: "How to fix", Items: []string{"declare the outputs"}}},
 		Actions:  []Action{{ID: "fix", Label: "Fix this"}},
 		After:    []Section{{Heading: "Problem", Items: items, Bullets: true, Collapse: 5}},
 		Expanded: expanded,
@@ -77,5 +77,18 @@ func TestFewItemsAreNotCollapsed(t *testing.T) {
 	text := strings.Join(lines, "\n")
 	if strings.Contains(text, "more (") || strings.Count(text, "•") != 3 {
 		t.Fatalf("%s", text)
+	}
+}
+
+func TestAFoldedSectionKeepsItsHeadingAndHidesItsBodyUntilExpanded(t *testing.T) {
+	p := Panel{After: []Section{{Heading: "Build details", Items: []string{"built with go1.24"}, Fold: true}}}
+	lines, _ := p.View(theme.Default(), 60, "")
+	if text := strings.Join(lines, "\n"); !strings.Contains(text, "Build details") || strings.Contains(text, "go1.24") || !strings.Contains(text, "e shows it") {
+		t.Fatalf("folded:\n%s", text)
+	}
+	p.Expanded = true
+	lines, _ = p.View(theme.Default(), 60, "")
+	if text := strings.Join(lines, "\n"); !strings.Contains(text, "go1.24") || strings.Contains(text, "e shows it") {
+		t.Fatalf("expanded:\n%s", text)
 	}
 }

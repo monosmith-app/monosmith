@@ -136,13 +136,15 @@ func (r *Run) Feed(line string, now time.Time) Event {
 }
 
 // End records that the process exited. A cancelled run marks what was still
-// running as failed and what was still queued as skipped, so nothing is left
-// spinning.
+// running as cancelled (not failed: the person stopped it) and what was still
+// queued as skipped, so nothing is left spinning.
 func (r *Run) End(exit int, cancelled bool, now time.Time) {
 	r.Finished, r.Exit, r.Cancelled, r.Ended = true, exit, cancelled, now
 	for _, t := range r.Tasks {
 		switch {
-		case t.Status == Running && (cancelled || exit != 0):
+		case t.Status == Running && cancelled:
+			t.Status, t.Reason, t.Duration = Cancelled, words.Say("runview.reason.interrupted"), now.Sub(t.Started)
+		case t.Status == Running && exit != 0:
 			t.Status, t.Reason, t.Duration = Failed, words.Say("runview.reason.interrupted"), now.Sub(t.Started)
 		case t.Status == Queued && cancelled:
 			t.Status, t.Reason = Skipped, words.Say("runview.reason.cancelled")
@@ -154,7 +156,7 @@ func (r *Run) End(exit int, cancelled bool, now time.Time) {
 
 // Counts are how many tasks are in each state.
 type Counts struct {
-	Queued, Running, Cached, Passed, Failed, Skipped int
+	Queued, Running, Cached, Passed, Failed, Skipped, Cancelled int
 	// Total is every task known; Done is those with an outcome.
 	Total, Done int
 }
@@ -173,21 +175,18 @@ func (r *Run) Counts() Counts {
 		case Passed:
 			c.Passed++
 		case Failed:
-			// A task the person stopped did not fail: it counts as skipped.
-			if r.Cancelled && t.Reason == "interrupted" {
-				c.Skipped++
-			} else {
-				c.Failed++
-			}
+			c.Failed++
 		case Skipped:
 			c.Skipped++
+		case Cancelled:
+			c.Cancelled++
 		}
 	}
 	c.Total = len(r.Tasks)
 	if r.total > c.Total {
 		c.Total = r.total
 	}
-	c.Done = c.Cached + c.Passed + c.Failed + c.Skipped
+	c.Done = c.Cached + c.Passed + c.Failed + c.Skipped + c.Cancelled
 	return c
 }
 
@@ -216,7 +215,7 @@ func (r *Run) RunTime(now time.Time) time.Duration {
 }
 
 // rank orders the list: failures first, then what is going on, then the rest.
-var rank = map[Status]int{Failed: 0, Running: 1, Queued: 2, Skipped: 3, Cached: 4, Passed: 5}
+var rank = map[Status]int{Failed: 0, Running: 1, Cancelled: 2, Queued: 3, Skipped: 4, Cached: 5, Passed: 6}
 
 // Ordered is the tasks with failures first, then running, queued, skipped and
 // finished ones; within a state, in the order they were first seen.

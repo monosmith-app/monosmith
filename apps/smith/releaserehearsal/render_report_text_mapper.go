@@ -2,7 +2,10 @@ package releaserehearsal
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // RenderText prints a report in doctor's style: one line per check, failures
@@ -22,13 +25,13 @@ func RenderText(r Report, targets int, verbose bool) string {
 		if res.Status == Pass && !verbose {
 			continue
 		}
-		mark := map[string]string{Pass: "✔", Warn: "!", Fail: "✖"}[res.Status]
+		mark := map[string]string{Pass: marks.Passed, Warn: "!", Fail: marks.Failed}[res.Status]
 		fmt.Fprintf(&b, "%s %s: %s on %s\n    %s\n", mark, res.Project, res.Check, res.Registry, res.Message)
 		if res.Fix != "" {
 			fmt.Fprintf(&b, "    → %s\n", res.Fix)
 		}
 	}
-	fmt.Fprintf(&b, "\n%d passed, %d failed, %d warning(s)\n", r.Passed, r.Failed, r.Warned)
+	fmt.Fprintf(&b, "\n%d passed, %d failed, %s\n", r.Passed, r.Failed, words.Count("doctor.summary.warnings", r.Warned))
 	return b.String()
 }
 

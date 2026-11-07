@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -87,7 +88,7 @@ func Link(s *session.Session, from *projectgraph.Project, libs []*projectgraph.P
 		if err != nil {
 			return err
 		}
-		line := "✔ " + from.Name + ": linked " + lib.Name
+		line := marks.Passed + " " + from.Name + ": linked " + lib.Name
 		if len(res.Files) > 0 {
 			line += " (" + joinNames(res.Files) + ")"
 		}
@@ -147,7 +148,7 @@ func Unlink(s *session.Session, from *projectgraph.Project, libs []*projectgraph
 			notLinked = append(notLinked, lib)
 			continue
 		}
-		fmt.Fprintf(o.Log, "✔ %s: unlinked %s (%s)\n", from.Name, lib.Name, joinNames(res.Files))
+		fmt.Fprintf(o.Log, marks.Passed+" %s: unlinked %s (%s)\n", from.Name, lib.Name, joinNames(res.Files))
 		for _, n := range res.Notes {
 			fmt.Fprintln(o.Log, "  "+n)
 		}

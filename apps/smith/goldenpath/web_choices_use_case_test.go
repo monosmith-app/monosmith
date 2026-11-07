@@ -69,7 +69,7 @@ func TestWebChoices(t *testing.T) {
 	out := w.smith(true, "run", "lint", "typecheck", "test", "build")
 	for name := range names {
 		for _, task := range []string{"lint", "typecheck", "test", "build"} {
-			if want := name + ":" + task + " ✔"; !strings.Contains(out, want) {
+			if want := name + ":" + task + " ✓"; !strings.Contains(out, want) {
 				t.Fatalf("%s did not pass:\n%s", want, out)
 			}
 		}

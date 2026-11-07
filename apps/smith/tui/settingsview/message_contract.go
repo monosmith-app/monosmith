@@ -40,6 +40,13 @@ func (Applied) settingsMsg()    {}
 func (Reviewed) settingsMsg()   {}
 func (StyleSaved) settingsMsg() {}
 
+// PluginToggle is a switch of a built-in plugin that just ended: the plugin
+// and the state it was switched to. The shell offers to switch it back.
+type PluginToggle struct {
+	Name    string
+	Enabled bool
+}
+
 // Result is what the shell does after the tab handled a key, a click or a
 // message.
 type Result struct {
@@ -48,6 +55,9 @@ type Result struct {
 	// Note is a sentence for a toast; Failed makes it an error.
 	Note   string
 	Failed bool
+	// Toggled is set when the change was a plugin switch that went through: the
+	// shell says it in the status line and offers to undo it.
+	Toggled *PluginToggle
 	// Theme is set when the interface must redraw in another theme.
 	Theme *theme.Choice
 	// Form is the title of a guided form to open.

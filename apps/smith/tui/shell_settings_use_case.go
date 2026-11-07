@@ -17,6 +17,9 @@ import (
 // smith commands call, so nothing leaves the interface. These are the few
 // places the shell hands it keys, clicks and messages, and takes its results.
 
+// undoOfferTicks is how long the status line keeps the offer to undo a plugin switch.
+const undoOfferTicks = 120
+
 // settingsForms are the guided forms the tab's last section opens.
 func settingsForms(actions []guide.Action) []settingsview.Form {
 	forms := make([]settingsview.Form, 0, len(actions))
@@ -28,6 +31,15 @@ func settingsForms(actions []guide.Action) []settingsview.Form {
 
 // settingsKey gives the open Settings tab a key.
 func (s *Shell) settingsKey(msg tea.KeyMsg) tea.Cmd {
+	if undo := s.pluginUndo; undo != nil {
+		// The offer lasts for one key: u takes it, any other key lets it go.
+		s.pluginUndo = nil
+		if msg.String() == "u" && !s.settings.Modal() {
+			var res settingsview.Result
+			s.settings, res = s.settings.Revert(*undo)
+			return s.settingsResult(res)
+		}
+	}
 	if why := s.settingsRefusal(msg.String()); why != "" {
 		s.say(why)
 		return nil
@@ -69,6 +81,20 @@ func (s *Shell) settingsMsg(msg settingsview.Msg) tea.Cmd {
 // settingsResult does what the tab asked of the shell: a toast, another
 // theme, a guided form, background work.
 func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
+	if res.Toggled != nil && res.Note != "" && !res.Failed {
+		// The status line says what changed and offers to undo it; a warning that
+		// is longer than the line (the projects that stop building) is a toast.
+		s.pluginUndo = res.Toggled
+		short := words.Say("settingsview.plugin.off", "name", res.Toggled.Name)
+		if res.Toggled.Enabled {
+			short = words.Say("settingsview.plugin.on", "name", res.Toggled.Name)
+		}
+		s.say(words.Say("tui.settings.undo_offer", "note", short, "shortcut", "u"))
+		s.hintTicks = undoOfferTicks
+		if res.Note == short {
+			res.Note = ""
+		}
+	}
 	if res.Note != "" {
 		level := toast.Success
 		if res.Failed {

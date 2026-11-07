@@ -93,11 +93,9 @@ func (l Layout) AreaAt(x, y int) Area {
 	return Nowhere
 }
 
-// DetailInner is where the detail is drawn: the pane has no left border of its
-// own, the list's right border divides them.
-func (l Layout) DetailInner() Rect {
-	return Rect{X: l.Detail.X, Y: l.Detail.Y + 1, W: max(l.Detail.W-1, 0), H: max(l.Detail.H-2, 0)}
-}
+// DetailInner is where the detail is drawn: the pane has no left margin of its
+// own, the list's divider is its left edge (see DetailFrame).
+func (l Layout) DetailInner() Rect { return DetailFrame.Inside(l.Detail) }
 
 // HasDetail says whether the detail is on screen beside the list.
 func (l Layout) HasDetail() bool { return l.Detail.W > 0 }

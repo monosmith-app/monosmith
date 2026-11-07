@@ -160,8 +160,8 @@ is one JSON event per line (`run.started` with the planned tasks, `task.queued`,
 status, and the plan arrives with the first line. `runview.ParseLine` reads such a line
 (`parse_run_event_algorithm.go`) and turns it into the same events the text lines give; any line
 that is not an event (smith's own messages and errors before the run starts) is read as text. The
-text parser (`<task> ▶ <command>`, `<task> ✔ <duration>`, `<task> ✔ from cache`, `<task> ✖ <reason>`,
-the skip and failure lines of the closing summary, the `✔ 3/4 tasks succeeded` line) stays for
+text parser (`<task> ▶ <command>`, `<task> ✓ <duration>`, `<task> ✓ from cache`, `<task> × <reason>`,
+the skip and failure lines of the closing summary, the `✓ 3/4 tasks succeeded` line) stays for
 every command that has no event stream (`smith doctor`, `plugin list`...) and for tests. The log
 shows each event as the text format would print it. `smith run --json` was not used: since #589 it
 prints the task output to stderr and the summary as one JSON document at the end, which gives no

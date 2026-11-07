@@ -113,10 +113,10 @@ func TestABadgeSitsAfterTheButtonAndNeverChangesTheNamesSpelledOut(t *testing.T)
 	without := props(68, "run")
 	with := without
 	with.Tabs = sample()
-	with.Tabs[2].Badge = "✗2"
+	with.Tabs[2].Badge = "×2"
 	a := strings.Join(plain(Render(without).Lines), "\n")
 	b := strings.Join(plain(Render(with).Lines), "\n")
-	if !strings.Contains(b, "Doctor (4)] ✗2") {
+	if !strings.Contains(b, "Doctor (4)] ×2") {
 		t.Fatalf("the badge follows the button:\n%s", b)
 	}
 	for _, name := range []string{"Sett", "Rel", "Proj"} {
@@ -128,7 +128,7 @@ func TestABadgeSitsAfterTheButtonAndNeverChangesTheNamesSpelledOut(t *testing.T)
 
 func TestSpansCoverTheButtonAndItsBadge(t *testing.T) {
 	p := props(90, "run")
-	p.Tabs[2].Badge = "✗2"
+	p.Tabs[2].Badge = "×2"
 	s := Render(p)
 	for _, sp := range s.Spans {
 		if sp.ID == "doctor" && s.At(sp.X1-1) != "doctor" {

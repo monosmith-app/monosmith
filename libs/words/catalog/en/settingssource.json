@@ -1,5 +1,5 @@
 {
-  "settingssource.disable.hides": "it hides projects: {count}. {warning}",
+  "settingssource.disable.hides": "these projects are no longer built, tested or checked: {count}. {warning}",
   "settingssource.trust.done": "Trusted {name}",
   "settingssource.trust.pinned": "{note}; sha256 {digest} pinned in smith.toml for CI",
   "settingssource.untrust.none": "{name} was not trusted",

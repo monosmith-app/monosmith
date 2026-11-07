@@ -8,11 +8,13 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -23,6 +25,28 @@ type hit struct {
 	kind  string
 	id    string
 	index int
+	// spans, when set, split the line into the parts that answer a click: a
+	// click outside every span does nothing, and in one it takes that span's
+	// id and index.
+	spans []hitSpan
+}
+
+// hitSpan is a part of a line, the cells [from, to), that answers a click with
+// its own id and index.
+type hitSpan struct {
+	from, to int
+	id       string
+	index    int
+}
+
+// at is the span under column x of the line.
+func (h hit) at(x int) (hitSpan, bool) {
+	for _, sp := range h.spans {
+		if x >= sp.from && x < sp.to {
+			return sp, true
+		}
+	}
+	return hitSpan{}, false
 }
 
 // content is the main view's body: its lines, and what each line stands for.
@@ -57,6 +81,7 @@ func (s Shell) mainContent(w, h int) content {
 		// Beside the list the detail tells a check in full; alone, the list expands it.
 		doctor := s.doctor
 		doctor.Waited, doctor.Covered = s.waited(), len(s.list.Projects())
+		doctor.Under, doctor.Pressed = doctorview.FilterOf(s.actionAt(s.mouseX, s.mouseY)), doctorview.FilterOf(s.pressed)
 		lines, rowOf := doctor.View(s.th, w, !s.lay().HasDetail())
 		sel := 0
 		for row, i := range rowOf {
@@ -71,20 +96,41 @@ func (s Shell) mainContent(w, h int) content {
 				c.hits[row-top] = hit{kind: "finding", index: i}
 			}
 		}
+		// The headline is the filter buttons: each answers a click with its own key.
+		for line, spans := range doctor.HeadlineSpans(s.th, w) {
+			if line < top || line >= top+h {
+				continue
+			}
+			filters := hit{kind: "action"}
+			for _, sp := range spans {
+				filters.spans = append(filters.spans, hitSpan{from: sp.From, to: sp.To, id: sp.Filter.CommandID()})
+			}
+			c.hits[line-top] = filters
+		}
 		lines = lines[top:min(top+h, len(lines))]
 		c.lines = append(c.lines, pane.Scrollbar(s.th, lines, w, top, total)...)
 	case commands.TabRelease:
 		release := s.release
 		release.Waited, release.Projects = s.waited(), len(s.list.Projects())
+		release.Button, release.FirstButton = s.releaseViewButton("rel.release", "tui.release_confirm.run"), s.releaseViewButton("rel.first", "tui.release_empty.first_button")
 		lines, rowOf := release.View(s.th, w)
 		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
+			switch i {
+			case releaseview.RowRelease:
+				c.hits[len(c.lines)+row] = hit{kind: "action", id: "rel.release"}
+			case releaseview.RowFirst:
+				c.hits[len(c.lines)+row] = hit{kind: "action", id: "rel.first"}
+			case releaseview.RowWhy:
+				c.hits[len(c.lines)+row] = hit{kind: "action", id: "rel.why"}
+			default:
+				c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
+			}
 		}
 		c.lines = append(c.lines, lines...)
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
 		deps := s.deps
-		deps.Waited, deps.Projects = s.waited(), len(s.list.Projects())
+		deps.Waited, deps.Projects, deps.Tick = s.waited(), len(s.list.Projects()), s.tick
 		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
@@ -119,14 +165,11 @@ func (s Shell) projectsContent(w, h int) content {
 		return withLines(c, s.th.Failure(s.projectsErr.Error()))
 	}
 	projects := s.list.Projects()
+	under := s.actionAt(s.mouseX, s.mouseY)
 	if len(projects) == 0 {
 		c.hits[0], c.hits[1] = hit{kind: "action", id: "file.add"}, hit{kind: "action", id: "file.compose"}
-		return withLines(c, s.newProjectButton(), button.Render(s.th, words.Say("tui.main.compose_a_stack"), commands.ShortcutOf("file.compose"), button.Rest),
+		return withLines(c, s.newProjectButton(under), button.Render(s.th, words.Say("tui.main.compose_a_stack"), commands.ShortcutOf("file.compose"), s.buttonState("file.compose", under)),
 			"", s.th.Muted(words.Say("tui.main.no_projects_yet_add_one_or")))
-	}
-	scope := words.Say("tui.main.every_project")
-	if p := s.selectedProject(); p != "" {
-		scope = p
 	}
 	affected := 0
 	for _, p := range projects {
@@ -135,7 +178,6 @@ func (s Shell) projectsContent(w, h int) content {
 		}
 	}
 	// The explanations wrap instead of running off the pane.
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.on"))+s.th.Bold(scope), w, 0)...)
 	noun := "projects"
 	if len(projects) == 1 {
 		noun = "project"
@@ -143,15 +185,9 @@ func (s Shell) projectsContent(w, h int) content {
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.affected_by_the_changes", "len", len(projects), "noun", noun, "affected", affected, "dot", s.th.Icons.Dot)), w, 0)...)
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.projects_it_needs_projects_that_use")), w, 0)...)
 	c.hits[len(c.lines)] = hit{kind: "action", id: "file.add"}
-	c.lines = append(c.lines, s.newProjectButton(), "")
+	c.lines = append(c.lines, s.newProjectButton(under), "")
 
-	nameW, tasksW, hasStack := 8, 0, false
-	for _, p := range projects {
-		hasStack = hasStack || p.Stack != ""
-		nameW = max(nameW, pane.Width(p.Name)+2) // the room for the last run's mark
-		tasksW = max(tasksW, pane.Width(taskList(p)))
-	}
-	cols := projectlist.ColumnsFor(w, nameW, tasksW, hasStack)
+	cols := s.projectColumns(w)
 	head := "   " + pane.Cell(words.Say("tui.main.project"), cols.Name+1)
 	if cols.Kind {
 		head += pane.Cell(words.Say("tui.main.kind"), projectlist.KindW)
@@ -197,9 +233,22 @@ func (s Shell) projectsContent(w, h int) content {
 	return c
 }
 
+// projectColumns is how the table of projects spends w cells: which of the
+// Kind, Language and Stack columns it draws. The detail asks it too, so it
+// leaves out only the facts the table shows.
+func (s Shell) projectColumns(w int) projectlist.Columns {
+	nameW, tasksW, hasStack := 8, 0, false
+	for _, p := range s.list.Projects() {
+		hasStack = hasStack || p.Stack != ""
+		nameW = max(nameW, pane.Width(p.Name)+2) // the room for the last run's mark
+		tasksW = max(tasksW, pane.Width(taskList(p)))
+	}
+	return projectlist.ColumnsFor(w, nameW, tasksW, hasStack)
+}
+
 // newProjectButton is the row that starts the Add wizard from the list of projects.
-func (s Shell) newProjectButton() string {
-	return button.Render(s.th, words.Say("tui.main.new_project"), commands.ShortcutOf("file.add"), button.Rest)
+func (s Shell) newProjectButton(under string) string {
+	return button.Render(s.th, words.Say("tui.main.new_project"), commands.ShortcutOf("file.add"), s.buttonState("file.add", under))
 }
 
 // taskList is a project's task names on one line.
@@ -246,7 +295,7 @@ func (s Shell) treeStatus(project, task string) string {
 }
 
 // statusRank orders the states by how much they matter to a project's mark.
-var statusRank = map[runview.Status]int{runview.Failed: 0, runview.Running: 1, runview.Queued: 2, runview.Skipped: 3, runview.Cached: 4, runview.Passed: 5}
+var statusRank = map[runview.Status]int{runview.Failed: 0, runview.Running: 1, runview.Queued: 2, runview.Cancelled: 3, runview.Skipped: 3, runview.Cached: 4, runview.Passed: 5}
 
 // statusIcon is the symbol of a task's state; the running one spins.
 func (s Shell) statusIcon(st runview.Status) string {
@@ -261,6 +310,8 @@ func (s Shell) statusIcon(st runview.Status) string {
 		return s.th.Failure(s.th.Icons.Failed)
 	case runview.Skipped:
 		return s.th.Warning(s.th.Icons.Skipped)
+	case runview.Cancelled:
+		return s.th.Muted(s.th.Icons.Cancelled)
 	}
 	return s.th.Muted(s.th.Icons.Queued)
 }
@@ -324,6 +375,7 @@ func (s *Shell) keepRunVisible() {
 func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
 	if s.run == nil || s.runHome {
+		under := s.actionAt(s.mouseX, s.mouseY)
 		if s.run == nil {
 			c.lines = append(c.lines, "", s.th.Muted(words.Say("tui.main.nothing_has_run_yet")))
 		} else {
@@ -347,7 +399,7 @@ func (s Shell) runContent(w, h int) content {
 			{"run.typecheck-all", words.Say("tui.main.typecheck_everything", "len", s.list.Len())},
 		} {
 			c.hits[len(c.lines)] = hit{kind: "action", id: b.id}
-			c.lines = append(c.lines, "  "+button.Render(s.th, b.label, commands.ShortcutOf(b.id), button.Rest))
+			c.lines = append(c.lines, "  "+button.Render(s.th, b.label, commands.ShortcutOf(b.id), s.buttonState(b.id, under)))
 		}
 		c.lines = append(c.lines, "")
 		if len(s.runs) > 0 && h-len(c.lines) > 1 {
@@ -369,7 +421,7 @@ func (s Shell) runContent(w, h int) content {
 	case s.stopping && s.running():
 		state = s.th.Warning(words.Say("tui.main.stopping", "spin", s.th.Spin(s.tick)))
 	case s.run.Cancelled:
-		state = s.th.Warning(words.Say("tui.main.cancelled", "skipped", s.th.Icons.Skipped))
+		state = s.th.Muted(words.Say("tui.main.cancelled", "cancelled", s.th.Icons.Cancelled))
 	case s.run.Finished && s.run.OK():
 		state = s.th.Success(words.Say("tui.main.passed", "passed", s.th.Icons.Passed))
 	case s.run.Finished:
@@ -384,6 +436,10 @@ func (s Shell) runContent(w, h int) content {
 	c.lines = append(c.lines, pane.Fit(" "+scope+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took), w))
 	if counts.Total > 0 {
 		bar := progress.Draw(s.th, counts.Done, counts.Total, min(max(w/2, 20), 40), counts.Failed > 0)
+		if s.run.Cancelled {
+			// A stopped run is not complete: the bar counts what ended and what was left.
+			bar = progress.DrawCancelled(s.th, counts.Passed+counts.Cached+counts.Failed, counts.Skipped+counts.Cancelled, counts.Total, min(max(w/2, 20), 40))
+		}
 		c.lines = append(c.lines, pane.Fit(" "+bar+"  "+s.countsText(counts), w))
 	} else if name, ok := addedProject(s.run.Command); ok && s.run.Finished && s.run.OK() {
 		c.lines = append(c.lines, pane.Fit(addedNextSteps(s.th, name), w))
@@ -413,7 +469,7 @@ func (s Shell) runContent(w, h int) content {
 	return c
 }
 
-// countsText is "✔ 4  ⚡ 1  ✖ 1  ↷ 2  ● 2  ○ 3" without the zeros.
+// countsText is "✓ 4  ≈ 1  × 1  » 2  ● 2  ○ 3" without the zeros.
 func (s Shell) countsText(c runview.Counts) string {
 	var parts []string
 	add := func(n int, st runview.Status) {
@@ -426,6 +482,7 @@ func (s Shell) countsText(c runview.Counts) string {
 	add(c.Passed, runview.Passed)
 	add(c.Cached, runview.Cached)
 	add(c.Skipped, runview.Skipped)
+	add(c.Cancelled, runview.Cancelled)
 	add(c.Queued, runview.Queued)
 	return strings.Join(parts, "  ")
 }
@@ -443,13 +500,14 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 	if t == nil {
 		return ""
 	}
-	nameW := min(max(w/3, 12), 28)
-	detail := t.Status.String()
-	if d := s.run.Elapsed(t, now); d > 0 {
-		detail += "  " + shortDuration(d)
+	nameW := taskNameW(w)
+	state, took, reason := s.taskFacts(t, now)
+	detail := state
+	if took != "" {
+		detail += "  " + took
 	}
-	if t.Reason != "" && t.Status != runview.Passed {
-		detail += "  " + t.Reason
+	if reason != "" {
+		detail += "  " + reason
 	}
 	if t.Status == runview.Running && strings.HasSuffix(t.ID, ":lint") && s.run.Elapsed(t, now) >= slowLintAfter {
 		detail += words.Say("tui.main.lint_checks_every_file_it_is")
@@ -459,6 +517,41 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 		line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 	}
 	return pane.Fit(line, w)
+}
+
+// taskNameW is the width of the name column of the task list in w cells.
+func taskNameW(w int) int { return min(max(w/3, 12), 28) }
+
+// taskFacts are the words a task row tells after its name: the state, the time
+// when there is one, and the reason unless the task passed.
+func (s Shell) taskFacts(t *runview.Task, now time.Time) (state, took, reason string) {
+	state = t.Status.String()
+	if d := s.run.Elapsed(t, now); d > 0 {
+		took = shortDuration(d)
+	}
+	if t.Reason != "" && t.Status != runview.Passed {
+		reason = t.Reason
+	}
+	return state, took, reason
+}
+
+// taskRowShows says which facts the row of a task draws whole in a list w cells
+// wide: the state, the time and the reason. A row cut short by a narrow list
+// does not show the fact it lost, so the detail keeps it. The last cell is the
+// scrollbar's.
+func (s Shell) taskRowShows(t *runview.Task, w int, now time.Time) (state, took, reason bool) {
+	st, tk, rs := s.taskFacts(t, now)
+	end := 1 + pane.Width(s.statusIcon(t.Status)) + 1 + taskNameW(w) + 1 + pane.Width(st)
+	state = end <= w-1
+	if tk != "" {
+		end += 2 + pane.Width(tk)
+		took = end <= w-1
+	}
+	if rs != "" {
+		end += 2 + pane.Width(rs)
+		reason = end <= w-1
+	}
+	return state, took, reason
 }
 
 // slowLintAfter is how long a lint task runs before the list says why it takes

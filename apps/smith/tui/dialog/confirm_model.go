@@ -50,6 +50,12 @@ type Confirm struct {
 	reading bool
 	tick    int
 	elapsed time.Duration
+	// runLabel replaces the label of the run button; line replaces the command
+	// line drawn (a command that is not a smith command line).
+	runLabel, line string
+	// cancelFirst is true when Cancel starts focused: Enter then cancels, so
+	// the run button shows the key y, which confirms.
+	cancelFirst bool
 }
 
 // NewConfirm builds the dialog for a command line (smith's arguments).
@@ -79,6 +85,36 @@ func NewWaiting(title, why string, argv []string, doing string) Confirm {
 // Returns: the dialog, marked.
 func (c Confirm) Reading() Confirm {
 	c.reading = true
+	return c
+}
+
+// WithRunLabel names the button that confirms, for a dialog whose action has a
+// name of its own ("Release now").
+//
+// Parameters: label is the text of the button.
+// Returns: the dialog with the new label.
+func (c Confirm) WithRunLabel(label string) Confirm {
+	c.runLabel = label
+	return c
+}
+
+// FocusCancel puts the focus on Cancel, so a hurried Enter cancels: the dialog
+// of a step that cannot be undone starts there.
+//
+// Returns: the dialog with Cancel focused.
+func (c Confirm) FocusCancel() Confirm {
+	c.focus, c.cancelFirst = 1, true
+	return c
+}
+
+// WithLine sets the command line the dialog draws, for a command that is not a
+// smith command line (it runs git, for example). Argv still tells the shell what
+// was confirmed.
+//
+// Parameters: line is the text drawn after the "$".
+// Returns: the dialog with the line.
+func (c Confirm) WithLine(line string) Confirm {
+	c.line = line
 	return c
 }
 
@@ -128,6 +164,7 @@ var (
 const (
 	keyEnter = "enter" // words:literal
 	keyEsc   = "esc"   // words:literal
+	keyYes   = "y"     // words:literal
 )
 
 // WithDetails adds the lines that say what the command will touch.
@@ -149,6 +186,9 @@ func (c Confirm) Place(sw, sh int) Confirm {
 	c.screenW, c.screenH = sw, sh
 	avail := max(sh-c.top-c.bottom, 3)
 	c.Command = commands.Line(c.Final())
+	if c.line != "" {
+		c.Command = c.line
+	}
 	w := min(max(ansi.StringWidth(c.Command)+8, minWidth), max(sw-2, 10))
 	if c.Offer {
 		// Wide enough for the box line, which is not cut.
@@ -183,7 +223,14 @@ func (c Confirm) buttonLabels() (labels, keys []string) {
 	if c.Info {
 		return []string{buttonOK}, []string{keyEnter}
 	}
-	return []string{buttonRun, buttonStop}, []string{keyEnter, keyEsc}
+	run := buttonRun
+	if c.runLabel != "" {
+		run = c.runLabel
+	}
+	if c.cancelFirst {
+		return []string{run, buttonStop}, []string{keyYes, keyEsc}
+	}
+	return []string{run, buttonStop}, []string{keyEnter, keyEsc}
 }
 
 // buttonsRow returns the columns (relative to the dialog's left edge) of each

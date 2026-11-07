@@ -104,7 +104,7 @@ func printRows(out io.Writer, rows []row) {
 			fmt.Fprintf(out, "  %-12s conflicts with %s\n", "", strings.Join(r.Conflicts, ", "))
 		}
 		if r.Problem != "" {
-			fmt.Fprintf(out, "  %-12s ✖ cannot be used: %s\n", "", r.Problem)
+			fmt.Fprintf(out, "  %-12s × cannot be used: %s\n", "", r.Problem)
 		}
 	}
 }

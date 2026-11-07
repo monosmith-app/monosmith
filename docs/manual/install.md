@@ -109,9 +109,9 @@ smith install
 ```
 
 ```text
-✔ go: installed 1 project(s)
-✔ node: installed 2 project(s) (package-lock.json)
-✔ python: installed 1 project(s)
+✓ go: installed 1 project(s)
+✓ node: installed 2 project(s) (package-lock.json)
+✓ python: installed 1 project(s)
 ...
 up to date in 1s
 ```
@@ -123,7 +123,7 @@ smith install -p web zod
 ```
 
 ```text
-✔ web: added zod (apps/web/package.json, package-lock.json)
+✓ web: added zod (apps/web/package.json, package-lock.json)
 ...
 up to date in 2s
 ```
@@ -133,7 +133,7 @@ smith install -p web -D left-pad
 ```
 
 ```text
-✔ web: added left-pad (apps/web/package.json, package-lock.json)
+✓ web: added left-pad (apps/web/package.json, package-lock.json)
 ...
 added 1 package in 2s
 ```

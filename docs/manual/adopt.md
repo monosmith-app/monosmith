@@ -191,7 +191,7 @@ smith adopt
   → --init runs go work init and go work use for you
 ! smith doctor will report: node_modules is missing at the workspace root
   → --init --install runs npm install for you (or run it yourself afterwards)
-✔ nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports
+✓ nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports
 
 Nothing changed (adopt only reports). To apply:
   → smith adopt --init
@@ -217,10 +217,10 @@ smith adopt --init --tags
   wrote .vscode/mcp.json
   wrote go.work: ./services/api
   not committed: git status lists the changes and git can take them back; commit them when you are happy, or run smith adopt --commit next time
-✔ adopted. smith doctor still reports 2 thing(s) for you:
-  ✖ node_modules is missing at the workspace root
+✓ adopted. smith doctor still reports 2 thing(s) for you:
+  × node_modules is missing at the workspace root
     → run `npm install` at the workspace root
-  ✖ the workspace root has no eslint.config file, so the slice rules do not run on lib
+  × the workspace root has no eslint.config file, so the slice rules do not run on lib
     → make the root eslint.config.mjs: ...
   next: follow the steps above, then run smith doctor
 ```

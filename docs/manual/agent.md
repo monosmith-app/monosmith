@@ -50,12 +50,12 @@ smith` with the workspace root as its folder.
 ## Common errors
 
 ```text
-✖ this workspace has no MonoSmith agent yet
+× this workspace has no MonoSmith agent yet
   → smith agent install
 ```
 
 ```text
-✖ Claude Code is not installed (no claude command on the PATH)
+× Claude Code is not installed (no claude command on the PATH)
   → install Claude Code from https://claude.com/claude-code, then run smith agent again
   → in VS Code, the MonoSmith extension and .vscode/mcp.json give the same tools to its agent mode
 ```

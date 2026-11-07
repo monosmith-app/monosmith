@@ -84,7 +84,7 @@ publish stacks; smith.toml declares more under [stacks.<name>].
 					fmt.Fprintf(out, "  %-10s %s\n", "choices", strings.Join(r.Choices, ", "))
 				}
 				if r.Problem != "" {
-					fmt.Fprintf(out, "  ✖ cannot be used: %s\n", r.Problem)
+					fmt.Fprintf(out, "  × cannot be used: %s\n", r.Problem)
 				}
 				if len(r.Projects) > 0 {
 					fmt.Fprintf(out, "  projects   %s\n", strings.Join(r.Projects, ", "))

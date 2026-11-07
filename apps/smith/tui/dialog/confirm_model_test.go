@@ -110,7 +110,7 @@ func TestALongCommandWrapsAndStillFitsASmallScreen(t *testing.T) {
 }
 
 func TestANoticeTellsAndOnlyClosesWithOK(t *testing.T) {
-	c := NewNotice("Cannot add web like that", "smith said:", []string{"✖ svelte needs node", "  → pick another framework"}).Place(100, 30)
+	c := NewNotice("Cannot add web like that", "smith said:", []string{"× svelte needs node", "  → pick another framework"}).Place(100, 30)
 	text := strings.Join(c.Lines(theme.Default()), "\n")
 	for _, want := range []string{"Cannot add web like that", "smith said:", "svelte needs node", "pick another framework", "OK (enter)"} {
 		if !strings.Contains(text, want) {

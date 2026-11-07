@@ -145,3 +145,42 @@ func TestWalkShowsAFixWhoseQuestionsAreAnsweredUpFrontOnce(t *testing.T) {
 		t.Fatalf("the description appears %d times, want 2:\n%s", n, out.String())
 	}
 }
+
+func TestWalkInATerminalListsADisabledOptionWithItsReasonAndRunsNothingForIt(t *testing.T) {
+	root := t.TempDir()
+	old := filepath.Join(root, "golangci-lint")
+	if err := os.WriteFile(old, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fix := protocol.Fix{Description: "get the tool", Choices: []protocol.FixChoice{{Question: "How?", Options: []protocol.FixChoiceOption{
+		{Label: "install", Fix: protocol.Fix{Steps: []protocol.FixStep{helper(t, "touch", "touch", filepath.Join(root, "installed"))}}},
+		{Label: "update the copy", Disabled: "smith does not know how this copy was installed"},
+	}}}}
+	var out bytes.Buffer
+	res, _ := Walk(context.Background(), Group([]Item{{Check: "c", Fix: &fix}}), Options{Root: root, Out: &out, In: strings.NewReader("2\n"), Interactive: true})
+	if len(res.Applied) != 0 || !strings.Contains(out.String(), "2) update the copy (disabled: smith does not know how this copy was installed)") || !strings.Contains(out.String(), "Option 2 is disabled") {
+		t.Fatalf("the reason is listed, and picking it applies nothing:\n%s", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(root, "installed")); err == nil {
+		t.Fatal("no step ran")
+	}
+}
+
+func TestWalkAFailingUpdateStepLeavesTheOldCopyUntouchedAndShowsItsOutput(t *testing.T) {
+	root := t.TempDir()
+	old := filepath.Join(root, "golangci-lint")
+	if err := os.WriteFile(old, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fix := protocol.Fix{Description: "get the tool", Choices: []protocol.FixChoice{{Question: "How?", Options: []protocol.FixChoiceOption{
+		{Label: "update the copy", Fix: protocol.Fix{Steps: []protocol.FixStep{helper(t, "update the copy", "fail")}}},
+	}}}}
+	var out bytes.Buffer
+	_, err := Walk(context.Background(), Group([]Item{{Check: "c", Fix: &fix}}), Options{Root: root, Out: &out, Yes: true, Explicit: true, Choose: []int{1}})
+	if err == nil || !strings.Contains(out.String(), "the build exploded") {
+		t.Fatalf("the failure shows what the step printed: %v\n%s", err, out.String())
+	}
+	if got, _ := os.ReadFile(old); string(got) != "old" {
+		t.Fatalf("the old copy is untouched: %q", got)
+	}
+}

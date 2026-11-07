@@ -95,7 +95,7 @@ func (s Shell) runResult(r *runview.Run) string {
 	case !r.Finished:
 		return s.th.Info(words.Say("tui.run_nav.running", "spin", s.th.Spin(s.tick)))
 	case r.Cancelled:
-		return s.th.Warning(words.Say("tui.run_nav.stopped", "skipped", s.th.Icons.Skipped))
+		return s.th.Muted(words.Say("tui.run_nav.stopped", "cancelled", s.th.Icons.Cancelled))
 	case r.OK():
 		return s.th.Success(words.Say("tui.run_nav.passed", "passed", s.th.Icons.Passed))
 	}

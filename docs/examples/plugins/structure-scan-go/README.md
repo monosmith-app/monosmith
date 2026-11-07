@@ -36,16 +36,16 @@ smith plugin check ./smith-plugin-widget-scan
 
 ```text
 widget-scan 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ accepts 4 requests at the same time
-  ✔ answers a cancelled request with its result or the cancelled error
-  ✔ ignores a cancel for a request it does not know
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ accepts 4 requests at the same time
+  ✓ answers a cancelled request with its result or the cancelled error
+  ✓ ignores a cancel for a request it does not know
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 ## Use

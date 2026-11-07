@@ -3,6 +3,8 @@ package toolinstall
 import (
 	"fmt"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // RenderNeed words one tool that is missing or outdated: what it is, why smith
@@ -70,10 +72,10 @@ func RenderList(list []Status) string {
 	var b strings.Builder
 	missing := false
 	for _, st := range list {
-		mark, detail := "✔", strings.TrimSpace(st.Program+" "+st.Version)
+		mark, detail := marks.Passed, strings.TrimSpace(st.Program+" "+st.Version)
 		switch st.State {
 		case Missing:
-			mark, detail = "✖", "not installed"
+			mark, detail = marks.Failed, "not installed"
 			if st.Optional {
 				mark = "!"
 			}

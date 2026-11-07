@@ -10,10 +10,27 @@ func (r Rect) Contains(x, y int) bool {
 	return r.W > 0 && r.H > 0 && x >= r.X && x < r.X+r.W && y >= r.Y && y < r.Y+r.H
 }
 
-// Inner is the rectangle inside a one-cell border.
-func (r Rect) Inner() Rect {
-	return Rect{X: r.X + 1, Y: r.Y + 1, W: max(r.W-2, 0), H: max(r.H-2, 0)}
+// Frame is how many cells the frame of the main screen takes from each side of
+// a pane. The main screen has no box: a rule under the tabs (Top), a one-cell
+// blank margin at each side (Left and Right; beside a detail, the divider takes
+// the place of the margin), and no bottom edge. Every size and every position
+// of the main screen derives from one Frame.
+type Frame struct{ Top, Left, Right, Bottom int }
+
+// MainFrame is the frame of the list, or of the single pane.
+var MainFrame = Frame{Top: 1, Left: 1, Right: 1}
+
+// DetailFrame is the frame of the detail beside the list: the divider of the
+// list is its left edge, so it has no left inset.
+var DetailFrame = Frame{Top: 1, Right: 1}
+
+// Inside is the rectangle of r left after the frame's insets.
+func (f Frame) Inside(r Rect) Rect {
+	return Rect{X: r.X + f.Left, Y: r.Y + f.Top, W: max(r.W-f.Left-f.Right, 0), H: max(r.H-f.Top-f.Bottom, 0)}
 }
+
+// Inner is the rectangle of a pane inside the main frame.
+func (r Rect) Inner() Rect { return MainFrame.Inside(r) }
 
 // Area names a part of the screen.
 type Area int

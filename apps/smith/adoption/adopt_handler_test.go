@@ -19,7 +19,7 @@ func TestPrintReportHasHeadersAndEachWayOut(t *testing.T) {
 	var b bytes.Buffer
 	printReport(&b, r)
 	out := b.String()
-	for _, want := range []string{"PROJECT", "LANGUAGE", "KIND", "FOLDER", "a Go main package is an app", "✖ web is published", "  → git fetch --tags\n", "  → or tag the commit"} {
+	for _, want := range []string{"PROJECT", "LANGUAGE", "KIND", "FOLDER", "a Go main package is an app", "× web is published", "  → git fetch --tags\n", "  → or tag the commit"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("report lacks %q:\n%s", want, out)
 		}
@@ -99,7 +99,7 @@ func TestPrintReportWithoutProjectsHasNoTick(t *testing.T) {
 	var b bytes.Buffer
 	printReport(&b, r)
 	out := b.String()
-	if strings.Contains(out, "✔") || !strings.Contains(out, "! no project to adopt yet") {
+	if strings.Contains(out, "✓") || !strings.Contains(out, "! no project to adopt yet") {
 		t.Errorf("a report with no project must not end with a tick:\n%s", out)
 	}
 }

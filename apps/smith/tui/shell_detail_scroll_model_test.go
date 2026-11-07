@@ -158,7 +158,7 @@ func TestZoomWorksInTheProjectsViewToo(t *testing.T) {
 	l.keys("z")
 	l.has("Run on orders")
 	l.keys("z")
-	l.has("Projects (")
+	l.has("projects ·")
 }
 
 func TestTheDetailKeysAreInTheHelp(t *testing.T) {

@@ -13,34 +13,25 @@ type tabPage struct{ sh *Shell }
 // page is the Page of the open tab.
 func (s *Shell) page() Page { return tabPage{sh: s} }
 
-// Title implements Page.
+// Title implements Page. The active tab is lit in the tab strip, so the frame has
+// no title that only says which tab is open (a fact shows once). Only what the
+// tab strip does not say is a title: the form open on the Start tab, or what the
+// Start tab does while a box covers its form.
 func (p tabPage) Title() string {
 	s := p.sh
-	switch s.tab {
-	case commands.TabProjects:
-		if s.detailFull() {
-			return s.list.SelectedName()
-		}
-		return words.Say("tui.tab_page.projects", "len", s.list.Len())
-	case commands.TabRun:
-		if s.run != nil {
-			return s.run.CommandLine()
-		}
-	case commands.TabGuide:
-		if t := s.guide.Title(); t != "" {
-			return t
-		}
-		if t := s.guideModalName(); t != "" {
-			return t
-		}
+	if s.tab != commands.TabGuide {
+		return ""
 	}
-	return tabTitles()[s.tab]
+	if t := s.guide.Title(); t != "" {
+		return t
+	}
+	return s.guideModalName()
 }
 
 // guideModalName is what the Start tab is doing while a box is open over it and
 // the form is no longer on screen: the form that waits for its confirmation, the
 // composer, the adopt wizard. It is "" when no such box is open, and the tab
-// keeps its own name.
+// has no title.
 func (s Shell) guideModalName() string {
 	if s.tab != commands.TabGuide {
 		return ""

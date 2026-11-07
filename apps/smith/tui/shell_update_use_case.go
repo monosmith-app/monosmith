@@ -17,6 +17,7 @@ import (
 // Update implements tea.Model.
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
+	s.keepSelection()
 	s.forgetDetailPlace()
 	s.refreshPalette()
 	s.trackWait()
@@ -39,10 +40,15 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil || s.settings.Busy()
+	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil || s.settings.Busy() || s.backgroundWork()
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {
+	switch msg.(type) {
+	case tea.WindowSizeMsg, tea.KeyMsg, tea.FocusMsg, tea.BlurMsg:
+		// A hold on a divider needs a mouse in motion: these end it.
+		s.letGoSplit()
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		s.resize(msg.Width, msg.Height)
@@ -58,6 +64,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		return s.key(msg)
 	case tea.MouseMsg:
 		if s.belowMinimum() {
+			s.letGoSplit()
 			return nil
 		}
 		return s.mouse(msg)
@@ -101,15 +108,17 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 		return s.fixDone(msg)
 	case depsview.Result:
-		s.deps = depsview.FromResult(msg)
+		s.deps, s.depsLoading = depsview.FromResult(msg), false
 	case releaseview.Result:
-		s.release = releaseview.FromResult(msg)
+		s.release, s.releaseLoading = releaseview.FromResult(msg), false
 		if argv := s.releaseWaiting; argv != nil {
 			// The release was asked before the plan was read: ask now, with the plan.
 			s.releaseWaiting = nil
 			s.closeWaiting()
 			return s.execute(argv, false)
 		}
+	case firstCommitMsg:
+		return s.firstCommitted(msg)
 	case toolsStartedMsg:
 		return s.toolsStarted(msg)
 	case toolsOutputMsg:
@@ -142,6 +151,7 @@ func (s Shell) dialogMargins() (top, bottom int) {
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
+	s.selection = s.selection.Clear()
 	if s.relpick != nil {
 		placed := s.relpick.Within(s.dialogMargins()).Place(w, h)
 		s.relpick = &placed

@@ -354,3 +354,50 @@ func TestALongOptionWrapsUnderItsNumberAndAClickOnAnyOfItsLinesChoosesIt(t *test
 		t.Fatalf("a click on the wrapped line chose %v in phase %v", w2.Answers(), w2.Phase())
 	}
 }
+
+func updateQuestion() doctorfix.Planned {
+	return doctorfix.Planned{Fix: protocol.Fix{Description: "Get the golangci-lint that CI pins", Choices: []protocol.FixChoice{{
+		Question: "How do you want to deal with golangci-lint?",
+		Options: []protocol.FixChoiceOption{
+			{Label: "Install 2.15.0 into smith's own folder", Fix: protocol.Fix{Steps: []protocol.FixStep{{Argv: []string{"go", "install"}}}}},
+			{Label: "Keep the found copy", Fix: protocol.Fix{Files: []protocol.FileEdit{{Path: "smith.toml", Content: "x"}}}},
+			{Label: "Update /x/golangci-lint to 2.15.0 (every project that uses this copy gets it)", Disabled: "smith does not know how this copy was installed"},
+		},
+	}}}, Ask: true}
+}
+
+func TestADisabledOptionShowsItsReasonAndCannotBeChosen(t *testing.T) {
+	w := New(updateQuestion(), show).Place(100, 30)
+	if !strings.Contains(text(w), "3) Update /x/golangci-lint to 2.15.0 (every project that uses this copy gets it)") || !strings.Contains(text(w), "Disabled: smith does not know how this copy was installed") {
+		t.Fatalf("the option is listed with its reason:\n%s", text(w))
+	}
+	if !strings.Contains(text(w), "1) Install 2.15.0 into smith's own folder  (suggested)") {
+		t.Fatalf("the first option keeps the suggested mark:\n%s", text(w))
+	}
+	for _, keys := range [][]string{{"3"}, {"down", "down", "enter"}} {
+		picked, out := press(t, w, keys...)
+		if picked.Phase() != Asking || out.Apply || len(picked.Answers()) != 0 {
+			t.Fatalf("%v: a disabled option is not an answer: phase %v answers %v", keys, picked.Phase(), picked.Answers())
+		}
+	}
+	picked, _ := press(t, w, "2")
+	if picked.Phase() != Reviewing {
+		t.Fatalf("an enabled option still answers: %v", picked.Phase())
+	}
+}
+
+func TestALockedFileFailureSaysWhatToDoAndThatTheOldCopyStays(t *testing.T) {
+	w := New(updateQuestion(), show).Place(100, 30)
+	w, _ = press(t, w, "1", "enter")
+	w = w.Fail(&doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"go", "install"}}, Err: errors.New("exited with code 1"), Output: "go: rename golangci-lint.exe: Access is denied."})
+	got := text(w)
+	for _, want := range []string{"Access is denied.", "Close it, then press Retry", "The old copy is not changed"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the failure lacks %q:\n%s", want, got)
+		}
+	}
+	w = w.Fail(&doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"go", "install"}}, Err: errors.New("exited with code 1"), Output: "go: no network"})
+	if strings.Contains(text(w), "Close it") {
+		t.Fatalf("another failure gets no hint about a locked file:\n%s", text(w))
+	}
+}

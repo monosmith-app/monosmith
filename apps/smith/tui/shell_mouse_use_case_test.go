@@ -5,6 +5,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // findAfter is find, starting at screen row minRow.
@@ -35,7 +39,7 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 failed", "✗ go.work lists every module", "fix all (F)")
+	l.has("2 failed", "× go.work lists every module", "fix all (F)")
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
@@ -60,7 +64,7 @@ func TestClickingAFooterHintPressesItsKey(t *testing.T) {
 func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 	l := newLab(t, true, 160, 34)
 	before := l.sh().View()
-	x, y := l.find("lint (l)")
+	x, y := l.find("lint orders (l)")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("hover should change how the hint is drawn")
@@ -84,7 +88,7 @@ func TestClickingARowSelectsItAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("● web")
 	l.send(click(x+2, y))
-	l.has("Depends on", "kit", "affected", "yes")
+	l.has("Projects it needs", "kit", "affected", "yes")
 	if l.sh().list.SelectedName() != "web" {
 		t.Fatalf("selected %q", l.sh().list.SelectedName())
 	}
@@ -98,7 +102,7 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 		t.Fatal("selecting a project must not run anything")
 	}
 	tx, ty := l.find("Run test")
-	l.send(click(tx+2, ty))
+	l.send(click(tx+2, ty)).send(letGo(tx+2, ty))
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -107,15 +111,15 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
 	l := newLab(t, true, 90, 30)
 	x, y := l.find("○ kit")
-	l.hasNot("Used by")
+	l.hasNot("Projects that use it")
 	l.send(click(x+2, y))
-	l.hasNot("Used by")
+	l.hasNot("Projects that use it")
 	l.advance(2 * time.Second)
 	l.doubleClick(x+2, y)
-	l.has("Used by", "Run test")
+	l.has("Projects that use it", "Run test")
 	// A click on an action of the detail does it.
 	ax, ay := l.find("Run test")
-	l.send(click(ax+2, ay))
+	l.send(click(ax+2, ay)).send(letGo(ax+2, ay))
 	if l.lastStarted() != "run test -p kit" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -156,7 +160,7 @@ func TestTheResultToastLeavesWithTheScreenItWasRaisedOn(t *testing.T) {
 
 func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("On: orders")
+	l.has("4 projects")
 	l.hasNot("Build orders")
 	l.keys("ctrl+p").typeText("Build all").keys("enter")
 	if l.lastStarted() != "run build" {
@@ -167,7 +171,7 @@ func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 func TestClickingAnActionOfTheDetailRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.findAfter("Run test", 3)
-	l.send(click(x+3, y))
+	l.send(click(x+3, y)).send(letGo(x+3, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -177,14 +181,14 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("○ kit")
 	l.send(click(x+2, y))
-	l.has("Used by")
+	l.has("Projects that use it")
 }
 
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("d")
 	l.has("How to fix", "go work use ./libs/x") // the detail beside the list tells the selected check
-	x, y := l.find("✗ Docker registries")
+	x, y := l.find("× Docker registries")
 	l.hasNot("write web's registry")
 	l.send(click(x+3, y)) // selecting a check shows its fix in the detail
 	l.has("Fix", "write web's registry")
@@ -200,7 +204,7 @@ func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	}
 	l.hasNot("The command that will run:")
 	l.keys("x", "enter")
-	x, y = l.find("Run (enter)")
+	x, y = l.find("Release anyway (y)")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "release --yes" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -317,5 +321,133 @@ func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 	l.send(click(x+1, y))
 	if l.sh().tab != "run" {
 		t.Fatalf("a click on Run opened %q", l.sh().tab)
+	}
+}
+
+// modalCases open each kind of blocking overlay on the tab it is opened from;
+// button is a button of that tab's content that sits clear of the modal.
+var modalCases = []struct {
+	name, tab, button string
+	open              func(l *lab)
+}{
+	{"help", commands.TabProjects, "New project", func(l *lab) { l.keys("f1") }},
+	{"palette", commands.TabProjects, "New project", func(l *lab) { l.keys("ctrl+p") }},
+	{"confirmation", commands.TabRelease, "", func(l *lab) { l.keys("x", "enter") }},
+	{"fix wizard", commands.TabDoctor, "fix all", func(l *lab) { l.keys("F") }},
+}
+
+// colourLab is a lab whose theme has colour, so a hover look would show on screen.
+func colourLab(t *testing.T, w, h int, tab string) *lab {
+	t.Helper()
+	l := newLab(t, true, w, h)
+	sh := l.sh()
+	sh.th = theme.Default()
+	l.m = sh
+	return l.openTab(tab)
+}
+
+func TestWithoutAModalThePointerHighlightsTheTabsAndTheFooter(t *testing.T) {
+	l := colourLab(t, 160, 50, commands.TabProjects)
+	before := l.sh().View()
+	x, y := l.find("Settings (7)")
+	l.send(motion(x+2, y))
+	if l.sh().View() == before {
+		t.Fatal("the tab under the pointer shows its hover look")
+	}
+	before = l.sh().View()
+	l.send(motion(3, l.sh().lay().Footer.Y))
+	if l.sh().View() == before {
+		t.Fatal("the footer button under the pointer shows its hover look")
+	}
+}
+
+func TestWhileAModalIsOpenTheMouseActsOnlyOnIt(t *testing.T) {
+	for _, c := range modalCases {
+		t.Run(c.name, func(t *testing.T) {
+			l := colourLab(t, 160, 50, c.tab)
+			tx, ty := l.find("Settings (7)")
+			if ty != 1 {
+				t.Fatalf("the tab is on row %d", ty)
+			}
+			points := [][2]int{{tx + 2, ty}, {3, l.sh().lay().Footer.Y}, {0, 0}, {159, 0}}
+			if c.button != "" {
+				bx, by := l.find(c.button)
+				points = append(points, [2]int{bx + 1, by})
+			}
+			c.open(l)
+			if !l.sh().modalOpen() {
+				t.Fatal("the modal is not open")
+			}
+			before, x0, y0 := l.sh().View(), l.sh().mouseX, l.sh().mouseY
+			for _, p := range points {
+				l.send(motion(p[0], p[1]))
+				if got := l.sh().View(); got != before {
+					t.Fatalf("a motion over (%d,%d) changed the screen:\n%s\nwas\n%s", p[0], p[1], pane.Strip(got), pane.Strip(before))
+				}
+			}
+			if sh := l.sh(); sh.mouseX != x0 || sh.mouseY != y0 {
+				t.Fatalf("the pointer behind the modal was tracked: %d,%d", sh.mouseX, sh.mouseY)
+			}
+			// A press outside the modal may close it (the palette and the help do),
+			// so each press has a modal of its own.
+			for _, p := range points {
+				l := colourLab(t, 160, 50, c.tab)
+				c.open(l)
+				l.send(click(p[0], p[1])).send(letGo(p[0], p[1]))
+				if sh := l.sh(); sh.tab != c.tab || sh.pressed != "" || sh.split.Dragging != "" || sh.selection.Active {
+					t.Fatalf("a click at (%d,%d) reached the screen behind the modal: tab %q pressed %q", p[0], p[1], sh.tab, sh.pressed)
+				}
+			}
+		})
+	}
+}
+
+func TestTheWheelDoesNotScrollTheScreenBehindAModal(t *testing.T) {
+	l := colourLab(t, 120, 40, commands.TabRelease)
+	l.keys("x", "enter")
+	before, lay := l.sh().View(), l.sh().lay()
+	for _, dir := range []int{1, 1, 1, -1} {
+		l.send(wheel(20, lay.Main.Y+3, dir))
+	}
+	if l.sh().View() != before {
+		t.Fatal("the wheel moved the release list behind the confirmation")
+	}
+}
+
+func TestAClickOnTheModalsOwnButtonStillWorks(t *testing.T) {
+	l := newLab(t, true, 120, 40)
+	l.openTab(commands.TabRelease)
+	l.keys("x", "enter")
+	l.has("[Cancel (esc)]")
+	l.clickText("Cancel")
+	if l.sh().modalOpen() {
+		t.Fatal("Cancel closes the confirmation")
+	}
+	if len(l.started) != 0 {
+		t.Fatalf("started %v", l.started)
+	}
+}
+
+func TestAClickOnTheFixingDialogsStopButtonStillWorks(t *testing.T) {
+	l := withInstallFix(newLab(t, true, 140, 34))
+	l.applyHold = make(chan struct{})
+	defer close(l.applyHold)
+	l.keys("f", "enter", "enter")
+	l.has("Fixing…")
+	if !l.sh().modalOpen() || !l.sh().fixApplying() {
+		t.Fatal("the fixing dialog is the modal")
+	}
+	l.clickText("Stop")
+	cancelled := false
+	for i := 0; i < 200 && !cancelled; i++ {
+		l.fixMu.Lock()
+		cancelled = l.applyCancel
+		l.fixMu.Unlock()
+		if !cancelled {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	if !cancelled {
+		t.Fatal("the Stop button did not stop the step")
 	}
 }
