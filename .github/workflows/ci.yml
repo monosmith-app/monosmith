@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/smith-v2' }}
 
 jobs:
   ci:
@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/go/pkg/mod
-          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-applescript/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-bundle/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-lua/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-objc/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-swift/go.sum', 'libs/plugin-vba/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum') }}
+          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-applescript/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-bundle/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-lua/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-objc/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-swift/go.sum', 'libs/plugin-vba/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum', 'libs/words/go.sum') }}
           restore-keys: |
             smith-go-${{ runner.os }}-
       - name: Cache the npm download store
@@ -110,11 +110,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pack
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         run: smith ci pack
       - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         with:
           name: drop
           path: dist/drop
@@ -138,7 +138,7 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           VSCE_AZURE_CREDENTIAL: "true"
       - name: Attest build provenance
-        if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2') && hashFiles('dist/release/**') != ''
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/release/*/*
