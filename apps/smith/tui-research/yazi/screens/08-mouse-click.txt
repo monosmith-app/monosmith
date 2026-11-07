@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples
+   bin        │  dockerplay                                             │  docs
+   dl-btop    │  gitplay                                                │  img
+   dl-k9s     │ yz                                                    │  src
+   dl-yazi    │  yazi.cmd                                               │  big.bin
+   lazydocker │                                                          │  data.json
+   lazydocke… │                                                          │ 󰂺 README.md
+   lazygit    │                                                          │
+   lazygit-c… │                                                          │
+   npm        │                                                          │
+   pipx       │                                                          │
+   pyenv      │                                                          │
+  samples   │                                                          │
+   venv       │                                                          │
+   drive.py   │                                                          │
+   mk-git….sh │                                                          │
+   run.sh     │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ NOR  0B  yz                                                                                           75%   3/4  

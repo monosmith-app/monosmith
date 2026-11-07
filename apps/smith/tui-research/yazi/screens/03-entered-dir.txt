@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples\yz\src
+   docs       │ main.go                                               │package main
+   img        │                                                          │func main(){}
+  src       │                                                          │
+   big.bin    │                                                          │
+   data.json  │                                                          │
+  󰂺 README.md  │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ NOR  27B  main.go                                                                                     Top   1/1  

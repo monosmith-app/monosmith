@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples\yz                                                      1
+   dockerplay │  docs                                                   │----- File Type Classification -----
+   gitplay    │  img                                                    │
+  yz        │  src                                                    │data
+   yazi.cmd   │  big.bin                                                │
+   yazi_1.cmd │ big_1.bin                                             │
+               │  data.json                                              │
+               │  huge.bin                                               │
+               │ 󰂺 README.md                                              │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │         m  Sort by modified time              M  Sort by modified time (re         b  Sort by birth time        │
+ │         B  Sort by birth time (revers         e  Sort by extension                 E  Sort by extension (reverse│
+ │         a  Sort alphabetically                A  Sort alphabetically (reve         n  Sort naturally            │
+ │         N  Sort naturally (reverse)           s  Sort by size                      S  Sort by size (reverse)    │
+ │         r  Sort randomly                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+               │                                                          │
+ NOR  572.2M  big_1.bin                                                                                62%   5/8  

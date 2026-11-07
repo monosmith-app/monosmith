@@ -1,0 +1,20 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples       1
+   bin  │  dockerplay                    │@echo off
+   dl-… │╭Create:─────────────────────────────────────────╮usso\dev\
+   dl-… ││x.txt                                           │NE=C:\Pro
+   dl-… │╰──────────────────────────────────────────────󰈙 ╯ev\monosm
+   laz… │ yazi_1.cmd                   │
+   laz… │                                 │
+   laz… │                                 │
+   laz… │                                 │
+   npm  │                                 │
+   pipx │                                 │
+   pye… │                                 │
+  sam…│                                 │
+   venv │                                 │
+   ….py │                                 │
+   ….sh │                                 │
+   ….sh │                                 │
+         │                                 │
+         │                                 │
+ NOR  262B  yazi_1.cmd                               Bot   5/5  

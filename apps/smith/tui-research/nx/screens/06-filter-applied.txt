@@ -1,0 +1,38 @@
+
+ NX    3 build, lint, serve tasks, and 6 others they depend on                                                    Cache   Duration
+
+> ✖    @play/app-a:lint                                                                                               -       1.4s
+  ✔    @play/lib-b:lint                                                                                               -       1.4s
+  ✔    @play/srv-c:lint                                                                                               -       1.4s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /lint   6 tasks filtered out   <enter> confirm, <esc> cancel

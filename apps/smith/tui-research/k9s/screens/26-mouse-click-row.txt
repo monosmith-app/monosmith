@@ -1,0 +1,38 @@
+ Context: kind-tuires [RW]                         <0> all       <a>       Attach       <ctrl-k>  Kill   ____  __ ________
+ Cluster: kind-tuires                              <1> demo      <ctrl-d>  Delete       <l>       Logs  |    |/  /   __   \______
+ User:    kind-tuires                              <2> default   <d>       Describe     <p>       Logs P|       /\____    /  ___/
+ K9s Rev: v0.51.0                                                <e>       Edit         <shift-f> Port-F|    \   \  /    /\___  \
+ K8s Rev: v1.31.2                                                <?>       Help         <z>       Saniti|____|\__ \/____//____  /
+ CPU:     n/a                                                    <shift-j> Jump Owner   <s>       Shell          \/           \/
+ MEM:     n/a
+┌──────────────────────────────────────────────────────── pods(demo)[6] ─────────────────────────────────────────────────────────┐
+│ NAME↑                      PF    READY    STATUS                  RESTARTS IP              NODE                     AGE        │
+│ broken-5c8f9f6dcf-9wpjn    ●     0/1      ImagePullBackOff               0 10.244.0.8      tuires-control-plane     2m43s      │
+│ crash                      ●     0/1      CrashLoopBackOff               4 10.244.0.9      tuires-control-plane     2m43s      │
+│ logger                     ●     1/1      Running                        0 10.244.0.10     tuires-control-plane     2m42s      │
+│ web-cbfbbd684-5gptj        ●     1/1      Running                        0 10.244.0.7      tuires-control-plane     2m43s      │
+│ web-cbfbbd684-bfs9g        ●     1/1      Running                        0 10.244.0.5      tuires-control-plane     2m43s      │
+│ web-cbfbbd684-chcjw        ●     1/1      Running                        0 10.244.0.6      tuires-control-plane     2m43s      │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  <pod>
+
