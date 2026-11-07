@@ -62,7 +62,7 @@ func TestANativeProjectAddsAJobPerOS(t *testing.T) {
 	if strings.Contains(RenderGitHub(m), "native:") || strings.Contains(RenderAzure(m), "jobs:") {
 		t.Fatal("no native project: no native job, and Azure keeps its single job")
 	}
-	m.Native, m.NativeRunners = true, DefaultNativeRunners
+	m.Native, m.NativeRunners, m.NativeOn = true, DefaultNativeRunners, NativeOnAlways
 	gh, az := RenderGitHub(m), RenderAzure(m)
 	for _, want := range []string{
 		"\n  native:\n    needs: ci\n    if: ${{ always() && (needs.ci.result == 'success' || (github.event_name == 'push' && needs.ci.outputs.released == 'true')) }}\n    strategy:\n      fail-fast: false\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]\n    runs-on: ${{ matrix.os }}\n",

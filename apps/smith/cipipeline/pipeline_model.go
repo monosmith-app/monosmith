@@ -58,6 +58,21 @@ type Model struct {
 	Attest bool
 	// AttestOptional makes the attestation step continue on error, from [ci] attest.
 	AttestOptional bool
+	// NativeOn is when the native job runs, from [ci] native_on: "release"
+	// (empty), "main" or "always".
+	NativeOn string
+	// Triggers are the events that start a GitHub or Azure run, from [ci]
+	// triggers: "push" and "pull_request". Empty means both.
+	Triggers []string
+	// Audit is when the audit step runs, from [ci] audit: "always" (empty),
+	// "main" or "schedule".
+	Audit string
+	// PublishOn is where pack, the packed-apps upload, the attestation and the
+	// assets job run, from [ci] publish_on: "release" (empty), the release
+	// branch only, or "channels", the release branch and every channel branch.
+	PublishOn string
+	// AuditCron is the schedule of a "schedule" audit, in cron syntax.
+	AuditCron string
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool
@@ -195,6 +210,52 @@ func (m Model) TriggerBranches() []string {
 	return append(out, m.Branches...)
 }
 
+// Native modes: when the native job runs (see Model.NativeOn).
+const (
+	NativeOnRelease = "release"
+	NativeOnMain    = "main"
+	NativeOnAlways  = "always"
+)
+
+// Audit modes: when the audit step runs (see Model.Audit).
+const (
+	AuditAlways   = "always"
+	AuditMain     = "main"
+	AuditSchedule = "schedule"
+)
+
+// DefaultAuditCron runs a scheduled audit on Mondays at 06:00 UTC.
+const DefaultAuditCron = "0 6 * * 1"
+
+// NativeMode is NativeOn with its default, "release", filled in.
+func (m Model) NativeMode() string {
+	if m.NativeOn == "" {
+		return NativeOnRelease
+	}
+	return m.NativeOn
+}
+
+// AuditMode is Audit with its default, "always", filled in.
+func (m Model) AuditMode() string {
+	if m.Audit == "" {
+		return AuditAlways
+	}
+	return m.Audit
+}
+
+// AuditSchedule is the cron expression of a scheduled audit.
+func (m Model) AuditSchedule() string {
+	if m.AuditCron == "" {
+		return DefaultAuditCron
+	}
+	return m.AuditCron
+}
+
+// TriggersOn says whether the pipelines start on the event: "push" or "pull_request".
+func (m Model) TriggersOn(event string) bool {
+	return len(m.Triggers) == 0 || slices.Contains(m.Triggers, event)
+}
+
 // ReleaseBranches are the branches `smith ci release` runs on: the release
 // branch, then each release channel's branch. Packing and the other steps that
 // publish more than a package stay on the release branch.
@@ -202,11 +263,30 @@ func (m Model) ReleaseBranches() []string {
 	return append([]string{m.ReleaseBranch}, m.ChannelBranches...)
 }
 
+// PublishBranches are the branches that pack, upload, attest and build the
+// release files: the release branch, or with [ci] publish_on = "channels" the
+// channel branches too.
+func (m Model) PublishBranches() []string {
+	if m.PublishOn == "channels" {
+		return m.ReleaseBranches()
+	}
+	return []string{m.ReleaseBranch}
+}
+
 // branchCondition joins one condition per release branch with join, which
 // writes the provider's "any of" for two or more.
 func (m Model) branchCondition(one func(branch string) string, join func(conditions []string) string) string {
+	return conditionOf(m.ReleaseBranches(), one, join)
+}
+
+// publishCondition is branchCondition over the publish branches.
+func (m Model) publishCondition(one func(branch string) string, join func(conditions []string) string) string {
+	return conditionOf(m.PublishBranches(), one, join)
+}
+
+func conditionOf(branches []string, one func(branch string) string, join func(conditions []string) string) string {
 	var conditions []string
-	for _, b := range m.ReleaseBranches() {
+	for _, b := range branches {
 		conditions = append(conditions, one(b))
 	}
 	if len(conditions) == 1 {

@@ -12,9 +12,14 @@ exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**"]
 
 [ci]
 providers = ["github"]
-# smith-v2 is the long-lived branch of the 2.0 work: it builds and tests like main
-# but never releases (only the release branch does).
+# smith-v2 is the long-lived branch of the 2.0 work. It is a release channel (below), so a
+# push to it releases 2.0.0-beta.n; a pull request merged into main is a push to main and
+# releases 1.x. Pull requests only run verify, as the merge gate.
 branches = ["main", "smith-v2"]
+# Pack, attest and the assets job run on both release branches, not on main only.
+publish_on = "channels"
+# The native job runs only when a release happened (the default), on main and on smith-v2.
+native_on = "release"
 # Every step of this repository's pipelines runs the smith built from the commit:
 # the installed one only bootstraps, so it need not change with every release.
 smith_version = "latest"

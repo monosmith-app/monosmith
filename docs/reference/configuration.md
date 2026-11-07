@@ -73,6 +73,11 @@ branches = ["main", "dev"]             # branches the GitHub and Azure pipelines
 azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines definition runs on; default: Microsoft's hosted ubuntu-latest
 azure_variable_groups = ["Build"]     # variable groups the definition links, for the secrets its steps read; default: none
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
+native_on = "release"                  # when the native job runs: release (default), main or always (docs/reference/ci.md#cost-controls)
+triggers = ["push", "pull_request"]    # events that start the GitHub and Azure pipelines; default: both
+audit = "always"                       # when smith ci audit runs: always (default), main or schedule
+audit_cron = "0 6 * * 1"               # the schedule of audit = "schedule"; default: Mondays 06:00 UTC
+publish_on = "release"                 # where pack, attest and the assets job run: release (default) or channels
 native_linux_packages = []            # apt packages the native job installs on Linux
 smith_version = "latest"              # the smith the pipelines install: "latest" or an exact version; default: the version that generates them (docs/reference/ci.md)
 audit_policies = []                    # "node", "go", "python", "rust": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)

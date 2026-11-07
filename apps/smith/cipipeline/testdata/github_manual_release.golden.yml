@@ -35,7 +35,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   ci:
@@ -123,7 +123,7 @@ jobs:
 
   native:
     needs: ci
-    if: ${{ always() && (needs.ci.result == 'success' || ((github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_bump != '')) && needs.ci.outputs.released == 'true')) }}
+    if: ${{ always() && ((github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_bump != '')) && github.ref_name == 'main' && needs.ci.outputs.released == 'true') }}
     strategy:
       fail-fast: false
       matrix:

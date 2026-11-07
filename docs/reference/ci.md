@@ -44,16 +44,73 @@ branches = ["main", "dev"]   # push and pull_request triggers; default: the rele
 
 The release branch is always one of them, even if the list leaves it out. It
 stays the only branch a release runs from: the pack, upload and release steps
-keep their condition on it, so a push to `dev` runs verify and nothing more.
+keep their condition on it, so a push to `dev` runs verify and nothing more
+(the native job runs there only with [`native_on = "main"` or `"always"`](#cost-controls)).
 Pull requests into any of the listed branches get the release preview comment.
 
 A [release channel](releasing.md#release-channels) adds its branch to the triggers and to the
 release step only: a push to the channel branch runs verify and `smith ci release`, which
-publishes the channel's prerelease versions. The sign-in steps (Azure, RubyGems) run there too, since the release publishes from the branch; pack and upload stay on the release
-branch. The preview comment on a pull request into a channel branch names the channel and shows
+publishes the channel's prerelease versions. The sign-in steps (Azure, RubyGems) run there too, since the release publishes from the branch; pack, upload, attest and the assets job stay on the release
+branch unless [`publish_on = "channels"`](#cost-controls) adds the channel branches. The preview comment on a pull request into a channel branch names the channel and shows
 the prerelease versions, because a pull request build plans for the branch it targets.
 `smith doctor` reports a pipeline that does not match the list, and
 `smith ci generate` rewrites it. GitLab, CircleCI and Bitbucket are not affected.
+
+## Cost controls
+
+A CI minute costs money on a private repository. These `[ci]` keys decide how many
+minutes a run uses. Each has a default that spends the least, and each is checked when
+smith reads `smith.toml`: an unknown value is an error that names the allowed values.
+
+```toml
+[ci]
+native_on = "release"                   # release (default) | main | always
+triggers = ["push", "pull_request"]     # the default: both; ["pull_request"] or ["push"] drop one
+audit = "always"                        # always (default) | main | schedule
+audit_cron = "0 6 * * 1"                # the schedule of audit = "schedule"; default: Mondays 06:00 UTC
+publish_on = "release"                  # release (default) | channels
+```
+
+**`native_on`** says when the native job runs.
+
+| Value | The native job runs |
+| --- | --- |
+| `release` (default) | only on a push to a release branch whose release step released a project (`released=true`) |
+| `main` | also on a push to, or a pull request into, a release branch when the ci job passed, and on a release |
+| `always` | after every successful ci job, and on a release even when a later step failed (the behaviour before this key) |
+
+A push to a branch that is not a release branch, and a pull request, run verify and nothing more
+by default. On Azure there is no output that says a release happened, so `release` runs the
+native job on every push to a release branch that passes the ci job. GitLab, CircleCI and
+Bitbucket always run their native job after the ci job: `native_on` does not apply, and
+`smith ci generate` says so.
+
+**Concurrency.** A newer run on the same ref cancels the older one, except on the release
+branch and the channel branches: a run that can release is never cancelled. This is not a
+key. It applies to GitHub only.
+
+**`triggers`** lists the events that start the GitHub and Azure pipelines. `["pull_request"]`
+runs CI on pull requests only. `["push"]` runs it on pushes only, and then there is no
+release preview comment, because the comment needs a pull request run. Without `push` nothing
+runs on the release branch, so nothing releases from it: use that only when releases start in
+another way. An empty list, an unknown name or a name twice is an error. GitLab, CircleCI and
+Bitbucket keep their own triggers: `triggers` does not apply, and `smith ci generate` says so,
+as it does for `branches`.
+
+**`audit`** says when `smith ci audit` runs. `always` runs it on every run. `main` runs it on
+a push to a release branch only. `schedule` adds a `schedule:` trigger with the cron of
+`audit_cron` (five fields, UTC) and runs the audit on that trigger and on a push to a release
+branch. A scheduled run only audits: the verify step is skipped, and so are the native and
+assets jobs. A skipped audit never blocks verify or the release. On Azure, `main` is the same
+condition. `schedule` does not apply there (the audit runs on every run), and the other
+providers always audit.
+
+**`publish_on`** says which branches pack apps, keep the packed apps, attest the release
+archives and build the release files in the assets job. `release` (default) is the release
+branch only. `channels` adds each [release channel](releasing.md#release-channels) branch, so
+a release from the channel branch gets the same files as one from the release branch. It
+applies to GitHub and Azure. A merge of a pull request is a push to the target branch, so
+"release on a merge into `main`" is a push to `main`: the two cannot be told apart.
 
 ## Sibling repositories
 
