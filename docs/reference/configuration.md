@@ -98,6 +98,7 @@ kinds = true                          # no project depends on an app: an error (
 branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
 github_releases = false               # a GitHub Release per tag (needs GITHUB_TOKEN)
+github_deployments = true              # GitHub Actions: list each registry a release published to in the Deployments sidebar (needs deployments: write, which the generated workflow grants)
 tag_format = "{name}@"                # the tag prefix of a project with no tag_prefix; "{scope}/{name}@" gives @acme/kit@ (releasing.md, Tags)
 rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC token, not GEM_HOST_API_KEY (GitHub only; docs/reference/releasing.md)
 vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)

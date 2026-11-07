@@ -39,8 +39,19 @@ type Options struct {
 // and tagged in dependency order; it stops at the first failure, keeping what
 // already finished.
 func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (Report, error) {
-	report := Report{DryRun: opts.DryRun, Channel: plan.Channel, Started: time.Now().UTC(), Unchanged: plan.Unchanged, NeverReleased: plan.NeverReleased, Results: []ReportResult{}}
-	defer func() { report.Finished = time.Now().UTC(); writeReport(s.Root, report) }()
+	started := time.Now().UTC()
+	report, err := execute(ctx, s, plan, opts)
+	report.Started, report.Finished = started, time.Now().UTC()
+	for i := range report.Results {
+		report.Results[i].Targets = TargetsOf(report.Results[i])
+	}
+	writeReport(s.Root, report)
+	recordDeployments(s, report, opts.Out)
+	return report, err
+}
+
+func execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (Report, error) {
+	report := Report{DryRun: opts.DryRun, Channel: plan.Channel, Unchanged: plan.Unchanged, NeverReleased: plan.NeverReleased, Results: []ReportResult{}}
 
 	if len(plan.Items) == 0 {
 		return report, nil
@@ -157,6 +168,9 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return err
 	}
 	res.Published, res.Registry, res.Publish, res.Assets = pr.Published, pr.Registry, pr.Skipped, pr.Assets
+	if len(p.Exports) > 0 {
+		res.Package = p.Exports[0]
+	}
 	for _, note := range pr.Notes {
 		say("note: %s", note)
 		res.Publish = strings.TrimSpace(res.Publish + " " + note)

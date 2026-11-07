@@ -227,6 +227,9 @@ func idToken(m Model) string {
 	if m.Attest {
 		b.WriteString("  attestations: write\n")
 	}
+	if m.Deployments {
+		b.WriteString("  deployments: write\n")
+	}
 	// Plugins add what their publishing needs: packages: write to push
 	// images to ghcr.io.
 	for _, perm := range m.Permissions {

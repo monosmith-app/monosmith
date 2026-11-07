@@ -56,6 +56,10 @@ type Model struct {
 	// GitHub the job then attests them (SLSA build provenance), which needs
 	// id-token and attestations permissions.
 	Attest bool
+	// Deployments is true when the workspace publishes to a registry and
+	// [release] github_deployments is not off: the GitHub job then asks for
+	// deployments: write to record each registry as a deployment.
+	Deployments bool
 	// AttestOptional makes the attestation step continue on error, from [ci] attest.
 	AttestOptional bool
 	// NativeOn is when the native job runs, from [ci] native_on: "release"
@@ -125,6 +129,10 @@ type Contributions struct {
 	Provenance bool
 	// Attest is true when a release attaches archives to a GitHub Release.
 	Attest bool
+	// Deployments is true when the workspace publishes to a registry and
+	// [release] github_deployments is not off: the GitHub job then needs
+	// deployments: write to record each registry as a deployment.
+	Deployments bool
 	// Pub is true when an app is published to pub.dev.
 	Pub bool
 	// RubyGemsTrusted is true when [release] rubygems_trusted_publishing is set.
@@ -301,7 +309,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 		smithVersion = "latest"
 	}
 	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish, AssetPlatforms: c.AssetPlatforms,
-		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
+		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Deployments: c.Deployments, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners
 	}

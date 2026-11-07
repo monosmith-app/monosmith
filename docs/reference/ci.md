@@ -287,6 +287,31 @@ On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,
 and each phase adds a line (passed or failed, and how long it took) and the
 release its report to the job summary. When a blocking setup or audit step fails, its whole captured output (the last 64 KB) is printed again in a log group named after the step, so a cause that scrolled past (such as pip's conflict report) is one click away; the error keeps its last 30 lines.
 
+### What `smith ci release` prints
+
+The banner and the plan are visible, the tool output is folded, then come the result table, the
+`Released` block (type, what, platforms and where of each target, see
+[Releasing](releasing.md#what-was-released)) and one closing line. The same block goes to the job
+summary. The `Published` column counts every target, and a pub.dev publish reads
+`pub.dev (queued)`: the workflow was started, not finished.
+
+```
+Project  Was      Now        Bump   Why             Published                                           Tag
+smith    1.128.0  › 1.129.0  minor  feat: add ...   6 targets: npm, PyPI, NuGet, RubyGems, GitHub ...   smith@1.129.0 (pushed)
+══ Released ════════════════════════════════════════════════
+smith 1.128.0 › 1.129.0 (minor)
+  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+  ...
+✓ Release passed in 3m 8s: 1 released (smith 1.129.0), 0 unchanged, 0 failed
+```
+
+### Deployments
+
+When a workspace publishes to a registry, the GitHub workflow gets `deployments: write`, and
+`smith ci release` records each registry as a GitHub deployment (the Deployments sidebar lists npm,
+PyPI, NuGet and RubyGems with the version and a link to the package page). A refusal only warns.
+Set `[release] github_deployments = false` to leave the permission out and record nothing.
+
 ## Packing
 
 `smith ci pack` runs the `package` task of every project that has one and

@@ -93,6 +93,9 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 		if p.Release != nil && s.Config.Release.GitHubReleases {
 			c.Attest = true
 		}
+		if s.Config.Release.DeploymentsOn() && release.PublishesToRegistry(p) {
+			c.Deployments = true
+		}
 		if release.PubPackage(p) != "" && !release.PublishesToNoRegistry(p) {
 			c.Pub = true
 		}
