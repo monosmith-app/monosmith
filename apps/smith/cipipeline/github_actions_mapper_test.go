@@ -126,7 +126,7 @@ func stepAfter(out, first string) string {
 func TestGitHubPassesTheCacheToTheStepsThatRunTasks(t *testing.T) {
 	cases := map[string][]string{
 		"azblob://acme/smith-cache/main": {"SMITH_CACHE_KEY", "AZURE_STORAGE_SAS_TOKEN"},
-		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
+		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_ENDPOINT_URL_S3", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
 		"https://cache.acme.dev/smith":   {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
 	}
 	for remote, envs := range cases {
