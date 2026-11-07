@@ -6,16 +6,10 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// RunProject is the project the run keys act on in a state: the one selected
-// in the list, but only on the Projects view, where the selection is in sight.
-// Everywhere else (Home first of all) a run covers the whole workspace, so a
-// selection the user never made there cannot narrow it.
-func (s State) RunProject() string {
-	if s.View != TabProjects {
-		return ""
-	}
-	return s.Project
-}
+// RunProject is the project the run keys b, t, l and c act on: the one selected
+// in the list, on every view, so one key has one meaning. The capital keys B, T,
+// L and C always cover every project, and every label names its scope.
+func (s State) RunProject() string { return s.Project }
 
 // RunScopeLabel names what a run command line covers, to be shown with the run:
 // "Build · all 23 projects", "Test · web", "Lint · affected projects".

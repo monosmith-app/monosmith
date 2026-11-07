@@ -162,7 +162,7 @@ The plugin has no `[projects.<p>.settings.ruby]` keys.
 The pin label is `ruby`, probed with `ruby --version`. Real output with `[toolchains] ruby = "3.3"` on a machine with 3.4.11:
 
 ```
-✖ ruby matches the pinned version 3.3
+× ruby matches the pinned version 3.3
     [toolchains] pins ruby 3.3, but this machine runs 3.4.11: tasks cached on another version are misses, and results can differ from CI
     → install ruby 3.3 (`mise use ruby@3.3`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] ruby
 ```
@@ -233,7 +233,7 @@ Dependencies (`dependencies/`): the plugin edits the gemspec, then runs `bundle 
 | `smith install -p <gem> <name>...` | adds `spec.add_dependency '<name>'` before the gemspec's closing `end` (`add_development_dependency` with `-D`; a gem already declared is left as is), then `bundle install`. No version constraint is written. |
 | `smith uninstall -p <gem> <name>...` | removes those lines, then `bundle install` |
 
-Real: `smith install -p cli thor` printed `✔ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -p cli thor` removed it again.
+Real: `smith install -p cli thor` printed `✓ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -p cli thor` removed it again.
 
 **Versions: `smith sync` and `smith up`.** The plugin lists the gems with a version constraint that each gemspec declares (`add_dependency`, `add_runtime_dependency`, `add_development_dependency`) and the workspace `Gemfile` declares (`gem 'rake', '~> 13.0'`; gems inside a `development` or `test` group count as development dependencies), so `smith sync`, `smith up` and the one-version check in `smith doctor` cover Ruby.
 

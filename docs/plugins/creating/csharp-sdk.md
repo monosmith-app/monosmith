@@ -271,15 +271,15 @@ never on a pause: a Linux runner under load is slower than your machine.
 ```text
 PS> smith plugin check "C:\Program Files\dotnet\dotnet.exe" .\bin\Release\net8.0\StructureLayout.dll
 widget-layout 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 The lines are the ones `structure-layout-go`, `structure-layout-node` and `structure-layout-py` print. A

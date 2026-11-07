@@ -30,6 +30,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/selection"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
@@ -87,6 +88,12 @@ type Config struct {
 	// CommitOperations is true when smith.toml sets commit_operations, so every
 	// change smith makes is already a commit.
 	CommitOperations bool
+	// CommitOperationsSet is true when smith.toml says anything about
+	// commit_operations; CommitChoice is what the person answered once ("no" or
+	// "ask"), and SaveCommitChoice keeps such an answer (nil keeps none).
+	CommitOperationsSet bool
+	CommitChoice        string
+	SaveCommitChoice    func(choice string)
 	// Environments are the environment names `[workspace] environments`
 	// declares; the Add form starts its "names of my own" question on them.
 	Environments []string
@@ -114,6 +121,14 @@ type Shell struct {
 	// shows it is s.fix.
 	repair    *sources.ConfigRepair
 	commitOps bool
+	// commitSet, commitChoice and saveCommit decide whether smith still has to
+	// ask how it treats undo (see commitUnasked); commitPending is the command
+	// that waits for the answer, and commitPendingOK says it was confirmed.
+	commitSet       bool
+	commitChoice    string
+	saveCommit      func(string)
+	commitPending   []string
+	commitPendingOK bool
 	// environments are the names of `[workspace] environments`.
 	environments []string
 	sources      sources.Sources
@@ -147,8 +162,13 @@ type Shell struct {
 	doctor        doctorview.Model
 	release       releaseview.Model
 	deps          depsview.Model
+	// depsLoading is true while the registries are asked for newer releases.
+	depsLoading bool
 	// settings is the Settings tab: plugins, style and the settings of smith.toml.
 	settings settingsview.Model
+	// pluginUndo is the plugin switch the status line offers to undo with u, until
+	// another key is pressed or the tab is left.
+	pluginUndo *settingsview.PluginToggle
 
 	// last is how the last command ended, for Home.
 	last *dashboard.Run
@@ -185,6 +205,13 @@ type Shell struct {
 	// releaseWaiting is a release command line that waits for the plan to be
 	// read, so its confirmation can list the packages and versions.
 	releaseWaiting []string
+	// releasing is the release the shell started: its packages and its remote,
+	// for the steps drawn while it runs and for its result.
+	releasing *releaseRun
+	// releaseLoading is true while the release plan is read, so no second read
+	// (the plan takes seconds of git) starts: the start reads it in the
+	// background for Home, and the Release tab uses that read.
+	releaseLoading bool
 	// planWait is the plan a dialog that opened at once still waits for (see
 	// openWaiting); nil when no dialog waits.
 	planWait *planWait
@@ -257,6 +284,12 @@ type Shell struct {
 	// mouseShift is whether shift was held at the last mouse event.
 	mouseShift bool
 	mouseY     int
+	// pressed is the action whose button the mouse holds down, "" for none; the
+	// action runs when the button is let go over the same one. probing is set on
+	// the copy of the Shell that looks up what is under the pointer, so drawing
+	// that lookup does not start another.
+	pressed string
+	probing bool
 	// detailCursor is the highlighted action while the detail fills the pane.
 	detailCursor int
 	// zoom is set while the detail fills the pane on a wide screen (z).
@@ -265,6 +298,11 @@ type Shell struct {
 	// package); saveSplits keeps the sizes for the next start, nil to keep none.
 	split      splitter.State
 	saveSplits func(map[string]int)
+	// selection is the text the person selects with a drag (see the selection
+	// package); selected is the text it held at the release, so a screen that
+	// changes under the highlight drops it.
+	selection selection.State
+	selected  string
 	// detailTop is the first visible line of the detail; detailAll shows every
 	// line of a folded list; detailFor is what the detail told last, so the
 	// place starts over for another selection.
@@ -299,6 +337,7 @@ func NewShell(cfg Config) Shell {
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
+	sh.commitSet, sh.commitChoice, sh.saveCommit = cfg.CommitOperationsSet, cfg.CommitChoice, cfg.SaveCommitChoice
 	if cfg.Repair != nil {
 		sh.repair = cfg.Repair
 		sh.sources.ShowFix, sh.sources.ApplyFix = cfg.Repair.Show, cfg.Repair.Apply
@@ -316,6 +355,8 @@ func NewShell(cfg Config) Shell {
 		sh.tab = commands.TabHome
 		// Doctor runs in the background from the start (see Init).
 		sh.doctor.Loading = sh.sources.Doctor != nil
+		// So does the release plan, for the release item of Home.
+		sh.releaseLoading = sh.sources.Release != nil
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
@@ -338,8 +379,20 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), StartScreen: s.tab == commands.TabRun && s.runHome, EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
-		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(),
+		InWorkspace: s.inWorkspace, Running: s.running(), StartScreen: s.tab == commands.TabRun && s.runHome, RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
+	}
+}
+
+// toggles are the toggle commands that are on now: the footer and the palette
+// then name what the key does next ("ungroup", "collapse all").
+func (s Shell) toggles() map[string]bool {
+	return map[string]bool{
+		"doctor.group":    s.doctor.Grouped,
+		"doctor.foldall":  s.doctor.Grouped && s.doctor.AllOpen(),
+		"doctor.failed":   s.doctor.Shows(doctorview.FilterFailed),
+		"doctor.warnings": s.doctor.Shows(doctorview.FilterWarnings),
+		"doctor.passed":   s.doctor.Shows(doctorview.FilterPassed),
 	}
 }
 
@@ -389,7 +442,17 @@ func (s Shell) viewReasons() map[string]string {
 		if _, ok := s.doctor.SelectedFix(); !ok {
 			r["doctor.fix"] = words.Say("tui.shell.this_check_has_no_fix_its")
 		}
+		if !s.doctor.Grouped {
+			r["doctor.foldall"] = words.Say("tui.toggle.fold_needs_groups")
+		}
 	case commands.TabDeps:
+		if !s.deps.Loaded {
+			// Until the registries answer no key but reload has anything to act on.
+			for _, id := range []string{"deps.mark", "deps.mark-safe", "deps.mark-all", "deps.update", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
+				r[id] = words.Say("tui.shell.deps_not_loaded")
+			}
+			break
+		}
 		if s.deps.UpArgv() == nil {
 			r["deps.update"] = words.Say("tui.shell.no_dependency_to_update")
 		}
@@ -408,12 +471,18 @@ func (s Shell) viewReasons() map[string]string {
 			r["rel.release"] = words.Say("tui.shell.there_is_nothing_to_release")
 			r["release.open"] = words.Say("tui.shell.there_is_no_bump_to_show")
 		}
+		if !s.release.Empty() {
+			r["rel.why"] = words.Say("tui.release_reason.nothing_to_explain")
+		}
+		if !s.release.FirstRelease() {
+			r["rel.first"] = words.Say("tui.release_reason.no_first")
+		}
 	case commands.TabSettings:
 		for id, why := range s.settings.Reasons() {
 			r[id] = why
 		}
 	case commands.TabHome:
-		if s.nextAction().CommandID == "" {
+		if s.homeCommand() == "" {
 			r["home.next"] = words.Say("tui.shell.nothing_to_do_yet")
 		}
 	case commands.TabRun:
@@ -441,7 +510,7 @@ func (s *Shell) refreshPalette() {
 	st := s.state()
 	var entries []palette.Entry
 	for _, e := range commands.PaletteEntries(st) {
-		entries = append(entries, palette.Entry{ID: e.ID, Section: e.Section, Title: e.Title, Hint: e.Hint, Shortcut: e.Shortcut, Unavailable: e.Unavailable})
+		entries = append(entries, palette.Entry{ID: e.ID, Section: e.Section, Title: e.Title, Hint: e.Hint, Shortcut: e.Shortcut, Keywords: e.Keywords, Unavailable: e.Unavailable})
 	}
 	s.pal = s.pal.WithEntries(entries)
 }
@@ -465,7 +534,22 @@ func (s Shell) Init() tea.Cmd {
 	if load := s.sources.Doctor; load != nil {
 		cmds = append(cmds, func() tea.Msg { return load() })
 	}
+	if load := s.sources.Release; load != nil {
+		// Home never waits for it: the release item shows when the plan arrives.
+		cmds = append(cmds, func() tea.Msg { return load() })
+	}
 	return tea.Batch(cmds...)
+}
+
+// loadRelease reads the release plan in the background, unless a read is
+// already going (the plan takes seconds of git) or this smith has no plan to read.
+func (s *Shell) loadRelease() tea.Cmd {
+	load := s.sources.Release
+	if load == nil || s.releaseLoading {
+		return nil
+	}
+	s.releaseLoading = true
+	return func() tea.Msg { return load() }
 }
 
 // Messages the shell sends itself.

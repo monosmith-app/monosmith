@@ -66,10 +66,14 @@ func (r Report) Text() string {
 		fmt.Fprintf(&b, "\nStopped: %s\nRe-run the release: finished packages are kept and the rest resume.\n", r.Error)
 	}
 	if r.DryRun && len(r.Results) > 0 && r.Error == "" {
-		b.WriteString("\n→ Push to the release branch and CI releases these; or run smith release here to publish them yourself.\n")
+		b.WriteString("\n" + PublishHintLine + "\n")
 	}
 	return b.String()
 }
+
+// PublishHintLine ends the report of a preview: it says how the release goes on.
+// The shell leaves it out, because its own screen has the button that releases.
+const PublishHintLine = "→ Push to the release branch and CI releases these; or run smith release here to publish them yourself."
 
 // asciiWanted reports whether the terminal needs the ASCII banner: the same
 // signals the TUI icon set reads (SMITH_ASCII=1, TERM=dumb or linux).

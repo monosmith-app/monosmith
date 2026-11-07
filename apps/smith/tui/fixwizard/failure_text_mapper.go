@@ -25,8 +25,20 @@ func failureOf(err error, name string) (headline string, output []string) {
 		label = strings.Join(step.Step.Argv, " ")
 	}
 	headline = words.Say("fixwizard.failed.step", "number", step.Number, "total", step.Total, "label", label, "error", step.Err)
+	if lockedFile(step.Output) {
+		headline += " " + words.Say("fixwizard.failed.locked")
+	}
 	if strings.TrimSpace(step.Output) != "" {
 		output = strings.Split(strings.TrimRight(step.Output, "\r\n"), "\n")
 	}
 	return headline, output
+}
+
+// lockedFile reports whether the output of a step says that a file could not
+// be replaced because a program holds it open (Windows: "Access is denied",
+// "being used by another process").
+func lockedFile(output string) bool {
+	text := strings.ToLower(output)
+	return strings.Contains(text, "access is denied") || // words:literal
+		strings.Contains(text, "used by another process") // words:literal
 }

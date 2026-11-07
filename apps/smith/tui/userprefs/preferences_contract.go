@@ -12,6 +12,10 @@ type Preferences struct {
 	// Splits are the sizes the person gave the panels by moving the dividers
 	// between them, in cells, by divider (for example "doctor.detail").
 	Splits map[string]int `json:"splits,omitempty"`
+	// CommitChoices are the answers to "commit each change so it can be
+	// undone?" that are kept for the person only, by workspace root: "no" or
+	// "ask". A "yes" is written in smith.toml, where smith reads it.
+	CommitChoices map[string]string `json:"commitChoices,omitempty"`
 }
 
 // FileName is the file in the smith home.

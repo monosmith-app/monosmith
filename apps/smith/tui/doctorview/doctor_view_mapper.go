@@ -4,8 +4,6 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
@@ -14,25 +12,9 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// Headline is the state of the workspace in a few words: "2 failed · 2 warnings".
-func (v Model) Headline(th theme.Theme) string {
-	r := v.Report
-	var parts []string
-	if r.Failed > 0 {
-		parts = append(parts, th.Failure(words.Say("doctor.headline.failed", "icon", th.Icons.Failed, "count", r.Failed)))
-	}
-	if r.Warnings > 0 {
-		parts = append(parts, th.Warning(words.Say("doctor.headline.warnings", "icon", th.Icons.Warning, "count", r.Warnings)))
-	}
-	if len(parts) == 0 {
-		parts = append(parts, th.Success(words.Say("doctor.headline.passed", "icon", th.Icons.Passed)))
-	}
-	return strings.Join(parts, th.Muted(" · "))
-}
-
-// View draws the page in w cells: the headline first, then the failing
-// checks one line each (the state and the title), the passed ones behind one
-// line. With expand the open check shows its problem, remedy and fix under
+// View draws the page in w cells: the headline with its three filter buttons
+// first, then the checks the filters let through, one line each (the state and
+// the title), the passed ones behind one line unless they are on. With expand the open check shows its problem, remedy and fix under
 // its line; without it the detail beside the list says all that, so the page
 // does not repeat it. rowOf maps a line to the finding drawn on it.
 func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf map[int]int) {
@@ -43,10 +25,10 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 	if v.Report == nil {
 		return []string{th.Muted(progress.Waiting(words.Say("doctor.waiting", "projects", progress.OfProjects(v.Covered)), v.Waited))}, rowOf
 	}
-	if v.Grouped {
-		rowOf[0] = ToggleAllRow
-	}
-	lines = append(lines, v.headline(th, w), "")
+	head, _ := v.headlineRows(th, w)
+	lines = append(lines, head...)
+	lines = append(lines, "")
+	headEnd := len(lines)
 	position := 0
 	for gi, g := range v.groups() {
 		open := v.groupOpen(g)
@@ -73,8 +55,11 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 			position++
 		}
 	}
+	if v.NothingMatches() {
+		lines = append(lines, " "+th.Muted(words.Say("doctor.filter.none", "failed", FilterFailed.Key(), "warnings", FilterWarnings.Key(), "passed", FilterPassed.Key())))
+	}
 	if v.collapsed() {
-		if len(lines) > 2 {
+		if len(lines) > headEnd {
 			lines = append(lines, "")
 		}
 		rowOf[len(lines)] = PassedRow
@@ -144,22 +129,6 @@ func suggestion(fix protocol.Fix) string {
 	return fix.Choices[0].Options[0].Label
 }
 
-// headline is the state of the workspace, and, with groups, the button at the
-// right end that folds or unfolds all of them.
-func (v Model) headline(th theme.Theme, w int) string {
-	left := " " + v.Headline(th)
-	if !v.Grouped {
-		return left
-	}
-	label := words.Say("doctor.toggle.collapse")
-	if !v.allOpen() {
-		label = words.Say("doctor.toggle.expand")
-	}
-	toggle := button.Render(th, label, commands.ShortcutOf("doctor.foldall"), button.Rest)
-	gap := w - pane.Width(left) - pane.Width(toggle) - 1
-	return left + strings.Repeat(" ", max(gap, 2)) + toggle
-}
-
 // header is a group's heading: its fold mark, its name and what is wrong in it.
 func (v Model) header(th theme.Theme, g Group, open, selected bool) string {
 	name := g.Project
@@ -167,7 +136,11 @@ func (v Model) header(th theme.Theme, g Group, open, selected bool) string {
 		name = words.Say("doctor.group.workspace")
 	}
 	failed, warned := 0, 0
-	for _, i := range g.Indexes {
+	counted := g.Counted
+	if counted == nil {
+		counted = g.Indexes
+	}
+	for _, i := range counted {
 		switch f := v.Report.Findings[i]; {
 		case f.OK:
 		case f.Warning:
@@ -181,7 +154,7 @@ func (v Model) header(th theme.Theme, g Group, open, selected bool) string {
 		facts = append(facts, th.Failure(words.Say("doctor.group.failed", "count", failed)))
 	}
 	if warned > 0 {
-		facts = append(facts, th.Warning(words.Say("doctor.group.warnings", "count", warned)))
+		facts = append(facts, th.Warning(words.Count("doctor.group.warnings", warned)))
 	}
 	if len(facts) == 0 {
 		facts = append(facts, th.Muted(words.Say("doctor.group.passed")))

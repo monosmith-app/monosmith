@@ -747,6 +747,7 @@ FixChoiceOption is one answer: a label, and the Fix it adds when picked.
 |---|---|---|---|
 | `label` | `string` | yes |  |
 | `fix` | `Fix` | yes |  |
+| `disabled` | `string` | no | Disabled, when not empty, is the reason the option cannot be picked: an interface shows the option greyed with the reason, and picking it is an error. |
 
 ### FileEdit
 

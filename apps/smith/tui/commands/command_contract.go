@@ -86,8 +86,13 @@ type Command struct {
 	// out of the footer. ShowIn are the views whose footer shows it (Views when
 	// empty); Tail puts it at the end of every footer.
 	Footer string
-	// StartFooter replaces Footer while the Run tab shows its start screen.
-	StartFooter string
+	// StartFooter replaces Footer while the Run tab shows its start screen;
+	// TaskFooter replaces it while the log of one task is shown (Esc then goes
+	// back to all output).
+	StartFooter, TaskFooter string
+	// OnFooter and OnTitle replace Footer and Title while the command is a
+	// toggle that is on (State.On): "group" becomes "ungroup".
+	OnFooter, OnTitle string
 	// ScopeInFooter puts the project a run acts on in the footer label
 	// ("build web"), so the scope is known before the key is pressed.
 	ScopeInFooter bool
@@ -122,6 +127,9 @@ type Command struct {
 	NeedsNarrowList, NeedsDetailOpen bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
+	// Yields gives the key to a command of every view while the command has a
+	// reason (State.Reasons) not to work: the key does not stop at a refusal.
+	Yields bool
 	// NeedsContent hides the command in a folder that holds nothing, where there is nothing for it to work on.
 	NeedsContent bool
 }
@@ -141,6 +149,12 @@ type State struct {
 	Running bool
 	// StartScreen is true while the Run tab shows its start screen, the list of recent runs.
 	StartScreen bool
+	// RunFailed is true when the run shown ended with a failed task: the keys
+	// that answer a failure (run again, copy the log) lead the footer.
+	RunFailed bool
+	// TaskSelected is true when the Run tab shows the log of one task: Esc then
+	// goes back to all output.
+	TaskSelected bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// BrokenConfig is true when smith.toml exists but cannot be read: the
@@ -161,4 +175,7 @@ type State struct {
 	// (nothing to update, no safe fix): the command is refused with that
 	// reason and the footer leaves its hint out.
 	Reasons map[string]string
+	// On says, by command id, which toggle commands are on now (the checks are
+	// grouped): a command with OnFooter or OnTitle shows that text then.
+	On map[string]bool
 }

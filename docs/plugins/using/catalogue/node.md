@@ -115,7 +115,7 @@ Real runs: `smith run build|typecheck|lint|test` succeeded; `smith run prune -p 
 ```
 kit:deps-check │ src/extra.ts imports lodash, which package.json does not declare
 kit:deps-check │ smith: packages/kit imports 1 package(s) its package.json does not declare where installing it installs them: add them to dependencies (peerDependencies when the installing app provides them)
-kit:deps-check ✖ exited with code 1
+kit:deps-check × exited with code 1
 ```
 
 ## Creating a project
@@ -252,7 +252,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 - The pin label is `node`, probed with `node --version`. Real output with `[toolchains] node = "22"` on a machine running 24.12.0:
 
 ```
-✖ node matches the pinned version 22
+× node matches the pinned version 22
     [toolchains] pins node 22, but this machine runs 24.12.0: tasks cached on another version are misses, and results can differ from CI
     → install node 22 (`mise use node@22`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] node
 ```
@@ -361,7 +361,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 ! web can be verified
     web has no lint task, so CI never checks it
     → add the task to the project (or in smith.toml under [projects.web.tasks])
-✖ Node projects are checked for vertical slices (@monosmith/eslint-config)
+× Node projects are checked for vertical slices (@monosmith/eslint-config)
     the workspace root has no eslint.config file, so the slice rules do not run on kit, util, web
 ```
 
@@ -374,7 +374,7 @@ Dependencies:
 | `smith uninstall -p <project> <pkg>...` | `npm uninstall <pkg>... --workspace <dir>` |
 | `smith up`, `smith sync` | the plugin lists every declaration of the root and each project (`dependencies`, `devDependencies`, `optionalDependencies`, `peerDependencies`), with installed versions from `node_modules`, and rewrites plain ranges (`^1.2.3`, `~1`, `>=2`); tags, URLs, git refs, `file:`, `workspace:`, `npm:` aliases and compound ranges are reported and left alone; peers are never rewritten. Latest versions come from `npm view`, so `.npmrc` applies; it also compares Node with the newest LTS. |
 
-Real: `smith install -p web @ts-demo/kit` printed `✔ web: added @ts-demo/kit (apps/web/package.json, package-lock.json)`. `smith up --check`:
+Real: `smith install -p web @ts-demo/kit` printed `✓ web: added @ts-demo/kit (apps/web/package.json, package-lock.json)`. `smith up --check`:
 
 ```
 patch
@@ -386,7 +386,7 @@ major
   typescript                   6.0.3 → 7.0.2  (root)
 
 Tools smith pins (informational):
-  Node.js (LTS)    24 ✔ (latest 24.22.1)
+  Node.js (LTS)    24 ✓ (latest 24.22.1)
 ```
 
 Removal: `smith remove <project>` deletes the directory, drops its entries from `package-lock.json`, and runs `npm install` so `node_modules` and the lockfile forget it (npm alone would keep it, marked extraneous). Real dry run: `Would remove util (libs/util)`, `changes package-lock.json`, `would run npm install to update the lockfile`.

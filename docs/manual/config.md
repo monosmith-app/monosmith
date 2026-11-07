@@ -69,7 +69,7 @@ smith config set ci.providers github azure
 ```
 
 ```text
-✔ ci.providers = ["github", "azure"]
+✓ ci.providers = ["github", "azure"]
 ```
 
 Run [`smith ci generate`](ci-generate.md) afterwards to write the pipelines the new

@@ -167,10 +167,10 @@ describe('newRecipe', () => {
   })
 
   it('returns the words of smith when it refuses the levels or the recipe', async () => {
-    expect(await newRecipe(fake([], true, undefined, { code: 1, stdout: '', stderr: '✖ no such flag: --list-levels\n' }).deps)).toEqual({ kind: 'refused', message: 'no such flag: --list-levels' })
+    expect(await newRecipe(fake([], true, undefined, { code: 1, stdout: '', stderr: '× no such flag: --list-levels\n' }).deps)).toEqual({ kind: 'refused', message: 'no such flag: --list-levels' })
     expect(await newRecipe(fake([], true, undefined, { code: 0, stdout: 'plain text', stderr: '' }).deps)).toMatchObject({ kind: 'refused' })
     const f = fake([['python'], [], []])
-    f.deps.apply = async () => ({ code: 1, stdout: '', stderr: '✖ team.recipe.toml exists: left as it is\n' })
+    f.deps.apply = async () => ({ code: 1, stdout: '', stderr: '× team.recipe.toml exists: left as it is\n' })
     expect(await newRecipe(f.deps)).toEqual({ kind: 'refused', message: 'team.recipe.toml exists: left as it is' })
   })
 })

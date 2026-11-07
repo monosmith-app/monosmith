@@ -19,6 +19,9 @@ type Outcome struct {
 	// Enter is the folder to open the shell in, now that the command made a
 	// workspace there.
 	Enter string
+	// CommitChoice is the answer to "commit each change so it can be undone?":
+	// Yes, No or Ask; Open asks the host to show that question.
+	CommitChoice CommitChoice
 	// Note is a sentence for the status line, when the choice only closes the dialog.
 	Note string
 }
@@ -47,3 +50,18 @@ type choice struct {
 	label, hint string
 	out         Outcome
 }
+
+// CommitChoice is how the person wants smith to treat undo.
+type CommitChoice string
+
+// The answers.
+const (
+	// CommitYes makes smith commit each change, so it can be undone.
+	CommitYes CommitChoice = "yes"
+	// CommitNo leaves every change uncommitted.
+	CommitNo CommitChoice = "no"
+	// CommitAsk shows the commit box on each change.
+	CommitAsk CommitChoice = "ask"
+	// CommitOpen asks the host to show the question.
+	CommitOpen CommitChoice = "open"
+)

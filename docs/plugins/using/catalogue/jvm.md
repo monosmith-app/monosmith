@@ -153,10 +153,10 @@ Real runs (Maven only; Gradle was not installed, see Verified):
 
 ```text
 $ smith run build               # three modules
-✔ 3/3 tasks succeeded (0 from cache) in 5.883s
+✓ 3/3 tasks succeeded (0 from cache) in 5.883s
 
 $ smith run test lint           # build, slice-check, test, lint for each
-✔ 12/12 tasks succeeded (0 from cache) in 11.151s
+✓ 12/12 tasks succeeded (0 from cache) in 11.151s
 
 $ smith run start -p tool
 tool:start ▶ mvn -B -q -pl dev.jvmdemo:jvm-demo-tool exec:java
@@ -409,10 +409,10 @@ In the Maven workspace all passed. In the Kotlin plus Android workspace on this
 machine (no Gradle, no Android SDK) the real output was:
 
 ```text
-✖ Gradle is installed
+× Gradle is installed
       gradle is not on PATH
       → install Gradle 9.8.1 (https://gradle.org/install)
-✖ the Android SDK is installed
+× the Android SDK is installed
       neither ANDROID_HOME nor local.properties' sdk.dir names an SDK
       → install the Android SDK command-line tools (https://developer.android.com/tools) and set ANDROID_HOME
 ```

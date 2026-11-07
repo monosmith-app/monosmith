@@ -45,7 +45,7 @@ func TestDoctorKindHints(t *testing.T) {
 			t.Fatalf("doctor lacks %q:\n%s", want, settled)
 		}
 	}
-	if strings.Contains(settled, "✖") {
+	if strings.Contains(settled, "×") {
 		t.Fatalf("suggestions are warnings, never failures:\n%s", settled)
 	}
 	if !strings.Contains(w.smith(true, "doctor", "--json"), `"failed": 0`) {

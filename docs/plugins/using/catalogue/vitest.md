@@ -54,10 +54,10 @@ Wrote 10 file(s):
   libs/a-vit/src/greeting/greet.use-case.spec.ts
   ...
 a-vit:test │       Tests  1 passed (1)
-a-vit:typecheck ✔ 1.03s
-a-vit:test ✔ 1.054s
-a-vit:lint ✔ 9.227s
-✔ 3/3 tasks succeeded (0 from cache) in 9.234s
+a-vit:typecheck ✓ 1.03s
+a-vit:test ✓ 1.054s
+a-vit:lint ✓ 9.227s
+✓ 3/3 tasks succeeded (0 from cache) in 9.234s
 ```
 
 ## Settings

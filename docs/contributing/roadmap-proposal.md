@@ -15,8 +15,8 @@
 
 ## How the gaps were ranked
 
-Every row of the comparison where another tool is ✅ and smith is ❌ or ◐ is a gap, and
-every row where smith is not ✅ and no rival is either is a shortfall in smith itself. Each
+Every row of the comparison where another tool is ✓ and smith is × or ◐ is a gap, and
+every row where smith is not ✓ and no rival is either is a shortfall in smith itself. Each
 is ranked on three things:
 
 - **Customer value**: how often a team evaluating or running a polyglot monorepo hits it

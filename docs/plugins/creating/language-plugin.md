@@ -215,11 +215,11 @@ shop:test │ shop 0.0.0 is valid
 core:test │ core 0.0.0 is valid
 core:build │ wrote ../../dist/libs/core/widget.txt
 ...
-✔ 4/4 tasks succeeded (0 from cache) in 48ms
+✓ 4/4 tasks succeeded (0 from cache) in 48ms
 $ smith run build test
 shop:build │ wrote ../../dist/apps/shop/widget.txt
-shop:build ✔ from cache
-✔ 4/4 tasks succeeded (4 from cache, 65ms saved) in 6ms
+shop:build ✓ from cache
+✓ 4/4 tasks succeeded (4 from cache, 65ms saved) in 6ms
 $ smith explain core:build
 core:build — write widget.txt into the build directory
   command    <dir>\smith-plugin-widget.exe build ../../dist/libs/core
@@ -356,7 +356,7 @@ The example's finding, run:
 
 ```text
 $ smith doctor
-✖ core names a license
+× core names a license
     libs/core/widget.json has no license field
     → add "license": "MIT" (or your license) to libs/core/widget.json
 ...
@@ -404,28 +404,28 @@ list it; on Windows the file is `smith-plugin-widget.exe`.) Real output:
 
 ```text
 widget 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ plays a known role: scaffold
-  ✔ a language plugin discovers projects
-  ✔ a scaffold generates projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ doctor answers with no projects
-  ✔ generates an app
-  ✔ generates a lib
-  ✔ generates a package
-  ✔ discovers the generated app
-  ✔ the generated app keeps its kind
-  ✔ the generated app records its stack
-  ✔ the generated app's tasks have commands
-  ✔ writes the app's version (dry run)
-  ✔ discovers the generated lib
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ plays a known role: scaffold
+  ✓ a language plugin discovers projects
+  ✓ a scaffold generates projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ doctor answers with no projects
+  ✓ generates an app
+  ✓ generates a lib
+  ✓ generates a package
+  ✓ discovers the generated app
+  ✓ the generated app keeps its kind
+  ✓ the generated app records its stack
+  ✓ the generated app's tasks have commands
+  ✓ writes the app's version (dry run)
+  ✓ discovers the generated lib
   ...
-  ✔ writes the package's version (dry run)
-  ✔ shuts down when asked
+  ✓ writes the package's version (dry run)
+  ✓ shuts down when asked
 ```
 
 With `--generate` the plugin writes an app, a lib and a package in a temporary directory and a
@@ -464,11 +464,11 @@ See [Testing a plugin](testing-a-plugin.md) for the approach and the golden-file
 
 | You see | Cause and remedy |
 |---|---|
-| `✖ a scaffold generates projects` | the plugin declares no `Roles`, so it is also a scaffold, but has no `Generate`. Declare `Roles: [language]`, or implement `Generate` |
-| `✖ a language plugin discovers projects` | `Manifests` is empty or `Discover` is not implemented |
-| `✖ the generated lib records its stack` / `discovered with stack ""; generate must record params.stack in the manifest` | `Generate` ignores `p.Stack`, or `Discover` does not return the manifest's stack in `Project.Stack` |
-| `✖ the generated app's tasks have commands` | a task has an empty `Command` |
-| `✖ generates a lib`: `files reported but not written` | `Files` names a path that does not exist under the workspace |
+| `× a scaffold generates projects` | the plugin declares no `Roles`, so it is also a scaffold, but has no `Generate`. Declare `Roles: [language]`, or implement `Generate` |
+| `× a language plugin discovers projects` | `Manifests` is empty or `Discover` is not implemented |
+| `× the generated lib records its stack` / `discovered with stack ""; generate must record params.stack in the manifest` | `Generate` ignores `p.Stack`, or `Discover` does not return the manifest's stack in `Project.Stack` |
+| `× the generated app's tasks have commands` | a task has an empty `Command` |
+| `× generates a lib`: `files reported but not written` | `Files` names a path that does not exist under the workspace |
 | the project appears but has the wrong root on Windows | `Root` used `filepath.Dir`; use `path.Dir` on the forward-slash path smith gave you |
 | `smith doctor`: an output outside `dist/` | a build writes somewhere else; use `protocol.ProjectBuildDir` |
 | every call fails after a good start | something wrote to stdout. Log to stderr |

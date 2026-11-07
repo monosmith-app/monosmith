@@ -64,7 +64,7 @@ nothing is changed. With `--fix`, each line ends in `(removed)` when the file wa
 | 0 | No problems, or `--fix` removed all of them. |
 | 1 | Problems remain (always, without `--fix`), not in a workspace, or the store could not be read. |
 
-The report is printed in either case; the `✖` line with the remedy goes to standard error.
+The report is printed in either case; the `×` line with the remedy goes to standard error.
 
 ## Files and environment
 
@@ -94,7 +94,7 @@ smith cache verify
 Checked 5 entries and 4 blobs in ~/work/acme/.smith/cache: 2 problems.
   corrupt-blob     0e9309b05cf8…  its content hashes to 28d39a931605…, not to its name
   damaged-entry    ba51ebc972a7…  the entry for core:bundle4 names blob 0e9309b05cf8…, which is corrupt
-✖ the cache at ~/work/acme/.smith/cache has 2 problems
+× the cache at ~/work/acme/.smith/cache has 2 problems
   → run `smith cache verify --fix` to remove the damaged files; the next run computes what they held again
 ```
 
@@ -123,8 +123,8 @@ Checked 4 entries and 3 blobs in ~/work/acme/.smith/cache: no problems.
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ the cache at <dir> has 2 problems` | Run `smith cache verify --fix`. The next run of the affected tasks runs them again. |
-| `✖ could not read the cache at <dir>` | A permissions or disk error. Fix it, or start over with `smith cache clear`. |
+| `× the cache at <dir> has 2 problems` | Run `smith cache verify --fix`. The next run of the affected tasks runs them again. |
+| `× could not read the cache at <dir>` | A permissions or disk error. Fix it, or start over with `smith cache clear`. |
 
 ## Related
 

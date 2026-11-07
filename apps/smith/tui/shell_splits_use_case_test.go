@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -155,5 +156,113 @@ func TestBackslashSelectsTheNextDividerAndTheBarThePrevious(t *testing.T) {
 	l.keys("|")
 	if l.sh().split.Selected != "run.detail" {
 		t.Fatalf("the bar goes back: %q", l.sh().split.Selected)
+	}
+}
+
+// held is a lab on the doctor tab with the detail divider held by the pointer
+// and dragged 6 columns; it returns the lab and the divider's cell.
+func held(t *testing.T) (l *lab, x, y int) {
+	t.Helper()
+	l = doctorLab(t, 140, 30)
+	lay := l.sh().lay()
+	x, y = lay.Detail.X-1, lay.Main.Y+4
+	l.send(click(x, y)).send(drag(x-6, y))
+	if l.sh().split.Dragging == "" {
+		t.Fatal("the divider is held")
+	}
+	return l, x - 6, y
+}
+
+// lit is true when the divider or a junction of the screen is drawn in a
+// selected or held look: the heavy bar is on screen.
+func lit(l *lab) bool { return strings.Contains(l.view(), "┃") }
+
+func TestAReleaseAnywhereLeavesNoHighlightOnTheDivider(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		at   func(l *lab, x, y int) (int, int)
+	}{
+		{"on the divider", func(_ *lab, x, y int) (int, int) { return x, y }},
+		{"over another row", func(_ *lab, x, y int) (int, int) { return x, y + 9 }},
+		{"over the list", func(_ *lab, _, y int) (int, int) { return 3, y + 2 }},
+		{"over the footer", func(l *lab, x, _ int) (int, int) { return x, l.sh().h - 2 }},
+		{"outside the window", func(l *lab, _, _ int) (int, int) { return l.sh().w + 5, l.sh().h + 5 }},
+	} {
+		l, x, y := held(t)
+		rx, ry := tc.at(l, x, y)
+		l.send(letGo(rx, ry))
+		if sp := l.sh().split; sp.Dragging != "" || sp.Selected != "" || lit(l) {
+			t.Errorf("a release %s leaves the divider lit: %+v", tc.name, sp)
+		}
+	}
+}
+
+func TestEveryEventThatIsNotADragEndsTheHold(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		msg  tea.Msg
+	}{
+		{"a motion with no button", tea.MouseMsg{X: 30, Y: 12, Action: tea.MouseActionMotion, Button: tea.MouseButtonNone}},
+		{"a motion with the right button", tea.MouseMsg{X: 30, Y: 12, Action: tea.MouseActionMotion, Button: tea.MouseButtonRight}},
+		{"a wheel step", tea.MouseMsg{X: 30, Y: 12, Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown}},
+		{"a right click", tea.MouseMsg{X: 30, Y: 12, Action: tea.MouseActionPress, Button: tea.MouseButtonRight}},
+		{"a click elsewhere", click(3, 12)},
+		{"a key", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}},
+		{"a resize", tea.WindowSizeMsg{Width: 120, Height: 30}},
+		{"a focus loss", tea.BlurMsg{}},
+		{"a focus gain", tea.FocusMsg{}},
+	} {
+		l, _, _ := held(t)
+		saved := keepingSplits(l)
+		l.send(tc.msg)
+		if sp := l.sh().split; sp.Dragging != "" || sp.Selected != "" {
+			t.Errorf("%s leaves the divider held: %+v", tc.name, sp)
+		}
+		if len(*saved) != 1 {
+			t.Errorf("%s ends the hold, and the size is kept once: %d saves", tc.name, len(*saved))
+		}
+		if _, ok := l.sh().split.Size("doctor.detail"); !ok {
+			t.Errorf("%s drops the size the drag reached", tc.name)
+		}
+	}
+}
+
+func TestADragThenAMotionWithNoButtonDoesNotMoveTheDivider(t *testing.T) {
+	l, x, y := held(t)
+	before, _ := l.sh().split.Size("doctor.detail")
+	l.send(tea.MouseMsg{X: x - 20, Y: y, Action: tea.MouseActionMotion, Button: tea.MouseButtonNone})
+	if got, _ := l.sh().split.Size("doctor.detail"); got != before {
+		t.Fatalf("a lost release: the divider followed a pointer with no button down: %d -> %d", before, got)
+	}
+}
+
+func TestAMouseEventBelowTheMinimumSizeEndsTheHold(t *testing.T) {
+	l, x, y := held(t)
+	l.send(tea.WindowSizeMsg{Width: 20, Height: 5})
+	l.send(letGo(x, y))
+	if l.sh().split.Dragging != "" {
+		t.Fatal("a screen too small to draw still holds the divider")
+	}
+}
+
+func TestAClickThatOpensADialogEndsTheHold(t *testing.T) {
+	l, x, y := held(t)
+	sh := l.sh()
+	sh.openHelp()
+	l.m = sh
+	l.send(tea.MouseMsg{X: x, Y: y, Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft})
+	if l.sh().split.Dragging != "" {
+		t.Fatal("a dialog covers the divider and ends the hold")
+	}
+}
+
+func TestAPressOnADividerTheKeysSelectedKeepsItSelectedAfterTheRelease(t *testing.T) {
+	l := doctorLab(t, 140, 30)
+	lay := l.sh().lay()
+	x, y := lay.Detail.X-1, lay.Main.Y+4
+	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
+	l.send(click(x, y)).send(letGo(x, y))
+	if l.sh().split.Selected != "doctor.detail" || l.sh().split.Dragging != "" {
+		t.Fatalf("the keys' selection stays: %+v", l.sh().split)
 	}
 }

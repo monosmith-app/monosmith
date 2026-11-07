@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"os"
 	"slices"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -89,9 +91,9 @@ option number. Steps run in the workspace root and stop at the first that fails.
 					if f.OK && !verbose {
 						continue
 					}
-					mark := "✔"
+					mark := marks.Passed
 					if !f.OK {
-						mark = "✖"
+						mark = marks.Failed
 						if f.Warning {
 							mark = "!"
 						}
@@ -110,10 +112,10 @@ option number. Steps run in the workspace root and stop at the first that fails.
 						passed = FoldPassed(passed)
 					}
 					for _, line := range passed {
-						fmt.Fprintf(out, "✔ %s\n", line.Text)
+						fmt.Fprintf(out, marks.Passed+" %s\n", line.Text)
 					}
 				}
-				fmt.Fprintf(out, "\n%d passed, %d failed, %d warning(s)\n", report.Passed, report.Failed, report.Warnings)
+				fmt.Fprintf(out, "\n%d passed, %d failed, %s\n", report.Passed, report.Failed, words.Count("doctor.summary.warnings", report.Warnings))
 				if !fix && len(report.Fixes) > 0 {
 					fmt.Fprintln(out, fixesAvailable(report.Fixes))
 				}
@@ -186,9 +188,9 @@ func reportUntrusted(cmd *cobra.Command, asJSON bool) error {
 		return ErrUnhealthy
 	}
 	for _, f := range report.Findings {
-		mark := "✔"
+		mark := marks.Passed
 		if !f.OK {
-			mark = "✖"
+			mark = marks.Failed
 		}
 		fmt.Fprintf(out, "%s %s\n", mark, f.Located())
 		if !f.OK {
@@ -340,7 +342,7 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 	}
 	defer fresh.Close()
 	after := Run(fresh)
-	fmt.Fprintf(out, "\nafter fixing: %d passed, %d failed, %d warning(s)\n", after.Passed, after.Failed, after.Warnings)
+	fmt.Fprintf(out, "\nafter fixing: %d passed, %d failed, %s\n", after.Passed, after.Failed, words.Count("doctor.summary.warnings", after.Warnings))
 	// Every fix verifies itself: what is still wrong is said, not left to the next run.
 	for _, f := range StillFailing(after, clears) {
 		fmt.Fprintln(out, StillFailingText(f))

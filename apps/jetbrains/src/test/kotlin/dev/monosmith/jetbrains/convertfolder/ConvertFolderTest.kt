@@ -90,7 +90,7 @@ class ConvertFolderTest {
 
     @Test
     fun anOldSmithThatCannotListTheQuestionsConvertsNothing() {
-        fake.answers["convert --questions --json"] = fake.fail("✖ unknown flag: --questions")
+        fake.answers["convert --questions --json"] = fake.fail("× unknown flag: --questions")
         assertFalse(ConvertFolderUseCase.run(fake.ports) {})
         assertTrue(fake.warnings.single().contains("Update smith"))
         assertEquals(1, fake.calls.size)

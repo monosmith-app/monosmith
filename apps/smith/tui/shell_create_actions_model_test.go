@@ -9,7 +9,7 @@ import (
 
 func TestHomeOffersAddAProjectAndComposeAStackWithKeysAndMouse(t *testing.T) {
 	l := newHomeLab(t, 140, 34)
-	l.has("Where to go", "[Add a project (a)]", "[Compose a stack (A)]")
+	l.has("[Add a project (a)]", "[Compose a stack (A)]")
 	l.clickText("[Add a project")
 	l.has("What are you building?")
 

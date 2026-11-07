@@ -43,7 +43,7 @@ func TestVerifyReportListsEachProjectWithItsResultsAndTheFailuresFirst(t *testin
 	}
 	rep := reportTasks(results, VerifyTasks, outputs, theme.Unicode)
 	got := strings.Join(rep.Table.Text("passed"), "\n")
-	for _, want := range []string{"Project    Lint  Types   Tests", "atlassian  ✓     ○ none  ✗ failed", "core       ✓     ○ none  ✓ 42 passed", "⚡ cached"} {
+	for _, want := range []string{"Project    Lint  Types   Tests", "atlassian  ✓     ○ none  × failed", "core       ✓     ○ none  ✓ 42 passed", "≈ cached"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)
 		}

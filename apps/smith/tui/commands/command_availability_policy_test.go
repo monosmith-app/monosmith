@@ -198,10 +198,10 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	}
 	for view, want := range map[string]string{
 		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
-		TabDoctor:   "Enter expand · f fix · F fix all · g group · E expand/collapse all · p passed · r reload view · b build · B build all · t test · z zoom · y copy",
+		TabDoctor:   "Enter expand · f fix · F fix all · g group · E expand all · r reload view · x show failed · w show warnings · p show passed · b build · B build all · t test · z zoom · y copy",
 		TabHome:     "Enter next · r reload view · b build · B build all · t test · w changed · d doctor",
 		TabDeps:     "Space mark · s safe · a all · u update · i install · x remove · v align · o one version · r reload view · b build · B build all · t test · y copy",
-		TabRelease:  "Enter commits · p preview · n notes · x release · r reload view · b build · B build all · t test",
+		TabRelease:  "Enter commits · p preview · n notes · x release · w why · c first commit · r reload view · b build · B build all · t test",
 		TabSettings: "↑↓ move · Enter change · Tab list/sections · Esc back · t trust · f forget · u reset · r reload view",
 	} {
 		if got := line(view); !strings.HasPrefix(got, want) {
@@ -277,7 +277,7 @@ func TestTheHelpListsTheViewKeysFirstAndNeverAKeyThatDoesNothing(t *testing.T) {
 		titles = append(titles, r.Title+"="+r.Shortcut)
 	}
 	joined := strings.Join(titles, "\n")
-	for _, want := range []string{"Build=b", "Typecheck=c", "Doctor=d", "Command palette…=: / Ctrl+P", "Keyboard shortcuts=? / F1", "Quit=q", "Mouse on or off=m", "Add project…=a"} {
+	for _, want := range []string{"Build=b", "Check types=c", "Doctor (check my project)=d", "Command palette…=: / Ctrl+P", "Keyboard shortcuts=? / F1", "Quit=q", "Mouse on or off=m", "Add project…=a"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("the help lacks %q:\n%s", want, joined)
 		}
@@ -397,5 +397,17 @@ func TestTheSettingsFooterOffersOnlyTheKeysThatDoSomethingForTheRow(t *testing.T
 	got := labels(map[string]string{"settings.trust": "x", "settings.forget": "x", "settings.unset": "x"})
 	if strings.Join(got, " ") != "move change list/sections back reload view" {
 		t.Fatalf("a built-in plugin: %q", got)
+	}
+}
+
+func TestAViewKeyThatYieldsGivesItsLetterBackToTheGlobalCommandWhileItHasAReason(t *testing.T) {
+	st := State{InWorkspace: true, View: TabRelease, Reasons: map[string]string{"rel.first": "no package waits for its first release"}}
+	c, reason, ok := ByKey("c", st)
+	if !ok || reason != "" || c.ID != "run.typecheck" {
+		t.Fatalf("with a reason c is %q (%q): the typecheck should have it", c.ID, reason)
+	}
+	st.Reasons = nil
+	if c, _, ok := ByKey("c", st); !ok || c.ID != "rel.first" {
+		t.Fatalf("with no reason c is %q: the first release commit should have it", c.ID)
 	}
 }

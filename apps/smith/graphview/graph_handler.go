@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/guardedwrite"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -48,7 +49,7 @@ marks the ones that changed.`,
 			}
 			defer s.Close()
 			for _, c := range s.Graph.Cycles() {
-				fmt.Fprintln(cmd.ErrOrStderr(), "⚠ import cycle: "+strings.Join(c, " → ")+"; "+projectgraph.CycleRemedy(c))
+				fmt.Fprintln(cmd.ErrOrStderr(), marks.Warning+" import cycle: "+strings.Join(c, " → ")+"; "+projectgraph.CycleRemedy(c))
 			}
 			if diffFrom != "" {
 				prefix, _ := s.Git.Run("rev-parse", "--show-prefix")

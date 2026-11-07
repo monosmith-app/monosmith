@@ -25,7 +25,7 @@ describe('writeReport', () => {
   })
 
   it('returns the words of smith when it fails', async () => {
-    expect(await writeReport(async () => ({ code: 1, stdout: '', stderr: '✖ cannot write the file\n  → pick a folder you can write to\n' }), 'r.html'))
+    expect(await writeReport(async () => ({ code: 1, stdout: '', stderr: '× cannot write the file\n  → pick a folder you can write to\n' }), 'r.html'))
       .toEqual({ ok: false, message: 'cannot write the file Try: pick a folder you can write to' })
   })
 })

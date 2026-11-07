@@ -24,7 +24,7 @@ func TestParseChoicesKeepsTheUsableOnesAndRefusesOtherText(t *testing.T) {
 			t.Fatal("a choice with a problem cannot be offered")
 		}
 	}
-	if _, err := ParseChoices("✖ not a workspace"); err == nil || !strings.Contains(err.Error(), "did not print a list") {
+	if _, err := ParseChoices("× not a workspace"); err == nil || !strings.Contains(err.Error(), "did not print a list") {
 		t.Fatalf("plain text must be refused with a reason: %v", err)
 	}
 }

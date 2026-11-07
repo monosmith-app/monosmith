@@ -2,14 +2,14 @@ import type { SmithRun } from './smith-run.contract.ts'
 import { say } from '../words/index.ts'
 
 /**
- * Takes the `✖` out of smith's problem so it reads as a sentence, and keeps the way-outs.
+ * Takes the `×` out of smith's problem so it reads as a sentence, and keeps the way-outs.
  * @param stderr - what smith wrote to standard error
  * @returns the problem, then each fix as `Try: ...`; empty when smith said nothing
  */
 export function sayProblem (stderr: string): string {
   const lines = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   const [first = '', ...rest] = lines
-  const problem = first.replace(/^✖\s*/, '')
+  const problem = first.replace(/^×\s*/, '')
 
   return [problem, ...rest.map((line) => line.replace(/^→\s*/, () => say('vscode.smith-run.try')))].join(' ')
 }

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // Status is a task's outcome.
@@ -82,10 +84,10 @@ func (s Summary) String() string {
 func mark(s Status) string {
 	switch s {
 	case Failed:
-		return "✖"
+		return marks.Failed
 	case Skipped:
-		return "↷"
+		return marks.Skipped
 	default:
-		return "✔"
+		return marks.Passed
 	}
 }

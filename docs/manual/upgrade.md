@@ -109,7 +109,7 @@ smith upgrade
 ```
 
 ```text
-✔ ci.devcontainer = true
+✓ ci.devcontainer = true
 upgraded: .devcontainer/devcontainer.json
 ```
 

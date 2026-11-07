@@ -209,7 +209,7 @@ The tool versions in `requirements-dev.txt` and the Python version `3.12` are co
 - `[toolchains] python = "..."` is compared with the version of the venv's interpreter, or without a venv the first system interpreter that answers `--version` (the probe order is in the table above). Real output, on a machine without a venv, with a pin of `3.13` on a machine where `py -3` is 3.12.0:
 
 ```
-✖ python matches the pinned version 3.13
+× python matches the pinned version 3.13
     [toolchains] pins python 3.13, but this machine runs 3.12.0: tasks cached on another version are misses, and results can differ from CI
     → install python 3.13 (`mise use python@3.13`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] python
 ```
@@ -301,7 +301,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use
 | `<dir> declares the distributions it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix | add the distribution to `dependencies` in `<dir>/pyproject.toml` |
 | `the venv's Python is 3.12, as in CI` | a warning when the venv's Python is newer than `3.12` (or has none); a failure when it is older | delete `.venv`, then `smith ci setup` |
 
-All three passed in the test run (`17 passed, 0 failed, 0 warning(s)`).
+All three passed in the test run (`17 passed, 0 failed, 0 warnings`).
 
 Dependencies:
 
@@ -317,9 +317,9 @@ Real output:
 
 ```
 $ smith install -p sdk "requests>=2.0"
-✔ sdk: added requests>=2.0 (packages/sdk/pyproject.toml)
+✓ sdk: added requests>=2.0 (packages/sdk/pyproject.toml)
 $ smith install -p sdk -D pytest-cov
-✔ sdk: added pytest-cov (packages/sdk/pyproject.toml)
+✓ sdk: added pytest-cov (packages/sdk/pyproject.toml)
 $ smith up --check
 minor
   requests                     2.0 → 2.34.2  sdk
@@ -327,7 +327,7 @@ minor
 Tools smith pins (informational):
   Python           3.12 → 3.15 available
 $ smith uninstall -p sdk requests
-✔ sdk: removed requests (packages/sdk/pyproject.toml)
+✓ sdk: removed requests (packages/sdk/pyproject.toml)
   left installed in .venv, which every project shares; recreate it to drop requests
 ```
 

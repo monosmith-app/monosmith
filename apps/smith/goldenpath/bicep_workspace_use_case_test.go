@@ -42,7 +42,7 @@ output sharedId string = shared.outputs.storageId`, 1))
 		t.Fatal("a module from a lib is a graph edge")
 	}
 	out := w.smith(true, "run", "lint", "build")
-	for _, want := range []string{"infra:lint ✔", "storage:lint ✔", "infra:params ✔", "infra:build ✔", "storage:build ✔"} {
+	for _, want := range []string{"infra:lint ✓", "storage:lint ✓", "infra:params ✓", "infra:build ✓", "storage:build ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -61,7 +61,7 @@ output sharedId string = shared.outputs.storageId`, 1))
 		t.Fatalf("lint fails on an unused parameter:\n%s", out)
 	}
 	w.write("libs/storage/main.bicep", strings.Replace(w.read("libs/storage/main.bicep"), "\nparam unused string\n", "", 1))
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ the Bicep CLI is installed") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ the Bicep CLI is installed") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "az bicep install") {

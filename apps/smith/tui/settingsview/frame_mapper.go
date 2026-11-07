@@ -136,7 +136,7 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 	}
 	copy(rows[1:1+listH], pane.Scrollbar(th, rows[1:1+listH], w, top, len(all)))
 	if detailH > 0 {
-		rows[1+listH] = th.Faint(" " + strings.Repeat("─", max(w-2, 0)))
+		rows[1+listH] = th.Faint(strings.Repeat("─", w))
 		var detail []string
 		if cursor < len(list) {
 			detail = m.detail(th, list[cursor], w-2)

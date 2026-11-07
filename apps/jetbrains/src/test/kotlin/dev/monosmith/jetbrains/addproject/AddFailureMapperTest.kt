@@ -12,8 +12,8 @@ class AddFailureMapperTest {
         Wrote 12 files
         smith: the new project desk was written but fails smith doctor
         The new project desk fails smith doctor:
-          ✖ pkg-config does not find webkit2gtk-4.1
-          ✖ the tauri CLI is missing
+          × pkg-config does not find webkit2gtk-4.1
+          × the tauri CLI is missing
         Not committed: the checks fail.
         """.trimIndent()
 

@@ -3,8 +3,8 @@ package tui
 import (
 	"strings"
 
-	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -60,19 +60,24 @@ func (s Shell) tooSmall() string {
 // the content, the footer and the status bar.
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
-	rows := make([]string, 0, h)
+	rows := s.overlays(s.paintSelection(s.baseRows()))
+	for i := range rows {
+		rows[i] = pane.Fit(rows[i], w)
+	}
+	return rows[:min(len(rows), h)]
+}
+
+// baseRows are the screen rows before the selection and the overlays are drawn
+// over them: the text a drag selects.
+func (s Shell) baseRows() []string {
+	rows := make([]string, 0, s.h)
 	strip := s.tabStrip()
 	rows = append(rows, s.headerRow())
 	rows = append(rows, strip.Lines...)
 	rows = append(rows, s.body()...)
 	rows = append(rows, s.footerRow())
-	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
-	rows = s.paintSplits(rows)
-	rows = s.overlays(rows)
-	for i := range rows {
-		rows[i] = pane.Fit(rows[i], w)
-	}
-	return rows[:min(len(rows), h)]
+	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), s.w))
+	return s.paintSplits(rows)
 }
 
 // statusInfo is what the status bar shows: the exact command running or last
@@ -104,27 +109,48 @@ func (s Shell) statusInfo() statusbar.Info {
 }
 
 // body draws the list, or the detail that took its place, and, on a wide
-// screen, the detail of the selection in the same frame: one border all round,
-// the list's right border dividing the two.
+// screen, the detail of the selection beside it. The main screen has no box: one
+// rule under the tabs across the whole width, a one-cell margin at each side,
+// and the divisions between the panels (see the layout's Frame).
 func (s Shell) body() []string {
 	l := s.lay()
-	page := s.page()
-	in := l.Main.Inner()
+	in, din := l.Main.Inner(), l.DetailInner()
 	reserve := s.toastRows(in.H)
-	main := pane.Frame(s.th, page.Title(), page.View(in.W, in.H-reserve).lines, l.Main.W, l.Main.H, false)
-	edge := func(r string) string { return s.th.Border(r, false) }
-	if !l.HasDetail() {
-		return main
+	spots := s.dividers()
+	list := pane.Block(s.page().View(in.W, in.H-reserve).lines, in.W, in.H)
+	var side []string
+	if l.HasDetail() {
+		side = pane.Block(s.detailContent(din.W, din.H-reserve).lines, din.W, din.H)
 	}
-	din := l.DetailInner()
-	side := pane.Block(s.detailContent(din.W, din.H-reserve).lines, din.W, din.H)
-	cut := func(line string) string { return ansi.Truncate(line, l.Main.W-1, "") + "\x1b[m" }
-	out := make([]string, 0, len(main))
-	out = append(out, cut(main[0])+edge("┬"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╮"))
-	for y := 1; y < len(main)-1; y++ {
-		out = append(out, main[y]+side[y-1]+edge("│"))
+	rows := make([]string, 0, l.Main.H)
+	rows = append(rows, s.th.Border(strings.Repeat("─", l.Main.W+l.Detail.W), false))
+	for i := range in.H {
+		y := in.Y + i
+		row := s.marginCell(spots, l.Main.X, y) + list[i]
+		if l.HasDetail() {
+			row += s.th.Border("│", false) + side[i] + s.marginCell(spots, din.X+din.W, y)
+		} else {
+			row += s.marginCell(spots, in.X+in.W, y)
+		}
+		rows = append(rows, row)
 	}
-	return append(out, cut(main[len(main)-1])+edge("┴"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╯"))
+	for _, j := range splitter.Junctions(spots, l.Main.Y) {
+		if at := j.Y - l.Main.Y; at >= 0 && at < len(rows) {
+			rows[at] = pane.Splice(rows[at], j.X, 1, s.th.Border(j.Glyph, false))
+		}
+	}
+	return rows
+}
+
+// marginCell is the cell of a margin at (x, y): blank, or part of the rule when a
+// horizontal division runs through it to the edge of the screen.
+func (s Shell) marginCell(spots []splitter.Spot, x, y int) string {
+	for _, p := range spots {
+		if p.Axis == splitter.Row && p.Hit.Contains(x, y) {
+			return s.th.Border("─", false)
+		}
+	}
+	return " "
 }
 
 // toastRows is how many rows at the foot of the content stay empty while a
@@ -138,20 +164,22 @@ func (s Shell) toastRows(innerH int) int {
 	return box
 }
 
-// modalOpen is true while a box that takes the keyboard is drawn over the screen.
-func (s Shell) modalOpen() bool {
-	return s.palOpen || s.help != nil || s.pkg != nil || s.relpick != nil || s.confirm != nil || s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil
-}
-
 // overlays composes the palette, dialogs and toast over the rendered
 // screen by cell, so nothing underneath is pushed down. Behind a modal the
-// content area is emptied (its frame stays), so no half word of the view shows
-// at the modal's edges; the toast sits inside the content area, never on its
-// frame.
+// content area is emptied (its rule and dividers stay) so no half word of the
+// view shows at the modal's edges, and the whole screen is drawn dimmed so
+// nothing behind it looks interactive. The toast sits inside the content area.
 func (s Shell) overlays(rows []string) []string {
 	l := s.lay()
 	if s.modalOpen() {
-		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y, l.Main.X, l.Main.X+l.Main.W-1, l.Detail.X+l.Detail.W-1)
+		keep := []int{}
+		if l.HasDetail() {
+			keep = append(keep, l.Detail.X-1)
+		}
+		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y, keep...)
+		for i := range rows {
+			rows[i] = s.th.Dim(rows[i])
+		}
 	}
 	if s.palOpen {
 		box := s.paletteBox()
@@ -198,9 +226,9 @@ func (s Shell) overlays(rows []string) []string {
 	// The result dialog says the same in its own words: a toast over its bottom
 	// edge would cut the frame.
 	if lines := s.toast.Lines(s.th, s.w-4); lines != nil && s.result == nil {
-		// The frame's bottom edge is the row above the footer: the toast sits
-		// on the rows above it, one cell clear of the right edge.
-		y := max(l.Footer.Y-1-len(lines), l.Main.Y+1)
+		// The content ends on the row above the footer: the toast sits on its
+		// last rows, one cell clear of the right edge.
+		y := max(l.Footer.Y-len(lines), l.Main.Y+1)
 		rows = pane.Overlay(rows, lines, max(s.w-2-pane.Width(lines[0]), 1), y)
 	}
 	return rows

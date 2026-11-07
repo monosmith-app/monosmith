@@ -52,18 +52,19 @@ func (s Shell) detailRect() layout.Rect {
 }
 
 // detailContent is the detail drawn in w by h cells, scrolled to the user's
-// place, with the action each of its lines stands for. The action under the
-// pointer is highlighted, and, in the opened detail, the one the cursor is on.
+// place, with the action each of its lines stands for. The button under the
+// pointer shows its hover look, and its active look while the mouse holds it. In
+// the opened detail the action the keyboard cursor is on has the cursor mark.
 func (s Shell) detailContent(w, h int) content {
 	panel := s.detailPanel()
+	panel.Pressed = s.pressed
+	if a := panel.Actions; s.detailFull() && s.detailCursor < len(a) {
+		panel.Cursor = a[s.detailCursor].ID
+	}
 	all, rows := panel.View(s.th, w, "")
 	_, hits := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
 	hover := ""
-	if r := s.detailRect(); s.detailFull() {
-		if a := panel.Actions; s.detailCursor < len(a) {
-			hover = a[s.detailCursor].ID
-		}
-	} else if r.Contains(s.mouseX, s.mouseY) {
+	if r := s.detailRect(); r.Contains(s.mouseX, s.mouseY) {
 		hover = hits[s.mouseY-r.Y]
 	}
 	all, _ = panel.View(s.th, w, hover)
@@ -91,7 +92,7 @@ func (s *Shell) pageDetail(dir int) {
 // detailIdentity changes when the selection the detail tells about changes,
 // so the scroll and the expansion start over for the next one.
 func (s Shell) detailIdentity() string {
-	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, "|", s.runSel)
+	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel)
 }
 
 // forgetDetailPlace starts the detail at its top, folded, when what it shows changed.
@@ -118,6 +119,8 @@ func (s *Shell) zoomDetail() {
 func (s Shell) detailPanel() detail.Panel {
 	p := s.selectionPanel()
 	p.Expanded = s.detailAll
+	p.ListVisible = !s.detailFull() && s.lay().HasDetail()
+	p.Actions = s.withKeys(p.Actions)
 	return p
 }
 
@@ -145,15 +148,19 @@ func (s Shell) runPanel() detail.Panel {
 		return s.workspacePanel()
 	}
 	if t := s.run.Task(s.runSel); t != nil && s.runSel != "" {
-		rows := []detail.Row{{Label: "state", Value: s.statusIcon(t.Status) + " " + t.Status.String()}}
-		if d := s.run.Elapsed(t, s.now()); d > 0 {
-			rows = append(rows, detail.Row{Label: "time", Value: shortDuration(d)})
+		// The list row of the task draws its state, its time and its reason when
+		// they fit: beside the list the detail leaves those out.
+		now := s.now()
+		inState, inTime, inReason := s.taskRowShows(t, s.mainInner().W, now)
+		rows := []detail.Row{{Label: "state", Value: s.statusIcon(t.Status) + " " + t.Status.String(), ShownByList: inState}}
+		if d := s.run.Elapsed(t, now); d > 0 {
+			rows = append(rows, detail.Row{Label: "time", Value: shortDuration(d), ShownByList: inTime})
 		}
 		if t.Command != "" {
 			rows = append(rows, detail.Row{Label: "command", Value: t.Command})
 		}
 		if t.Reason != "" {
-			rows = append(rows, detail.Row{Label: "reason", Value: t.Reason})
+			rows = append(rows, detail.Row{Label: "reason", Value: t.Reason, ShownByList: inReason})
 		}
 		rows = append(rows, detail.Row{Label: "log", Value: words.Say("tui.detail.lines", "len", len(t.Log))})
 		return detail.Panel{
@@ -161,12 +168,9 @@ func (s Shell) runPanel() detail.Panel {
 			Actions:  s.runActions(),
 		}
 	}
-	counts := s.run.Counts()
-	rows := []detail.Row{{Label: "command", Value: s.run.CommandLine()}}
-	if counts.Total > 0 {
-		rows = append(rows, detail.Row{Label: "tasks", Value: s.countsText(counts)})
-	}
-	rows = append(rows, detail.Row{Label: "output", Value: words.Say("tui.detail.lines", "len", len(s.run.Lines))})
+	// The command and the task counts are in the run's own lines beside this, so
+	// the detail does not say them again.
+	rows := []detail.Row{{Label: "output", Value: words.Say("tui.detail.lines", "len", len(s.run.Lines))}}
 	return detail.Panel{
 		Sections: []detail.Section{{Heading: words.Say("tui.detail.this_run"), Rows: rows}},
 		Actions:  s.runActions(),
@@ -179,9 +183,12 @@ func (s Shell) projectPanel() detail.Panel {
 	if !ok {
 		return s.workspacePanel()
 	}
-	rows := []detail.Row{{Label: "kind", Value: p.Kind}, {Label: "language", Value: p.Language}}
+	// The table beside the detail has the Kind, Language and Stack columns when
+	// it has the room for them.
+	cols := s.projectColumns(s.mainInner().W)
+	rows := []detail.Row{{Label: "kind", Value: p.Kind, ShownByList: cols.Kind}, {Label: "language", Value: p.Language, ShownByList: cols.Lang}}
 	if p.Stack != "" {
-		rows = append(rows, detail.Row{Label: "stack", Value: stackText(p.Stack)})
+		rows = append(rows, detail.Row{Label: "stack", Value: stackText(p.Stack), ShownByList: cols.Stack})
 	}
 	rows = append(rows, detail.Row{Label: "root", Value: p.Root})
 	if p.Version != "" {
@@ -199,8 +206,9 @@ func (s Shell) projectPanel() detail.Panel {
 		secs = append(secs, sec)
 	}
 	var actions []detail.Action
+	keys := s.taskKeys(p)
 	for _, t := range p.Tasks {
-		a := s.taskAction(t.Name)
+		a := s.taskAction(t.Name, keys[t.Name])
 		a.Hint = taskHint(t)
 		actions = append(actions, a)
 	}
@@ -287,13 +295,13 @@ func needsText(deps []string) string {
 
 // taskAction is the action that runs a task on the selected project; the
 // common four are the commands with their keys.
-func (s Shell) taskAction(task string) detail.Action {
+func (s Shell) taskAction(task, key string) detail.Action {
 	for _, id := range []string{"run.build", "run.test", "run.lint", "run.typecheck"} {
 		if c, _ := commands.ByID(id); c.Task == task {
 			return s.action(id, words.Say("tui.detail.run", "task", task))
 		}
 	}
-	return detail.Action{ID: "x:run:" + task, Label: words.Say("tui.detail.run", "task", task), Disabled: s.running()}
+	return detail.Action{ID: "x:run:" + task, Label: words.Say("tui.detail.run", "task", task), Shortcut: key, Disabled: s.running()}
 }
 
 // doctorPanel tells the selected check in full: the list beside it has one
@@ -303,27 +311,17 @@ func (s Shell) doctorPanel() detail.Panel {
 	if !ok {
 		return s.workspacePanel()
 	}
-	state := words.Say("tui.detail.passed", "passed", s.th.Success(s.th.Icons.Passed))
-	switch {
-	case !f.OK && f.Warning:
-		state = words.Say("tui.detail.warning", "warning", s.th.Warning(s.th.Icons.Warning))
-	case !f.OK:
-		state = words.Say("tui.detail.failed", "failed", s.th.Failure(s.th.Icons.Failed))
-	}
 	planned, hasFix := s.doctor.FixFor(f)
-	// Four contexts, in this order: the state, the actions, what is wrong,
-	// how to fix it. Each fact is said once. The problem folds, so it cannot
+	// Three contexts, in this order: the actions, what is wrong, how to fix it.
+	// The state is the icon of the highlighted row. Each fact is said once. The problem folds, so it cannot
 	// push the remedy off the screen.
-	secs := []detail.Section{{Heading: f.Check, Items: []string{state}, OneLine: true}}
+	secs := []detail.Section{{Heading: f.Check}}
 	var actions []detail.Action
 	if hasFix {
-		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Shortcut: "f", Hint: planned.Description, Button: true, Disabled: s.running()})
+		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Hint: planned.Description, Disabled: s.running()})
 	}
-	actions = append(actions, detail.Action{ID: "x:reload", Label: words.Say("tui.detail.check_again"), Shortcut: commands.ShortcutOf("view.reload"), Hint: words.Say("tui.detail.run_every_check_again_nothing_changes"), Button: true})
+	actions = append(actions, detail.Action{ID: "x:reload", Label: words.Say("tui.detail.check_again"), Shortcut: commands.ShortcutOf("view.reload"), Hint: words.Say("tui.detail.run_every_check_again_nothing_changes")})
 	var after []detail.Section
-	if problems := doctorview.SplitProblem(f.Detail); len(problems) > 0 {
-		after = append(after, detail.Section{Heading: words.Say("tui.detail.what_is_wrong"), Items: problems, Bullets: len(problems) > 1, Collapse: 3})
-	}
 	how := detail.Section{Heading: words.Say("tui.detail.how_to_fix")}
 	if f.Remedy != "" {
 		how.Items = append(how.Items, f.Remedy)
@@ -335,6 +333,16 @@ func (s Shell) doctorPanel() detail.Panel {
 		how.Tail = []string{words.Say("tui.detail.or_in_a_terminal_smith_doctor", "check", f.Check)}
 	case commandIn(f.Remedy) != "":
 		how.Tail = []string{words.Say("tui.detail.in_a_terminal", "commandIn", commandIn(f.Remedy))}
+	}
+	// What is wrong is the cause, one line each. What the tool printed about its
+	// own build goes behind a fold of its own, and no text or path shows twice.
+	problems, notes, items := doctorview.TellOnce(f.Check, f.Detail, how.Items)
+	how.Items = items
+	if len(problems) > 0 {
+		after = append(after, detail.Section{Heading: words.Say("tui.detail.what_is_wrong"), Items: problems, Bullets: len(problems) > 1, Collapse: 3})
+	}
+	if len(notes) > 0 {
+		after = append(after, detail.Section{Heading: words.Say("tui.detail.build_details"), Items: notes, Fold: true})
 	}
 	if len(how.Items)+len(how.Tail) > 0 {
 		how.Collapse = 8
@@ -404,7 +412,7 @@ func (s Shell) workspacePanel() detail.Panel {
 // action is a detail action for a command, with its shortcut and availability.
 func (s Shell) action(id, label string) detail.Action {
 	c, _ := commands.ByID(id)
-	return detail.Action{ID: id, Label: label, Shortcut: c.Shortcut, Disabled: c.Unavailable(s.state()) != ""}
+	return detail.Action{ID: id, Label: label, Shortcut: s.shortcutHere(id), Disabled: c.Unavailable(s.state()) != ""}
 }
 
 func (s Shell) detailActions() []detail.Action { return s.detailPanel().Actions }

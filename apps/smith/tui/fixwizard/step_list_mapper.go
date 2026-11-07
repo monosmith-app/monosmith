@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/libs/words/words"
@@ -32,7 +33,7 @@ func stepListRows(th theme.Theme, steps []protocol.FixStep, current, inner int) 
 		}
 		mark := th.Muted("·")
 		if n < current {
-			mark = th.Muted("✓")
+			mark = th.Muted(marks.Passed)
 		}
 		rows = append(rows, pane.Wrap(words.Say("fixwizard.steps.done", "mark", mark, "number", n, "description", s.Description), inner, 2)...)
 	}

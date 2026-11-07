@@ -58,7 +58,7 @@ Usage: `smith up [packages...] [flags]`
 Behaviour:
 
 - A run that changes no file (a report such as `smith up` with no package named and `--check`, or with nothing to update) never prints the "Not committed" line or advice about `--commit`: there is nothing to commit. Changes that were already in the work tree before the run are not counted as its own.
-- With names, those packages are updated without a prompt. `--yes` takes every update.
+- With names, those packages are updated without a prompt. `--yes` takes every update. The report then lists only the named packages, grouped by level, with a count (`3 updates: 1 patch, 2 minor`), and leaves out the pinned tools.
 - Without a terminal, or with `--check`, `up` only reports; `--json` also never writes.
 - With `--align` nothing is updated: the named packages (or, with none, every one) that
   projects declare at different versions are brought to one, leaving those on the
@@ -95,9 +95,9 @@ major
   typescript                   6.0.3 → 7.0.2  (root)
 
 Tools smith pins (informational):
-  Go               1.27 ✔ (latest 1.27.3)
-  golangci-lint    2.15.0 ✔ (latest 2.15.0)
-  Node.js (LTS)    24 ✔ (latest 24.22.1)
+  Go               1.27 ✓ (latest 1.27.3)
+  golangci-lint    2.15.0 ✓ (latest 2.15.0)
+  Node.js (LTS)    24 ✓ (latest 24.22.1)
   Python           3.12 → 3.15 available
 
 Report only: pick with smith up in a terminal, name packages, or pass --yes.

@@ -63,7 +63,7 @@ class ProjectActionsUseCaseTest {
 
     @Test
     fun aWorkspaceItCannotReadIsAWarningAndNothingElseRuns() {
-        fake.answers["projects --json"] = fake.fail("✖ smith.toml:3:9 is not valid\n")
+        fake.answers["projects --json"] = fake.fail("× smith.toml:3:9 is not valid\n")
         assertFalse(ProjectActionsUseCase.runRemove(fake.ports, {}, "web"))
         assertTrue(fake.warnings.single().startsWith("Nothing was changed."))
         assertEquals(1, fake.calls.size)
@@ -84,7 +84,7 @@ class ProjectActionsUseCaseTest {
     @Test
     fun aFailedKindChangeIsAWarning() {
         fake.ones.add("package")
-        fake.answers["kind web package --dry-run"] = fake.fail("✖ web has no version\n→ give it one\n")
+        fake.answers["kind web package --dry-run"] = fake.fail("× web has no version\n→ give it one\n")
         assertFalse(ProjectActionsUseCase.runChangeKind(fake.ports, {}, "web"))
         assertEquals("Nothing was changed. web has no version Try: give it one", fake.warnings.single())
     }

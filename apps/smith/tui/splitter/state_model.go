@@ -137,11 +137,16 @@ func (s State) Move(spots []Spot, dir, step int) (State, Spot, bool) {
 	return s.set(p, p.Size+p.Sign*dir*step), p, true
 }
 
-// Press grabs the divider under (x, y), if any, and selects it.
+// Press grabs the divider under (x, y), if any. The hold is the pointer's own
+// look: a divider the keys selected stays selected, but a press never leaves a
+// selection behind, so the highlight ends with the release.
 func (s State) Press(spots []Spot, x, y int) (State, bool) {
 	for _, p := range spots {
 		if p.Hit.Contains(x, y) {
-			s.Dragging, s.Selected = p.ID, p.ID
+			if s.Selected != p.ID {
+				s.Selected = ""
+			}
+			s.Dragging = p.ID
 			return s, true
 		}
 	}

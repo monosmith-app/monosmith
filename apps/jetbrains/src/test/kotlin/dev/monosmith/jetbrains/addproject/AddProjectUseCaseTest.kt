@@ -147,7 +147,7 @@ class AddProjectUseCaseTest {
         val environments = "--environments lcl,prd --default-environment prd --environment-output workspace --env-files commit"
         fake.answers["add app web --lang node --with react,jest $environments --yes"] =
             fake.fail(
-                "Wrote 12 files\nsmith: the new project web was written but fails smith doctor\nThe new project web fails smith doctor:\n  ✖ node is old\n",
+                "Wrote 12 files\nsmith: the new project web was written but fails smith doctor\nThe new project web fails smith doctor:\n  × node is old\n",
             )
         assertFalse(AddProjectUseCase.run(fake.ports, emptyList(), follow) {})
         assertTrue(fake.warnings.single().startsWith("The project web was created (12 files)"))
@@ -170,7 +170,7 @@ class AddProjectUseCaseTest {
 
     @Test
     fun anOldSmithThatCannotListItsChoicesAddsNothing() {
-        fake.answers["choices --json"] = fake.fail("✖ unknown command")
+        fake.answers["choices --json"] = fake.fail("× unknown command")
         assertFalse(AddProjectUseCase.run(fake.ports, emptyList(), follow) {})
         assertTrue(fake.warnings.single().startsWith("Nothing was added."))
     }

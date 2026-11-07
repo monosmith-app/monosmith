@@ -1,17 +1,11 @@
 package dashboard
 
-import (
-	"strings"
-	"testing"
+import "testing"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-)
-
-func TestTheProjectsRowNamesTheMostUsedLanguagesInWords(t *testing.T) {
+func TestTheWorkspaceLineNamesTheMostUsedLanguagesInWords(t *testing.T) {
 	langs := []string{"node", "node", "node", "python", "jvm", "jvm", "go", "rust", "dotnet"}
 	got := projectsText(Facts{Projects: len(langs), Languages: langs})
-	want := "9 projects: 3 TypeScript / JavaScript · 2 Java / Kotlin · 1 Python · 1 Go · 2 more"
+	want := "9 projects (3 TypeScript / JavaScript, 2 Java / Kotlin, 1 Python, 3 more)"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -20,17 +14,13 @@ func TestTheProjectsRowNamesTheMostUsedLanguagesInWords(t *testing.T) {
 	}
 }
 
-func TestHomeFillsItsSpaceWithProjectsAndWhereToGo(t *testing.T) {
-	f := Facts{ProjectsLoaded: true, Checked: true, Projects: 2, Languages: []string{"go", "go"}}
-	lines, _, _ := Lines(theme.Default(), f, 100)
-	var plain []string
-	for _, l := range lines {
-		plain = append(plain, pane.Strip(l))
+func TestTheWorkspaceLineStartsWithTheNameAndTheBranch(t *testing.T) {
+	f := Facts{Workspace: "acme", Branch: "main", Projects: 2, Languages: []string{"go", "go"}}
+	if got, want := workspaceText(f), "acme · main · 2 projects (2 Go)"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
 	}
-	all := strings.Join(plain, "\n")
-	for _, want := range []string{"2 projects: 2 Go", "Where to go", "Doctor", "Release"} {
-		if !strings.Contains(all, want) {
-			t.Fatalf("Home lacks %q:\n%s", want, all)
-		}
+	f.Branch = ""
+	if got, want := workspaceText(f), "acme · 2 projects (2 Go)"; got != want {
+		t.Fatalf("no branch: got %q, want %q", got, want)
 	}
 }

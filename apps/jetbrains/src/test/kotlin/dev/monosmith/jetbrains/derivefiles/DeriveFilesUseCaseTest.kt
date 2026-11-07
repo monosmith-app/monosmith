@@ -34,7 +34,7 @@ class DeriveFilesUseCaseTest {
 
     @Test
     fun aFailedCheckThatListsNothingIsAWarning() {
-        fake.answers["derive --check"] = fake.fail("✖ smith.lock is not valid\n")
+        fake.answers["derive --check"] = fake.fail("× smith.lock is not valid\n")
         assertFalse(derive())
         assertEquals("smith.lock is not valid", fake.warnings.single())
     }

@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 	"github.com/monosmith-app/monosmith/libs/words/words"
@@ -58,7 +59,7 @@ func foundText(f adoptflow.Found) string {
 	}
 	for _, x := range f.Blockers {
 		// Missing packages are a step smith takes itself, not a dead end.
-		mark := "✖"
+		mark := marks.Failed
 		if f.NeedsInstall {
 			mark = "●"
 		}

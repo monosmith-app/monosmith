@@ -101,7 +101,7 @@
         "e": "R"
       },
       "t": "PPYYNNYYUPNNNY",
-      "n": "Nx: named in its README, no Go page found; Turborepo: experimental. A tool whose documented scope is another single language is marked ❌."
+      "n": "Nx: named in its README, no Go page found; Turborepo: experimental. A tool whose documented scope is another single language is marked ×."
     },
     {
       "id": "lang-py",
@@ -380,7 +380,7 @@
         "e": "R"
       },
       "t": "YPNPPPPNPNPYYN",
-      "n": "◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); ❌ means per-target BUILD files or Earthfiles."
+      "n": "◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); × means per-target BUILD files or Earthfiles."
     },
     {
       "id": "find-scaffold",
@@ -436,7 +436,7 @@
         "e": "T"
       },
       "t": "PNUYNNNNNNNNNP",
-      "n": "Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages \"Nx does not detect dependencies from source code imports\". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies."
+      "n": "Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages \"Nx does not detect dependencies from source code imports\". Please: the puku tool diagnoses missing imports. ×: the tool's documented mechanism is declared dependencies."
     },
     {
       "id": "find-schema",
@@ -701,7 +701,7 @@
         "p": "deliberate non-goal (execution-and-cache.md, section 9)"
       },
       "t": "PUYYPPPYUPPUUP",
-      "n": "◐: through Nx Cloud (Nx, Lerna), experimental cobuilds (Rush), unfinished action distribution (moon), remote runners (Earthly), BuildXL (Lage), experimental (Please). Workspaces: npm ❌, pnpm and Yarn ❔."
+      "n": "◐: through Nx Cloud (Nx, Lerna), experimental cobuilds (Rush), unfinished action distribution (moon), remote runners (Earthly), BuildXL (Lage), experimental (Please). Workspaces: npm ×, pnpm and Yarn ❔."
     },
     {
       "id": "cache-hermetic",

@@ -9,13 +9,13 @@ import (
 func TestATableAlignsColumnsWithSpacesAndRightAlignsNumbers(t *testing.T) {
 	table := resultTable{
 		Headers: []string{"Project", "Result", "Time"}, Right: []bool{false, false, true},
-		Rows: []tableRow{{Cells: []string{"core", "✓ passed", "12s"}}, {Cells: []string{"atlassian", "✗ failed", "3m 12s"}, Bad: true}},
+		Rows: []tableRow{{Cells: []string{"core", "✓ passed", "12s"}}, {Cells: []string{"atlassian", "× failed", "3m 12s"}, Bad: true}},
 	}
-	want := "Project    Result      Time\ncore       ✓ passed     12s\natlassian  ✗ failed  3m 12s"
+	want := "Project    Result      Time\ncore       ✓ passed     12s\natlassian  × failed  3m 12s"
 	if got := strings.Join(table.Text("passed"), "\n"); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
 	}
-	if md := table.Markdown(); md[1] != "| --- | --- | ---: |" || md[3] != "| atlassian | ✗ failed | 3m 12s |" {
+	if md := table.Markdown(); md[1] != "| --- | --- | ---: |" || md[3] != "| atlassian | × failed | 3m 12s |" {
 		t.Errorf("markdown: %v", md)
 	}
 }

@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 	case "lines":
 		fmt.Println("kit:build ▶ go build")
 		fmt.Fprintln(os.Stderr, "kit:build │ from stderr")
-		fmt.Println("kit:build ✔ 1ms")
+		fmt.Println("kit:build ✓ 1ms")
 		if len(os.Args) > 0 && os.Args[len(os.Args)-1] == "fail" {
 			os.Exit(3)
 		}
@@ -57,7 +57,7 @@ func TestOutputFromBothStreamsArrivesAsLinesAndTheExitCodeIsKept(t *testing.T) {
 		t.Fatalf("exit %+v", exit)
 	}
 	text := strings.Join(lines, "\n")
-	for _, want := range []string{"kit:build ▶ go build", "kit:build │ from stderr", "kit:build ✔ 1ms"} {
+	for _, want := range []string{"kit:build ▶ go build", "kit:build │ from stderr", "kit:build ✓ 1ms"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in:\n%s", want, text)
 		}

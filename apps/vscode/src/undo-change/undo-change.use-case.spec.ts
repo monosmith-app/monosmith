@@ -41,7 +41,7 @@ describe('undoLastChange', () => {
   })
 
   it('tells how to turn it on when smith has no operation to undo', async () => {
-    const f = fake([{ code: 1, stdout: '', stderr: '✖ smith has no operation to undo here\n  → set commit_operations = true under [workspace] in smith.toml, then run a command such as smith add\n' }], true)
+    const f = fake([{ code: 1, stdout: '', stderr: '× smith has no operation to undo here\n  → set commit_operations = true under [workspace] in smith.toml, then run a command such as smith add\n' }], true)
     expect(await undoLastChange(f.deps)).toEqual({
       kind:    'refused',
       message: 'smith has no operation to undo here Try: set commit_operations = true under [workspace] in smith.toml, then run a command such as smith add',
@@ -50,7 +50,7 @@ describe('undoLastChange', () => {
   })
 
   it('returns the refusal of smith when the revert fails', async () => {
-    const f = fake([PLAN, { code: 1, stdout: '', stderr: '✖ a later commit touches the same files\n' }], true)
+    const f = fake([PLAN, { code: 1, stdout: '', stderr: '× a later commit touches the same files\n' }], true)
     expect(await undoLastChange(f.deps)).toEqual({ kind: 'refused', message: 'a later commit touches the same files' })
   })
 })

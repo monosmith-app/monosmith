@@ -14,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
@@ -63,7 +64,7 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		if err != nil {
 			return res, err
 		}
-		fmt.Fprintf(opts.Out, "✔ reinstalled dependencies and updated package-lock.json\n")
+		fmt.Fprintf(opts.Out, marks.Passed+" reinstalled dependencies and updated package-lock.json\n")
 		for _, n := range notes {
 			fmt.Fprintln(opts.Out, "  "+n)
 		}
@@ -110,7 +111,7 @@ func writeConversion(plan *convertplan.Plan, opts ApplyOptions, snap *snapshot, 
 		return err
 	}
 	res.Created = append(res.Created, workspace.FileName)
-	say("✔ wrote %s", workspace.FileName)
+	say(marks.Passed+" wrote %s", workspace.FileName)
 	if err := editRootPackage(root, plan, opts.Version); err != nil {
 		return err
 	}
@@ -124,7 +125,7 @@ func writeConversion(plan *convertplan.Plan, opts ApplyOptions, snap *snapshot, 
 		}
 		manifests++
 	}
-	say("✔ updated the root package.json and %s", plural(manifests, "project manifest", "project manifests"))
+	say(marks.Passed+" updated the root package.json and %s", plural(manifests, "project manifest", "project manifests"))
 	for _, rel := range plan.WriteFiles {
 		if _, err := os.Stat(file(rel)); err == nil {
 			res.Rewritten = append(res.Rewritten, rel)
@@ -136,7 +137,7 @@ func writeConversion(plan *convertplan.Plan, opts ApplyOptions, snap *snapshot, 
 		}
 	}
 	if len(plan.WriteFiles) > 0 {
-		say("✔ wrote %s", strings.Join(plan.WriteFiles, ", "))
+		say(marks.Passed+" wrote %s", strings.Join(plan.WriteFiles, ", "))
 	}
 	for _, rel := range plan.Delete {
 		if err := os.RemoveAll(file(rel)); err != nil {
@@ -144,14 +145,14 @@ func writeConversion(plan *convertplan.Plan, opts ApplyOptions, snap *snapshot, 
 		}
 	}
 	if len(plan.Delete) > 0 {
-		say("✔ removed %s", plural(len(plan.Delete), "file or folder the old tool needed", "files and folders the old tool needed"))
+		say(marks.Passed+" removed %s", plural(len(plan.Delete), "file or folder the old tool needed", "files and folders the old tool needed"))
 	}
 	if err := ignoreSmithFiles(root, plan); err != nil {
 		return err
 	}
 
 	if opts.KeepPipelines {
-		say("✔ kept the CI pipelines as they are")
+		say(marks.Passed + " kept the CI pipelines as they are")
 	} else if err := regeneratePipelines(root, plan, opts, res); err != nil {
 		return err
 	}
@@ -193,7 +194,7 @@ func regeneratePipelines(root string, plan *convertplan.Plan, opts ApplyOptions,
 	res.Pipelines = changed
 	res.LostSlots = append(res.LostSlots, lost...)
 	if len(changed) > 0 {
-		say("✔ generated %s", strings.Join(changed, ", "))
+		say(marks.Passed+" generated %s", strings.Join(changed, ", "))
 	}
 	res.Created = append(res.Created, changed...)
 	return nil

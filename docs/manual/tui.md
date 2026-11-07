@@ -43,6 +43,13 @@ From top to bottom:
    the tabs are one row of names.
 3. **The view.** Projects, Run and Doctor show a list with a **detail pane** beside it; on a
    narrow terminal the detail replaces the list when you press Enter, and Esc goes back.
+   The main screen has no box. One rule runs under the tabs across the whole width, a blank
+   cell keeps the text one cell in from each side, and thin lines divide the panels: the
+   vertical line between a list and its detail, and the horizontal line between stacked
+   panels (the rows and the help of a setting, the task list and the log). The lines meet
+   in tees (`┬` under the rule, `├` and `┤` where a horizontal line meets a vertical one).
+   There is no left, right or bottom edge. The rule has no title: the lit tab says where
+   you are, and a fact shows once. A form on the Start tab names itself on its first line.
 4. **Footer**: key hints for the open view, then the ones every view ends with
    (`views`, `palette`, `help`, `quit`, `mouse`). Each hint can be clicked.
 5. **Status bar**: the exact command line running or last run, its result, the git branch
@@ -55,19 +62,53 @@ goes away by itself. A result toast belongs to the view it was raised on.
 
 | View | Key | Shows |
 |---|---|---|
-| Home | `1` | The health of the workspace in one headline, the facts behind it (checks, affected projects, the last run, outdated dependencies) and the one thing to do next, with its key. "Where to go" starts with two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
-| Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
+| Home | `1` | An attention queue: what needs a look, the most urgent first, each with the buttons that deal with it (see [Home](#home)). Under it: the last three runs, the workspace, and two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
+| Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties (beside the list it leaves out the kind, language and stack, which the list shows as columns; opened full-screen it shows them), its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Doctor detail](#the-doctor-detail)); fixes open the fix wizard. |
 | Deps | `5` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
-| Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. |
+| Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump, and a button `Release now (x)` that releases it. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
 
-Home chooses the **next action** by priority: what is broken first (`doctor could not run`,
-failing checks with a fix ready, failing checks), then a last run that failed, then work the
-changes left (`N projects affected: press w to lint and test them`), then warnings, then
-outdated dependencies, and when there is nothing, `all good: press b to build`. Enter does
-the suggested action.
+### Home
+
+Home is a queue of what needs attention, not a table of facts. Only the items that apply
+appear, in this order:
+
+1. **The last run failed** (a stopped run is not a failure): `orders:build failed`, the
+   task that failed (the command when no task failed). Buttons: `See why` (opens that task's
+   log in the Run tab) and `Run it again` (not offered for a command that makes something,
+   such as `add`).
+2. **Setup is broken**: `2 checks fail, 6 can be fixed now`, with the first two failing
+   checks named under it. Buttons: `Fix` (only when a fix is ready) and `Open Doctor`.
+   When doctor could not run, the item says so and offers `Retry`.
+3. **Checks warn**: `1 warning: golangci-lint is 2.14.0, CI uses 2.15.0`. Buttons: `Fix`
+   (only when a fix is ready, the same button and wording as for a failure) and `Open Doctor`. Home never says `All good` while a check warns.
+4. **Changes not tested**: `N projects are affected by your changes`. Button: `Test what changed`.
+5. **A release is ready**: `Ready to release: 8 packages, smith 1.132.0 → 1.133.0 (292 commits)`,
+   naming the package with the most commits. Button: `Preview`.
+6. **Updates**: `N dependencies have newer releases` (`Open Deps`), or `Updates not looked at yet` (`Check for updates`: its key, `5`, opens Deps and reads the registries the first time).
+7. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
+
+A workspace without projects shows one item with `Add a project` and `Compose a stack`.
+While the first doctor run goes on, one item says `Running the health checks…` and nothing
+can be pressed.
+
+Every item is drawn the same way: its title in bold, an optional note under it, and its buttons on one line
+below, left-aligned under the title, never at the right. A button names its destination (`Open Doctor`,
+`Open Deps`) and shows its key. **Enter runs the first button of the first item**, which shows `(Enter)`;
+the footer says `next (Enter)`. Every button has three looks:
+at rest, under the pointer and pressed. A click on a button runs its command; a click
+elsewhere on an item does nothing.
+
+Under the queue, `Recent runs` lists the last three runs of the session on one line (mark,
+command, duration); a click on one opens it in the Run view. The line under it names the
+workspace, its branch and what it holds, with the two buttons that add a project.
+
+The release item needs the plan of the Release view. The shell reads that plan in the
+background when it starts, with the checks, and the Release view shows the same read. Home never waits for
+it: the item appears when the plan arrives, and nothing shows if reading it failed. After a command
+that changes the workspace, the plan is read again in the background.
 
 Doctor and Release load the first time you open them; Deps and Settings load their data on first open too.
 `r` reads a view again.
@@ -90,8 +131,8 @@ that does nothing. Esc never quits.
 | `?`, `F1` | The shortcuts overlay (Up, Down, PgUp, PgDn, Home, End scroll it; Esc, `?`, `F1`, `q` or Enter close it). |
 | `:`, `Ctrl+P`, `/` | The command palette. |
 | `q` | Quit (not while a run is going: `Ctrl+C` stops it first). |
-| `Ctrl+C` | Stop the run in progress; pressed again, quit. |
-| `m` | Turn the mouse on or off. Off lets the terminal select text; Shift+drag selects with it on. |
+| `Ctrl+C` | Stop the run in progress; pressed again, quit. A stopped run is **cancelled**, not failed (see [A stopped run](#a-stopped-run)). |
+| `m` | Turn the mouse on or off. Off lets the terminal select text itself; with it on, a plain drag selects too (see Select text). |
 | `y` | Copy the focused item (remedy, command, project path or package) to the clipboard, through the terminal (OSC 52), so it also works over SSH and in tmux panes that allow it. Works in Projects, Run, Doctor, Deps. |
 | `r` | Reload this view: read the files and the checks again, run nothing (Home, Doctor, Release, Deps). The footer says `r reload view`. On the Run view `r` is `run again`: it runs the last command line again. |
 
@@ -102,21 +143,34 @@ that does nothing. Esc never quits.
 | `b` | `smith run build -p <project>` on the project selected in the list; the footer names it (`b build orders`) | footer in every workspace view |
 | `B` | `smith run build` on every project; the footer counts them (`B build all 23`) | footer in every workspace view |
 | `t` | `smith run test -p <project>`, same; `T` tests every project | footer in every workspace view |
-| `L` | `smith run lint` on every project | palette |
-| `l` | `smith lint` | footer in Projects |
-| `c` | `smith typecheck` | footer in Projects |
+| `l` | `smith run lint -p <project>`; `L` checks the style of every project | `l` in the footer of Projects, `L` in the palette |
+| `c` | `smith run typecheck -p <project>`; `C` checks the types of every project | `c` in the footer of Projects, `C` in the palette |
 | `w` | `smith run lint test --affected` | footer in Home, Projects |
+
+One key has one meaning on every view, the Run view and Home included: the lower-case keys
+`b`, `t`, `l` and `c` act on the project selected in the list, and the capital keys `B`, `T`,
+`L` and `C` act on every project. Every label, in the footer, the palette and the Run view's
+first screen, names the scope (`build orders`, `build all 23`). With no project selected, a
+lower-case key covers the workspace.
 
 The run opens the Run view. The keys work in every workspace view; the footer shows only
 the ones that make sense for the open view (the column above). The Run view's empty state
 also has Build everything and Test everything as buttons, and the palette names the scope in
 each title (`Build orders`, `Build all 23`).
 
+### A stopped run
+
+`Ctrl+C` asks the run to stop. The status line says "Stopping" until the process ends, and
+then it stops saying it. A run that was stopped is neutral, not red: the marks use `⊘`
+(cancelled) for the task that was running and `»` (skipped) for those that never started, the
+bar reads `3/8 done, 5 skipped` and never 100%, the task that was running is not counted as
+failed, and the toast says "Cancelled". `R` runs the tasks that did not finish again.
+
 ### Per view
 
 | View | Key | Does |
 |---|---|---|
-| Home | `Enter` | Do the suggested next action. |
+| Home | `Enter` | Run the first button of the first item of the queue (`Fix`, `Test what changed`, `Build all`, …). |
 | any workspace view | `d` | Open Doctor (shown in the footer of Home and Projects). |
 | Home, Projects, Doctor, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; on the Run view the same key is `run again`. |
 | Projects | `a` | Add project (a guided form). |
@@ -124,7 +178,9 @@ each title (`Build orders`, `Build all 23`).
 | any workspace view | `-` | Remove a package: the same form for `smith uninstall -p <project> ...`. After the form, a confirmation shows the exact command line and what it changes, because a removal edits the manifest and the lock file. |
 | any workspace view | `i` | Install everything every project declares, as after a fresh clone (asks to confirm the command). To add one package use `+`. |
 | Projects | `z` | Zoom the detail to the full width, and back. |
-| Projects, Run, Doctor, Settings | `\` `|`, `[` `]` | `\` selects the next divider between two panels and `|` the previous one. `Shift`+arrows select one too. `[` moves it left or up and `]` right or down. `Tab` picks the next divider and `Esc` lets go. With one divider, `[` and `]` need no selection. Drag a divider with the mouse to do the same. Each view keeps its sizes in the preferences file. |
+| Projects | `e`, `o`, `g` | The buttons of the detail: Explain the project, Why (who owns its files) and Graph (the projects it needs and the projects that use it). A project with derived files also has `E` explain them, `u` update them, `K` keep my edit, `O` own the files I edited and `r` replace them. `+` and `-` install and remove a package. A task with no key of its own, such as `package`, takes a free letter shown on its button. |
+| Projects, Run, Doctor, Settings | `\` `|`, `[` `]` | `\` selects the next divider between two panels and `|` the previous one. `Shift`+arrows select one too. `[` moves it left or up and `]` right or down. `Tab` picks the next divider and `Esc` lets go. With one divider, `[` and `]` need no selection. Drag a divider with the mouse to do the same. A divider you drag goes back to its resting look when
+you let go; a divider you select with the keys stays lit until `Esc`. Each view keeps its sizes in the preferences file. |
 | Projects, Run, Doctor | `Ctrl+U` `Ctrl+D` | Scroll the detail. |
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
@@ -136,7 +192,9 @@ each title (`Build orders`, `Build all 23`).
 | Doctor | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
 | Doctor | `F` | Fix with doctor: the wizard on all the fixes that need no decision. |
 | Doctor | `g` | Group the checks by project, or list them flat. |
-| Doctor | `p` | Show or hide the passed checks. |
+| Doctor | `x` | Show or hide the failed checks in every group. The headline has a button for it, `× 2 failed (x)`. |
+| Doctor | `w` | Show or hide the warnings in every group. The headline button reads `▲ 1 warning (w)` (`warnings` for any other count). |
+| Doctor | `p` | Show or hide the passed checks (the headline button `✓ 20 passed (p)`). By default they are one collapsed line, so this filter starts off. |
 | Doctor | `e` | Show every line of the problem, or fewer. |
 | Doctor | `PgUp` `PgDn` | Scroll the detail. |
 | Deps | `Space` | Mark or unmark a dependency. |
@@ -149,7 +207,9 @@ each title (`Build orders`, `Build all 23`).
 | Release | `Enter` | Show the commits behind the selected bump. |
 | Release | `p` | Preview the next release (`smith release --dry-run`). |
 | Release | `n` | Print the release notes (`smith release --dry-run --notes`). |
-| Release | `x` | Release… (`smith release`: first hold back or bump packages, then a confirmation that says it cannot be undone). |
+| Release | `x` | Release now… (`smith release`: first hold back or bump packages, then a confirmation that says it cannot be undone). The button `Release now (x)` does the same. |
+| Release | `w` | Open or close `Why?`, the explanation of an empty plan: which commits make a release. Only when nothing releases; otherwise `w` runs the affected lint and test, as in the other views. |
+| Release | `c` | Create the first release commit: `git commit --allow-empty -m "feat: first version"`, after a confirmation. Only for a package that was never released; otherwise `c` runs the typecheck. |
 | Settings | `Up` `Down` | Move in the list of sections, or in its rows. |
 | Settings | `Tab`, `Left` `Right` | Switch between the list of sections and its rows. |
 | Settings | `Space`, `Enter` | Change the selected plugin or setting. |
@@ -160,8 +220,21 @@ each title (`Build orders`, `Build all 23`).
 | Start menu | `n` | New workspace… (outside a workspace). |
 | Start menu | `a` | Bring into MonoSmith… (opens the wizard). |
 
-A key is refused with a reason in the toast when the view cannot do it now (nothing to
-update, no safe fix), and its hint leaves the footer.
+A key is refused with a reason in the status line when the view cannot do it now (nothing to
+update, no safe fix), and its hint leaves the footer. The palette and the help list it greyed,
+with the reason (`Disabled: a run is in progress`). In a folder that is not a workspace the help
+lists only the keys that can run. Until the registries answer, the Deps footer keeps only
+`reload`: the keys that need the list wait for it.
+
+### The footer follows the mode
+
+- While a text box is open, the footer shows only `Enter confirm` and `Esc back`.
+- When the run shown has a failed task, `r run again` and `Y copy log` lead the footer.
+- The `Esc` label says what Esc does: on the Run view, `all output` while one task's log is
+  shown, then `start screen`; it leaves the footer while a run shows all output.
+- A tab shows a spinner after its name while its work goes on in the background: the checks
+  of Doctor, the registries asked for Deps, the plan being read for Release. The Deps view
+  shows a spinner and the seconds while it waits.
 
 ### In the palette
 
@@ -178,8 +251,18 @@ Health section also holds the 2.0 commands, described in
 [Undo, report, why and derived files](#undo-report-why-and-derived-files): Undo the last
 change, Open the report, Write the agent file, Check the derived files, Update the derived
 files and Why is this here?
-The palette and every box drawn over the screen stay inside the frame; behind a box the
+The palette and every box drawn over the screen stay inside the content area; behind a box the
 view is emptied so no text shows at its edges, and a toast sits inside the content area.
+
+While a box is open (the palette, help, a confirmation, a picker, the fix, adopt and compose
+screens, the tools and result dialogs) it blocks the screen. The whole screen behind it, from the
+header to the status bar, is drawn dimmed in the faint style, with its colours removed, so
+nothing behind it looks clickable. The mouse acts only on the box: a hover, a click, a press,
+the wheel or a drag over the tabs, the header, the footer, the panels or the dividers does
+nothing, and the pointer position behind the box is not tracked. A click outside a box does what
+the box does with it: the palette closes, the other boxes ignore it. The keyboard works as before.
+Without colour (`NO_COLOR`), the dimming is the faint attribute of the terminal, when the
+terminal prints styles at all.
 
 ### In a confirmation
 
@@ -192,6 +275,17 @@ commit box, the command that will run and the buttons stay on screen. The dialog
 the window changes size, and it stays between the tab bar and the status bar. On the Release view `x`
 first asks which packages to hold back and which bump to change (see [`smith release`](release.md)),
 then shows this confirmation with the `--hold` and `--bump` it built.
+
+The release confirmation is titled `Release now` and lists, in this order:
+
+1. `Before you release:` three checks. The doctor (no findings, or how many are open, or not checked yet), the last test run of this session (passed, failed or none) and the branch (pushed, commits not pushed, no upstream, no remote). A check that fails is drawn in the warning colour with the warning mark. It never blocks: you decide.
+2. `Packages and versions to publish:` each package with its old and new version and its tag, and the packages you held back.
+3. `What will happen:` smith makes no commit (it tags the current commit), how many tags it creates, whether the tags go to the remote (and which) or stay on this computer (no remote, or `--no-push`), and that each package goes to its registry.
+4. The exact command line, for example `smith release --yes`.
+
+Cancel has the focus, so a hurried `Enter` does not publish; `Esc` cancels too. `y` confirms. The confirming button reads `Release now (y)`, or `Release anyway (y)` when a check warns. While the release runs, the Release view shows the command, one step per package (waiting, building with a spinner, tagged) and `Ctrl+C` stops it. When it ends, a dialog lists the new tags, read from what the release printed, and a line `What next:` (`smith release --status`, or the `git push --tags` to run when the tags stayed local, or what to do after a failure). The Run view keeps the full output.
+
+The preview of an empty plan does not repeat the headline, and the preview of a plan ends with a pointer to `Release now (x)` and not with the advice to run `smith release` in a terminal.
 
 The dialog opens at once, also when smith must work out the plan first (the packages and versions
 of `u` in Deps, the files of a swap, an add or an undo, the packages of a release). While it
@@ -250,8 +344,8 @@ consequence. The first line is always the one that does nothing, because smith n
 
 The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): click an entry
 to put the cursor on it, double-click to select it like `Enter`. The last line of the dialog says so.
-The dialog covers the content of the Run tab, but the frame stays: the outer border and the divider
-between the panes. Glyphs the log drew itself (a rule, a scrollbar thumb) are cleared with the rest, so no
+The dialog covers the content of the Run tab, but the rule under the tabs and the divider
+between the panes stay. Glyphs the log drew itself (a rule, a scrollbar thumb) are cleared with the rest, so no
 stray line shows around the dialog.
 
 ### Undo, report, why and derived files
@@ -260,7 +354,7 @@ These are in the palette (`:`), under Health. None has a key of its own.
 
 | Palette entry | What it does |
 |---|---|
-| **Undo the last change…** | Runs `smith undo --dry-run` first and shows what it would revert in a dialog. `y` or `Enter` then runs `smith undo --yes`, which reverts it with a new commit; `Esc` leaves everything as it is. When smith has nothing to undo, a notice shows its reason and the fix (for example `commit_operations = true` under `[workspace]` in `smith.toml`); `Enter` closes it. |
+| **Undo the last change…** | Runs `smith undo --dry-run` first and shows what it would revert in a dialog. `y` or `Enter` then runs `smith undo --yes`, which reverts it with a new commit; `Esc` leaves everything as it is. When commits are off, the notice reads "Undo is not on" and has a button, **Choose how smith commits**, that opens the question below. When commits are on and smith has nothing to undo, a notice shows its reason; `Enter` closes it. |
 | **Open the report** | Runs `smith report -o <file>` with a file in the temporary folder named after the workspace (`smith-report-<workspace>.html`), opens it in your browser and tells you the path in a toast, so you can open it again. |
 | **Write the agent file…** | `smith agent file` after a confirmation: `AGENTS.md`, and a short `CLAUDE.md` that imports it. |
 | **Check the derived files** | `smith derive --check` in the Run view: writes nothing, fails when a derived file is out of date or was edited. |
@@ -271,6 +365,23 @@ These are in the palette (`:`), under Health. None has a key of its own.
 | **Try a command in a copy…** | A form that asks for a smith command (`add package billing`) and runs `smith try` on it: the command runs in a temporary copy, doctor checks the result, and the Run view says what changed. Your files stay as they are. |
 | **Write the launcher…** | `smith bootstrap` after a confirmation: writes `tools/smith/smith` and `tools/smith/smith.cmd`, so a laptop and CI run the same smith. |
 | **Swap a choice…** | Under Projects in the palette. Pick the project, the decision (test, lint, style) and the answer. smith shows the plan of `smith swap --dry-run` first, with the unticked box "Commit this change so it can be undone"; Run does the swap. |
+
+### Undo is asked once
+
+The first time smith is about to change the workspace and nothing says how to treat undo (no
+`commit_operations` in `smith.toml`, no saved answer), a box asks "Let smith commit each change
+so it can be undone?" before the change goes on. Each choice says what it saves:
+
+- **Yes, commit each change** writes `commit_operations = true` in `smith.toml` with
+  `smith config set workspace.commit_operations true --commit`, as a commit of its own, so the
+  work tree is clean for the change that waits. The change then goes on to its confirmation.
+- **No, leave my files uncommitted** saves the answer for you only, in `tui.json` in the smith
+  home, not in `smith.toml`. Undo has nothing to revert.
+- **Ask me each time** saves the answer for you only. Each change then shows the box "Commit this
+  change so it can be undone" in its confirmation.
+- **Cancel this change** (`Esc`) changes and saves nothing, and smith asks again at the next change.
+
+The palette entry **Undo the last change…** opens the same question from its "Undo is not on" notice.
 
 ### Environments, cache, pipelines and the rest of the palette
 
@@ -362,7 +473,9 @@ every other line stay as they are. A setting whose default has a recorded reason
 the setting as "Why:", the same text as `smith why <setting>`.
 
 **Plugins.** The built-in language plugins, each on or off (`Space`; at least one must stay
-on, as with `smith plugin disable`). Below them, the external plugins the workspace declares
+on, as with `smith plugin disable`). The status line says what changed and offers `undo (u)`:
+`u` switches the plugin back, and any other key lets the offer go. Switching a language off also
+shows, in a toast, which projects are no longer built, tested or checked. Below them, the external plugins the workspace declares
 in `smith.toml`, with whether each is trusted and pinned: `Enter` (or `t`) shows the review
 `smith plugin trust` shows, which is what the plugin is, where it comes from, the files its
 command runs with their sha256 and the environment it may see, and `y` trusts it, `p` trusts
@@ -428,11 +541,21 @@ written with `smith recipe new` on a terminal, which asks the questions.
 Home points at the tab (`New here? ...`) until you have opened it once; that is remembered in
 `tui.json`.
 
+## The Doctor list
+
+The first line of the Doctor view holds three filter buttons, one for each state: `× 2 failed (x)`,
+`▲ 1 warning (w)` and `✓ 20 passed (p)`. Each is a toggle: click it or press its key. A filter that is
+off hides the checks of that state in every group; the group headings still count all of their
+checks. The failed checks and the warnings start on. The passed checks start off, as one line
+(`20 checks passed`) that `p` or `Enter` opens. When the filters hide every problem, the list says
+`No checks match the filters. Turn one on (x, w or p).` The filters last while the Doctor view is
+open, also across a new check. The footer names what each key does now: `hide failed` or `show failed`.
+
 ## The Doctor detail
 
 The detail of the selected check has four parts, always in this order, and each fact appears once:
 
-1. **State**, under the check's name: the icon and the word only (`✗ failed`, `▲ warning`, `✓ passed`).
+1. **State**, under the check's name: the icon and the word only (`× failed`, `▲ warning`, `✓ passed`).
 2. **Actions**, as buttons: `[ Fix  f ]` (only when the check has a fix) and `[ Check again  r ]`. Each button shows its key and, under it, a plain line on what it does (for a fix, what it will change). Click a button or press its key.
 3. **What is wrong**: the problem the check found. A long problem shows its first three items; `e` shows all.
 4. **How to fix**: the remedy, then what the fix will do (the projects it covers, the files it writes, the commands it runs, the questions it asks), and last the same fix in a terminal (`or in a terminal: smith doctor --fix --only '<check>'`). A check without a fix has no Fix button; its remedy says what to do.
@@ -449,6 +572,8 @@ Opened by `f` or `F` in Doctor, or by **Fix smith.toml** on the Start menu when 
 1. **Questions.** A fix may ask something (install the missing tool, or remove the script?).
    `Up` `Down` (or `j` `k`, `Tab`) move, a digit picks that option, `Enter` or `Space`
    chooses, `b`, `Left` or `Backspace` goes back one question, `Esc`, `q` or `Ctrl+C` leaves.
+   An option the plugin cannot offer is greyed, with `Disabled: <reason>` under it; a digit or `Enter` on it
+   moves the cursor there and picks nothing.
 2. **Review.** What will change: one line for each file (what happens and how many lines), the
    commands it will run, the projects it covers. `d` shows the diffs and hides them again.
    `Enter` or `y` applies; `n`, `Esc` or `q` leaves; `Up` `Down` `PgUp` `PgDn` `Home` `End`
@@ -483,7 +608,7 @@ wizard's keys and drawing. The stages:
 1. **Reading** the repository.
 2. **What was found**: the kind of repository (Nx, Turborepo, or plain), the projects
    (the first twelve, with their language in words), the tools in use today, and blockers
-   (`✖`) and warnings (`!`). Nothing has changed yet. When the packages are not installed, or
+   (`×`) and warnings (`!`). Nothing has changed yet. When the packages are not installed, or
    are not the ones the repository lists, the button is **Install the packages and
    continue**: smith runs `npm ci` (or `npm install` without a lockfile), reads the
    repository again and goes on. git cannot take an install back, and the screen says so.
@@ -598,9 +723,18 @@ prints `→ smith <command line>`.
 
 ## The mouse
 
+**Buttons.** Every action in a detail pane, and the buttons of the Projects list (`New project`,
+`Compose a stack`) and of the Run start screen, is a button that shows its key in
+parentheses, for example `Run test (t)`. A button has three looks. It rests; it is lit while the
+pointer is over it; and it is pressed while you hold the mouse button on it. The action runs when you
+let go over the same button. Press a button, drag away and let go, and nothing runs. A muted line under a
+button says what it does. A task that the keymap has no key for (`package`, `start`, a task you wrote)
+gets a letter that no other key of the view uses, shown on its button. In the opened detail on a
+narrow screen the row at the keyboard cursor carries the cursor mark, and `Enter` runs it.
+
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
 button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
-a list and never moves the selection, and a thin scrollbar on the right edge shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
+a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
 (the choices of Add a project, the languages, the plugin lists of a recipe) and in the Compose a
 stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
 selection and keep it in view; a scrollbar and a line "↑ 3 more · ↓ 12 more" say what is hidden.
@@ -614,6 +748,19 @@ mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shif
 and click the box in the heading to mark all or none. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
 turns the mouse off.
+
+### Select text
+
+Drag across text with the left button to select it, with the mouse on. When you let go, smith
+copies the plain text to the clipboard (OSC 52, as `y` does) and the toast says so. The selected cells stay lit
+until you press Esc or any other key (Esc only clears the highlight; another key also does its work), press
+again, scroll the wheel, change tab, resize the terminal, or the text under the highlight changes.
+
+- A drag stays inside the panel where it started: the list or the detail; in Settings the sections, the
+  settings and their help; in Run the task list and the log. The rule, the margins, the header, the tabs and the footer are never selected.
+- A press on a button, a tab, a divider or a dialog starts no selection. A plain click selects nothing.
+- Without colour (`NO_COLOR`) the selection is drawn in reverse video.
+- Shift+drag, and `m` with a plain drag, still select with the terminal itself, across panels.
 
 ## Plain mode and environment
 

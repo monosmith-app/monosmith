@@ -16,24 +16,62 @@ const wheelStep = 3
 
 // paletteBox is where the command palette is drawn.
 func (s Shell) paletteBox() layout.Rect {
-	// Inside the frame of the content, whatever the size: never over the tabs,
-	// the footer or the frame's own edges.
-	main := s.lay().Main
-	w, h := min(max(s.w-8, 10), 100), min(max(main.H-2, 5), 28)
-	return layout.Rect{X: (s.w - w) / 2, Y: main.Y + 1 + max((main.H-2-h)/3, 0), W: w, H: h}
+	// Inside the content, whatever the size: never over the tabs or the footer.
+	in := s.mainInner()
+	w, h := min(max(s.w-8, 10), 100), min(max(in.H, 5), 28)
+	return layout.Rect{X: (s.w - w) / 2, Y: in.Y + max((in.H-h)/3, 0), W: w, H: h}
 }
 
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 	e := tea.MouseEvent(msg)
+	if s.modalOpen() {
+		return s.modalMouse(e)
+	}
 	s.mouseX, s.mouseY, s.mouseShift = e.X, e.Y, e.Shift
-	if s.splitMouse(e) {
+	if s.splitMouse(e) || s.selectMouse(e) {
 		return nil
 	}
 	switch {
 	case e.Action == tea.MouseActionMotion:
+		if e.Button != tea.MouseButtonLeft {
+			// A motion with no button held means the terminal lost the release.
+			s.pressed = ""
+		}
 		s.hover(e.X, e.Y)
+	case e.Action == tea.MouseActionRelease && s.pressed != "":
+		return s.releaseButton(e.X, e.Y)
 	case e.Action != tea.MouseActionPress:
 		// Releases need no handling: everything happens on the press.
+	case e.Button == tea.MouseButtonWheelUp:
+		s.selection = s.selection.Clear()
+		return s.wheel(e.X, e.Y, -1)
+	case e.Button == tea.MouseButtonWheelDown:
+		s.selection = s.selection.Clear()
+		return s.wheel(e.X, e.Y, 1)
+	case e.Button == tea.MouseButtonLeft:
+		if s.pressButton(e.X, e.Y) {
+			return nil
+		}
+		return s.pressAndSelect(e.X, e.Y)
+	}
+	return nil
+}
+
+// modalMouse handles a mouse event while a modal is open. Only the modal sees
+// it: nothing behind it gets a hover, a press, a release, a wheel step, a drag
+// or a click, and the pointer position the screen draws its hover looks from
+// stays where it was. A press outside the modal does what the modal does with
+// it (the palette closes; the other dialogs ignore it or follow their own rule).
+func (s *Shell) modalMouse(e tea.MouseEvent) tea.Cmd {
+	s.mouseShift = e.Shift
+	// A press or a drag that began before the modal opened ends here.
+	s.pressed = ""
+	s.selection = s.selection.Clear()
+	s.letGoSplit()
+	switch {
+	case e.Action == tea.MouseActionMotion:
+		s.hover(e.X, e.Y)
+	case e.Action != tea.MouseActionPress:
 	case e.Button == tea.MouseButtonWheelUp:
 		return s.wheel(e.X, e.Y, -1)
 	case e.Button == tea.MouseButtonWheelDown:
@@ -183,6 +221,13 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	if !ok {
 		return nil
 	}
+	if len(h.spans) > 0 {
+		sp, ok := h.at(rx)
+		if !ok {
+			return nil
+		}
+		h.id, h.index = sp.id, sp.index
+	}
 	switch h.kind {
 	case "project":
 		s.list = s.list.SelectProject(h.id)
@@ -195,6 +240,11 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 		s.keepRunVisible()
 	case "recent":
 		s.recentAt = h.index
+		if s.tab == commands.TabHome {
+			// A run on Home opens at one click, in the Run tab.
+			s.openRecent()
+			return s.activate("view.run")
+		}
 		if double {
 			s.openRecent()
 		}

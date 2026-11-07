@@ -218,7 +218,7 @@ words read the same without it; the job summary is always plain. `SMITH_ASCII=1`
 Auditing 26 projects with 22 checks.
 Rules: smith's default policies ([ci] audit_policies).
 Check                             Result       Time  Note
-govulncheck actions               ↷ unchanged     -  nothing changed since it passed on 2026-10-27
+govulncheck actions               » unchanged     -  nothing changed since it passed on 2026-10-27
 govulncheck plugin-sdk           ✓ done       1.5s
 npm audit (runtime dependencies)  ✓ done       2.7s
 pip-audit                         ▲ problems   0.0s  reported problems, not blocking
@@ -252,14 +252,14 @@ packages:
 Checking 26 projects (lint, typecheck, test, build).
 The dependency boundaries between projects are checked first.
 Project            Lint      Types   Tests              Build     Time
-jest-preset        ✗ failed  ✓       ✓ 19 passed        ○ none  1m 27s
+jest-preset        × failed  ✓       ✓ 19 passed        ○ none  1m 27s
 smith              ✓         ○ none  ✓ 116 packages ok  ✓       2m 49s
 eslint-config      ✓         ✓       ✓ 75 passed        ○ none  2m 37s
 vscode             ✓         ✓       ✓ 220 passed       ✓          56s
 last output of jest-preset:lint:
   Oops! Something went wrong! :(
 → repeat it with `smith run lint -p jest-preset`
-✗ Verify failed after 2m 37s
+× Verify failed after 2m 37s
 ```
 
 `smith ci pack` runs the `package` task of the apps (here a Go app and a VS Code extension), then

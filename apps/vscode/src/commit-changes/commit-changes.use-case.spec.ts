@@ -63,7 +63,7 @@ describe('commitChanges', () => {
   })
 
   it('returns smith words when it refuses', async () => {
-    const f = fake([{ code: 1, stdout: '', stderr: '✖ this workspace is not in a git work tree\n  → run git init, then commit again\n' }], 'operation')
+    const f = fake([{ code: 1, stdout: '', stderr: '× this workspace is not in a git work tree\n  → run git init, then commit again\n' }], 'operation')
     expect(await commitChanges(f.deps, 'add app web')).toMatchObject({ kind: 'refused' })
     expect(f.asked).toEqual([])
   })

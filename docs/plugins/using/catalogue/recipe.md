@@ -102,7 +102,7 @@ team:test │   language     node           (default; options node, python) Lang
 team:test │ Plugins
 team:test │   language     node                     team.recipe.toml:15 (recipe team)
 team:test │ The recipe is valid.
-team:test ✔ 55ms
+team:test ✓ 55ms
 ```
 
 ## Creating a project
@@ -228,7 +228,7 @@ installs.
 ## Doctor, dependencies and removal
 
 - **Doctor.** No checks of its own. The host warns that a recipe project has no
-  `lint` task (three warnings in the demo: `14 passed, 0 failed, 3 warning(s)`).
+  `lint` task (three warnings in the demo: `14 passed, 0 failed, 3 warnings`).
 - **Dependencies.** None: `smith install`, `smith sync` and `smith up` do nothing
   for recipes.
 - **Remove.** `smith remove <project>` deletes the folder and regenerates the

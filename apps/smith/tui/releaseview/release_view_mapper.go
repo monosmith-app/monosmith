@@ -12,7 +12,8 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// View draws the plan in a w by h area; rowOf maps a line to the plan item drawn on it.
+// View draws the plan in a w by h area; rowOf maps a line to the plan item drawn
+// on it, or to RowRelease, RowFirst or RowWhy for the line of a button or fold.
 func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	rowOf = map[int]int{}
 	switch {
@@ -30,7 +31,12 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		}
 		lines = append(lines, "", th.Muted(words.Say("releaseview.blocked.hint")))
 	default:
-		lines = append(lines, v.headline(th), "")
+		lines = append(lines, v.headline(th))
+		if v.CanRelease() && v.Button != "" {
+			rowOf[len(lines)] = RowRelease
+			lines = append(lines, v.Button)
+		}
+		lines = append(lines, "")
 		if v.Plan.Channel != "" {
 			// A prerelease line is not the stable release: say so before the versions.
 			lines = append(lines, th.Warning(th.Icons.Warning+" "+release.ChannelNotice(v.Plan.Channel)), "")
@@ -39,7 +45,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 			lines = append(lines, th.Warning(words.Say("releaseview.warning", "message", m)))
 		}
 		if len(v.Plan.Items) == 0 {
-			lines = append(lines, strings.Split(release.NothingToRelease(v.Plan), "\n")...)
+			lines = v.emptyLines(th, lines, rowOf)
 		}
 		nameW := 8
 		for _, item := range v.Plan.Items {
@@ -78,7 +84,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 func (v Model) headline(th theme.Theme) string {
 	n := len(v.Plan.Items)
 	if n == 0 {
-		return th.Muted(words.Say("releaseview.nothing"))
+		return th.Bold(v.emptyHeadline())
 	}
 	levels := map[string]int{}
 	for _, item := range v.Plan.Items {

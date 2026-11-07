@@ -18,9 +18,9 @@ public sealed class SmithPluginCheckTests(ExampleSides examples) : IClassFixture
     {
         var (status, output) = Check(examples.CSharp("structure-layout-cs").CheckCommand);
         Assert.Contains("widget-layout 0.1.0", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("✖", output, StringComparison.Ordinal);
-        Assert.Contains("✔ a structure plugin does something", output, StringComparison.Ordinal);
-        Assert.Contains("✔ shuts down when asked", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("×", output, StringComparison.Ordinal);
+        Assert.Contains("✓ a structure plugin does something", output, StringComparison.Ordinal);
+        Assert.Contains("✓ shuts down when asked", output, StringComparison.Ordinal);
         Assert.Equal(0, status);
     }
 
@@ -29,10 +29,10 @@ public sealed class SmithPluginCheckTests(ExampleSides examples) : IClassFixture
     {
         var (status, output) = Check(examples.CSharp("language-widget-cs").CheckCommand, "--generate");
         Assert.Contains("widget 0.1.0", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("✖", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("×", output, StringComparison.Ordinal);
         foreach (var kind in new[] { "app", "lib", "package" })
         {
-            Assert.Contains($"✔ discovers the generated {kind}", output, StringComparison.Ordinal);
+            Assert.Contains($"✓ discovers the generated {kind}", output, StringComparison.Ordinal);
         }
 
         Assert.Equal(0, status);
@@ -43,10 +43,10 @@ public sealed class SmithPluginCheckTests(ExampleSides examples) : IClassFixture
     {
         var (status, output) = Check(examples.CSharp("structure-scan-cs").CheckCommand);
         Assert.Contains("widget-scan 0.1.0", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("✖", output, StringComparison.Ordinal);
-        Assert.Contains("✔ accepts 4 requests at the same time", output, StringComparison.Ordinal);
-        Assert.Contains("✔ answers a cancelled request with its result or the cancelled error", output, StringComparison.Ordinal);
-        Assert.Contains("✔ ignores a cancel for a request it does not know", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("×", output, StringComparison.Ordinal);
+        Assert.Contains("✓ accepts 4 requests at the same time", output, StringComparison.Ordinal);
+        Assert.Contains("✓ answers a cancelled request with its result or the cancelled error", output, StringComparison.Ordinal);
+        Assert.Contains("✓ ignores a cancel for a request it does not know", output, StringComparison.Ordinal);
         Assert.Equal(0, status);
     }
 

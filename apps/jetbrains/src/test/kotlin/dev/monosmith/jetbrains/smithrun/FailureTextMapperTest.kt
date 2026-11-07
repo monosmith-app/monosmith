@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 class FailureTextMapperTest {
     @Test
     fun usesStandardErrorWithItsFix() {
-        val run = SmithRunContract(1, "", "✖ the tree is not clean\n→ commit or stash first\n")
+        val run = SmithRunContract(1, "", "× the tree is not clean\n→ commit or stash first\n")
         assertEquals("the tree is not clean Try: commit or stash first", FailureTextMapper.describe(run))
     }
 

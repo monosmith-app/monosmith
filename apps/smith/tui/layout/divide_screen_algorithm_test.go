@@ -71,3 +71,19 @@ func TestAnAbsurdlySmallScreenDoesNotPanic(t *testing.T) {
 		_ = l.AreaAt(0, 0)
 	}
 }
+
+func TestTheMainFrameIsARuleAndTwoMarginsAndNoBottom(t *testing.T) {
+	l := Divide(140, 40, true)
+	in, din := l.Main.Inner(), l.DetailInner()
+	if in.X != 1 || in.Y != l.Main.Y+1 || in.W != l.Main.W-2 || in.H != l.Main.H-1 {
+		t.Fatalf("the list's inside is %+v of %+v", in, l.Main)
+	}
+	// The detail starts at the divider's neighbour, keeps a right margin and
+	// ends on the same last row as the list.
+	if din.X != l.Detail.X || din.W != l.Detail.W-1 || din.Y != in.Y || din.H != in.H {
+		t.Fatalf("the detail's inside is %+v of %+v", din, l.Detail)
+	}
+	if bottom := in.Y + in.H; bottom != l.Footer.Y {
+		t.Fatalf("the content ends above the footer: %d, footer at %d", bottom, l.Footer.Y)
+	}
+}

@@ -2164,6 +2164,9 @@ public sealed record FixChoiceOption : IProtocolValue<FixChoiceOption>
     /// <summary>The <c>fix</c> member of <c>FixChoiceOption</c>.</summary>
     public required Fix Fix { get; init; }
 
+    /// <summary>Disabled, when not empty, is the reason the option cannot be picked: an interface shows the option greyed with the reason, and picking it is an error.</summary>
+    public string Disabled { get; init; } = string.Empty;
+
     /// <inheritdoc />
     public static FixChoiceOption Read(JsonAny? value, string path)
     {
@@ -2172,6 +2175,7 @@ public sealed record FixChoiceOption : IProtocolValue<FixChoiceOption>
         {
             Label = StringValue(Member(map, "label"), Join(path, "label")),
             Fix = Fix.Read(Member(map, "fix"), Join(path, "fix")),
+            Disabled = StringValue(Member(map, "disabled"), Join(path, "disabled")),
         };
     }
 
@@ -2183,6 +2187,11 @@ public sealed record FixChoiceOption : IProtocolValue<FixChoiceOption>
         writer.String(Label);
         writer.Property("fix");
         Fix.Write(writer);
+        if (Disabled.Length > 0)
+        {
+            writer.Property("disabled");
+            writer.String(Disabled);
+        }
         writer.EndObject();
     }
 }

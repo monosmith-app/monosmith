@@ -321,6 +321,11 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 
 // choose answers the question with option i.
 func (w Wizard) choose(i int) Wizard {
+	if w.question.Options[i].Disabled != "" {
+		// The option is not an answer: the cursor goes to it, so its reason shows.
+		w.cursor = i
+		return w.follow()
+	}
 	w.answers = append(append([]int(nil), w.answers...), i+1)
 	return w.resolve()
 }

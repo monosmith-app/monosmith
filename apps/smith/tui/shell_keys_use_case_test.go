@@ -21,7 +21,7 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 		t.Fatalf("the views are tabs under the header: %q", tabs)
 	}
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"build orders (b)", "test orders (t)", "lint (l)", "typecheck (c)", "changed (w)", "doctor (d)", "add project (a)", "palette (:)", "help (?)", "quit (q)", "mouse (m)"} {
+	for _, want := range []string{"build orders (b)", "test orders (t)", "lint orders (l)", "typecheck orders (c)", "changed (w)", "doctor (d)", "add project (a)", "palette (:)", "help (?)", "quit (q)", "mouse (m)"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
@@ -132,7 +132,7 @@ func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 	l.keys("ctrl+p")
 	l.has("Command palette", "Build", "Build orders", "smith run build -p orders", "Build all 3")
 	l.typeText("typec")
-	l.has("Typecheck")
+	l.has("Check types")
 	l.hasNot("Quit")
 	l.keys("esc", "ctrl+p").typeText("affect") // one entry per intent, in plain words
 	l.has("Show what changed", "smith affected")
@@ -279,9 +279,9 @@ func TestHelpTellsHowToSelectTextAndHasNoStaleKeys(t *testing.T) {
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 44)
 	l.keys("f1")
-	l.has("Keyboard shortcuts", "Move in a list", "Build all")
+	l.has("Keyboard shortcuts", "Move in a list")
 	l.keys("pgdown")
-	l.has("Stop", "Ctrl+C")
+	l.has("Build all", "Stop", "Ctrl+C")
 	l.keys("pgup")
 	l.keys("end")
 	l.has(": / Ctrl+P", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
@@ -294,17 +294,17 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 
 func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 	l := newLab(t, true, 90, 30)
-	l.hasNot("Depends on")
+	l.hasNot("Projects it needs")
 	l.keys("down", "enter") // web
 	if !l.sh().detailOpen {
 		t.Fatal("Enter should open the detail")
 	}
-	l.has("Depends on", "Run build", "Run test")
+	l.has("Projects it needs", "Run build", "Run test")
 	l.keys("esc")
 	if l.sh().detailOpen {
 		t.Fatal("Esc should go back to the list")
 	}
-	l.has("On: web")
+	l.has("4 projects")
 	l.keys("enter", "down", "enter") // the second action: Run test, on web
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -316,7 +316,7 @@ func TestAtTheSupportedFloorTheDetailStillOpensFullWidth(t *testing.T) {
 	l.keys("enter")
 	l.has("orders", "Run build", "Explain")
 	l.keys("esc")
-	l.has("On: orders", "Tasks")
+	l.has("4 projects", "Tasks")
 	l.hasNot("Run build")
 }
 
@@ -331,15 +331,15 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l.keys("3")
 	l.has("Nothing has run yet")
 	l.keys("2")
-	l.has("Projects (4)")
+	l.has("4 projects")
 	l.keys("1")
-	l.has("Next:")
+	l.has("Fix (Enter)")
 }
 
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 170, 30)
 	l.keys("d")
-	l.has("✗ go.work lists every module", "fix all (F)", "reload view (r)")
+	l.has("× go.work lists every module", "fix all (F)", "reload view (r)")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
 	l.has("2 failed", "What is wrong", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")
@@ -385,11 +385,11 @@ func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
 	l.keys("6", "x")
 	l.has("Release: hold back or bump", "Continue (enter)")
 	l.keys("enter")
-	l.has("Release", "$ smith release --yes", "Run (enter)", "Cancel (esc)")
+	l.has("Release", "$ smith release --yes", "Release anyway (y)", "Cancel (esc)")
 	if len(l.started) != 0 {
 		t.Fatal("release must wait for the dialog")
 	}
-	l.keys("enter")
+	l.keys("y")
 	if l.lastStarted() != "release --yes" {
 		t.Fatalf("started %q", l.lastStarted())
 	}

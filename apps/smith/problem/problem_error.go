@@ -3,6 +3,8 @@ package problem
 import (
 	"fmt"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // Error is a problem with the step that clears it. A message that ends in a
@@ -24,7 +26,7 @@ func New(problem string, remedy ...string) *Error {
 // Error prints the problem on one line and each remedy on an arrow line.
 func (e *Error) Error() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "✖ %s", e.Problem)
+	fmt.Fprintf(&b, marks.Failed+" %s", e.Problem)
 	for _, r := range e.Remedy {
 		fmt.Fprintf(&b, "\n  → %s", r)
 	}

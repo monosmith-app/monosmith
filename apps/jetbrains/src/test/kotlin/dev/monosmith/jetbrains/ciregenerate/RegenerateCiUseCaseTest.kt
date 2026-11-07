@@ -26,7 +26,7 @@ class RegenerateCiUseCaseTest {
 
     @Test
     fun aRefusedPlanIsAWarning() {
-        fake.answers["ci generate --dry-run"] = fake.fail("✖ smith.toml has no ci table\n")
+        fake.answers["ci generate --dry-run"] = fake.fail("× smith.toml has no ci table\n")
         assertFalse(RegenerateCiUseCase.run(fake.ports))
         assertEquals("Nothing was changed. smith.toml has no ci table", fake.warnings.single())
     }

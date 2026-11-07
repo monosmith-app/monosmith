@@ -23,6 +23,8 @@
   "fixwizard.title.failed": "{name} failed",
   "fixwizard.failed.printed": "What it printed:",
   "fixwizard.suggested": "  (suggested)",
+  "fixwizard.disabled": "Disabled: {reason}",
+  "fixwizard.failed.locked": "A program may be using this file. Close it, then press Retry. The old copy is not changed.",
   "fixwizard.hint.pick": "Up Down or a number picks · Enter chooses · Esc cancels",
   "fixwizard.hint.typing": "Type the {field} · Backspace deletes · Enter or Esc stops editing",
   "fixwizard.hint.edit": "Up Down or a number picks · e edits the {field} · Enter chooses · Esc cancels",

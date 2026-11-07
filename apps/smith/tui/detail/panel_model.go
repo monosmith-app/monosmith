@@ -1,9 +1,12 @@
 package detail
 
-import ()
-
 // Row is a label and its value.
-type Row struct{ Label, Value string }
+type Row struct {
+	Label, Value string
+	// ShownByList marks a fact the highlighted row of the list beside the panel
+	// already draws. The panel leaves the row out while ListVisible is set.
+	ShownByList bool
+}
 
 // Section is a heading and its rows.
 type Section struct {
@@ -19,22 +22,24 @@ type Section struct {
 	// Collapse is how many items show until the panel is Expanded; the rest
 	// is told as a count. Zero shows them all.
 	Collapse int
+	// Fold hides the whole section body until the panel is Expanded; the
+	// heading stays, with a note that says how to show it.
+	Fold bool
 	// Tail are plain lines drawn after the items and never folded, so the
 	// last line of a section (a terminal command) stays visible.
 	Tail []string
 }
 
-// Action is a clickable line.
+// Action is a button: its label and its key, drawn by package button.
 type Action struct {
-	ID       string
-	Label    string
+	ID    string
+	Label string
+	// Shortcut is the key that does the same as a click; it shows in
+	// parentheses after the label.
 	Shortcut string
 	Disabled bool
 	// Hint says, under the label, what the action does or what it needs.
 	Hint string
-	// Button draws the action as a button, ` Label (key) `, instead of a line with
-	// the key at the right edge. The mouse clicks it the same way.
-	Button bool
 }
 
 // Panel is what the detail shows.
@@ -48,4 +53,15 @@ type Panel struct {
 	After []Section
 	// Expanded shows every item of a Collapse section.
 	Expanded bool
+	// Pressed is the ID of the action the pointer holds down; it shows the
+	// Active state while the pointer is still over it.
+	Pressed string
+	// ListVisible is true when the list the panel tells about is on screen next
+	// to it; the rows marked ShownByList are then left out. It is false when the
+	// panel fills the pane, so those rows stay.
+	ListVisible bool
+	// Cursor is the ID of the action the keyboard cursor is on. When it is set,
+	// every action leads with the cursor mark (see package choicerow) and the one
+	// at the cursor looks as if hovered.
+	Cursor string
 }

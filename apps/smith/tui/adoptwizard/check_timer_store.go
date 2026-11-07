@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // checkedStep is one step that finished, and how long it took.
@@ -14,7 +16,7 @@ type checkedStep struct {
 }
 
 // stepTimer sits between a job and the shell: it passes everything on and
-// notes, from the "… name" and "✔ name" lines the steps write, how long each
+// notes, from the "… name" and "✓ name" lines the steps write, how long each
 // step took.
 type stepTimer struct {
 	out     io.Writer
@@ -45,7 +47,7 @@ func (t *stepTimer) Write(p []byte) (int, error) {
 func (t *stepTimer) see(line string) {
 	if name, ok := strings.CutPrefix(line, "… "); ok {
 		t.started[name] = t.now()
-	} else if name, ok := strings.CutPrefix(line, "✔ "); ok {
+	} else if name, ok := strings.CutPrefix(line, marks.Passed+" "); ok {
 		if at, seen := t.started[name]; seen {
 			t.done = append(t.done, checkedStep{Name: name, Took: t.now().Sub(at)})
 		}

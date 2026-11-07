@@ -22,7 +22,7 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 		t.Fatalf("b started %q", got)
 	}
 	l.keys("2")
-	l.clickText("Graph: needs and used by")
+	l.clickText("Graph: projects it needs and projects that use it")
 	if got := l.lastStarted(); got != "graph --focus orders" {
 		t.Fatalf("the graph action started %q", got)
 	}
@@ -235,7 +235,7 @@ func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 		l.clickText("‹") // the strip scrolls: the marker leads to the tabs before
 	}
 	l.clickText("Home")
-	l.has("Next:")
+	l.has("Fix (Enter)")
 }
 
 // longDeps is a lab with n outdated dependencies named pkg00, pkg01, ...
@@ -365,7 +365,7 @@ func TestTheBoxInTheHeadingMarksEveryRowThenNoneAndShowsSome(t *testing.T) {
 func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
 	for key, want := range map[string][]string{
 		"2": {"Projects view", "Open the detail of the project"},
-		"5": {"Deps view", "Update the marked ones", "Bring drifting versions to one"},
+		"5": {"Deps view", "Update the marked ones", "Use the same version everywhere (Align)"},
 	} {
 		l := newLab(t, true, 100, 40)
 		l.keys(key, "?")
@@ -457,12 +457,14 @@ func TestTheDepsViewAsksWhichProjectsWhenSeveralDeclareThePackage(t *testing.T) 
 
 func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T) {
 	short := longDeps(t, 8)
-	short.hasNot("┃")
+	short.hasNot("┆")
 	long := longDeps(t, 60)
-	long.has("┃")
+	long.has("┆")
 	thumbRow := func(l *lab) int {
 		for y, line := range l.lines() {
-			if strings.Contains(line, "┃") {
+			// The thumb is the solid line where the dashed track would be, in the
+			// last content column, inside the right margin.
+			if r := []rune(line); len(r) > 2 && r[len(r)-2] == '│' {
 				return y
 			}
 		}

@@ -137,7 +137,7 @@ These came from real sessions, recorded on
 - **A dependency belongs to a project, never the root.** In a converted Node project, install
   with `smith i`, which uses npm.
 - **Run the project's own tasks and `smith slices check` before pushing.** CI runs them.
-- **Errors come as the `problem` shape.** `✖ problem`, then one `→ way out` per line. The
+- **Errors come as the `problem` shape.** `× problem`, then one `→ way out` per line. The
   agent reports it and follows a `→` line.
 - **Releases come from conventional commits.** `version(<project>)[x.y.z]: message` forces a
   version. It never creates or pushes tags for you; a naming conflict is a rule smith should

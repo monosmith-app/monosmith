@@ -169,12 +169,12 @@ await client.close()
 The example's tests, run with `node --test` (Node.js 24):
 
 ```text
-✔ the plugin conforms (5.9366ms)
-✔ the handshake advertises exactly what is implemented (1.8395ms)
-✔ lint waits for the layout check (1.5453ms)
-✔ an unknown method is -32601 (1.5749ms)
-✔ doctor warns about a missing README (2.0646ms)
-✔ findJunkDrawers skips build output (2.474ms)
+✓ the plugin conforms (5.9366ms)
+✓ the handshake advertises exactly what is implemented (1.8395ms)
+✓ lint waits for the layout check (1.5453ms)
+✓ an unknown method is -32601 (1.5749ms)
+✓ doctor warns about a missing README (2.0646ms)
+✓ findJunkDrawers skips build output (2.474ms)
 ```
 
 `client.call` is typed by method name: `client.call('discover', { manifests: [] })` returns a
@@ -193,15 +193,15 @@ const client = await startPlugin({ command: [process.execPath, 'plugin.ts'], wor
 ```text
 PS> smith plugin check .\plugin.cmd
 widget-layout 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 `plugin.cmd` is the two-line launcher of [Starting an interpreted

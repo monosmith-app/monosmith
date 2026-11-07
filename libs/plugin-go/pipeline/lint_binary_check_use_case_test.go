@@ -88,8 +88,8 @@ func TestLintFindingOffersTheWaysOnForANewerAndAnOlderVersion(t *testing.T) {
 			t.Errorf("%s: the detail names the file, the line and the order: %s", version, f.Detail)
 		}
 		options := f.Fix.Choices[0].Options
-		if len(options) != 2 || !strings.Contains(options[0].Label, "recommended") || !strings.Contains(options[1].Label, "Keep /old/golangci-lint ("+version+")") {
-			t.Fatalf("%s: install into smith's folder first, keep the one found second: %+v", version, options)
+		if len(options) != 3 || !strings.Contains(options[0].Label, "recommended") || !strings.Contains(options[1].Label, "Keep /old/golangci-lint ("+version+")") || options[2].Disabled != unknownOrigin {
+			t.Fatalf("%s: install into smith's folder first, keep the one found second, the update third (greyed, the origin is unknown): %+v", version, options)
 		}
 		step := options[0].Fix.Steps[0]
 		if step.Env[0] != "GOBIN="+toolrun.ManagedBinDir(root) || step.Argv[0] != "go" || step.Argv[1] != "install" || !strings.HasSuffix(step.Argv[2], "@v2.15.0") {

@@ -213,6 +213,9 @@ func lintFix(root, pin, managed string, found lintBinary) *protocol.Fix {
 				Fix:   keep,
 			})
 		}
+		if update, ok := updateOption(root, pin, managed, found); ok {
+			options = append(options, update)
+		}
 	} else {
 		options = append(options, protocol.FixChoiceOption{
 			Label: "Install " + pin + " with go install (" + strings.Join(install, " ") + "). It lands in the Go bin folder, which must come first on PATH",
@@ -228,6 +231,34 @@ func lintFix(root, pin, managed string, found lintBinary) *protocol.Fix {
 			Options:  options,
 		}},
 	}
+}
+
+// updateOption is the answer that updates the copy found, in place, to the
+// pinned version. It is greyed with a reason when no route knows how the copy
+// was installed. It is left out (ok = false) for smith's own copy, which the
+// first answer already replaces, and when the tool has no route.
+func updateOption(root, pin, managed string, found lintBinary) (protocol.FixChoiceOption, bool) {
+	route, has := updateRoutes[lintProgram]
+	if !has || sameFile(filepath.Dir(found.path), managed) {
+		return protocol.FixChoiceOption{}, false
+	}
+	label := "Update " + found.path + " to " + pin + " (every project that uses this copy gets it)"
+	argv, env, ok := route(root, found.path)
+	if !ok {
+		return protocol.FixChoiceOption{Label: label, Disabled: unknownOrigin}, true
+	}
+	command := strings.Join(env, " ") + " " + strings.Join(argv, " ")
+	return protocol.FixChoiceOption{
+		Label: label + ". Runs " + command + " (uses the network). It changes every project that uses this copy; PATH stays as it is",
+		Fix: protocol.Fix{
+			Description: "Update golangci-lint at " + found.path + " to " + pin,
+			Steps: []protocol.FixStep{{
+				Description: "Update " + found.path + " to " + pin + ": " + command + " (uses the network)",
+				Argv:        argv,
+				Env:         env,
+			}},
+		},
+	}, true
 }
 
 // keepFix is the fix that records, in smith.toml, that the workspace keeps the

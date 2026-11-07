@@ -70,7 +70,7 @@ class InstallPluginTest {
     @Test
     fun aRefusedInstallIsAWarningWithSmithsWords() {
         fake.answers["plugin search"] = fake.ok(found)
-        fake.answers["plugin install"] = fake.fail("✖ the archive does not match its SHA-256")
+        fake.answers["plugin install"] = fake.fail("× the archive does not match its SHA-256")
         fake.texts.add("")
         fake.ones.add("widget")
         fake.plans.add(PlanAnswerContract(false, listOf(false, false), -1))

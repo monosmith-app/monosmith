@@ -175,7 +175,7 @@ The plugin has no `[projects.<p>.settings.rust]` keys.
 The pin label is `rustc`, probed with `rustc --version`. Real output with `[toolchains] rustc = "1.90"` on a machine with 1.76.0:
 
 ```
-✖ rustc matches the pinned version 1.90
+× rustc matches the pinned version 1.90
     [toolchains] pins rustc 1.90, but this machine runs 1.76.0: tasks cached on another version are misses, and results can differ from CI
     → install rustc 1.90 (`mise use rust@1.90`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] rustc
 ```

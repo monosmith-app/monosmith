@@ -86,7 +86,7 @@ class ReleaseWorkspaceUseCaseTest {
 
     @Test
     fun aRefusedPlanIsAWarningAndAsksNothing() {
-        fake.answers["release --dry-run"] = fake.fail("✖ the branch is not main\n→ switch to main\n")
+        fake.answers["release --dry-run"] = fake.fail("× the branch is not main\n→ switch to main\n")
         assertFalse(release())
         assertEquals("Nothing was released. the branch is not main Try: switch to main", fake.warnings.single())
         assertEquals(emptyList(), fake.plansSeen)

@@ -85,7 +85,7 @@ smith pipeline e2e
 ```
 
 ```text
-✔ wrote .github/workflows/e2e.yml
+✓ wrote .github/workflows/e2e.yml
 ```
 
 ## Common errors

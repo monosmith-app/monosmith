@@ -30,7 +30,7 @@ func (s Shell) headerRow() string {
 	return pane.Fit(strings.Join(parts, "  "), s.w)
 }
 
-// healthSummary is what the last doctor run found, as counts: "✖2 ▲2" for two
+// healthSummary is what the last doctor run found, as counts: "×2 ▲2" for two
 // failures and two warnings, a check mark when everything passed, and "checking…"
 // until the first doctor run (it starts with the shell) has finished.
 func (s Shell) healthSummary() string {

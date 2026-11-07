@@ -18,6 +18,15 @@ type Hint struct {
 // then the Tail, which every view ends with. Only what can be done now is
 // listed, so no hint promises a key that would be refused.
 func Hints(s State) (view, tail []Hint) {
+	if s.Editing {
+		// A text box has the keyboard: the keys of the view and the tail would
+		// type into it, so only what ends the box is listed.
+		return []Hint{
+			{Glyph: words.Say("commands.footer.editing.confirm.glyph"), Label: words.Say("commands.footer.editing.confirm"), Key: "enter"},
+			{Glyph: words.Say("commands.footer.editing.back.glyph"), Label: words.Say("commands.footer.editing.back"), Key: "esc"},
+		}, nil
+	}
+	var lead []Hint
 	for _, c := range all {
 		if c.Footer == "" || c.Unavailable(s) != "" || (c.Kind != PaneKey && !c.Visible(s)) {
 			continue
@@ -38,17 +47,25 @@ func Hints(s State) (view, tail []Hint) {
 		switch {
 		case c.Tail:
 			tail = append(tail, hintOf(c, s))
+		case s.RunFailed && s.View == TabRun && (c.ID == "run.again" || c.ID == "run.copy-log"):
+			lead = append(lead, hintOf(c, s))
 		case slices.Contains(show, s.View):
 			view = append(view, hintOf(c, s))
 		}
 	}
-	return view, tail
+	return append(lead, view...), tail
 }
 
 func hintOf(c Command, s State) Hint {
 	h := Hint{Glyph: c.Glyph, Label: scopedLabel(c, s)}
 	if s.StartScreen && c.StartFooter != "" {
 		h.Label = c.StartFooter
+	}
+	if s.TaskSelected && c.TaskFooter != "" {
+		h.Label = c.TaskFooter
+	}
+	if s.On[c.ID] && c.OnFooter != "" {
+		h.Label = c.OnFooter
 	}
 	// A glyph that is no key name ("1-9", "↑↓") stands for several keys.
 	if h.Glyph == "" || h.Glyph == KeyLabel(c.Keys[0]) {

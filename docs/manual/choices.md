@@ -76,7 +76,7 @@ test
 
 Each line is a choice, its description and the plugin that owns it in brackets. `(default)` marks
 the choice that fills an axis a selection needs and leaves out. `requires` and `conflicts` follow a
-choice that has them, and a choice that cannot be used shows `✖ cannot be used:` and the reason.
+choice that has them, and a choice that cannot be used shows `× cannot be used:` and the reason.
 `--json` prints the same as data.
 
 With `--json`, each choice also lists `kinds`: the project kinds it is for (`app`, `lib`,

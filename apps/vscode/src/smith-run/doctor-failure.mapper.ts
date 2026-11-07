@@ -49,7 +49,7 @@ export function parseDoctorFailure (output: string): DoctorFailure | undefined {
     block.push(line.trimEnd())
   }
   const steps = block.filter((line, index, all) => line !== '' || index < all.length - 1)
-  const reasons = block.filter((line) => line.trimStart().startsWith('✖')).map((line) => line.trimStart().slice(1).trim())
+  const reasons = block.filter((line) => line.trimStart().startsWith('×')).map((line) => line.trimStart().slice(1).trim())
 
   return {
     name,

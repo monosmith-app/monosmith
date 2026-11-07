@@ -1426,6 +1426,10 @@ export const protocolSchema: SchemaDocument = {
         },
         "fix": {
           "$ref": "#/$defs/Fix"
+        },
+        "disabled": {
+          "type": "string",
+          "description": "Disabled, when not empty, is the reason the option cannot be picked: an interface shows the option greyed with the reason, and picking it is an error."
         }
       },
       "required": [

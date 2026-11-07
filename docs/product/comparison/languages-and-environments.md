@@ -69,17 +69,17 @@ The Python add also created the workspace's one `.venv` and installed the pinned
 
 ```text
 $ smith run lint test build -p core,sdk,engine --no-cache
-core:build ✔ 1.435s
-core:test ✔ 2.777s
-core:lint ✔ 1.807s
-engine:build ✔ 1.49s
-engine:test ✔ 1.728s
-engine:lint ✔ 1.727s
-sdk:test ✔ 1.727s
-sdk:lint ✔ 716ms
-sdk:build ✔ 24.157s
+core:build ✓ 1.435s
+core:test ✓ 2.777s
+core:lint ✓ 1.807s
+engine:build ✓ 1.49s
+engine:test ✓ 1.728s
+engine:lint ✓ 1.727s
+sdk:test ✓ 1.727s
+sdk:lint ✓ 716ms
+sdk:build ✓ 24.157s
 ...
-✔ 12/12 tasks succeeded (0 from cache) in 24.173s
+✓ 12/12 tasks succeeded (0 from cache) in 24.173s
 ```
 
 The twelve tasks include a layout check per project. The commands behind them are the language's own: `golangci-lint` and `go test`, `cargo clippy -D warnings` and `cargo test`, `ruff check`, `pytest` and PyPA `build` through the workspace `.venv`. `smith explain sdk:build` shows each one, and where each setting came from.
@@ -134,25 +134,25 @@ A stack is a project's plugins: `smith add app site --stack react`. These were s
 
 **Only MonoSmith scaffolds, runs, caches, generates CI for and releases eleven ecosystems from one tool and one config file with no per-language rules to write.** The nearest in breadth are Nx (JavaScript by generators, other ecosystems by plugins) and Gradle (the JVM and C++).
 
-On this page a ✅ in the environment rows means the tool's documentation shows a built-in generator for a new project in that language and tasks that run it, with no rules for you to write. ◐ means the tool supports the language, but you write BUILD files, rules, scripts or configuration, or add a plugin. ❌ means the documentation scopes the tool to another language. ❔ means the sources were searched and say nothing either way. Gradle gets ✅ for the JVM and C++ because `gradle init` creates applications and libraries in Java, Kotlin, Groovy, Scala and C++; Cargo gets ✅ for Rust because of `cargo new`; Nx gets ✅ for JavaScript and TypeScript because its generators create projects whose tasks its plugins infer.
+On this page a ✓ in the environment rows means the tool's documentation shows a built-in generator for a new project in that language and tasks that run it, with no rules for you to write. ◐ means the tool supports the language, but you write BUILD files, rules, scripts or configuration, or add a plugin. × means the documentation scopes the tool to another language. ❔ means the sources were searched and say nothing either way. Gradle gets ✓ for the JVM and C++ because `gradle init` creates applications and libraries in Java, Kotlin, Groovy, Scala and C++; Cargo gets ✓ for Rust because of `cargo new`; Nx gets ✓ for JavaScript and TypeScript because its generators create projects whose tasks its plugins infer.
 
 | Row | **MonoSmith** | Nx | Turbo | Bazel | Pants | Lerna | Rush | moon | Buck2 | Gradle | Earthly | Lage | JS pkg mgrs | Cargo | Please |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| JavaScript, TypeScript | **✅** | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | ❌ | ❔ |
-| Python | **✅** | ◐ | ◐ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❔ | ❌ | ◐ |
-| Go | **✅** | ◐ | ◐ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❌ | ❌ | ◐ |
-| Rust | **✅** | ◐ | ◐ | ◐ | ❔ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❔ | ✅ | ◐ |
-| .NET | **✅** | ◐ | ◐ | ❔ | ❔ | ❌ | ❌ | ◐ | ❌ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ |
-| Ruby | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ |
-| PHP | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ |
-| C and C++ | **✅** | ❔ | ❔ | ◐ | ❔ | ❌ | ❌ | ◐ | ◐ | ✅ | ◐ | ❌ | ❌ | ❌ | ◐ |
-| Dart and Flutter | **◐** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ |
-| Java, Kotlin, Android | **◐** | ◐ | ❔ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ✅ | ◐ | ❌ | ❌ | ❌ | ◐ |
-| Azure Bicep | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ |
-| A new project passes lint, test and build on first run | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Writes a dev container with CI's toolchains | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Generated CI installs and caches each toolchain | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Downloads and pins toolchains | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ✅ | ❔ | ✅ | ❔ | ❔ | ◐ | ❔ | ❔ |
+| JavaScript, TypeScript | **✓** | ✓ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | × | ❔ |
+| Python | **✓** | ◐ | ◐ | ◐ | ◐ | × | × | ◐ | ◐ | ❔ | ◐ | × | ❔ | × | ◐ |
+| Go | **✓** | ◐ | ◐ | ◐ | ◐ | × | × | ◐ | ◐ | ❔ | ◐ | × | × | × | ◐ |
+| Rust | **✓** | ◐ | ◐ | ◐ | ❔ | × | × | ◐ | ◐ | ❔ | ◐ | × | ❔ | ✓ | ◐ |
+| .NET | **✓** | ◐ | ◐ | ❔ | ❔ | × | × | ◐ | × | ❔ | ◐ | × | × | × | ❔ |
+| Ruby | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ◐ | ❔ | ❔ | ◐ | × | × | × | ❔ |
+| PHP | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ◐ | ❔ | ❔ | ◐ | × | × | × | ❔ |
+| C and C++ | **✓** | ❔ | ❔ | ◐ | ❔ | × | × | ◐ | ◐ | ✓ | ◐ | × | × | × | ◐ |
+| Dart and Flutter | **◐** | ❔ | ❔ | ❔ | ❔ | × | × | ❔ | ❔ | ❔ | ◐ | × | × | × | ❔ |
+| Java, Kotlin, Android | **◐** | ◐ | ❔ | ◐ | ◐ | × | × | ◐ | ◐ | ✓ | ◐ | × | × | × | ◐ |
+| Azure Bicep | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ❔ | ❔ | ❔ | ◐ | × | × | × | ❔ |
+| A new project passes lint, test and build on first run | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Writes a dev container with CI's toolchains | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Generated CI installs and caches each toolchain | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Downloads and pins toolchains | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ✓ | ❔ | ✓ | ❔ | ❔ | ◐ | ❔ | ❔ |
 
 Seven of the cells are worth reading closely.
 

@@ -45,7 +45,9 @@ type Model struct {
 	// that is wanted from one the person stopped.
 	busy      string
 	stoppable bool
-	ticket    int
+	// toggling is the plugin switch in the background, until it ends.
+	toggling *PluginToggle
+	ticket   int
 	// tick and waited move the spinner line (see Pulse).
 	tick   int
 	waited time.Duration
@@ -175,6 +177,7 @@ func (m Model) Handle(msg Msg) (Model, Result) {
 // reason on failure; the fresh snapshot replaces the old.
 func (m Model) applied(msg Applied) (Model, Result) {
 	if msg.Err != nil {
+		m.toggling = nil
 		if m.ed != nil {
 			e := *m.ed
 			e.err = msg.Err.Error()
@@ -191,7 +194,9 @@ func (m Model) applied(msg Applied) (Model, Result) {
 		m.snap = *msg.Fresh
 		m = m.clampCursors()
 	}
-	return m, Result{Note: msg.Note}
+	toggled := m.toggling
+	m.toggling = nil
+	return m, Result{Note: msg.Note, Toggled: toggled}
 }
 
 func describeStyle(themeName, icons string) string {

@@ -53,7 +53,7 @@ smith config set ci.devcontainer false
 ```
 
 ```text
-✔ ci.devcontainer = false
+✓ ci.devcontainer = false
 ```
 
 ```sh
@@ -61,7 +61,7 @@ smith config set ci.providers github azure
 ```
 
 ```text
-✔ ci.providers = ["github", "azure"]
+✓ ci.providers = ["github", "azure"]
 ```
 
 ## Common errors

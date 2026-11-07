@@ -104,7 +104,7 @@ describe('addProject', () => {
   })
 
   it('says a project that was written but fails its doctor was written, and keeps smith steps', async () => {
-    const stdout = 'Wrote 32 file(s)\nThe new project web fails smith doctor:\n  ✖ pkg-config does not find webkit2gtk-4.1\n'
+    const stdout = 'Wrote 32 file(s)\nThe new project web fails smith doctor:\n  × pkg-config does not find webkit2gtk-4.1\n'
     const stderr = 'smith: the new project web was written but fails smith doctor; follow the steps above, then run smith doctor\n'
     const f = fake({ apply: { code: 1, stdout, stderr }, answer: 'add-commit' })
     const outcome = await addProject(f.deps)
@@ -113,7 +113,7 @@ describe('addProject', () => {
   })
 
   it('refuses, with smith words, a failure that is not a missing tool', async () => {
-    const f = fake({ apply: { code: 1, stdout: '', stderr: '✖ the new project web fails its first build\n' } })
+    const f = fake({ apply: { code: 1, stdout: '', stderr: '× the new project web fails its first build\n' } })
     expect(await addProject(f.deps)).toMatchObject({ kind: 'refused' })
   })
 
@@ -147,13 +147,13 @@ describe('addProject', () => {
   })
 
   it('returns the words of smith when the plan fails, and adds nothing', async () => {
-    const f = fake({ plan: { code: 1, stdout: '', stderr: '✖ web exists\n  → pick another name\n' } })
+    const f = fake({ plan: { code: 1, stdout: '', stderr: '× web exists\n  → pick another name\n' } })
     expect(await addProject(f.deps)).toEqual({ kind: 'refused', message: 'web exists Try: pick another name' })
     expect(f.applied).toEqual([])
   })
 
   it('returns the words of smith when the add fails', async () => {
-    const f = fake({ apply: { code: 1, stdout: '', stderr: '✖ the build failed\n' } })
+    const f = fake({ apply: { code: 1, stdout: '', stderr: '× the build failed\n' } })
     expect(await addProject(f.deps)).toEqual({ kind: 'refused', message: 'the build failed' })
   })
 
@@ -163,7 +163,7 @@ describe('addProject', () => {
   })
 
   it('refuses when smith cannot list the kinds', async () => {
-    const f = fake({ lists: [{ code: 1, stdout: '', stderr: '✖ no smith.toml\n  → run smith new\n' }] })
+    const f = fake({ lists: [{ code: 1, stdout: '', stderr: '× no smith.toml\n  → run smith new\n' }] })
     expect(await addProject(f.deps)).toEqual({ kind: 'refused', message: 'no smith.toml Try: run smith new' })
   })
 })

@@ -5,16 +5,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 var (
 	// taskLine is "<project>:<task> <marker> <rest>" as taskrun prints it.
-	taskLine = regexp.MustCompile(`^([^\s│]+:[^\s│]+) (│|▶|✔|✖|■|!)(?: (.*))?$`) // words:literal
-	// summaryTask is a line of the closing summary: "  ↷ web:test because ..."
-	// or "  ✖ web:build exited with code 1".
-	summaryTask = regexp.MustCompile(`^\s+(↷|✖) (\S+:\S+)(?: (.*))?$`) // words:literal
-	// summaryLine is "✔ 3/4 tasks succeeded (1 from cache) in 1.2s".
-	summaryLine = regexp.MustCompile(`^(✔|✖) (\d+)/(\d+) tasks succeeded`) // words:literal
+	taskLine = regexp.MustCompile(`^([^\s│]+:[^\s│]+) (│|▶|✓|×|■|!)(?: (.*))?$`) // words:literal
+	// summaryTask is a line of the closing summary: "  » web:test because ..."
+	// or "  × web:build exited with code 1".
+	summaryTask = regexp.MustCompile(`^\s+(»|×) (\S+:\S+)(?: (.*))?$`) // words:literal
+	// summaryLine is "✓ 3/4 tasks succeeded (1 from cache) in 1.2s".
+	summaryLine = regexp.MustCompile(`^(✓|×) (\d+)/(\d+) tasks succeeded`) // words:literal
 )
 
 // fromCache is how smith says a task was replayed.
@@ -38,9 +40,9 @@ func ParseLine(line string) Event {
 			return Event{Kind: Stopped, Task: task, Text: rest}
 		case "!":
 			return Event{Kind: Warned, Task: task, Text: rest}
-		case "✖":
+		case marks.Failed:
 			return Event{Kind: Finish, Task: task, Status: Failed, Text: rest}
-		case "✔":
+		case marks.Passed:
 			if rest == fromCache {
 				return Event{Kind: Finish, Task: task, Status: Cached, Text: rest}
 			}
@@ -51,10 +53,10 @@ func ParseLine(line string) Event {
 	if m := summaryLine.FindStringSubmatch(line); m != nil {
 		done, _ := strconv.Atoi(m[2])
 		total, _ := strconv.Atoi(m[3])
-		return Event{Kind: Summary, Done: done, Total: total, OK: m[1] == "✔", Text: line}
+		return Event{Kind: Summary, Done: done, Total: total, OK: m[1] == marks.Passed, Text: line}
 	}
 	if m := summaryTask.FindStringSubmatch(line); m != nil {
-		if m[1] == "↷" {
+		if m[1] == marks.Skipped {
 			return Event{Kind: Skip, Task: m[2], Status: Skipped, Text: m[3]}
 		}
 		return Event{Kind: Failure, Task: m[2], Status: Failed, Text: m[3]}

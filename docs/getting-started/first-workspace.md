@@ -359,10 +359,10 @@ smith install -p api workspace:core --yes
 web: no terminal to ask in, so smith writes * (Any version (*)). To choose another: --range <range>
 web will use ui: smith adds "@acme/ui": "*" to apps/web/package.json.
 Running npm install --no-audit --no-fund ...
-✔ web: linked ui (apps/web/package.json, package-lock.json)
+✓ web: linked ui (apps/web/package.json, package-lock.json)
 
 api will use core: smith adds require example.com/acme/libs/core v0.0.0 to apps/api/go.mod.
-✔ api: linked core (apps/api/go.mod)
+✓ api: linked core (apps/api/go.mod)
 ```
 
 Nothing is downloaded. The `workspace:` prefix says "the project of this
@@ -438,11 +438,11 @@ sdk:test ▶ {workspaceRoot}/.venv/Scripts/python.exe -m pytest -q -p no:cachepr
 web:test ▶ npm run test --silent
 ui:test ▶ npm run test --silent
 ...
-✔ 5/5 tasks succeeded (0 from cache) in 1.409s
+✓ 5/5 tasks succeeded (0 from cache) in 1.409s
 ```
 
 Each line starts with `project:task`. `▶` shows the command smith started,
-`│` is a line the task printed, and `✔` marks success with how long it took.
+`│` is a line the task printed, and `✓` marks success with how long it took.
 Tasks run in parallel, in dependency order; a task whose dependency failed is
 skipped.
 
@@ -450,7 +450,7 @@ Run it again without changing anything:
 
 ![smith test, second run: every task ends with "from cache" and the summary says 5 from cache, in 12 milliseconds](../assets/run-cache-hit.png)
 
-*Every task ends `✔ from cache`: smith replayed the stored output and log
+*Every task ends `✓ from cache`: smith replayed the stored output and log
 instead of running anything. Look at the last line: five tasks, 12 ms, and the
 time it saved.*
 
@@ -552,7 +552,7 @@ smith doctor
 A healthy workspace prints one line per check and a count (the Doctor tab of the
 shell shows the headline, the failing checks and, behind `p`, the passed ones):
 
-![smith doctor on a healthy workspace: a check mark per check and the line "31 passed, 0 failed, 0 warning(s)"](../assets/doctor.png)
+![smith doctor on a healthy workspace: a check mark per check and the line "31 passed, 0 failed, 0 warnings"](../assets/doctor.png)
 
 *The middle of the list is cut here. The checks that run depend on the languages
 in the workspace.*
@@ -583,14 +583,14 @@ smith tools
 ```
 
 ```text
-✔ Git: git 2.41.0
-✔ the GitHub CLI: gh 2.94.0
-✔ Go: go 1.27.0
-✔ Node.js: node 24.12.0
-✔ Docker: docker 28.0.1
+✓ Git: git 2.41.0
+✓ the GitHub CLI: gh 2.94.0
+✓ Go: go 1.27.0
+✓ Node.js: node 24.12.0
+✓ Docker: docker 28.0.1
 ```
 
-A missing tool gets a `✖` line. `smith tools install` then shows the ways to get
+A missing tool gets a `×` line. `smith tools install` then shows the ways to get
 it and asks which you want, one tool at a time. It never runs a command that
 needs administrator rights in silence. [`smith tools`](../manual/tools.md) has
 the details.
@@ -694,7 +694,7 @@ smith release --rehearse
 
 ```text
 Release rehearsal: asking 1 registry with read-only requests; nothing is published.
-✖ kit: access on registry.npmjs.org
+× kit: access on registry.npmjs.org
     the registry refused the credential (401)
     → create a token that can publish @acme/kit and set NODE_AUTH_TOKEN
 ```

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
@@ -24,7 +23,9 @@ func (s Shell) confirmDetails(argv []string) []string {
 	case argv[0] == "uninstall":
 		lines = uninstallDetails(argv)
 	case argv[0] == "release":
-		lines = s.releaseDetails(argv)
+		// The dialog scrolls a long plan: nothing is cut, so the checks and the
+		// effects that frame the packages are always there.
+		return s.releaseDetails(argv)
 	case argv[0] == "doctor" && slices.Contains(argv, "--fix"):
 		only := ""
 		if i := slices.Index(argv, "--only"); i >= 0 && i+1 < len(argv) {
@@ -33,39 +34,6 @@ func (s Shell) confirmDetails(argv []string) []string {
 		lines = s.doctorFixDetails(only)
 	}
 	return capLines(lines, max(s.h-16, 3))
-}
-
-// releaseDetails lists the packages and the versions the release publishes.
-func (s Shell) releaseDetails(argv []string) []string {
-	if !s.release.Loaded || len(s.release.Plan.Items) == 0 {
-		return []string{words.Say("tui.confirm_details.the_plan_is_not_loaded_open", "shortcutOf", commands.ShortcutOf("view.release"))}
-	}
-	var lines []string
-	if s.release.Plan.Channel != "" {
-		lines = append(lines, release.ChannelNotice(s.release.Plan.Channel), "")
-	}
-	plan := s.release.Plan
-	var held []string
-	if adjusted, _, err := release.Adjust(plan, adjustmentsIn(argv)); err == nil {
-		for _, item := range plan.Items {
-			if !slices.ContainsFunc(adjusted.Items, func(a release.Item) bool { return a.Project == item.Project }) {
-				held = append(held, item.Project)
-			}
-		}
-		plan = adjusted
-	}
-	lines = append(lines, words.Say("tui.confirm_details.packages_and_versions_to_publish"))
-	for _, item := range plan.Items {
-		from := item.Current
-		if from == "" {
-			from = "new"
-		}
-		lines = append(lines, words.Say("tui.confirm_details.text", "project", item.Project, "from", from, "next", item.Next))
-	}
-	if len(held) > 0 {
-		lines = append(lines, "", words.Say("tui.confirm_details.held_back_not_released", "list", strings.Join(held, ", ")))
-	}
-	return lines
 }
 
 // doctorFixDetails lists the files the fix of one check, or of every check

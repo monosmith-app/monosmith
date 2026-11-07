@@ -213,9 +213,9 @@ func (l *lab) walkTo(t *testing.T, text string) {
 // selectedLine is the row the pointer of the right pane is on.
 func (l *lab) selectedLine() string {
 	for _, line := range l.lines() {
-		// "│ left │ right │": the right pane is the third part.
-		if parts := strings.SplitN(line, "│", 4); len(parts) == 4 && strings.HasPrefix(parts[2], " › ") {
-			return parts[2]
+		// " left │ right": the main screen has no sides, so the right pane is the second part.
+		if parts := strings.SplitN(line, "│", 3); len(parts) >= 2 && strings.HasPrefix(parts[1], " › ") {
+			return parts[1]
 		}
 	}
 	return ""
@@ -376,7 +376,7 @@ func TestAKeyThatDoesNothingOnTheRowSaysWhy(t *testing.T) {
 func TestTheHelpListsTheKeysOfTheSettingsTab(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
 	l.press("7", "?")
-	l.has("Settings view", "Reset a setting to its default", "Review an external plugin and trust it", "Forget that an external plugin is trusted")
+	l.has("Settings view", "Reset a setting to its default", "Approve an external plugin (Trust)", "Forget that an external plugin is trusted")
 }
 
 func TestAFormOfTheFormsSectionOpensTheGuide(t *testing.T) {
@@ -407,4 +407,16 @@ func TestInstallingAPluginShowsTheCommandLineAsksAndRunsItInTheRunTab(t *testing
 	if l.sh().tab != commands.TabRun {
 		t.Fatalf("the output shows in the Run tab, on %q", l.sh().tab)
 	}
+}
+
+func TestAPluginSwitchOffersUndoInTheStatusLineAndUTakesIt(t *testing.T) {
+	l, _ := newSettingsLab(t, 140, 40)
+	l.press("7", "space")
+	first := firstBuiltin(t)
+	l.has(first+" is off", "undo (u)")
+	l.press("u")
+	l.has("[x] "+first, first+" is on")
+	// The offer lasts for one key: another key lets it go.
+	l.press("space", "down", "u")
+	l.hasNot("undo (u)")
 }

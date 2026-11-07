@@ -30,6 +30,12 @@ another one on PATH), the fix is a question. Nothing runs before you answer:
    whatever PATH says. Your other copy and PATH stay as they are.
 2. Keep the one found. smith writes `golangci-lint = "<version>"` under `[toolchains]` in `smith.toml`, and
    doctor stops warning; lint results may differ from CI, which uses the pinned version.
+3. Update the copy found, in place (offered when a version was found). The label states the exact command and
+   that it changes every project that uses that copy: for a copy in a Go bin folder (`GOBIN`, a `GOPATH` entry's
+   `bin`, or `~/go/bin`) built by Go, it runs `GOBIN=<that folder> go install ...@v<version>`. smith does not guess
+   another origin (npm, pip, winget, brew, a system folder): the option shows greyed with `Disabled: smith does
+   not know how this copy was installed`, and picking it does nothing. If the file is in use on Windows, the
+   failure says to close the program and retry; the old copy is not changed. Doctor checks again after it ends.
 
 Moving the CI pin to the version found is not offered: no setting moves the version CI installs. A fix never runs `smith ci setup`, because that command also installs the
 dependencies of every other plugin (for example `npm ci`). In the TUI the fix dialog shows the
@@ -320,7 +326,7 @@ Interactions:
   `source`), `passed`, `failed` and `warnings`. For a passing check `detail` and `remedy`
   describe the failure that would be reported.
 
-A check is `✔` (passed), `✖` (failed, exit 1) or `!` (a warning, not counted as a failure).
+A check is `✓` (passed), `×` (failed, exit 1) or `!` (a warning, not counted as a failure).
 
 ## Exit codes
 
@@ -346,18 +352,18 @@ smith doctor
 ```
 
 ```text
-✖ CI pipelines match the workspace
+× CI pipelines match the workspace
     .github/workflows/ci.yml is out of date
     → run `smith ci generate` and commit the result
-✖ go.work exists
+× go.work exists
     the workspace has Go projects but no go.work
     → run `go work init` then `go work use` for each Go project
-✔ the cache directory is ignored by git
-✔ the repository has commits
+✓ the cache directory is ignored by git
+✓ the repository has commits
 ...
-✔ Node projects are checked for vertical slices (@monosmith/eslint-config)
+✓ Node projects are checked for vertical slices (@monosmith/eslint-config)
 
-25 passed, 2 failed, 0 warning(s)
+25 passed, 2 failed, 0 warnings
 1 fix(es) available: `smith doctor --fix`
 ```
 
@@ -386,9 +392,9 @@ smith doctor --fix --yes
 
 ```text
 ...
-✔ regenerate the pipelines, keeping your slot contents
+✓ regenerate the pipelines, keeping your slot contents
 
-after fixing: 26 passed, 1 failed, 0 warning(s)
+after fixing: 26 passed, 1 failed, 0 warnings
 ```
 
 Read the diff before applying: in this trial `go.work` was missing, and the regenerated
@@ -414,14 +420,14 @@ For every external plugin `smith.toml` declares, doctor shows where it comes fro
 trusted and pinned, and the environment variables it may see (names, never values):
 
 ```text
-✔ external plugin widget is trusted (from .smith/plugins, pinned no, sees the baseline plus GITHUB_TOKEN, NPM_TOKEN)
+✓ external plugin widget is trusted (from .smith/plugins, pinned no, sees the baseline plus GITHUB_TOKEN, NPM_TOKEN)
 ```
 
 An external plugin smith would refuse to start fails the check, and because no plugin starts until
 it is trusted, doctor shows only the plugin checks and exits non-zero until you trust it:
 
 ```text
-✖ external plugin widget is trusted
+× external plugin widget is trusted
     the external plugin "widget" is not trusted yet, so smith did not start it (from .smith/plugins, pinned no, sees the baseline plus GITHUB_TOKEN, NPM_TOKEN)
     → run `smith plugin trust widget` to review it and trust it
     → run `smith plugin list` to see every external plugin and what it may see

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
@@ -52,6 +53,10 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 
 // tabBadge is the mark after a tab's name: how the run is going, what doctor found.
 func (s Shell) tabBadge(id string) string {
+	if id != commands.TabRun && s.tabBusy(id) {
+		// Work for the tab goes on in the background: a spinner says so.
+		return s.th.Info(s.th.Spin(s.tick))
+	}
 	switch id {
 	case commands.TabRun:
 		switch {
@@ -60,14 +65,17 @@ func (s Shell) tabBadge(id string) string {
 		case s.run != nil:
 			if n := s.run.Counts().Failed; n > 0 {
 				return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, n))
+			} else if s.run.OK() && slices.Contains(s.run.Command, "--dry-run") {
+				// A dry run changed nothing: a tick would say that something shipped.
+				return s.th.Muted(s.th.Icons.Skipped)
 			} else if s.run.OK() {
 				return s.th.Success(s.th.Icons.Passed)
 			} else if s.run.Cancelled {
-				return s.th.Warning(s.th.Icons.Warning)
+				return s.th.Muted(s.th.Icons.Cancelled)
 			}
 		}
 	case commands.TabDoctor:
-		// The same marks as the header: ✗ counts failures only, ▲ warnings.
+		// The same marks as the header: × counts failures only, ▲ warnings.
 		if r := s.doctor.Report; r != nil {
 			if r.Failed > 0 {
 				return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, r.Failed))
@@ -91,4 +99,24 @@ func (s Shell) hoveredTab() string {
 		return ""
 	}
 	return id
+}
+
+// tabBusy is true while the work that fills a tab goes on in the background:
+// the doctor checks, the registries answering, the release plan being read.
+func (s Shell) tabBusy(id string) bool {
+	switch id {
+	case commands.TabDoctor:
+		return s.doctor.Loading
+	case commands.TabDeps:
+		return s.depsLoading
+	case commands.TabRelease:
+		return s.releaseLoading
+	}
+	return false
+}
+
+// backgroundWork is true while any tab has work in the background, so its
+// badge keeps moving.
+func (s Shell) backgroundWork() bool {
+	return s.tabBusy(commands.TabDoctor) || s.tabBusy(commands.TabDeps) || s.tabBusy(commands.TabRelease)
 }

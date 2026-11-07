@@ -83,7 +83,7 @@ Notes from the real run:
 
 - `build` and `configure` are not cached: CMake and Ninja do their own
   incremental build in the persistent tree under `dist/`. A second
-  `smith run build` printed `core:build ✔ 86ms`.
+  `smith run build` printed `core:build ✓ 86ms`.
 - `test` is cached, so an unchanged project's second `smith run test` is
   restored.
 - With the `vertical-slices` convention (on in a new workspace) each project
@@ -206,7 +206,7 @@ are fixed in the plugin; override them with a task override.
   run on CMake 4.4.2:
 
 ```text
-✖ cmake matches the pinned version 3.28
+× cmake matches the pinned version 3.28
     [toolchains] pins cmake 3.28, but this machine runs 4.4.2: tasks cached on another version are misses, and results can differ from CI
     → install cmake 3.28 (`mise use cmake@3.28`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] cmake
 ```

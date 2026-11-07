@@ -27,7 +27,7 @@ class WriteReportUseCaseTest {
 
     @Test
     fun aFailureIsAWarningAndOpensNothing() {
-        fake.answers["report"] = fake.fail("✖ the workspace has no smith.toml")
+        fake.answers["report"] = fake.fail("× the workspace has no smith.toml")
         var opened = false
         assertFalse(WriteReportUseCase.run(fake.ports, file) { opened = true })
         assertFalse(opened)

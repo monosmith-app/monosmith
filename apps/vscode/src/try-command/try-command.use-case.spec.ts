@@ -56,7 +56,7 @@ describe('tryCommand', () => {
   })
 
   it('returns smith\'s words when it printed no result', async () => {
-    const f = fake([{ code: 1, stdout: '', stderr: '✖ nothing to try\n  → name a command\n' }], ['wat'], true)
+    const f = fake([{ code: 1, stdout: '', stderr: '× nothing to try\n  → name a command\n' }], ['wat'], true)
     expect(await tryCommand(f.deps)).toEqual({ kind: 'refused', message: 'nothing to try Try: name a command' })
   })
 

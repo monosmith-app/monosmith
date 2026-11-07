@@ -18,7 +18,7 @@ const readline = require('node:readline')
 const AGENT_FILES = ['.claude/agents/smith.md', '.mcp.json', '.vscode/mcp.json']
 const [command, subcommand, ...rest] = process.argv.slice(2)
 const stop = (message, hint) => {
-  process.stderr.write(`✖ ${message}\n  → ${hint}\n`)
+  process.stderr.write(`× ${message}\n  → ${hint}\n`)
   process.exit(1)
 }
 if (subcommand === 'install' && (command === 'agent' || command === 'mcp')) {
@@ -46,7 +46,7 @@ if (subcommand === 'install' && (command === 'agent' || command === 'mcp')) {
 }
 if (command === 'config' && subcommand === 'set' && rest[0] === 'agent.enabled') {
   fs.appendFileSync('smith.toml', `\n[agent]\nenabled = ${rest[1]}\n`)
-  process.stdout.write(`✔ agent.enabled = ${rest[1]}\n`)
+  process.stdout.write(`✓ agent.enabled = ${rest[1]}\n`)
   process.exit(0)
 }
 // The Health view asks `smith derive --check`; this workspace has not turned derived files on.

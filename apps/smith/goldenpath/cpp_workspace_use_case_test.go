@@ -50,7 +50,7 @@ func TestCppWorkspace(t *testing.T) {
 		t.Fatal("add_subdirectory of a workspace project is a graph edge")
 	}
 	out := w.smith(true, "run", "lint", "test", "build")
-	for _, want := range []string{"api:build ✔", "core:test ✔", "api:test ✔", "core:lint ✔", "api:lint ✔"} {
+	for _, want := range []string{"api:build ✓", "core:test ✓", "api:test ✓", "core:lint ✓", "api:lint ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -67,7 +67,7 @@ func TestCppWorkspace(t *testing.T) {
 			t.Errorf("%s was not configured", tree)
 		}
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ cppcheck is installed") || !strings.Contains(out, "✔ every build writes to dist/") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ cppcheck is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "ninja-build g++ cppcheck") {

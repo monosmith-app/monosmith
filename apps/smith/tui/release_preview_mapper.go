@@ -2,7 +2,9 @@ package tui
 
 import (
 	"slices"
+	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/libs/words/words"
@@ -17,6 +19,9 @@ func isPreview(argv []string) bool {
 // is waiting for while it runs, and its output when it has ended, so the
 // preview does not need the Run screen. room is how many lines it may take.
 func (s Shell) previewLines(w, room int) []string {
+	if s.run != nil && isRelease(s.run.Command) {
+		return s.releaseRunLines(w, room)
+	}
 	if s.run == nil || !isPreview(s.run.Command) || room < 3 {
 		return nil
 	}
@@ -32,8 +37,11 @@ func (s Shell) previewLines(w, room int) []string {
 	}
 	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_on_the_run_screen", "shortcutOf", commands.ShortcutOf("view.run"))))
 	var out []string
-	for _, l := range s.run.Lines {
+	for _, l := range s.previewOutput() {
 		out = append(out, pane.Wrap(pane.Strip(l), w-2, 2)...)
+	}
+	if s.release.CanRelease() {
+		out = append(out, s.th.Muted(words.Say("tui.release_preview.next", "key", commands.ShortcutOf("rel.release"))))
 	}
 	keep := max(room-len(lines), 1)
 	if len(out) > keep {
@@ -43,6 +51,22 @@ func (s Shell) previewLines(w, room int) []string {
 		lines = append(lines, "  "+l)
 	}
 	return lines
+}
+
+// previewOutput is what the preview printed, less what the view says itself: an
+// empty plan is the headline of the view (said once, not twice), and the closing
+// line that sends the person to a terminal is the button of the view.
+func (s Shell) previewOutput() []string {
+	if s.release.Empty() {
+		return nil
+	}
+	var out []string
+	for _, l := range s.run.Lines {
+		if strings.TrimSpace(pane.Strip(l)) != release.PublishHintLine {
+			out = append(out, l)
+		}
+	}
+	return out
 }
 
 // capTail keeps the first n lines.

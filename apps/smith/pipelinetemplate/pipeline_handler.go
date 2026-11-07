@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -65,7 +66,7 @@ template, lists them.`,
 			}
 			written, err := Add(s, args[0], opts)
 			for _, f := range written {
-				fmt.Fprintf(out, "✔ wrote %s\n", f)
+				fmt.Fprintf(out, marks.Passed+" wrote %s\n", f)
 			}
 			return err
 		},

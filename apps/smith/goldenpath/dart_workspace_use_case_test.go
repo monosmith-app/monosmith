@@ -42,7 +42,7 @@ func TestDartWorkspace(t *testing.T) {
 		t.Fatal("a workspace dependency is a graph edge")
 	}
 	out := w.smith(true, "run", "format", "lint", "test", "build")
-	for _, want := range []string{"web:build ✔", "tool:build ✔", "web:test ✔", "core:test ✔", "core:lint ✔", "web:format ✔"} {
+	for _, want := range []string{"web:build ✓", "tool:build ✓", "web:test ✓", "core:test ✓", "core:lint ✓", "web:format ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -64,7 +64,7 @@ func TestDartWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "apps", "web", "build", "web")); err == nil {
 		t.Error("apps/web/build/web exists: Flutter builds must go to dist/")
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ Flutter is installed") || !strings.Contains(out, "✔ every build writes to dist/") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ Flutter is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "subosito/flutter-action") || !strings.Contains(ci, "PUB_TOKEN") {

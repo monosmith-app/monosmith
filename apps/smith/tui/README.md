@@ -13,7 +13,7 @@ views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
 tab reads, and the functions it calls, which are the ones `smith plugin` and `smith config` call), `userprefs` (the
 person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix dialog),
 `adoptwizard` (the adopt and convert dialog), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `pathfinder` (the list of folders and files under a path field), `layout`,
-`progress`, `splitter` (the dividers: keys, step and spots from plain values), `runhistory` (the Run tab's
+`progress`, `splitter` (the dividers: keys, step and spots from plain values), `selection` (drag to select text: regions cut along the dividers, the selected text and its highlight), `runhistory` (the Run tab's
 history: ago text, header parts, recent rows, steps, the rerun-failed line) and `commandtext` (the
 text a captured command printed: plan lines, failure text, report file, not-committed line).
 

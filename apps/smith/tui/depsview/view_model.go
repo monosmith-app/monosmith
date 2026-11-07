@@ -16,6 +16,8 @@ type Model struct {
 	Loaded bool
 	// Waited is how long the load has taken so far, set by the shell for drawing.
 	Waited time.Duration
+	// Tick moves the spinner of the wait, set by the shell for drawing.
+	Tick int
 	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
 	Projects int
 	Rows     []Row

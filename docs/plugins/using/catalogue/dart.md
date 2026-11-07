@@ -120,7 +120,7 @@ on Windows; the Flutter app writes `index.html`, `main.dart.js`,
 tool:build │ Generated: ...\dist\apps\tool\bundle\bin\main.exe
 mobile:build │ Compiling lib\main.dart for the Web...                             20.7s
 mobile:build │ √ Built ..\..\dist\apps\mobile
-mobile:build ✔ 25.467s
+mobile:build ✓ 25.467s
 ```
 
 `smith run start -p tool` printed `Hello, world!`. `flutter run -d web-server`
@@ -252,7 +252,7 @@ file is not read: CI installs the Dart SDK from the `stable` channel.
   with Dart 3.12.0:
 
 ```text
-✖ dart matches the pinned version 3.0
+× dart matches the pinned version 3.0
     [toolchains] pins dart 3.0, but this machine runs 3.12.0: tasks cached on another version are misses, and results can differ from CI
     → install dart 3.0 (`mise use dart@3.0`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] dart
 ```
@@ -357,7 +357,7 @@ All passed.
 
 | Command | Runs |
 |---|---|
-| `smith install` | `dart pub get` (`flutter pub get` when a member is Flutter) at the root. Printed `✔ dart: installed 4 project(s)` |
+| `smith install` | `dart pub get` (`flutter pub get` when a member is Flutter) at the root. Printed `✓ dart: installed 4 project(s)` |
 | `smith install -p core path` | `dart pub add path` in the member (`flutter pub add` for a Flutter project) |
 | `smith install -p core -D mockito` | `dart pub add dev:mockito` |
 | `smith uninstall -p core path mockito` | `dart pub remove path mockito` |

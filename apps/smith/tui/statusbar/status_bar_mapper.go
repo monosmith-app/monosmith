@@ -28,7 +28,7 @@ func Render(th theme.Theme, in Info, w int) string {
 	case Failed:
 		middle = th.Failure(th.Icons.Failed + words.Say("statusbar.failed"))
 	case Cancelled:
-		middle = th.Warning(th.Icons.Skipped + words.Say("statusbar.cancelled"))
+		middle = th.Muted(th.Icons.Cancelled + words.Say("statusbar.cancelled"))
 	}
 	if in.Result != "" {
 		if middle != "" {

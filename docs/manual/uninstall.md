@@ -70,7 +70,7 @@ smith uninstall -p web zod
 ```
 
 ```text
-✔ web: removed zod (apps/web/package.json, package-lock.json)
+✓ web: removed zod (apps/web/package.json, package-lock.json)
 ...
 up to date in 1s
 ```

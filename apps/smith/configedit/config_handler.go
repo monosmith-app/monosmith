@@ -6,6 +6,7 @@ import (
 	"sort"
 	"text/tabwriter"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
@@ -126,7 +127,7 @@ itself.`,
 				return err
 			}
 			value, _, _ := Get(dir, args[0])
-			fmt.Fprintf(cmd.OutOrStdout(), "✔ %s = %s\n", args[0], value)
+			fmt.Fprintf(cmd.OutOrStdout(), marks.Passed+" %s = %s\n", args[0], value)
 			return nil
 		},
 	}
@@ -143,7 +144,7 @@ itself.`,
 			if err := Unset(dir, args[0]); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "✔ %s removed: it has its default\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), marks.Passed+" %s removed: it has its default\n", args[0])
 			return nil
 		},
 	}

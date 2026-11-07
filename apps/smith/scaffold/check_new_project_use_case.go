@@ -28,7 +28,7 @@ func CheckNewProject(s *session.Session, p *projectgraph.Project, out io.Writer)
 	}
 	fmt.Fprintf(out, "The new project %s fails smith doctor:\n", p.Name)
 	for _, f := range failed {
-		fmt.Fprintf(out, "  ✖ %s\n", f.Detail)
+		fmt.Fprintf(out, "  × %s\n", f.Detail)
 		for i, line := range strings.Split(f.Remedy, "\n") {
 			if i == 0 {
 				line = "→ " + line

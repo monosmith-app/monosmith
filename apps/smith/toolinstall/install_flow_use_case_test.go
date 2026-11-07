@@ -151,7 +151,7 @@ func TestFlowPageMyselfAndSkipRunNothing(t *testing.T) {
 
 func TestRenderListAndPlans(t *testing.T) {
 	list := RenderList([]Status{{Need: Need{ToolNeed: missing("git").ToolNeed}, State: Found, Program: "git", Version: "2.45.1"}, missing("python")})
-	for _, want := range []string{"✔ Git: git 2.45.1", "✖ Python: not installed", "If you skip it:", "smith tools install"} {
+	for _, want := range []string{"✓ Git: git 2.45.1", "× Python: not installed", "If you skip it:", "smith tools install"} {
 		if !strings.Contains(list, want) {
 			t.Errorf("list lacks %q:\n%s", want, list)
 		}

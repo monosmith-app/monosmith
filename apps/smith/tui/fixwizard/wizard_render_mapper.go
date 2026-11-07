@@ -158,12 +158,17 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 		if i == 0 {
 			label += words.Say("fixwizard.suggested")
 		}
+		if o.Disabled != "" {
+			label += " " + words.Say("fixwizard.disabled", "reason", o.Disabled)
+		}
 		mark := choicerow.Cursor(th, i == w.cursor)
 		optionRow = append(optionRow, len(rows))
 		// A long label wraps under its number, so no option is cut off.
 		for _, part := range pane.Wrap(mark+label, inner, 5) {
 			if i == w.cursor {
 				part = th.Selected(pane.Fit(part, inner))
+			} else if o.Disabled != "" {
+				part = th.Muted(part)
 			}
 			rows = append(rows, part)
 		}

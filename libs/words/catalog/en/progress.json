@@ -1,5 +1,6 @@
 {
   "progress.bar.label": " {done}/{total} {percent}%",
+  "progress.bar.cancelled": " {done}/{total} done, {skipped} skipped",
   "progress.elapsed.minutes": "{minutes}m {seconds}s",
   "progress.projects.every": "every project",
   "progress.projects.one": "the project",

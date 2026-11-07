@@ -9,6 +9,7 @@ func (v Model) Replace(r Result) Model {
 		return next
 	}
 	next.Grouped, next.ShowPassed, next.Folds, next.All = v.Grouped, v.ShowPassed, v.Folds, v.All
+	next.HideFailed, next.HideWarnings = v.HideFailed, v.HideWarnings
 	next.Cursor = min(v.Cursor, max(next.rows()-1, 0))
 	return next
 }

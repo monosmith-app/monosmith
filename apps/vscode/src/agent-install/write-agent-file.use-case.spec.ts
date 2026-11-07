@@ -3,7 +3,7 @@ import type { SmithRun } from '../smith-run/index.ts'
 import { writeAgentFile } from './write-agent-file.use-case.ts'
 
 const CURRENT: SmithRun = { code: 0, stdout: 'AGENTS.md is current\n', stderr: '' }
-const MISSING: SmithRun = { code: 1, stdout: 'AGENTS.md is missing, run smith agent file\n', stderr: '✖ AGENTS.md is missing\n  → smith agent file\n' }
+const MISSING: SmithRun = { code: 1, stdout: 'AGENTS.md is missing, run smith agent file\n', stderr: '× AGENTS.md is missing\n  → smith agent file\n' }
 const WRITTEN: SmithRun = { code: 0, stdout: 'wrote AGENTS.md\nwrote CLAUDE.md\n', stderr: '' }
 
 function fake (runs: SmithRun[], answer: boolean) {
@@ -57,12 +57,12 @@ describe('writeAgentFile', () => {
   })
 
   it('returns the words of smith when the write fails', async () => {
-    const f = fake([MISSING, { code: 1, stdout: '', stderr: '✖ AGENTS.md is read-only\n  → make it writable\n' }], true)
+    const f = fake([MISSING, { code: 1, stdout: '', stderr: '× AGENTS.md is read-only\n  → make it writable\n' }], true)
     expect(await writeAgentFile(f.deps)).toEqual({ kind: 'refused', message: 'AGENTS.md is read-only Try: make it writable' })
   })
 
   it('refuses when smith cannot check at all', async () => {
-    const f = fake([{ code: 1, stdout: '', stderr: '✖ smith.toml not found\n  → run smith in a workspace\n' }], true)
+    const f = fake([{ code: 1, stdout: '', stderr: '× smith.toml not found\n  → run smith in a workspace\n' }], true)
     expect(await writeAgentFile(f.deps)).toEqual({ kind: 'refused', message: 'smith.toml not found Try: run smith in a workspace' })
   })
 })

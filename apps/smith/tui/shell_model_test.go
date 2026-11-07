@@ -165,7 +165,9 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 	cfg := Config{
 		Version: "1.2.3", Workspace: "acme", Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}),
 		Commands: smithCommands,
-		Actions:  guide.Actions([]string{"go", "node"}, []string{"go", "node", "python"}, []string{"go", "node"}),
+		// The commit question is answered, so a change goes to its confirmation at once.
+		CommitChoice: "no",
+		Actions:      guide.Actions([]string{"go", "node"}, []string{"go", "node", "python"}, []string{"go", "node"}),
 	}
 	if inWorkspace {
 		cfg.Sources = &sources.Sources{
@@ -404,7 +406,7 @@ func wheel(x, y, dir int) tea.MouseMsg {
 
 func (l *lab) clickText(text string) *lab {
 	x, y := l.find(text)
-	return l.send(click(x+1, y))
+	return l.send(click(x+1, y)).send(letGo(x+1, y))
 }
 
 func (l *lab) advance(d time.Duration) { l.clock = l.clock.Add(d) }

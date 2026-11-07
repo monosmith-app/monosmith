@@ -206,7 +206,7 @@ func TestGoldenPath(t *testing.T) {
 	if out := w.smith(false, "install", "acme-pyutil"); !strings.Contains(out, "needs a target project") {
 		t.Fatalf("install without -w:\n%s", out)
 	}
-	if out := w.smith(true, "install", "-p", "apps/worker", "acme-pyutil"); !strings.Contains(out, "✔ worker: added acme-pyutil (.venv") && !strings.Contains(out, "✔ worker: added acme-pyutil (apps/worker/pyproject.toml)") {
+	if out := w.smith(true, "install", "-p", "apps/worker", "acme-pyutil"); !strings.Contains(out, "✓ worker: added acme-pyutil (.venv") && !strings.Contains(out, "✓ worker: added acme-pyutil (apps/worker/pyproject.toml)") {
 		t.Fatalf("install:\n%s", out)
 	}
 	if after, _ := os.ReadFile(filepath.Join(w.dir, "apps", "worker", "pyproject.toml")); !strings.Contains(string(after), `dependencies = ["acme-pyutil"]`) {
@@ -338,7 +338,7 @@ func TestGoldenPath(t *testing.T) {
 	if out := w.smith(false, "doctor", "--fix"); !strings.Contains(out, "-\t./libs/gone") || !strings.Contains(out, "+\t./libs/core") || !strings.Contains(out, "Pass --yes") {
 		t.Fatalf("doctor --fix without a terminal shows the diff only:\n%s", out)
 	}
-	if out := w.smith(true, "doctor", "--fix", "--yes"); !strings.Contains(out, "✔ make go.work use exactly the workspace's Go modules") || !strings.Contains(out, "after fixing:") {
+	if out := w.smith(true, "doctor", "--fix", "--yes"); !strings.Contains(out, "✓ make go.work use exactly the workspace's Go modules") || !strings.Contains(out, "after fixing:") {
 		t.Fatalf("doctor --fix --yes:\n%s", out)
 	}
 	if !strings.Contains(w.read("go.work"), "./libs/core") || strings.Contains(w.read("go.work"), "libs/gone") {

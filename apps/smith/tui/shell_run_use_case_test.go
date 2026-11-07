@@ -14,13 +14,13 @@ func failingRun() *scripted {
 		"kit:build ▶ go build ./...",
 		"orders:build ▶ go build ./...",
 		"kit:build │ ok example.com/kit 0.3s",
-		"kit:build ✔ 106ms",
+		"kit:build ✓ 106ms",
 		"orders:build │ main.go:12: undefined: Foo",
-		"orders:build ✖ exited with code 2",
-		"  ✖ orders:build exited with code 2",
-		"  ↷ web:build because orders:build did not succeed",
-		"sdk:test ✔ from cache",
-		"✖ 1/4 tasks succeeded (0 from cache) in 1s",
+		"orders:build × exited with code 2",
+		"  × orders:build exited with code 2",
+		"  » web:build because orders:build did not succeed",
+		"sdk:test ✓ from cache",
+		"× 1/4 tasks succeeded (0 from cache) in 1s",
 	}, exit: runner.Exit{Code: 1}}
 }
 
@@ -50,7 +50,7 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	l.has("Log: orders:build", "main.go:12: undefined: Foo")
 	l.hasNot("ok example.com/kit")
 	// The tab carries a badge, the status bar the result, the Projects list a mark.
-	l.has("Run (3)] ✗1")
+	l.has("Run (3)] ×1")
 }
 
 func TestTheStatusBarShowsTheExactCommandWhileAndAfterItRuns(t *testing.T) {
@@ -138,9 +138,9 @@ func TestACancelledRunLeavesNothingSpinning(t *testing.T) {
 
 func TestCachedTasksAreShownAsCached(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.next = &scripted{lines: []string{"kit:build ✔ from cache", "orders:build ✔ from cache", "web:build ✔ from cache", "sdk:test ✔ from cache", "✔ 4/4 tasks succeeded (4 from cache) in 10ms"}}
+	l.next = &scripted{lines: []string{"kit:build ✓ from cache", "orders:build ✓ from cache", "web:build ✓ from cache", "sdk:test ✓ from cache", "✓ 4/4 tasks succeeded (4 from cache) in 10ms"}}
 	l.keys("b")
-	l.has("cached", "⚡", "4 cached", "passed")
+	l.has("cached", "≈", "4 cached", "passed")
 	l.hasNot("failed")
 }
 
@@ -150,7 +150,7 @@ func TestTheLogFollowsUntilYouScrollAndFTogglesIt(t *testing.T) {
 	for i := 0; i < 120; i++ {
 		lines = append(lines, fmt.Sprintf("kit:build │ line %d", i))
 	}
-	lines = append(lines, "kit:build ✔ 1s")
+	lines = append(lines, "kit:build ✓ 1s")
 	l.next = &scripted{lines: lines}
 	l.keys("b") // no task failed: all output is shown
 	l.has("following", "line 119")
@@ -182,7 +182,7 @@ func TestTheProjectsListMarksTheLastResultOfEachProject(t *testing.T) {
 	l.keys("b")
 	l.keys("2")
 	_, y := l.find("○ orders")
-	if row := l.lines()[y]; !strings.Contains(row, "✗") {
+	if row := l.lines()[y]; !strings.Contains(row, "×") {
 		t.Fatalf("orders failed but its row says %q", row)
 	}
 	_, y = l.find("○ kit")
@@ -196,7 +196,7 @@ func TestEveryRunIsKeptInTheCommandLog(t *testing.T) {
 	l.keys("b")
 	l.keys("t")
 	l.keys("1", "2")
-	if got := strings.Join(l.sh().history, " | "); got != "smith run build -p orders | smith run test" {
+	if got := strings.Join(l.sh().history, " | "); got != "smith run build -p orders | smith run test -p orders" {
 		t.Fatalf("history %q", got)
 	}
 }
@@ -220,7 +220,7 @@ func TestProcessOutputAfterANewRunIsIgnored(t *testing.T) {
 	l.keys("b", "ctrl+c")
 	l.send(outputMsg{proc: old, exit: &runner.Exit{Code: 1, Cancelled: true}})
 	l.keys("t")
-	l.send(outputMsg{proc: old, lines: []string{"kit:build ✖ stale"}})
+	l.send(outputMsg{proc: old, lines: []string{"kit:build × stale"}})
 	l.hasNot("stale")
 }
 
@@ -243,7 +243,7 @@ func TestBareUpOpensTheDependenciesTabInsteadOfHandingOver(t *testing.T) {
 
 func TestEscOnAFinishedRunOpensTheStartScreenAndEnterGoesBack(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✔ 1s"}}
+	l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✓ 1s"}}
 	l.keys("b")
 	l.has("passed")
 	l.keys("esc")

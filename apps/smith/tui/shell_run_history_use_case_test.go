@@ -43,7 +43,7 @@ func TestEveryRunOfTheSessionIsKeptAndCanBeShownAgain(t *testing.T) {
 	l := newLab(t, true, 140, 36)
 	l.next = failingRun()
 	l.keys("b")
-	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✔ 12ms"}}
+	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✓ 12ms"}}
 	l.keys("t")
 	l.has("$ smith run test", "run 2 of 2", "kit:test")
 	l.keys(",")
@@ -138,7 +138,7 @@ func TestYCopiesTheCommandLineAndShiftYCopiesTheLogShown(t *testing.T) {
 	out.Reset()
 	l.keys("esc", "Y")
 	got := decodedClip(t, &out)
-	if !strings.Contains(got, "kit:build │ ok example.com/kit") || !strings.Contains(got, "✖ 1/4 tasks succeeded") {
+	if !strings.Contains(got, "kit:build │ ok example.com/kit") || !strings.Contains(got, "× 1/4 tasks succeeded") {
 		t.Fatalf("with all output selected Y copied %q", got)
 	}
 }
@@ -158,12 +158,12 @@ func TestTheExitSummaryNamesTheLastRunAndItsCommand(t *testing.T) {
 		t.Fatalf("nothing ran, summary %q", got)
 	}
 	l.keys("b")
-	if got := l.sh().ExitSummary(); got != "✔ done in 0s · smith run build -p orders" {
+	if got := l.sh().ExitSummary(); got != "✓ done in 0s · smith run build -p orders" {
 		t.Fatalf("summary %q", got)
 	}
 	l.next = failingRun()
 	l.keys("t")
-	if got := l.sh().ExitSummary(); got != "✖ failed (code 1) in 0s · smith run test" {
+	if got := l.sh().ExitSummary(); got != "× failed (code 1) in 0s · smith run test -p orders" {
 		t.Fatalf("summary %q", got)
 	}
 }
@@ -202,7 +202,7 @@ func TestTheTaskThatFailedOnItsOwnIsShownBeforeOneThatWasOnlyInterrupted(t *test
 	l := newLab(t, true, 140, 36)
 	l.next = &scripted{lines: []string{
 		"kit:build ▶ x", "orders:build ▶ y",
-		"orders:build │ real reason", "orders:build ✖ exited with code 3",
+		"orders:build │ real reason", "orders:build × exited with code 3",
 	}, exit: runner.Exit{Code: 1}}
 	l.keys("b")
 	// kit:build was running, was seen first, and was interrupted by the end.

@@ -148,7 +148,7 @@ class ComposeStackUseCaseTest {
     fun aFailedAddIsAWarningThatNamesTheCommand() {
         picks.add(listOf("node/react"))
         fake.plans.add(fake.yes())
-        fake.answers["add app web"] = fake.fail("✖ apps/web exists\n")
+        fake.answers["add app web"] = fake.fail("× apps/web exists\n")
         assertFalse(compose())
         assertTrue(fake.warnings.single().contains("apps/web exists"))
         assertTrue(fake.warnings.single().contains("The command was: smith add app web"))

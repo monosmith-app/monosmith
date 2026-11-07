@@ -135,7 +135,7 @@ $ smith run test
 util:test │ OK (1 test, 1 assertion)
 cli:test  │ OK (1 test, 1 assertion)
 sdk:test  │ OK (1 test, 1 assertion)
-✔ 3/3 tasks succeeded (0 from cache) in 211ms
+✓ 3/3 tasks succeeded (0 from cache) in 211ms
 
 $ smith run start -p cli
 cli:start ▶ php bin/cli
@@ -275,7 +275,7 @@ PHPStan `^2.1` (`scaffolding/package_templates_config.go`). Edit the root
   set to `8.3` on a machine running 8.4.25:
 
 ```text
-✖ php matches the pinned version 8.3
+× php matches the pinned version 8.3
     [toolchains] pins php 8.3, but this machine runs 8.4.25: tasks cached on another version are misses, and results can differ from CI
     → install php 8.3 (`mise use php@8.3`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] php
 ```
@@ -380,8 +380,8 @@ build to stderr; the check only looks at the exit status.
 
 Real run of the last two: both changed only `libs/util/composer.json` and
 `composer.lock`, and printed
-`✔ util: added monolog/monolog (libs/util/composer.json, composer.lock)` and
-`✔ util: removed monolog/monolog (...)`.
+`✓ util: added monolog/monolog (libs/util/composer.json, composer.lock)` and
+`✓ util: removed monolog/monolog (...)`.
 
 **Versions: `smith sync` and `smith up`.** The plugin lists the `require` and
 `require-dev` packages of every package's `composer.json` and of the workspace

@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"strings"
-
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
@@ -22,9 +20,23 @@ var (
 var SectionOrder = []string{SectionStart, SectionBuild, SectionProjects, SectionDependencies, SectionRelease, SectionHealth, SectionGoTo, SectionHelp}
 
 // PaletteEntry is a command as the palette lists it: one line for one intent,
-// with the command it runs as a hint.
+// with the command it runs as a hint. Keywords are the synonyms the catalogue
+// holds for the command: the search finds them, the list never shows them.
 type PaletteEntry struct {
-	ID, Section, Title, Hint, Shortcut, Unavailable string
+	ID, Section, Title, Hint, Shortcut, Keywords, Unavailable string
+}
+
+// keywordsKey is the catalogue key prefix of the synonyms of a command.
+const keywordsKey = "palette.keywords."
+
+// keywordsOf is the synonyms of a command from the catalogue, or "" when it has
+// none. A key the catalogue lacks gives the key itself, which means no text.
+func keywordsOf(id string) string {
+	key := keywordsKey + id
+	if text := words.Say(key); text != key {
+		return text
+	}
+	return ""
 }
 
 // paletteSections says which commands the palette lists and under which
@@ -72,7 +84,7 @@ func PaletteEntries(s State) []PaletteEntry {
 				continue
 			}
 			title, hint := paletteText(c, s)
-			out = append(out, PaletteEntry{ID: c.ID, Section: section, Title: title, Hint: hint, Shortcut: c.Shortcut, Unavailable: c.Unavailable(s)})
+			out = append(out, PaletteEntry{ID: c.ID, Section: section, Title: title, Hint: hint, Shortcut: c.Shortcut, Keywords: keywordsOf(c.ID), Unavailable: c.Unavailable(s)})
 		}
 		if section == SectionBuild && s.Project != "" && s.InWorkspace {
 			// The selected project's own tasks (dev, storybook…) have no key of
@@ -82,7 +94,7 @@ func PaletteEntries(s State) []PaletteEntry {
 				busy = words.Say("commands.reason.running", "shortcut", ShortcutOf("run.stop"))
 			}
 			for _, task := range s.OtherTasks {
-				out = append(out, PaletteEntry{ID: "x:run:" + task, Section: section, Title: words.Say("commands.palette.task", "task", task, "project", s.Project), Hint: Line(RunArgv(task, s.Project)), Unavailable: busy})
+				out = append(out, PaletteEntry{ID: "x:run:" + task, Section: section, Title: words.Say("commands.palette.task", "task", task, "project", s.Project), Hint: Line(RunArgv(task, s.Project)), Keywords: task, Unavailable: busy})
 			}
 		}
 	}
@@ -110,6 +122,8 @@ func paletteText(c Command, s State) (title, hint string) {
 		return words.Say("commands.palette.goto", "title", c.Title), c.Hint
 	case len(c.Argv) > 0:
 		return c.Title, Line(c.Argv)
+	case s.On[c.ID] && c.OnTitle != "":
+		return c.OnTitle, c.Hint
 	}
 	return c.Title, c.Hint
 }
@@ -124,8 +138,16 @@ func hasAllSibling(c Command) bool {
 	return false
 }
 
-// verb is the first word of a task's title: "Build", "Test"...
+// verb is the name of a task as the palette shows it with its scope: "Build",
+// "Lint"... The title of the command for one project, so the "all"
+// command borrows it.
 func (c Command) verb() string {
-	verb, _, _ := strings.Cut(c.Title, " ")
-	return verb
+	if c.All {
+		for _, o := range all {
+			if o.Kind == RunTask && !o.All && o.Task == c.Task {
+				return o.Title
+			}
+		}
+	}
+	return c.Title
 }

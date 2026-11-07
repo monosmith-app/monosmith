@@ -55,8 +55,8 @@ func TestStatusTextNamesTheRemedyForEveryProblem(t *testing.T) {
 		Remote:      RemoteSummary{Configured: true, Scheme: "https", Host: "cache.example.com"},
 	})
 	for _, want := range []string{
-		"✖ the cache is over its limit\n    → smith cache prune brings it under 2.0 MB",
-		"✖ 1 entry cannot be used: unreadable, or naming a blob that is gone\n    → smith cache verify --fix removes them",
+		"× the cache is over its limit\n    → smith cache prune brings it under 2.0 MB",
+		"× 1 entry cannot be used: unreadable, or naming a blob that is gone\n    → smith cache verify --fix removes them",
 		"https://cache.example.com (off: set SMITH_CACHE_KEY to use it)",
 	} {
 		if !strings.Contains(got, want) {

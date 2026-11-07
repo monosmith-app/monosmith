@@ -50,7 +50,7 @@ func TestAChangingCommandShowsItsPlanBeforeItRuns(t *testing.T) {
 // A plan that smith refuses is shown as it is, and nothing runs.
 func TestAPlanSmithRefusesIsShownAndNothingRuns(t *testing.T) {
 	l := newHomeLab(t, 140, 40)
-	l.answers(map[string]sources.Captured{"kind core lib --dry-run": {Text: "✖ core is imported by an app\n  → --force goes ahead"}})
+	l.answers(map[string]sources.Captured{"kind core lib --dry-run": {Text: "× core is imported by an app\n  → --force goes ahead"}})
 	l.ask("kind", "core", "lib")
 	l.has("core is imported by an app", "--force goes ahead")
 	l.keys("enter")
@@ -117,7 +117,7 @@ func TestReleaseOffersHoldAndBumpBeforeTheConfirmation(t *testing.T) {
 	if len(l.started) != 0 {
 		t.Fatalf("nothing runs before the last answer: %v", l.started)
 	}
-	l.keys("enter")
+	l.keys("y")
 	if got := l.lastStarted(); got != "release --hold kit --bump web=major --yes" {
 		t.Fatalf("started %q", got)
 	}

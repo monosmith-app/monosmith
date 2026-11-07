@@ -47,6 +47,28 @@ func TestAPressOffTheDividerHoldsNothing(t *testing.T) {
 	}
 }
 
+func TestAPressLeavesNoSelectionBehindUnlessTheKeysMadeIt(t *testing.T) {
+	spots := []Spot{detail(), logRow()}
+	s, _ := New(nil).Press(spots, 59, 5)
+	if s, _ = s.Release(); s.Selected != "" || s.Look("detail") != Resting {
+		t.Fatalf("a press and a release leave the divider lit: %+v", s)
+	}
+	s, _ = State{Selected: "log"}.Press(spots, 59, 5)
+	if s.Selected != "" || s.Look("log") != Resting {
+		t.Fatalf("a press on another divider drops the keys' selection: %+v", s)
+	}
+	s, _ = State{Selected: "detail"}.Press(spots, 59, 5)
+	if s, _ = s.Release(); s.Selected != "detail" {
+		t.Fatalf("the keys' selection of the same divider stays: %+v", s)
+	}
+}
+
+func TestAPressOffEveryDividerKeepsTheSelection(t *testing.T) {
+	if s, ok := (State{Selected: "log"}).Press([]Spot{detail()}, 30, 5); ok || s.Selected != "log" {
+		t.Fatalf("%+v", s)
+	}
+}
+
 func TestReleaseSaysWhichDividerWasHeld(t *testing.T) {
 	s, _ := New(nil).Press([]Spot{detail()}, 59, 5)
 	s, id := s.Release()

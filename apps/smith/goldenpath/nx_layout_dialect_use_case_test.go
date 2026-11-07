@@ -111,7 +111,7 @@ func assertFollowsNxSiblings(t *testing.T, w *workspace, added string) {
 	if manifest := w.read("packages/bar/package.json"); strings.Contains(manifest, `"jest": {`) {
 		t.Errorf("the Jest configuration is inline although the siblings keep it in files:\n%s", manifest)
 	}
-	if doctor := w.smith(true, "doctor"); strings.Contains(doctor, "✖") {
+	if doctor := w.smith(true, "doctor"); strings.Contains(doctor, "×") {
 		t.Errorf("doctor finds a problem after smith add:\n%s", doctor)
 	}
 }

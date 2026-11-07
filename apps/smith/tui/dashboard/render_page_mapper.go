@@ -1,132 +1,125 @@
 package dashboard
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// Lines is Page without the buttons: the lines, the row of the next action
-// and the command a click on it runs.
-func Lines(th theme.Theme, f Facts, w int) (lines []string, actionRow int, commandID string) {
-	lines, actionRow, commandID, _ = Page(th, f, w)
-	return lines, actionRow, commandID
+// buttonGap is the cells between two buttons of a row.
+const buttonGap = 2
+
+// canvas collects the lines of the page and the click targets on them.
+type canvas struct {
+	th      theme.Theme
+	w       int
+	ptr     Pointer
+	lines   []string
+	targets []Target
 }
 
-// Page draws the page in w cells: the headline, the next action, then the
-// facts and the places to go, with a button each to add a project and to
-// compose a stack. actionRow is the first line of the next action and
-// commandID the command a click on it runs ("" when there is none); buttons
-// maps the line of each button to its command.
-func Page(th theme.Theme, f Facts, w int) (lines []string, actionRow int, commandID string, buttons map[int]string) {
-	next := NextAction(f)
-	lines = append(lines, "", " "+headline(th, f), "")
-	actionRow = len(lines)
-	arrow := th.Accent(th.Icons.Pointer)
-	if next.CommandID == "" {
-		arrow = th.Muted(th.Icons.Queued)
+// Page draws the attention queue in w cells: every item the same way (its
+// headline, an optional note line and its buttons on a line of their own,
+// left-aligned under the headline), then the recent runs, and the workspace
+// with the buttons that add to it.
+//
+// Parameters: th styles the page; f is what is known; w is the width; ptr is
+// the cell under the mouse, so the button under it shows its hover state.
+// Returns: the lines and the targets of the clicks.
+func Page(th theme.Theme, f Facts, w int, ptr Pointer) Rendered {
+	c := &canvas{th: th, w: w, ptr: ptr}
+	q := Queue(f)
+	c.add("")
+	for _, it := range q {
+		c.item(it)
+		c.add("")
 	}
-	lines = append(lines, pane.Wrap(" "+arrow+" "+th.Bold(words.Say("dashboard.next.label"))+next.Text, w, 4)...)
-	lines = append(lines, "")
-
-	row := func(name, text string) {
-		lines = append(lines, pane.Wrap(" "+th.Muted(pane.Cell(name, 10))+text, w, 11)...)
-	}
-	row(words.Say("dashboard.row.health"), healthText(th, f))
-	row(words.Say("dashboard.row.affected"), affectedText(th, f))
-	row(words.Say("dashboard.row.last"), lastRunText(th, f))
-	row(words.Say("dashboard.row.updates"), updatesText(th, f))
-	if f.ProjectsLoaded && f.Projects > 0 {
-		row(words.Say("dashboard.row.projects"), projectsText(f))
+	if len(f.Recent) > 0 && (len(q) != 1 || q[0].Kind != KindChecking) {
+		c.recent(f.Recent)
+		c.add("")
 	}
 	if f.SettingsTip {
-		row(words.Say("dashboard.row.settings"), words.Say("dashboard.settings.tip", "new", th.Accent(words.Say("dashboard.settings.new")), "shortcut", commands.ShortcutOf("view.settings")))
+		tip := words.Say("dashboard.settings.tip", "new", th.Accent(words.Say("dashboard.settings.new")), "shortcut", commands.ShortcutOf("view.settings"))
+		c.add(pane.Wrap(" "+th.Muted(tip), w, 1)...)
+		c.add("")
 	}
-	where, at := whereToGo(th, w)
-	buttons = map[int]string{}
-	for i, id := range at {
-		buttons[len(lines)+i] = id
+	if f.ProjectsLoaded && f.Projects > 0 {
+		c.add(pane.Wrap(" "+th.Muted(workspaceText(f)), w, 1)...)
 	}
-	lines = append(lines, where...)
-	for i := range lines {
-		lines[i] = pane.Fit(lines[i], w)
+	if q[0].Kind != KindEmpty {
+		c.buttons([]Button{queueButton("dashboard.add.label", "file.add"), queueButton("dashboard.compose.label", "file.compose")}, 1)
 	}
-	return lines, actionRow, next.CommandID, buttons
+	for i := range c.lines {
+		c.lines[i] = pane.Fit(c.lines[i], w)
+	}
+	return Rendered{Lines: c.lines, Targets: c.targets}
 }
 
-// headline is the whole workspace's state in a few words.
-func headline(th theme.Theme, f Facts) string {
-	switch {
-	case f.CheckErr != "":
-		return th.Failure(th.Icons.Failed + " " + words.Say("dashboard.headline.checkerr"))
-	case !f.Checked:
-		return th.Muted(progress.Waiting(words.Say("dashboard.headline.waiting", "projects", progress.OfProjects(f.Projects)), f.Waited))
-	case f.Failed > 0:
-		return th.Failure(th.Icons.Failed+" "+words.Count("dashboard.check.fails", f.Failed)) + warnTail(th, f)
-	case f.Warnings > 0:
-		return th.Warning(th.Icons.Warning + " " + words.Count("dashboard.warning", f.Warnings))
+func (c *canvas) add(lines ...string) { c.lines = append(c.lines, lines...) }
+
+// icon is the status mark of a severity, in its colour.
+func (c *canvas) icon(s Severity) string {
+	th := c.th
+	switch s {
+	case SeverityFailure:
+		return th.Failure(th.Icons.Failed)
+	case SeverityWarning:
+		return th.Warning(th.Icons.Warning)
+	case SeveritySuccess:
+		return th.Success(th.Icons.Passed)
+	case SeverityInfo:
+		return th.Accent(th.Icons.Dot)
 	}
-	return th.Success(th.Icons.Passed + " " + words.Say("dashboard.headline.healthy"))
+	return th.Muted(th.Icons.Queued)
 }
 
-func warnTail(th theme.Theme, f Facts) string {
-	if f.Warnings == 0 {
-		return ""
+// item draws an item: the headline in bold, the note under it and the buttons
+// under that, all starting at the same column.
+func (c *canvas) item(it Item) {
+	lead := " " + c.icon(it.Severity) + " "
+	indent := pane.Width(lead)
+	c.add(pane.Wrap(lead+c.th.Bold(it.Title), c.w, indent)...)
+	if it.Detail != "" {
+		c.add(pane.Wrap(strings.Repeat(" ", indent)+c.th.Muted(it.Detail), c.w, indent)...)
 	}
-	return th.Muted(" · ") + th.Warning(words.Count("dashboard.warning", f.Warnings))
+	if len(it.Buttons) > 0 {
+		c.buttons(it.Buttons, indent)
+	}
 }
 
-func healthText(th theme.Theme, f Facts) string {
-	switch {
-	case f.CheckErr != "":
-		return th.Failure(f.CheckErr)
-	case !f.Checked:
-		return th.Muted(words.Say("dashboard.health.running"))
+// buttons lays buttons out from column x on a new line, and on the next line
+// when one does not fit.
+func (c *canvas) buttons(bs []Button, x0 int) {
+	row := len(c.lines)
+	line, x := strings.Repeat(" ", x0), x0
+	for i, b := range bs {
+		bw := button.Width(c.th, b.Label, b.Key)
+		if i > 0 && x+buttonGap+bw > c.w {
+			c.add(line)
+			row++
+			line, x = strings.Repeat(" ", x0), x0
+		} else if i > 0 {
+			line += strings.Repeat(" ", buttonGap)
+			x += buttonGap
+		}
+		line += c.draw(b, row, x)
+		x += bw
 	}
-	parts := []string{th.Success(words.Say("dashboard.health.passed", "count", f.Passed))}
-	if f.Failed > 0 {
-		parts = append(parts, th.Failure(words.Say("dashboard.health.failed", "count", f.Failed)))
-	}
-	if f.Warnings > 0 {
-		parts = append(parts, th.Warning(words.Count("dashboard.warning", f.Warnings)))
-	}
-	return strings.Join(parts, th.Muted(" · ")) + th.Muted(words.Say("dashboard.health.hint", "shortcut", commands.ShortcutOf("ws.doctor")))
+	c.add(line)
 }
 
-func affectedText(th theme.Theme, f Facts) string {
-	switch {
-	case !f.ProjectsLoaded:
-		return th.Muted(words.Say("dashboard.affected.reading"))
-	case f.Affected == 0:
-		return words.Say("dashboard.affected.none", "projects", words.Count("dashboard.project", f.Projects))
+// draw is a button at column x of line row, in the state the pointer gives it,
+// and records where a click on it lands.
+func (c *canvas) draw(b Button, row, x int) string {
+	bw := button.Width(c.th, b.Label, b.Key)
+	c.targets = append(c.targets, Target{Row: row, From: x, To: x + bw, Command: b.CommandID})
+	state := button.Rest
+	if c.ptr.Row == row && c.ptr.Col >= x && c.ptr.Col < x+bw {
+		state = button.Hover
 	}
-	return words.Say("dashboard.affected.some", "affected", th.Warning(fmt.Sprintf("%d", f.Affected)), "projects", words.Count("dashboard.project", f.Projects))
-}
-
-func lastRunText(th theme.Theme, f Facts) string {
-	r := f.Last
-	switch {
-	case r == nil:
-		return th.Muted(words.Say("dashboard.last.none"))
-	case r.Cancelled:
-		return th.Warning(th.Icons.Skipped+" "+words.Say("dashboard.last.stopped")) + "  " + r.Command
-	case r.OK:
-		return th.Success(th.Icons.Passed+" "+words.Say("dashboard.last.passed")) + "  " + r.Command + th.Muted("  "+r.Took)
-	}
-	return th.Failure(th.Icons.Failed+" "+words.Say("dashboard.last.failed")) + "  " + r.Command + th.Muted("  "+r.Took)
-}
-
-func updatesText(th theme.Theme, f Facts) string {
-	switch {
-	case !f.DepsChecked:
-		return th.Muted(words.Say("dashboard.updates.unchecked", "shortcut", commands.ShortcutOf("view.deps")))
-	case f.Outdated == 0:
-		return words.Say("dashboard.updates.current")
-	}
-	return words.Say("dashboard.updates.outdated", "count", th.Warning(fmt.Sprintf("%d", f.Outdated)))
+	return button.Render(c.th, b.Label, b.Key, state)
 }

@@ -127,8 +127,7 @@ func (m Model) activate() (Model, Result) {
 	switch it.kind {
 	case kindPlugin:
 		p := m.snap.Plugins[it.idx]
-		m = m.begin(map[bool]string{true: words.Say("settingsview.busy.on", "name", p.Name), false: words.Say("settingsview.busy.off", "name", p.Name)}[!p.Enabled], false)
-		return m, Result{Cmd: m.setPlugin(p.Name, !p.Enabled)}
+		return m.switchPlugin(p.Name, !p.Enabled)
 	case kindExternal:
 		return m.askTrust()
 	case kindInstall:
@@ -245,6 +244,26 @@ func (m Model) run(op func() (string, error)) tea.Cmd {
 		}
 		return a
 	}
+}
+
+// switchPlugin turns a built-in plugin on or off in the background, and
+// remembers the switch so the result can offer to undo it.
+func (m Model) switchPlugin(name string, enable bool) (Model, Result) {
+	m = m.begin(map[bool]string{true: words.Say("settingsview.busy.on", "name", name), false: words.Say("settingsview.busy.off", "name", name)}[enable], false)
+	m.toggling = &PluginToggle{Name: name, Enabled: enable}
+	return m, Result{Cmd: m.setPlugin(name, enable)}
+}
+
+// Revert switches a plugin back to the state before a switch the shell offered
+// to undo.
+//
+// Parameters: t is the switch to undo: the plugin and the state it was switched to.
+// Returns: the tab, busy with the switch back, and the work to run.
+func (m Model) Revert(t PluginToggle) (Model, Result) {
+	if m.busy != "" {
+		return m, Result{}
+	}
+	return m.switchPlugin(t.Name, !t.Enabled)
 }
 
 func (m Model) setPlugin(name string, enable bool) tea.Cmd {

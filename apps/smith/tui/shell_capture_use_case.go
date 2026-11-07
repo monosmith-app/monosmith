@@ -99,6 +99,8 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.toolsRead(msg)
 	case capSearch:
 		return s.searchRead(msg)
+	case capCommit:
+		return s.commitSaved(msg)
 	}
 	return nil
 }
@@ -142,6 +144,11 @@ var undoArgv = []string{"undo", "--yes"}
 // undoRead shows what smith undo would revert and asks; when there is nothing
 // to revert, the reason smith gave is the notice.
 func (s *Shell) undoRead(msg capturedMsg) tea.Cmd {
+	if !msg.res.OK && !s.commitOps {
+		// Commits are off, so there is nothing to revert: say how to turn undo on.
+		s.openUndoOff()
+		return nil
+	}
 	if !msg.res.OK {
 		s.tell(words.Say("tui.capture.nothing_to_undo"), words.Say("tui.capture.smith_said"), commandtext.Failure(msg.res.Text, msg.res.Err))
 		return nil

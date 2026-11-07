@@ -172,7 +172,7 @@ func runKindScenario(t *testing.T, sc kindScenario) {
 	}
 	healthy := func(stage string) {
 		t.Helper()
-		if out := w.smith(true, "doctor"); strings.Contains(out, "✖") {
+		if out := w.smith(true, "doctor"); strings.Contains(out, "×") {
 			t.Fatalf("%s: doctor is not clean:\n%s", stage, out)
 		}
 		w.smith(true, "run", "build", "test")

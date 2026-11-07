@@ -48,6 +48,11 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		s.Argv, s.quit = argv, true
 		return nil
 	case catalog.Changes:
+		if s.asksCommit(argv) {
+			// Ask once, before the first change, how smith treats undo.
+			s.askCommitChoice(argv, confirmed)
+			return nil
+		}
 		if !confirmed {
 			if resultdialog.ChoosesVersion(argv) {
 				// Which version wins is the person's choice: ask before the plan.
@@ -63,8 +68,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 				title, why := commands.Describe(argv)
 				s.planTicket++
 				s.openWaiting(title, why, catalog.WithConfirmation(argv), words.Say("tui.run.reading_the_commits_to_work_out"), nil)
-				load := s.sources.Release
-				return func() tea.Msg { return load() }
+				return s.loadRelease()
 			}
 			if argv[0] == "release" && s.offersAdjustments(argv) {
 				// Which packages go out, and with which bump, is the person's choice: ask before the confirmation.
@@ -102,6 +106,10 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 // askConfirm shows the confirmation of a command that changes the workspace or
 // publishes: the sentence, what it touches and the line that will run.
 func (s *Shell) askConfirm(argv []string) {
+	if argv[0] == "release" {
+		s.askReleaseConfirm(argv)
+		return
+	}
 	title, why := commands.Describe(argv)
 	c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
@@ -129,7 +137,11 @@ func (s *Shell) start(argv []string) tea.Cmd {
 		s.history = s.history[len(s.history)-maxHistory:]
 	}
 	// The preview is shown on the Release screen it was started from.
-	stayOnRelease := s.tab == commands.TabRelease && isPreview(argv)
+	stayOnRelease := s.tab == commands.TabRelease && (isPreview(argv) || isRelease(argv))
+	s.releasing = nil
+	if isRelease(argv) {
+		s.startRelease(argv)
+	}
 	if contains(s.tabs, commands.TabRun) && !stayOnRelease {
 		s.tab = commands.TabRun
 	}
@@ -186,17 +198,25 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	}
 	exit := *msg.exit
 	s.run.End(exit.Code, exit.Cancelled, now)
+	if s.stopping {
+		// The process has ended: the status line stops saying it is stopping.
+		s.hint, s.hintTicks = "", 0
+	}
 	s.proc, s.stopping = nil, false
 	s.showOutside()
 	if s.runSel == "" {
 		s.runSel = s.firstFailed()
 	}
 	s.finished()
+	if isRelease(s.run.Command) {
+		s.releaseEnded()
+	}
 	s.afterRun()
 	if name, ok := addedProject(s.run.Command); ok && s.run.OK() {
 		s.justAdded = name
 	}
 	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
+	s.last.Task = s.firstFailed()
 	cmds := []tea.Cmd{s.refreshAfter(s.run.Command)}
 	if _, ok := commandtext.ReportTarget(s.run.Command); ok && s.run.OK() {
 		cmds = append(cmds, s.reportWritten(s.run.Command))
@@ -218,7 +238,8 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 		return nil
 	}
 	s.release, s.deps = releaseview.Model{}, depsview.Model{}
-	cmds := []tea.Cmd{s.loadProjects()}
+	// The release item of Home is read again in the background.
+	cmds := []tea.Cmd{s.loadProjects(), s.loadRelease()}
 	if len(argv) > 0 && argv[0] == "plugin" {
 		// A plugin that came or went changes the choices a project can be built from.
 		s.choices, s.offers = choicesNotAsked, nil
@@ -236,7 +257,7 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 func (s *Shell) finished() {
 	switch {
 	case s.run.Cancelled:
-		s.notify(words.Say("tui.run.cancelled", "commandLine", s.run.CommandLine()), toast.Warning)
+		s.notify(words.Say("tui.run.cancelled", "commandLine", s.run.CommandLine()), toast.Info)
 	case s.run.OK() && undoable(s.run.Command, s.commitOps) && !commandtext.SaidNotCommitted(s.run.Lines):
 		s.notify(s.summary()+". "+undoHint(), toast.Success)
 	case s.run.OK() && changesFiles(s.run.Command):
@@ -254,6 +275,9 @@ func (s *Shell) summary() string {
 	took := shortDuration(r.RunTime(s.now()))
 	c := r.Counts()
 	if c.Total == 0 {
+		if r.Cancelled {
+			return words.Say("tui.run.stopped_after", "took", took)
+		}
 		if r.Exit == 0 {
 			return words.Say("tui.run.done_in", "took", took)
 		}
@@ -263,7 +287,7 @@ func (s *Shell) summary() string {
 	for _, p := range []struct {
 		n    int
 		word string
-	}{{c.Passed, "passed"}, {c.Cached, "cached"}, {c.Failed, "failed"}, {c.Skipped, "skipped"}} {
+	}{{c.Passed, "passed"}, {c.Cached, "cached"}, {c.Failed, "failed"}, {c.Skipped, "skipped"}, {c.Cancelled, "cancelled"}} {
 		if p.n > 0 {
 			parts = append(parts, words.Say("tui.run.text", "n", p.n, "word", p.word))
 		}

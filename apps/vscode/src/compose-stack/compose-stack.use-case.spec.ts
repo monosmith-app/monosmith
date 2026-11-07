@@ -210,7 +210,7 @@ describe('composeStack', () => {
   })
 
   it('says a project that was written but fails its doctor was written, with the facts and smith steps', async () => {
-    const stdout = 'Creating app desk in apps/desk/: a Tauri app\nWrote 32 file(s)\nThe new project desk fails smith doctor:\n  ✖ pkg-config does not find webkit2gtk-4.1\n      → run: sudo apt-get install libwebkit2gtk-4.1-dev\n'
+    const stdout = 'Creating app desk in apps/desk/: a Tauri app\nWrote 32 file(s)\nThe new project desk fails smith doctor:\n  × pkg-config does not find webkit2gtk-4.1\n      → run: sudo apt-get install libwebkit2gtk-4.1-dev\n'
     const stderr = 'smith: the new project desk was written but fails smith doctor; follow the steps above, then run smith doctor\n'
     const f = deps({
       picks: [['node/electron']],
@@ -223,7 +223,7 @@ describe('composeStack', () => {
   })
 
   it('never adds --commit-anyway by itself: the person decides after the facts', async () => {
-    const f = deps({ picks: [['node/electron']], reply: 'run-commit', apply: async (args) => ({ code: args.includes('--commit-anyway') ? 0 : 1, stdout: '', stderr: '✖ the build failed\n' }) })
+    const f = deps({ picks: [['node/electron']], reply: 'run-commit', apply: async (args) => ({ code: args.includes('--commit-anyway') ? 0 : 1, stdout: '', stderr: '× the build failed\n' }) })
     expect(await composeStack(f.deps)).toMatchObject({ kind: 'refused' })
   })
 

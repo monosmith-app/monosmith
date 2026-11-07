@@ -39,7 +39,7 @@ func TestAdoptRepository(t *testing.T) {
 	_ = os.Remove(filepath.Join(w.dir, "scratch.txt"))
 
 	out = w.smith(true, "adopt", "--tags", "--init")
-	if !strings.Contains(out, "tagged libs/core/v1.2.0") || !strings.Contains(out, "✔ adopted") {
+	if !strings.Contains(out, "tagged libs/core/v1.2.0") || !strings.Contains(out, "✓ adopted") {
 		t.Fatalf("adopt --tags --init:\n%s", out)
 	}
 	if commit := strings.TrimSpace(w.git("rev-parse", "libs/core/v1.2.0^{commit}")); commit != strings.TrimSpace(w.git("rev-parse", "core@1.2.0^{commit}")) {

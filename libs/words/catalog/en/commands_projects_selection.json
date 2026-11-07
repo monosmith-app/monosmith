@@ -1,0 +1,18 @@
+{
+  "commands.projects.explain.title": "Explain the project",
+  "commands.projects.explain.hint": "smith explain <project>: what the project is, how smith sees it and why",
+  "commands.projects.why.title": "Show who owns the project's files",
+  "commands.projects.why.hint": "smith why <root>: what produced each file of the project",
+  "commands.projects.graph.title": "Show the projects it needs and the projects that use it",
+  "commands.projects.graph.hint": "smith graph --focus <project>: the projects it needs and the projects that use it",
+  "commands.projects.derive-explain.title": "Explain the derived files",
+  "commands.projects.derive-explain.hint": "smith derive --explain: who owns each file and why it is in its state",
+  "commands.projects.derive-apply.title": "Update the derived files",
+  "commands.projects.derive-apply.hint": "smith derive: writes the files that are out of date or missing; never overwrites a file you edited",
+  "commands.projects.derive-adopt.title": "Keep my edit of a derived file",
+  "commands.projects.derive-adopt.hint": "smith derive --adopt: takes your edit of a keys file as the new baseline",
+  "commands.projects.derive-eject.title": "Own the files I edited",
+  "commands.projects.derive-eject.hint": "smith derive --eject: the files become yours and smith stops touching them",
+  "commands.projects.derive-replace.title": "Replace the files I edited",
+  "commands.projects.derive-replace.hint": "smith derive --replace: overwrites them with what smith derives; your edit is lost"
+}

@@ -40,7 +40,7 @@ func TestAdmitRefusesWithoutAPrompterAndNamesTheRemedy(t *testing.T) {
 	if !errors.Is(err, ErrUntrusted) {
 		t.Fatalf("got %v", err)
 	}
-	for _, want := range []string{"✖ the external plugin \"widget\" is not trusted yet, so smith did not start it", "→ run `smith plugin trust widget` to review it and trust it"} {
+	for _, want := range []string{"× the external plugin \"widget\" is not trusted yet, so smith did not start it", "→ run `smith plugin trust widget` to review it and trust it"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("message lacks %q:\n%s", want, err)
 		}

@@ -39,7 +39,7 @@ func TestExternalLanguagePlugin(t *testing.T) {
 	if out := w.smith(true, "plugin", "list"); !strings.Contains(out, "kiwi           1.0.0") {
 		t.Fatalf("plugin list:\n%s", out)
 	}
-	if out := w.smith(true, "plugin", "check", "kiwi", "--generate"); !strings.Contains(out, "✔ the generated package records its stack") || strings.Contains(out, "✖") {
+	if out := w.smith(true, "plugin", "check", "kiwi", "--generate"); !strings.Contains(out, "✓ the generated package records its stack") || strings.Contains(out, "×") {
 		t.Fatalf("plugin check:\n%s", out)
 	}
 	ignore, _ := os.ReadFile(filepath.Join(w.dir, ".gitignore"))
@@ -99,13 +99,13 @@ func TestExternalLanguagePlugin(t *testing.T) {
 
 	// A plugin of your own, in Go: scaffolded, conformant, then in use.
 	w.smith(true, "add", "app", "hello-rules", "--stack", "go-smith-plugin")
-	if out := w.smith(true, "run", "test", "-p", "hello-rules"); !strings.Contains(out, "hello-rules:test ✔") {
+	if out := w.smith(true, "run", "test", "-p", "hello-rules"); !strings.Contains(out, "hello-rules:test ✓") {
 		t.Fatalf("the scaffolded plugin's conformance test:\n%s", out)
 	}
 	toml, _ = os.ReadFile(filepath.Join(w.dir, "smith.toml"))
 	w.write("smith.toml", string(toml)+"\n[plugins.external.hello-rules]\ncommand = [\"go\", \"run\", \"./apps/hello-rules\"]\n\n[conventions.hello-rules]\nlanguages = [\"go\"]\n")
 	w.trust("hello-rules")
-	if out := w.smith(true, "run", "hello", "-p", "hello-rules"); !strings.Contains(out, "hello-rules:hello ✔") {
+	if out := w.smith(true, "run", "hello", "-p", "hello-rules"); !strings.Contains(out, "hello-rules:hello ✓") {
 		t.Fatalf("the plugin's task:\n%s", out)
 	}
 }

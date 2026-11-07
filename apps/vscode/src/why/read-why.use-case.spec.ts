@@ -27,7 +27,7 @@ describe('readFileWhy', () => {
   })
 
   it('throws smith words when it fails', async () => {
-    await expect(readFileWhy(async () => ({ code: 1, stdout: '', stderr: '✖ not a workspace\n  → run smith new\n' }), 'a')).rejects.toThrow('not a workspace Try: run smith new')
+    await expect(readFileWhy(async () => ({ code: 1, stdout: '', stderr: '× not a workspace\n  → run smith new\n' }), 'a')).rejects.toThrow('not a workspace Try: run smith new')
   })
 
   it('throws a fix when the answer is not JSON', async () => {

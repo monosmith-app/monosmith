@@ -5,6 +5,7 @@ import (
 	"io"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
@@ -56,6 +57,9 @@ type Sources struct {
 	Capture func(ctx context.Context, argv []string) Captured
 	// Open opens a file with the program the system chooses (the report).
 	Open func(path string) error
+	// FirstCommit makes the empty commit that starts the history of a package
+	// that was never released (release.FirstReleaseCommand).
+	FirstCommit func() error
 }
 
 // ProjectsLoaded is the workspace's projects, loaded in the background.
@@ -97,6 +101,15 @@ func WorkspaceSources(dir, version string) Sources {
 			}
 			return doctorfix.Apply(ctx, root, fix, out)
 		},
+		FirstCommit: func() error {
+			s, err := open()
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			_, err = s.Git.Run("commit", "--allow-empty", "-m", release.FirstReleaseMessage)
+			return err
+		},
 		Projects: func() ProjectsLoaded { return loadProjects(open) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
 		Plan:     func(argv []string) []string { return planTasks(open, argv) },
@@ -127,9 +140,23 @@ func WorkspaceSources(dir, version string) Sources {
 				}
 			}
 			out.Plan, out.Err = release.PlanFor(s)
+			out.Git = gitState(s)
 			return out
 		},
 	}
+}
+
+// gitState reads where the release tags would go and how far the branch is from
+// its upstream. A failing read leaves the field empty: the checks then say what
+// is not known.
+func gitState(s *session.Session) releaseview.GitState {
+	remote := s.Config.Release.Remote
+	g := releaseview.GitState{Known: true, Branch: s.Git.CurrentBranch(), Remote: remote, HasRemote: s.Git.HasRemote(remote)}
+	if out, err := s.Git.Run("rev-list", "--count", "@{upstream}..HEAD"); err == nil {
+		g.Upstream = true
+		g.Ahead, _ = strconv.Atoi(strings.TrimSpace(out))
+	}
+	return g
 }
 
 // fixRoot is the workspace root a fix's paths are relative to.

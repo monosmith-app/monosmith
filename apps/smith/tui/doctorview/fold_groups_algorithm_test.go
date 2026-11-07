@@ -38,17 +38,18 @@ func TestEnterOnAHeadingFoldsAndUnfoldsItsGroup(t *testing.T) {
 	}
 }
 
-func TestETogglesEveryGroupAndTheHeadlineButtonSaysWhichWay(t *testing.T) {
+func TestETogglesEveryGroupAndAllOpenSaysWhichWay(t *testing.T) {
 	m := sample()
-	if !strings.Contains(plain(m), "collapse all") {
-		t.Fatalf("with every group open the button collapses:\n%s", plain(m))
+	if !m.AllOpen() || strings.Contains(plain(m), "collapse all") || strings.Contains(plain(m), "expand all") {
+		t.Fatalf("with every group open AllOpen is true and the page has no button of its own (the footer owns the key):\n%s", plain(m))
 	}
 	m = m.Update(key("E"))
 	out := plain(m)
-	if strings.Contains(out, "Go is installed") || !strings.Contains(out, "expand all") {
-		t.Fatalf("E folds every group and the button offers to expand:\n%s", out)
+	if strings.Contains(out, "Go is installed") || m.AllOpen() {
+		t.Fatalf("E folds every group and AllOpen turns false, so the footer offers to expand:\n%s", out)
 	}
-	if out := plain(m.Update(key("E"))); !strings.Contains(out, "Go is installed") || !strings.Contains(out, "Docker registries of web agree") {
+	m = m.Update(key("E"))
+	if out := plain(m); !m.AllOpen() || !strings.Contains(out, "Go is installed") || !strings.Contains(out, "Docker registries of web agree") {
 		t.Fatalf("E again opens them all:\n%s", out)
 	}
 }

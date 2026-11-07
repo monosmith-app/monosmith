@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -101,11 +102,11 @@ In CI, or without a terminal, it never asks: it prints the command to run.
 func Report(out interface{ Write([]byte) (int, error) }, r Result) {
 	w := func(format string, a ...any) { fmt.Fprintf(out, format, a...) }
 	if !r.CommandOK {
-		w("✗ smith %s failed in the copy:\n%s\n", strings.Join(r.Command, " "), indent(r.CommandTail))
+		w(marks.Failed+" smith %s failed in the copy:\n%s\n", strings.Join(r.Command, " "), indent(r.CommandTail))
 		w("→ fix the cause, then try again. Your files were not touched.\n")
 		return
 	}
-	w("✓ smith %s ran in the copy: %d files changed\n", strings.Join(r.Command, " "), len(r.Changed))
+	w(marks.Passed+" smith %s ran in the copy: %d files changed\n", strings.Join(r.Command, " "), len(r.Changed))
 	for i, l := range r.Changed {
 		if i == 20 {
 			w("  … %d more\n", len(r.Changed)-20)
@@ -115,10 +116,10 @@ func Report(out interface{ Write([]byte) (int, error) }, r Result) {
 	}
 	for _, c := range r.Checks {
 		if c.OK {
-			w("✓ %s passed on the result\n", c.Name)
+			w(marks.Passed+" %s passed on the result\n", c.Name)
 			continue
 		}
-		w("✗ %s failed on the result:\n%s\n", c.Name, indent(c.Tail))
+		w(marks.Failed+" %s failed on the result:\n%s\n", c.Name, indent(c.Tail))
 		w("→ try again with --keep to look at the copy. Your files were not touched.\n")
 	}
 	if r.Kept != "" {

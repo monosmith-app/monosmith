@@ -105,7 +105,7 @@ Real run and its output files:
 ```text
 $ smith run lint build
 ...
-✔ 5/5 tasks succeeded (0 from cache) in 8.996s
+✓ 5/5 tasks succeeded (0 from cache) in 8.996s
 
 dist/apps/infra/parameters/main.parameters.json
 dist/apps/infra/template/main.json
@@ -264,7 +264,7 @@ separately by me for Bicep).
 Both passed. Doctor also warned, from the host, once per project:
 `! infra can be verified: infra has no test task, so CI never checks it`
 (and the same for `network`), because Bicep projects have no `test` task. The
-run ended `16 passed, 0 failed, 2 warning(s)`.
+run ended `16 passed, 0 failed, 2 warnings`.
 
 **Dependencies.** Not supported: `smith install`, `smith sync` and `smith up`
 do nothing for Bicep. Module versions live in `br:` references you edit.

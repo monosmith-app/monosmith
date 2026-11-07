@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parseFixPreview } from './fix-preview.mapper.ts'
 
 const proposed = [
-  'smith doctor --fix exited with code 1 and printed no JSON: ✖ the cache directory is ignored by git',
+  'smith doctor --fix exited with code 1 and printed no JSON: × the cache directory is ignored by git',
   '    → add `.smith/` to .gitignore',
   '',
   '34 passed, 1 failed, 0 warning(s)',

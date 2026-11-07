@@ -89,12 +89,12 @@ smith tools
 ```
 
 ```text
-✔ Git: git 2.41.0
-✔ the GitHub CLI: gh 2.94.0
-✖ the Dart SDK: not installed
+✓ Git: git 2.41.0
+✓ the GitHub CLI: gh 2.94.0
+× the Dart SDK: not installed
     If you skip it: smith install, build and test fail for the dart projects.
-✔ Node.js: node 24.12.0
-✔ Python: python3 3.13.14
+✓ Node.js: node 24.12.0
+✓ Python: python3 3.13.14
 
 To get what is missing: smith tools install
 ```

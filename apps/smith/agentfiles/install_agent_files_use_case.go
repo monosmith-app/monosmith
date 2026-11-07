@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -70,7 +71,7 @@ func (i Install) Run() error {
 			"take smith's: delete "+edited[0].Path+" (or its smith entry in an MCP file) and run the command again")
 	}
 	if len(todo) == 0 {
-		fmt.Fprintf(i.Out, "✓ The MonoSmith agent is already installed (%d files)\n", len(files))
+		fmt.Fprintf(i.Out, marks.Passed+" The MonoSmith agent is already installed (%d files)\n", len(files))
 		return nil
 	}
 	for _, f := range todo {
@@ -94,7 +95,7 @@ func (i Install) Run() error {
 	}
 	written, err := Write(root, todo)
 	for _, w := range written {
-		fmt.Fprintf(i.Out, "✓ Wrote %s\n", w)
+		fmt.Fprintf(i.Out, marks.Passed+" Wrote %s\n", w)
 	}
 	if err != nil {
 		return err

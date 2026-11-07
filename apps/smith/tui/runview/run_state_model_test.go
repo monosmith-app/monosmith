@@ -28,7 +28,7 @@ func TestARunWalksTheTasksThroughTheirStates(t *testing.T) {
 	if c.Running != 2 || c.Queued != 1 {
 		t.Fatalf("%+v", c)
 	}
-	feed(r, time.Second, "kit:test │ ok example.com/kit 0.3s", "kit:test ✔ 934ms", "sdk:test ✔ from cache")
+	feed(r, time.Second, "kit:test │ ok example.com/kit 0.3s", "kit:test ✓ 934ms", "sdk:test ✓ from cache")
 	c = r.Counts()
 	if c.Passed != 1 || c.Cached != 1 || c.Running != 1 || c.Done != 2 {
 		t.Fatalf("%+v", c)
@@ -36,7 +36,7 @@ func TestARunWalksTheTasksThroughTheirStates(t *testing.T) {
 	if got := r.Task("kit:test").Log; len(got) != 1 || got[0] != "ok example.com/kit 0.3s" {
 		t.Fatalf("kit log %v", got)
 	}
-	feed(r, 2*time.Second, "web:test ✔ 1.5s", "✔ 3/3 tasks succeeded (1 from cache) in 2s")
+	feed(r, 2*time.Second, "web:test ✓ 1.5s", "✓ 3/3 tasks succeeded (1 from cache) in 2s")
 	r.End(0, false, t0.Add(2*time.Second))
 	if !r.OK() || r.Counts().Done != 3 {
 		t.Fatalf("ok %v %+v", r.OK(), r.Counts())
@@ -48,7 +48,7 @@ func TestARunWalksTheTasksThroughTheirStates(t *testing.T) {
 
 func TestFailuresComeFirstThenRunningThenQueued(t *testing.T) {
 	r := NewRun([]string{"build"}, []string{"a:build", "b:build", "c:build", "d:build"}, t0)
-	feed(r, 0, "a:build ▶ x", "b:build ▶ x", "a:build ✔ 1s", "b:build ✖ exited with code 1")
+	feed(r, 0, "a:build ▶ x", "b:build ▶ x", "a:build ✓ 1s", "b:build × exited with code 1")
 	var ids []string
 	for _, tk := range r.Ordered() {
 		ids = append(ids, tk.ID+":"+tk.Status.String())
@@ -69,7 +69,7 @@ func TestFailuresComeFirstThenRunningThenQueued(t *testing.T) {
 
 func TestTheClosingSummaryMarksSkippedTasks(t *testing.T) {
 	r := NewRun([]string{"test"}, []string{"kit:test", "web:test"}, t0)
-	feed(r, 0, "kit:test ✖ exited with code 2", "  ✖ kit:test exited with code 2", "  ↷ web:test because kit:test did not succeed", "✖ 0/2 tasks succeeded (0 from cache) in 1s")
+	feed(r, 0, "kit:test × exited with code 2", "  × kit:test exited with code 2", "  » web:test because kit:test did not succeed", "× 0/2 tasks succeeded (0 from cache) in 1s")
 	r.End(1, false, t0.Add(time.Second))
 	if r.Task("web:test").Status != Skipped || r.Task("web:test").Reason != "because kit:test did not succeed" {
 		t.Fatalf("%+v", r.Task("web:test"))
@@ -83,8 +83,11 @@ func TestCancellingLeavesNothingSpinning(t *testing.T) {
 	r := NewRun([]string{"build"}, []string{"a:build", "b:build"}, t0)
 	feed(r, 0, "a:build ▶ x")
 	r.End(1, true, t0.Add(3*time.Second))
-	if r.Task("a:build").Status != Failed || r.Task("a:build").Reason != "interrupted" {
+	if r.Task("a:build").Status != Cancelled || r.Task("a:build").Reason != "interrupted" {
 		t.Fatalf("%+v", r.Task("a:build"))
+	}
+	if c := r.Counts(); c.Failed != 0 || c.Cancelled != 1 || c.Skipped != 1 {
+		t.Fatalf("a stopped task is not a failure: %+v", c)
 	}
 	if r.Task("b:build").Status != Skipped || r.Task("b:build").Reason != "cancelled" {
 		t.Fatalf("%+v", r.Task("b:build"))
@@ -96,7 +99,7 @@ func TestCancellingLeavesNothingSpinning(t *testing.T) {
 
 func TestTasksNotInThePlanAreAddedAsTheyAppear(t *testing.T) {
 	r := NewRun([]string{"build"}, nil, t0)
-	feed(r, 0, "affected: 1 file → 1 project(s)", "kit:build ▶ go build", "kit:build ✔ 1s")
+	feed(r, 0, "affected: 1 file → 1 project(s)", "kit:build ▶ go build", "kit:build ✓ 1s")
 	if c := r.Counts(); c.Total != 1 || c.Passed != 1 {
 		t.Fatalf("%+v", c)
 	}
@@ -125,11 +128,11 @@ func TestTheLogsAreCapped(t *testing.T) {
 
 func TestAFailedTaskWithNoOutputShowsItsReasonInTheLog(t *testing.T) {
 	r := NewRun([]string{"add"}, nil, t0)
-	feed(r, 0, "api-cs:add ▶ dotnet new", "api-cs:add ✖ the .NET SDK is missing: install it from https://dot.net/download")
+	feed(r, 0, "api-cs:add ▶ dotnet new", "api-cs:add × the .NET SDK is missing: install it from https://dot.net/download")
 	if got := r.Task("api-cs:add").Log; len(got) != 1 || got[0] != "the .NET SDK is missing: install it from https://dot.net/download" {
 		t.Fatalf("log %v", got)
 	}
-	feed(r, 0, "web:test ▶ x", "web:test │ boom", "web:test ✖ exited with code 1")
+	feed(r, 0, "web:test ▶ x", "web:test │ boom", "web:test × exited with code 1")
 	if got := r.Task("web:test").Log; len(got) != 1 || got[0] != "boom" {
 		t.Fatalf("a task with output keeps only its output: %v", got)
 	}

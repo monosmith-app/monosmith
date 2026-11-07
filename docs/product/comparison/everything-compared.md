@@ -18,26 +18,26 @@ addition:
 
 | Mark | Meaning |
 |---|---|
-| ✅ | The tool's documentation says it has the feature |
+| ✓ | The tool's documentation says it has the feature |
 | ◐ | Partly, experimental, or with a condition; the notes say which |
 | ❔ | Not verified: the tool's documentation source was searched and neither states nor excludes the feature. Never counted as absent |
-| ❌ | The documentation says it is not provided, describes a different mechanism for the same job, or the tool's documented scope is another single language |
+| × | The documentation says it is not provided, describes a different mechanism for the same job, or the tool's documented scope is another single language |
 | – | Not applicable (a tool converting from itself) |
 
 Rules the table follows:
 
-- **MonoSmith's column is held to a stricter standard.** ✅ means the feature is
+- **MonoSmith's column is held to a stricter standard.** ✓ means the feature is
   shipped and was run, is live on a public registry or release, or is covered by a test
   in the repository. ◐ means shipped but partial, or shipped and not verified end to
-  end here. ❌ means not shipped. The last column says how each smith cell was checked
-  (R, C, L, T, D or I, below) and, for a ◐ or ❌, which tracking issue or decision it
+  end here. × means not shipped. The last column says how each smith cell was checked
+  (R, C, L, T, D or I, below) and, for a ◐ or ×, which tracking issue or decision it
   belongs to. An issue number is a tracking issue, not a commitment.
 - **Language rows** mark first-party, language-aware support: the tool finds the
   projects, knows their tasks. Running any command through a shell or a container
   is ◐ at most. A single-language tool (Lerna, Rush, Lage, Cargo, the JavaScript
-  package managers) is ❌ in the other languages' rows, because its documentation
+  package managers) is × in the other languages' rows, because its documentation
   states that scope.
-- **Environment rows** ("ready-made environment", by language) are ✅ for a tool only where its
+- **Environment rows** ("ready-made environment", by language) are ✓ for a tool only where its
   documentation shows a built-in generator for a new project in that language and tasks that run it,
   with no rules for you to write; ◐ means the language is supported but you write BUILD files, rules,
   scripts or configuration, or add a plugin. The reasoning is on
@@ -74,134 +74,134 @@ The table is generated from [`features.json`](features.json) by
 | Capability | **MonoSmith** | Nx | Turbo | Bazel | Pants | Lerna | Rush | moon | Buck2 | Gradle | Earthly | Lage | JS pkg mgrs | Cargo | Please | Smith: evidence, issue |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **Languages and stacks** | | | | | | | | | | | | | | | | |
-| JavaScript and TypeScript | **✅** | ✅ | ✅ | ◐ | ◐ | ✅ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ | ❌ | ❔ | R |
-| Go | **✅** | ◐ | ◐ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ❔ | ◐ | ❌ | ❌ | ❌ | ✅ | R |
-| Python | **✅** | ◐ | ◐ | ◐ | ✅ | ❌ | ❌ | ◐ | ✅ | ❔ | ◐ | ❌ | ◐ | ❌ | ✅ | C |
-| Rust | **✅** | ◐ | ◐ | ◐ | ❔ | ❌ | ❌ | ✅ | ✅ | ❔ | ◐ | ❌ | ◐ | ✅ | ◐ | C |
-| Java, Kotlin, Android | **◐** | ✅ | ❔ | ✅ | ✅ | ❌ | ❌ | ◐ | ✅ | ✅ | ◐ | ❌ | ❌ | ❌ | ✅ | C, not yet verified: Gradle run |
-| .NET (C#, F#) | **✅** | ✅ | ◐ | ❔ | ❔ | ❌ | ❌ | ◐ | ❌ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
-| C and C++ | **✅** | ❔ | ❔ | ✅ | ❔ | ❌ | ❌ | ◐ | ✅ | ✅ | ◐ | ❌ | ❌ | ❌ | ✅ | C |
-| Ruby | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
-| PHP | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
-| Dart and Flutter | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
-| Azure Bicep (infrastructure) | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
-| Front-end frameworks (React, Angular, Vue, Vite, Astro) | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| JavaScript and TypeScript | **✓** | ✓ | ✓ | ◐ | ◐ | ✓ | ✓ | ✓ | ❔ | ❔ | ◐ | ✓ | ✓ | × | ❔ | R |
+| Go | **✓** | ◐ | ◐ | ✓ | ✓ | × | × | ✓ | ✓ | ❔ | ◐ | × | × | × | ✓ | R |
+| Python | **✓** | ◐ | ◐ | ◐ | ✓ | × | × | ◐ | ✓ | ❔ | ◐ | × | ◐ | × | ✓ | C |
+| Rust | **✓** | ◐ | ◐ | ◐ | ❔ | × | × | ✓ | ✓ | ❔ | ◐ | × | ◐ | ✓ | ◐ | C |
+| Java, Kotlin, Android | **◐** | ✓ | ❔ | ✓ | ✓ | × | × | ◐ | ✓ | ✓ | ◐ | × | × | × | ✓ | C, not yet verified: Gradle run |
+| .NET (C#, F#) | **✓** | ✓ | ◐ | ❔ | ❔ | × | × | ◐ | × | ❔ | ◐ | × | × | × | ❔ | C |
+| C and C++ | **✓** | ❔ | ❔ | ✓ | ❔ | × | × | ◐ | ✓ | ✓ | ◐ | × | × | × | ✓ | C |
+| Ruby | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ◐ | ❔ | ❔ | ◐ | × | × | × | ❔ | C |
+| PHP | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ◐ | ❔ | ❔ | ◐ | × | × | × | ❔ | C |
+| Dart and Flutter | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ❔ | ❔ | ❔ | ◐ | × | × | × | ❔ | C |
+| Azure Bicep (infrastructure) | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ❔ | ❔ | ❔ | ◐ | × | × | × | ❔ | C |
+| Front-end frameworks (React, Angular, Vue, Vite, Astro) | **✓** | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Ready-made environments, by language** | | | | | | | | | | | | | | | | |
-| Ready-made environment: JavaScript and TypeScript | **✅** | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | ❌ | ❔ | R |
-| Ready-made environment: Python | **✅** | ◐ | ◐ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❔ | ❌ | ◐ | R |
-| Ready-made environment: Go | **✅** | ◐ | ◐ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❌ | ❌ | ◐ | R |
-| Ready-made environment: Rust | **✅** | ◐ | ◐ | ◐ | ❔ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❔ | ✅ | ◐ | R |
-| Ready-made environment: Java, Kotlin and Android | **◐** | ◐ | ❔ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ✅ | ◐ | ❌ | ❌ | ❌ | ◐ | R, not yet verified end to end |
-| Ready-made environment: .NET | **✅** | ◐ | ◐ | ❔ | ❔ | ❌ | ❌ | ◐ | ❌ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
-| Ready-made environment: Ruby | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
-| Ready-made environment: PHP | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
-| Ready-made environment: C and C++ (CMake) | **✅** | ❔ | ❔ | ◐ | ❔ | ❌ | ❌ | ◐ | ◐ | ✅ | ◐ | ❌ | ❌ | ❌ | ◐ | R |
-| Ready-made environment: Dart and Flutter | **◐** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R, not yet verified end to end |
-| Ready-made environment: Azure Bicep | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
-| A new project lints, type-checks, tests and builds on its first run (a worked example is included) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Writes a dev container with the toolchains CI installs | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| The generated pipeline installs each language's toolchain and caches its package store | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Ready-made environment: JavaScript and TypeScript | **✓** | ✓ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | × | ❔ | R |
+| Ready-made environment: Python | **✓** | ◐ | ◐ | ◐ | ◐ | × | × | ◐ | ◐ | ❔ | ◐ | × | ❔ | × | ◐ | R |
+| Ready-made environment: Go | **✓** | ◐ | ◐ | ◐ | ◐ | × | × | ◐ | ◐ | ❔ | ◐ | × | × | × | ◐ | R |
+| Ready-made environment: Rust | **✓** | ◐ | ◐ | ◐ | ❔ | × | × | ◐ | ◐ | ❔ | ◐ | × | ❔ | ✓ | ◐ | R |
+| Ready-made environment: Java, Kotlin and Android | **◐** | ◐ | ❔ | ◐ | ◐ | × | × | ◐ | ◐ | ✓ | ◐ | × | × | × | ◐ | R, not yet verified end to end |
+| Ready-made environment: .NET | **✓** | ◐ | ◐ | ❔ | ❔ | × | × | ◐ | × | ❔ | ◐ | × | × | × | ❔ | R |
+| Ready-made environment: Ruby | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ◐ | ❔ | ❔ | ◐ | × | × | × | ❔ | R |
+| Ready-made environment: PHP | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ◐ | ❔ | ❔ | ◐ | × | × | × | ❔ | R |
+| Ready-made environment: C and C++ (CMake) | **✓** | ❔ | ❔ | ◐ | ❔ | × | × | ◐ | ◐ | ✓ | ◐ | × | × | × | ◐ | R |
+| Ready-made environment: Dart and Flutter | **◐** | ❔ | ❔ | ❔ | ❔ | × | × | ❔ | ❔ | ❔ | ◐ | × | × | × | ❔ | R, not yet verified end to end |
+| Ready-made environment: Azure Bicep | **✓** | ❔ | ❔ | ❔ | ❔ | × | × | ❔ | ❔ | ❔ | ◐ | × | × | × | ❔ | R |
+| A new project lints, type-checks, tests and builds on its first run (a worked example is included) | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Writes a dev container with the toolchains CI installs | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| The generated pipeline installs each language's toolchain and caches its package store | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Project discovery and scaffolding** | | | | | | | | | | | | | | | | |
-| Projects found from the manifests you already have | **✅** | ✅ | ◐ | ❌ | ◐ | ◐ | ◐ | ◐ | ❌ | ◐ | ❌ | ◐ | ✅ | ✅ | ❌ | R |
-| Scaffold apps, libraries and packages | **✅** | ✅ | ✅ | ❔ | ◐ | ✅ | ◐ | ✅ | ◐ | ✅ | ❔ | ◐ | ◐ | ✅ | ◐ | R |
-| Team recipes: a shared preset of plugins and settings, with questions at add time | **✅** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Existing projects checked against their recipe, owned files upgraded | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Code layout checked inside projects (vertical slices) in nine languages | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Projects found from the manifests you already have | **✓** | ✓ | ◐ | × | ◐ | ◐ | ◐ | ◐ | × | ◐ | × | ◐ | ✓ | ✓ | × | R |
+| Scaffold apps, libraries and packages | **✓** | ✓ | ✓ | ❔ | ◐ | ✓ | ◐ | ✓ | ◐ | ✓ | ❔ | ◐ | ◐ | ✓ | ◐ | R |
+| Team recipes: a shared preset of plugins and settings, with questions at add time | **✓** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Existing projects checked against their recipe, owned files upgraded | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Code layout checked inside projects (vertical slices) in nine languages | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | **The dependency graph** | | | | | | | | | | | | | | | | |
-| Dependencies between projects read from source imports, in several languages | **✅** | ◐ | ❌ | ❔ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ◐ | T |
-| Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages | **✅** | ❔ | ❔ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected | **✅** | ✅ | ✅ | ◐ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | R |
-| Graph diff between two revisions (projects and imports added or removed) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Rules for which projects may depend on which (boundaries, visibility) | **❌** | ✅ | ◐ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | I, #570 |
-| Edges between projects of different languages | **◐** | ✅ | ❔ | ✅ | ◐ | ❌ | ❌ | ◐ | ✅ | ❔ | ◐ | ❌ | ❌ | ❌ | ✅ | R, by design, ADR 0028 |
-| Asks what depends on a project or a file, transitively | **✅** | ✅ | ◐ | ✅ | ✅ | ❔ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ❔ | ◐ | ✅ | R |
-| The graph as JSON for scripts | **✅** | ✅ | ◐ | ◐ | ✅ | ✅ | ◐ | ✅ | ◐ | ❔ | ❔ | ❔ | ◐ | ✅ | ✅ | R |
-| A plugin can contribute graph edges for its own language | **✅** | ✅ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Dependencies between projects read from source imports, in several languages | **✓** | ◐ | × | ❔ | ✓ | × | × | × | × | × | × | × | × | × | ◐ | T |
+| Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages | **✓** | ❔ | ❔ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected | **✓** | ✓ | ✓ | ◐ | ❔ | ◐ | ❔ | ✓ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | R |
+| Graph diff between two revisions (projects and imports added or removed) | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Rules for which projects may depend on which (boundaries, visibility) | **×** | ✓ | ◐ | ✓ | ✓ | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ◐ | ❔ | ✓ | I, #570 |
+| Edges between projects of different languages | **◐** | ✓ | ❔ | ✓ | ◐ | × | × | ◐ | ✓ | ❔ | ◐ | × | × | × | ✓ | R, by design, ADR 0028 |
+| Asks what depends on a project or a file, transitively | **✓** | ✓ | ◐ | ✓ | ✓ | ❔ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ❔ | ◐ | ✓ | R |
+| The graph as JSON for scripts | **✓** | ✓ | ◐ | ◐ | ✓ | ✓ | ◐ | ✓ | ◐ | ❔ | ❔ | ❔ | ◐ | ✓ | ✓ | R |
+| A plugin can contribute graph edges for its own language | **✓** | ✓ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | **Tasks, graph and affected** | | | | | | | | | | | | | | | | |
-| Tasks run in dependency order, in parallel | **✅** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | R |
-| Only what changed since a git base (affected) | **✅** | ✅ | ✅ | ◐ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ | ✅ | ✅ | ❔ | ✅ | R |
-| Runs everything when it cannot be sure (no base, shallow clone, changed lockfile) | **✅** | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Affected selection by task, finer than a project | **❌** | ✅ | ❔ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | D, #574 to decide; the unit is the project today |
-| Dependency graph of single source files and targets (Bazel and Pants style) | **❌** | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | D, design choice: not planned |
-| Compiler and runtime versions are part of the cache key | **✅** | ✅ | ◐ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Tasks run in dependency order, in parallel | **✓** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | R |
+| Only what changed since a git base (affected) | **✓** | ✓ | ✓ | ◐ | ✓ | ✓ | ✓ | ✓ | ◐ | ◐ | ◐ | ✓ | ✓ | ❔ | ✓ | R |
+| Runs everything when it cannot be sure (no base, shallow clone, changed lockfile) | **✓** | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Affected selection by task, finer than a project | **×** | ✓ | ❔ | ✓ | ✓ | ❔ | ❔ | ✓ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ✓ | D, #574 to decide; the unit is the project today |
+| Dependency graph of single source files and targets (Bazel and Pants style) | **×** | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | D, design choice: not planned |
+| Compiler and runtime versions are part of the cache key | **✓** | ✓ | ◐ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Cache and execution** | | | | | | | | | | | | | | | | |
-| Local content-addressed cache that restores outputs and replays logs | **✅** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ✅ | ✅ | ✅ | ◐ | ✅ | ✅ | R |
-| Remote cache you host yourself, no vendor service required | **✅** | ✅ | ✅ | ✅ | ✅ | ◐ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ✅ | T |
-| Remote cache objects signed; a bad signature is a miss | **✅** | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | T |
-| Explains a cache miss with one command that runs nothing | **✅** | ◐ | ◐ | ◐ | ❔ | ◐ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Commands to see, trim, clear and verify the local cache | **✅** | ◐ | ❔ | ◐ | ❔ | ◐ | ◐ | ◐ | ❔ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | R |
-| Local cache kept under a size limit automatically | **✅** | ✅ | ◐ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | R |
-| Reports the time a cache hit saved | **✅** | ◐ | ✅ | ❔ | ✅ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Speaks the Bazel Remote Execution API | **❌** | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | I, #345 |
-| Remote or distributed task execution | **❌** | ◐ | ❔ | ✅ | ✅ | ◐ | ◐ | ◐ | ✅ | ❔ | ◐ | ◐ | ❔ | ❔ | ◐ | D, deliberate non-goal (execution-and-cache.md, section 9) |
-| Hermetic or sandboxed execution | **❌** | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | ◐ | ❔ | ❔ | ✅ | D, deliberate non-goal; opt-in strict mode proposed in #563 |
-| Pins language toolchains and downloads them for you | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ✅ | ❔ | ✅ | ❔ | ❔ | ◐ | ❔ | ❔ | R, deliberate (ADR 0020) |
-| Watch mode: re-run tasks when files change | **❌** | ✅ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ✅ | ❔ | ✅ | ❔ | ❔ | ✅ | D, deliberate non-goal (execution-and-cache.md, section 9) |
+| Local content-addressed cache that restores outputs and replays logs | **✓** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ◐ | ✓ | ✓ | ✓ | ◐ | ✓ | ✓ | R |
+| Remote cache you host yourself, no vendor service required | **✓** | ✓ | ✓ | ✓ | ✓ | ◐ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ◐ | ◐ | ✓ | T |
+| Remote cache objects signed; a bad signature is a miss | **✓** | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | T |
+| Explains a cache miss with one command that runs nothing | **✓** | ◐ | ◐ | ◐ | ❔ | ◐ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Commands to see, trim, clear and verify the local cache | **✓** | ◐ | ❔ | ◐ | ❔ | ◐ | ◐ | ◐ | ❔ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | R |
+| Local cache kept under a size limit automatically | **✓** | ✓ | ◐ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | R |
+| Reports the time a cache hit saved | **✓** | ◐ | ✓ | ❔ | ✓ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Speaks the Bazel Remote Execution API | **×** | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | I, #345 |
+| Remote or distributed task execution | **×** | ◐ | ❔ | ✓ | ✓ | ◐ | ◐ | ◐ | ✓ | ❔ | ◐ | ◐ | ❔ | ❔ | ◐ | D, deliberate non-goal (execution-and-cache.md, section 9) |
+| Hermetic or sandboxed execution | **×** | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ◐ | ❔ | ✓ | ◐ | ❔ | ❔ | ✓ | D, deliberate non-goal; opt-in strict mode proposed in #563 |
+| Pins language toolchains and downloads them for you | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ✓ | ❔ | ✓ | ❔ | ❔ | ◐ | ❔ | ❔ | R, deliberate (ADR 0020) |
+| Watch mode: re-run tasks when files change | **×** | ✓ | ✓ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ✓ | ❔ | ✓ | ❔ | ❔ | ✓ | D, deliberate non-goal (execution-and-cache.md, section 9) |
 | **CI generation and verification** | | | | | | | | | | | | | | | | |
-| Writes the CI pipeline files for you | **✅** | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | R |
-| GitHub Actions, Azure Pipelines and GitLab CI generated | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| CircleCI, Bitbucket Pipelines or Jenkins generated | **◐** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | D, #571 |
-| CI fails when the committed pipeline is out of date, and a fix regenerates it | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Your own steps survive regeneration (named slots) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Dependency vulnerability audit | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, #572 |
-| CI fails when a task leaves a tracked file modified | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Release preview posted on the pull request | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Ready-made pipelines beyond CI (e2e, GitHub Pages, Azure Function) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Writes the CI pipeline files for you | **✓** | ✓ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | R |
+| GitHub Actions, Azure Pipelines and GitLab CI generated | **✓** | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| CircleCI, Bitbucket Pipelines or Jenkins generated | **◐** | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | D, #571 |
+| CI fails when the committed pipeline is out of date, and a fix regenerates it | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Your own steps survive regeneration (named slots) | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Dependency vulnerability audit | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | D, #572 |
+| CI fails when a task leaves a tracked file modified | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Release preview posted on the pull request | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Ready-made pipelines beyond CI (e2e, GitHub Pages, Azure Function) | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Release and publishing** | | | | | | | | | | | | | | | | |
-| Versions from conventional commits | **✅** | ✅ | ❌ | ❔ | ◐ | ✅ | ❌ | ❌ | ❔ | ❌ | ❔ | ❔ | ❌ | ❌ | ❔ | L |
-| Publishes to npm | **✅** | ✅ | ◐ | ❔ | ❔ | ✅ | ✅ | ❌ | ❔ | ❔ | ❔ | ❔ | ✅ | ❌ | ❔ | L |
-| Publishes to PyPI | **✅** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| Publishes to crates.io | **◐** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | T, none needed; live publish unverified |
-| Publishes to NuGet | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| Publishes to RubyGems | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| Publishes to pub.dev | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| Publishes to Maven repositories | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | D, live publish unverified |
-| Releases Go modules and Packagist packages by tag | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | D, live publish unverified |
-| Builds and pushes container images | **◐** | ◐ | ❔ | ❔ | ✅ | ❔ | ❔ | ❌ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | D, run unverified |
-| Homebrew, Scoop and winget manifests from the release archives | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| .deb and .rpm packages attached to the release | **✅** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| Per-platform app archives with checksums on a GitHub Release | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L, #573 |
-| SBOM generation | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ◐ | ❔ | L, #348 |
-| Signed provenance for what you publish | **◐** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, #348 |
-| Publishes without a long-lived key (trusted publishing) | **◐** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, needs an issue |
-| A failed release resumes: versions a registry already has are skipped, in every registry | **✅** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Versions from conventional commits | **✓** | ✓ | × | ❔ | ◐ | ✓ | × | × | ❔ | × | ❔ | ❔ | × | × | ❔ | L |
+| Publishes to npm | **✓** | ✓ | ◐ | ❔ | ❔ | ✓ | ✓ | × | ❔ | ❔ | ❔ | ❔ | ✓ | × | ❔ | L |
+| Publishes to PyPI | **✓** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| Publishes to crates.io | **◐** | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | T, none needed; live publish unverified |
+| Publishes to NuGet | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| Publishes to RubyGems | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| Publishes to pub.dev | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| Publishes to Maven repositories | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | D, live publish unverified |
+| Releases Go modules and Packagist packages by tag | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | D, live publish unverified |
+| Builds and pushes container images | **◐** | ◐ | ❔ | ❔ | ✓ | ❔ | ❔ | × | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | D, run unverified |
+| Homebrew, Scoop and winget manifests from the release archives | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| .deb and .rpm packages attached to the release | **✓** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| Per-platform app archives with checksums on a GitHub Release | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | × | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L, #573 |
+| SBOM generation | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ◐ | ❔ | L, #348 |
+| Signed provenance for what you publish | **◐** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | D, #348 |
+| Publishes without a long-lived key (trusted publishing) | **◐** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | D, needs an issue |
+| A failed release resumes: versions a registry already has are skipped, in every registry | **✓** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Asks every registry whether it accepts the credential and the names before the first publish | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T, #347, #380 |
 | Release journal of what was published where | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R, #347 |
-| Publishes a VS Code extension to the Marketplace with the release | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| Publishes a VS Code extension to the Marketplace with the release | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
 | **Dependencies** | | | | | | | | | | | | | | | | |
-| One version of each shared dependency across projects | **◐** | ◐ | ◐ | ◐ | ◐ | ❔ | ✅ | ❔ | ❔ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | R, #572 |
-| Checks that a package declares what it imports | **◐** | ✅ | ❔ | ✅ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | T, #572 |
+| One version of each shared dependency across projects | **◐** | ◐ | ◐ | ◐ | ◐ | ❔ | ✓ | ❔ | ❔ | ✓ | ❔ | ❔ | ✓ | ✓ | ❔ | R, #572 |
+| Checks that a package declares what it imports | **◐** | ✓ | ❔ | ✓ | ◐ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | T, #572 |
 | **Health and migration** | | | | | | | | | | | | | | | | |
-| Read-only health check, each finding with a remedy | **✅** | ◐ | ◐ | ❔ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | R |
-| Applies fixes: diffs for file changes, questions for risky ones | **✅** | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Bring an existing repository under the tool | **✅** | ✅ | ✅ | ❔ | ✅ | ✅ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | C |
-| A dry-run report of what adopting involves (what maps, what blocks), changing nothing | **✅** | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | C |
-| Automated conversion from Nx | **✅** | – | ◐ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Automated conversion from Turborepo | **✅** | ◐ | – | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Importer for Lerna, Rush, Bazel or Gradle workspaces | **❌** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #553 |
-| Config and generated files migrate when the tool upgrades | **✅** | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Read-only health check, each finding with a remedy | **✓** | ◐ | ◐ | ❔ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | R |
+| Applies fixes: diffs for file changes, questions for risky ones | **✓** | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Bring an existing repository under the tool | **✓** | ✓ | ✓ | ❔ | ✓ | ✓ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | C |
+| A dry-run report of what adopting involves (what maps, what blocks), changing nothing | **✓** | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | C |
+| Automated conversion from Nx | **✓** | – | ◐ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Automated conversion from Turborepo | **✓** | ◐ | – | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Importer for Lerna, Rush, Bazel or Gradle workspaces | **×** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #553 |
+| Config and generated files migrate when the tool upgrades | **✓** | ✓ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | **Plugins and extensibility** | | | | | | | | | | | | | | | | |
-| A plugin model | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ◐ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ | R |
-| Plugins are separate programs speaking a documented protocol | **✅** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | R |
-| An SDK for writing plugins | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| A registry or catalogue of third-party plugins | **❌** | ✅ | ❔ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #164, #565 |
-| Extensions are integrity-checked or sandboxed | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T, #565 |
-| Named stacks: a per-project choice of toolchain plugins | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Extensions can add support for a new language | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | R |
-| An extension can be written in any language, not only the tool's own | **✅** | ❌ | ❔ | ❌ | ❌ | ❔ | ❌ | ◐ | ❌ | ❌ | ❔ | ❔ | ❌ | ✅ | ❌ | R |
-| Each extension runs in a process of its own | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | R |
-| A trust step before an extension named by the repository can run, with pins for CI | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| A command that checks an extension keeps the protocol's promises | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| A plugin model | **✓** | ✓ | ❔ | ✓ | ✓ | ❔ | ◐ | ◐ | ✓ | ✓ | ❔ | ❔ | ◐ | ✓ | ✓ | R |
+| Plugins are separate programs speaking a documented protocol | **✓** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | R |
+| An SDK for writing plugins | **✓** | ✓ | ❔ | ✓ | ✓ | ❔ | ◐ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| A registry or catalogue of third-party plugins | **×** | ✓ | ❔ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #164, #565 |
+| Extensions are integrity-checked or sandboxed | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T, #565 |
+| Named stacks: a per-project choice of toolchain plugins | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Extensions can add support for a new language | **✓** | ✓ | ❔ | ✓ | ✓ | ❔ | ❔ | ◐ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ✓ | R |
+| An extension can be written in any language, not only the tool's own | **✓** | × | ❔ | × | × | ❔ | × | ◐ | × | × | ❔ | ❔ | × | ✓ | × | R |
+| Each extension runs in a process of its own | **✓** | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | R |
+| A trust step before an extension named by the repository can run, with pins for CI | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| A command that checks an extension keeps the protocol's promises | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Interfaces** | | | | | | | | | | | | | | | | |
-| Full-screen terminal interface (dashboard, doctor, deps, release, settings) | **✅** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| VS Code extension | **✅** | ✅ | ✅ | ✅ | ❌ | ✅ | ❔ | ◐ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ✅ | L |
-| JetBrains IDE plugin | **❌** | ✅ | ❔ | ✅ | ❌ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | I, #303 |
-| MCP server for AI assistants | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| A documented protocol for editors to drive the engine | **✅** | ❔ | ◐ | ✅ | ◐ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ◐ | R |
-| A hosted service (remote cache, analytics, CI features) | **❌** | ✅ | ✅ | ◐ | ❔ | ◐ | ❔ | ✅ | ❔ | ✅ | ❌ | ❔ | ❔ | ❔ | ❔ | D, deliberate: no hosted service |
+| Full-screen terminal interface (dashboard, doctor, deps, release, settings) | **✓** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| VS Code extension | **✓** | ✓ | ✓ | ✓ | × | ✓ | ❔ | ◐ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ✓ | L |
+| JetBrains IDE plugin | **×** | ✓ | ❔ | ✓ | × | ✓ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ✓ | I, #303 |
+| MCP server for AI assistants | **✓** | ✓ | ❔ | ❔ | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| A documented protocol for editors to drive the engine | **✓** | ❔ | ◐ | ✓ | ◐ | ❔ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ◐ | R |
+| A hosted service (remote cache, analytics, CI features) | **×** | ✓ | ✓ | ◐ | ❔ | ◐ | ❔ | ✓ | ❔ | ✓ | × | ❔ | ❔ | ❔ | ❔ | D, deliberate: no hosted service |
 | **Operations** | | | | | | | | | | | | | | | | |
-| Native Windows support | **✅** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❌ | L |
-| **Score: rows marked ✅** (of 115) | **84** | 39 | 14 | 21 | 24 | 12 | 10 | 19 | 16 | 20 | 5 | 7 | 10 | 12 | 20 | ◐ 20, ❌ 11 |
+| Native Windows support | **✓** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | × | L |
+| **Score: rows marked ✓** (of 115) | **84** | 39 | 14 | 21 | 24 | 12 | 10 | 19 | 16 | 20 | 5 | 7 | 10 | 12 | 20 | ◐ 20, × 11 |
 | **Rows marked ❔** (not verified, not counted as absent) | – | 51 | 74 | 73 | 70 | 66 | 68 | 50 | 83 | 84 | 78 | 79 | 70 | 73 | 79 | |
 
 <!-- everything-compared:table:end -->
@@ -216,7 +216,7 @@ comparison tables and the tool pages.
 **Languages and stacks**
 
 - *JavaScript and TypeScript.* Bazel: through separately maintained rules; Pants: beta; Earthly: any language, as containers (no language awareness).
-- *Go.* Nx: named in its README, no Go page found; Turborepo: experimental. A tool whose documented scope is another single language is marked ❌.
+- *Go.* Nx: named in its README, no Go page found; Turborepo: experimental. A tool whose documented scope is another single language is marked ×.
 - *Python.* Nx: a walkthrough adds Python with uv; Turborepo: experimental; Bazel: external rules_python; moon: partial; pnpm 12 can add `pypi:` packages (a package source, not Python projects).
 - *Rust.* Nx: a guide publishes crates; Turborepo: experimental; Bazel: external rules_rust; pnpm 12 can add `crate:` packages; Please: rules in its plugin repository.
 - *Java, Kotlin, Android.* MonoSmith: Maven (Java) was run; Gradle, Kotlin and Android were not. moon: only as a "system" task.
@@ -241,7 +241,7 @@ comparison tables and the tool pages.
 
 **Project discovery and scaffolding**
 
-- *Projects found from the manifests you already have.* ◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); ❌ means per-target BUILD files or Earthfiles.
+- *Projects found from the manifests you already have.* ◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); × means per-target BUILD files or Earthfiles.
 - *Scaffold apps, libraries and packages.* Pants: tailor writes BUILD files, not code.
 - *Team recipes: a shared preset of plugins and settings, with questions at add time.* ◐: custom generators (Nx, Turborepo) or templates (moon); none documents levels, slots or versions.
 - *Existing projects checked against their recipe, owned files upgraded.* Searched for ❔: "template" with "update", "upgrade", "drift" and "sync".
@@ -249,7 +249,7 @@ comparison tables and the tool pages.
 
 **The dependency graph**
 
-- *Dependencies between projects read from source imports, in several languages.* Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages "Nx does not detect dependencies from source code imports". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies.
+- *Dependencies between projects read from source imports, in several languages.* Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages "Nx does not detect dependencies from source code imports". Please: the puku tool diagnoses missing imports. ×: the tool's documented mechanism is declared dependencies.
 - *Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages.* MonoSmith: #343 is still open although the feature shipped (ADR 0028). Bazel and Pants model protobuf through rules and code generation; Pants has an experimental OpenAPI backend.
 - *Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected.* Lerna: through the Nx project graph; Bazel: query output formats.
 - *Graph diff between two revisions (projects and imports added or removed).* Searched for ❔: "graph" with "between", "since" and "compare".
@@ -275,7 +275,7 @@ comparison tables and the tool pages.
 - *Local cache kept under a size limit automatically.* Nx: maxCacheSize; Turborepo: eviction by age; Earthly: garbage collection of layers.
 - *Reports the time a cache hit saved.* MonoSmith: time saved per run; no hit-rate report yet. Turborepo prints it; Pants logs cache statistics; Nx and Lerna through Nx Cloud; Gradle compares times in a guide.
 - *Speaks the Bazel Remote Execution API.* Please: experimental, from v15.
-- *Remote or distributed task execution.* ◐: through Nx Cloud (Nx, Lerna), experimental cobuilds (Rush), unfinished action distribution (moon), remote runners (Earthly), BuildXL (Lage), experimental (Please). Workspaces: npm ❌, pnpm and Yarn ❔.
+- *Remote or distributed task execution.* ◐: through Nx Cloud (Nx, Lerna), experimental cobuilds (Rush), unfinished action distribution (moon), remote runners (Earthly), BuildXL (Lage), experimental (Please). Workspaces: npm ×, pnpm and Yarn ❔.
 - *Pins language toolchains and downloads them for you.* MonoSmith: pins checked by doctor and written to .tool-versions; never downloaded (ADR 0020). moon downloads tool versions (its tier 3); Gradle provisions JDK toolchains; Rush and pnpm manage their package manager's version.
 - *Watch mode: re-run tasks when files change.* smith dev starts dev servers but does not rebuild.
 
@@ -358,7 +358,7 @@ comparison tables and the tool pages.
 <!-- rows:weak env-first, env-ci, ci-slot, ci-tpl, plug-stack, plug-check -->
 <!-- rows:nearly-only lang-rb, lang-php, lang-dart, lang-bicep, env-py, env-go, env-net, env-rb, env-php, env-bicep, find-recipe, find-schema, cache-why, cache-manage, rel-pypi, rel-linux, rel-resume, health-doctor, health-fix, health-dry, plug-oop, ui-tui, ops-win -->
 
-These are the rows where smith is ✅ and every other tool is ❌, ❔ or not applicable.
+These are the rows where smith is ✓ and every other tool is ×, ❔ or not applicable.
 The wording is deliberate: **no other tool in this comparison documents it, in the
 sources searched.** It does not say no other tool can do it. No cell on this list is a
 positively documented absence; each ❔ means the tool's documentation source was
@@ -380,7 +380,7 @@ not searched.
 | **Publishing a VS Code extension to the Marketplace** with the release | L: the MonoSmith extension is on the Visual Studio Marketplace, 0.2.0, updated 2026-10-24 | |
 | A **dev container written from the workspace**, with the toolchains CI installs at the same versions | R: `smith new` and `smith add` wrote `.devcontainer/devcontainer.json` with one feature per toolchain for eleven languages (1.65.0) | Pants, moon and Earthly mention dev containers as places to run the tool; none documents generating one |
 
-Six more rows have only smith at ✅ but were searched too little to claim: generated
+Six more rows have only smith at ✓ but were searched too little to claim: generated
 pipelines whose hand-written steps survive regeneration (named slots), ready-made
 pipelines beyond CI (e2e, GitHub Pages, Azure Function), per-project stacks, a command that
 checks a plugin keeps the protocol's promises, a new project that passes lint, test and build on
@@ -389,7 +389,7 @@ in the table; this page does not call them unique.
 
 ### Nearly only smith
 
-Here smith is ✅ and no other tool is better than ◐. The ◐ holders are named.
+Here smith is ✓ and no other tool is better than ◐. The ◐ holders are named.
 
 | Row | Who is ◐, and why |
 |---|---|
@@ -402,7 +402,7 @@ Here smith is ✅ and no other tool is better than ◐. The ◐ holders are name
 | PyPI, `.deb` and `.rpm` | Pants, in experimental backends |
 | A failed release resumes | Nx, for npm |
 | Health check; applies fixes; adoption dry run | See the notes; none previews diffs, asks about risky fixes or reports what blocks adoption |
-| Ready-made environment: Python, Go, .NET, Ruby, PHP, Bicep | Nobody is ✅; Nx, Bazel, Pants, moon, Buck2, Please and Earthly are ◐ where they support the language at all: you write BUILD files, rules, `moon.yml` or a plugin |
+| Ready-made environment: Python, Go, .NET, Ruby, PHP, Bicep | Nobody is ✓; Nx, Bazel, Pants, moon, Buck2, Please and Earthly are ◐ where they support the language at all: you write BUILD files, rules, `moon.yml` or a plugin |
 | Out-of-process plugins in any language | moon (WASM, experimental), Cargo (`cargo-*` programs), Nx (plugins run in forked processes, but are Node packages) |
 | Terminal interface | Nx and Turborepo, for task output |
 | Native Windows | Pants (WSL 2), Earthly (experimental native) |
@@ -410,13 +410,13 @@ Here smith is ✅ and no other tool is better than ◐. The ◐ holders are name
 ### What "one tool for the whole chain" is worth
 
 The composite claim, "scaffold, run, cache, generate CI and release, across many
-languages, in one tool", does not survive as "only smith". Nx is ✅ for scaffolding,
-cached tasks, CI file generation and release, and is the only other tool ✅ for CI
-generation. The difference is breadth: in the language rows smith is ✅ for 11 of 12 and
-◐ for the twelfth (Gradle, Kotlin and Android were not run); Nx is ✅ for 4. In the
+languages, in one tool", does not survive as "only smith". Nx is ✓ for scaffolding,
+cached tasks, CI file generation and release, and is the only other tool ✓ for CI
+generation. The difference is breadth: in the language rows smith is ✓ for 11 of 12 and
+◐ for the twelfth (Gradle, Kotlin and Android were not run); Nx is ✓ for 4. In the
 ready-made-environment rows, which ask for a generator and tasks with no rules to write, smith is
-✅ for nine of eleven languages and ◐ for two (JVM and Dart), and Nx is ✅ for one (JavaScript and
-TypeScript), with Gradle ✅ for the JVM and C++ and Cargo for Rust. Nx publishes to npm, crates.io and Docker registries;
+✓ for nine of eleven languages and ◐ for two (JVM and Dart), and Nx is ✓ for one (JavaScript and
+TypeScript), with Gradle ✓ for the JVM and C++ and Cargo for Rust. Nx publishes to npm, crates.io and Docker registries;
 smith to the registries in the table. That is a difference of degree, and the table shows
 it row by row.
 
@@ -425,7 +425,7 @@ it row by row.
 <!-- rows:not-yet lang-jvm, env-jvm, find-bounds, graph-xlang, task-granular, task-file, cache-reapi, cache-rexec, cache-hermetic, cache-toolchain, cache-watch, ci-more, ci-audit, rel-crates, rel-maven, rel-image, rel-sbom, rel-prov, rel-oidc, dep-sync, dep-decl, plug-reg, plug-sec, ui-jb, ui-cloud -->
 <!-- rows:no-rival env-dart, rel-tag, rel-assets, rel-preflight, rel-journal, health-other -->
 
-Every row where at least one tool is ✅ and smith is ❌ or ◐. "How much it matters" is
+Every row where at least one tool is ✓ and smith is × or ◐. "How much it matters" is
 the author's judgement for a typical team, not a fact; "deliberate" means a written
 decision, not a gap.
 
@@ -466,7 +466,7 @@ These are recorded in
 
 ### Gaps no other tool fills either
 
-Rows where smith is ◐ or ❌ and no tool is ✅. They are shortfalls in smith, not
+Rows where smith is ◐ or × and no tool is ✓. They are shortfalls in smith, not
 advantages of a rival: per-platform release archives for apps outside Go (#573); Go-module and
 Packagist release by tag verified live; a registry preflight (#347, #380) and a release
 journal (#347) across every registry; an importer for Lerna, Rush, Bazel or Gradle
@@ -493,7 +493,7 @@ yet proven against the live registry.
 
 ## Limits of this page
 
-- **Counting rows favours whoever wrote the rows.** The Score rows count only ✅. Every
+- **Counting rows favours whoever wrote the rows.** The Score rows count only ✓. Every
   row is something smith does or has a plan for; rows a rival would add (a hosted
   dashboard, file-level graphs, IDE breadth, years of production use) are in the table
   only where smith is also measured on them. The ❔ row is there so the score is not
@@ -536,7 +536,7 @@ node docs/product/comparison/build-everything-compared.mjs --report # print the 
 `--check` also compares the row lists named in this page's `rows:` comments (only smith,
 nearly only, not yet, gaps with no rival) with the lists derived from the data, so a
 changed cell cannot leave a claim behind. Each row has a short mark string for the
-fourteen tools in the order of the table's columns (`Y` ✅, `P` ◐, `U` ❔, `N` ❌, `-` not
+fourteen tools in the order of the table's columns (`Y` ✓, `P` ◐, `U` ❔, `N` ×, `-` not
 applicable), smith's mark, evidence code and issue, an optional note and the keywords
 searched for its ❔ cells.
 

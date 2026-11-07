@@ -91,6 +91,9 @@ type FixChoice struct {
 type FixChoiceOption struct {
 	Label string `json:"label"`
 	Fix   Fix    `json:"fix"`
+	// Disabled, when not empty, is the reason the option cannot be picked: an
+	// interface shows the option greyed with the reason, and picking it is an error.
+	Disabled string `json:"disabled,omitempty"`
 }
 
 // FileEdit is one file's new content, workspace-relative; Delete removes it.

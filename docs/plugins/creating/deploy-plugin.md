@@ -176,7 +176,7 @@ $ smith release --no-push --yes
 api: building 0.1.0
 api:build ▶ <examples>\language-widget\smith-plugin-widget.exe build ../../dist/apps/api
 api:build │ wrote ../../dist/apps/api/widget.txt
-api:build ✔ 13ms
+api:build ✓ 13ms
 api: widget-bundle published 0.1.0 to dist/deploy
 api: tagged api@0.1.0
 shop: building 0.1.0
@@ -241,7 +241,7 @@ $ sed -n 46,50p .github/workflows/ci.yml
 
 ```text
 $ smith doctor
-✖ shop deploys inside the workspace
+× shop deploys inside the workspace
     the deploy target ../elsewhere is outside the workspace
     → set target in [projects.shop.settings.widget-bundle] in smith.toml to a workspace-relative folder
 ```
@@ -251,16 +251,16 @@ $ smith doctor
 ```text
 $ smith plugin check ./smith-plugin-widget-bundle
 widget-bundle 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: deploy
-  ✔ a deploy plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ ci answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: deploy
+  ✓ a deploy plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ ci answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 `plugin_test.go` also runs the conformance suite and checks that only apps get a bundle task, that
@@ -289,7 +289,7 @@ target = "dist/deploy"
 | the second release run fails | `publish` is not idempotent. Return `Skipped` with a reason for what exists |
 | `--dry-run` deploys | `DryRun` is ignored |
 | the secret is missing in CI | the credential is not in `CIResult.Credentials` (regenerate with `smith ci generate`), or the repository secret is not set |
-| `✖ a deploy plugin does something` | none of `contribute`, `generate`, `ci`, `doctor` is implemented |
+| `× a deploy plugin does something` | none of `contribute`, `generate`, `ci`, `doctor` is implemented |
 | `unknown field` for a `[conventions.<name>]` key | per-project settings: `[projects.<name>.settings.<plugin>]` |
 
 ## See also

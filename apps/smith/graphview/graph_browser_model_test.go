@@ -32,7 +32,7 @@ func TestBrowserWalksTheGraph(t *testing.T) {
 		t.Fatalf("starts at the first project: %s", b.Selected())
 	}
 	view := b.View()
-	for _, want := range []string{"Projects", "Depends on", "  ui", "Used by", "  web", "q quit"} {
+	for _, want := range []string{"Projects", "Projects it needs", "  ui", "Projects that use it", "  web", "q quit"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("view lacks %q:\n%s", want, view)
 		}

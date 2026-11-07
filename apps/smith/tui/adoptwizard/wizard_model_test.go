@@ -118,7 +118,7 @@ func (f *fakeFlow) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer) 
 			delete(f.failOn, s.Description)
 			return &doctorfix.StepError{Number: 1, Total: len(fix.Steps), Step: s, Err: err, Output: "npm ERR! it broke\nline two"}
 		}
-		fmt.Fprintln(out, "✔ "+s.Description)
+		fmt.Fprintln(out, "✓ "+s.Description)
 	}
 	return f.fail("apply " + fix.Description)
 }
@@ -296,7 +296,7 @@ func TestTheFirstScreenTellsWhatWasFoundAndNothingHasChanged(t *testing.T) {
 func TestABlockedRepositoryExplainsAndClosesOnEnter(t *testing.T) {
 	f := &fakeFlow{found: adoptflow.Found{Kind: adoptflow.KindNotARepo, Name: "x", Source: "repository", Blockers: []string{"This folder is not a git repository"}}}
 	w := start(t, f)
-	w.want("✖ This folder is not a git repository", "Nothing was changed", "Close (enter)")
+	w.want("× This folder is not a git repository", "Nothing was changed", "Close (enter)")
 	w.press("enter")
 	if !w.last.Close || w.last.Job != nil {
 		t.Fatalf("outcome %+v", w.last)
@@ -582,7 +582,7 @@ func TestMissingPackagesAreOneClickToInstallThenTheWizardGoesOn(t *testing.T) {
 	f := &fakeFlow{found: found}
 	w := start(t, f)
 	w.want("● The packages are not installed", "None of your own files are touched", "Install the packages and continue (enter)")
-	if strings.Contains(w.screen(), "✖") {
+	if strings.Contains(w.screen(), "×") {
 		t.Fatalf("a step smith takes itself is not shown as a failure: %s", w.screen())
 	}
 	if strings.Contains(w.screen(), "No projects found yet") {

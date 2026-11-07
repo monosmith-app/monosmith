@@ -57,7 +57,7 @@ describe('planThenApply', () => {
   })
 
   it('refuses with smith words when the plan fails, without asking', async () => {
-    const f = fake({ code: 1, stdout: '', stderr: '✖ core is imported by api\n  → pass --force\n' }, true)
+    const f = fake({ code: 1, stdout: '', stderr: '× core is imported by api\n  → pass --force\n' }, true)
     expect(await planThenApply(f.deps, kindPlanArguments('core', 'app'), () => kindArguments('core', 'app'))).toMatchObject({ kind: 'refused' })
     expect(f.asked).toEqual([])
   })

@@ -44,7 +44,7 @@ describe('writeLauncher', () => {
   })
 
   it('returns the refusal of smith', async () => {
-    const f = fake({ code: 1, stdout: '', stderr: '✖ not a smith workspace\n' }, true)
+    const f = fake({ code: 1, stdout: '', stderr: '× not a smith workspace\n' }, true)
     expect(await writeLauncher(f.deps)).toEqual({ kind: 'refused', message: 'not a smith workspace' })
   })
 })

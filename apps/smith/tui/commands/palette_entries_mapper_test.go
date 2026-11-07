@@ -76,8 +76,8 @@ func TestTheFooterNamesTheScopeOfTheRunKeys(t *testing.T) {
 func TestThePaletteOffersTheTwoPointZeroCommands(t *testing.T) {
 	want := map[string]string{
 		"ws.undo": "Undo the last change…", "ws.report": "Open the report", "ws.agent-file": "Write the agent file…",
-		"ws.derive-check": "Check the derived files", "ws.derive": "Update the derived files…", "ws.why": "Why is this here?…",
-		"ws.derive-preview": "Preview the derived files", "ws.divergences": "Divergences from the defaults", "ws.try": "Try a command in a copy…", "ws.bootstrap": "Write the launcher…", "proj.swap": "Swap a choice…",
+		"ws.derive-check": "Check generated files (Derived files)", "ws.derive": "Update generated files (Derived files)…", "ws.why": "Why is this here?…",
+		"ws.derive-preview": "Preview generated files (Derived files)", "ws.divergences": "Where I differ from the defaults (Divergences)", "ws.try": "Try a command in a copy…", "ws.bootstrap": "Make everyone use the same smith (Write the launcher)…", "proj.swap": "Change my test tool or linter (Swap a choice)…",
 	}
 	for _, e := range PaletteEntries(State{View: TabHome, InWorkspace: true}) {
 		if title, ok := want[e.ID]; ok {

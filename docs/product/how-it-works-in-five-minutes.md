@@ -80,13 +80,13 @@ smith build
 ```
 
 ```text
-core:build ✔ 298ms
-api:build ✔ 908ms
-✔ 2/2 tasks succeeded (0 from cache) in 980ms
+core:build ✓ 298ms
+api:build ✓ 908ms
+✓ 2/2 tasks succeeded (0 from cache) in 980ms
 
-core:build ✔ from cache
-api:build ✔ from cache
-✔ 2/2 tasks succeeded (2 from cache, 1.206s saved) in 5ms
+core:build ✓ from cache
+api:build ✓ from cache
+✓ 2/2 tasks succeeded (2 from cache, 1.206s saved) in 5ms
 ```
 
 The second run replays the stored output and log. The key behind each result is
@@ -122,12 +122,12 @@ smith doctor
 ```
 
 ```text
-✔ release tags are not behind the registry
-✔ every production dependency has one version across the workspace
-✔ go.work lists each project (2 projects)
-✔ Go is at least 1.27 (go.work)
+✓ release tags are not behind the registry
+✓ every production dependency has one version across the workspace
+✓ go.work lists each project (2 projects)
+✓ Go is at least 1.27 (go.work)
 
-19 passed, 0 failed, 0 warning(s)
+19 passed, 0 failed, 0 warnings
 ```
 
 A failing check prints a `→` line with the remedy. `smith doctor --fix` shows each
