@@ -14,15 +14,7 @@ const AzurePath = "azure-pipelines.yml"
 func RenderAzure(m Model) string {
 	var b strings.Builder
 	b.WriteString(header("#"))
-	fmt.Fprintf(&b, `trigger:
-  branches:
-    include: [%[1]s]
-
-pr:
-  branches:
-    include: [%[1]s]
-
-`, strings.Join(m.TriggerBranches(), ", "))
+	b.WriteString(azureTriggers(m))
 	b.WriteString(azureParameters(m))
 	b.WriteString(azureVariables(m))
 	steps := azureSteps(m)
@@ -57,9 +49,7 @@ func azureSteps(m Model) string {
 	b.WriteString(slot("  ", "before-setup"))
 	b.WriteString("  - bash: smith ci setup\n    displayName: Setup\n")
 	b.WriteString(azureEnv("    ", m.SetupCredentials()))
-	b.WriteString(`  - bash: smith ci audit
-    displayName: Audit
-`)
+	b.WriteString(azureAuditStep(m))
 	b.WriteString(azureEnv("    ", m.TaskCredentials()))
 	b.WriteString(`  - bash: smith ci verify
     displayName: Verify
@@ -72,7 +62,7 @@ func azureSteps(m Model) string {
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 `)
-	onPush := fmt.Sprintf("and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'), eq(variables['Build.SourceBranch'], 'refs/heads/%s'))", m.ReleaseBranch)
+	onPush := azureOnPublishBranches(m)
 	if m.Pack {
 		fmt.Fprintf(&b, `  - bash: smith ci pack
     displayName: Pack
@@ -83,12 +73,7 @@ func azureSteps(m Model) string {
     condition: %[1]s
 `, onPush, azureEnv("    ", m.TaskCredentials()))
 	}
-	onRelease := fmt.Sprintf("and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'), %s)", m.branchCondition(
-		func(branch string) string {
-			return fmt.Sprintf("eq(variables['Build.SourceBranch'], 'refs/heads/%s')", branch)
-		},
-		func(c []string) string { return "or(" + strings.Join(c, ", ") + ")" }))
-	b.WriteString(azureReleaseStep(m, onRelease))
+	b.WriteString(azureReleaseStep(m, azureOnReleaseBranches(m)))
 	return b.String()
 }
 
@@ -96,7 +81,7 @@ func azureSteps(m Model) string {
 // ci job.
 func azureNativeJob(m Model) string {
 	var b strings.Builder
-	b.WriteString("  - job: native\n    dependsOn: ci\n    strategy:\n      matrix:\n")
+	b.WriteString("  - job: native\n    dependsOn: ci\n" + azureNativeCondition(m) + "    strategy:\n      matrix:\n")
 	for _, r := range m.NativeRunners {
 		fmt.Fprintf(&b, "        %s:\n          image: %s\n", strings.ReplaceAll(r, "-", "_"), r)
 	}

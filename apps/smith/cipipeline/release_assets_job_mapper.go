@@ -85,12 +85,12 @@ func githubAssetsJob(m Model) string {
 	fmt.Fprintf(&b, `
   assets:
     needs: ci
-    if: ${{ always() && ((needs.ci.outputs.released == 'true' && %s && github.ref_name == '%s') || (github.event_name == 'workflow_dispatch' && inputs.assets_tag != '')) }}
+    if: ${{ always() && ((needs.ci.outputs.released == 'true' && %s && %s) || (github.event_name == 'workflow_dispatch' && inputs.assets_tag != '')) }}
     strategy:
       fail-fast: false
       matrix:
         include:
-`, githubReleaseEvent(m), m.ReleaseBranch)
+`, githubReleaseEvent(m), githubOnPublishBranches(m))
 	for _, p := range m.AssetPlatforms {
 		fmt.Fprintf(&b, "          - platform: %s\n            os: %s\n", p, githubAssetRunners[p])
 	}

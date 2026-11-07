@@ -186,6 +186,25 @@ type CISection struct {
 	// as the provider names them. Default: ubuntu-latest, windows-latest,
 	// macos-latest.
 	NativeRunners []string `toml:"native_runners"`
+	// NativeOn is when the generated native job runs: "release" (the default)
+	// only for a run that releases, "main" also for a push or pull request
+	// into the release branch whose ci job passed, "always" for every run.
+	NativeOn string `toml:"native_on"`
+	// Triggers are the events that start the generated GitHub and Azure
+	// pipelines: "push", "pull_request". Default: both.
+	Triggers []string `toml:"triggers"`
+	// Audit is when the generated pipelines run smith ci audit: "always" (the
+	// default), "main" on a push to the release branch only, or "schedule" on a
+	// timer (GitHub only) and on the release branch.
+	Audit string `toml:"audit"`
+	// AuditCron is the cron schedule of audit = "schedule". Default: weekly,
+	// Mondays at 06:00 UTC.
+	AuditCron string `toml:"audit_cron"`
+	// PublishOn is where the generated GitHub and Azure pipelines pack apps,
+	// keep the packed apps, attest the release archives and build the release
+	// files: "release" (the default) on the release branch only, "channels" on
+	// the release branch and every [[release.channels]] branch.
+	PublishOn string `toml:"publish_on"`
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
