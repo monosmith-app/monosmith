@@ -9,9 +9,9 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// ManifestFile is the file that makes a directory a bundle, together with an
-// app.json beside it.
-const ManifestFile = "flow.json"
+// ManifestFiles are the file names that make a directory a bundle, together
+// with an app.json beside it: either one is enough.
+var ManifestFiles = []string{"flow.json", "flow.loom"}
 
 // AppFile is the file the bundle's name, version and dependencies are read from.
 const AppFile = "app.json"
@@ -20,8 +20,8 @@ const AppFile = "app.json"
 // a project of that language, not a bundle.
 var otherManifests = []string{"package.json", "Cargo.toml", "go.mod", "pyproject.toml", "pom.xml", "pubspec.yaml"}
 
-// Discover describes the bundle behind each flow.json. A directory is a bundle
-// when it has an app.json beside the flow.json and no manifest of a language
+// Discover describes the bundle behind each flow.json or flow.loom. A directory
+// is a bundle when it has an app.json beside the flow file and no manifest of a language
 // plugin; the root is skipped. The project is named for its directory, exports
 // the app.json name (when it differs) and imports what app.json's dependsOn
 // lists, of which the host keeps the ones another project exports. It is
@@ -29,12 +29,14 @@ var otherManifests = []string{"package.json", "Cargo.toml", "go.mod", "pyproject
 // it has no tasks until smith.toml gives it some.
 func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult, error) {
 	result := protocol.DiscoverResult{Projects: []protocol.Project{}}
+	seen := map[string]bool{}
 	for _, manifest := range manifests {
 		root := path.Dir(manifest)
 		dir := filepath.Join(workspaceRoot, filepath.FromSlash(root))
-		if root == "." || ownedByLanguage(dir) {
+		if root == "." || seen[root] || ownedByLanguage(dir) {
 			continue
 		}
+		seen[root] = true
 		src, err := os.ReadFile(filepath.Join(dir, AppFile))
 		if err != nil {
 			continue

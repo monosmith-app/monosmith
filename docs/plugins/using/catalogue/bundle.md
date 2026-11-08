@@ -16,14 +16,14 @@ never publishes to a registry: a release is a git tag.
 | Plugin name | `bundle` (built in; runs as a separate process, `smith plugin serve bundle`) |
 | Kind | language |
 | `--lang` value | `bundle` (`smith add app <name> --lang bundle`) |
-| Manifest that makes a directory a project | `flow.json`, with an `app.json` beside it |
+| Manifest that makes a directory a project | `flow.json` or `flow.loom`, with an `app.json` beside it |
 | Capabilities advertised | `discover`, `generate`, `version`, `publish`, `channels` |
 | Project kinds | `app` |
 | Tasks | none |
 
 ## What it detects
 
-smith hands the plugin every `flow.json` in the files git lists. A directory is a
+smith hands the plugin every `flow.json` and `flow.loom` in the files git lists. A directory is a
 bundle when it also has an `app.json`, and none of `package.json`, `Cargo.toml`,
 `go.mod`, `pyproject.toml`, `pom.xml` or `pubspec.yaml` (then a language plugin owns
 it). The workspace root is skipped. An `app.json` that is not valid JSON is an error
