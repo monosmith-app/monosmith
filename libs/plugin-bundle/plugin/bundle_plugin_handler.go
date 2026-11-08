@@ -26,7 +26,7 @@ func (b *Bundle) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Plugin:    protocol.Peer{Name: Name, Version: b.Version},
 		Kind:      protocol.KindLanguage,
 		Languages: []string{"bundle"},
-		Manifests: []string{discovery.ManifestFile},
+		Manifests: discovery.ManifestFiles,
 		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 	}, nil
 }

@@ -38,6 +38,22 @@ func TestDiscoverReadsAppJSON(t *testing.T) {
 	}
 }
 
+func TestDiscoverAcceptsFlowLoomOnceAlongsideFlowJSON(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "apps/a/flow.loom", `{}`)
+	write(t, ws, "apps/a/app.json", `{"version":"1.0.0"}`)
+	write(t, ws, "apps/b/flow.json", `{}`)
+	write(t, ws, "apps/b/flow.loom", `{}`)
+	write(t, ws, "apps/b/app.json", `{"version":"2.0.0"}`)
+	res, err := Discover(ws, []string{"apps/a/flow.loom", "apps/b/flow.json", "apps/b/flow.loom"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Projects) != 2 {
+		t.Fatalf("want a and b once each, got %+v", res.Projects)
+	}
+}
+
 func TestDiscoverRejectsBrokenAppJSON(t *testing.T) {
 	ws := t.TempDir()
 	write(t, ws, "apps/x/flow.json", `{}`)

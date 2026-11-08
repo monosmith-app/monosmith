@@ -38,7 +38,7 @@ The values were read from `smith plugin list` of the smith 2.0 release candidate
 | `vba` | VBA modules exported as text (`.bas`, `.cls`, `.frm`) | no | yes | no | [vba](vba.md) |
 | `swift` | Swift packages: each `Package.swift` | yes | yes | no | [swift](swift.md) |
 | `objc` | CocoaPods libraries (Objective-C): each `*.podspec` | no | yes | no | [objc](objc.md) |
-| `bundle` | apps with no language: a directory with `app.json` and `flow.json` | no | yes | no | [bundle](bundle.md) |
+| `bundle` | apps with no language: a directory with `app.json` and `flow.json` or `flow.loom` | no | yes | no | [bundle](bundle.md) |
 | `recipe` | a `*.recipe.toml` in a folder of its own | no | yes | no | [recipe](recipe.md) |
 
 ## Toolchain, scaffold, structure and deploy plugins
