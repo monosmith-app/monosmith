@@ -65,6 +65,12 @@ import stylistic from '@stylistic/eslint-plugin'
  *   very place it is most wanted). `VariableDeclarator` permits aligned `=`,
  *   `BinaryExpression` aligned operators, `TSTypeAnnotation` aligned types.
  *
+ * - **Type members have no separator.** `member-delimiter-style` removes the
+ *   `;` after each member of a multiline type literal or interface, the way
+ *   object literals have no `;`, and writes a comma between members on one
+ *   line. Together with the aligned values above, a type reads like the object
+ *   it describes.
+ *
  * - **`quote-props` is `consistent-as-needed`, not `as-needed`.** Quotes are
  *   still dropped where no key needs them, but the moment one key does, they
  *   all take them. `as-needed` produces the mixed form — one quoted key beside
@@ -109,6 +115,10 @@ export default [
         align: { beforeColon: false, afterColon: true, on: 'value' },
       }],
       '@stylistic/max-statements-per-line': ['error', { max: 2 }],
+      '@stylistic/member-delimiter-style':  ['error', {
+        multiline:  { delimiter: 'none' },
+        singleline: { delimiter: 'comma', requireLast: false },
+      }],
       '@stylistic/no-multi-spaces':         ['error', {
         ignoreEOLComments: true,
         exceptions:        {
