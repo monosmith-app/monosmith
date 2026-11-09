@@ -451,6 +451,24 @@ the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
 
+## Warnings you keep on purpose
+
+`smith doctor` fails a pull request on a warning as well as on an error, so a
+warning that stays has to be named. Each `[[doctor.accept]]` entry names the
+warning by its check, as `smith doctor` lists it, and says why it stays:
+
+```toml
+[[doctor.accept]]
+check = "dist is tracked by git"
+project = "site"                # optional: only this project
+reason = "GitHub Pages serves the folder from the repository"
+```
+
+Doctor then shows the check as passed, with the reason. The reason is required.
+Only a warning can be accepted; a failure still fails. When an entry matches no
+warning any more, doctor warns about the entry, so the list does not outlive the
+problems it answered.
+
 ## Output folders outside the build directory
 
 `smith doctor` checks that every build writes into `dist/` and that no two tasks

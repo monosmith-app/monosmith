@@ -122,6 +122,7 @@ func run(s *session.Session, askRegistries bool) Report {
 	findings = append(findings, trustFindings(s.Root, s.Config)...)
 	findings = append(findings, PluginChecks(s, nil)...)
 	findings = ToolFindings(context.Background(), s, findings)
+	findings = applyAccepted(findings, s.Config.Doctor.Accept)
 	report := Report{Findings: findings}
 	report.tally()
 	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })

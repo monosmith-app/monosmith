@@ -199,6 +199,11 @@ func Validate(cfg *Config) error {
 	if cfg.CI.ArtifactRetentionDays < 0 || cfg.CI.ArtifactRetentionDays > 90 {
 		return fmt.Errorf("%s: [ci] artifact_retention_days must be between 1 and 90 (0 keeps the repository's setting), not %d", FileName, cfg.CI.ArtifactRetentionDays)
 	}
+	for i, a := range cfg.Doctor.Accept {
+		if strings.TrimSpace(a.Check) == "" || strings.TrimSpace(a.Reason) == "" {
+			return fmt.Errorf("%s: [[doctor.accept]] entry %d needs a check and a reason", FileName, i+1)
+		}
+	}
 	if err := validateCISecrets(cfg.CI.Secrets); err != nil {
 		return err
 	}

@@ -15,6 +15,8 @@ type Config struct {
 	Cache     CacheSection     `toml:"cache"`
 	// Derive turns on derived files (smith derive).
 	Derive DeriveSection `toml:"derive"`
+	// Doctor holds what the workspace has decided about smith doctor.
+	Doctor DoctorSection `toml:"doctor"`
 	// Agent configures the MonoSmith agent files (smith agent install).
 	Agent AgentSection `toml:"agent"`
 	// Toolchains pins the runtime versions the workspace builds with, by
@@ -420,6 +422,26 @@ type DeriveSection struct {
 	// reports drift and smith ci verify runs smith derive --check. Default:
 	// false.
 	Enabled bool `toml:"enabled"`
+}
+
+// DoctorSection is what the workspace has decided about smith doctor.
+type DoctorSection struct {
+	// Accept lists warnings the workspace has weighed and keeps on purpose.
+	// Doctor shows each as passed, with the reason, and warns when an entry
+	// matches nothing any more. Default: none.
+	Accept []AcceptedWarning `toml:"accept"`
+}
+
+// AcceptedWarning is one warning the workspace keeps on purpose.
+type AcceptedWarning struct {
+	// Check is the warning's check, as `smith doctor` lists it.
+	Check string `toml:"check"`
+	// Project limits the entry to one project; empty accepts the warning
+	// wherever it is raised.
+	Project string `toml:"project"`
+	// Reason says why the warning stays. It is required: a warning nobody
+	// can explain is one nobody can judge later.
+	Reason string `toml:"reason"`
 }
 
 // CacheSection configures the local task cache.
