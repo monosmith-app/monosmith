@@ -199,12 +199,10 @@ type Shell struct {
 	runAt int
 	// recentAt is the row chosen in the list of recent runs under the projects
 	// (0 is the newest run); recentFocus is true while the keyboard moves in
-	// that list and not in the list of projects.
+	// that list and not in the list of projects; the list is unfolded upward to
+	// show every run kept while it is true.
 	recentAt    int
 	recentFocus bool
-	// recentOpen is true while the list of recent runs is unfolded upward to
-	// show every run kept (the keyboard is on it, or a click opened it).
-	recentOpen bool
 	// sideFocus is true while the keyboard is on the right panel (the detail,
 	// or the run) and not on the list beside it.
 	sideFocus bool
