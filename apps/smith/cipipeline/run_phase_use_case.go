@@ -165,13 +165,27 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 			log.conclusion = "nothing to " + phase
 			return nil
 		}
-		log.banner(intro...)
-		outcomes, err := runSteps(ctx, s.Root, steps, remembered, out)
+		var outcomes []stepOutcome
+		var sections *SectionLog
+		if phase == "setup" {
+			// Each plugin's steps are a section (a CI group of their own), not one fold.
+			log.heading(intro...)
+			sections = &SectionLog{out: out, icons: log.icons, colour: colourOn(), now: time.Now, Remedy: defaultSectionRemedy}
+			outcomes, err = runSetupSections(ctx, s.Root, c, sections, out)
+		} else {
+			log.banner(intro...)
+			outcomes, err = runSteps(ctx, s.Root, steps, remembered, out)
+		}
 		log.close()
+		if sections != nil {
+			sections.Summary()
+		}
 		if len(outcomes) > 0 {
 			table := stepTable(map[string]string{"setup": "Step", "audit": "Check"}[phase], outcomes, log.icons)
-			for _, line := range table.Text("steps done") {
-				log.say("%s", line)
+			if sections == nil {
+				for _, line := range table.Text("steps done") {
+					log.say("%s", line)
+				}
 			}
 			log.markdown = table.Markdown()
 		}

@@ -32,6 +32,9 @@ type Facts struct {
 	// Release is what the next release would publish, nil until the plan is
 	// read and while there is nothing to release.
 	Release *Ready
+	// CompletionOffer is true while tab completion is not set up and the person
+	// has not said no: Home lists it as something that waits.
+	CompletionOffer bool
 	// SettingsTip is true until the person has opened the Settings tab: Home points at it.
 	SettingsTip bool
 }

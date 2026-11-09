@@ -1,0 +1,6 @@
+{
+  "vscode.tab-completion.offer": "MonoSmith: set up tab completion for smith in your terminal? The terminal shows the files it writes and asks before it writes anything.",
+  "vscode.tab-completion.set-up": "Set up",
+  "vscode.tab-completion.not-now": "Not now",
+  "vscode.tab-completion.dont-ask-again": "Don't ask again"
+}

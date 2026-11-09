@@ -48,6 +48,11 @@ const (
 	OpenUndo
 	// OpenReport writes the HTML report to a temporary file and opens it.
 	OpenReport
+	// OpenCompletion shows the files and lines that set up tab completion in
+	// the shell of the person, and asks before anything is written.
+	OpenCompletion
+	// DeclineCompletion remembers "Not now": Home stops listing tab completion.
+	DeclineCompletion
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey

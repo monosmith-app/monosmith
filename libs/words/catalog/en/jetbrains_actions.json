@@ -93,6 +93,8 @@
   "action.MonoSmith.OneVersion.description": "Turn dependencies.one_version on or off, with its reason and the plan",
   "action.MonoSmith.AgentFile.text": "Write the Agent File (AGENTS.md)...",
   "action.MonoSmith.AgentFile.description": "smith agent file, after the files it would write",
+  "action.MonoSmith.TabCompletion.text": "Set Up Tab Completion...",
+  "action.MonoSmith.TabCompletion.description": "smith completion install, in the terminal: it shows the files and asks first",
   "action.MonoSmith.McpInstall.text": "Connect smith to a Coding Assistant...",
   "action.MonoSmith.McpInstall.description": "smith mcp install for Claude Code or VS Code",
   "action.MonoSmith.Commit.text": "Commit the Changes...",

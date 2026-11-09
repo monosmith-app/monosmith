@@ -421,6 +421,12 @@
         "icon": "$(rocket)"
       },
       {
+        "command": "monosmith.setUpTabCompletion",
+        "title": "%vscode.command.tab-completion.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(keyboard)"
+      },
+      {
         "command": "monosmith.installTools",
         "title": "%vscode.command.install-tools.title%",
         "category": "%vscode.package.display-name%",

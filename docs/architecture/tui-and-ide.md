@@ -152,7 +152,7 @@ through `Theme.Dim` before the dialog is drawn on top.
 
 - **Home** is the first tab: an attention queue. `dashboard.Queue` (a pure policy
   over `dashboard.Facts`) lists only what applies, most urgent first: a failed run
-  (named by its task, with "See why"), broken setup, warning checks, changes not tested, a release that is ready, updates, and when
+  (named by its task, with "See why"), broken setup, warning checks, changes not tested, a release that is ready, updates, tab completion that is not set up (muted, with `Set up` and `Not now`; `Facts.CompletionOffer` comes from `sources.CompletionOffer`, which reads `shellcompletion` and the `tui.json` answer), and when
   nothing applies "All good". Each item has a severity, a title, an optional detail
   and buttons. The first item is drawn large and Enter runs its first button;
   the others are one line with the buttons at the right. Every button comes from

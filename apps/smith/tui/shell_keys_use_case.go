@@ -424,6 +424,10 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.openUndo()
 	case commands.OpenReport:
 		return s.openReport()
+	case commands.OpenCompletion:
+		return s.openCompletion()
+	case commands.DeclineCompletion:
+		s.declineCompletion()
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
 	case commands.OpenCompose:

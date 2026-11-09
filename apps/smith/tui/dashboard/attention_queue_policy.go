@@ -59,6 +59,10 @@ func Queue(f Facts) []Item {
 		q = append(q, Item{Kind: KindUpdates, Severity: SeverityMuted, Title: words.Say("dashboard.updates.unlooked"),
 			Buttons: []Button{queueButton("dashboard.updates.review", "view.deps")}})
 	}
+	if f.CompletionOffer {
+		q = append(q, Item{Kind: KindCompletion, Severity: SeverityMuted, Title: words.Say("dashboard.completion.title"),
+			Buttons: []Button{queueButton("dashboard.completion.setup", "ws.completion"), queueButton("dashboard.completion.later", "ws.completion-later")}})
+	}
 	if !asksForAttention(q) {
 		good := Item{Kind: KindGood, Severity: SeveritySuccess, Title: words.Say("dashboard.good.title"),
 			Buttons: []Button{queueButton("dashboard.good.build", "run.build-all")}}

@@ -170,6 +170,10 @@ type Shell struct {
 	// another key is pressed or the tab is left.
 	pluginUndo *settingsview.PluginToggle
 
+	// completionWanted is true while Home lists "Tab completion is not set up".
+	// It is read once at the start, and cleared by "Not now" and by a setup that
+	// ends well.
+	completionWanted bool
 	// last is how the last command ended, for Home.
 	last *dashboard.Run
 	// justAdded is the project a finished `smith add` made, to be selected
@@ -369,6 +373,7 @@ func NewShell(cfg Config) Shell {
 		sh.doctor.Loading = sh.sources.Doctor != nil
 		// So does the release plan, for the release item of Home.
 		sh.releaseLoading = sh.sources.Release != nil
+		sh.completionWanted = sh.sources.CompletionWanted != nil && sh.sources.CompletionWanted()
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
