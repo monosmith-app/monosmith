@@ -61,7 +61,7 @@ func Stage(workspaceRoot, root string) (string, error) {
 	}
 	for _, e := range entries {
 		upper := strings.ToUpper(e.Name())
-		goesWith := strings.HasPrefix(upper, "README") || strings.HasPrefix(upper, "LICENSE") || strings.HasPrefix(upper, "LICENCE") || upper == ".NPMRC"
+		goesWith := strings.HasPrefix(upper, "README") || strings.HasPrefix(upper, "LICENSE") || strings.HasPrefix(upper, "LICENCE") || upper == ".NPMRC" || isNLS(e.Name())
 		if e.IsDir() || !goesWith {
 			continue
 		}
@@ -88,4 +88,12 @@ func RelativeToBuild(packageJSON, root string) string {
 		out = strings.ReplaceAll(out, ` `+p+`/`, ` ./`)
 	}
 	return out
+}
+
+// isNLS reports whether name is a text file of a VS Code extension's manifest
+// (package.nls.json, package.nls.pt-br.json). The editor reads the %key%
+// texts of package.json from them, so they must sit beside it in the package:
+// without them every %key% shows as written.
+func isNLS(name string) bool {
+	return strings.HasPrefix(name, "package.nls.") && strings.HasSuffix(name, ".json")
 }
