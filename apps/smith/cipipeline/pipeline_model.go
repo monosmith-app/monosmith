@@ -62,6 +62,12 @@ type Model struct {
 	Deployments bool
 	// AttestOptional makes the attestation step continue on error, from [ci] attest.
 	AttestOptional bool
+	// ArtifactsOptional makes the artifact upload steps continue on error, from
+	// [ci] artifacts = "optional".
+	ArtifactsOptional bool
+	// ArtifactRetentionDays is the retention-days of the artifact upload steps,
+	// from [ci] artifact_retention_days; 0 leaves the repository's setting.
+	ArtifactRetentionDays int
 	// NativeOn is when the native job runs, from [ci] native_on: "release"
 	// (empty), "main" or "always".
 	NativeOn string

@@ -124,6 +124,7 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Branches = cfg.CI.Branches
 	m.Attest = m.Attest && cfg.CI.Attest != "off"
 	m.AttestOptional = cfg.CI.Attest == "optional"
+	m.ArtifactsOptional, m.ArtifactRetentionDays = cfg.CI.Artifacts == "optional", cfg.CI.ArtifactRetentionDays
 	m.ManualRelease = cfg.CI.ManualRelease
 	m.NativeOn, m.Triggers, m.Audit, m.AuditCron, m.PublishOn = cfg.CI.NativeOn, cfg.CI.Triggers, cfg.CI.Audit, cfg.CI.AuditCron, cfg.CI.PublishOn
 	m.ChannelBranches = nil

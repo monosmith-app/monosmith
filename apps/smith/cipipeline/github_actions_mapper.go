@@ -63,11 +63,11 @@ jobs:
 %[2]s      - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && %[1]s
-        with:
+%[3]s        with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
-`, githubOnPublishBranches(m), githubEnv("        ", m.TaskCredentials()))
+%[4]s`, githubOnPublishBranches(m), githubEnv("        ", m.TaskCredentials()), githubArtifactContinue(m), githubArtifactRetention(m))
 	}
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
 	b.WriteString(githubAzureSignIn(m, "ci"))
@@ -205,12 +205,31 @@ func githubNativeJob(m Model) string {
 	}
 	b.WriteString(`      - name: Keep the native builds (dist/drop as artifact native-OS)
         uses: actions/upload-artifact@v7
-        with:
+` + githubArtifactContinue(m) + `        with:
           name: native-${{ matrix.os }}
           path: dist/drop
           if-no-files-found: ignore
-`)
+` + githubArtifactRetention(m))
 	return b.String()
+}
+
+// githubArtifactContinue is the continue-on-error line of an artifact upload
+// step when [ci] artifacts is optional: a full artifact quota then does not
+// fail the job that has already released.
+func githubArtifactContinue(m Model) string {
+	if m.ArtifactsOptional {
+		return "        continue-on-error: true\n"
+	}
+	return ""
+}
+
+// githubArtifactRetention is the retention-days line of an artifact upload
+// step when [ci] artifact_retention_days is set.
+func githubArtifactRetention(m Model) string {
+	if m.ArtifactRetentionDays > 0 {
+		return fmt.Sprintf("          retention-days: %d\n", m.ArtifactRetentionDays)
+	}
+	return ""
 }
 
 // idToken lets the job request an OIDC token, which npm provenance signs
