@@ -146,3 +146,32 @@ func TestGenerateRefuses(t *testing.T) {
 		t.Errorf("a stack of another plugin is refused: %v", err)
 	}
 }
+
+// The host and the test runner are separate layers: a function app takes Jest
+// as it takes Vitest, and its starter test imports from the runner chosen.
+func TestGenerateImportsTheTestApiOfTheChosenRunner(t *testing.T) {
+	real := scaffolding.Installer
+	defer func() { scaffolding.Installer = real }()
+	scaffolding.Installer = func(string) error { return nil }
+	for runner, module := range map[string]string{"jest": "@jest/globals", "vitest": "vitest", "": "vitest"} {
+		t.Run("runner "+runner, func(t *testing.T) {
+			ws := t.TempDir()
+			p := New("1.0.0")
+			_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+			choices := []string{"azure-functions", "http-trigger", "node24"}
+			if runner != "" {
+				choices = append(choices, runner)
+			}
+			if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "api", Directory: "apps/api", Stack: "s", Choices: choices, Workspace: protocol.WorkspaceInfo{Name: "acme", Scope: "@acme"}}); err != nil {
+				t.Fatal(err)
+			}
+			raw, err := os.ReadFile(filepath.Join(ws, "apps", "api", "src", "functions", "greeting.handler.spec.ts"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(raw), "from '"+module+"'") {
+				t.Errorf("the test should import from %s:\n%s", module, raw)
+			}
+		})
+	}
+}

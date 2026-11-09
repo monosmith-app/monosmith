@@ -7,7 +7,6 @@ layer = "host"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]
-conflicts = ["jest"]
 dependencies = ["@google-cloud/functions-framework"]
 
 [slots]
@@ -97,7 +96,7 @@ export { [[if eq $t "http"]]hello[[else if eq $t "queue"]]processMessage[[else]]
 
 "src/functions/greeting.handler.[[.TestSuffix]].ts" = '''
 [[- $t := index .Slots "trigger" 0 -]]
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from '[[index .Slots "test.module" 0]]'
 [[if eq $t "http"]]import type { Request, Response } from '@google-cloud/functions-framework'
 [[else]]import type { CloudEvent } from '@google-cloud/functions-framework'
 [[end]]import { [[if eq $t "http"]]hello[[else if eq $t "queue"]]processMessage[[else]]processObject[[end]] } from './greeting.handler.ts'

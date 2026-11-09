@@ -7,7 +7,6 @@ layer = "host"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]
-conflicts = ["jest"]
 dependencies = ["@azure/functions"]
 
 [slots]
@@ -126,7 +125,7 @@ export { [[if eq $t "http"]]hello[[else if eq $t "timer"]]tick[[else if eq $t "q
 "src/functions/greeting.handler.[[.TestSuffix]].ts" = '''
 [[- $t := index .Slots "trigger" 0 -]]
 import { InvocationContext[[if eq $t "http"]], HttpRequest[[else if eq $t "timer"]], type Timer[[end]] } from '@azure/functions'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from '[[index .Slots "test.module" 0]]'
 import { [[if eq $t "http"]]hello[[else if eq $t "timer"]]tick[[else if eq $t "queue"]]processMessage[[else]]processBlob[[end]] } from './greeting.handler.ts'
 
 function recordingContext ([[if eq $t "blob"]]triggerMetadata: Record<string, string>[[end]]): { context: InvocationContext, logs: string[] } {
