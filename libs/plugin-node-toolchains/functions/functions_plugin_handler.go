@@ -3,6 +3,7 @@ package functions
 import (
 	"fmt"
 	"maps"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
@@ -54,7 +55,7 @@ func (p *Functions) Generate(params protocol.GenerateParams) (protocol.GenerateR
 	if len(plan.Applied) == 0 {
 		return protocol.GenerateResult{}, fmt.Errorf("the functions plugin writes projects from the choices azure-functions, aws-lambda and gcp-functions, not the stack %q: smith add app <name> --lang node --with azure-functions", params.Stack)
 	}
-	res, err := scaffolding.GenerateFrom(p.root, params, templateSet(plan))
+	res, err := scaffolding.GenerateFrom(p.root, params, templateSet(plan, testModule(params.Choices)))
 	if err != nil {
 		return res, err
 	}
@@ -81,15 +82,35 @@ func nextSteps(applied []string) []string {
 	return notes
 }
 
+// testModule is the module the starter's test imports describe, expect and it
+// from: the one of the test runner the choices name. Vitest is the default.
+func testModule(choices []string) string {
+	if slices.Contains(choices, "jest") {
+		return "@jest/globals"
+	}
+	return "vitest"
+}
+
 // templateSet is the starter that a plan of choices describes: the greeting
-// slice and the files of the plan.
-func templateSet(plan choicedata.Plan) scaffolding.TemplateSet {
+// slice and the files of the plan. module is the test runner's module, which
+// the starter's test imports.
+func templateSet(plan choicedata.Plan, module string) scaffolding.TemplateSet {
 	files := maps.Clone(typescript.GreetingSlice)
 	for path, body := range plan.Files {
 		files["[[.Dir]]/"+path] = body
 	}
 	return scaffolding.TemplateSet{
 		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
-		Slots: plan.Slots, Scripts: plan.Tasks, Dependencies: plan.Dependencies,
+		Slots: withSlot(plan.Slots, "test.module", module), Scripts: plan.Tasks, Dependencies: plan.Dependencies,
 	}
+}
+
+// withSlot returns a copy of slots with one more slot of one value.
+func withSlot(slots map[string][]string, name, value string) map[string][]string {
+	out := maps.Clone(slots)
+	if out == nil {
+		out = map[string][]string{}
+	}
+	out[name] = []string{value}
+	return out
 }
