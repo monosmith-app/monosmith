@@ -14,8 +14,8 @@ they disagree with the box, the box is right.
 > | Drag a pane border to resize | built in the TUI (the `splitter` package): drag a divider, or select it with `\` (or `Shift`+arrows) and move it with `[` and `]`; the IDE panels do not have it |
 > | Huh, Glamour and ntcharts | not used; the shell uses Bubble Tea, Bubbles and Lip Gloss |
 > | The `.cuppa` design files in `docs/architecture/tui/` | not in the repository |
-> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab reads it for task runs (`--json-events`, `tui/runview`) and parses smith's text output for other commands |
-> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands stay in the Run tab (captured, with live status per task); only a command that asks questions takes the terminal |
+> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the run panel of Projects reads it for task runs (`--json-events`, `tui/runview`) and parses smith's text output for other commands |
+> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands stay in the run panel of Projects (captured, with live status per task); only a command that asks questions takes the terminal |
 > | Recipes in the interface | partly: the Settings tab lists the workspace's recipes and whether each is valid; `a` opens a guided form, and the recipe's choices are asked by `smith add` |
 > | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
 > | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
@@ -109,7 +109,7 @@ right. It was not built that way; "As built" below is what the shell is.
 - **Inspector** (right): properties of the selection and its actions, as in
   cuppa's properties panel; where an option can be changed, it is edited here.
 - **Footer** (second row from the bottom): the keys of the open view, then the
-  keys every view ends with (`1-7` views, `m` mouse, `:` palette, `?` help,
+  keys every view ends with (`1-6` views, `m` mouse, `:` palette, `?` help,
   `q` quit). Only what can be done now is listed, and a hint that is one key
   can be clicked.
 - **Status bar** (bottom): the exact command running or last run, the result,
@@ -160,7 +160,7 @@ through `Theme.Dim` before the dialog is drawn on top.
   several buttons; `dashboard.Page` returns the lines and the click targets, and
   the shell turns the targets into `hitSpan`s. The pointer cell goes in, so the
   button under it is drawn in its hover state. Under the queue: the last three
-  runs (a click opens the run in the Run tab), the workspace line and the add
+  runs (a click opens the run in the run panel of Projects), the workspace line and the add
   buttons. Doctor and the release plan start in the background with the shell
   (`releaseLoading` stops a second git read when the Release tab opens), so the
   header badge and the release item fill without opening a tab, and Home never
@@ -203,7 +203,7 @@ The palette lists one **Settings** entry; a `smith plugin`, `plugin list`, `reci
 the terminal. Home points a new user at the tab until it has been opened once (kept in
 `tui.json` as `settingsTipSeen`). Not in the tab: `smith plugin set`, which the Plugins section does one plugin at a time.
 
-Other commands that print and end (`graph`, `explain`...) run in the Run tab like a task run: the interface
+Other commands that print and end (`graph`, `explain`...) run in the run panel of Projects like a task run: the interface
 stays and the output is captured there. A command that changes `smith.toml` still asks first.
 
 ## Components
@@ -268,7 +268,7 @@ split by role: `shell_model.go` (state and queries), `shell_update_use_case.go`
 (`Update`, `handle`, `resize`), the key, mouse and run use cases, the mappers that
 draw, and `splits_repository.go` (the one file write). What needs no `Shell` lives
 in slices of its own that take plain values: `splitter` (dividers, their keys and
-spots), `selection` (drag to select text: regions cut along the dividers, the text, the highlight), `runhistory` (the Run tab's history: ago text, header parts, recent rows,
+spots), `selection` (drag to select text: regions cut along the dividers, the text, the highlight), `runhistory` (the run panel's history: ago text, header parts, recent rows,
 the rerun-failed line) and `commandtext` (the text a captured command printed).
 `apps/smith/tui/README.md` lists what is still a method on `Shell` and the next
 slice to cut.

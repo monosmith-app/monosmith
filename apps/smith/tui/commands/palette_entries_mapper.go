@@ -63,7 +63,7 @@ var paletteSections = map[string]string{
 	"ws.copies": SectionHealth, "ws.tools-list": SectionHealth, "ws.why-miss": SectionHealth, "ws.mcp-install": SectionHealth,
 	"ws.env-list": SectionProjects, "ws.env-add": SectionProjects, "ws.env-remove": SectionProjects, "ws.pipeline": SectionRelease, "ws.tauri-icon": SectionProjects, "ws.docker-description": SectionRelease,
 
-	"view.home": SectionGoTo, "view.projects": SectionGoTo, "view.run": SectionGoTo, "view.doctor": SectionGoTo,
+	"view.home": SectionGoTo, "view.projects": SectionGoTo, "view.doctor": SectionGoTo,
 	"view.deps": SectionGoTo, "view.release": SectionGoTo, "view.settings": SectionGoTo,
 
 	"cli.guide": SectionHelp, "help.keys": SectionHelp, "view.mouse": SectionHelp, "file.quit": SectionHelp,

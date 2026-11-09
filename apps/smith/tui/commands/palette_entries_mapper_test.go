@@ -6,7 +6,7 @@ import (
 )
 
 func TestThePaletteListsEachIntentOnceWithAUniqueKeyInEveryView(t *testing.T) {
-	for _, view := range []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease, TabSettings} {
+	for _, view := range []string{TabHome, TabProjects, TabDoctor, TabDeps, TabRelease, TabSettings} {
 		s := State{View: view, InWorkspace: true, Project: "web", Projects: 4}
 		titles, keys := map[string]bool{}, map[string]string{}
 		for _, e := range PaletteEntries(s) {

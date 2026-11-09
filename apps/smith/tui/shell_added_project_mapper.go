@@ -18,7 +18,7 @@ func addedProject(argv []string) (string, bool) {
 	return argv[2], true
 }
 
-// addedNextSteps is the line the Run tab shows under a finished add: what to
+// addedNextSteps is the line the run panel shows under a finished add: what to
 // do with the project just made, with the keys that do it.
 func addedNextSteps(th theme.Theme, name string) string {
 	return " " + th.Muted(words.Say("tui.added_project.next")) +

@@ -37,7 +37,7 @@ func valueLines(value string, valueW int) []string {
 // caller shows a window of them (see Window).
 func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits map[int]string) {
 	hits = map[int]string{}
-	if len(p.Sections) == 0 && len(p.Actions) == 0 && len(p.After) == 0 {
+	if len(p.Sections) == 0 && len(p.Actions) == 0 && len(p.More) == 0 && len(p.After) == 0 {
 		return []string{th.Muted(words.Say("detail.nothing"))}, hits
 	}
 	labelW := 0
@@ -52,23 +52,31 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 	for _, s := range p.Sections {
 		lines = p.section(lines, th, s, w, labelW)
 	}
-	if len(p.Actions) > 0 {
-		if len(lines) > 0 {
-			lines = append(lines, "")
-		}
-		title := p.ActionsTitle
-		if title == "" {
-			title = words.Say("detail.actions")
-		}
-		lines = append(lines, " "+th.Title(title))
-		for _, a := range p.Actions {
-			lines = p.action(lines, hits, th, a, w, hover)
-		}
-	}
+	lines = p.group(lines, hits, th, p.ActionsTitle, p.Actions, w, hover)
+	lines = p.group(lines, hits, th, p.MoreTitle, p.More, w, hover)
 	for _, s := range p.After {
 		lines = p.section(lines, th, s, w, labelW)
 	}
 	return lines, hits
+}
+
+// group appends a heading and the buttons of a list of actions, after a blank
+// line; an empty list adds nothing. An empty title reads "Actions".
+func (p Panel) group(lines []string, hits map[int]string, th theme.Theme, title string, actions []Action, w int, hover string) []string {
+	if len(actions) == 0 {
+		return lines
+	}
+	if len(lines) > 0 {
+		lines = append(lines, "")
+	}
+	if title == "" {
+		title = words.Say("detail.actions")
+	}
+	lines = append(lines, " "+th.Title(title))
+	for _, a := range actions {
+		lines = p.action(lines, hits, th, a, w, hover)
+	}
+	return lines
 }
 
 // action appends the lines of one action: its button, then what it does in

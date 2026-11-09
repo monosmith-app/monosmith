@@ -30,10 +30,10 @@
   "tui.release_preview.failed": "{failed} failed",
   "tui.uninstall_details.removes_from_the_dependencies_or_the": "Removes {list} from the dependencies, or the development dependencies, of:",
   "tui.add_plan_text.it_is_built_from_your_choices": "It is built from your choices: {choices}. ",
-  "tui.release_preview.full_output_on_the_run_screen": " · full output on the Run screen ({shortcutOf})",
   "tui.confirm_details.no_files": "This fix lists no files: `smith doctor --fix` shows what it changes first.",
   "tui.confirm_details.files_change": "Files that will change:",
   "tui.handler.stopped_unexpectedly": "the interface stopped unexpectedly: {reason}",
   "tui.handler.running": "Running: {command}\n\n",
-  "tui.handler.chosen": "→ {command}\n\n"
+  "tui.handler.chosen": "→ {command}\n\n",
+  "tui.release_preview.full_output_in_the_run_panel": " · full output in the run panel of Projects ({shortcutOf})"
 }

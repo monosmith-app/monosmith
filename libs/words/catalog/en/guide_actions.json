@@ -22,7 +22,7 @@
   "guide.actions.name_it_lowercase_words_joined_by": "Name it (lowercase words joined by dashes)",
   "guide.actions.manage_plugins": "Manage plugins",
   "guide.actions.plugin_set": "plugin set",
-  "guide.actions.choose_which_built_in_plugins_are": "choose which built-in plugins are on; press 7 to search for more",
+  "guide.actions.choose_which_built_in_plugins_are": "choose which built-in plugins are on; press 6 to search for more",
   "guide.actions.enabled_plugins_space_toggles_enter_save": "Enabled plugins (space toggles, enter saves)",
   "guide.actions.show_the_project_graph": "Show the project graph",
   "guide.actions.smith_graph": "smith graph",

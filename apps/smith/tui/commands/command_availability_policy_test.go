@@ -10,18 +10,22 @@ var (
 	inside  = State{InWorkspace: true, Narrow: true, View: TabProjects}
 	outside = State{View: TabGuide}
 	busy    = State{InWorkspace: true, Running: true, View: TabProjects}
+	// withRun and withRecent are Projects while its right panel shows a run, and
+	// while the keyboard is on the list of recent runs.
+	withRun    = State{InWorkspace: true, View: TabProjects, RunOpen: true}
+	withRecent = State{InWorkspace: true, View: TabProjects, RecentFocus: true}
 )
 
-var everyView = []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease, TabGuide}
+var everyView = []string{TabHome, TabProjects, TabDoctor, TabDeps, TabRelease, TabGuide}
 
 func TestNoKeyIsBoundTwiceInTheSameViewAndState(t *testing.T) {
-	for _, base := range []State{inside, outside, busy} {
+	for _, base := range []State{inside, outside, busy, withRun, withRecent} {
 		for _, view := range everyView {
 			s := base
 			s.View = view
 			seen := map[string]string{}
 			for _, c := range all {
-				if c.Kind != PaneKey && !c.Visible(s) {
+				if (c.Kind != PaneKey && !c.Visible(s)) || !c.gated(s) {
 					continue
 				}
 				if len(c.Views) > 0 && !slices.Contains(c.Views, view) {
@@ -189,6 +193,8 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	line := func(view string) string {
 		s := inside
 		s.View = view
+		// No run has happened: the list of recent runs has nothing to offer.
+		s.Reasons = map[string]string{"run.recent-focus": "nothing has run yet"}
 		v, tail := Hints(s)
 		var out []string
 		for _, h := range append(v, tail...) {
@@ -199,20 +205,37 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	for view, want := range map[string]string{
 		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
 		TabDoctor:   "Enter expand · f fix · F fix all · g group · E expand all · r reload view · x show failed · w show warnings · p show passed · b build · B build all · t test · z zoom · y copy",
-		TabHome:     "Enter next · r reload view · b build · B build all · t test · w changed · d doctor",
+		TabHome:     "Enter next · ←↑↓→ move · PgUp/PgDn scroll · r reload view · b build · B build all · t test · w changed · d doctor",
 		TabDeps:     "Space mark · s safe · a all · u update · i install · x remove · v align · o one version · r reload view · b build · B build all · t test · y copy",
-		TabRelease:  "Enter commits · p preview · n notes · x release · w why · c first commit · r reload view · b build · B build all · t test",
+		TabRelease:  "←→ expand/collapse · p preview · n notes · x release · w why · c first commit · r reload view · b build · B build all · t test",
 		TabSettings: "↑↓ move · Enter change · Tab list/sections · Esc back · t trust · f forget · u reset · r reload view",
 	} {
 		if got := line(view); !strings.HasPrefix(got, want) {
 			t.Errorf("%s footer is\n%s\nwant\n%s", view, got, want)
 		}
-		if got := line(view); !strings.HasSuffix(got, "1-7 views · m mouse · : palette · ? help · q quit") {
+		if got := line(view); !strings.HasSuffix(got, "1-6 views · m mouse · : palette · ? help · q quit") {
 			t.Errorf("%s footer ends %q", view, got)
 		}
 	}
-	if got := line(TabRun); !strings.HasPrefix(got, ", older · . newer · Esc start screen · Enter open · ↑↓ task · r run again · R failed · Y copy log · f follow") {
-		t.Errorf("Run footer %q", got)
+	run := withRun
+	run.Narrow = true
+	v, _ := Hints(run)
+	var out []string
+	for _, h := range v {
+		out = append(out, h.Glyph+" "+h.Label)
+	}
+	if got := strings.Join(out, " · "); !strings.HasPrefix(got, ", older · . newer · Esc back · ↑↓ task · r run again · R failed · Y copy log · f follow") {
+		t.Errorf("Run panel footer %q", got)
+	}
+	recent := withRecent
+	recent.Narrow, recent.On = true, map[string]bool{"run.recent-focus": true}
+	v, _ = Hints(recent)
+	out = nil
+	for _, h := range v {
+		out = append(out, h.Glyph+" "+h.Label)
+	}
+	if got := strings.Join(out, " · "); !strings.HasPrefix(got, "↑↓ choose run · Enter open · Tab projects") {
+		t.Errorf("recent runs footer %q", got)
 	}
 }
 
@@ -306,7 +329,7 @@ func TestQuitCopyAndMouseAreSingleKeys(t *testing.T) {
 }
 
 func TestNumberKeysSwitchViewsInTheOrderOfTheTabs(t *testing.T) {
-	want := []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease, TabSettings}
+	want := []string{TabHome, TabProjects, TabDoctor, TabDeps, TabRelease, TabSettings}
 	for i, tab := range want {
 		key := string(rune('1' + i))
 		if c, _, ok := ByKey(key, inside); !ok || c.Tab != tab {
@@ -356,7 +379,7 @@ func TestTheDoctorExpandsInPlaceOnlyWhenNoDetailIsBesideIt(t *testing.T) {
 }
 
 func TestTheRunFooterDoesNotOfferFollowOrTasksBeforeAnythingRan(t *testing.T) {
-	s := State{InWorkspace: true, View: TabRun, Reasons: map[string]string{
+	s := State{InWorkspace: true, View: TabProjects, RunOpen: true, Reasons: map[string]string{
 		"run.follow": "nothing has run yet", "run.scroll": "nothing has run yet",
 	}}
 	v, _ := Hints(s)

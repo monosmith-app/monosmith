@@ -49,7 +49,7 @@ func Queue(f Facts) []Item {
 	}
 	if r := f.Release; r != nil {
 		q = append(q, Item{Kind: KindRelease, Severity: SeverityInfo, Title: releaseTitle(*r),
-			Buttons: []Button{queueButton("dashboard.release.preview", "view.release")}})
+			Buttons: []Button{queueButton("dashboard.release.open", "view.release")}})
 	}
 	switch {
 	case f.DepsChecked && f.Outdated > 0:
@@ -57,7 +57,7 @@ func Queue(f Facts) []Item {
 			Buttons: []Button{queueButton("dashboard.updates.review", "view.deps")}})
 	case !f.DepsChecked:
 		q = append(q, Item{Kind: KindUpdates, Severity: SeverityMuted, Title: words.Say("dashboard.updates.unlooked"),
-			Buttons: []Button{queueButton("dashboard.updates.look", "view.deps")}})
+			Buttons: []Button{queueButton("dashboard.updates.review", "view.deps")}})
 	}
 	if !asksForAttention(q) {
 		good := Item{Kind: KindGood, Severity: SeveritySuccess, Title: words.Say("dashboard.good.title"),

@@ -25,5 +25,18 @@
   "commands.footer.editing.confirm": "confirm",
   "commands.footer.editing.confirm.glyph": "Enter",
   "commands.footer.editing.back": "back",
-  "commands.footer.editing.back.glyph": "Esc"
+  "commands.footer.editing.back.glyph": "Esc",
+  "commands.reason.norunpanel": "no run is open in the panel",
+  "commands.reason.inrunpanel": "a run is open (press Esc to go back to the project)",
+  "commands.reason.norecentfocus": "the recent runs do not have the keyboard (press Tab)",
+  "commands.reason.inrecentfocus": "the recent runs have the keyboard (press Tab to leave them)",
+  "commands.runtitle": "{scope} · {tasks}",
+  "commands.runtitle.affected": "affected projects",
+  "commands.runtitle.only": "the only project",
+  "commands.runtitle.count": "all {count} projects",
+  "commands.runtitle.all": "all projects",
+  "commands.reason.nosidefocus": "the detail does not have the keyboard (press Tab)",
+  "commands.reason.insidefocus": "the detail has the keyboard (press Tab to leave it)",
+  "commands.reason.nosidenext": "Tab does not go to the detail from here",
+  "commands.reason.sidenext": "Tab goes to the detail from here"
 }

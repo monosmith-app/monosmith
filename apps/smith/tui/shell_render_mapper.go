@@ -120,7 +120,7 @@ func (s Shell) body() []string {
 	list := pane.Block(s.page().View(in.W, in.H-reserve).lines, in.W, in.H)
 	var side []string
 	if l.HasDetail() {
-		side = pane.Block(s.detailContent(din.W, din.H-reserve).lines, din.W, din.H)
+		side = pane.Block(s.sideContent(din.W, din.H-reserve).lines, din.W, din.H)
 	}
 	rows := make([]string, 0, l.Main.H)
 	rows = append(rows, s.th.Border(strings.Repeat("─", l.Main.W+l.Detail.W), false))

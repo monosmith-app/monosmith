@@ -16,7 +16,7 @@ import (
 
 func TestATaskHintSaysWhatRunsFirstWithoutNxSyntax(t *testing.T) {
 	hint := taskHint(projectlist.Task{Name: "package", DependsOn: []string{"^build", "build"}, Cache: true})
-	if strings.Contains(hint, "^") || !strings.Contains(hint, "runs after the build of the projects it needs and its own build") {
+	if strings.Contains(hint, "^") || !strings.Contains(hint, "runs after the build of the dependencies and its own build") {
 		t.Fatalf("%s", hint)
 	}
 }
@@ -83,32 +83,27 @@ func TestWhenTheListIsNotVisibleTheProjectDetailKeepsKindLanguageAndStack(t *tes
 	w.has("kind", "language", "stack", "root")
 }
 
-func TestBesideTheListTheRunDetailLeavesOutWhatTheTaskRowShows(t *testing.T) {
+func TestBesideTheListTheRunPanelLeavesOutWhatTheTaskRowShows(t *testing.T) {
 	for _, w := range []int{120, 140} {
 		l := newLab(t, true, w, 36)
 		l.next = failingRun()
 		l.keys("b")
-		got := detailLabels(l.sh())
-		for _, gone := range []string{"state", "time", "reason"} {
-			if got[gone] {
-				t.Errorf("%d columns: the detail says %q, the task row has it", w, gone)
-			}
+		// The row of the failed task shows its state, time and reason, so the lines
+		// under the rule say only the command; the log stays below them.
+		if got := l.sh().taskInfo(w / 2); len(got) != 1 {
+			t.Errorf("%d columns: the lines under the rule repeat the task row: %v", w, got)
 		}
-		for _, kept := range []string{"command", "log"} {
-			if !got[kept] {
-				t.Errorf("%d columns: the detail lost %q", w, kept)
-			}
-		}
+		l.has("$ go build ./...", "exited with code 2")
 	}
 }
 
-func TestWhenTheListIsNotVisibleTheRunDetailKeepsStateTimeAndReason(t *testing.T) {
+func TestTheRunPanelKeepsTheStateTimeAndReasonOfTheSelectedTaskAndItsCommand(t *testing.T) {
 	l := newLab(t, true, 80, 36)
 	l.next = failingRun()
 	l.keys("b")
-	if got := detailLabels(l.sh()); !got["state"] || !got["reason"] || !got["command"] {
-		t.Fatalf("80 columns: %v", got)
-	}
+	// The failed task is selected: its row is cut in a panel this narrow, so the
+	// lines under the rule of the log say what the row had no room for.
+	l.has("orders:build", "$ go build ./...", "exited with code 2")
 }
 
 func TestAPanelKeepsAnUnmarkedRowAndLeavesOutAMarkedOneBesideTheList(t *testing.T) {
@@ -123,7 +118,7 @@ func TestAPanelKeepsAnUnmarkedRowAndLeavesOutAMarkedOneBesideTheList(t *testing.
 func TestTheDoctorDetailDoesNotRepeatTheStateTheHighlightedRowShows(t *testing.T) {
 	for _, w := range []int{80, 120} {
 		l := newLab(t, true, w, 34)
-		l.keys("4")
+		l.keys("3")
 		if w < layout.WideFrom {
 			l.keys("enter")
 		}
@@ -144,8 +139,17 @@ func TestTheDoctorDetailDoesNotRepeatTheStateTheHighlightedRowShows(t *testing.T
 
 func TestTheProjectDetailKeepsAFactWhenTheListIsTooNarrowToDrawItsColumn(t *testing.T) {
 	var dropped, drawn bool
-	for w := 100; w <= 150; w += 5 {
+	// A project with a long name squeezes the columns after it: that is how the
+	// table runs out of room now that it has no Tasks column to give way.
+	for w, long := 100, false; w <= 150; w, long = w+5*btoi(long), !long {
 		l := newLab(t, true, w, 34)
+		if long {
+			projects := append([]projectlist.Project(nil), sampleProjects...)
+			projects[1].Name = "a-project-with-a-very-long-name-indeed"
+			sh := l.sh()
+			sh.list = projectlist.New(projects)
+			l.m = sh
+		}
 		l.keys("down")
 		got := detailLabels(l.sh())
 		for _, c := range []struct{ label, header string }{{"kind", "Kind"}, {"language", "Language"}, {"stack", "Stack"}} {
@@ -161,17 +165,16 @@ func TestTheProjectDetailKeepsAFactWhenTheListIsTooNarrowToDrawItsColumn(t *test
 	}
 }
 
-func TestTheRunDetailKeepsTheReasonWhenTheTaskRowIsCutBeforeIt(t *testing.T) {
+func TestTheRunPanelSaysTheReasonUnderTheRuleOnlyWhenTheTaskRowIsCutBeforeIt(t *testing.T) {
 	l := newLab(t, true, 120, 36)
 	l.next = failingRun()
 	l.keys("b")
 	sh := l.sh()
-	tk := sh.run.Task(sh.runSel)
-	if _, _, shown := sh.taskRowShows(tk, 30, sh.now()); shown {
-		t.Fatal("a 30 cell list should cut the reason")
+	if got := sh.taskInfo(30); len(got) < 2 {
+		t.Fatalf("a 30 cell panel should cut the reason and say it under the rule: %v", got)
 	}
-	if _, _, shown := sh.taskRowShows(tk, 100, sh.now()); !shown {
-		t.Fatal("a 100 cell list should show the reason")
+	if got := sh.taskInfo(100); len(got) != 1 {
+		t.Fatalf("a 100 cell panel shows the reason in the row and says only the command: %v", got)
 	}
 }
 
@@ -207,4 +210,45 @@ func TestTheDoctorDetailFoldsBuildMetadataAndSaysEachThingOnce(t *testing.T) {
 	if open := panel(true); !strings.Contains(open, "modified: ?") {
 		t.Error("e does not show the build metadata")
 	}
+}
+
+// btoi is 1 for true and 0 for false.
+func btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func TestTaskButtonsSayWhatTheTaskDoesToTheKindOfProject(t *testing.T) {
+	for _, tc := range []struct{ task, kind, want string }{
+		{"build", "app", "Build app"}, {"build", "lib", "Build library"}, {"build", "package", "Build package"},
+		{"test", "app", "Test app"}, {"test", "lib", "Test library"}, {"lint", "lib", "Lint library"},
+		{"typecheck", "package", "Typecheck package"},
+		{"package", "app", "Package app"}, {"package", "lib", "Package library"},
+		// "package" is also a kind: the task of a package is told as what it does.
+		{"package", "package", "Pack for publishing"},
+		// A task with no verb, or a project of an unknown kind, keeps the raw name.
+		{"stage-web", "app", "Run stage-web"}, {"package-dmg", "lib", "Run package-dmg"}, {"build", "tool", "Run build"},
+	} {
+		if got := taskLabel(tc.task, tc.kind); got != tc.want {
+			t.Errorf("%s on a %s is %q, want %q", tc.task, tc.kind, got, tc.want)
+		}
+	}
+}
+
+func TestTheDetailNamesTheKindInItsTaskButtonsAndKeepsTheRawTaskInTheHint(t *testing.T) {
+	l := buttonLab(t, 160, 100) // web, an app with package, slice-check and start tasks
+	l.has("Build app (b)", "Test app (t)", "Package app (p)", "Run slice-check (s)", "Run start (S)")
+	l.hasNot("Run build", "Run test", "Run package")
+	l.has("smith run package", "smith run build")
+	l.hasNot("smith run slice-check") // a task with no verb says nothing more than "Run <task>"
+	actions := l.sh().detailPanel().Actions
+	if actions[2].ID != "x:run:package" || actions[2].Shortcut != "p" {
+		t.Fatalf("the Package app button changed its id or key: %+v", actions[2])
+	}
+	// The same task on a library.
+	l.keys("down") // kit, a library
+	l.has("Build library (b)", "Test library (t)")
+	l.hasNot("Package app")
 }

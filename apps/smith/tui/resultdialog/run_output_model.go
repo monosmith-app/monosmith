@@ -27,7 +27,7 @@ const (
 )
 
 // NewRunOutput builds the dialog that shows a command that runs where there is
-// no Run tab (smith new and smith convert, before a workspace exists). It shows
+// no run panel (smith new and smith convert, before a workspace exists). It shows
 // the end of the output; when the command is done it offers to open the
 // workspace, or to go back to the form.
 //

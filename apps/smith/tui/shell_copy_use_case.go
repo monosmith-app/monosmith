@@ -11,18 +11,17 @@ import (
 )
 
 // focusedText is what `y` copies: the remedy (else the message) of the
-// selected Doctor check, the last command line of the Run view, the root of
+// selected Doctor check, the command line of the run open in Projects, the root of
 // the selected project, the package of the selected dependency. ok is false
 // when the view has nothing to copy.
 func (s Shell) focusedText() (text string, ok bool) {
 	switch s.tab {
 	case commands.TabProjects:
+		if s.runShown() {
+			return s.run.CommandLine(), true
+		}
 		if p, found := s.list.Selected(); found && p.Root != "" {
 			return p.Root, true
-		}
-	case commands.TabRun:
-		if s.run != nil {
-			return s.run.CommandLine(), true
 		}
 	case commands.TabDoctor:
 		if f, found := s.doctor.Selected(); found {

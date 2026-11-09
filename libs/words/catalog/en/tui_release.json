@@ -36,7 +36,7 @@
   "tui.release_result.ok": "Released",
   "tui.release_result.stopped": "The release stopped",
   "tui.release_result.why_ok": "The release ended well.",
-  "tui.release_result.why_stopped": "The release did not finish. The Run screen ({shortcutOf}) holds the output.",
+  "tui.release_result.why_stopped": "The release did not finish. The run panel of Projects ({shortcutOf}) holds the output.",
   "tui.release_result.tags": "New tags:",
   "tui.release_result.tag": "{tag}",
   "tui.release_result.next_pushed": "What next: smith release --status shows what went where. CI builds the assets from the tags.",

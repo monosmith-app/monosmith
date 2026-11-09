@@ -18,7 +18,7 @@ func runsOutside(argv []string) bool {
 }
 
 // startOutside starts smith new or smith convert as a child process and opens
-// the dialog that shows its output, because no Run tab exists yet.
+// the dialog that shows its output, because no run panel exists yet.
 func (s *Shell) startOutside(argv []string) tea.Cmd {
 	if s.running() {
 		s.say(words.Say("tui.outside.a_run_is_in_progress_ctrl"))
@@ -30,7 +30,7 @@ func (s *Shell) startOutside(argv []string) tea.Cmd {
 }
 
 // showOutside draws the output of the run that goes (or went) in the dialog;
-// it does nothing inside a workspace, where the Run tab shows it.
+// it does nothing inside a workspace, where the run panel shows it.
 func (s *Shell) showOutside() {
 	if s.inWorkspace || s.run == nil || !runsOutside(s.run.Command) {
 		return

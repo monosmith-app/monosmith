@@ -47,7 +47,7 @@ func Hints(s State) (view, tail []Hint) {
 		switch {
 		case c.Tail:
 			tail = append(tail, hintOf(c, s))
-		case s.RunFailed && s.View == TabRun && (c.ID == "run.again" || c.ID == "run.copy-log"):
+		case s.RunFailed && s.RunOpen && (c.ID == "run.again" || c.ID == "run.copy-log"):
 			lead = append(lead, hintOf(c, s))
 		case slices.Contains(show, s.View):
 			view = append(view, hintOf(c, s))
@@ -58,9 +58,6 @@ func Hints(s State) (view, tail []Hint) {
 
 func hintOf(c Command, s State) Hint {
 	h := Hint{Glyph: c.Glyph, Label: scopedLabel(c, s)}
-	if s.StartScreen && c.StartFooter != "" {
-		h.Label = c.StartFooter
-	}
 	if s.TaskSelected && c.TaskFooter != "" {
 		h.Label = c.TaskFooter
 	}

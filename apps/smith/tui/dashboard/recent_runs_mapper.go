@@ -40,6 +40,9 @@ func (c *canvas) recent(runs []Run) {
 			line += strings.Repeat(" ", runGap)
 			x += runGap
 		}
+		if len(c.targets) == c.sel {
+			cell = th.Selected(pane.Strip(cell))
+		}
 		c.targets = append(c.targets, Target{Row: row, From: x, To: x + cw, Run: r.Index})
 		line += cell
 		x += cw

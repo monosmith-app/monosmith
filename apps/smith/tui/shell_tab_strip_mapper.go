@@ -40,7 +40,7 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 			// that took its place: the tab names it, not "Start".
 			t.Label = name
 		}
-		if id == commands.TabRun || id == commands.TabDoctor {
+		if id == commands.TabProjects || id == commands.TabDoctor {
 			t.Reserve = badgeRoom
 		}
 		list = append(list, t)
@@ -51,14 +51,15 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 	})
 }
 
-// tabBadge is the mark after a tab's name: how the run is going, what doctor found.
+// tabBadge is the mark after a tab's name: how the run is going (Projects, which
+// holds the run panel), what doctor found.
 func (s Shell) tabBadge(id string) string {
-	if id != commands.TabRun && s.tabBusy(id) {
+	if id != commands.TabProjects && s.tabBusy(id) {
 		// Work for the tab goes on in the background: a spinner says so.
 		return s.th.Info(s.th.Spin(s.tick))
 	}
 	switch id {
-	case commands.TabRun:
+	case commands.TabProjects:
 		switch {
 		case s.running():
 			return s.th.Info(s.th.Spin(s.tick))

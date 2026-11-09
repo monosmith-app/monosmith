@@ -176,14 +176,17 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		return s.tabClick(x)
 	case layout.Main:
 		if in := s.mainInner(); in.Contains(x, y) {
+			s.sideFocus = false
 			return s.contentClick(x-in.X, y-in.Y, double)
 		}
 	case layout.Detail:
 		in := s.detailInner()
 		if in.Contains(x, y) {
-			if h, ok := s.detailContent(in.W, in.H).hits[y-in.Y]; ok {
-				return s.activate(h.id)
-			}
+			// The click lands on the rows as they were drawn: the cursor mark of a detail
+			// that has the keyboard changes how its notes wrap. The keyboard moves after.
+			cmd := s.clickHit(s.sideContent(in.W, in.H-s.toastRows(in.H)), x-in.X, y-in.Y, double)
+			s.sideFocus = s.beside()
+			return cmd
 		}
 	}
 	return nil
@@ -216,7 +219,13 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	if s.tab == commands.TabSettings {
 		return s.settingsClick(in.W, in.H, rx, ry, double)
 	}
-	c := s.mainContent(in.W, in.H)
+	return s.clickHit(s.mainContent(in.W, in.H-s.toastRows(in.H)), rx, ry, double)
+}
+
+// clickHit handles a click at (rx, ry) in a body c that was drawn: on a project,
+// a task, a recent run, a part of the run header, a finding, a dependency, an
+// option or a button.
+func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 	h, ok := c.hits[ry]
 	if !ok {
 		return nil
@@ -230,6 +239,9 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	}
 	switch h.kind {
 	case "project":
+		// A project clicked shows its own detail: a run that was open goes on in
+		// the background and stays in the list of recent runs.
+		s.runOpen, s.recentFocus = false, false
 		s.list = s.list.SelectProject(h.id)
 		s.detailCursor = 0
 		if double {
@@ -241,17 +253,15 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	case "recent":
 		s.recentAt = h.index
 		if s.tab == commands.TabHome {
-			// A run on Home opens at one click, in the Run tab.
-			s.openRecent()
-			return s.activate("view.run")
+			// A run on Home opens at one click, in the run panel of Projects.
+			return s.openRecent()
 		}
+		s.recentFocus = true
 		if double {
-			s.openRecent()
+			return s.openRecent()
 		}
 	case "nav":
 		switch s.navAction(rx) {
-		case "start":
-			s.openStart()
 		case "older":
 			s.stepRun(-1)
 		case "newer":
@@ -319,24 +329,15 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	}
 	switch s.lay().AreaAt(x, y) {
 	case layout.Detail:
-		s.scrollDetail(dir * wheelStep)
+		s.wheelSide(y, dir)
 	case layout.Main:
-		in := s.mainInner()
 		if s.detailFull() {
-			s.scrollDetail(dir * wheelStep)
+			s.wheelSide(y, dir)
 			return nil
 		}
 		switch s.tab {
-		case commands.TabRun:
-			if s.run == nil {
-				return nil
-			}
-			g := s.runGeom(in.W, in.H)
-			if y-in.Y >= g.logTop {
-				s.log = s.log.Scroll(dir*wheelStep, s.logTotal(), g.logRows)
-			} else {
-				s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
-			}
+		case commands.TabHome:
+			s.scrollHome(dir * wheelStep)
 		case commands.TabDeps:
 			s.deps = s.deps.Wheel(dir * wheelStep)
 		case commands.TabProjects:
@@ -363,4 +364,20 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// wheelSide scrolls what the right panel shows: the log of the run (or its task
+// list, above the log) while a run is open, else the detail.
+func (s *Shell) wheelSide(y, dir int) {
+	if !s.runShown() {
+		s.scrollDetail(dir * wheelStep)
+		return
+	}
+	r := s.detailRect()
+	g := s.runGeom(r.W, r.H)
+	if y-r.Y >= g.logTop {
+		s.log = s.log.Scroll(dir*wheelStep, s.logTotal(), g.logRows)
+		return
+	}
+	s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
 }

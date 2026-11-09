@@ -63,7 +63,7 @@ type Result struct {
 	// Form is the title of a guided form to open.
 	Form string
 	// Run is a smith command line (without the leading smith) the shell
-	// shows, asks about and runs in the Run view: the tab never runs it.
+	// shows, asks about and runs in the run panel: the tab never runs it.
 	Run []string
 	// Search asks the shell to search the plugin marketplace for Term (empty:
 	// every plugin) and offer the plugins it finds.

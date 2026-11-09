@@ -57,7 +57,6 @@ const (
 const (
 	TabHome     = "home"
 	TabProjects = "projects"
-	TabRun      = "run"
 	TabDoctor   = "doctor"
 	TabDeps     = "deps"
 	TabRelease  = "release"
@@ -86,10 +85,9 @@ type Command struct {
 	// out of the footer. ShowIn are the views whose footer shows it (Views when
 	// empty); Tail puts it at the end of every footer.
 	Footer string
-	// StartFooter replaces Footer while the Run tab shows its start screen;
-	// TaskFooter replaces it while the log of one task is shown (Esc then goes
-	// back to all output).
-	StartFooter, TaskFooter string
+	// TaskFooter replaces Footer while the log of one task is shown in the run
+	// panel (Esc then goes back to all output).
+	TaskFooter string
 	// OnFooter and OnTitle replace Footer and Title while the command is a
 	// toggle that is on (State.On): "group" becomes "ungroup".
 	OnFooter, OnTitle string
@@ -125,6 +123,18 @@ type Command struct {
 	// NeedsNarrowList and NeedsDetailOpen are for the keys of the narrow
 	// layout, where the detail is opened over the list and closed again.
 	NeedsNarrowList, NeedsDetailOpen bool
+	// NeedsRunPanel makes the command work only while the Projects view shows a
+	// run in its right panel; NotInRunPanel only while it does not.
+	NeedsRunPanel, NotInRunPanel bool
+	// NeedsRecentFocus makes the command work only while the keyboard is on the
+	// list of recent runs; NotInRecentFocus only while it is not.
+	NeedsRecentFocus, NotInRecentFocus bool
+	// NeedsSideFocus makes the command work only while the keyboard is on the
+	// right panel beside the list; NotInSideFocus only while it is not.
+	NeedsSideFocus, NotInSideFocus bool
+	// NeedsSideNext makes the command work only where Tab goes to the right
+	// panel next; NotSideNext only where it goes elsewhere (to the recent runs).
+	NeedsSideNext, NotSideNext bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
 	// Yields gives the key to a command of every view while the command has a
@@ -145,14 +155,18 @@ type State struct {
 	// Narrow is true when the detail is not beside the list; DetailOpen when it
 	// fills the pane instead of the list.
 	Narrow, DetailOpen bool
-	// Running is true while a command is running in the run view.
+	// Running is true while a command is running in the run panel.
 	Running bool
-	// StartScreen is true while the Run tab shows its start screen, the list of recent runs.
-	StartScreen bool
+	// RunOpen is true while the right panel of Projects shows a run; RecentFocus
+	// while the keyboard is on the list of recent runs under the projects.
+	RunOpen, RecentFocus bool
+	// SideFocus is true while the keyboard is on the right panel beside the
+	// list; SideNext when Tab would move it there next.
+	SideFocus, SideNext bool
 	// RunFailed is true when the run shown ended with a failed task: the keys
 	// that answer a failure (run again, copy the log) lead the footer.
 	RunFailed bool
-	// TaskSelected is true when the Run tab shows the log of one task: Esc then
+	// TaskSelected is true when the run panel shows the log of one task: Esc then
 	// goes back to all output.
 	TaskSelected bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.

@@ -24,7 +24,7 @@ func TestTheTabStripAndTheFootersHelpAndQuitAreNeverCutAboveTheMinimumWidth(t *t
 func TestBelowTheMinimumKeysDoNothingButLeave(t *testing.T) {
 	l := newLab(t, true, minWidth-1, 24)
 	before := l.sh().tab
-	l.keys("a", "enter", "enter", "6", "?")
+	l.keys("a", "enter", "enter", "5", "?")
 	if sh := l.sh(); sh.tab != before || sh.quit || sh.confirm != nil {
 		t.Fatalf("keys acted below the minimum: tab %q (was %q), confirm %v", sh.tab, before, sh.confirm)
 	}

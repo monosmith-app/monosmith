@@ -127,7 +127,7 @@ func TestANewPressTheWheelAndATabChangeClearTheHighlight(t *testing.T) {
 		if l.sh().selection.Held || l.sh().selection.Active {
 			t.Fatalf("%s clears the highlight", name)
 		}
-		l.keys("4")
+		l.keys("3")
 	}
 }
 
@@ -156,7 +156,7 @@ func TestADragCannotLeaveThePanelItStartedIn(t *testing.T) {
 
 func TestInSettingsADragFromTheSectionsNeverReachesTheDetail(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 30)
-	l.keys("7")
+	l.keys("6")
 	out := copying(l)
 	x, y := l.find("Recipes")
 	l.send(click(x, y)).send(drag(130, y+1)).send(letGo(130, y+1))
@@ -173,7 +173,7 @@ func TestInSettingsADragFromTheSectionsNeverReachesTheDetail(t *testing.T) {
 
 func TestInSettingsADragInTheDetailStaysAboveTheSeparator(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 30)
-	l.keys("7")
+	l.keys("6")
 	out := copying(l)
 	x, y := l.find("[x] go")
 	l.send(click(x, y)).send(drag(x+5, 27)).send(letGo(x+5, 27))

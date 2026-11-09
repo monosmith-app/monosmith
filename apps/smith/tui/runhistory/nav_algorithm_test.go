@@ -17,7 +17,7 @@ func TestNavPartsDisableWhatCannotBeUsed(t *testing.T) {
 		return false
 	}
 	first := NavParts(true, 0, 3)
-	if on(first, "older") || !on(first, "newer") || !on(first, "start") {
+	if on(first, "older") || !on(first, "newer") {
 		t.Fatalf("first of three: %+v", first)
 	}
 	last := NavParts(true, 2, 3)
@@ -25,7 +25,7 @@ func TestNavPartsDisableWhatCannotBeUsed(t *testing.T) {
 		t.Fatalf("last of three: %+v", last)
 	}
 	busy := NavParts(false, 1, 3)
-	if on(busy, "start") || on(busy, "older") || on(busy, "newer") {
+	if on(busy, "older") || on(busy, "newer") {
 		t.Fatalf("a run goes: %+v", busy)
 	}
 }
@@ -36,8 +36,8 @@ func TestActionAtFindsThePartUnderAColumn(t *testing.T) {
 	for _, p := range parts {
 		line.WriteString(p.Text)
 	}
-	if got := ActionAt(parts, 1); got != "start" {
-		t.Fatalf("column 1 is %q", got)
+	if got := ActionAt(parts, 1); got != "" {
+		t.Fatalf("column 1 is %q, the plain position of the run", got)
 	}
 	older := utf8.RuneCountInString(line.String()[:strings.Index(line.String(), "older")])
 	if got := ActionAt(parts, older+1); got != "older" {

@@ -77,7 +77,7 @@ func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 
 func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
 	l := newLab(t, true, 160, 34)
-	x, y := l.find("1-7 views")
+	x, y := l.find("1-6 views")
 	l.send(click(x+1, y))
 	if l.sh().tab != "projects" || len(l.started) != 0 {
 		t.Fatal("nothing happens")
@@ -88,7 +88,7 @@ func TestClickingARowSelectsItAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("● web")
 	l.send(click(x+2, y))
-	l.has("Projects it needs", "kit", "affected", "yes")
+	l.has("Dependencies", "kit", "affected", "yes")
 	if l.sh().list.SelectedName() != "web" {
 		t.Fatalf("selected %q", l.sh().list.SelectedName())
 	}
@@ -101,7 +101,7 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 	if len(l.started) != 0 {
 		t.Fatal("selecting a project must not run anything")
 	}
-	tx, ty := l.find("Run test")
+	tx, ty := l.find("Test app")
 	l.send(click(tx+2, ty)).send(letGo(tx+2, ty))
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -111,14 +111,14 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
 	l := newLab(t, true, 90, 30)
 	x, y := l.find("○ kit")
-	l.hasNot("Projects that use it")
+	l.hasNot("Dependants")
 	l.send(click(x+2, y))
-	l.hasNot("Projects that use it")
+	l.hasNot("Dependants")
 	l.advance(2 * time.Second)
 	l.doubleClick(x+2, y)
-	l.has("Projects that use it", "Run test")
+	l.has("Dependants", "Test library")
 	// A click on an action of the detail does it.
-	ax, ay := l.find("Run test")
+	ax, ay := l.find("Test library")
 	l.send(click(ax+2, ay)).send(letGo(ax+2, ay))
 	if l.lastStarted() != "run test -p kit" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -170,7 +170,7 @@ func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 
 func TestClickingAnActionOfTheDetailRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Run test", 3)
+	x, y := l.findAfter("Test app", 3)
 	l.send(click(x+3, y)).send(letGo(x+3, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -181,7 +181,7 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("○ kit")
 	l.send(click(x+2, y))
-	l.has("Projects that use it")
+	l.has("Dependants")
 }
 
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
@@ -196,7 +196,7 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	x, y := l.find("Cancel (esc)")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
@@ -213,7 +213,7 @@ func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 
 func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	l.send(click(2, 30))
 	l.hasNot("The command that will run:")
 	if len(l.started) != 0 {
@@ -223,7 +223,7 @@ func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 
 func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	before := l.sh().View()
 	x, y := l.find("Cancel (esc)")
 	l.send(motion(x+2, y))
@@ -243,11 +243,11 @@ func TestTheWheelScrollsTheLogAndPausesIt(t *testing.T) {
 	l.keys("b")
 	l.has("output line 149", "following")
 	_, y := l.find("output line 149")
-	l.send(wheel(60, y-3, -1))
+	l.send(wheel(100, y-3, -1))
 	l.has("paused")
 	l.hasNot("output line 149")
 	for i := 0; i < 60; i++ {
-		l.send(wheel(60, y-3, 1))
+		l.send(wheel(100, y-3, 1))
 	}
 	l.has("following", "output line 149")
 }
@@ -314,13 +314,13 @@ func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 	// Every tab is a button with its key, so the strip needs more room than the names alone.
 	l := newLab(t, true, 99, 30)
 	l.hasNot("›", "‹")
-	for _, name := range []string{"Home", "Proj", "Run", "Doctor", "Deps", "Rel"} {
+	for _, name := range []string{"Home", "Proj", "Doctor", "Deps", "Rel"} {
 		l.has(name)
 	}
-	x, y := l.findAfter("Run", 0)
+	x, y := l.findAfter("Doctor", 0)
 	l.send(click(x+1, y))
-	if l.sh().tab != "run" {
-		t.Fatalf("a click on Run opened %q", l.sh().tab)
+	if l.sh().tab != commands.TabDoctor {
+		t.Fatalf("a click on Doctor opened %q", l.sh().tab)
 	}
 }
 
@@ -349,7 +349,7 @@ func colourLab(t *testing.T, w, h int, tab string) *lab {
 func TestWithoutAModalThePointerHighlightsTheTabsAndTheFooter(t *testing.T) {
 	l := colourLab(t, 160, 50, commands.TabProjects)
 	before := l.sh().View()
-	x, y := l.find("Settings (7)")
+	x, y := l.find("Settings (6)")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("the tab under the pointer shows its hover look")
@@ -365,7 +365,7 @@ func TestWhileAModalIsOpenTheMouseActsOnlyOnIt(t *testing.T) {
 	for _, c := range modalCases {
 		t.Run(c.name, func(t *testing.T) {
 			l := colourLab(t, 160, 50, c.tab)
-			tx, ty := l.find("Settings (7)")
+			tx, ty := l.find("Settings (6)")
 			if ty != 1 {
 				t.Fatalf("the tab is on row %d", ty)
 			}

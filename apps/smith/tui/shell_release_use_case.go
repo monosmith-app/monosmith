@@ -131,7 +131,7 @@ func (s Shell) releaseRunLines(w, room int) []string {
 	if !s.run.OK() {
 		mark = words.Say("tui.release_preview.failed", "failed", s.th.Failure(s.th.Icons.Failed))
 	}
-	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_on_the_run_screen", "shortcutOf", commands.ShortcutOf("view.run"))))
+	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_in_the_run_panel", "shortcutOf", commands.ShortcutOf("view.projects"))))
 	lines = append(lines, releaseconfirm.Steps(s.th, items, s.run.Lines, s.tick, true, s.run.OK())...)
 	if !s.run.OK() {
 		var out []string

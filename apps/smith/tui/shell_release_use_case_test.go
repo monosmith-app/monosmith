@@ -40,7 +40,7 @@ func firstRelease() releaseview.Result {
 
 func TestTheReleaseViewHasAReleaseNowButtonThatOpensTheQuestion(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6")
+	l.keys("5")
 	l.has("2 packages to release", "Release now (x)")
 	l.clickText("Release now (x)")
 	l.has("Release: hold back or bump")
@@ -51,7 +51,7 @@ func TestTheReleaseViewHasAReleaseNowButtonThatOpensTheQuestion(t *testing.T) {
 
 func TestTheReleaseConfirmationListsTheChecksTheEffectsAndTheCommandAndStartsOnCancel(t *testing.T) {
 	l := newLab(t, true, 120, 40)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	l.has("Release now", "Before you release:", "Doctor: 2 findings are open", "Tests: no test run in this session", "Branch: not known",
 		"A warning does not stop the release", "Packages and versions to publish:", "web 1.0.0 → 1.1.0 tag web@1.1.0",
 		"What will happen:", "Commit: no", "Tag: 2 tags are created.", "Push: no. There is no remote", "Publish: yes",
@@ -65,7 +65,7 @@ func TestTheReleaseConfirmationListsTheChecksTheEffectsAndTheCommandAndStartsOnC
 
 func TestEscCancelsTheReleaseConfirmation(t *testing.T) {
 	l := newLab(t, true, 120, 40)
-	l.keys("6", "x", "enter", "esc")
+	l.keys("5", "x", "enter", "esc")
 	if len(l.started) != 0 {
 		t.Fatalf("Esc ran %v", l.started)
 	}
@@ -74,7 +74,7 @@ func TestEscCancelsTheReleaseConfirmation(t *testing.T) {
 
 func TestAConfirmationWithNoWarningSaysReleaseNow(t *testing.T) {
 	l := newLab(t, true, 120, 40)
-	l.keys("6")
+	l.keys("5")
 	readyToRelease(l)
 	l.keys("x", "enter")
 	l.has("Doctor: no findings", "Tests: the last test run passed", "Branch main: pushed", "Push: the tags go to origin.", "Release now (y)")
@@ -83,7 +83,7 @@ func TestAConfirmationWithNoWarningSaysReleaseNow(t *testing.T) {
 
 func TestTheReleaseRunShowsTheCommandAStepPerPackageAndThenTheResultAndWhatNext(t *testing.T) {
 	l := newLab(t, true, 120, 40)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	p := &scripted{lines: []string{"web: building 1.1.0"}, hold: true, release: make(chan struct{})}
 	l.next = p
 	l.keys("y")
@@ -100,7 +100,7 @@ func TestTheReleaseRunShowsTheCommandAStepPerPackageAndThenTheResultAndWhatNext(
 
 func TestAFailedReleaseSaysSoAndWhatToDoNext(t *testing.T) {
 	l := newLab(t, true, 120, 40)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	p := &scripted{lines: []string{"web: building 1.1.0", "web:build x boom"}, hold: true, release: make(chan struct{})}
 	l.next = p
 	l.keys("y")
@@ -111,7 +111,7 @@ func TestAFailedReleaseSaysSoAndWhatToDoNext(t *testing.T) {
 
 func TestAnEmptyPlanHasOneHeadlineAFoldedWhyAndNoRepeatedText(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6")
+	l.keys("5")
 	l.releaseRead(releaseview.Result{Plan: release.Plan{Unchanged: []string{"sdk"}}})
 	l.has("Nothing to release: no feat: or fix: commits since the last tag", "Why? (w)")
 	l.hasNot("Only feat:", "Create the first release commit", "Release now")
@@ -123,7 +123,7 @@ func TestAnEmptyPlanHasOneHeadlineAFoldedWhyAndNoRepeatedText(t *testing.T) {
 
 func TestThePreviewOfAnEmptyPlanDoesNotRepeatTheHeadline(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6")
+	l.keys("5")
 	l.releaseRead(releaseview.Result{Plan: release.Plan{Unchanged: []string{"sdk"}}})
 	l.next = &scripted{lines: []string{"Dry run: nothing is published or tagged.", "Nothing to release: no package has a feat: or fix: commit since its last release"}}
 	l.keys("p")
@@ -136,14 +136,14 @@ func TestThePreviewOfAnEmptyPlanDoesNotRepeatTheHeadline(t *testing.T) {
 func TestThePreviewOfAPlanLeavesOutTheTerminalAdviceAndPointsAtTheButton(t *testing.T) {
 	l := newLab(t, true, 120, 34)
 	l.next = &scripted{lines: []string{"web 1.0.0 -> 1.1.0", release.PublishHintLine}}
-	l.keys("6", "p")
+	l.keys("5", "p")
 	l.has("web 1.0.0 -> 1.1.0", "Release now (x) publishes them from here")
 	l.hasNot("or run smith release here")
 }
 
 func TestFirstReleaseOffersTheCommitAndMakesItOnlyAfterTheConfirmation(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6")
+	l.keys("5")
 	l.releaseRead(firstRelease())
 	var made int
 	sh := l.sh()
@@ -164,7 +164,7 @@ func TestFirstReleaseOffersTheCommitAndMakesItOnlyAfterTheConfirmation(t *testin
 
 func TestAFailedFirstCommitIsToldInADialog(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6")
+	l.keys("5")
 	l.releaseRead(firstRelease())
 	sh := l.sh()
 	sh.sources.FirstCommit = func() error { return errors.New("hook said no") }
@@ -175,8 +175,42 @@ func TestAFailedFirstCommitIsToldInADialog(t *testing.T) {
 
 func TestTheFirstCommitKeyDoesNotShadowTypecheckWhenThereIsAPlan(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6", "c")
+	l.keys("5", "c")
 	if got := l.lastStarted(); !strings.Contains(got, "typecheck") {
 		t.Fatalf("c started %q, want the typecheck run", got)
+	}
+}
+
+func TestAReleaseRowShowsWhetherItsCommitsAreFoldedAndTheArrowsToggleThem(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("5")
+	l.has("▸ web", "▸ kit", "←→ expand/collapse")
+	l.hasNot("▾ web", "dark mode")
+	l.keys("right")
+	l.has("▾ web", "▸ kit", "dark mode")
+	l.keys("left")
+	l.has("▸ web")
+	l.hasNot("▾ web", "dark mode")
+	// A click on the row still shows and hides the commits.
+	x, y := l.find("▸ web")
+	l.send(click(x, y))
+	l.send(letGo(x, y))
+	l.has("▾ web")
+	l.send(click(x, y))
+	l.send(letGo(x, y))
+	l.has("▸ web")
+}
+
+func TestOnDepsTheUpAndDownArrowsMoveTheSelection(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4")
+	first := l.sh().deps.Cursor
+	l.keys("down")
+	if l.sh().deps.Cursor != first+1 {
+		t.Fatalf("Down moved the cursor from %d to %d", first, l.sh().deps.Cursor)
+	}
+	l.keys("up")
+	if l.sh().deps.Cursor != first {
+		t.Fatalf("Up moved the cursor to %d, want %d", l.sh().deps.Cursor, first)
 	}
 }

@@ -108,7 +108,7 @@ func TestSyncWhichVersionCanBeCancelled(t *testing.T) {
 // the confirmation that follows states the line and that it cannot be undone.
 func TestReleaseOffersHoldAndBumpBeforeTheConfirmation(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6", "x")
+	l.keys("5", "x")
 	l.has("Release: hold back or bump", "web", "kit")
 	l.keys("b", "b", "b", "down", " ") // web=major, hold kit
 	l.has("$ smith release --hold kit --bump web=major")
@@ -125,7 +125,7 @@ func TestReleaseOffersHoldAndBumpBeforeTheConfirmation(t *testing.T) {
 
 func TestEscInTheReleaseQuestionCancelsWithoutRunning(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6", "x", "esc")
+	l.keys("5", "x", "esc")
 	l.hasNot("Release: hold back or bump", "The command that will run:")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v", l.started)

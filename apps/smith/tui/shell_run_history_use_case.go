@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
@@ -13,7 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// The Run tab keeps the runs of the session (the newest last), so an earlier
+// The run panel keeps the runs of the session (the newest last), so an earlier
 // result can be read again after another run started. The run shown is s.run;
 // while one is going it is the one shown, and the history keys wait for it.
 
@@ -26,7 +25,7 @@ func (s *Shell) remember(r *runview.Run) {
 	if len(s.runs) > maxRunsKept {
 		s.runs = append([]*runview.Run(nil), s.runs[len(s.runs)-maxRunsKept:]...)
 	}
-	s.runAt = len(s.runs) - 1
+	s.runAt, s.recentAt = len(s.runs)-1, 0
 }
 
 // showRun shows another run of the history: the first failed task is selected,
@@ -35,7 +34,8 @@ func (s *Shell) showRun(at int) {
 	if at < 0 || at >= len(s.runs) || s.running() {
 		return
 	}
-	s.runAt, s.run, s.runHome = at, s.runs[at], false
+	s.runAt, s.run, s.runOpen = at, s.runs[at], true
+	s.recentAt = len(s.runs) - 1 - at
 	s.runSel, s.runTop, s.log = s.firstFailed(), 0, logview.Log{}
 	s.keepRunVisible()
 }
@@ -122,17 +122,19 @@ func (s *Shell) copyLog() {
 	s.copyText(strings.Join(plain, "\n"))
 }
 
-// runReasons are why the keys of the Run tab cannot work now ("" keys are fine).
+// runReasons are why the keys of the run panel and of the recent runs cannot
+// work now ("" keys are fine).
 func (s Shell) runReasons() map[string]string {
 	r := map[string]string{}
+	if len(s.runs) == 0 {
+		none := words.Say("tui.run_history.nothing_has_run")
+		r["run.recent-focus"] = none
+	}
+	if s.detailFull() {
+		// The list of projects is not on screen, so there is no list of runs either.
+		r["run.recent-focus"] = words.Say("commands.reason.besidelist")
+	}
 	if s.run == nil {
-		none := words.Say("tui.run_history.none")
-		for _, id := range []string{"run.follow", "run.scroll", "run.again-failed", "run.copy-log", "run.older", "run.newer", "run.open-recent", "run.all-output"} {
-			r[id] = none
-		}
-		if s.lastArg == nil {
-			r["run.again"] = none
-		}
 		return r
 	}
 	if s.repeatArgv() == nil {
@@ -149,19 +151,6 @@ func (s Shell) runReasons() map[string]string {
 	}
 	if len(s.logLines()) == 0 {
 		r["run.copy-log"] = words.Say("tui.run_history.the_log_is_empty")
-	}
-	if s.runSel == "" && s.running() {
-		r["run.all-output"] = words.Say("tui.run_history.all_output_is_shown")
-	}
-	if s.runHome {
-		// The start screen lists the runs: the keys of a run's own view wait.
-		home := words.Say("tui.run_history.home")
-		for _, id := range []string{"run.follow", "run.again-failed", "run.copy-log", "run.older", "run.newer", "run.all-output"} {
-			r[id] = home
-		}
-	} else {
-		view := words.Say("tui.run_history.view")
-		r["run.open-recent"] = view
 	}
 	return r
 }
@@ -190,20 +179,4 @@ func (s Shell) ExitSummary() string {
 		return words.Say("tui.run_history.failed_code_in", "exit", last.Exit, "took", took, "line", line)
 	}
 	return words.Say("tui.run_history.done_in", "took", took, "line", line)
-}
-
-// runActions are the actions of the Run tab's detail: only those that can be
-// done now are offered, as the footer does for keys.
-func (s Shell) runActions() []detail.Action {
-	var out []detail.Action
-	if !s.running() && s.repeatArgv() != nil {
-		out = append(out, detail.Action{ID: "x:rerun", Label: words.Say("tui.run_history.run_again")})
-	}
-	if !s.running() && s.failedArgv() != nil {
-		out = append(out, detail.Action{ID: "x:rerun-failed", Label: words.Say("tui.run_history.run_the_unfinished_tasks_again")})
-	}
-	if len(s.logLines()) > 0 {
-		out = append(out, detail.Action{ID: "x:copy-log", Label: words.Say("tui.run_history.copy_the_log")})
-	}
-	return append(out, detail.Action{ID: "x:projects", Label: words.Say("tui.run_history.show_the_projects")})
 }

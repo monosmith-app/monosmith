@@ -37,7 +37,7 @@ func withInstallFix(l *lab) *lab {
 		return doctorview.Result{Report: report}
 	}
 	l.m = sh
-	return l.keys("4", "r")
+	return l.keys("3", "r")
 }
 
 func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T) {
@@ -133,7 +133,7 @@ func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *
 
 func TestFixWizardFixAllReviewsTheSafeFixesOnceAndAppliesThemOnConfirm(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "F")
+	l.keys("3", "F")
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "Apply (enter)")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
 		t.Fatal("x applied before the review was confirmed")
@@ -159,7 +159,7 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 		return doctorview.Result{Report: doctor.Report{Passed: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{Check: "git", OK: true}}}}}
 	}
 	l.m = sh
-	l.keys("4", "r", "F")
+	l.keys("3", "r", "F")
 	if l.sh().fix != nil {
 		t.Fatal("a wizard opened with nothing to fix")
 	}
@@ -198,7 +198,7 @@ func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t 
 		}}}}}
 	}
 	l.m = sh
-	l.keys("4", "r")
+	l.keys("3", "r")
 	first := loads
 	l.has("[Fix (f)]", "Move the workspace to the latest defaults")
 	l.keys("f")
@@ -228,7 +228,7 @@ func TestFixWizardReviewScrollsWithTheWheel(t *testing.T) {
 			Description: "write a big file", Safe: true, Files: []protocol.FileEdit{{Path: "big.txt", Content: content.String()}}}}}}}}
 	}
 	l.m = sh
-	l.keys("4", "r", "f")
+	l.keys("3", "r", "f")
 	// The review opens on one line per file; d shows the whole diff, which scrolls.
 	l.has("Fix · review", "big.txt  new file  +60 -0", "Show changes")
 	l.hasNot("↓ more")
@@ -243,7 +243,7 @@ func TestFixWizardReviewScrollsWithTheWheel(t *testing.T) {
 
 func TestFixWizardDoctorKeepsItsPlaceAfterTheRecheck(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "down")
+	l.keys("3", "down")
 	before := l.sh().doctor.Cursor
 	l.keys("f", "enter")
 	if l.sh().doctor.Cursor != before || l.sh().doctor.Report == nil {

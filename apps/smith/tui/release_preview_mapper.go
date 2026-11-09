@@ -17,7 +17,7 @@ func isPreview(argv []string) bool {
 
 // previewLines is the Release screen's own view of the preview run: what it
 // is waiting for while it runs, and its output when it has ended, so the
-// preview does not need the Run screen. room is how many lines it may take.
+// preview does not need the run panel. room is how many lines it may take.
 func (s Shell) previewLines(w, room int) []string {
 	if s.run != nil && isRelease(s.run.Command) {
 		return s.releaseRunLines(w, room)
@@ -35,7 +35,7 @@ func (s Shell) previewLines(w, room int) []string {
 	if !s.run.OK() {
 		mark = words.Say("tui.release_preview.failed", "failed", s.th.Failure(s.th.Icons.Failed))
 	}
-	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_on_the_run_screen", "shortcutOf", commands.ShortcutOf("view.run"))))
+	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_in_the_run_panel", "shortcutOf", commands.ShortcutOf("view.projects"))))
 	var out []string
 	for _, l := range s.previewOutput() {
 		out = append(out, pane.Wrap(pane.Strip(l), w-2, 2)...)

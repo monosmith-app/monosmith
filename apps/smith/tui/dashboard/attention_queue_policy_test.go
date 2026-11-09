@@ -60,7 +60,7 @@ func TestSetupNamesTheChecksAndOffersTheFixFirst(t *testing.T) {
 	if it.Title != "3 checks fail, 6 can be fixed now" || it.Detail != "gradle is not on PATH · ci.yml is out of date" || it.Severity != SeverityFailure {
 		t.Fatalf("%+v", it)
 	}
-	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Doctor:view.doctor:4"; got != want {
+	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Doctor:view.doctor:3"; got != want {
 		t.Fatalf("buttons %q, want %q", got, want)
 	}
 
@@ -107,7 +107,7 @@ func TestWarningsAreCountedAndTheFirstIsNamed(t *testing.T) {
 	if it.Title != "1 warning: golangci-lint is older than CI" || it.Severity != SeverityWarning || it.Kind != KindWarnings {
 		t.Fatalf("%+v", it)
 	}
-	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Doctor:view.doctor:4"; got != want {
+	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Doctor:view.doctor:3"; got != want {
 		t.Fatalf("%q, want %q", got, want)
 	}
 	f.Warnings, f.Fixable = 3, 0
@@ -151,7 +151,7 @@ func TestTheReleaseItemNamesAPackageAndItsVersions(t *testing.T) {
 	for _, c := range cases {
 		r := c.r
 		it := Queue(Facts{Checked: true, DepsChecked: true, Release: &r})[0]
-		if it.Title != c.want || it.Kind != KindRelease || buttonsOf(it) != "Preview:view.release:Enter" {
+		if it.Title != c.want || it.Kind != KindRelease || buttonsOf(it) != "Open Release:view.release:Enter" {
 			t.Errorf("%+v, want %q", it, c.want)
 		}
 	}
@@ -163,7 +163,7 @@ func TestUpdatesAreReviewedWhenKnownAndLookedAtWhenNot(t *testing.T) {
 		t.Fatalf("%+v", it)
 	}
 	q := Queue(Facts{Checked: true})
-	if len(q) != 2 || q[1].Title != "Updates not looked at yet" || buttonsOf(q[1]) != "Check for updates:view.deps:5" {
+	if len(q) != 2 || q[1].Title != "Updates not looked at yet" || buttonsOf(q[1]) != "Open Deps:view.deps:4" {
 		t.Fatalf("%+v", q)
 	}
 }

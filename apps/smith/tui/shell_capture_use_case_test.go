@@ -192,7 +192,7 @@ func TestTheReportIsWrittenToATemporaryFileAndOpened(t *testing.T) {
 
 func TestReleasingOnAChannelRepeatsTheNoticeInTheConfirmation(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("6") // the plan is read
+	l.keys("5") // the plan is read
 	sh := l.sh()
 	sh.release.Plan.Channel = "next"
 	l.m = sh
@@ -204,7 +204,7 @@ func TestReleasingOnAChannelRepeatsTheNoticeInTheConfirmation(t *testing.T) {
 
 func TestReleasingOnTheStableLineHasNoChannelNotice(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("6")
+	l.keys("5")
 	l.hasNot("Release channel")
 	l.keys("x", "enter")
 	l.hasNot("Release channel")

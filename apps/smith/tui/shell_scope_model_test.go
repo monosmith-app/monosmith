@@ -29,7 +29,8 @@ func TestShiftBBuildsEveryProjectAndBBuildsTheSelectedOne(t *testing.T) {
 }
 
 func TestOnHomeTheLowerCaseRunKeysActOnTheSelectionAndTheCapitalsOnEveryProject(t *testing.T) {
-	l := newLab(t, true, 140, 34)
+	// 160 columns: the footer also names the arrows that move through Home.
+	l := newLab(t, true, 160, 34)
 	l.openTab("home")
 	footer := l.lines()[len(l.lines())-2]
 	if !strings.Contains(footer, "build orders (b)") || !strings.Contains(footer, "build all 3 (B)") {
@@ -39,18 +40,18 @@ func TestOnHomeTheLowerCaseRunKeysActOnTheSelectionAndTheCapitalsOnEveryProject(
 	if got := l.lastStarted(); got != "run build -p orders" {
 		t.Fatalf("b on Home started %q", got)
 	}
-	l.has("Build · orders")
+	l.has("orders · build")
 }
 
-func TestOnTheRunTabTheKeysKeepTheSameMeaning(t *testing.T) {
+func TestWithARunOpenTheKeysKeepTheSameMeaning(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("b", "t")
 	if got := l.lastStarted(); got != "run test -p orders" {
-		t.Fatalf("t on the Run tab started %q", got)
+		t.Fatalf("t with the run panel open started %q", got)
 	}
 	l.keys("T")
 	if got := l.lastStarted(); got != "run test" {
-		t.Fatalf("T on the Run tab started %q", got)
+		t.Fatalf("T with the run panel open started %q", got)
 	}
 }
 
@@ -61,13 +62,13 @@ func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {
 	if got := l.lastStarted(); got != "run build -p orders" {
 		t.Fatalf("b on Projects started %q", got)
 	}
-	l.has("Build · orders")
+	l.has("orders · build")
 }
 
-func TestTheRunTabOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
+func TestTheProjectDetailOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.openTab("run")
-	l.has("Nothing has run yet", "Build everything (4)", "Test everything (4)")
+	l.openTab("projects")
+	l.has("Run on every project", "Build everything (4)", "Test everything (4)")
 	l.hasNot("in the list")
 	l.clickText("Build everything")
 	if got := l.lastStarted(); got != "run build" {

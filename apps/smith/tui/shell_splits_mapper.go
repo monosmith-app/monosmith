@@ -2,15 +2,21 @@ package tui
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 )
 
 // detailDivider is the id of the divider beside the detail of the open tab.
 func (s Shell) detailDivider() string { return splitter.DetailID(s.tab) }
 
-// detailWidth is the width the person gave the detail of the open tab; 0 is automatic.
+// detailWidth is the width the person gave the detail of the open tab; 0 is
+// automatic. A run open beside the projects takes half the screen unless the
+// person chose a width: its log needs the room.
 func (s Shell) detailWidth() int {
 	n, _ := s.split.Size(s.detailDivider())
+	if n == 0 && s.runWanted() {
+		return layout.ClampDetailWidth(s.w, s.w/2)
+	}
 	return n
 }
 
@@ -50,9 +56,10 @@ func (s Shell) dividers() []splitter.Spot {
 	in := l.Main.Inner()
 	switch {
 	case s.detailFull():
-	case s.tab == commands.TabRun && s.run != nil:
-		g := s.runGeom(in.W, in.H)
-		out = append(out, splitter.RunListSpot(in, g.listTop, g.sepRow, g.listRows))
+	case s.runShown():
+		r := s.detailRect()
+		g := s.runGeom(r.W, r.H)
+		out = append(out, splitter.RunListSpot(r, g.listTop, g.sepRow, g.listRows))
 	case s.tab == commands.TabSettings:
 		g := s.settings.Geometry(in.W, in.H)
 		out = append(out, splitter.SettingsListSpot(in, g.ListW, g.ListMin, g.ListMax))
