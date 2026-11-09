@@ -62,6 +62,9 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 			return c, fmt.Errorf("plugin %s: %w", client.Info.Plugin.Name, err)
 		}
 		c.Add(r)
+		if len(r.Setup) > 0 {
+			c.SetupSections = append(c.SetupSections, SetupSection{Plugin: client.Info.Plugin.Name, Projects: len(projects), Steps: len(r.Setup)})
+		}
 	}
 	for _, p := range s.Graph.Projects {
 		if _, ok := p.Tasks[PackTask]; ok {

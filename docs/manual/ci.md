@@ -71,7 +71,10 @@ Usage: `smith ci setup [flags]`
 <!-- smith:end ci setup -->
 
 Collects the setup steps the plugins contribute (Go modules, Node dependencies, the Python
-venv and toolchain, other tools) and runs them in order. With nothing to do it prints
+venv and toolchain, other tools) and runs them in order. Each plugin's steps are one section: a rule
+with the plugin name and its project count, the steps' own output, and one status line (`✓ node done in
+37s`, or `× node failed: cause` and a `→` remedy). A GitHub Actions or Azure Pipelines log folds each section
+as a group instead of a rule. The phase ends with one row per plugin. With nothing to do it prints
 `nothing to setup`.
 
 ### audit
@@ -234,11 +237,21 @@ smith ci setup
 ══ Setup ═══════════════════════════════════════════════════
 smith 1.102.2 on windows/amd64
 Installing dependencies for 4 toolchains (dotnet 10.0, go 1.26, node 24, python 3.12) and preparing 26 projects: 8 steps.
-Step                          Result  Time
-Download Go modules           ✓ done  0.1s
-Install Node dependencies     ✓ done   37s
-Create the Python venv        ✓ done   15s
-Install plugin-sdk-py         ✓ done  4.9s
+══ go (3 projects) ═════════════════════════════════════════
+▶ Download Go modules
+✓ go done in 0.1s
+══ node (12 projects) ══════════════════════════════════════
+▶ Install Node dependencies
+✓ node done in 37s
+══ python (2 projects) ═════════════════════════════════════
+▶ Create the Python venv
+▶ Install plugin-sdk-py
+✓ python done in 20s
+
+Toolchain  Projects  Status  Time
+go                 3  ✓ done  0.1s
+node              12  ✓ done   37s
+python             2  ✓ done   20s
 ✓ Setup passed in 1m 32s: 8 steps ran, 26 projects ready
 ```
 
