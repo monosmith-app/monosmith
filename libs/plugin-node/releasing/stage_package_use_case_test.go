@@ -26,6 +26,8 @@ func TestStage(t *testing.T) {
 }
 `)
 	write("packages/sdk/README.md", "# sdk\n")
+	write("packages/sdk/package.nls.json", `{"title": "SDK"}`)
+	write("packages/sdk/package.nls.pt-br.json", `{"title": "SDK"}`)
 	write("dist/packages/sdk/index.js", "")
 	dir, err := Stage(ws, "packages/sdk")
 	if err != nil || dir != filepath.Join(ws, "dist", "packages", "sdk") {
@@ -42,6 +44,11 @@ func TestStage(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "README.md")); err != nil {
 		t.Error("the README goes with it")
+	}
+	for _, nls := range []string{"package.nls.json", "package.nls.pt-br.json"} {
+		if _, err := os.Stat(filepath.Join(dir, nls)); err != nil {
+			t.Errorf("%s goes with it: an extension's %%key%% texts are read from it", nls)
+		}
 	}
 	// A package the workspace reads from its sources publishes their build.
 	write("packages/kit/package.json", `{"name": "@acme/kit", "type": "module", "exports": "./src/index.ts"}`)
