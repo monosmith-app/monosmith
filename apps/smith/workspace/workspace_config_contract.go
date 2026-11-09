@@ -168,6 +168,14 @@ type CISection struct {
 	// the job go on when GitHub refuses, as on a private repository of a free
 	// organisation, which has no attestations; "off" leaves the step out.
 	Attest string `toml:"attest"`
+	// Artifacts says what the generated GitHub pipeline does when GitHub
+	// refuses to keep a build as an artifact (the artifact storage quota is
+	// full): "on" fails the job (the default); "optional" lets the job go on,
+	// so a release is not lost to a full quota.
+	Artifacts string `toml:"artifacts"`
+	// ArtifactRetentionDays is how many days GitHub keeps the artifacts the
+	// generated pipeline uploads. Default: 0, the repository's own setting.
+	ArtifactRetentionDays int `toml:"artifact_retention_days"`
 	// Secrets name repository secrets the generated pipelines hand to every
 	// step that runs smith, as environment variables of the same name: the ci
 	// job, the native jobs and the assets jobs, for a build command that reads

@@ -191,6 +191,14 @@ func Validate(cfg *Config) error {
 	default:
 		return fmt.Errorf("%s: [ci] attest must be \"on\", \"optional\" or \"off\", not %q", FileName, cfg.CI.Attest)
 	}
+	switch cfg.CI.Artifacts {
+	case "", "on", "optional":
+	default:
+		return fmt.Errorf("%s: [ci] artifacts must be \"on\" or \"optional\", not %q", FileName, cfg.CI.Artifacts)
+	}
+	if cfg.CI.ArtifactRetentionDays < 0 || cfg.CI.ArtifactRetentionDays > 90 {
+		return fmt.Errorf("%s: [ci] artifact_retention_days must be between 1 and 90 (0 keeps the repository's setting), not %d", FileName, cfg.CI.ArtifactRetentionDays)
+	}
 	if err := validateCISecrets(cfg.CI.Secrets); err != nil {
 		return err
 	}

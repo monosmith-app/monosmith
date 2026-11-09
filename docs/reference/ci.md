@@ -105,6 +105,14 @@ assets jobs. A skipped audit never blocks verify or the release. On Azure, `main
 condition. `schedule` does not apply there (the audit runs on every run), and the other
 providers always audit.
 
+**`artifacts`** and **`artifact_retention_days`** set how the generated GitHub pipeline keeps
+its artifacts (the packed apps, `drop`, and the native builds). `artifacts = "optional"` adds
+`continue-on-error: true` to the upload steps, so a full GitHub artifact storage quota does not
+fail a job that has already released; `on` (default) fails the job. `artifact_retention_days`
+(1 to 90) adds `retention-days` to the same steps; `0` (default) leaves the repository's
+setting. Without these settings, a hand edit of an upload step is lost the next time
+`smith ci generate` runs.
+
 **`publish_on`** says which branches pack apps, keep the packed apps, attest the release
 archives and build the release files in the assets job. `release` (default) is the release
 branch only. `channels` adds each [release channel](releasing.md#release-channels) branch, so
