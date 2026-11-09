@@ -93,6 +93,15 @@ VS Code 1.140 or newer. An older editor keeps the version it has and does not of
 
   ![Explain page of a project](https://github.com/monosmith-app/monosmith/raw/main/apps/vscode/media/screenshot-explain.png)
 
+- **Tab completion.** **MonoSmith: Set Up Tab Completion** opens a MonoSmith terminal on
+  `smith completion install`: the terminal lists the files and lines it will write and asks
+  before it writes anything, so the editor itself writes nothing. Once, after smith starts in
+  a folder, the extension also asks in a notification (**Set up**, **Not now**, **Don't ask
+  again**), but only when `smith completion status --json` says it is not set up and you did not
+  say no on the command line. **Don't ask again** and **Set up** are kept for you in the global
+  state of the editor (`monosmith.tabCompletionOffer`); **Not now** asks again in the next session.
+  See [`smith completion`](https://github.com/monosmith-app/monosmith/blob/main/docs/manual/completion.md).
+
 - **The MonoSmith agent.** A workspace without the agent files shows one line
   in the Projects view, **Add the MonoSmith agent**, and the extension offers
   it once as a notification (**Install**, **Not now**, **Never for this

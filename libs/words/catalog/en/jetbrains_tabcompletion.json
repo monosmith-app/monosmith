@@ -1,0 +1,6 @@
+{
+  "jetbrains.tabcompletion.offer": "Set up tab completion for smith in your terminal? The terminal shows the files it writes and asks before it writes anything.",
+  "jetbrains.tabcompletion.set-up": "Set up",
+  "jetbrains.tabcompletion.not-now": "Not now",
+  "jetbrains.tabcompletion.dont-ask-again": "Don't ask again"
+}

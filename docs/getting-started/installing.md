@@ -79,6 +79,21 @@ winget-pkgs submission uses them yet. `go install` is not supported, by
 decision: smith is built from the repository's `go.work`, which `go install`
 ignores ([ADR 0019](../architecture/decisions/0019-no-go-install.md)).
 
+## Tab completion
+
+No channel above sets up tab completion on its own: install scripts, package managers and post-install
+hooks never write to your shell files. You ask for it once, in any channel, with
+`smith completion install`. It shows the files and lines it will write, asks, and
+`smith completion uninstall` takes them out again. Smith also asks once after your first interactive run
+(the terminal interface, or `smith doctor`), and the terminal interface and the editor extensions
+offer it on Home and in their command lists. See [`smith completion`](../manual/completion.md).
+
+| Channel | How completion comes |
+|---|---|
+| Install scripts, npm, pipx, uv, pip, .NET tool, RubyGems, pub.dev, GitHub Releases | `smith completion install` (the package carries no completion file) |
+| `.deb` and `.rpm` | `smith completion install`: the packages carry no completion file today. When one ships it in a system folder, `install` says so and writes nothing |
+| Homebrew, Scoop, winget (manifests in each release, no tap or bucket yet) | `smith completion install`. A Homebrew formula that ships the file would be found and respected the same way |
+
 ## Knowing when smith changed
 
 The first command you run after smith was updated ends with one line on stderr:

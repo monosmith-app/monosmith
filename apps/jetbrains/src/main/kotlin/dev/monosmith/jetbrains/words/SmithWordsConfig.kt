@@ -310,6 +310,12 @@ object SmithWordsConfig {
     /** The key action.MonoSmith.SyncVersions.text. */
     const val ACTION_MONOSMITH_SYNCVERSIONS_TEXT = "action.MonoSmith.SyncVersions.text"
 
+    /** The key action.MonoSmith.TabCompletion.description. */
+    const val ACTION_MONOSMITH_TABCOMPLETION_DESCRIPTION = "action.MonoSmith.TabCompletion.description"
+
+    /** The key action.MonoSmith.TabCompletion.text. */
+    const val ACTION_MONOSMITH_TABCOMPLETION_TEXT = "action.MonoSmith.TabCompletion.text"
+
     /** The key action.MonoSmith.TauriAdd.description. */
     const val ACTION_MONOSMITH_TAURIADD_DESCRIPTION = "action.MonoSmith.TauriAdd.description"
 
@@ -2103,6 +2109,18 @@ object SmithWordsConfig {
 
     /** The key jetbrains.syncversions.write-it. */
     const val JETBRAINS_SYNCVERSIONS_WRITE_IT = "jetbrains.syncversions.write-it"
+
+    /** The key jetbrains.tabcompletion.dont-ask-again. */
+    const val JETBRAINS_TABCOMPLETION_DONT_ASK_AGAIN = "jetbrains.tabcompletion.dont-ask-again"
+
+    /** The key jetbrains.tabcompletion.not-now. */
+    const val JETBRAINS_TABCOMPLETION_NOT_NOW = "jetbrains.tabcompletion.not-now"
+
+    /** The key jetbrains.tabcompletion.offer. */
+    const val JETBRAINS_TABCOMPLETION_OFFER = "jetbrains.tabcompletion.offer"
+
+    /** The key jetbrains.tabcompletion.set-up. */
+    const val JETBRAINS_TABCOMPLETION_SET_UP = "jetbrains.tabcompletion.set-up"
 
     /** The key jetbrains.tauriapp.add-tauri. Values: {0} is title. */
     const val JETBRAINS_TAURIAPP_ADD_TAURI = "jetbrains.tauriapp.add-tauri"

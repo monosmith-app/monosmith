@@ -131,7 +131,7 @@ Python package). Paths in output are shortened.
 
 | Page | About |
 |---|---|
-| [`smith completion`](completion.md) | The autocompletion script for bash, fish, PowerShell and zsh. |
+| [`smith completion`](completion.md) | Set up, check and remove tab completion for bash, zsh, fish and PowerShell (`install` asks first); prints the scripts. |
 | [The smith terminal interface](tui.md) | The full-screen shell a bare `smith` opens: views, every key, the wizards. |
 | [The MonoSmith VS Code extension](vscode.md) | Every command, view, setting, task field and key. |
 

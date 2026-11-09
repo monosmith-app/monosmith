@@ -21,6 +21,8 @@ func Describe(argv []string) (title, why string) {
 		return words.Say("commands.describe.doctor.only.title"), words.Say("commands.describe.doctor.only.why")
 	case verb == "doctor" && slices.Contains(argv, "--fix"):
 		return words.Say("commands.describe.doctor.title"), words.Say("commands.describe.doctor.why")
+	case verb == "completion":
+		return words.Say("commands.describe.completion.title"), words.Say("commands.describe.completion.why")
 	case verb == "install" && slices.ContainsFunc(argv, func(a string) bool { return flagvocabulary.Is("project", a) }):
 		return words.Say("commands.describe.install.packages.title"), words.Say("commands.describe.install.packages.why")
 	case verb == "install":

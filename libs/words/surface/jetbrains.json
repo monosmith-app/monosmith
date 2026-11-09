@@ -70,6 +70,8 @@
     "action.MonoSmith.InstallPlugin.text",
     "action.MonoSmith.InstallTools.description",
     "action.MonoSmith.InstallTools.text",
+    "action.MonoSmith.TabCompletion.description",
+    "action.MonoSmith.TabCompletion.text",
     "action.MonoSmith.McpInstall.description",
     "action.MonoSmith.McpInstall.text",
     "action.MonoSmith.NewRecipe.description",
