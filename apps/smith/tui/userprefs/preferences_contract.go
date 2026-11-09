@@ -1,5 +1,7 @@
 package userprefs
 
+import "time"
+
 // Preferences are what one person chose for the interface.
 type Preferences struct {
 	// Theme is dark, light or plain; "" (or auto) lets the terminal decide.
@@ -16,6 +18,12 @@ type Preferences struct {
 	// undone?" that are kept for the person only, by workspace root: "no" or
 	// "ask". A "yes" is written in smith.toml, where smith reads it.
 	CommitChoices map[string]string `json:"commitChoices,omitempty"`
+	// CompletionOffer is what the person answered to "Set up tab completion?":
+	// "no" (never ask again), "later" (ask again after CompletionAskAfter) or
+	// "installed" (smith wrote the completion script). "" means not asked yet.
+	CompletionOffer string `json:"completionOffer,omitempty"`
+	// CompletionAskAfter is when to ask again after the answer "later".
+	CompletionAskAfter time.Time `json:"completionAskAfter,omitzero"`
 }
 
 // FileName is the file in the smith home.

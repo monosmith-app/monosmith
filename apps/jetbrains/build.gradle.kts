@@ -34,6 +34,7 @@ repositories {
 dependencies {
     intellijPlatform {
         create(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
+        bundledPlugin("org.jetbrains.plugins.terminal")
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation("junit:junit:4.13.2")

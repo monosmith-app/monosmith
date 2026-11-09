@@ -7,6 +7,7 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- Tab completion: "Set Up Tab Completion" runs `smith completion install` in a MonoSmith terminal, where the files are listed and the question is asked. The extension offers it once (Set up, Not now, Don't ask again) when `smith completion status --json` says it is not set up.
 - Convert an Nx or Turborepo Workspace with Your Choices: asks the level and, at the full level, lint, tests, build and pipelines from `smith convert --questions --json`, shows the plan with the files it deletes, asks the unticked commit box, then converts.
 - New workspace: the Customise questions (CI, language, Node tests, code layout, agent files, dev container) come from `smith new --questions --json`, so a question that smith adds appears without a new version of the extension.
 - Environments of a web app: "Environments of the Web Apps", "Add Environments to a Web App…" (the names start on `[workspace] environments`, to edit; the plan lists the files) and "Remove Environments from a Web App…" (only the ones that can go; the `.env` file stays).

@@ -5,10 +5,12 @@
     <description>The same functions as the MonoSmith VS Code extension. A tool window lists the projects and tasks of a MonoSmith workspace, with a menu on each project and a Health view that fixes a check with its plan shown. Tools &gt; MonoSmith adds a project, composes a stack, installs a package or an internal library, commits, undoes, releases, syncs, removes, swaps a choice, creates a workspace or a recipe, installs tools and more. Every question is a presented choice with the default marked, every change shows its plan first, and smith commits only when you tick the box. Uses the smith installed in the workspace or on the PATH.</description>
     <resource-bundle>messages</resource-bundle>
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="MonoSmith" anchor="right" factoryClass="dev.monosmith.jetbrains.toolwindow.ProjectsToolWindowHandler"/>
         <notificationGroup id="MonoSmith" displayType="BALLOON"/>
+        <postStartupActivity implementation="dev.monosmith.jetbrains.tabcompletion.TabCompletionStartupHandler"/>
     </extensions>
 
     <actions>
@@ -91,6 +93,7 @@
             <action id="MonoSmith.EditSettings" class="dev.monosmith.jetbrains.smithaction.EditSettingsActionHandler"/>
             <action id="MonoSmith.TryCommand" class="dev.monosmith.jetbrains.smithaction.TryCommandActionHandler"/>
             <action id="MonoSmith.Bootstrap" class="dev.monosmith.jetbrains.smithaction.BootstrapLauncherActionHandler"/>
+            <action id="MonoSmith.TabCompletion" class="dev.monosmith.jetbrains.smithaction.TabCompletionActionHandler"/>
             <action id="MonoSmith.InstallAgent" class="dev.monosmith.jetbrains.smithaction.InstallAgentActionHandler"/>
             <action id="MonoSmith.ExplainProject" class="dev.monosmith.jetbrains.smithaction.ExplainProjectActionHandler"/>
             <action id="MonoSmith.WhyAnything" class="dev.monosmith.jetbrains.smithaction.WhyAnythingActionHandler"/>

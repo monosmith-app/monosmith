@@ -14,7 +14,9 @@ const (
 	KindChanges  Kind = "changes"
 	KindRelease  Kind = "release"
 	KindUpdates  Kind = "updates"
-	KindGood     Kind = "good"
+	// KindCompletion is the offer to set up tab completion; it only waits.
+	KindCompletion Kind = "completion"
+	KindGood       Kind = "good"
 )
 
 // Severity is how much an item asks for attention; the page draws its icon in

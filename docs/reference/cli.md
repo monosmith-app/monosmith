@@ -49,7 +49,8 @@ smith version 1.62.0
 - **Project selection** (`-p`): a name, a glob over names or directories (`apps/*`),
   `kind:app`, `lang:go`, `tag:x`, and a leading `!` to exclude. Comma-separated or repeated.
 - **Bare `smith`** in a terminal opens [the terminal interface](../manual/tui.md); `smith
-  completion <shell>` prints a completion script ([manual](../manual/completion.md)).
+  completion install` sets up tab completion in your shell after it shows the files and asks
+  ([manual](../manual/completion.md)).
 
 ## Create
 

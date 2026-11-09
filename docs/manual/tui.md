@@ -87,7 +87,13 @@ appear, in this order:
 5. **A release is ready**: `Ready to release: 8 packages, smith 1.132.0 → 1.133.0 (292 commits)`,
    naming the package with the most commits. Button: `Open Release`.
 6. **Updates**: `N dependencies have newer releases` (`Open Deps`), or `Updates not looked at yet` (`Open Deps` too: its key, `4`, opens Deps and reads the registries the first time).
-7. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
+7. **Tab completion** (only while it waits): `Tab completion is not set up`. Buttons: `Set up` and
+   `Not now`. `Set up` (also `Set up tab completion` in the palette) runs `smith completion install --dry-run`
+   and shows the files and lines in the confirmation; nothing is written until you press `Run`, and the
+   confirmed line runs in the run panel. `Not now` is remembered for you in `tui.json` (`completionOffer`),
+   and the item never comes back; so does a finished setup. The item is muted, so it never takes Enter or
+   the `All good` line away. See [`smith completion`](completion.md).
+8. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
 
 A workspace without projects shows one item with `Add a project` and `Compose a stack`.
 While the first doctor run goes on, one item says `Running the health checks…` and nothing
