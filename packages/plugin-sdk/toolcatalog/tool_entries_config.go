@@ -145,7 +145,7 @@ var entries = []protocol.ToolNeed{
 		Consequence: "smith build, test and start fail for the projects built with Gradle",
 		Program:     "gradle", Files: []string{"build.gradle.kts", "build.gradle"},
 		Install: []protocol.ToolInstall{
-			install("winget", "Gradle.Gradle"), install("brew", "gradle"), install("dnf", "gradle"), install("pacman", "gradle"),
+			install("brew", "gradle"), install("dnf", "gradle"), install("pacman", "gradle"),
 		},
 		Download: "https://gradle.org/install/", Source: "https://gradle.org/install/", Checked: checked,
 	},
