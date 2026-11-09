@@ -18,3 +18,15 @@ func TestAFileThatIsGoneIsReportedRemovedNotWritten(t *testing.T) {
 		t.Errorf("a missing file: %q", got)
 	}
 }
+
+func TestCiAloneRunsTheSetupPhaseAndRefusesStrayWords(t *testing.T) {
+	cmd := Command("test")
+	if cmd.RunE == nil {
+		t.Fatal("smith ci alone does nothing: it must install what a clean checkout needs")
+	}
+	cmd.SetArgs([]string{"nonsense"})
+	cmd.SilenceUsage, cmd.SilenceErrors = true, true
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("smith ci nonsense must fail, not install")
+	}
+}

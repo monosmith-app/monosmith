@@ -26,6 +26,7 @@ shortcuts, which do not run installs or the tracked-changes guard.
 ## Synopsis
 
 ```sh
+smith ci                      # the same as smith ci setup: install what a clean checkout needs
 smith ci setup | audit | verify | pack | native | release
 smith ci generate [--check]
 smith ci check
