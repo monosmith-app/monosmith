@@ -47,6 +47,35 @@ export const ERROR_CODES = {
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES]
 
+/** APISurfaceParams asks a plugin for the public API names of one project. */
+export interface APISurfaceParams {
+  project: Project
+  /**
+   * Ref is the git revision to read the project at (the tag of its last release). Empty means the
+   * working tree.
+   */
+  ref?: string
+}
+
+/**
+ * APISurfaceResult is the public API of a project: the names its entry points export. A host
+ * compares the names of two revisions; it never reads their meaning, so a plugin chooses its own
+ * spelling and keeps it stable.
+ */
+export interface APISurfaceResult {
+  /**
+   * Names are the exported names, sorted. A name an entry point other than the main one exports is
+   * prefixed with that entry point and a colon ("./cli:run"). An empty list is an answer: the
+   * project exports nothing.
+   */
+  names: string[]
+  /**
+   * Unreadable says why the API could not be listed (no entry point, no source at the revision).
+   * When set, Names is empty and the host skips the project without a warning.
+   */
+  unreadable?: string
+}
+
 /**
  * ActionStep is a provider-native step: a GitHub action or an Azure task, with its inputs in the
  * order they are written.
@@ -165,6 +194,13 @@ export interface Capabilities {
   published?: boolean
   /** Dependencies installs and uninstalls packages in its projects. */
   dependencies?: boolean
+  /**
+   * Link makes a project depend on a library of the same workspace in the ecosystem's own form (a
+   * workspace dependency, a path dependency, a project reference), and takes it out again. A plugin
+   * without it is refused by the host with one sentence that tells the user to add the dependency
+   * by hand.
+   */
+  link?: boolean
   /** Declarations lists and rewrites declared dependency specs (sync, up). */
   declarations?: boolean
   /** Latest reports the newest releases of dependencies and pinned tools. */
@@ -177,6 +213,34 @@ export interface Capabilities {
   cancel?: boolean
   /** Components lists a project's dependencies for its SBOM. */
   components?: boolean
+  /** Derive says which files the plugin derives from facts and the project graph (smith derive). */
+  derive?: boolean
+  /**
+   * APISurface lists the names a project exports, at a git revision, so a release can warn when the
+   * commits ask for a smaller bump than the API change needs.
+   */
+  apiSurface?: boolean
+  /**
+   * Channels says a prerelease version the plugin publishes never takes the place of the stable
+   * one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the
+   * registry's stable pointer (npm's latest), or its registry orders a prerelease below the release
+   * (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a
+   * plugin that lacks it.
+   */
+  channels?: boolean
+  /**
+   * Packs says publish honours PublishParams.PackDir: it writes the package file and publishes
+   * nowhere (registry = "github-release"). A host never calls publish with the setting on a plugin
+   * that lacks it, since the plugin would publish to the public registry.
+   */
+  packs?: boolean
+  /**
+   * Declared says the plugin describes the projects smith.toml declares for its language
+   * (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a
+   * project by its manifest only, and the host refuses a declaration for its language with a
+   * message that says so.
+   */
+  declared?: boolean
 }
 
 /**
@@ -221,6 +285,69 @@ export interface ChangeKindResult {
    * not, a lockfile to refresh).
    */
   warnings?: string[]
+}
+
+/**
+ * Choice is one option on an axis of a project's make-up: a framework, a test runner, a style
+ * library. A plugin publishes the choices it owns in InitializeResult.Choices; the host checks a
+ * selection of them (smith add --with react,vitest,bootstrap) and turns it into a stack. What a
+ * choice writes (dependencies, tasks, files) stays with the plugin: the host never sees it.
+ */
+export interface Choice {
+  /**
+   * Axis is the question the choice answers: "framework", "test", "style", "lint". The plugins
+   * agree on the name; the host only compares it.
+   */
+  axis: string
+  /**
+   * Name identifies the choice in a selection and is unique among the choices of all loaded
+   * plugins.
+   */
+  name: string
+  description?: string
+  /** Title is the name shown to a person ("Electron" for electron). Without it the name is shown. */
+  title?: string
+  /**
+   * Aliases are words that find the choice when a person searches the catalogue (smith compose):
+   * "desktop", "serverless", "web".
+   */
+  aliases?: string[]
+  /**
+   * Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop
+   * shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's own.
+   * Without it the layer is the axis. It is for display and grouping: the axis decides conflicts.
+   */
+  layer?: string
+  /** Language is the language plugin the choice applies to ("node"). */
+  language: string
+  /**
+   * Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the
+   * project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin
+   * of the selection already writes, as a style does.
+   */
+  roles?: Role[]
+  /**
+   * Needs are axes that the selection must have a choice on. An axis the person leaves out is
+   * filled with the default of the axis.
+   */
+  needs?: string[]
+  /** Default marks the choice the host adds when a selection needs its axis and has no choice on it. */
+  default?: boolean
+  /**
+   * Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by
+   * itself: an axis that a choice needs and that has no Default is asked, and the person answers
+   * (ADR 0072).
+   */
+  suggested?: boolean
+  /**
+   * Many allows the choice next to other choices of its axis that are Many too. By default a
+   * selection has one choice per axis.
+   */
+  many?: boolean
+  /** Requires are choices that must be in the selection. */
+  requires?: string[]
+  /** Conflicts are choices that must not be in the selection. */
+  conflicts?: string[]
 }
 
 /** Component is one dependency of a project. */
@@ -289,6 +416,13 @@ export interface Contribution {
    * sets wins.
    */
   release?: ReleaseDefaults
+  /**
+   * Facts are the plugin's default facts for the project: typed values under namespaced keys
+   * ({"source.roots": ["src"]}) that other settings and plugins read through the merged
+   * Project.Facts. They are the lowest scope: a [facts] table in smith.toml wins over them, and two
+   * plugins that publish different values for one key are an error that names both.
+   */
+  facts?: Record<string, unknown>
 }
 
 /** Credential is a secret the release phase needs. */
@@ -341,6 +475,16 @@ export interface DeclaredParams {
   projects: Project[]
 }
 
+/** DeclaredProject is a project smith.toml declares: a folder with no manifest. */
+export interface DeclaredProject {
+  /** Name is the project's name, the key of its [projects.<name>] table. */
+  name: string
+  /** Root is the workspace-relative folder. */
+  root: string
+  /** Kind is "app", "lib" or "package", or empty for the plugin's choice. */
+  kind?: ProjectKind
+}
+
 /**
  * DeclaredResult is every declaration, and the version installed of each name where the plugin can
  * tell.
@@ -356,6 +500,80 @@ export interface DependencyResult {
   notes?: string[]
 }
 
+/**
+ * DeriveParams asks a plugin for the files it can derive from facts and the project graph. The
+ * plugin writes nothing: it answers with the content, and the host decides, from its ownership
+ * record, whether to write it.
+ */
+export interface DeriveParams {
+  /** Projects are the projects the plugin serves. */
+  projects: Project[]
+  /**
+   * Graph maps a project name to the names of the projects it depends on inside the workspace,
+   * sorted. The host resolved these edges: a plugin does not repeat that work.
+   */
+  graph?: Record<string, string[]>
+  /**
+   * Owned are the workspace-relative paths the host's ownership record says smith owns. A plugin
+   * proposes such a file again even when it is missing on disk, so deleting a derived file and
+   * deriving restores it. A file that is not owned and not on disk is not proposed.
+   */
+  owned?: string[]
+}
+
+/** DeriveResult carries the files a plugin derives. */
+export interface DeriveResult {
+  files: DerivedFile[]
+  /**
+   * Diverging are files a renderer looked at and left alone because they differ from the shape
+   * their siblings share. They are not drift: the project owns them. The host shows them in `smith
+   * derive --explain` and in the doctor, and never writes them.
+   */
+  diverging?: DivergentFile[]
+}
+
+/** DerivedFile is the content one renderer derives for one file. */
+export interface DerivedFile {
+  /** Project is the project the file belongs to. */
+  project: string
+  /** Path is workspace-relative, with forward slashes. */
+  path: string
+  /** Mode is DeriveFile, DeriveRegion or DeriveKeys. */
+  mode: string
+  /**
+   * Renderer is the stable id of the renderer, for example "node.tsconfig.references". It names the
+   * region markers.
+   */
+  renderer: string
+  /**
+   * Version is the renderer's version. A new version means new output for the same inputs, so the
+   * host rewrites an unedited file.
+   */
+  version: number
+  /**
+   * Content is the whole file (DeriveFile) or the lines of the region (DeriveRegion), without the
+   * markers. Unused for DeriveKeys.
+   */
+  content?: string
+  /**
+   * Comment is the line comment leader of the file ("//", "#"): the host writes a generated header
+   * after it in a DeriveFile. Empty for a format without comments, then the file has no header.
+   */
+  comment?: string
+  /** Format is "json" or "toml" for DeriveKeys. */
+  format?: string
+  /**
+   * Table is the TOML table that holds the keys ("tool.smith"); required for "toml", unused for
+   * "json", whose keys are the top-level ones.
+   */
+  table?: string
+  /**
+   * Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a
+   * boolean or an array of those.
+   */
+  keys?: Record<string, unknown>
+}
+
 /** DevcontainerFeature is a dev container feature and its options (https://containers.dev/features). */
 export interface DevcontainerFeature {
   /** ID is the feature reference, e.g. "ghcr.io/devcontainers/features/go:1". */
@@ -369,6 +587,20 @@ export interface DevcontainerFeature {
  */
 export interface DiscoverParams {
   manifests: string[]
+  /**
+   * Declared are the projects smith.toml declares for this plugin's language ([projects.<name>]
+   * with a root and a language): folders with no manifest of their own, such as a program that is a
+   * package of the Go module above it. The plugin describes each one in its result, or answers with
+   * an error saying why it cannot.
+   */
+  declared?: DeclaredProject[]
+  /**
+   * Settings are this plugin's settings for projects, by project name, from smith.toml
+   * [projects.<project>.settings.<plugin>]. They reach the plugin here because the tasks it
+   * describes may depend on them (the Go plugin's build tags). A project with no settings is
+   * absent.
+   */
+  settings?: Record<string, Record<string, unknown>>
 }
 
 /**
@@ -377,6 +609,21 @@ export interface DiscoverParams {
  */
 export interface DiscoverResult {
   projects: Project[]
+}
+
+/**
+ * DivergentFile is a file a renderer does not derive because the project made it differ from its
+ * siblings.
+ */
+export interface DivergentFile {
+  /** Project is the project the file belongs to. */
+  project: string
+  /** Path is workspace-relative, with forward slashes. */
+  path: string
+  /** Renderer is the stable id of the renderer that compared the file. */
+  renderer: string
+  /** Detail says in a sentence how the file differs from its siblings. */
+  detail: string
 }
 
 /** DoctorParams gives the plugin its projects to check. */
@@ -399,10 +646,31 @@ export interface FileEdit {
   delete?: boolean
 }
 
-/** Finding is one check. Every failed finding names its remedy. */
+/** Finding is one check. Every failed finding names its problem and its remedy. */
 export interface Finding {
+  /**
+   * Check is the rule, stated as it should hold ("golangci-lint is 2.15.0, as in CI"). A passing
+   * finding is listed by it.
+   */
   check: string
   ok: boolean
+  /**
+   * Problem is what is wrong, in one line ("golangci-lint is 2.14.0, CI uses 2.15.0"). A failed
+   * finding is listed by it; one without it is listed by its Check.
+   */
+  problem?: string
+  /**
+   * Project is the project the finding is about, as the workspace names it ("web"); empty for a
+   * finding about the workspace itself. The host files a finding under its project, so the Check,
+   * Problem and Detail need not name it.
+   */
+  project?: string
+  /**
+   * Area is the part of the workspace a workspace-wide finding is about, in one lowercase word:
+   * "toolchain", "ci", "lint", "dependencies", "release", "git" or "config". A finding with a
+   * Project has none.
+   */
+  area?: string
   detail?: string
   remedy?: string
   /** Warning true reports a problem without failing doctor. */
@@ -465,6 +733,11 @@ export interface FixChoice {
 export interface FixChoiceOption {
   label: string
   fix: Fix
+  /**
+   * Disabled, when not empty, is the reason the option cannot be picked: an interface shows the
+   * option greyed with the reason, and picking it is an error.
+   */
+  disabled?: string
 }
 
 /** FixStep is a command to run in the workspace. */
@@ -475,6 +748,11 @@ export interface FixStep {
   argv: string[]
   /** Dir is where it runs, workspace-relative; empty is the workspace root. */
   dir?: string
+  /**
+   * Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go
+   * install write there). Absent adds none.
+   */
+  env?: string[]
 }
 
 /**
@@ -505,6 +783,25 @@ export interface GenerateParams {
    * Project.Settings. Nil when there are none.
    */
   settings?: Record<string, unknown>
+  /**
+   * Facts are the shared facts that hold for the new project, from smith.toml:
+   * [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin
+   * scaffolds its own default. Set by the host; read only.
+   */
+  facts?: Record<string, unknown>
+  /**
+   * Shape is the dialect the new project should have: the facts (see Project.Shape) that most
+   * projects of its kind and language agree on, as the host counted them. A plugin applies the keys
+   * it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to
+   * follow, or the person asked for a fresh project.
+   */
+  shape?: Record<string, string>
+  /**
+   * Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the
+   * order they apply: a choice comes after those it requires. A plugin applies the choices it owns
+   * and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.
+   */
+  choices?: string[]
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */
@@ -579,6 +876,24 @@ export interface InitializeResult {
    * just those.
    */
   kinds?: ProjectKind[]
+  /**
+   * Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project
+   * with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a
+   * key that a plugin of the stack follows. Absent means the plugin follows none.
+   */
+  follows?: string[]
+  /**
+   * Choices are the options on an axis (framework, test, style) the plugin owns. The host lists
+   * them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin
+   * owns none.
+   */
+  choices?: Choice[]
+  /**
+   * Tools are the programs the plugin needs on the person's machine. The host detects them and,
+   * when one is missing, presents the ways to get it (smith tools). Absent means the plugin
+   * declares none.
+   */
+  tools?: ToolNeed[]
 }
 
 /**
@@ -634,6 +949,65 @@ export interface LatestResult {
   latest?: Record<string, string>
   unreachable?: Record<string, string>
   tools?: ToolPin[]
+}
+
+/**
+ * LinkOption is one way to write the dependency, with its consequence in words a person who read no
+ * manual can follow.
+ */
+export interface LinkOption {
+  /** Spec is the value passed back in LinkParams.Spec. */
+  spec: string
+  /** Label is the option in a few words. */
+  label: string
+  /** Meaning says what happens with this option. */
+  meaning: string
+}
+
+/**
+ * LinkParams asks a plugin to make Project depend on Library, a lib or package of the same
+ * workspace and language, in the ecosystem's own form, and to install or lock as that needs. The
+ * host has checked that both exist, that the languages match, that Library is not an app, and that
+ * the link makes no cycle; the plugin answers with an error that names the file when it cannot
+ * write the dependency.
+ */
+export interface LinkParams {
+  /** Project is the project that gains the dependency. */
+  project: Project
+  /** Library is the project it depends on. */
+  library: Project
+  /** Quiet keeps the package manager's output unless it fails. */
+  quiet?: boolean
+  /**
+   * Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line
+   * it would write and the choices the user has.
+   */
+  plan?: boolean
+  /**
+   * Spec is the version range the user chose from LinkResult.Options; empty means the plugin's
+   * default, or the form the workspace already uses.
+   */
+  spec?: string
+}
+
+/** LinkResult is what a link wrote, or with LinkParams.Plan would write. */
+export interface LinkResult {
+  /** Files are the workspace-relative files changed (or to be changed). */
+  files?: string[]
+  /** Notes are for the user. */
+  notes?: string[]
+  /** Manifest is the file the dependency goes into, workspace-relative. */
+  manifest?: string
+  /**
+   * Line is the dependency as it is written there, for the plan shown before anything is written
+   * ("@acme/core": "*").
+   */
+  line?: string
+  /**
+   * Options are the real choices of the range written, with the default first. Empty when the
+   * ecosystem has none, or the workspace already follows a convention (then Line shows it).
+   */
+  options?: LinkOption[]
 }
 
 /**
@@ -748,6 +1122,14 @@ export interface Project {
    */
   settings?: Record<string, Record<string, unknown>>
   /**
+   * Shape is the dialect of the project: named facts about how it is made ("build.tool": "esbuild",
+   * "test.runner": "@swc/jest", "exports.target": "dist"), each a short string, read from the
+   * manifest and files the plugin already reads in discovery. The host counts the shapes of the
+   * projects of one kind and language to let a new project follow what they do, and knows no key
+   * itself. Nil when the plugin does not describe shapes.
+   */
+  shape?: Record<string, string>
+  /**
    * Registries are the private registries the project installs from and publishes to, from
    * smith.toml [registries]; nil means the public ones. Set by the host.
    */
@@ -758,6 +1140,14 @@ export interface Project {
    * a project that has no release files. Set by the host.
    */
   releaseAssets?: AssetSpec
+  /**
+   * Facts are the shared facts that hold for the project, merged by the host, narrowest scope
+   * first: [projects.<name>.facts], then [facts], then the defaults plugins published through
+   * Contribution.Facts. A key that is absent was set by no one: the plugin uses its own default. A
+   * request made before every plugin has contributed carries the smith.toml facts and the defaults
+   * published so far. Set by the host; read only.
+   */
+  facts?: Record<string, unknown>
 }
 
 /**
@@ -797,6 +1187,33 @@ export interface PublishParams {
    */
   commit?: string
   branch?: string
+  /**
+   * Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When
+   * set, the plugin publishes under it and leaves the registry's stable pointer where it is, or
+   * ignores it when its registry has no such pointer. Only sent to a plugin with the channels
+   * capability.
+   */
+  tag?: string
+  /**
+   * PropagationWait is the longest time a plugin waits, in a Finalize call, for the packages of the
+   * release to be fetchable from the registry: a duration such as "15m", "0" to not wait. Empty
+   * means the default. Only npm has such a wait. A publish never waits.
+   */
+  propagationWait?: string
+  /**
+   * PackDir, when set, turns the call into a pack: the plugin writes the package file of the
+   * project's ecosystem (npm tarball, wheel and sdist, .nupkg, .gem, .crate) and returns the files
+   * in PublishResult.Assets, and publishes nothing anywhere. A workspace-relative folder. The host
+   * sends it only to a plugin with the packs capability. In a dry run the plugin lists the files it
+   * would write, writes none, and reads no registry.
+   */
+  packDir?: string
+  /**
+   * Finalize turns the call into the last phase of a release: nothing is published; for each move
+   * the plugin waits until its packages are fetchable, then moves the dist-tag. The host sends it
+   * after every project has published, so a wait never blocks another publish.
+   */
+  finalize?: TagMove[]
 }
 
 /**
@@ -807,6 +1224,20 @@ export interface PublishResult {
   published: boolean
   skipped?: string
   registry?: string
+  /**
+   * Notes are things the person must know about a publish that succeeded, such as a dist-tag that
+   * was not moved; the host prints them and the report keeps them.
+   */
+  notes?: string[]
+  /**
+   * PendingMoves are the dist-tags the call did not move, because the packages the release needs
+   * were not fetchable yet. A publish returns them for the host to move at the end of the release;
+   * a Finalize call returns the ones still waiting when its time ran out. The release then ends
+   * with a warning, never silently.
+   */
+  pendingMoves?: TagMove[]
+  /** Moved names the dist-tags a Finalize call moved ("name@version tag"). */
+  moved?: string[]
   /**
    * Assets are the workspace-relative files built for the release, in upload order; in a dry run,
    * the files that would be built.
@@ -875,6 +1306,13 @@ export interface Registries {
    * rest).
    */
   noPublish?: boolean
+  /**
+   * PackToRelease means smith.toml says registry = "github-release": the release packs the project
+   * into its ecosystem's package file and attaches it to the project's GitHub Release, publishing
+   * to no registry. The host sends PublishParams.PackDir to a plugin with the packs capability and
+   * never calls publish on one without it.
+   */
+  packToRelease?: boolean
 }
 
 /**
@@ -1002,6 +1440,12 @@ export interface Stack {
   /** Scaffold generates new projects; empty means the language plugin does. */
   scaffold?: string
   deploy?: string[]
+  /**
+   * Choices make the stack a saved selection (see Choice). When they are set, the host derives the
+   * language, the scaffold and the toolchain from them, and Toolchain lists only the plugins to add
+   * after those. The plugins of the stack get the choices in GenerateParams.Choices.
+   */
+  choices?: string[]
 }
 
 /** Step is one command a CI phase runs. */
@@ -1019,6 +1463,20 @@ export interface Step {
    * repeated. Only the audit phase reads it.
    */
   cacheFiles?: string[]
+}
+
+/**
+ * TagMove is a dist-tag a publish left where it was, because the packages the release needs were
+ * not fetchable yet.
+ */
+export interface TagMove {
+  /** Package and Version name the package that carries the tag. */
+  package: string
+  version: string
+  /** Tag is the dist-tag to move to Version. */
+  tag: string
+  /** Awaits are the packages that must be fetchable first. */
+  awaits: string[]
 }
 
 /** Task is a command the host can run, hash and cache. */
@@ -1066,6 +1524,103 @@ export interface Task {
 }
 
 /**
+ * ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew",
+ * "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo" and "go" (go install,
+ * for a tool published as a Go module). The host builds the exact command from the manager and
+ * Package; Package may hold {major}, {major.minor} and {version} (the whole version), which the
+ * pinned or suggested version fills. The language's own installers (uv, fnm, rustup, cargo) are
+ * offered only when they are already on the machine.
+ */
+export interface ToolInstall {
+  manager: string
+  package: string
+  /** Note adds a sentence the person needs before choosing ("a new terminal is needed"). */
+  note?: string
+}
+
+/**
+ * ToolNeed is a program on the person's machine that a plugin needs to build, test or run its
+ * projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in
+ * InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to
+ * get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the tool is,
+ * how to detect it, how each system gets it); the host decides how to ask.
+ */
+export interface ToolNeed {
+  /**
+   * Name identifies the tool across plugins and in commands (smith tools install python). Two
+   * plugins that need the same tool use the same Name.
+   */
+  name: string
+  /**
+   * Title is what the tool is called in text: "Python", "the .NET SDK". Doctor words the check
+   * "<Title> is installed".
+   */
+  title: string
+  /** Why says in plain words what smith needs the tool for. */
+  why: string
+  /**
+   * Consequence says what stops working while the tool is missing, as the end of a sentence that
+   * starts "If you skip it, ": "smith test and smith build fail for the python projects".
+   */
+  consequence: string
+  /** Program is the program that carries the tool on PATH ("python3"). */
+  program: string
+  /** Alternatives are other programs that also count ("python", "py"). */
+  alternatives?: string[]
+  /** VersionArgs are the arguments that make Program print its version. Absent means --version. */
+  versionArgs?: string[]
+  /**
+   * Pins are the files where a workspace pins the version it wants. The first pin the host finds
+   * gives the version range. Absent means any version counts.
+   */
+  pins?: ToolVersionPin[]
+  /**
+   * Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not
+   * needed by a project built without it. Absent means every project of the plugin needs it.
+   */
+  choice?: string
+  /**
+   * Files limit the tool to projects that hold one of these files in their folder
+   * ("build.gradle.kts"): a Gradle build needs gradle, a Maven build does not. A tool that the
+   * tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the
+   * plugin needs it.
+   */
+  files?: string[]
+  /**
+   * Systems limits the tool to these systems, named as Go names them ("windows", "darwin",
+   * "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.
+   */
+  systems?: string[]
+  /**
+   * Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and
+   * {major.minor} in the install entries.
+   */
+  suggested?: string
+  /**
+   * Optional marks a tool whose absence only costs a feature (running a function app locally).
+   * Doctor reports it as a warning, not a failure.
+   */
+  optional?: boolean
+  /**
+   * Exact says Suggested is the one version the workspace wants, such as the version CI pins: an
+   * installed version that differs, older or newer, is reported as different, and an install
+   * fetches that version.
+   */
+  exact?: boolean
+  /** Install are the ways to get the tool, per package manager and system. */
+  install?: ToolInstall[]
+  /**
+   * Download is the official page of the tool, for the person who installs it by hand or has no
+   * package manager.
+   */
+  download: string
+  /** Source is the address of the page the Install entries were checked against. */
+  source: string
+  /** Checked is the date (YYYY-MM-DD) the entries were last checked. */
+  checked: string
+}
+
+/**
  * ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv)
  * against the newest release; informational.
  */
@@ -1076,6 +1631,21 @@ export interface ToolPin {
   latest?: string
   /** Newer is true when Latest is a release the pin does not cover. */
   newer?: boolean
+}
+
+/**
+ * ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one of:
+ * "text" (the first word of the file, as in .nvmrc and .python-version), "go-mod" (the toolchain
+ * line, else the go line), "pyproject" (requires-python), "global-json" (sdk.version) and
+ * "rust-toolchain" (the channel).
+ */
+export interface ToolVersionPin {
+  /**
+   * File is the base name of the file, looked up at the workspace root and in the folders of the
+   * projects that use the tool.
+   */
+  file: string
+  format: string
 }
 
 /**
@@ -1105,6 +1675,15 @@ export interface Toolchain {
 export interface UninstallParams {
   project: Project
   packages: string[]
+}
+
+/**
+ * UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result
+ * say so when the manifest held no such dependency.
+ */
+export interface UnlinkParams {
+  project: Project
+  library: Project
 }
 
 /** VersionParams asks a plugin to record a new version in a project manifest. */
@@ -1246,6 +1825,21 @@ export interface ProtocolMethods {
     result: DependencyResult
     capability: 'dependencies'
   }
+  /**
+   * Makes a project depend on a library of the same workspace and language, in the ecosystem's own
+   * form, then installs or locks as that needs.
+   */
+  'dependencies/link': {
+    params: LinkParams
+    result: LinkResult
+    capability: 'link'
+  }
+  /** Removes the dependency of a project on a library of the same workspace. */
+  'dependencies/unlink': {
+    params: UnlinkParams
+    result: DependencyResult
+    capability: 'link'
+  }
   /** Lists the dependencies the manifests of the plugin's projects declare. */
   'dependencies/declared': {
     params: DeclaredParams
@@ -1276,6 +1870,25 @@ export interface ProtocolMethods {
     params: ComponentsParams
     result: ComponentsResult
     capability: 'components'
+  }
+  /**
+   * Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a
+   * test config's display name). The plugin writes nothing: it answers with the content, and the
+   * host rewrites a file only when its ownership record allows.
+   */
+  derive: {
+    params: DeriveParams
+    result: DeriveResult
+    capability: 'derive'
+  }
+  /**
+   * Asks for the public API names of a project, at the working tree or at a git revision (its last
+   * release tag), so a release can compare them and say what bump the change needs.
+   */
+  'api/surface': {
+    params: APISurfaceParams
+    result: APISurfaceResult
+    capability: 'apiSurface'
   }
 }
 

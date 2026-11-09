@@ -37,12 +37,12 @@ elsewhere through a process group.
 
 Each project's tasks come from its plugin; smith.toml changes them in three
 layers, the later winning field by field: `[tasks.<task>]` (every project),
-`[[task_groups]]` (the projects a group selects, such as `lang:node` and
+`[[groups]]` (the projects a group selects, such as `lang:node` and
 `kind:lib`) and `[projects.<name>.tasks.<task>]` (one project). A workspace
 whose libraries share the same overrides states them once in a group, and the
 one library that differs overrides only its own task. `smith explain
 <project>:<task>` shows which layer each value came from. See
-[Task groups](configuration.md#task-groups). The cache key follows the
+[Groups](configuration.md#groups). The cache key follows the
 resolved task, whichever layer a value came from.
 
 ### Default tool configuration
@@ -283,11 +283,81 @@ off: nothing is shared unsigned.
 The generated pipelines pass the key and the backend's credentials to the steps
 that run tasks, and keep the cache read-only in pull requests; see
 [The remote cache](ci.md#the-remote-cache) in CI pipelines, with a worked Azure
-Blob example.
+Blob example. The generated pipelines also pass `AWS_ENDPOINT_URL_S3`, so an
+S3-compatible store works in CI as it does on a developer machine.
+
+**Example: Cloudflare R2.** R2 speaks the S3 protocol, so it needs no new
+setting. Make a bucket, then an R2 API token with object read and write on it.
+Set:
+
+```toml
+[cache]
+remote = "s3://smith-cache/shop"
+```
+
+and keep these as secrets: `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` (from the token), `AWS_REGION=auto` and
+`AWS_ENDPOINT_URL_S3=https://<account id>.r2.cloudflarestorage.com`. Use one
+prefix per project in a shared bucket (`shop`, `blog`). Check the current free
+allowance on Cloudflare's pricing page before you rely on it.
 
 `SMITH_CACHE_REMOTE` and `SMITH_CACHE_READ_ONLY=1` override the settings for
 one machine. The remote holds results only: which run was last (for
 `smith why-miss`) and pruning stay local.
+
+### Set up the remote cache
+
+Four things make a remote cache work: a storage place, a key, the backend's
+credential, and the setting. You make the key yourself; smith never stores it.
+
+**What the key is.** `SMITH_CACHE_KEY` is a random secret that every machine and
+pipeline of the team shares. smith signs each cached object with it
+(HMAC-SHA256) and checks the signature before it uses the object. A person who
+can write to the storage but does not know the key cannot plant a result.
+
+**Who makes it.** You do, once: run `smith cache key`. It makes 32 random bytes
+from the operating system (64 hex characters) and puts them on the clipboard
+without showing them. `smith cache key --print` prints the key instead. On a
+terminal, `c` copies the key again, `g` makes another one (the old key is then
+wrong: use the newest everywhere), `u` sets it as a user environment variable
+(Windows; the command is shown and asked first), and `q` ends. The clipboard
+clears after 60 seconds, or on `q`, but only if it still holds the key
+(`--clear-after 0` turns this off). A clipboard-history tool may keep a copy.
+
+**Where it lives.** In the environment only. smith does not read it from
+`smith.toml` or from a `.env` file. In CI it is a secret of the provider:
+GitHub repository secret, Azure Pipelines secret variable, GitLab masked
+variable, CircleCI project variable, Bitbucket secured repository variable
+(`smith ci check` lists the steps for the providers in `[ci] providers`). On a
+developer machine it is a user environment variable or a password-manager entry
+the developer exports.
+
+**Without the key** the remote is off: nothing is shared unsigned, runs use the
+local cache, and `smith doctor` warns once. A pull request from a fork gets no
+secrets, so the remote is off there too. Other pull requests only read the
+cache; a push to the release branch writes.
+
+**Rotating it.** Make a new key, put it in every place, and delete the old one.
+Objects signed with the old key fail verification and count as misses, so the
+cache fills again under the new key. Nothing is wrong or lost; the next runs
+are slower once.
+
+**SAS token or key.** They are different secrets. The key (`SMITH_CACHE_KEY`)
+proves an object is yours. For Azure Blob the SAS token
+(`AZURE_STORAGE_SAS_TOKEN`) lets smith reach the container, with read, write
+and create permission (a developer who only reads needs read). A SAS token
+expires, so renew it before its date and update the secret. Signing in to Azure
+through `az` directly is not supported by the backend today.
+
+**One prefix for each workspace.** The cache key of a task does not include the
+workspace. Give each workspace its own prefix, for example
+`azblob://acme/cache/smith/shop` and `azblob://acme/cache/smith/blog`. The
+workspaces stay apart, and deleting a workspace's prefix deletes only its
+cache. Two workspaces may share one prefix when they share code, so one fills
+the cache for the other. Blob storage has no real folders: a prefix appears at
+the first write.
+
+Google Cloud Storage is not supported. Use S3, Azure Blob or an HTTPS server.
 
 ## Affected
 

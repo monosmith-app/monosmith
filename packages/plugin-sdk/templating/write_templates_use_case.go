@@ -67,6 +67,11 @@ func Write(root string, files map[string]string, data any) ([]string, error) {
 	return written, nil
 }
 
+// Render renders one template text with data and returns the bytes Write would
+// write for it, before its line endings are chosen. name labels errors. It
+// returns an error when the template does not parse or does not execute.
+func Render(name, text string, data any) ([]byte, error) { return render(name, text, data) }
+
 func render(name, text string, data any) ([]byte, error) {
 	tmpl, err := template.New(name).Delims("[[", "]]").Option("missingkey=error").Parse(text)
 	if err != nil {

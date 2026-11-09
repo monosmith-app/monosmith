@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releasetable"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -20,17 +22,38 @@ import (
 
 // Collect asks every plugin what CI needs for its projects.
 func Collect(s *session.Session) (Contributions, error) {
+	return collect(s, false)
+}
+
+// CollectForAssets is Collect for the assets job's setup: the plugins hear
+// of every project except those whose [release] install is false, because
+// their build command needs none of the project's dependencies.
+func CollectForAssets(s *session.Session) (Contributions, error) {
+	return collect(s, true)
+}
+
+// servedProjects are the projects a plugin is asked about. For the assets job
+// it leaves out those whose [release] install is false.
+func servedProjects(all []*projectgraph.Project, plugin string, assets bool) []protocol.Project {
+	var projects []protocol.Project
+	for _, p := range all {
+		if assets && release.SkipsAssetsInstall(p) {
+			continue
+		}
+		if p.ServedBy(plugin) {
+			projects = append(projects, p.Project)
+		}
+	}
+	return projects
+}
+
+func collect(s *session.Session, assets bool) (Contributions, error) {
 	var c Contributions
 	for _, client := range s.Plugins.Clients {
 		if !client.Info.Capabilities.CI {
 			continue
 		}
-		var projects []protocol.Project
-		for _, p := range s.Graph.Projects {
-			if p.ServedBy(client.Info.Plugin.Name) {
-				projects = append(projects, p.Project)
-			}
-		}
+		projects := servedProjects(s.Graph.Projects, client.Info.Plugin.Name, assets)
 		if len(projects) == 0 {
 			continue
 		}
@@ -45,7 +68,7 @@ func Collect(s *session.Session) (Contributions, error) {
 			c.Pack = true
 		}
 		if release.BuildsAssetsFromCommand(p) {
-			for _, platform := range workspace.CommandPlatforms {
+			for _, platform := range releasetable.CommandPlatforms {
 				if slices.Contains(p.Release.Platforms, platform) && !slices.Contains(c.AssetPlatforms, platform) {
 					c.AssetPlatforms = append(c.AssetPlatforms, platform)
 				}
@@ -56,17 +79,24 @@ func Collect(s *session.Session) (Contributions, error) {
 			c.NativePublish = c.NativePublish || p.Kind == protocol.ProjectPackage || (p.Kind == protocol.ProjectApp && len(p.Deployers) > 0)
 			continue
 		}
-		c.Add(protocol.CIResult{Credentials: release.DistributionCredentials(p.Release)})
+		// registry = "none" or "github-release": no registry credential and no
+		// pub.dev workflow. The GitHub token below is all such a project needs.
+		if !release.PublishesToNoRegistry(p) {
+			c.Add(protocol.CIResult{Credentials: release.DistributionCredentials(p.Release, "")})
+		}
 		if p.SplitRepo != "" {
 			c.Add(protocol.CIResult{Credentials: []protocol.Credential{splitrepo.Credential(p.SplitRepo)}})
 		}
-		if p.Release != nil && len(p.Release.NPM) > 0 {
+		if p.Release != nil && len(p.Release.NPM) > 0 && !release.PublishesToNoRegistry(p) {
 			c.Provenance = true
 		}
 		if p.Release != nil && s.Config.Release.GitHubReleases {
 			c.Attest = true
 		}
-		if release.PubPackage(p) != "" {
+		if s.Config.Release.DeploymentsOn() && release.PublishesToRegistry(p) {
+			c.Deployments = true
+		}
+		if release.PubPackage(p) != "" && !release.PublishesToNoRegistry(p) {
 			c.Pub = true
 		}
 	}
@@ -78,6 +108,7 @@ func Collect(s *session.Session) (Contributions, error) {
 	}
 	// A remote cache is read by every step that runs tasks.
 	c.Add(protocol.CIResult{Credentials: cachecredentials.For(s.Config.Cache.Remote)})
+	c.Add(protocol.CIResult{Credentials: SecretCredentials(s.Config.CI.Secrets)})
 	c.NativeRunners, c.NativeLinuxPackages = s.Config.CI.NativeRunners, s.Config.CI.NativeLinuxPackages
 	if s.Config.Release.GitHubReleases {
 		c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "GITHUB_TOKEN", Description: "creates GitHub Releases and uploads their assets", Required: true}}})
@@ -88,6 +119,14 @@ func Collect(s *session.Session) (Contributions, error) {
 // Rendered maps each configured provider's file to its content.
 func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Branches = cfg.CI.Branches
+	m.Attest = m.Attest && cfg.CI.Attest != "off"
+	m.AttestOptional = cfg.CI.Attest == "optional"
+	m.ManualRelease = cfg.CI.ManualRelease
+	m.NativeOn, m.Triggers, m.Audit, m.AuditCron, m.PublishOn = cfg.CI.NativeOn, cfg.CI.Triggers, cfg.CI.Audit, cfg.CI.AuditCron, cfg.CI.PublishOn
+	m.ChannelBranches = nil
+	for _, c := range cfg.Release.Channels {
+		m.ChannelBranches = append(m.ChannelBranches, c.Branch)
+	}
 	m.SiblingRepos = cfg.CI.SiblingRepos
 	out := map[string]string{}
 	for _, p := range cfg.CI.Providers {
@@ -127,6 +166,7 @@ func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, 
 		if err := os.Remove(filepath.Join(root, filepath.FromSlash(path))); err != nil {
 			return changed, lost, err
 		}
+		removeEmptyParents(root, path)
 		changed = append(changed, path)
 	}
 	for path, content := range rendered {
@@ -153,6 +193,24 @@ func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, 
 	return changed, lost, nil
 }
 
+// removeEmptyParents removes the folders a removed file leaves empty, from its
+// own folder up to (not including) the workspace root. A folder that still
+// holds a file stays.
+func removeEmptyParents(root, path string) {
+	for dir := filepath.Dir(filepath.FromSlash(path)); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		if os.Remove(filepath.Join(root, dir)) != nil {
+			return
+		}
+	}
+}
+
+// PackageManagerInstallsSmith reports whether a project written in the named
+// language makes the pipelines install smith with a package manager (npm, pip or
+// dotnet), so the committed install script is no longer used.
+func PackageManagerInstallsSmith(language string) bool {
+	return !SmithInstallFor(Model{Toolchains: []protocol.Toolchain{{Name: language}}}).Script
+}
+
 // fileMode is 0755 for the installer (where the OS has modes) and 0644 for
 // the rest.
 func fileMode(path string) os.FileMode {
@@ -175,6 +233,20 @@ func Stale(root string, rendered map[string]string) []string {
 		if _, wanted := rendered[path]; wanted {
 			continue
 		}
+		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err == nil && generated(string(raw)) {
+			out = append(out, path)
+		}
+	}
+	return out
+}
+
+// GeneratedFiles lists the pipeline and dev container files that exist in the
+// workspace and that smith generated, so smith may rewrite them. A file
+// without smith's header is the team's and is not listed.
+func GeneratedFiles(root string) []string {
+	var out []string
+	for _, path := range OwnedPaths {
 		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
 		if err == nil && generated(string(raw)) {
 			out = append(out, path)

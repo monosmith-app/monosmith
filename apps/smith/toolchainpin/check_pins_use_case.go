@@ -46,8 +46,9 @@ func CheckPins(pins map[string]string, projects []protocol.Project, existing str
 			}
 		}
 		sort.Strings(wrong)
-		f := protocol.Finding{Check: fmt.Sprintf("%s matches the pinned version %s", label, pin), OK: len(wrong) == 0}
+		f := protocol.Finding{Check: fmt.Sprintf("%s matches the pinned version %s", label, pin), OK: len(wrong) == 0, Area: "toolchain"}
 		if !f.OK {
+			f.Problem = fmt.Sprintf("this machine runs %s %s, [toolchains] pins %s", label, strings.Join(wrong, ", "), pin)
 			f.Detail = fmt.Sprintf("[toolchains] pins %s %s, but this machine runs %s: tasks cached on another version are misses, and results can differ from CI", label, pin, strings.Join(wrong, ", "))
 			f.Remedy = fmt.Sprintf("install %s %s (`mise use %s@%s`, asdf, or your installer; `smith doctor --fix` writes %s for mise and asdf), or change [toolchains] %s", label, pin, ToolName(label), pin, ToolVersionsFile, label)
 			f.Fix = &protocol.Fix{

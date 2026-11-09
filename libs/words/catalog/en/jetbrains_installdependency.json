@@ -1,0 +1,20 @@
+{
+  "jetbrains.installdependency.monosmith-add-a-dependency": "MonoSmith: add a dependency",
+  "jetbrains.installdependency.nothing-was-added": "Nothing was added. {message}",
+  "jetbrains.installdependency.add-a-dependency": "add a dependency",
+  "jetbrains.installdependency.package-names-separated-by": "Package names, separated by spaces (for example zod react@19):",
+  "jetbrains.installdependency.type-at-least-one-package": "Type at least one package.",
+  "jetbrains.installdependency.no-library-of-this-workspace": "No library of this workspace can be linked to {name}. A library must be a lib or a package, in the same language, and must not already depend on {name}.",
+  "jetbrains.installdependency.which-library": "{title}: which library?",
+  "jetbrains.installdependency.libraries-may-use": "Libraries {name} may use.",
+  "jetbrains.installdependency.smith-runs-this-command-it": "smith runs this command. It commits only if you tick the box.",
+  "jetbrains.installdependency.the-dependency-is-added": "The dependency is added. Committed as one change: Undo reverts it.",
+  "jetbrains.installdependency.the-dependency-is-added-not": "The dependency is added. Not committed: review it with the Commit window.",
+  "jetbrains.installdependency.what-do-you-add-to": "{title}: what do you add to {project}?",
+  "jetbrains.installdependency.a-package-from-the-registry": "A package from the registry",
+  "jetbrains.installdependency.downloaded-from-the-language": "Downloaded from the language registry (npm, PyPI, crates.io...), a copy outside this workspace.",
+  "jetbrains.installdependency.linked-nothing-is-downloaded": "linked, nothing is downloaded",
+  "jetbrains.installdependency.uses-the-code-of-another": "{project} uses the code of another project here, always its current copy.",
+  "jetbrains.installdependency.which-version-of-does-ask": "{title}: which version of {library} does {project} ask for?",
+  "jetbrains.installdependency.follow-the-workspace": "Follow the workspace"
+}

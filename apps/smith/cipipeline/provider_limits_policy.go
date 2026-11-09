@@ -34,6 +34,10 @@ func Limits(cfg workspace.Config, m Model) []string {
 			}
 		}
 	}
+	out = append(out, costLimits(cfg, m)...)
+	if cfg.CI.ManualRelease && slices.Contains(cfg.CI.Providers, "circleci") {
+		out = append(out, circleciManualReleaseNote)
+	}
 	if len(m.AssetPlatforms) > 0 {
 		for _, p := range cfg.CI.Providers {
 			if p != "github" {

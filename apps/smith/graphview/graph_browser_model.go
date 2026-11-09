@@ -131,8 +131,8 @@ func (b Browser) View() string {
 		}
 		right.WriteString("\n")
 	}
-	list("Depends on", n.Deps)
-	list("Used by", b.dependents[n.Name])
-	help := faintStyle.Render("↑↓ move · → depends on · d used by · ← back · q quit")
+	list("Projects it needs", n.Deps)
+	list("Projects that use it", b.dependents[n.Name])
+	help := faintStyle.Render("↑↓ move · → projects it needs · d projects that use it · ← back · q quit")
 	return lipgloss.JoinHorizontal(lipgloss.Top, panelStyle.Render(left.String()), right.String()) + "\n" + help + "\n"
 }

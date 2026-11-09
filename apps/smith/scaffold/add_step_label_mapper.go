@@ -36,6 +36,17 @@ func createStep(kind, name, dir string, st protocol.Stack, language string) stri
 	return fmt.Sprintf("Creating %s %s in %s: %s", kind, name, dir, made)
 }
 
+// directoryReason is the line `smith add` prints when a Node project goes to
+// another folder than its kind's own: the root package.json workspaces do not
+// reach the kind's folder, so npm would not link the project there. It is empty
+// when the project goes to the kind's folder.
+func directoryReason(kind, conventional, parent string) string {
+	if parent == conventional {
+		return ""
+	}
+	return fmt.Sprintf("The %s goes to %s/, not %s/: the workspaces of the root package.json list %s/* and not %s/*, so npm links it there.", kind, parent, conventional, parent, conventional)
+}
+
 // doneStep is the last line of a successful add: what is ready and how many
 // files it took.
 func doneStep(kind, name string, files int, took string) string {

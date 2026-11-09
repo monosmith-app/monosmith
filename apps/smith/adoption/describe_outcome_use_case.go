@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 )
 
@@ -27,19 +28,19 @@ func DescribeOutcome(root, version string, out io.Writer) error {
 		}
 	}
 	if len(s.Graph.Projects) == 0 {
-		fmt.Fprintln(out, "✔ workspace created, with no projects yet: nothing in this repository was adopted as one")
-		fmt.Fprintln(out, "  next: smith add app <name> --lang <language>, or move your code into packages/<name> (smith finds it there)")
+		fmt.Fprintln(out, "! workspace created, but it has no projects: nothing in this repository was adopted as one")
+		fmt.Fprintln(out, "  next: move your code into packages/<name> (smith finds it there), or run smith add app <name> --lang <language>")
 		return nil
 	}
 	if len(left) == 0 {
-		fmt.Fprintln(out, "✔ adopted, and smith doctor finds nothing to fix")
+		fmt.Fprintln(out, marks.Passed+" adopted, and smith doctor finds nothing to fix")
 		fmt.Fprintln(out, "  next: smith run build")
 		offerAgent(s.Root, s.Config.AgentEnabled(), out)
 		return nil
 	}
-	fmt.Fprintf(out, "✔ adopted. smith doctor still reports %d thing(s) for you:\n", len(left))
+	fmt.Fprintf(out, marks.Passed+" adopted. smith doctor still reports %d thing(s) for you:\n", len(left))
 	for _, f := range left {
-		fmt.Fprintf(out, "  ✖ %s\n", f.Detail)
+		fmt.Fprintf(out, "  × %s\n", f.Detail)
 		for i, line := range strings.Split(f.Remedy, "\n") {
 			if i == 0 {
 				line = "→ " + line

@@ -39,7 +39,7 @@ func TestServer(t *testing.T) {
 	}
 	for _, c := range []struct{ msg, want string }{
 		{`{"name":"smith_projects"}`, "projects --json"},
-		{`{"name":"smith_install","arguments":{"package":"zod@^3","projects":["web","apps/api"],"dev":true}}`, "install -w web -w apps/api -D zod@^3"},
+		{`{"name":"smith_install","arguments":{"package":"zod@^3","projects":["web","apps/api"],"dev":true}}`, "install -p web -p apps/api -D zod@^3"},
 		{`{"name":"smith_run","arguments":{"tasks":["test","lint"],"projects":["web"],"affected":true}}`, "run test lint -p web --affected"},
 		{`{"name":"smith_add_project","arguments":{"kind":"app","name":"api","lang":"go"}}`, "add app api --lang go"},
 		{`{"name":"smith_remove_project","arguments":{"name":"old","dry_run":true}}`, "remove old --dry-run"},

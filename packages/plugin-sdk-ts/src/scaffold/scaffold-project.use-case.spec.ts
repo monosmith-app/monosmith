@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { GenerateParams } from '../protocol/index.ts'
-import { scaffoldData } from './scaffold-data.mapper.ts'
+import { scaffoldData } from './template-fields.mapper.ts'
 import { scaffoldProject } from './scaffold-project.use-case.ts'
 
 let root: string

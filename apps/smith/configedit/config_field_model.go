@@ -23,6 +23,9 @@ type Field struct {
 	Enum        []string `json:"enum,omitempty"`
 	Minimum     *int     `json:"minimum,omitempty"`
 	MinLength   int      `json:"minLength,omitempty"`
+	// Reason is one line saying why the default is what it is, from the
+	// schema's x-reason; empty when the schema gives none.
+	Reason string `json:"reason,omitempty"`
 }
 
 // Table and Key split the path.
@@ -34,6 +37,7 @@ func (f Field) Key() string { return strings.SplitN(f.Path, ".", 2)[1] }
 type schemaNode struct {
 	Type                 string                `json:"type"`
 	Description          string                `json:"description"`
+	Reason               string                `json:"x-reason"`
 	Properties           map[string]schemaNode `json:"properties"`
 	Items                *schemaNode           `json:"items"`
 	Enum                 []string              `json:"enum"`
@@ -42,8 +46,8 @@ type schemaNode struct {
 	AdditionalProperties json.RawMessage       `json:"additionalProperties"`
 }
 
-// Fields are the settings of smith.toml's fixed tables ([workspace], [ci],
-// [release], [cache], [plugins], [agent]), in schema order of tables and by name
+// Fields are the settings of smith.toml's fixed tables ([workspace], [ci], [release], [cache],
+// [plugins], [agent], [dependencies]), in schema order of tables and by name
 // within one. Tables of named entries (stacks, tasks, projects, ...) are
 // edited in the file.
 func Fields() ([]Field, error) {
@@ -52,7 +56,7 @@ func Fields() ([]Field, error) {
 		return nil, err
 	}
 	var out []Field
-	for _, table := range []string{"workspace", "ci", "release", "cache", "plugins", "agent"} {
+	for _, table := range []string{"workspace", "ci", "release", "cache", "plugins", "agent", "dependencies"} {
 		node := root.Properties[table]
 		keys := make([]string, 0, len(node.Properties))
 		for k := range node.Properties {
@@ -61,12 +65,16 @@ func Fields() ([]Field, error) {
 		sort.Strings(keys)
 		for _, k := range keys {
 			p := node.Properties[k]
-			if p.Type == "object" {
-				continue
+			if p.Type == "object" || (p.Type == "array" && p.Items != nil && p.Items.Type == "object") {
+				continue // a table, or a list of tables ([[release.channels]]): edited in the file
 			}
-			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Minimum: p.Minimum, MinLength: p.MinLength}
+			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Reason: p.Reason, Minimum: p.Minimum, MinLength: p.MinLength}
 			if p.Items != nil {
 				f.Enum = p.Items.Enum
+			}
+			if p.Type == "" && len(p.Enum) > 0 {
+				// A string that takes one of a few words: the schema gives only the choices.
+				f.Type, f.Enum = "string", p.Enum
 			}
 			out = append(out, f)
 		}
@@ -97,6 +105,9 @@ func Find(path string) (Field, error) {
 	message := path + " is not a setting smith config edits"
 	if near := nearest(path, paths); len(near) > 0 {
 		message += "; did you mean " + strings.Join(near, " or ") + "?"
+	}
+	if strings.HasPrefix(path, "release.channels") {
+		return Field{}, errors.New("release channels are a list of tables, which smith config set does not edit: add a [[release.channels]] table to smith.toml (branch, prerelease, major, dist_tag). docs/reference/releasing.md, Release channels, shows one")
 	}
 	return Field{}, errors.New(message + " Run smith config list to see them (stacks, tasks and projects are edited in smith.toml).")
 }
@@ -188,6 +199,12 @@ func (f Field) Encode(args []string) (string, error) {
 	case "string":
 		if len(args[0]) < f.MinLength {
 			return "", fmt.Errorf("%s cannot be empty", f.Path)
+		}
+		if len(f.Enum) > 0 && !slices.Contains(f.Enum, args[0]) {
+			return "", fmt.Errorf("%s takes %s, not %q", f.Path, strings.Join(f.Enum, " or "), args[0])
+		}
+		if err := checkNpmScope(f.Path, args[0]); err != nil {
+			return "", err
 		}
 		return Quote(args[0]), nil
 	case "array":

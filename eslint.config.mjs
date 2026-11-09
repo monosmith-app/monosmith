@@ -6,4 +6,8 @@ import monosmith from '@monosmith/eslint-config'
 
 export default [
   ...monosmith(),
+  // The jest-preset tests create and delete throwaway projects here while the lint task runs.
+  { ignores: ['**/.fixture-*/**'] },
+  // Written by `go run ./wordgen` in libs/words: the generator owns its format.
+  { ignores: ['apps/vscode/src/words/smith-words.config.ts'] },
 ]

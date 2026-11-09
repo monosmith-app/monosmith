@@ -118,23 +118,15 @@ func unchangedLine(names []string) string {
 	return fmt.Sprintf("Unchanged: %s have no releasing commit", plural(len(names), "project"))
 }
 
-// publishedTo lists where a package went: its registry, container images, a
-// GitHub Release, a split repository; else why nothing was published.
+// publishedTo lists every target a package reached: its registries, container
+// images, GitHub Release, split repository and pub.dev. Up to three are listed
+// by name; four or more are counted first ("5 targets: npm, PyPI, ..."). When
+// there are none it says why nothing was published.
 func publishedTo(res release.ReportResult) string {
-	var where []string
-	if res.Published && res.Registry != "" {
-		where = append(where, registryHost(res.Registry))
-	}
-	if n := len(res.Images); n > 0 {
-		where = append(where, plural(n, "image"))
-	}
-	if res.GitHubRelease != "" {
-		where = append(where, "GitHub Release")
-	}
-	if res.Mirror != "" {
-		where = append(where, res.Mirror)
-	}
+	where := release.TargetLabels(res)
 	switch {
+	case len(where) > 3:
+		return fmt.Sprintf("%d targets: %s", len(where), strings.Join(where, ", "))
 	case len(where) > 0:
 		return strings.Join(where, ", ")
 	case res.Publish == "published by its tag":
@@ -145,15 +137,6 @@ func publishedTo(res release.ReportResult) string {
 		return "-"
 	}
 	return "nothing to publish"
-}
-
-// registryHost is a registry URL as a reader names it: registry.npmjs.org.
-func registryHost(url string) string {
-	_, rest, found := strings.Cut(url, "://")
-	if !found {
-		rest = url
-	}
-	return strings.TrimSuffix(rest, "/")
 }
 
 func tagOf(res release.ReportResult) string {
@@ -188,4 +171,18 @@ func releaseConclusion(report release.Report) string {
 		line += fmt.Sprintf(", %d already released", again)
 	}
 	return line + fmt.Sprintf(", %d unchanged, %d failed", len(report.Unchanged), failed)
+}
+
+// releasedSummary is the "what was released" block under the result table:
+// a banner, then each released project's targets. The platform lines are dim.
+func releasedSummary(report release.Report, icons theme.Icons, colour bool) []string {
+	var out []string
+	for _, line := range report.SummaryLines(icons.Passed == theme.ASCII.Passed) {
+		text := line.Text
+		if line.Detail {
+			text = paint(text, tintDim, colour)
+		}
+		out = append(out, text)
+	}
+	return out
 }

@@ -41,7 +41,8 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		r.Blockers = append(r.Blockers, Item{Message: "this is not a git repository: smith versions from tags and finds files through git", Step: "git init, then commit what you have", Blocks: BlocksAdoption})
 		return r, nil
 	case exists(workspace.FileName):
-		r.Blockers = append(r.Blockers, Item{Message: "this is already a smith workspace", Step: "nothing to adopt: smith doctor checks it, smith upgrade brings it up to this smith", Blocks: BlocksAdoption})
+		raw, _ := os.ReadFile(filepath.Join(root, workspace.FileName))
+		r.Blockers = append(r.Blockers, existingWorkspaceItem(raw))
 		return r, nil
 	case exists("turbo.json") && !exists("nx.json"):
 		r.Blockers = append(r.Blockers, Item{Message: "this is a Turborepo workspace: its tasks are turbo.json's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption})
@@ -56,10 +57,27 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		return r, nil
 	}
 	status, _ := git.Run("status", "--porcelain")
-	r.Clean = strings.TrimSpace(status) == ""
+	r.Clean = cleanApartFromSmith(status)
 	r.Scope = scopeOf(root, r.Name)
 	r.Providers = providersOf(exists)
+	r.Detected = detectedProviders(exists)
+	files, _ := git.Files()
+	read := func(rel string) string {
+		raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+		return string(raw)
+	}
+	if item, ok := PnpmWorkspace(files, read); ok {
+		r.Blockers = append(r.Blockers, item)
+		return r, nil
+	}
 
+	if exists("go.mod") {
+		var rootProgram bool
+		r.Declared, rootProgram = InferGoProjects(root)
+		if rootProgram {
+			r.Warnings = append(r.Warnings, Item{Message: "the root module's main package is in the repository's own folder, which cannot be a project", Step: "move it to cmd/<name> (git mv main.go cmd/<name>/main.go), commit, then run smith adopt again"})
+		}
+	}
 	cfg, err := previewConfig(r)
 	if err != nil {
 		return r, err
@@ -74,7 +92,11 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	}
 	sort.Slice(r.Projects, func(i, j int) bool { return r.Projects[i].Root < r.Projects[j].Root })
 	if len(r.Projects) == 0 {
-		r.Warnings = append(r.Warnings, noProjectWarning(exists))
+		if attachRootProject(&r, files) {
+			r.Warnings = withoutRootProgramWarning(r.Warnings)
+		} else {
+			r.Warnings = append(r.Warnings, noProjectWarning(exists))
+		}
 	}
 	for _, f := range release.CheckLineage(s, false) {
 		item := Item{Message: f.Message, Baseline: f.Baseline, Steps: f.Remedy}
@@ -105,8 +127,9 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 			r.Warnings = append(r.Warnings, Item{Message: path + " is yours, at a path smith's pipeline uses", Step: "--init keeps it as " + path + ".pre-smith; move your own steps into the generated file's slots"})
 		}
 	}
+	r.Warnings = append(r.Warnings, ExistingWorkflows(files, read, r.Providers)...)
 	if deps := rootRuntimeDependencies(root); len(deps) > 0 && hasNodeProjects(r.Projects) {
-		r.Warnings = append(r.Warnings, Item{Message: "the root package.json has runtime dependencies (" + strings.Join(deps, ", ") + "): in smith each project declares what it uses", Step: "smith install -w <project> <package> for each project that imports it, then drop it from the root"})
+		r.Warnings = append(r.Warnings, Item{Message: "the root package.json has runtime dependencies (" + strings.Join(deps, ", ") + "): in smith each project declares what it uses", Step: "smith install -p <project> <package> for each project that imports it, then drop it from the root"})
 	}
 	return r, nil
 }
@@ -121,6 +144,24 @@ func noProjectWarning(exists func(string) bool) Item {
 			Steps: []string{
 				"move the code into packages/<name> (git mv src packages/<name>/src, and its package.json), commit, then run smith adopt again",
 				"or run smith adopt --init now and add projects with smith add app <name> --lang <language>",
+			},
+		}
+	}
+	if exists("go.mod") {
+		return Item{
+			Message: "no project found: the go.mod at the root is one module for the whole repository, and smith runs a Go project from a go.mod in its own folder (one module per project, joined by a go.work)",
+			Steps: []string{
+				"give each program or library its own go.mod (go mod init <module>/apps/<name> in its folder), list them in a go.work at the root (go work init; go work use ./apps/<name> ...), make the programs require the libraries, commit, then run smith adopt again",
+				"or run smith adopt --init now and add projects with smith add app <name> --lang go",
+			},
+		}
+	}
+	if exists("pyproject.toml") {
+		return Item{
+			Message: "no project found: the pyproject.toml at the root describes the whole repository, and smith looks for a Python project in its own folder (apps/, libs/ or packages/), one pyproject.toml each",
+			Steps: []string{
+				"move the code into packages/<name> (git mv src packages/<name>/src, and its pyproject.toml), commit, then run smith adopt again",
+				"or run smith adopt --init now and add projects with smith add app <name> --lang python",
 			},
 		}
 	}
@@ -151,15 +192,25 @@ func scopeOf(root, name string) string {
 
 // providersOf keeps the CI providers the repository already uses.
 func providersOf(exists func(string) bool) []string {
-	var out []string
-	if exists(".github/workflows") {
-		out = append(out, "github")
-	}
-	if exists(cipipeline.AzurePath) {
-		out = append(out, "azure")
-	}
+	out := detectedProviders(exists)
 	if len(out) == 0 {
 		out = []string{"github"}
+	}
+	return out
+}
+
+// detectedProviders are the CI providers the repository already has a
+// pipeline for: GitHub Actions, Azure Pipelines, GitLab CI, CircleCI and
+// Bitbucket Pipelines. It is empty when there is none.
+func detectedProviders(exists func(string) bool) []string {
+	var out []string
+	for _, c := range []struct{ provider, path string }{
+		{"github", ".github/workflows"}, {"azure", cipipeline.AzurePath}, {"gitlab", cipipeline.GitLabPath},
+		{"circleci", ".circleci"}, {"bitbucket", cipipeline.BitbucketPath},
+	} {
+		if exists(c.path) {
+			out = append(out, c.provider)
+		}
 	}
 	return out
 }
@@ -169,7 +220,8 @@ func previewConfig(r Report) (workspace.Config, error) {
 	for i, p := range r.Providers {
 		quoted[i] = fmt.Sprintf("%q", p)
 	}
-	return workspace.Parse([]byte(fmt.Sprintf("schema = %d\n\n[workspace]\nname = %q\nscope = %q\n\n[ci]\nproviders = [%s]\n", workspace.SchemaVersion, r.Name, r.Scope, strings.Join(quoted, ", "))))
+	text := fmt.Sprintf("schema = %d\n\n[workspace]\nname = %q\nscope = %q\n\n[ci]\nproviders = [%s]\n", workspace.SchemaVersion, r.Name, r.Scope, strings.Join(quoted, ", "))
+	return workspace.Parse([]byte(text + declarationsText(r.Declared)))
 }
 
 func rootRuntimeDependencies(root string) []string {
@@ -216,4 +268,22 @@ func predictedFailure(f doctor.Finding) Item {
 	}
 	item.Step = item.Steps[0]
 	return item
+}
+
+// cleanApartFromSmith says whether git status (--porcelain) lists nothing but
+// what smith itself leaves in the working tree: the .smith folder, which holds
+// the cache and the default tool configurations it derives and never commits. A
+// dry run that wrote them must not make the repository look changed.
+func cleanApartFromSmith(status string) bool {
+	for _, line := range strings.Split(status, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if f := strings.Fields(line); len(f) == 2 && (f[1] == ".smith/" || strings.HasPrefix(f[1], ".smith/")) {
+			continue
+		}
+		return false
+	}
+	return true
 }

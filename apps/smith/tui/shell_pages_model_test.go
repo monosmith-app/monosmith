@@ -52,7 +52,7 @@ func TestThePaletteFindsTheSettingsTabByWhatItHolds(t *testing.T) {
 	l.has("Settings", "plugins, style and the settings of smith.toml")
 }
 
-func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunTab(t *testing.T) {
+func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunPanel(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	sh := l.sh()
 	cmd := sh.execute([]string{"config", "set", "ci.devcontainer", "false"}, false)
@@ -69,10 +69,10 @@ func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunTab(t *testing.T)
 }
 
 func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
-	l := newLab(t, true, 160, 30)
-	l.keys("3")
+	l := newLab(t, true, 230, 30)
+	l.keys("2")
 	footer := footerOf(l)
-	for _, key := range []string{"follow", "task", "again", "failed", "copy log", "runs"} {
+	for _, key := range []string{"follow", "task", "again", "failed", "copy log", "older"} {
 		if strings.Contains(footer, key) {
 			t.Fatalf("nothing has run, and the footer offers %q: %q", key, footer)
 		}
@@ -80,28 +80,28 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 	l.next = failingRun()
 	l.keys("b")
 	footer = footerOf(l)
-	for _, key := range []string{"r again", "R failed", "Y copy log", "f follow", "task"} {
+	for _, key := range []string{"run again (r)", "failed (R)", "copy log (Y)", "follow (f)", "task"} {
 		if !strings.Contains(footer, key) {
 			t.Fatalf("a failed run offers %q: %q", key, footer)
 		}
 	}
-	if strings.Contains(footer, "runs") {
+	if strings.Contains(footer, "older") {
 		t.Fatalf("there is one run, so there is no other to show: %q", footer)
 	}
 	l.keys("r")
 	l.next = &scripted{lines: []string{"kit:build ✓ 1ms"}}
 	l.keys("r")
-	if footer = footerOf(l); strings.Contains(footer, "R failed") || !strings.Contains(footer, "runs") {
+	if footer = footerOf(l); strings.Contains(footer, "failed (R)") || !strings.Contains(footer, "older") {
 		t.Fatalf("a run that passed has no failed tasks, and three runs can be browsed: %q", footer)
 	}
 }
 
 func TestTheDoctorExpandsACheckInPlaceOnANarrowScreen(t *testing.T) {
-	l := newLab(t, true, 90, 30)
-	l.keys("4")
+	l := newLab(t, true, 95, 30)
+	l.keys("3")
 	l.has("2 failed", "go.work lists every module")
 	l.hasNot("libs/x is missing")
-	if !strings.Contains(footerOf(l), "Enter expand") {
+	if !strings.Contains(footerOf(l), "expand (Enter)") {
 		t.Fatalf("Enter expands in the single pane: %q", footerOf(l))
 	}
 	l.keys("enter")
@@ -115,7 +115,7 @@ func TestTheDoctorExpandsACheckInPlaceOnANarrowScreen(t *testing.T) {
 
 func TestBesideTheDetailTheDoctorTellsEachCheckOnceAndEnterIsNotOffered(t *testing.T) {
 	l := newLab(t, true, 140, 30)
-	l.keys("4")
+	l.keys("3")
 	if strings.Contains(footerOf(l), "Enter") {
 		t.Fatalf("the detail is already beside the list: %q", footerOf(l))
 	}
@@ -129,16 +129,16 @@ func TestBesideTheDetailTheDoctorTellsEachCheckOnceAndEnterIsNotOffered(t *testi
 }
 
 func TestTheDepsFooterOffersOnlyWhatWorksHere(t *testing.T) {
-	l := newLab(t, true, 140, 30)
-	l.keys("5")
-	if footer := footerOf(l); !strings.Contains(footer, "u update") || !strings.Contains(footer, "v align") {
+	l := newLab(t, true, 200, 30)
+	l.keys("4")
+	if footer := footerOf(l); !strings.Contains(footer, "update (u)") || !strings.Contains(footer, "align (v)") {
 		t.Fatalf("with something to update: %q", footer)
 	}
 	sh := l.sh()
 	sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 	l.m = sh
 	l.keys("r")
-	if footer := footerOf(l); strings.Contains(footer, "u update") || strings.Contains(footer, "v align") || !strings.Contains(footer, "r reload") {
+	if footer := footerOf(l); strings.Contains(footer, "update (u)") || strings.Contains(footer, "align (v)") || !strings.Contains(footer, "reload view (r)") {
 		t.Fatalf("with nothing to update: %q", footer)
 	}
 	l.keys("u")
@@ -146,9 +146,9 @@ func TestTheDepsFooterOffersOnlyWhatWorksHere(t *testing.T) {
 }
 
 func TestTheReleaseFooterOffersReleaseOnlyWhenThereIsSomethingToRelease(t *testing.T) {
-	l := newLab(t, true, 140, 30)
-	l.keys("6")
-	if footer := footerOf(l); !strings.Contains(footer, "x release") || !strings.Contains(footer, "n notes") {
+	l := newLab(t, true, 200, 30)
+	l.keys("5")
+	if footer := footerOf(l); !strings.Contains(footer, "release (x)") || !strings.Contains(footer, "notes (n)") {
 		t.Fatalf("with a plan: %q", footer)
 	}
 	l.has("2 packages to release (1 minor · 1 patch)")
@@ -162,7 +162,7 @@ func TestLongNamesAreShortenedInTheMiddleInDepsAndRelease(t *testing.T) {
 		return depsview.Result{Rows: []depsview.Row{{Name: long, Current: "1.0.0", Latest: "1.0.1", Level: "patch", Projects: []string{"web"}}}}
 	}
 	l.m = sh
-	l.keys("5")
+	l.keys("4")
 	l.has("@acme-pl")
 	l.has("-react")
 	l.hasNot(long)

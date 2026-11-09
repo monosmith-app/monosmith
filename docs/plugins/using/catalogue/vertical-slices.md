@@ -42,7 +42,7 @@ A violation fails the task, and with it `lint`:
 ```text
 util:slice-check │ helpers/ - "helpers" is a junk drawer; name the folder for the outcome it serves
 util:slice-check │ smith: 1 file(s) or folder(s) break the vertical-slice layout; an exception is written in the project README
-util:slice-check ✖ exited with code 1
+util:slice-check × exited with code 1
 ```
 
 For Node there is no task. Node's rules live in `@monosmith/eslint-config` (run by the `lint` task

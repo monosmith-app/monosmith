@@ -1,12 +1,14 @@
 package layout
 
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+)
+
 // Layout is where each area is drawn. An area that is not on screen has an
 // empty rectangle.
 type Layout struct {
 	Mode          Mode
 	Width, Height int
-	// Tall is true when the tabs are three rows high.
-	Tall bool
 	// Header is the workspace, the branch and the health; Tabs the row of views.
 	Header, Tabs Rect
 	// Main is the list (or the detail, when it has the whole width); Detail is
@@ -17,9 +19,7 @@ type Layout struct {
 }
 
 // Divide lays the screen out from the top: a header row, the row of tabs, the
-// content, then a one-row footer of key hints and a one-row status bar. From
-// TallFrom rows the tabs are drawn three rows high and the last of them is the
-// top edge of the content; below it they are one row. Below WideFrom columns
+// content, then a one-row footer of key hints and a one-row status bar. Below WideFrom columns
 // the content is one pane; from WideFrom it is the list and, when withDetail
 // is true, the detail of the selection beside it (two fifths of the width, 38
 // to 64 columns).
@@ -35,18 +35,18 @@ const (
 )
 
 // AutoDetailWidth is the width of the detail the user has not resized.
-func AutoDetailWidth(width int) int { return clamp(width*2/5, 38, 64) }
+func AutoDetailWidth(width int) int { return pane.Clamp(width*2/5, 38, 64) }
 
 // ClampDetailWidth keeps a width the user chose between MinDetail and what
 // leaves the list its MinList columns.
 func ClampDetailWidth(width, detailW int) int {
-	return clamp(detailW, MinDetail, max(width-MinList, MinDetail))
+	return pane.Clamp(detailW, MinDetail, max(width-MinList, MinDetail))
 }
 
 // DivideWith is Divide with a detail width the user chose (0 keeps the
 // automatic one).
 func DivideWith(width, height int, withDetail bool, detailW int) Layout {
-	l := Layout{Width: width, Height: height, Mode: Narrow, Tall: height >= TallFrom}
+	l := Layout{Width: width, Height: height, Mode: Narrow}
 	if width >= WideFrom {
 		l.Mode = Wide
 	}
@@ -66,13 +66,9 @@ func DivideWith(width, height int, withDetail bool, detailW int) Layout {
 			detail = ClampDetailWidth(width, detailW)
 		}
 	}
-	// The content starts under the tabs; the top edge of a tall strip is the
-	// content's own.
-	tabsH, top := 1, 2
-	if l.Tall {
-		tabsH, top = 3, 3
-	}
-	l.Tabs = Rect{0, 1, width, tabsH}
+	// The content starts under the one row of tabs.
+	const top = 2
+	l.Tabs = Rect{0, 1, width, 1}
 	l.Main = Rect{0, top, width - detail, max(height-2-top, 0)}
 	l.Detail = Rect{width - detail, top, detail, max(height-2-top, 0)}
 	return l
@@ -97,13 +93,9 @@ func (l Layout) AreaAt(x, y int) Area {
 	return Nowhere
 }
 
-// DetailInner is where the detail is drawn: the pane has no left border of its
-// own, the list's right border divides them.
-func (l Layout) DetailInner() Rect {
-	return Rect{X: l.Detail.X, Y: l.Detail.Y + 1, W: max(l.Detail.W-1, 0), H: max(l.Detail.H-2, 0)}
-}
+// DetailInner is where the detail is drawn: the pane has no left margin of its
+// own, the list's divider is its left edge (see DetailFrame).
+func (l Layout) DetailInner() Rect { return DetailFrame.Inside(l.Detail) }
 
 // HasDetail says whether the detail is on screen beside the list.
 func (l Layout) HasDetail() bool { return l.Detail.W > 0 }
-
-func clamp(v, lo, hi int) int { return min(max(v, lo), hi) }

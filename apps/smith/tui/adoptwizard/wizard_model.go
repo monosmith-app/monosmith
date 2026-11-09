@@ -2,8 +2,10 @@ package adoptwizard
 
 import (
 	"context"
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
@@ -12,9 +14,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -60,6 +62,21 @@ type Model struct {
 	// changesDiff shows them as diffs, the way the Doctor fix dialog does.
 	changes     adoptflow.Changes
 	changesDiff string
+	// commit is true when the person ticked "Commit this change so it can be
+	// undone" in the review of a plain repository's adoption.
+	commit bool
+	// commitNote is what committing the conversion said, once it ran.
+	commitNote *string
+	// moveTo is the answer to "where does the project at the root go?": a
+	// folder, adoptmove.Leave, or "" when there is no such question or it is
+	// not answered yet. moveName is the name as the person last edited it, and
+	// moveNote tells why the last answer was not usable.
+	moveTo, moveName, moveNote string
+	// initQuestions are the decisions of adopt --init being asked; initChoices
+	// the answers once given; initAsked says they were.
+	initQuestions []adoptdecision.Question
+	initChoices   adoptdecision.Choices
+	initAsked     bool
 }
 
 // prepared is what Prepare returned.
@@ -77,14 +94,14 @@ type prepared struct {
 // it, and the shell reports the result with Done.
 func New(open Opener) (Model, Job) {
 	m := Model{open: open, declined: map[string]bool{}}
-	job := Job{Name: "reading the repository", Run: func(_ context.Context, out io.Writer) (any, error) {
+	job := Job{Name: words.Say("adopt.job.reading"), Run: func(_ context.Context, out io.Writer) (any, error) {
 		f, err := open(out)
 		if err != nil {
 			return nil, err
 		}
 		return f, nil
 	}}
-	return m.running(StageReading, "Reading the repository…", job, fixwizard.Style{Name: "Bring in", Verb: "Bringing in…", Working: "reading the files"}), job
+	return m.running(StageReading, words.Say("adopt.reading.headline"), job, withWorking(adoptStyle, words.Say("adopt.working.files"))), job
 }
 
 // Stage is where the walk is.
@@ -111,7 +128,7 @@ func (m Model) Place(w, h int) Model {
 }
 
 // Rect is where the dialog sits.
-func (m Model) Rect() dialog.Rect { return m.fw.Rect() }
+func (m Model) Rect() layout.Rect { return m.fw.Rect() }
 
 // Lines draws the dialog.
 func (m Model) Lines(th theme.Theme, tick int) []string { return m.fw.Lines(th, tick) }
@@ -130,13 +147,51 @@ func (m Model) Wheel(delta int) Model {
 
 // Key handles a key name.
 func (m Model) Key(name string) (Model, Outcome) {
+	if name == "c" && m.togglesCommit() {
+		return m.toggleCommit(), Outcome{}
+	}
 	fw, out := m.fw.Key(name)
 	m.fw = fw
 	return m.react(out)
 }
 
+// togglesCommit is true in the review of the changes, the step where the
+// person chooses whether the result is committed.
+func (m Model) togglesCommit() bool {
+	return m.stage == StageReview && m.fw.Phase() == fixwizard.Reviewing
+}
+
+// toggleCommit flips the commit box and draws the review again.
+func (m Model) toggleCommit() Model {
+	m.commit = !m.commit
+	if m.full {
+		return m.reviewFull()
+	}
+	return m.showConservative()
+}
+
+// committed is true when the result is one commit: a plain repository's
+// adoption asked to commit, or a conversion whose commit went through.
+func (m Model) committed() bool {
+	if !m.commit {
+		return false
+	}
+	if !m.found.Kind.Convertible() {
+		return true
+	}
+	return m.commitNote != nil && strings.HasPrefix(strings.TrimSpace(*m.commitNote), "Committed") // words:literal
+}
+
+// finished is the outcome that opens the workspace.
+func (m Model) finished(build bool) Outcome {
+	return Outcome{Close: true, Finished: words.Say("adopt.finished", "name", m.found.Name), Build: build, Committed: m.committed()}
+}
+
 // Click handles a left press.
 func (m Model) Click(x, y int) (Model, Outcome) {
+	if m.togglesCommit() && m.fw.Rect().Contains(x, y) && strings.Contains(m.fw.TextAt(y), words.Say("adopt.commit.click")) {
+		return m.toggleCommit(), Outcome{}
+	}
 	fw, out := m.fw.Click(x, y)
 	m.fw = fw
 	return m.react(out)
@@ -171,7 +226,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 	case out.Decline && m.stage == StageAgent:
 		return m.done(), Outcome{}
 	case out.Decline && m.stage == StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready.", Build: true}
+		return m, m.finished(true)
 	case out.Decline:
 		return m.decline(false)
 	case out.Skip && m.stage == StageDone:
@@ -179,7 +234,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 	case out.Skip:
 		return m.decline(true)
 	}
-	if (m.stage == StageLevel || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
+	if (m.stage == StageLevel || m.stage == StageMove || m.stage == StageInit || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
 		return m.answered()
 	}
 	return m, Outcome{}
@@ -189,13 +244,13 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 func (m Model) cancel() (Model, Outcome) {
 	switch m.stage {
 	case StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+		return m, m.finished(false)
 	case StageReport, StageAgent:
 		return m.done(), Outcome{}
 	case StageGroup, StageChecking:
-		return m, Outcome{Close: true, Note: "Stopped. The conversion is in your files; git status shows it, and git restore --staged --worktree . && git clean -fd takes it back (installed packages stay installed)."}
+		return m, Outcome{Close: true, Note: words.Say("adopt.cancel.stopped")}
 	case StageFinishing, StageRemoving, StageConverting:
-		return m, Outcome{Close: true, Note: "Closed. Whatever ran is in your files; git status shows it and git can take it back (installed packages stay installed)."}
+		return m, Outcome{Close: true, Note: words.Say("adopt.cancel.closed")}
 	}
 	return m, Outcome{Close: true}
 }
@@ -203,13 +258,25 @@ func (m Model) cancel() (Model, Outcome) {
 // goBack returns to the screen before the first question or the review.
 func (m Model) goBack() (Model, Outcome) {
 	switch m.stage {
-	case StageLevel:
+	case StageLevel, StageMove:
+		return m.showFound(), Outcome{}
+	case StageInit:
+		if m.hasRootProject() {
+			return m.askMove(), Outcome{}
+		}
 		return m.showFound(), Outcome{}
 	case StageChoices:
 		return m.askLevel(), Outcome{}
 	case StageReview:
 		if m.full && len(m.asked) > 0 {
 			return m.askChoices(), Outcome{}
+		}
+		if !m.found.Kind.Convertible() && m.initAsked {
+			m.initAsked = false
+			return m.askInit(), Outcome{}
+		}
+		if m.hasRootProject() {
+			return m.askMove(), Outcome{}
 		}
 		if m.found.Full {
 			return m.askLevel(), Outcome{}
@@ -236,23 +303,23 @@ func (m Model) confirm() (Model, Outcome) {
 		return m.startConversion()
 	case StageGroup:
 		g, flow := m.group, m.flow
-		job := Job{Name: "removing " + g.ID, Steps: len(g.Fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
+		job := Job{Name: words.Say("adopt.job.removing", "group", g.ID), Steps: len(g.Fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 			return nil, flow.ApplyFix(ctx, g.Fix.Fix, out)
 		}}
 		style := adoptStyle
-		style.Verb = "Removing…"
+		style.Verb = words.Say("adopt.removing.verb")
 		return m.runFix(StageRemoving, g.Fix, job, style), Outcome{Job: &job}
 	case StageAgent:
 		fix, _ := m.flow.AgentFix()
 		flow := m.flow
-		job := Job{Name: "installing the MonoSmith agent", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
+		job := Job{Name: words.Say("adopt.job.agent"), Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 			return nil, flow.ApplyFix(ctx, fix.Fix, out)
 		}}
 		style := adoptStyle
-		style.Verb = "Installing the agent…"
+		style.Verb = words.Say("adopt.agent.verb")
 		return m.runFix(StageAgentInstalling, fix, job, style), Outcome{Job: &job}
 	case StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+		return m, m.finished(false)
 	case StageReport:
 		return m.done(), Outcome{}
 	}
@@ -278,86 +345,6 @@ func (m Model) decline(skipRest bool) (Model, Outcome) {
 	return m.check()
 }
 
-// Done reports the end of the job the shell ran.
-func (m Model) Done(result any, err error) (Model, Outcome) {
-	if err != nil {
-		m.fw = m.fw.Fail(err)
-		return m, Outcome{}
-	}
-	switch m.stage {
-	case StageReading:
-		flow, _ := result.(Flow)
-		if flow == nil {
-			m.fw = m.fw.Fail(fmt.Errorf("could not read the repository"))
-			return m, Outcome{}
-		}
-		m.flow = flow
-		m.found = flow.Found()
-		return m.showFound(), Outcome{}
-	case StageInstalling:
-		flow, _ := result.(Flow)
-		if flow == nil {
-			m.fw = m.fw.Fail(fmt.Errorf("could not read the repository again"))
-			return m, Outcome{}
-		}
-		m.flow = flow
-		m.found = flow.Found()
-		return m.showFound(), Outcome{}
-	case StageListing:
-		l, _ := result.(listed)
-		m.changes, m.changesDiff = l.changes, l.diff
-		return m.showConservative(), Outcome{}
-	case StagePreparing:
-		p, _ := result.(prepared)
-		m.defaults = p.defaults
-		m.asked = nil
-		for _, q := range p.questions {
-			if len(q.Options) >= 2 {
-				m.asked = append(m.asked, q)
-			}
-		}
-		m.choices = m.defaults
-		for _, q := range p.questions {
-			if len(q.Options) == 1 {
-				m.choices.Set(q.Key, q.Options[0].Value)
-			}
-		}
-		if len(m.asked) == 0 {
-			return m.planFull()
-		}
-		return m.askChoices(), Outcome{}
-	case StagePlanning:
-		m.preview, _ = result.(adoptflow.Preview)
-		return m.reviewFull(), Outcome{}
-	case StageConverting:
-		m.summary, _ = result.(string)
-		if m.full {
-			return m.check()
-		}
-		return m.finish()
-	case StageChecking:
-		plan, _ := result.(removalplan.Plan)
-		m.kept, m.notes = plan.Kept, plan.Notes
-		if len(plan.Groups) == 0 {
-			return m.finish()
-		}
-		m.rest = nil
-		for _, g := range plan.Groups[1:] {
-			m.rest = append(m.rest, g.ID)
-		}
-		return m.askGroup(plan.Groups[0]), Outcome{}
-	case StageRemoving:
-		m.applied = append(m.applied, m.group.ID)
-		return m.check()
-	case StageFinishing:
-		m.checked, _ = result.([]checkedStep)
-		return m.offerAgent(), Outcome{}
-	case StageAgentInstalling:
-		return m.done(), Outcome{}
-	}
-	return m, Outcome{}
-}
-
 // running shows a job that is going to run, with the style of the dialog.
 func (m Model) running(stage Stage, headline string, job Job, style fixwizard.Style) Model {
 	steps := make([]protocol.FixStep, job.Steps)
@@ -376,7 +363,7 @@ func (m Model) runFix(stage Stage, p doctorfix.Planned, job Job, style fixwizard
 	return m
 }
 
-var adoptStyle = fixwizard.Style{Name: "Bring in", Verb: "Bringing in…"}
+var adoptStyle = fixwizard.Style{Name: words.Say("adopt.style.name"), Verb: words.Say("adopt.style.verb")}
 
 // reviewOf makes a review screen of a text.
 func (m Model) reviewOf(stage Stage, title, text string, style fixwizard.Style) Model {
@@ -390,34 +377,34 @@ func (m Model) reviewOf(stage Stage, title, text string, style fixwizard.Style) 
 // showFound is the first screen.
 func (m Model) showFound() Model {
 	style := adoptStyle
-	style.Review = "what smith found"
-	style.Apply = "Continue"
+	style.Review = words.Say("adopt.found.review")
+	style.Apply = words.Say("adopt.found.continue")
 	if len(m.found.Blockers) > 0 {
-		style.Apply = "Close"
+		style.Apply = words.Say("adopt.found.close")
 	}
 	if m.found.NeedsInstall {
-		style.Apply = "Install the packages and continue"
+		style.Apply = words.Say("adopt.found.install.apply")
 	}
 	return m.reviewOf(StageFound, "found", foundText(m.found), style)
 }
 
-const levelQuestion = "How far should smith go?"
+var levelQuestion = words.Say("adopt.level.question")
 
 // askLevel asks conservative or full.
 func (m Model) askLevel() Model {
 	m.stage = StageLevel
 	m.retry = nil
 	m.full = false
-	desc := fmt.Sprintf("%s %q: %s", m.found.Source, m.found.Name, plural(len(m.found.Projects), "project"))
+	desc := words.Say("adopt.level.desc", "source", m.found.Source, "name", strconv.Quote(m.found.Name), "projects", words.Count("adopt.project", len(m.found.Projects)))
 	fix := protocol.Fix{Description: desc, Choices: []protocol.FixChoice{{
 		Question: levelQuestion,
 		Options: []protocol.FixChoiceOption{
-			{Label: "Conservative: keep what works, map what can be mapped and list the rest as things to check"},
-			{Label: "Full: make smith the only tool, replacing the old lint, test, build and CI tooling and deleting what is left over, asking about each group first"},
+			{Label: words.Say("adopt.level.conservative")},
+			{Label: words.Say("adopt.level.full")},
 		},
 	}}}
 	style := adoptStyle
-	style.Back, style.Ask = true, "how far to go"
+	style.Back, style.Ask = true, words.Say("adopt.level.ask")
 	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).Place(m.sw, m.sh)
 	return m
 }
@@ -435,9 +422,9 @@ func (m Model) askChoices() Model {
 		}
 		qs = append(qs, c)
 	}
-	desc := "Full level: smith becomes the only tool. The first option of each question is the one this repository's own tooling suggests."
+	desc := words.Say("adopt.choices.desc")
 	style := adoptStyle
-	style.Back, style.Ask = true, "your choices"
+	style.Back, style.Ask = true, words.Say("adopt.choices.ask")
 	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
 	return m
 }
@@ -445,6 +432,12 @@ func (m Model) askChoices() Model {
 // answered reads the answer of the level question or of the choices.
 func (m Model) answered() (Model, Outcome) {
 	answers := m.fw.Answers()
+	if m.stage == StageMove {
+		return m.answeredMove(answers)
+	}
+	if m.stage == StageInit {
+		return m.answeredInit(answers)
+	}
 	if m.stage == StageLevel {
 		if len(answers) == 1 && answers[0] == levelFull {
 			m.full = true
@@ -467,14 +460,14 @@ func (m Model) answered() (Model, Outcome) {
 // prepare converts a scratch copy to learn the defaults and questions.
 func (m Model) prepare() (Model, Outcome) {
 	flow := m.flow
-	job := Job{Name: "working out what the conversion leaves behind", Run: func(context.Context, io.Writer) (any, error) {
+	job := Job{Name: words.Say("adopt.job.prepare"), Run: func(context.Context, io.Writer) (any, error) {
 		def, qs, err := flow.Prepare()
 		if err != nil {
 			return nil, err
 		}
 		return prepared{defaults: def, questions: qs}, nil
 	}}
-	m = m.running(StagePreparing, "Working out what the conversion leaves behind…", job, withWorking(adoptStyle, "converting a scratch copy"))
+	m = m.running(StagePreparing, words.Say("adopt.prepare.headline"), job, withWorking(adoptStyle, words.Say("adopt.prepare.working")))
 	return m, Outcome{Job: &job}
 }
 
@@ -486,29 +479,32 @@ func withWorking(s fixwizard.Style, working string) fixwizard.Style {
 // planFull plans the removals for the choices.
 func (m Model) planFull() (Model, Outcome) {
 	flow, c := m.flow, m.choices
-	job := Job{Name: "planning the removals", Run: func(context.Context, io.Writer) (any, error) {
+	job := Job{Name: words.Say("adopt.job.plan"), Run: func(context.Context, io.Writer) (any, error) {
 		return flow.PlanFull(c, true)
 	}}
-	m = m.running(StagePlanning, "Planning what the choices remove…", job, withWorking(adoptStyle, "reading the converted files"))
+	m = m.running(StagePlanning, words.Say("adopt.plan.headline"), job, withWorking(adoptStyle, words.Say("adopt.plan.working")))
 	return m, Outcome{Job: &job}
 }
 
 // reviewFull shows the whole plan.
 func (m Model) reviewFull() Model {
 	style := adoptStyle
-	style.Apply, style.Back, style.Review = "Convert", true, "what will change"
-	text := reviewHeader + planSummaryText(m.preview.Changes, m.flow.Result()) + "\n" + m.preview.Text
-	return m.reviewOf(StageReview, "full conversion", text, style)
+	style.Apply, style.Back, style.Review = words.Say("adopt.review.convert"), true, words.Say("adopt.review.change")
+	text := reviewHeader + planSummaryText(m.preview.Changes, m.flow.Result()) + "\n" + m.preview.Text + commitBox(m.commit)
+	return m.reviewOf(StageReview, words.Say("adopt.review.full"), text, style)
 }
 
 // reviewConservative works out the files a conservative conversion changes
 // (on a scratch copy), then shows them; a plain repository shows its adoption.
 func (m Model) reviewConservative() (Model, Outcome) {
+	if m.asksWhereToMove() {
+		return m.askMove(), Outcome{}
+	}
 	if !m.found.Kind.Convertible() {
-		return m.showConservative(), Outcome{}
+		return m.afterMove(), Outcome{}
 	}
 	flow := m.flow
-	job := Job{Name: "working out which files change", Run: func(context.Context, io.Writer) (any, error) {
+	job := Job{Name: words.Say("adopt.job.listing"), Run: func(context.Context, io.Writer) (any, error) {
 		if _, _, err := flow.Prepare(); err != nil {
 			return nil, err
 		}
@@ -518,13 +514,11 @@ func (m Model) reviewConservative() (Model, Outcome) {
 		}
 		diff, err := flow.ShowChanges(c)
 		if err != nil {
-			diff = `● The files smith writes
-  could not show the changes: ` + err.Error() + `
-`
+			diff = words.Say("adopt.review.writes.failed", "error", err.Error())
 		}
 		return listed{changes: c, diff: diff}, nil
 	}}
-	m = m.running(StageListing, "Working out which files change…", job, withWorking(adoptStyle, "trying the conversion on a copy"))
+	m = m.running(StageListing, words.Say("adopt.listing.headline"), job, withWorking(adoptStyle, words.Say("adopt.listing.working")))
 	return m, Outcome{Job: &job}
 }
 
@@ -532,76 +526,22 @@ func (m Model) reviewConservative() (Model, Outcome) {
 func (m Model) showConservative() Model {
 	text := ""
 	if !m.found.Kind.Convertible() {
-		fix := m.flow.AdoptFix()
+		fix := m.flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices)
 		shown, err := m.flow.ShowFix(fix)
 		if err != nil {
-			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
+			shown = words.Say("adopt.show.failed", "description", fix.Description, "error", err.Error())
 		}
-		text = conservativeText(m.found, shown, adoptflow.Changes{}, "", convert.Highlights{})
+		// The plan shows every file smith writes, and a diff of each file of yours it edits.
+		shown += "\n" + m.flow.InitPlan(m.initChoices)
+		text = conservativeText(m.found, shown, adoptflow.Changes{}, "", convert.Highlights{}, m.commit)
 	} else {
-		text = conservativeText(m.found, "", m.changes, m.changesDiff, m.flow.Result())
+		text = conservativeText(m.found, "", m.changes, m.changesDiff, m.flow.Result(), m.commit)
 	}
 	style := adoptStyle
-	style.Apply, style.Back, style.Review = "Go ahead", true, "what will change"
+	style.Apply, style.Back, style.Review = words.Say("adopt.review.go"), true, words.Say("adopt.review.change")
 	m = m.reviewOf(StageReview, "conservative", text, style)
 	m.full = false
 	return m
-}
-
-// install installs the packages the repository lists and reads it again.
-func (m Model) install() (Model, Outcome) {
-	flow, open := m.flow, m.open
-	job := Job{Name: "installing the packages", Steps: 1, Run: func(ctx context.Context, out io.Writer) (any, error) {
-		if err := flow.Install(ctx, out); err != nil {
-			return nil, err
-		}
-		flow.Close()
-		return open(io.Discard)
-	}}
-	style := adoptStyle
-	style.Verb = "Installing…"
-	m = m.running(StageInstalling, "Installing the packages", job, withWorking(style, "starting npm"))
-	return m, Outcome{Job: &job}
-}
-
-// startConversion starts the conversion (or the adoption of a plain repository).
-func (m Model) startConversion() (Model, Outcome) {
-	flow, c := m.flow, m.choices
-	if !m.found.Kind.Convertible() {
-		fix := flow.AdoptFix()
-		job := Job{Name: "adopting the repository", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
-			return "", flow.ApplyFix(ctx, fix.Fix, out)
-		}}
-		style := adoptStyle
-		style.NoRetry = true
-		m = m.runFix(StageConverting, fix, job, style)
-		return m, Outcome{Job: &job}
-	}
-	if !m.full {
-		c = convertchoices.Choices{Level: convertchoices.LevelConservative, Lint: convertchoices.Keep, Test: convertchoices.Keep, Build: convertchoices.Smith, CI: convertchoices.Smith}
-		m.choices = c
-	}
-	job := Job{Name: "converting the workspace", Steps: 1, Run: func(ctx context.Context, out io.Writer) (any, error) {
-		return flow.Convert(ctx, c, out)
-	}}
-	style := adoptStyle
-	style.Verb, style.NoRetry = "Converting…", true
-	m = m.running(StageConverting, "Converting the workspace to smith", job, style)
-	return m, Outcome{Job: &job}
-}
-
-// check plans the next group from the files as they are.
-func (m Model) check() (Model, Outcome) {
-	flow, c := m.flow, m.choices
-	declined := map[string]bool{}
-	for k, v := range m.declined {
-		declined[k] = v
-	}
-	job := Job{Name: "checking what the old tooling leaves", Run: func(context.Context, io.Writer) (any, error) {
-		return flow.NextGroup(c, declined)
-	}}
-	m = m.running(StageChecking, "Checking what is left of the old tooling…", job, withWorking(adoptStyle, "reading the files"))
-	return m, Outcome{Job: &job}
 }
 
 // askGroup asks about one group of removals.
@@ -611,8 +551,8 @@ func (m Model) askGroup(g removalplan.Group) Model {
 	m.retry = nil
 	flow := m.flow
 	style := adoptStyle
-	style.Apply, style.Decline, style.Skip = "Yes, delete", "No, keep", "Skip rest"
-	style.Review = "delete old tooling?"
+	style.Apply, style.Decline, style.Skip = words.Say("adopt.group.apply"), words.Say("adopt.group.decline"), words.Say("adopt.group.skip")
+	style.Review = words.Say("adopt.group.review")
 	show := func(p doctorfix.Planned) (string, error) {
 		text, err := flow.ShowFix(p)
 		return groupText(g, text), err
@@ -628,16 +568,22 @@ func (m Model) finish() (Model, Outcome) {
 		return m.offerAgent(), Outcome{}
 	}
 	fix := flow.FinishFix(m.full)
-	job := Job{Name: "installing and checking", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
+	note := new(string)
+	m.commitNote = note
+	commit := m.commit
+	job := Job{Name: words.Say("adopt.job.finish"), Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 		timer := newStepTimer(out)
 		if err := flow.ApplyFix(ctx, fix.Fix, timer); err != nil {
 			return nil, err
 		}
+		if commit {
+			*note = flow.CommitConversion()
+		}
 		return timer.Steps(), nil
 	}}
 	style := adoptStyle
-	style.Verb = "Installing and checking…"
-	style.Working = "starting"
+	style.Verb = words.Say("adopt.finish.verb")
+	style.Working = words.Say("adopt.finish.working")
 	m = m.runFix(StageFinishing, fix, job, style)
 	return m, Outcome{Job: &job}
 }
@@ -651,26 +597,29 @@ func (m Model) offerAgent() Model {
 	}
 	text, err := m.flow.ShowFix(fix)
 	if err != nil {
-		text = "● " + fix.Description + "\n"
+		text = words.Say("adopt.show.fix", "description", fix.Description)
 	}
 	style := adoptStyle
-	style.Apply, style.Decline, style.Review = "Add the agent", "Not now", "the MonoSmith agent"
-	return m.reviewOf(StageAgent, "agent", "The MonoSmith agent lets Claude Code and VS Code work in this workspace through smith.\nIt reads on its own and asks before it changes anything.\n\n"+text, style)
+	style.Apply, style.Decline, style.Review = words.Say("adopt.agent.apply"), words.Say("adopt.agent.decline"), words.Say("adopt.agent.review")
+	return m.reviewOf(StageAgent, "agent", words.Say("adopt.agent.text")+text, style)
 }
 
 // done tells what happened.
 func (m Model) done() Model {
 	style := adoptStyle
-	style.Apply, style.Review = "Open the workspace", "the result"
+	style.Apply, style.Review = words.Say("adopt.done.apply"), words.Say("adopt.done.review")
 	checked := checkedText(m.checked)
 	if checked == "" {
 		// Nothing proved that it works: offer to build everything on opening.
-		style.Decline = "Open it and build everything"
+		style.Decline = words.Say("adopt.done.build")
 	}
 	if m.found.Kind.Convertible() {
-		style.Skip = "Read the report"
+		style.Skip = words.Say("adopt.done.report")
 	}
-	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes)
+	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes, m.committed())
+	if m.commit && m.commitNote != nil && !m.committed() && *m.commitNote != "" {
+		text += "\n  " + strings.TrimSpace(*m.commitNote) + "\n"
+	}
 	return m.reviewOf(StageDone, "done", strings.TrimLeft(text, "\n"), style)
 }
 
@@ -678,9 +627,9 @@ func (m Model) done() Model {
 func (m Model) showReport() Model {
 	text, err := m.flow.Report()
 	if err != nil || strings.TrimSpace(text) == "" {
-		text = "The report could not be read: " + convert.ReportFile + " is missing or empty.\n"
+		text = words.Say("adopt.report.missing", "file", convert.ReportFile)
 	}
 	style := adoptStyle
-	style.Apply, style.Review = "Back to the result", "the report"
+	style.Apply, style.Review = words.Say("adopt.report.back"), words.Say("adopt.report.review")
 	return m.reviewOf(StageReport, "report", text, style)
 }

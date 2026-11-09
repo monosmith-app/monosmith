@@ -187,6 +187,28 @@ _SCHEMA_JSON = r'''{
       "capability": "dependencies",
       "notification": false
     },
+    "dependencies/link": {
+      "description": "Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.",
+      "params": {
+        "$ref": "#/$defs/LinkParams"
+      },
+      "result": {
+        "$ref": "#/$defs/LinkResult"
+      },
+      "capability": "link",
+      "notification": false
+    },
+    "dependencies/unlink": {
+      "description": "Removes the dependency of a project on a library of the same workspace.",
+      "params": {
+        "$ref": "#/$defs/UnlinkParams"
+      },
+      "result": {
+        "$ref": "#/$defs/DependencyResult"
+      },
+      "capability": "link",
+      "notification": false
+    },
     "dependencies/declared": {
       "description": "Lists the dependencies the manifests of the plugin's projects declare.",
       "params": {
@@ -229,6 +251,28 @@ _SCHEMA_JSON = r'''{
         "$ref": "#/$defs/ComponentsResult"
       },
       "capability": "components",
+      "notification": false
+    },
+    "derive": {
+      "description": "Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.",
+      "params": {
+        "$ref": "#/$defs/DeriveParams"
+      },
+      "result": {
+        "$ref": "#/$defs/DeriveResult"
+      },
+      "capability": "derive",
+      "notification": false
+    },
+    "api/surface": {
+      "description": "Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.",
+      "params": {
+        "$ref": "#/$defs/APISurfaceParams"
+      },
+      "result": {
+        "$ref": "#/$defs/APISurfaceResult"
+      },
+      "capability": "apiSurface",
       "notification": false
     }
   },
@@ -310,6 +354,42 @@ _SCHEMA_JSON = r'''{
     }
   ],
   "$defs": {
+    "APISurfaceParams": {
+      "description": "APISurfaceParams asks a plugin for the public API names of one project.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "ref": {
+          "type": "string",
+          "description": "Ref is the git revision to read the project at (the tag of its last release). Empty means the working tree."
+        }
+      },
+      "required": [
+        "project"
+      ]
+    },
+    "APISurfaceResult": {
+      "description": "APISurfaceResult is the public API of a project: the names its entry points export. A host compares the names of two revisions; it never reads their meaning, so a plugin chooses its own spelling and keeps it stable.",
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names are the exported names, sorted. A name an entry point other than the main one exports is prefixed with that entry point and a colon (\"./cli:run\"). An empty list is an answer: the project exports nothing."
+        },
+        "unreadable": {
+          "type": "string",
+          "description": "Unreadable says why the API could not be listed (no entry point, no source at the revision). When set, Names is empty and the host skips the project without a warning."
+        }
+      },
+      "required": [
+        "names"
+      ]
+    },
     "ActionStep": {
       "description": "ActionStep is a provider-native step: a GitHub action or an Azure task, with its inputs in the order they are written.",
       "type": "object",
@@ -543,6 +623,10 @@ _SCHEMA_JSON = r'''{
           "type": "boolean",
           "description": "Dependencies installs and uninstalls packages in its projects."
         },
+        "link": {
+          "type": "boolean",
+          "description": "Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand."
+        },
         "declarations": {
           "type": "boolean",
           "description": "Declarations lists and rewrites declared dependency specs (sync, up)."
@@ -558,6 +642,26 @@ _SCHEMA_JSON = r'''{
         "components": {
           "type": "boolean",
           "description": "Components lists a project's dependencies for its SBOM."
+        },
+        "derive": {
+          "type": "boolean",
+          "description": "Derive says which files the plugin derives from facts and the project graph (smith derive)."
+        },
+        "apiSurface": {
+          "type": "boolean",
+          "description": "APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs."
+        },
+        "channels": {
+          "type": "boolean",
+          "description": "Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it."
+        },
+        "packs": {
+          "type": "boolean",
+          "description": "Packs says publish honours PublishParams.PackDir: it writes the package file and publishes nowhere (registry = \"github-release\"). A host never calls publish with the setting on a plugin that lacks it, since the plugin would publish to the public registry."
+        },
+        "declared": {
+          "type": "boolean",
+          "description": "Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so."
         }
       }
     },
@@ -614,6 +718,87 @@ _SCHEMA_JSON = r'''{
           "description": "Warnings name what the change loses or leaves for the user (a binary an app has and a lib does not, a lockfile to refresh)."
         }
       }
+    },
+    "Choice": {
+      "description": "Choice is one option on an axis of a project's make-up: a framework, a test runner, a style library. A plugin publishes the choices it owns in InitializeResult.Choices; the host checks a selection of them (smith add --with react,vitest,bootstrap) and turns it into a stack. What a choice writes (dependencies, tasks, files) stays with the plugin: the host never sees it.",
+      "type": "object",
+      "properties": {
+        "axis": {
+          "type": "string",
+          "description": "Axis is the question the choice answers: \"framework\", \"test\", \"style\", \"lint\". The plugins agree on the name; the host only compares it."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name identifies the choice in a selection and is unique among the choices of all loaded plugins."
+        },
+        "description": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title is the name shown to a person (\"Electron\" for electron). Without it the name is shown."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Aliases are words that find the choice when a person searches the catalogue (smith compose): \"desktop\", \"serverless\", \"web\"."
+        },
+        "layer": {
+          "type": "string",
+          "description": "Layer is where the choice sits in the stack of a project: \"framework\", \"shell\" (a desktop shell), \"host\" (where cloud code runs), \"test\", \"lint\", \"style\" or a layer of the plugin's own. Without it the layer is the axis. It is for display and grouping: the axis decides conflicts."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language is the language plugin the choice applies to (\"node\")."
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Role"
+          },
+          "description": "Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin of the selection already writes, as a style does."
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Needs are axes that the selection must have a choice on. An axis the person leaves out is filled with the default of the axis."
+        },
+        "default": {
+          "type": "boolean",
+          "description": "Default marks the choice the host adds when a selection needs its axis and has no choice on it."
+        },
+        "suggested": {
+          "type": "boolean",
+          "description": "Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by itself: an axis that a choice needs and that has no Default is asked, and the person answers (ADR 0072)."
+        },
+        "many": {
+          "type": "boolean",
+          "description": "Many allows the choice next to other choices of its axis that are Many too. By default a selection has one choice per axis."
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Requires are choices that must be in the selection."
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Conflicts are choices that must not be in the selection."
+        }
+      },
+      "required": [
+        "axis",
+        "name",
+        "language"
+      ]
     },
     "Component": {
       "description": "Component is one dependency of a project.",
@@ -729,6 +914,10 @@ _SCHEMA_JSON = r'''{
         "release": {
           "$ref": "#/$defs/ReleaseDefaults",
           "description": "Release is how the project's release files are made, for a project that releases through GitHub releases and leaves them out of its smith.toml [projects.<name>.release] table; what the table sets wins."
+        },
+        "facts": {
+          "type": "object",
+          "description": "Facts are the plugin's default facts for the project: typed values under namespaced keys ({\"source.roots\": [\"src\"]}) that other settings and plugins read through the merged Project.Facts. They are the lowest scope: a [facts] table in smith.toml wins over them, and two plugins that publish different values for one key are an error that names both."
         }
       }
     },
@@ -817,6 +1006,28 @@ _SCHEMA_JSON = r'''{
         "projects"
       ]
     },
+    "DeclaredProject": {
+      "description": "DeclaredProject is a project smith.toml declares: a folder with no manifest.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the project's name, the key of its [projects.<name>] table."
+        },
+        "root": {
+          "type": "string",
+          "description": "Root is the workspace-relative folder."
+        },
+        "kind": {
+          "$ref": "#/$defs/ProjectKind",
+          "description": "Kind is \"app\", \"lib\" or \"package\", or empty for the plugin's choice."
+        }
+      },
+      "required": [
+        "name",
+        "root"
+      ]
+    },
     "DeclaredResult": {
       "description": "DeclaredResult is every declaration, and the version installed of each name where the plugin can tell.",
       "type": "object",
@@ -856,6 +1067,114 @@ _SCHEMA_JSON = r'''{
         }
       }
     },
+    "DeriveParams": {
+      "description": "DeriveParams asks a plugin for the files it can derive from facts and the project graph. The plugin writes nothing: it answers with the content, and the host decides, from its ownership record, whether to write it.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          },
+          "description": "Projects are the projects the plugin serves."
+        },
+        "graph": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "Graph maps a project name to the names of the projects it depends on inside the workspace, sorted. The host resolved these edges: a plugin does not repeat that work."
+        },
+        "owned": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Owned are the workspace-relative paths the host's ownership record says smith owns. A plugin proposes such a file again even when it is missing on disk, so deleting a derived file and deriving restores it. A file that is not owned and not on disk is not proposed."
+        }
+      },
+      "required": [
+        "projects"
+      ]
+    },
+    "DeriveResult": {
+      "description": "DeriveResult carries the files a plugin derives.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DerivedFile"
+          }
+        },
+        "diverging": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DivergentFile"
+          },
+          "description": "Diverging are files a renderer looked at and left alone because they differ from the shape their siblings share. They are not drift: the project owns them. The host shows them in `smith derive --explain` and in the doctor, and never writes them."
+        }
+      },
+      "required": [
+        "files"
+      ]
+    },
+    "DerivedFile": {
+      "description": "DerivedFile is the content one renderer derives for one file.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project is the project the file belongs to."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is workspace-relative, with forward slashes."
+        },
+        "mode": {
+          "type": "string",
+          "description": "Mode is DeriveFile, DeriveRegion or DeriveKeys."
+        },
+        "renderer": {
+          "type": "string",
+          "description": "Renderer is the stable id of the renderer, for example \"node.tsconfig.references\". It names the region markers."
+        },
+        "version": {
+          "type": "integer",
+          "description": "Version is the renderer's version. A new version means new output for the same inputs, so the host rewrites an unedited file."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content is the whole file (DeriveFile) or the lines of the region (DeriveRegion), without the markers. Unused for DeriveKeys."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Comment is the line comment leader of the file (\"//\", \"#\"): the host writes a generated header after it in a DeriveFile. Empty for a format without comments, then the file has no header."
+        },
+        "format": {
+          "type": "string",
+          "description": "Format is \"json\" or \"toml\" for DeriveKeys."
+        },
+        "table": {
+          "type": "string",
+          "description": "Table is the TOML table that holds the keys (\"tool.smith\"); required for \"toml\", unused for \"json\", whose keys are the top-level ones."
+        },
+        "keys": {
+          "type": "object",
+          "description": "Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a boolean or an array of those."
+        }
+      },
+      "required": [
+        "project",
+        "path",
+        "mode",
+        "renderer",
+        "version"
+      ]
+    },
     "DevcontainerFeature": {
       "description": "DevcontainerFeature is a dev container feature and its options (https://containers.dev/features).",
       "type": "object",
@@ -884,6 +1203,20 @@ _SCHEMA_JSON = r'''{
           "items": {
             "type": "string"
           }
+        },
+        "declared": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DeclaredProject"
+          },
+          "description": "Declared are the projects smith.toml declares for this plugin's language ([projects.<name>] with a root and a language): folders with no manifest of their own, such as a program that is a package of the Go module above it. The plugin describes each one in its result, or answers with an error saying why it cannot."
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          },
+          "description": "Settings are this plugin's settings for projects, by project name, from smith.toml [projects.<project>.settings.<plugin>]. They reach the plugin here because the tasks it describes may depend on them (the Go plugin's build tags). A project with no settings is absent."
         }
       },
       "required": [
@@ -903,6 +1236,34 @@ _SCHEMA_JSON = r'''{
       },
       "required": [
         "projects"
+      ]
+    },
+    "DivergentFile": {
+      "description": "DivergentFile is a file a renderer does not derive because the project made it differ from its siblings.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project is the project the file belongs to."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is workspace-relative, with forward slashes."
+        },
+        "renderer": {
+          "type": "string",
+          "description": "Renderer is the stable id of the renderer that compared the file."
+        },
+        "detail": {
+          "type": "string",
+          "description": "Detail says in a sentence how the file differs from its siblings."
+        }
+      },
+      "required": [
+        "project",
+        "path",
+        "renderer",
+        "detail"
       ]
     },
     "DoctorParams": {
@@ -958,14 +1319,27 @@ _SCHEMA_JSON = r'''{
       ]
     },
     "Finding": {
-      "description": "Finding is one check. Every failed finding names its remedy.",
+      "description": "Finding is one check. Every failed finding names its problem and its remedy.",
       "type": "object",
       "properties": {
         "check": {
-          "type": "string"
+          "type": "string",
+          "description": "Check is the rule, stated as it should hold (\"golangci-lint is 2.15.0, as in CI\"). A passing finding is listed by it."
         },
         "ok": {
           "type": "boolean"
+        },
+        "problem": {
+          "type": "string",
+          "description": "Problem is what is wrong, in one line (\"golangci-lint is 2.14.0, CI uses 2.15.0\"). A failed finding is listed by it; one without it is listed by its Check."
+        },
+        "project": {
+          "type": "string",
+          "description": "Project is the project the finding is about, as the workspace names it (\"web\"); empty for a finding about the workspace itself. The host files a finding under its project, so the Check, Problem and Detail need not name it."
+        },
+        "area": {
+          "type": "string",
+          "description": "Area is the part of the workspace a workspace-wide finding is about, in one lowercase word: \"toolchain\", \"ci\", \"lint\", \"dependencies\", \"release\", \"git\" or \"config\". A finding with a Project has none."
         },
         "detail": {
           "type": "string"
@@ -1060,6 +1434,10 @@ _SCHEMA_JSON = r'''{
         },
         "fix": {
           "$ref": "#/$defs/Fix"
+        },
+        "disabled": {
+          "type": "string",
+          "description": "Disabled, when not empty, is the reason the option cannot be picked: an interface shows the option greyed with the reason, and picking it is an error."
         }
       },
       "required": [
@@ -1085,6 +1463,13 @@ _SCHEMA_JSON = r'''{
         "dir": {
           "type": "string",
           "description": "Dir is where it runs, workspace-relative; empty is the workspace root."
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go install write there). Absent adds none."
         }
       },
       "required": [
@@ -1121,6 +1506,24 @@ _SCHEMA_JSON = r'''{
         "settings": {
           "type": "object",
           "description": "Settings are this plugin's own settings for the new project, from the recipe the project is created from (its settings.<plugin> table); the same table is later the plugin's entry in Project.Settings. Nil when there are none."
+        },
+        "facts": {
+          "type": "object",
+          "description": "Facts are the shared facts that hold for the new project, from smith.toml: [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin scaffolds its own default. Set by the host; read only."
+        },
+        "shape": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project."
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only."
         }
       },
       "required": [
@@ -1257,6 +1660,27 @@ _SCHEMA_JSON = r'''{
             "$ref": "#/$defs/ProjectKind"
           },
           "description": "Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those."
+        },
+        "follows": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none."
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Choice"
+          },
+          "description": "Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none."
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolNeed"
+          },
+          "description": "Tools are the programs the plugin needs on the person's machine. The host detects them and, when one is missing, presents the ways to get it (smith tools). Absent means the plugin declares none."
         }
       },
       "required": [
@@ -1350,6 +1774,94 @@ _SCHEMA_JSON = r'''{
           "items": {
             "$ref": "#/$defs/ToolPin"
           }
+        }
+      }
+    },
+    "LinkOption": {
+      "description": "LinkOption is one way to write the dependency, with its consequence in words a person who read no manual can follow.",
+      "type": "object",
+      "properties": {
+        "spec": {
+          "type": "string",
+          "description": "Spec is the value passed back in LinkParams.Spec."
+        },
+        "label": {
+          "type": "string",
+          "description": "Label is the option in a few words."
+        },
+        "meaning": {
+          "type": "string",
+          "description": "Meaning says what happens with this option."
+        }
+      },
+      "required": [
+        "spec",
+        "label",
+        "meaning"
+      ]
+    },
+    "LinkParams": {
+      "description": "LinkParams asks a plugin to make Project depend on Library, a lib or package of the same workspace and language, in the ecosystem's own form, and to install or lock as that needs. The host has checked that both exist, that the languages match, that Library is not an app, and that the link makes no cycle; the plugin answers with an error that names the file when it cannot write the dependency.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project",
+          "description": "Project is the project that gains the dependency."
+        },
+        "library": {
+          "$ref": "#/$defs/Project",
+          "description": "Library is the project it depends on."
+        },
+        "quiet": {
+          "type": "boolean",
+          "description": "Quiet keeps the package manager's output unless it fails."
+        },
+        "plan": {
+          "type": "boolean",
+          "description": "Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line it would write and the choices the user has."
+        },
+        "spec": {
+          "type": "string",
+          "description": "Spec is the version range the user chose from LinkResult.Options; empty means the plugin's default, or the form the workspace already uses."
+        }
+      },
+      "required": [
+        "project",
+        "library"
+      ]
+    },
+    "LinkResult": {
+      "description": "LinkResult is what a link wrote, or with LinkParams.Plan would write.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files are the workspace-relative files changed (or to be changed)."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notes are for the user."
+        },
+        "manifest": {
+          "type": "string",
+          "description": "Manifest is the file the dependency goes into, workspace-relative."
+        },
+        "line": {
+          "type": "string",
+          "description": "Line is the dependency as it is written there, for the plan shown before anything is written (\"@acme/core\": \"*\")."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LinkOption"
+          },
+          "description": "Options are the real choices of the range written, with the default first. Empty when the ecosystem has none, or the workspace already follows a convention (then Line shows it)."
         }
       }
     },
@@ -1501,6 +2013,13 @@ _SCHEMA_JSON = r'''{
           },
           "description": "Settings are plugins' settings for this project from smith.toml, by plugin name: [projects.<project>.settings.<name>] (what a recipe's settings became when it created the project), and for a convention its [conventions.<name>] settings and the project's [projects.<project>.<name>] on top. Set by the host; a plugin reads its own entry."
         },
+        "shape": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Shape is the dialect of the project: named facts about how it is made (\"build.tool\": \"esbuild\", \"test.runner\": \"@swc/jest\", \"exports.target\": \"dist\"), each a short string, read from the manifest and files the plugin already reads in discovery. The host counts the shapes of the projects of one kind and language to let a new project follow what they do, and knows no key itself. Nil when the plugin does not describe shapes."
+        },
         "registries": {
           "$ref": "#/$defs/Registries",
           "description": "Registries are the private registries the project installs from and publishes to, from smith.toml [registries]; nil means the public ones. Set by the host."
@@ -1508,6 +2027,10 @@ _SCHEMA_JSON = r'''{
         "releaseAssets": {
           "$ref": "#/$defs/AssetSpec",
           "description": "ReleaseAssets is what an app's release builds, from smith.toml [projects.<project>.release]: the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil for a project that has no release files. Set by the host."
+        },
+        "facts": {
+          "type": "object",
+          "description": "Facts are the shared facts that hold for the project, merged by the host, narrowest scope first: [projects.<name>.facts], then [facts], then the defaults plugins published through Contribution.Facts. A key that is absent was set by no one: the plugin uses its own default. A request made before every plugin has contributed carries the smith.toml facts and the defaults published so far. Set by the host; read only."
         }
       },
       "required": [
@@ -1557,6 +2080,25 @@ _SCHEMA_JSON = r'''{
         },
         "branch": {
           "type": "string"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag is the name of the release channel the version belongs to (npm's dist-tag \"beta\"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is, or ignores it when its registry has no such pointer. Only sent to a plugin with the channels capability."
+        },
+        "propagationWait": {
+          "type": "string",
+          "description": "PropagationWait is the longest time a plugin waits, in a Finalize call, for the packages of the release to be fetchable from the registry: a duration such as \"15m\", \"0\" to not wait. Empty means the default. Only npm has such a wait. A publish never waits."
+        },
+        "packDir": {
+          "type": "string",
+          "description": "PackDir, when set, turns the call into a pack: the plugin writes the package file of the project's ecosystem (npm tarball, wheel and sdist, .nupkg, .gem, .crate) and returns the files in PublishResult.Assets, and publishes nothing anywhere. A workspace-relative folder. The host sends it only to a plugin with the packs capability. In a dry run the plugin lists the files it would write, writes none, and reads no registry."
+        },
+        "finalize": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TagMove"
+          },
+          "description": "Finalize turns the call into the last phase of a release: nothing is published; for each move the plugin waits until its packages are fetchable, then moves the dist-tag. The host sends it after every project has published, so a wait never blocks another publish."
         }
       },
       "required": [
@@ -1576,6 +2118,27 @@ _SCHEMA_JSON = r'''{
         },
         "registry": {
           "type": "string"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them."
+        },
+        "pendingMoves": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TagMove"
+          },
+          "description": "PendingMoves are the dist-tags the call did not move, because the packages the release needs were not fetchable yet. A publish returns them for the host to move at the end of the release; a Finalize call returns the ones still waiting when its time ran out. The release then ends with a warning, never silently."
+        },
+        "moved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Moved names the dist-tags a Finalize call moved (\"name@version tag\")."
         },
         "assets": {
           "type": "array",
@@ -1678,6 +2241,10 @@ _SCHEMA_JSON = r'''{
         "noPublish": {
           "type": "boolean",
           "description": "NoPublish means smith.toml says registry = \"none\": the release versions and tags the project and publishes it to no registry (a registry that builds from the tag, such as JitPack, does the rest)."
+        },
+        "packToRelease": {
+          "type": "boolean",
+          "description": "PackToRelease means smith.toml says registry = \"github-release\": the release packs the project into its ecosystem's package file and attaches it to the project's GitHub Release, publishing to no registry. The host sends PublishParams.PackDir to a plugin with the packs capability and never calls publish on one without it."
         }
       }
     },
@@ -1936,6 +2503,13 @@ _SCHEMA_JSON = r'''{
           "items": {
             "type": "string"
           }
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Choices make the stack a saved selection (see Choice). When they are set, the host derives the language, the scaffold and the toolchain from them, and Toolchain lists only the plugins to add after those. The plugins of the stack get the choices in GenerateParams.Choices."
         }
       },
       "required": [
@@ -1976,6 +2550,36 @@ _SCHEMA_JSON = r'''{
         "name",
         "command",
         "blocking"
+      ]
+    },
+    "TagMove": {
+      "description": "TagMove is a dist-tag a publish left where it was, because the packages the release needs were not fetchable yet.",
+      "type": "object",
+      "properties": {
+        "package": {
+          "type": "string",
+          "description": "Package and Version name the package that carries the tag."
+        },
+        "version": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag is the dist-tag to move to Version."
+        },
+        "awaits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Awaits are the packages that must be fetchable first."
+        }
+      },
+      "required": [
+        "package",
+        "version",
+        "tag",
+        "awaits"
       ]
     },
     "Task": {
@@ -2048,6 +2652,132 @@ _SCHEMA_JSON = r'''{
         "command"
       ]
     },
+    "ToolInstall": {
+      "description": "ToolInstall is one way to get a tool with a package manager. Manager is one of: \"winget\", \"brew\", \"brew-cask\", \"apt\", \"dnf\", \"pacman\", \"npm\", \"uv\", \"fnm\", \"rustup\", \"cargo\" and \"go\" (go install, for a tool published as a Go module). The host builds the exact command from the manager and Package; Package may hold {major}, {major.minor} and {version} (the whole version), which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup, cargo) are offered only when they are already on the machine.",
+      "type": "object",
+      "properties": {
+        "manager": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string",
+          "description": "Note adds a sentence the person needs before choosing (\"a new terminal is needed\")."
+        }
+      },
+      "required": [
+        "manager",
+        "package"
+      ]
+    },
+    "ToolNeed": {
+      "description": "ToolNeed is a program on the person's machine that a plugin needs to build, test or run its projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the tool is, how to detect it, how each system gets it); the host decides how to ask.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name identifies the tool across plugins and in commands (smith tools install python). Two plugins that need the same tool use the same Name."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title is what the tool is called in text: \"Python\", \"the .NET SDK\". Doctor words the check \"<Title> is installed\"."
+        },
+        "why": {
+          "type": "string",
+          "description": "Why says in plain words what smith needs the tool for."
+        },
+        "consequence": {
+          "type": "string",
+          "description": "Consequence says what stops working while the tool is missing, as the end of a sentence that starts \"If you skip it, \": \"smith test and smith build fail for the python projects\"."
+        },
+        "program": {
+          "type": "string",
+          "description": "Program is the program that carries the tool on PATH (\"python3\")."
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternatives are other programs that also count (\"python\", \"py\")."
+        },
+        "versionArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "VersionArgs are the arguments that make Program print its version. Absent means --version."
+        },
+        "pins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolVersionPin"
+          },
+          "description": "Pins are the files where a workspace pins the version it wants. The first pin the host finds gives the version range. Absent means any version counts."
+        },
+        "choice": {
+          "type": "string",
+          "description": "Choice limits the tool to stacks that have this choice (\"azure-functions\"): the tool is not needed by a project built without it. Absent means every project of the plugin needs it."
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files limit the tool to projects that hold one of these files in their folder (\"build.gradle.kts\"): a Gradle build needs gradle, a Maven build does not. A tool that the tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the plugin needs it."
+        },
+        "systems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Systems limits the tool to these systems, named as Go names them (\"windows\", \"darwin\", \"linux\"): the Xcode Command Line Tools exist only on \"darwin\". Absent means every system."
+        },
+        "suggested": {
+          "type": "string",
+          "description": "Suggested is the version smith installs when no pin says one: \"3.13\". It fills {major} and {major.minor} in the install entries."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure."
+        },
+        "exact": {
+          "type": "boolean",
+          "description": "Exact says Suggested is the one version the workspace wants, such as the version CI pins: an installed version that differs, older or newer, is reported as different, and an install fetches that version."
+        },
+        "install": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolInstall"
+          },
+          "description": "Install are the ways to get the tool, per package manager and system."
+        },
+        "download": {
+          "type": "string",
+          "description": "Download is the official page of the tool, for the person who installs it by hand or has no package manager."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source is the address of the page the Install entries were checked against."
+        },
+        "checked": {
+          "type": "string",
+          "description": "Checked is the date (YYYY-MM-DD) the entries were last checked."
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "why",
+        "consequence",
+        "program",
+        "download",
+        "source",
+        "checked"
+      ]
+    },
     "ToolPin": {
       "description": "ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv) against the newest release; informational.",
       "type": "object",
@@ -2070,6 +2800,23 @@ _SCHEMA_JSON = r'''{
       "required": [
         "name",
         "pinned"
+      ]
+    },
+    "ToolVersionPin": {
+      "description": "ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one of: \"text\" (the first word of the file, as in .nvmrc and .python-version), \"go-mod\" (the toolchain line, else the go line), \"pyproject\" (requires-python), \"global-json\" (sdk.version) and \"rust-toolchain\" (the channel).",
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "File is the base name of the file, looked up at the workspace root and in the folders of the projects that use the tool."
+        },
+        "format": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "format"
       ]
     },
     "Toolchain": {
@@ -2121,6 +2868,22 @@ _SCHEMA_JSON = r'''{
       "required": [
         "project",
         "packages"
+      ]
+    },
+    "UnlinkParams": {
+      "description": "UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result say so when the manifest held no such dependency.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "library": {
+          "$ref": "#/$defs/Project"
+        }
+      },
+      "required": [
+        "project",
+        "library"
       ]
     },
     "VersionParams": {

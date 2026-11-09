@@ -4,6 +4,8 @@ import (
 	"slices"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Unavailable says why the command cannot be used now, or "" when it can.
@@ -13,15 +15,31 @@ func (c Command) Unavailable(s State) string {
 	}
 	switch {
 	case c.NeedsWorkspace && !s.InWorkspace:
-		return "not in a workspace (press " + ShortcutOf("file.new") + " to create one)"
+		return words.Say("commands.reason.noworkspace", "shortcut", ShortcutOf("file.new"))
 	case c.NeedsRunning && !s.Running:
-		return "nothing is running"
+		return words.Say("commands.reason.notrunning")
 	case c.NeedsNarrowList && (!s.Narrow || s.DetailOpen):
-		return "the detail is beside the list"
+		return words.Say("commands.reason.besidelist")
 	case c.NeedsDetailOpen && !s.DetailOpen:
-		return "the detail is not open"
+		return words.Say("commands.reason.detailclosed")
+	case c.NeedsRunPanel && !s.RunOpen:
+		return words.Say("commands.reason.norunpanel")
+	case c.NotInRunPanel && s.RunOpen:
+		return words.Say("commands.reason.inrunpanel")
+	case c.NeedsRecentFocus && !s.RecentFocus:
+		return words.Say("commands.reason.norecentfocus")
+	case c.NotInRecentFocus && s.RecentFocus:
+		return words.Say("commands.reason.inrecentfocus")
+	case c.NeedsSideFocus && !s.SideFocus:
+		return words.Say("commands.reason.nosidefocus")
+	case c.NotInSideFocus && s.SideFocus:
+		return words.Say("commands.reason.insidefocus")
+	case c.NeedsSideNext && !s.SideNext:
+		return words.Say("commands.reason.nosidenext")
+	case c.NotSideNext && s.SideNext:
+		return words.Say("commands.reason.sidenext")
 	case c.NeedsIdle && s.Running:
-		return "a run is in progress (" + ShortcutOf("run.stop") + " stops it)"
+		return words.Say("commands.reason.running", "shortcut", ShortcutOf("run.stop"))
 	}
 	return ""
 }
@@ -37,6 +55,17 @@ func (c Command) inView(s State) bool {
 	return len(c.Views) == 0 || slices.Contains(c.Views, s.View)
 }
 
+// gated is false for a command that is not in use in this state: a key of the
+// run panel while none is open, a key of the list of projects while the run panel
+// or the list of recent runs has the keyboard. Its key and its line stay out of
+// the way, and two commands that share a key never both count.
+func (c Command) gated(s State) bool {
+	return (!c.NeedsRunPanel || s.RunOpen) && (!c.NotInRunPanel || !s.RunOpen) &&
+		(!c.NeedsRecentFocus || s.RecentFocus) && (!c.NotInRecentFocus || !s.RecentFocus) &&
+		(!c.NeedsSideFocus || s.SideFocus) && (!c.NotInSideFocus || !s.SideFocus) &&
+		(!c.NeedsSideNext || s.SideNext) && (!c.NotSideNext || !s.SideNext)
+}
+
 // Visible reports whether the command is listed at all in this state (a
 // command for creating a workspace has no place inside one, a view's own
 // action none in another view).
@@ -44,10 +73,10 @@ func (c Command) Visible(s State) bool {
 	if c.Kind == PaneKey {
 		return false
 	}
-	if c.ownsView() && !c.inView(s) {
+	if !c.gated(s) || (c.ownsView() && !c.inView(s)) {
 		return false
 	}
-	return (!c.OnlyOutside || !s.InWorkspace) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
+	return (!c.OnlyOutside || (!s.InWorkspace && !s.BrokenConfig)) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
 }
 
 // plain is a key that types a character: one letter, digit or symbol.
@@ -75,6 +104,9 @@ func ByKey(key string, s State) (c Command, reason string, ok bool) {
 				return Command{}, "", false
 			}
 			if !cmd.Visible(s) || (s.Editing && !cmd.WhileEditing) {
+				continue
+			}
+			if scoped && cmd.Yields && s.Reasons[cmd.ID] != "" {
 				continue
 			}
 			return cmd, cmd.Unavailable(s), true

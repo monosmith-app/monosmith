@@ -7,16 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/nativebuild"
-	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -27,6 +24,19 @@ import (
 
 // VerifyTasks are what a pull request must pass.
 var VerifyTasks = []string{"lint", "typecheck", "test", "build"}
+
+// AssetsRun is what the assets phase needs to run again for an existing tag.
+type AssetsRun struct {
+	// Tag is the release tag (project@version); empty means the tags at HEAD.
+	Tag string
+	// Source is current or tag: the code to build when Tag is not at HEAD.
+	Source string
+	// Terminal says a person can answer the question for the source on In.
+	Terminal bool
+	In       io.Reader
+	// Manual is set when a person started the release by hand (the release phase).
+	Manual ManualRelease
+}
 
 // PackTask is the task that builds what a project deploys into dist/drop.
 const PackTask = "package"
@@ -39,12 +49,33 @@ var Phases = []string{"setup", "audit", "verify", "pack", "native", "assets", "r
 
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
+	return RunPhaseFor(ctx, s, phase, false, AssetsRun{}, out)
+}
+
+// AssetsPrepare returns the step that installs the dependencies in the
+// worktree of a tag before its release files are built: the same install
+// `smith ci assets` runs, so `smith release assets --source tag` builds from
+// the same state (ADR 0075).
+//
+// Parameters: out receives the install output.
+// Returns: a function for releaseassets.Request.Prepare.
+func AssetsPrepare(out io.Writer) func(ctx context.Context, ws *session.Session) error {
+	return func(ctx context.Context, ws *session.Session) error {
+		return RunPhaseFor(ctx, ws, "setup", true, AssetsRun{}, out)
+	}
+}
+
+// RunPhaseFor runs one CI phase. With assets set, the setup phase installs
+// only what the assets job needs: it leaves out the projects whose [release]
+// install is false (smith ci setup --assets). A tag (project@version) makes the
+// assets phase build for that existing release instead of the ones at HEAD.
+func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, run AssetsRun, out io.Writer) error {
 	begin := time.Now()
 	log := newPhaseLog(out, phase)
 	if !announces(phase) {
 		log.fold()
 	}
-	err := runPhase(ctx, s, phase, log)
+	err := runPhase(ctx, s, phase, assets, run, log)
 	log.close()
 	took := time.Since(begin)
 	if err != nil {
@@ -101,11 +132,15 @@ func announces(phase string) bool {
 	return false
 }
 
-func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseLog) error {
+func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, run AssetsRun, log *phaseLog) error {
 	out := log.out
 	switch phase {
 	case "setup", "audit":
-		c, err := Collect(s)
+		collect := Collect
+		if assets && phase == "setup" {
+			collect = CollectForAssets
+		}
+		c, err := collect(s)
 		if err != nil {
 			return err
 		}
@@ -155,6 +190,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
 		log.banner(verifyIntro(s, base)...)
+		if err := verifyDerived(s, out); err != nil {
+			return err
+		}
 		if err := verifyBoundaries(s, out); err != nil {
 			return err
 		}
@@ -252,15 +290,34 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 	case "native":
 		return nativebuild.Run(ctx, s, out)
 	case "assets":
-		done, err := releaseassets.Run(ctx, s, releaseassets.Request{Platform: os.Getenv("SMITH_PLATFORM"), Out: out})
-		if err == nil && len(done) == 0 {
-			fmt.Fprintln(out, "no release files to build: no project with a build command was released by this commit on this platform")
+		res, err := releaseassets.Run(ctx, s, releaseassets.Request{
+			Platform: os.Getenv("SMITH_PLATFORM"), Tag: run.Tag, Source: run.Source, Terminal: run.Terminal, In: run.In, Out: out,
+			// A tag's own commit is a fresh checkout without the installed dependencies.
+			Prepare: AssetsPrepare(out),
+		})
+		if err == nil && res.Skipped != "" {
+			// The job summary says it too, so a run that did nothing does not read as a success.
+			log.conclusion = res.Skipped
 		}
 		return err
 	case "release":
 		ensureIdentity(s)
-		plan, err := release.MakePlan(s.Git, s.Graph)
+		plan, err := release.PlanFor(s)
 		if err != nil {
+			return err
+		}
+		manual := ""
+		if run.Manual.Active() {
+			var notes []string
+			if plan, notes, err = release.AdjustPlan(s, plan, nil, run.Manual.Bumps, run.Manual.Force); err != nil {
+				return err
+			}
+			for _, n := range notes {
+				fmt.Fprintln(out, "note: "+n)
+			}
+			manual = run.Manual.Sentence(Actor(os.Getenv))
+		}
+		if err := release.CheckAPI(ctx, s, &plan); err != nil {
 			return err
 		}
 		projects := len(s.Graph.Projects)
@@ -276,13 +333,23 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 				log.fold()
 			}
 		} else {
-			log.heading(releaseIntro(plan, s.Config.Release.Branch, projects)...)
+			log.heading(releaseIntro(plan, release.PlanBranch(s), projects)...)
 			log.fold()
 			for _, item := range plan.Items {
 				fmt.Fprintf(out, "%s: %s -> %s (%s) because %s\n", item.Project, cmp.Or(item.Current, "new"), item.Next, bumpOf(item), item.Why())
+				for _, w := range item.APIWarnings {
+					warn(out, w)
+				}
 			}
 		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})
+		// A release whose dist-tag waits for npm is done: the steps after it
+		// still run, and the run ends with a warning and exit code 2.
+		pending := errors.Is(err, release.ErrPropagationPending)
+		if pending {
+			err = nil
+		}
+		markReleased(report)
 		var after []stepOutcome
 		if err == nil {
 			// Work plugins want after every push to the release branch, released
@@ -296,6 +363,10 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		}
 		log.close()
 		log.markdown = strings.Split(strings.TrimSpace(strings.TrimPrefix(report.Markdown(), "### Release")), "\n")
+		if manual != "" {
+			log.say("%s", manual)
+			log.markdown = append([]string{"**" + manual + "**", ""}, log.markdown...)
+		}
 		if len(plan.Items) == 0 {
 			log.say("Nothing to release: none of the %s has a releasing commit since its last release.", plural(projects, "project"))
 			log.say("→ commit with a message like \"feat: add search\" or \"fix: handle empty input\"; docs, chore, test and ci commits do not release")
@@ -315,6 +386,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 					log.say("GitHub Release for %s: %s", res.Project, res.GitHubRelease)
 				}
 			}
+			for _, line := range releasedSummary(report, log.icons, colourOn()) {
+				log.say("%s", line)
+			}
 			if len(after) > 0 {
 				for _, line := range stepTable("After the release", after, log.icons).Text("steps") {
 					log.say("%s", line)
@@ -328,113 +402,16 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 				notice(out, releaseConclusion(report))
 			}
 		}
+		if err == nil && pending {
+			for _, command := range report.PendingTags() {
+				warn(out, "a dist-tag was not moved: npm did not serve every platform package in time. When it does, run: "+command)
+				log.say("%s", "→ when npm serves the packages, run: "+command)
+			}
+			return release.ErrPropagationPending
+		}
 		return err
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
-}
-
-// uncommitted lists the tracked files changed in the working tree, as the
-// release's preflight sees them; nil when git cannot say.
-func uncommitted(s *session.Session) []string {
-	out, err := s.Git.Run("status", "--porcelain", "--untracked-files=no")
-	if err != nil {
-		return nil
-	}
-	return release.Uncommitted(out)
-}
-
-// verifyClean fails verify when its tasks left tracked files changed: the
-// release refuses a dirty tree, and the pull request is where to find out.
-// A file already changed before verify fails it only in CI, where checkout
-// starts clean; on a laptop it is the developer's own edit.
-func verifyClean(s *session.Session, before []string, summary taskrun.Summary) error {
-	after := uncommitted(s)
-	if len(after) == 0 {
-		return nil
-	}
-	ran := make([]string, 0, len(summary.Results))
-	for _, r := range summary.Results {
-		ran = append(ran, r.Task)
-	}
-	var changes []TrackedChange
-	for _, c := range TrackedChanges(before, after, s.Graph.Projects, ran) {
-		if !c.Before || os.Getenv("CI") != "" {
-			changes = append(changes, c)
-		}
-	}
-	if len(changes) == 0 {
-		return nil
-	}
-	return errors.New(ExplainTrackedChanges(changes))
-}
-
-// verifyMarked runs, after the verify tasks, the tasks a plugin marked for
-// verify (protocol.Task.Verify: an app's image), each for the affected
-// projects that have it marked, native ones left to the native job. A task
-// whose program is not installed is skipped with a warning.
-func verifyMarked(ctx context.Context, s *session.Session, base string, out io.Writer) ([]taskrun.Result, error) {
-	byTask, missing := MarkedForVerify(s.Graph.Projects, func(program string) bool {
-		_, err := exec.LookPath(program)
-		return err == nil
-	})
-	for _, m := range missing {
-		warn(out, m)
-	}
-	names := make([]string, 0, len(byTask))
-	for name := range byTask {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	var results []taskrun.Result
-	for _, name := range names {
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{name}, Projects: byTask[name], Affected: base != "", Base: base, Out: out})
-		if err != nil {
-			return results, err
-		}
-		if len(summary.Results) > 0 {
-			fmt.Fprintln(out, summary.String())
-		}
-		results = append(results, summary.Results...)
-		if !summary.OK() {
-			return results, taskrun.ErrTasksFailed
-		}
-	}
-	return results, nil
-}
-
-// taskOf is the task of a task id ("core:test" is "test").
-func taskOf(id string) string {
-	_, task := projectOf(id)
-	return task
-}
-
-// MarkedForVerify lists, by task, the projects whose task a plugin marked
-// for verify, leaving out native projects, the verify tasks themselves and
-// tasks whose program is not installed (named in missing, for a warning).
-func MarkedForVerify(projects []*projectgraph.Project, installed func(string) bool) (byTask map[string][]string, missing []string) {
-	byTask = map[string][]string{}
-	for _, p := range projects {
-		if slices.Contains(p.Tags, release.NativeTag) {
-			continue
-		}
-		tasks := make([]string, 0, len(p.Tasks))
-		for name := range p.Tasks {
-			tasks = append(tasks, name)
-		}
-		sort.Strings(tasks)
-		for _, name := range tasks {
-			t := p.Tasks[name]
-			if !t.Verify || slices.Contains(VerifyTasks, name) || len(t.Command) == 0 {
-				continue
-			}
-			if program := t.Command[0]; !strings.HasPrefix(program, "{") && !installed(program) {
-				missing = append(missing, fmt.Sprintf("%s:%s not verified: %s is not installed", p.Name, name, program))
-				continue
-			}
-			byTask[name] = append(byTask[name], p.Name)
-		}
-	}
-	return byTask, missing
 }
 
 func runSteps(ctx context.Context, root string, steps []protocol.Step, remembered *verdicts, out io.Writer) ([]stepOutcome, error) {
@@ -479,7 +456,13 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 			msg = step.Name + ": " + err.Error()
 		}
 		if step.Blocking {
-			return outcomes, errors.New(failureWithOutput(out, msg, tail.String()))
+			return outcomes, errors.New(failureWithOutput(out, step.Name, msg, tail.String()))
+		}
+		if code == 127 {
+			// The shell could not find the tool: nothing was checked.
+			outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepSkipped, Took: time.Since(began)})
+			warn(out, step.Name+" was skipped: a tool it needs is not installed, so nothing was checked. Install it, or make the audit blocking for this ecosystem in [ci] audit.")
+			continue
 		}
 		failures = append(failures, msg)
 		outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepProblem, Took: time.Since(began)})
@@ -492,10 +475,12 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 }
 
 // failureWithOutput is the failure of a blocking step with the end of its
-// output after it. When that output names a log file smith can read (npm's
-// debug log stays on the agent), the file's end is printed first, in a CI log
-// group, so the cause can be found from the pipeline.
-func failureWithOutput(out io.Writer, msg, output string) string {
+// output after it. The step's whole captured output (up to tailKeep bytes) is
+// printed again in a CI log group named after the step, so a cause the live
+// stream scrolled past (pip's conflict block) is one click away. When the
+// output names a log file smith can read (npm's debug log stays on the agent),
+// the file's end is printed first in its own group.
+func failureWithOutput(out io.Writer, step, msg, output string) string {
 	if path := logFileNamed(output); path != "" {
 		if raw, err := os.ReadFile(path); err == nil {
 			group(out, "log file "+path)
@@ -506,6 +491,12 @@ func failureWithOutput(out io.Writer, msg, output string) string {
 	if strings.TrimSpace(output) == "" {
 		return msg
 	}
+	group(out, step+": full output")
+	if !inGroupedLog() {
+		fmt.Fprintf(out, "%s: full output\n", step)
+	}
+	fmt.Fprintf(out, "%s\n", strings.TrimRight(output, "\r\n"))
+	endGroup(out)
 	return msg + "\n" + lastLines(output, outputTailLines)
 }
 
@@ -516,51 +507,5 @@ func ensureIdentity(s *session.Session) {
 	}
 	if v, _ := s.Git.Run("config", "user.name"); v == "" {
 		_, _ = s.Git.Run("config", "user.name", "smith release")
-	}
-}
-
-func group(out io.Writer, name string) {
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintf(out, "::group::%s\n", name)
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintf(out, "##[group]%s\n", name)
-	}
-}
-
-func endGroup(out io.Writer) {
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintln(out, "::endgroup::")
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintln(out, "##[endgroup]")
-	}
-}
-
-func annotate(out io.Writer, phase string, err error) {
-	msg := strings.ReplaceAll(err.Error(), "\n", " ")
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintf(out, "::error title=smith ci %s::%s\n", phase, msg)
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintf(out, "##vso[task.logissue type=error]smith ci %s: %s\n", phase, msg)
-	}
-}
-
-// notice puts a result in the run summary of the CI that has notices.
-func notice(out io.Writer, msg string) {
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Fprintf(out, "::notice title=smith ci release::%s\n", msg)
-	}
-}
-
-func warn(out io.Writer, msg string) {
-	switch {
-	case os.Getenv("GITHUB_ACTIONS") == "true":
-		fmt.Fprintf(out, "::warning::%s\n", msg)
-	case os.Getenv("TF_BUILD") != "":
-		fmt.Fprintf(out, "##vso[task.logissue type=warning]%s\n", msg)
-	default:
-		fmt.Fprintln(out, "warning: "+msg)
 	}
 }

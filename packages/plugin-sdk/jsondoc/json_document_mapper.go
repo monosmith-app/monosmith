@@ -204,6 +204,55 @@ func reindent(raw json.RawMessage, indent string) string {
 	return out.String()
 }
 
+// RewriteStrings replaces every string value under the keys (at any depth,
+// strings inside arrays included) with fn(value); the keys, their order and
+// everything else stay as they were. It reports whether any value changed.
+func (d *Document) RewriteStrings(keys []string, fn func(string) string) bool {
+	changed := false
+	for _, k := range keys {
+		switch v := d.values[k].(type) {
+		case *Document:
+			if v.RewriteStrings(v.keys, fn) {
+				changed = true
+			}
+		case json.RawMessage:
+			if out, ok := rewriteRaw(v, fn); ok {
+				d.values[k], changed = out, true
+			}
+		}
+	}
+	return changed
+}
+
+// rewriteRaw rewrites the strings of a leaf or an array.
+func rewriteRaw(raw json.RawMessage, fn func(string) string) (json.RawMessage, bool) {
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
+		if out := fn(s); out != s {
+			return json.RawMessage(quote(out)), true
+		}
+		return raw, false
+	}
+	var list []json.RawMessage
+	if json.Unmarshal(raw, &list) != nil {
+		return raw, false
+	}
+	changed := false
+	for i, item := range list {
+		if out, ok := rewriteRaw(item, fn); ok {
+			list[i], changed = out, true
+		}
+	}
+	if !changed {
+		return raw, false
+	}
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(list)
+	return json.RawMessage(bytes.TrimSpace(b.Bytes())), true
+}
+
 func quote(s string) string {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)

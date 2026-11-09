@@ -1,0 +1,11 @@
+axis = "runtime"
+name = "node24"
+description = "Node.js 24, the current LTS; all three hosts support it"
+title = "Node.js 24"
+aliases = ["serverless", "runtime", "version"]
+layer = "host"
+language = "node"
+suggested = true
+
+[slots]
+"node.major" = ["24"]

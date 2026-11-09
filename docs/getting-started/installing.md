@@ -30,7 +30,9 @@ or `npx monosmith --version`.
 
 `@monosmith/cli` is the same npm package under the scope; `monosmith` is the
 short name. Both install the binary through per-platform packages
-(`@monosmith/cli-linux-x64`, …) that npm picks by `os` and `cpu`.
+(`@monosmith/cli-linux-x64`, …) that npm picks by `os` and `cpu`. If one is missing right
+after a release, the launcher says why and offers the fix
+([troubleshooting](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed)).
 
 The pub.dev package is published by hand for now, so it can lag behind the
 others.
@@ -86,15 +88,31 @@ smith updated 1.70.0 → 1.73.0. What's new: https://github.com/monosmith-app/mo
 ```
 
 It shows once; the terminal interface shows it as a toast. At most once a day smith also asks the
-registry whether a newer one exists (a short, cached check that never holds a command up and
-says nothing when you are offline) and prints the update command that fits how you installed it:
+registry whether a newer one exists on the channel you installed and prints the update command
+that fits how you installed it:
 
 ```
-smith 1.75.0 is out, you have 1.73.0: update with npm i -g monosmith@latest (hide this: SMITH_NO_UPDATE_CHECK=1)
+smith 1.75.0 is out, you have 1.73.0: update with npm i -g monosmith@latest (turn this off: update_check = "off" under [workspace], or SMITH_UPDATE_CHECK=off)
 ```
 
-Set `SMITH_NO_UPDATE_CHECK=1` to stop the registry check. Neither line appears in CI, in a pipe
-or in `smith serve` and `smith mcp`. What smith remembers is `version.json` in the smith home
+If you installed the next channel (a version such as `2.0.0-beta.22`), smith checks the `next`
+tag and says `smith 2.0.0-beta.23 is out on the next channel`, with `npm i -g monosmith@next`.
+
+The check is one request, announced here: `GET https://registry.npmjs.org/-/package/monosmith/dist-tags`.
+Nothing about you or your workspace is sent. It has a one second timeout, never holds a command
+up, says nothing when you are offline, and its answer is cached for 24 hours in the smith home.
+The choice is yours:
+
+| Setting | Effect |
+|---|---|
+| `[workspace] update_check = "on"` in `smith.toml` | ask once a day |
+| `[workspace] update_check = "off"` | never ask |
+| `SMITH_UPDATE_CHECK=on` or `off` (a user setting, wins over `smith.toml`) | the same, for every workspace |
+| not chosen | smith prints one line the first time (what the request is and how to choose) and asks nothing for a day; then it asks |
+| `SMITH_NO_UPDATE_CHECK=1` | never ask (the older switch, still read) |
+
+`smith --version` and `smith doctor` repeat the line every time while a newer smith exists, from the
+cached answer. No line appears in CI, in a pipe or in `smith serve` and `smith mcp`. What smith remembers is `version.json` in the smith home
 (`$SMITH_HOME`, or `~/.smith`).
 
 ## Checking a download

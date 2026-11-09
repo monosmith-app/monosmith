@@ -1,6 +1,10 @@
 package tabs
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+)
 
 // markerW is the room a scroll marker takes: the arrow and a space.
 const markerW = 2
@@ -13,36 +17,26 @@ func (t Tab) name(short bool) string {
 	return t.Label
 }
 
-// text is what goes inside the tab: padded name and badge.
-func (t Tab) text(short bool) string {
-	s := " " + t.name(short)
-	if t.Badge != "" {
-		s += " " + t.Badge
-	}
-	return s + " "
-}
-
-// planned is the width the fit calculation gives the inside of a tab: the
-// room for its badge counts whether or not the badge is there.
-func (t Tab) planned(short bool) int {
-	w := pane.Width(" " + t.name(short) + " ")
+// planned is the width the fit calculation gives a tab: its button, and the
+// room for its badge, which counts whether or not the badge is there.
+func (t Tab) planned(th theme.Theme, short bool) int {
 	extra := t.Reserve
 	if t.Badge != "" {
 		extra = max(extra, pane.Width(t.Badge)+1)
 	}
-	return w + extra
+	return button.Width(th, t.name(short), t.Key) + extra
 }
 
 // shortened says which tabs use their short name: as few as it takes for every
 // tab to fit in avail cells, in the order of order. cost turns the inside
 // width of a tab into the cells it takes in the strip. When even the short
 // names do not fit, all of them are short and the strip scrolls.
-func shortened(tabs []Tab, order []string, avail int, cost func(inner int) int) map[string]bool {
+func shortened(th theme.Theme, tabs []Tab, order []string, avail int, cost func(inner int) int) map[string]bool {
 	short := map[string]bool{}
 	total := func() int {
 		n := 0
 		for _, t := range tabs {
-			n += cost(t.planned(short[t.ID]))
+			n += cost(t.planned(th, short[t.ID]))
 		}
 		return n
 	}

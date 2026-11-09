@@ -3,6 +3,7 @@ import { openSession } from './json-rpc-session.client.ts'
 import { judgeProtocol } from './protocol-range.policy.ts'
 import { lastLines } from './stderr-tail.algorithm.ts'
 import type { SmithExit, SmithInitialized, SmithSession } from './smith-connection.contract.ts'
+import { say } from '../words/index.ts'
 
 /** What the caller wants to hear from the process while it lives. */
 export interface SmithHooks {
@@ -10,6 +11,11 @@ export interface SmithHooks {
   onStderr?: (line: string) => void
   /** The process ended without being stopped by `stop`. */
   onExit?:   (exit: SmithExit) => void
+}
+
+/** The message of the error when smith serve ends before it answers: its last lines of output, if any. */
+function endedText (tail: string): string {
+  return tail.trim() === '' ? say('vscode.smith-client.smith-serve-ended') : say('vscode.smith-client.smith-serve-ended-2', { trim: lastLines(tail, 3).trim() })
 }
 
 /**
@@ -39,7 +45,7 @@ export async function startSmith (executable: string, workspaceRoot: string, hoo
   })
   child.once('error', (error) => { connection.close(error) })
   child.once('close', (code, signal) => {
-    connection.close(new Error(tail.trim() === '' ? 'smith serve ended' : `smith serve ended: ${lastLines(tail, 3).trim()}`))
+    connection.close(new Error(endedText(tail)))
     if (!stopped) hooks.onExit?.({ code, signal, stderr: tail.trim() })
   })
   const stop = (): void => {
@@ -54,15 +60,15 @@ export async function startSmith (executable: string, workspaceRoot: string, hoo
     const hello = await connection.request<SmithInitialized>('initialize')
     const protocol = judgeProtocol(hello.protocolVersion)
     if (protocol === 'older') {
-      throw new Error(`smith ${hello.version} speaks protocol ${hello.protocolVersion}, older than this extension supports. Upgrade smith.`)
+      throw new Error(say('vscode.smith-client.smith-speaks-protocol-older-than-this', { version: hello.version, protocolVersion: hello.protocolVersion }))
     }
 
     return { connection, version: hello.version, protocol: protocol === 'newer' ? 'newer' : 'supported', stop }
   } catch (error) {
     stop()
     const said = lastLines(tail, 3)
-    if (said !== '' && error instanceof Error && error.message === 'smith serve ended') {
-      throw new Error(`smith serve ended before it answered: ${said}`, { cause: error })
+    if (said !== '' && error instanceof Error && error.message === say('vscode.smith-client.smith-serve-ended')) {
+      throw new Error(say('vscode.smith-client.smith-serve-ended-before-it-answered', { said }), { cause: error })
     }
     throw error
   }

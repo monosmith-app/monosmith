@@ -1,6 +1,9 @@
 package adoption
 
-import "github.com/monosmith-app/monosmith/apps/smith/releaselineage"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
+)
 
 // What an item stops.
 const (
@@ -17,11 +20,22 @@ type Report struct {
 	Name      string   `json:"name"`
 	Scope     string   `json:"scope"`
 	Providers []string `json:"providers"`
+	// Detected are the CI providers the repository already has a pipeline for;
+	// Providers falls back to github when it is empty.
+	Detected []string `json:"detected,omitempty"`
 	// Clean is true when git has no uncommitted changes; the steps need it.
 	Clean    bool          `json:"clean"`
 	Projects []ProjectLine `json:"projects"`
-	Blockers []Item        `json:"blockers"`
-	Warnings []Item        `json:"warnings"`
+	// Declared are the projects --init declares in smith.toml for a repository
+	// whose Go code is one module at the root (ADR 0052).
+	Declared []DeclaredProject `json:"declared,omitempty"`
+	Blockers []Item            `json:"blockers"`
+	Warnings []Item            `json:"warnings"`
+	// RootProject is the one project at the repository root, when there is one
+	// and smith sees no project: smith needs it in a folder of its own, and
+	// --init asks where. MovePlan is the move for the suggested folder.
+	RootProject *adoptmove.Candidate `json:"rootProject,omitempty"`
+	MovePlan    *adoptmove.Plan      `json:"movePlan,omitempty"`
 }
 
 // Item is one finding and the step that clears it.

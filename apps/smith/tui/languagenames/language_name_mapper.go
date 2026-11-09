@@ -1,28 +1,33 @@
 package languagenames
 
-import "strings"
+import (
+	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/words/words"
+)
+
+// languages is the catalog key of the name of each language, by language id.
 var languages = map[string]string{
-	"node":   "TypeScript / JavaScript",
-	"python": "Python",
-	"go":     "Go",
-	"rust":   "Rust",
-	"jvm":    "Java / Kotlin",
-	"dotnet": "C# / .NET",
-	"cpp":    "C / C++",
-	"dart":   "Dart / Flutter",
-	"ruby":   "Ruby",
-	"objc":   "Objective-C",
-	"php":    "PHP",
-	"vba":    "VBA",
-	"swift":  "Swift",
-	"lua":    "Lua",
-	"bicep":  "Azure Bicep",
-	"bundle": "Bundle",
-	"docker": "Docker",
-	"recipe": "A recipe (a ready-made set of projects)",
+	"node":   "languagenames.name.node",
+	"python": "languagenames.name.python",
+	"go":     "languagenames.name.go",
+	"rust":   "languagenames.name.rust",
+	"jvm":    "languagenames.name.jvm",
+	"dotnet": "languagenames.name.dotnet",
+	"cpp":    "languagenames.name.cpp",
+	"dart":   "languagenames.name.dart",
+	"ruby":   "languagenames.name.ruby",
+	"objc":   "languagenames.name.objc",
+	"php":    "languagenames.name.php",
+	"vba":    "languagenames.name.vba",
+	"swift":  "languagenames.name.swift",
+	"lua":    "languagenames.name.lua",
+	"bicep":  "languagenames.name.bicep",
+	"bundle": "languagenames.name.bundle",
+	"docker": "languagenames.name.docker",
+	"recipe": "languagenames.name.recipe",
 
-	"applescript": "AppleScript",
+	"applescript": "languagenames.name.applescript",
 }
 
 // popular are the languages most people reach for, in the order the lists
@@ -31,8 +36,8 @@ var popular = []string{"node", "python", "go", "jvm", "dotnet", "rust"}
 
 // Of is the language as people say it; an unknown id comes back as it is.
 func Of(id string) string {
-	if n, ok := languages[strings.ToLower(id)]; ok {
-		return n
+	if key, ok := languages[strings.ToLower(id)]; ok {
+		return words.Say(key)
 	}
 	return id
 }
@@ -64,41 +69,47 @@ func Order(ids []string) []string {
 func KindOf(kind string) string {
 	switch kind {
 	case "app":
-		return "app"
+		return words.Say("languagenames.kind.app")
 	case "lib":
-		return "library"
+		return words.Say("languagenames.kind.lib")
 	case "package":
-		return "package"
+		return words.Say("languagenames.kind.package")
 	}
 	return kind
 }
 
+// descriptions is the catalog key of the description of each language, by id.
 var descriptions = map[string]string{
-	"node":   "runs on Node, with tests and linting set up",
-	"python": "scripts, services and libraries",
-	"go":     "services and command-line tools",
-	"rust":   "fast, safe programs and libraries",
-	"jvm":    "built with Gradle or Maven",
-	"dotnet": ".NET apps and libraries",
-	"cpp":    "native programs and libraries",
-	"dart":   "Flutter apps and Dart packages",
-	"ruby":   "gems and web apps",
-	"objc":   "CocoaPods libraries",
-	"php":    "web apps and Composer packages",
-	"vba":    "Office macros kept in git as text",
-	"swift":  "packages and command-line tools built with SwiftPM",
-	"lua":    "scripts and LuaRocks libraries",
-	"bicep":  "Azure infrastructure as code",
-	"bundle": "apps assembled from other projects: app.json and flow.json",
-	"docker": "container images",
-	"recipe": "A ready-made set of projects that work together",
+	"node":   "languagenames.about.node",
+	"python": "languagenames.about.python",
+	"go":     "languagenames.about.go",
+	"rust":   "languagenames.about.rust",
+	"jvm":    "languagenames.about.jvm",
+	"dotnet": "languagenames.about.dotnet",
+	"cpp":    "languagenames.about.cpp",
+	"dart":   "languagenames.about.dart",
+	"ruby":   "languagenames.about.ruby",
+	"objc":   "languagenames.about.objc",
+	"php":    "languagenames.about.php",
+	"vba":    "languagenames.about.vba",
+	"swift":  "languagenames.about.swift",
+	"lua":    "languagenames.about.lua",
+	"bicep":  "languagenames.about.bicep",
+	"bundle": "languagenames.about.bundle",
+	"docker": "languagenames.about.docker",
+	"recipe": "languagenames.about.recipe",
 
-	"applescript": "scripts that automate macOS apps",
+	"applescript": "languagenames.about.applescript",
 }
 
 // Describe is a one-line description of what a language gives a new project,
 // or "" for a language it does not know.
-func Describe(id string) string { return descriptions[strings.ToLower(id)] }
+func Describe(id string) string {
+	if key, ok := descriptions[strings.ToLower(id)]; ok {
+		return words.Say(key)
+	}
+	return ""
+}
 
 // MostUsed is the language that most of the given projects use, for the
 // default of a new project; a tie goes to the one seen first, and "" means

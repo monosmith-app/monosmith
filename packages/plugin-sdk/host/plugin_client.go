@@ -397,12 +397,18 @@ func (c *Client) Supports(method string) bool {
 		return caps.Published
 	case protocol.MethodInstall, protocol.MethodUninstall:
 		return caps.Dependencies
+	case protocol.MethodLink, protocol.MethodUnlink:
+		return caps.Link
 	case protocol.MethodDeclared, protocol.MethodRewrite:
 		return caps.Declarations
 	case protocol.MethodLatest:
 		return caps.Latest
 	case protocol.MethodComponents:
 		return caps.Components
+	case protocol.MethodDerive:
+		return caps.Derive
+	case protocol.MethodAPISurface:
+		return caps.APISurface
 	}
 	return method == protocol.MethodInitialize || method == protocol.MethodShutdown
 }

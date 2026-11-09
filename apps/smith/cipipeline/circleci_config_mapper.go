@@ -78,13 +78,20 @@ commands:
 	b.WriteString(circleciRun("Release preview", "if [ -n \"$CIRCLE_PULL_REQUEST\" ]; then smith release --dry-run --comment; fi"))
 	var onRelease strings.Builder
 	if m.Pack {
-		onRelease.WriteString(circleciRun("Pack", "smith ci pack"))
-		onRelease.WriteString("      - store_artifacts:\n          path: dist/drop\n          destination: drop\n")
+		var pack strings.Builder
+		pack.WriteString(circleciRun("Pack", "smith ci pack"))
+		pack.WriteString("      - store_artifacts:\n          path: dist/drop\n          destination: drop\n")
+		if len(m.ChannelBranches) == 0 {
+			onRelease.WriteString(pack.String())
+		} else {
+			// Packing stays on the release branch; the release also runs on the channels.
+			b.WriteString(circleciWhen(circleciBranch(m.ReleaseBranch), pack.String()))
+		}
 	}
 	onRelease.WriteString("      # Releasing pushes tags: the checkout key is read-only, so add a user key with write access\n")
 	onRelease.WriteString("      # (Project Settings > SSH Keys > Add user key) for it to push with.\n")
 	onRelease.WriteString(circleciRun("Release", "smith ci release"))
-	b.WriteString(circleciWhenOnRelease(m, onRelease.String()))
+	b.WriteString(circleciWhen(m.branchCondition(circleciBranch, func(c []string) string { return "or: [ { " + strings.Join(c, " }, { ") + " } ]" }), onRelease.String()))
 	if m.Native {
 		b.WriteString(circleciNativeJob(m))
 	}
@@ -149,10 +156,15 @@ func circleciNativeJob(m Model) string {
 	return b.String()
 }
 
-// circleciWhenOnRelease wraps steps in a condition that holds only on the
-// release branch.
-func circleciWhenOnRelease(m Model, steps string) string {
-	return fmt.Sprintf("      - when:\n          condition:\n            equal: [ %s, << pipeline.git.branch >> ]\n          steps:\n%s", yamlWord(m.ReleaseBranch), indent(steps, "      "))
+// circleciBranch is the CircleCI condition that holds on one branch.
+func circleciBranch(branch string) string {
+	return fmt.Sprintf("equal: [ %s, << pipeline.git.branch >> ]", yamlWord(branch))
+}
+
+// circleciWhen wraps steps in a condition: one circleciBranch, or an "or" of
+// them.
+func circleciWhen(condition, steps string) string {
+	return fmt.Sprintf("      - when:\n          condition:\n            %s\n          steps:\n%s", condition, indent(steps, "      "))
 }
 
 // circleciRun is a run step with a one-line command.

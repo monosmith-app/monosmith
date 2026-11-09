@@ -82,7 +82,7 @@ func CI(workspaceRoot string, params protocol.CIParams) (protocol.CIResult, erro
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that Docker answers when an app ships as an image, and that
 // each app's registry settings agree.
@@ -93,21 +93,25 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	_, err := probe(workspaceRoot, []string{"docker", "version", "--format", "{{.Server.Version}}"})
 	findings := []protocol.Finding{
-		{Check: "Docker is running", OK: err == nil, Detail: "docker version could not reach a daemon", Remedy: "install and start Docker (https://docs.docker.com/get-docker/)"},
+		{Check: "Docker is running", Area: "toolchain", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "docker version could not reach a daemon"), Detail: "docker version could not reach a daemon", Remedy: "install and start Docker (https://docs.docker.com/get-docker/)"},
 	}
 	for _, p := range apps {
 		if short, _ := p.Settings["docker"]["short_description"].(string); utf8.RuneCountInString(strings.Join(strings.Fields(short), " ")) > images.ShortDescriptionLimit {
 			findings = append(findings, protocol.Finding{
-				Check:  "Docker Hub short description of " + p.Name + " fits",
-				Detail: fmt.Sprintf("short_description is longer than the %d characters Docker Hub takes and would be cut", images.ShortDescriptionLimit),
-				Remedy: "shorten short_description in [conventions.docker] (or [projects." + p.Name + ".docker]) in smith.toml",
+				Check:   "Docker Hub short description of " + p.Name + " fits",
+				Project: p.Name,
+				Problem: fmt.Sprintf("has a short_description longer than the %d characters Docker Hub takes", images.ShortDescriptionLimit),
+				Detail:  fmt.Sprintf("short_description is longer than the %d characters Docker Hub takes and would be cut", images.ShortDescriptionLimit),
+				Remedy:  "shorten short_description in [conventions.docker] (or [projects." + p.Name + ".docker]) in smith.toml",
 			})
 		}
 		if _, err := images.TargetOf(p, func(string) string { return "" }); err != nil {
 			findings = append(findings, protocol.Finding{
-				Check:  "Docker registries of " + p.Name + " agree",
-				Detail: err.Error(),
-				Remedy: "fix [conventions.docker] (or [projects." + p.Name + ".docker]) in smith.toml",
+				Check:   "Docker registries of " + p.Name + " agree",
+				Project: p.Name,
+				Problem: err.Error(),
+				Detail:  err.Error(),
+				Remedy:  "fix [conventions.docker] (or [projects." + p.Name + ".docker]) in smith.toml",
 			})
 		}
 	}

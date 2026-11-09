@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Doctor checks that Node.js is the version CI installs (nodeVersion), that
@@ -22,10 +23,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 	findings = append(findings, CheckNodeVersion(workspaceRoot, nodeVersion))
 	_, err := os.Stat(filepath.Join(workspaceRoot, "node_modules"))
 	installed := protocol.Finding{
-		Check:  "Node dependencies are installed",
-		OK:     err == nil,
-		Detail: "node_modules is missing at the workspace root",
-		Remedy: "run `npm install` at the workspace root",
+		Check:   "Node dependencies are installed",
+		Area:    "toolchain",
+		OK:      err == nil,
+		Problem: toolrun.ProblemUnless(err == nil, "node_modules is missing at the workspace root"),
+		Detail:  "node_modules is missing at the workspace root",
+		Remedy:  "run `npm install` at the workspace root",
 	}
 	if err != nil {
 		installed.Fix = &protocol.Fix{
@@ -59,15 +62,17 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 			}
 		}
 		findings = append(findings, protocol.Finding{
-			Check:  "npm workspaces include " + p.Root,
-			OK:     err == nil && covered,
-			Detail: p.Root + " is not matched by the root package.json \"workspaces\"",
-			Remedy: "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
+			Check:   "npm workspaces include " + p.Root,
+			Project: p.Name,
+			OK:      err == nil && covered,
+			Problem: toolrun.ProblemUnless(err == nil && covered, "is not in the root package.json \"workspaces\""),
+			Detail:  p.Root + " is not matched by the root package.json \"workspaces\"",
+			Remedy:  "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
 		})
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}
-		if f, ok := CheckBuildDir(workspaceRoot, p); ok {
+		if f, ok := CheckBuildDir(workspaceRoot, p, dependentsOf(params.Projects, p)...); ok {
 			findings = append(findings, f)
 		}
 		if p.Kind == protocol.ProjectPackage {

@@ -116,9 +116,9 @@ A task that depends on another project's build waits for it. Running web's build
 ```text
 $ smith run build test -p web
 core:build ▶ go build ./...
-core:build ✔ 109ms
-web:build ✔ 941ms
-web:test ✔ 1.327s
+core:build ✓ 109ms
+web:build ✓ 941ms
+web:test ✓ 1.327s
 ```
 
 `smith explain web:test` shows `dependsOn ^build (build of the projects it imports, first)`. The same graph sets the cache key (a task's key includes the sources of the projects it depends on), the order of a release (packages release in dependency order) and the affected set.
@@ -127,7 +127,7 @@ web:test ✔ 1.327s
 
 ```text
 $ smith graph
-⚠ import cycle: ui → web → ui; remove web's import of ui (web → ui)
+▲ import cycle: ui → web → ui; remove web's import of ui (web → ui)
 
 $ smith run build
 smith: projects import each other in a cycle: ui → web → ui
@@ -143,17 +143,17 @@ The marks follow the [legend](README.md#legend). These rows are also in the [mas
 
 | Row | **MonoSmith** | Nx | Turbo | Bazel | Pants | Lerna | Rush | moon | Buck2 | Gradle | Earthly | Lage | JS pkg mgrs | Cargo | Please |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Projects found from the manifests you already have | **✅** | ✅ | ◐ | ❌ | ◐ | ◐ | ◐ | ◐ | ❌ | ◐ | ❌ | ◐ | ✅ | ✅ | ❌ |
-| Edges read from source imports, in several languages | **✅** | ◐ | ❌ | ❔ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ◐ |
-| Edges between projects of different languages | **◐** | ✅ | ❔ | ✅ | ◐ | ❌ | ❌ | ◐ | ✅ | ❔ | ◐ | ❌ | ❌ | ❌ | ✅ |
-| Edges from shared schemas (OpenAPI, protobuf, GraphQL, AsyncAPI) | **✅** | ❔ | ❔ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| A plugin can contribute edges for its language | **✅** | ✅ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Graph of single files and targets | **❌** | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ |
-| Views: tree, JSON, DOT, HTML, interactive, focus, affected | **✅** | ✅ | ✅ | ◐ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ |
-| The graph as JSON | **✅** | ✅ | ◐ | ◐ | ✅ | ✅ | ◐ | ✅ | ◐ | ❔ | ❔ | ❔ | ◐ | ✅ | ✅ |
-| Ask what depends on a project or file | **✅** | ✅ | ◐ | ✅ | ✅ | ❔ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ❔ | ◐ | ✅ |
-| Graph diff between two revisions | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
-| Rules for who may depend on whom | **❌** | ✅ | ◐ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ |
+| Projects found from the manifests you already have | **✓** | ✓ | ◐ | × | ◐ | ◐ | ◐ | ◐ | × | ◐ | × | ◐ | ✓ | ✓ | × |
+| Edges read from source imports, in several languages | **✓** | ◐ | × | ❔ | ✓ | × | × | × | × | × | × | × | × | × | ◐ |
+| Edges between projects of different languages | **◐** | ✓ | ❔ | ✓ | ◐ | × | × | ◐ | ✓ | ❔ | ◐ | × | × | × | ✓ |
+| Edges from shared schemas (OpenAPI, protobuf, GraphQL, AsyncAPI) | **✓** | ❔ | ❔ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| A plugin can contribute edges for its language | **✓** | ✓ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Graph of single files and targets | **×** | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ | ❔ | ❔ | ✓ |
+| Views: tree, JSON, DOT, HTML, interactive, focus, affected | **✓** | ✓ | ✓ | ◐ | ❔ | ◐ | ❔ | ✓ | ❔ | ❔ | ❔ | ✓ | ❔ | ❔ | ❔ |
+| The graph as JSON | **✓** | ✓ | ◐ | ◐ | ✓ | ✓ | ◐ | ✓ | ◐ | ❔ | ❔ | ❔ | ◐ | ✓ | ✓ |
+| Ask what depends on a project or file | **✓** | ✓ | ◐ | ✓ | ✓ | ❔ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ❔ | ◐ | ✓ |
+| Graph diff between two revisions | **✓** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ |
+| Rules for who may depend on whom | **×** | ✓ | ◐ | ✓ | ✓ | ❔ | ❔ | ✓ | ✓ | ❔ | ❔ | ❔ | ◐ | ❔ | ✓ |
 
 ### How each tool builds and shows its graph
 

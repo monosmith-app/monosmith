@@ -19,7 +19,7 @@ pipelines which PHP to install.
 | `--lang` value | `php` |
 | Manifest that makes a directory a candidate project | `composer.json` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared` |
 | Not advertised | none of the dependency capabilities |
 | Stacks it publishes | none. The `php` language alone is the stack; a project records no stack unless `extra.smith.stack` names one |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `php-app`, `php-lib`, `php-package`) |
@@ -135,7 +135,7 @@ $ smith run test
 util:test │ OK (1 test, 1 assertion)
 cli:test  │ OK (1 test, 1 assertion)
 sdk:test  │ OK (1 test, 1 assertion)
-✔ 3/3 tasks succeeded (0 from cache) in 211ms
+✓ 3/3 tasks succeeded (0 from cache) in 211ms
 
 $ smith run start -p cli
 cli:start ▶ php bin/cli
@@ -275,7 +275,7 @@ PHPStan `^2.1` (`scaffolding/package_templates_config.go`). Edit the root
   set to `8.3` on a machine running 8.4.25:
 
 ```text
-✖ php matches the pinned version 8.3
+× php matches the pinned version 8.3
     [toolchains] pins php 8.3, but this machine runs 8.4.25: tasks cached on another version are misses, and results can differ from CI
     → install php 8.3 (`mise use php@8.3`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] php
 ```
@@ -298,6 +298,7 @@ See [configuration: toolchains](../../../reference/configuration.md#toolchains).
 | Version write | at release time `version` is replaced in place (formatting kept); if there is no `version` field, one is added after the `name` line. The manifest is restored afterwards: the tag is the record. A dry run reports the file and writes nothing |
 | Tag | `<project>@<version>`, for example `sdk@0.1.0`; change it with `[projects.<name>] tag_prefix` |
 | Publish | nothing is uploaded. For a package the result is "Packagist publishes from the repository's tags" (registry `packagist.org`); for other kinds "released by its tag" |
+| Release channel | the plugin declares `channels`: Packagist reads the version from the repository tag, Composer ranks a beta tag below its release, and the default `minimum-stability` of `stable` skips it. The release writes the semver spelling as it is into `composer.json`. There is nothing to upload. |
 | Registry query | `Published` asks `https://repo.packagist.org/p2/<vendor>/<name>.json` for the newest stable version (versions with `-`, `@` or a `dev` prefix are skipped, a leading `v` is dropped). A 404 means "not published"; a network failure or other status means "unreachable", not an error |
 | Credentials | none |
 | Private registry | not supported by the plugin |
@@ -374,13 +375,13 @@ build to stderr; the check only looks at the exit status.
 | Command | What the plugin runs |
 |---|---|
 | `smith install` (no package) | `composer install --no-interaction --no-progress` at the root; the file it reports is `composer.lock` |
-| `smith install -w util monolog/monolog` | `composer require monolog/monolog --no-update --no-interaction` in the package's directory (`--dev` for `-D`), then `composer update` at the root |
-| `smith uninstall -w util monolog/monolog` | `composer remove ... --no-update` in the package, then `composer update` at the root |
+| `smith install -p util monolog/monolog` | `composer require monolog/monolog --no-update --no-interaction` in the package's directory (`--dev` for `-D`), then `composer update` at the root |
+| `smith uninstall -p util monolog/monolog` | `composer remove ... --no-update` in the package, then `composer update` at the root |
 
 Real run of the last two: both changed only `libs/util/composer.json` and
 `composer.lock`, and printed
-`✔ util: added monolog/monolog (libs/util/composer.json, composer.lock)` and
-`✔ util: removed monolog/monolog (...)`.
+`✓ util: added monolog/monolog (libs/util/composer.json, composer.lock)` and
+`✓ util: removed monolog/monolog (...)`.
 
 **Versions: `smith sync` and `smith up`.** The plugin lists the `require` and
 `require-dev` packages of every package's `composer.json` and of the workspace
@@ -405,6 +406,12 @@ runs `composer remove <name> --no-update` and
 `composer update` so `composer.lock` stops naming the package too (`--dry-run`
 only lists `composer.json` and `composer.lock`).
 
+## Declared projects
+
+The plugin declares `declared`. A folder of a package (its `src/` or a folder of it, its `bin/`) has no `composer.json` of its own, so declare it in `smith.toml` with `root` and `language = "php"`. smith finds the package whose `composer.json` is above the folder (the workspace's own does not count) and runs PHPStan over the whole folder, PHPUnit when the folder has a `tests/` directory, and for an `app` the package's `bin` executable that is in the folder. The workspace `vendor/` serves them all, and the `composer.json` is a task input. The project imports what the `composer.json` requires. It exports nothing, because a package is required by its name, not by a folder.
+
+smith refuses, naming the folder: a folder that does not exist, one with a `composer.json` of its own, one with no package above it, an app with no `bin` executable in its folder, and the kind `package` (a package has one version).
+
 ## Requirements and limits
 
 - PHP and Composer on `PATH`. The scaffold needs PHP 8.2 or newer.
@@ -426,7 +433,7 @@ Run: `smith new`, `smith add lib|app|package --lang php`, `smith projects`,
 `smith graph`, `smith explain` (project and task), `smith run lint`,
 `smith run test`, `smith run start -p cli`, `smith doctor` (with and without a
 mismatching pin), `smith ci generate` for GitHub, Azure and GitLab,
-`smith ci setup`, `smith ci audit`, `smith install -w`, `smith uninstall -w`,
+`smith ci setup`, `smith ci audit`, `smith install -p`, `smith uninstall -p`,
 `smith sync --check`, `smith up --json`, `smith remove`,
 `smith release --dry-run` and `--json`, with and without `split_repo`.
 

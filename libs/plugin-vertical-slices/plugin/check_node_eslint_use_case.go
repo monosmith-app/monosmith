@@ -40,6 +40,7 @@ func checkNodeESLint(workspaceRoot string, projects []protocol.Project) []protoc
 	}
 	finding := protocol.Finding{
 		Check:  "Node projects are checked for vertical slices (" + eslintConfigPackage + ")",
+		Area:   "lint",
 		Remedy: "make the root eslint.config.mjs:\n  import monosmith from '" + eslintConfigPackage + "'\n  export default monosmith({ workspaceRoot: import.meta.dirname })\nand add " + eslintConfigPackage + " to the root devDependencies (npm i -D " + eslintConfigPackage + "). It also turns on Standard-style formatting and type-aware rules, so try it on a copy first; to keep another config, drop the vertical-slices convention for these projects ([conventions.vertical-slices] exclude = [...])",
 	}
 	for _, name := range eslintConfigNames {
@@ -54,10 +55,12 @@ func checkNodeESLint(workspaceRoot string, projects []protocol.Project) []protoc
 		case strings.Contains(text, eslintConfigPackage):
 			finding.OK = true
 		default:
+			finding.Problem = name + " does not load " + eslintConfigPackage + usingInstead(text)
 			finding.Detail = name + " does not load " + eslintConfigPackage + usingInstead(text) + ", so the slice rules do not run on " + named(covered)
 		}
 		return []protocol.Finding{finding}
 	}
+	finding.Problem = "the workspace root has no eslint.config file"
 	finding.Detail = "the workspace root has no eslint.config file, so the slice rules do not run on " + named(covered)
 	return []protocol.Finding{finding}
 }

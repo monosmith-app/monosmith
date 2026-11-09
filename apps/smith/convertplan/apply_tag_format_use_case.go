@@ -1,6 +1,8 @@
 package convertplan
 
-import "github.com/monosmith-app/monosmith/apps/smith/workspace"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/releasetag"
+)
 
 // applyTagFormat replaces the tag_prefix of each project that follows the
 // workspace's common tag format with [release] tag_format, and keeps a
@@ -21,5 +23,5 @@ func applyTagFormat(plan *Plan) {
 		}
 		plan.SetOverride(c.project, o)
 	}
-	plan.Add(Mapped, "", "release tags", "the tags follow "+workspace.ExpandTagFormat(format, plan.Config.Workspace.Scope, "<project>")+"<version>: [release] tag_format = "+`"`+format+`"`+" names them once, and a project whose tags differ keeps its own tag_prefix")
+	plan.Add(Mapped, "", "release tags", "the tags follow "+releasetag.ExpandTagFormat(format, plan.Config.Workspace.Scope, "<project>")+"<version>: [release] tag_format = "+`"`+format+`"`+" names them once, and a project whose tags differ keeps its own tag_prefix")
 }

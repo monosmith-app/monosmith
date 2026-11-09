@@ -245,10 +245,11 @@ how it is released.
 | the plugin works from the repository and not when installed | a later element of `command` is a relative path; only the first is resolved against the plugin's directory |
 | a built-in behaviour changed after installing | an external plugin with a built-in's name replaces it |
 | the plugin cannot find a token or a cloud credential it used to read | it is not in `env` of the `plugin.json`: external plugins start with a minimal environment |
-| `✖ the external plugin "x" is not trusted yet, so smith did not start it` | the workspace has not trusted this command and file yet: `smith plugin trust x` |
+| `× the external plugin "x" is not trusted yet, so smith did not start it` | the workspace has not trusted this command and file yet: `smith plugin trust x` |
 
 ## See also
 
 - [Installing, enabling and configuring plugins](../using/managing-plugins.md)
+- [Listing a packed plugin in the marketplace](../using/marketplace.md#publish-a-plugin)
 - [Troubleshooting plugins](../using/troubleshooting-plugins.md)
 - [Testing a plugin](testing-a-plugin.md)

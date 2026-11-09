@@ -1,0 +1,14 @@
+{
+  "jetbrains.pluginmarket.monosmith-plugins": "MonoSmith: plugins",
+  "jetbrains.pluginmarket.words-to-search-for-empty": "Words to search for (empty lists every plugin):",
+  "jetbrains.pluginmarket.no-plugin-was-installed": "No plugin was installed. {failureTextMapper}",
+  "jetbrains.pluginmarket.smith-printed-the-plugins-in": "smith printed the plugins in a form this plugin does not read. Update the plugin.",
+  "jetbrains.pluginmarket.no-plugin-matches": "No plugin matches \"{term}\".",
+  "jetbrains.pluginmarket.pick-a-plugin-the-newest": "Pick a plugin. The newest version is installed.",
+  "jetbrains.pluginmarket.monosmith-install": "MonoSmith: install {name}?",
+  "jetbrains.pluginmarket.also-trust-it-in-this": "Also trust it in this workspace (--trust)",
+  "jetbrains.pluginmarket.also-pin-the-sha-256": "Also pin the SHA-256 of its program in smith.toml, which CI checks (--pin)",
+  "jetbrains.pluginmarket.was-not-installed": "{name} was not installed. {failureTextMapper}",
+  "jetbrains.pluginmarket.is-installed": "{name} {newest} is installed.",
+  "jetbrains.pluginmarket.is-a-program-that-runs": "{name} {newest} is a program that runs on your computer{value}. smith checks the archive's SHA-256 and file list and every path before it installs. Installing does not trust it: --trust records that you trust it in this workspace. Nothing is committed."
+}

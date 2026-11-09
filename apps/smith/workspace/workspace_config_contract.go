@@ -13,6 +13,8 @@ type Config struct {
 	CI        CISection        `toml:"ci"`
 	Release   ReleaseSection   `toml:"release"`
 	Cache     CacheSection     `toml:"cache"`
+	// Derive turns on derived files (smith derive).
+	Derive DeriveSection `toml:"derive"`
 	// Agent configures the MonoSmith agent files (smith agent install).
 	Agent AgentSection `toml:"agent"`
 	// Toolchains pins the runtime versions the workspace builds with, by
@@ -21,6 +23,11 @@ type Config struct {
 	// that runs another version, and --fix writes .tool-versions for mise
 	// and asdf. Default: none.
 	Toolchains map[string]string `toml:"toolchains"`
+	// Facts are shared facts every project gets, by namespaced key
+	// ("module.aliases", "source.roots"): typed values that plugins read when
+	// they set a project up. They win over the defaults plugins publish and
+	// lose to a project's own [projects.<name>.facts]. Default: none.
+	Facts map[string]any `toml:"facts"`
 	// Dependencies is the workspace's policy for the versions its projects
 	// declare.
 	Dependencies DependenciesSection `toml:"dependencies"`
@@ -40,12 +47,13 @@ type Config struct {
 	// instead of [workspace] recipe.
 	Recipes map[string]string       `toml:"recipes"`
 	Tasks   map[string]TaskOverride `toml:"tasks"`
-	// TaskGroups set task fields for the projects their selectors name, so a
-	// set of similar projects states its overrides once. Each group sits
-	// between [tasks.<task>] and [projects.<name>.tasks.<task>]; with several
-	// matching, a later group wins field by field.
-	TaskGroups []TaskGroup                `toml:"task_groups"`
-	Projects   map[string]ProjectOverride `toml:"projects"`
+	// Groups set task fields, tags and the release for the projects their
+	// selectors name, so a set of similar projects states them once. A
+	// group's tasks sit between [tasks.<task>] and
+	// [projects.<name>.tasks.<task>]; with several matching, a later group
+	// wins field by field.
+	Groups   []Group                    `toml:"groups"`
+	Projects map[string]ProjectOverride `toml:"projects"`
 	// Registries are private package registries, by name, that the
 	// workspace installs from ([workspace] registry) and publishes to
 	// ([release] registry, [projects.<name>] registry).
@@ -86,6 +94,9 @@ type StackConfig struct {
 	Structure   []string `toml:"structure"`
 	Scaffold    string   `toml:"scaffold"`
 	Deploy      []string `toml:"deploy"`
+	// Choices make the stack a saved selection: smith derives the language, the
+	// scaffold and the toolchain from them (ADR 0045).
+	Choices []string `toml:"choices"`
 }
 
 // WorkspaceSection names the monorepo.
@@ -99,6 +110,23 @@ type WorkspaceSection struct {
 	// whose manifests are not projects: discovery leaves them out in every
 	// language, and a change there affects no project.
 	Exclude []string `toml:"exclude"`
+	// AllowedOutputs are workspace-relative paths a task may write to outside
+	// the build directory (dist/): a folder a tool needs the output in, such as
+	// a go:embed folder. smith doctor does not report them.
+	AllowedOutputs []string `toml:"allowed_outputs"`
+	// SharedOutputs are workspace-relative folders (dist/drop) that several
+	// tasks fill on purpose, each with its own files; smith doctor does not
+	// report their overlap.
+	SharedOutputs []string `toml:"shared_outputs"`
+	// AlternativeOutputs are groups of tasks ("api:build", "api:build-dev")
+	// that write one folder but never run together; smith doctor does not
+	// report the overlap inside a group. smith still clears the folder before
+	// each task, so a run of two tasks of one group keeps the last one's files.
+	AlternativeOutputs [][]string `toml:"alternative_outputs"`
+	// Environments are the environments a new web app is built for, one build
+	// each (lcl, dev, uat, prd): the list the add question starts from. A web
+	// app keeps its own list in [projects.<name>.settings.vite].
+	Environments []string `toml:"environments"`
 	// Registry names the [registries] entry the workspace installs from;
 	// empty means the public registries.
 	Registry string `toml:"registry"`
@@ -106,20 +134,77 @@ type WorkspaceSection struct {
 	// to smith.toml, or an https URL (docs/reference/recipes.md). Empty means
 	// stacks only. `smith add --stack` bypasses it.
 	Recipe string `toml:"recipe"`
+	// Confirm says which plans ask before they are applied: "always" (the
+	// default) asks for every plan; "risky" asks only for a plan that deletes
+	// a file or edits a file that exists, and applies a plan that only creates
+	// files after printing it (ADR 0073). A flag always wins: --yes never
+	// asks, a terminal is never needed for a plan that is not risky.
+	Confirm string `toml:"confirm"`
+	// UpdateCheck is "on" or "off": whether smith may ask the npm registry,
+	// once a day, if a newer smith exists on the channel you installed (stable
+	// or next). Empty means the choice is not made yet: smith announces the
+	// request once and makes it only after a day. SMITH_UPDATE_CHECK, a user
+	// setting, wins over this; CI never asks.
+	UpdateCheck string `toml:"update_check"`
+	// CommitOperations makes every mutating command (smith add, remove,
+	// upgrade, derive, sync) commit what it changed as one commit, when the
+	// work tree is clean before it starts. smith undo reverts the last such
+	// commit. Default: false (ADR 0047).
+	CommitOperations bool `toml:"commit_operations"`
+	// Defaults is the defaults vintage the workspace was made with (for
+	// example "2026.11", ADR 0054). A newer smith keeps the defaults of this
+	// vintage until `smith upgrade --defaults` adopts a newer one. Empty means
+	// a workspace made before vintages.
+	Defaults string `toml:"defaults"`
 }
 
 // CISection chooses which pipelines smith generates.
 type CISection struct {
 	// Providers is any of "github", "azure", "gitlab", "circleci", "bitbucket". Default: ["github"].
 	Providers []string `toml:"providers"`
+	// Attest says what the generated GitHub pipeline does about the build
+	// provenance attestation of a release's archives: "on" attests and fails the
+	// release job when GitHub refuses (the default); "optional" attests but lets
+	// the job go on when GitHub refuses, as on a private repository of a free
+	// organisation, which has no attestations; "off" leaves the step out.
+	Attest string `toml:"attest"`
+	// Secrets name repository secrets the generated pipelines hand to every
+	// step that runs smith, as environment variables of the same name: the ci
+	// job, the native jobs and the assets jobs, for a build command that reads
+	// a token. Default: none.
+	Secrets []string `toml:"secrets"`
 	// Devcontainer writes .devcontainer/devcontainer.json with the
 	// toolchains CI installs, at the same versions. Default: false (smith new
 	// turns it on).
 	Devcontainer bool `toml:"devcontainer"`
+	// ManualRelease adds to the generated pipelines a way to start a release by
+	// hand: a package no commit releases (the same code under a new version),
+	// chosen with an input, parameter or variable of the provider. Off by
+	// default, because whoever can run the pipeline can then publish.
+	ManualRelease bool `toml:"manual_release"`
 	// NativeRunners are the machines the native job runs on, one per OS,
 	// as the provider names them. Default: ubuntu-latest, windows-latest,
 	// macos-latest.
 	NativeRunners []string `toml:"native_runners"`
+	// NativeOn is when the generated native job runs: "release" (the default)
+	// only for a run that releases, "main" also for a push or pull request
+	// into the release branch whose ci job passed, "always" for every run.
+	NativeOn string `toml:"native_on"`
+	// Triggers are the events that start the generated GitHub and Azure
+	// pipelines: "push", "pull_request". Default: both.
+	Triggers []string `toml:"triggers"`
+	// Audit is when the generated pipelines run smith ci audit: "always" (the
+	// default), "main" on a push to the release branch only, or "schedule" on a
+	// timer (GitHub only) and on the release branch.
+	Audit string `toml:"audit"`
+	// AuditCron is the cron schedule of audit = "schedule". Default: weekly,
+	// Mondays at 06:00 UTC.
+	AuditCron string `toml:"audit_cron"`
+	// PublishOn is where the generated GitHub and Azure pipelines pack apps,
+	// keep the packed apps, attest the release archives and build the release
+	// files: "release" (the default) on the release branch only, "channels" on
+	// the release branch and every [[release.channels]] branch.
+	PublishOn string `toml:"publish_on"`
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
@@ -172,6 +257,15 @@ type AgentSection struct {
 // AgentEnabled reports whether the workspace keeps the MonoSmith agent files.
 func (c Config) AgentEnabled() bool { return c.Agent.Enabled == nil || *c.Agent.Enabled }
 
+// Declared reports whether the table declares a project, one with a Root.
+func (o ProjectOverride) Declared() bool { return o.Root != "" }
+
+// DeploymentsOn reports whether a release records its registries as GitHub
+// deployments: on unless [release] github_deployments = false.
+func (r ReleaseSection) DeploymentsOn() bool {
+	return r.GitHubDeployments == nil || *r.GitHubDeployments
+}
+
 // ReleaseSection configures `smith release`.
 type ReleaseSection struct {
 	// Branch is the only branch a real release runs from. Default: main.
@@ -182,6 +276,10 @@ type ReleaseSection struct {
 	// release's commits as notes and an app's assets attached. Needs
 	// GITHUB_TOKEN (or GH_TOKEN). Default: false.
 	GitHubReleases bool `toml:"github_releases"`
+	// GitHubDeployments records each registry a release publishes to as a
+	// GitHub deployment (the repository's Deployments sidebar), on GitHub
+	// Actions only; needs the deployments: write permission. Default: true.
+	GitHubDeployments *bool `toml:"github_deployments"`
 	// TagFormat is the release tag prefix of every project that sets no
 	// tag_prefix (and no bare_tags), with {name} for the project's name and
 	// {scope} for [workspace] scope: "{scope}/{name}@" gives "@acme/kit@" for
@@ -202,6 +300,49 @@ type ReleaseSection struct {
 	// Registry names the [registries] entry packages are published to;
 	// empty means [workspace] registry, and then the public registries.
 	Registry string `toml:"registry"`
+	// APICheck says what smith does when the commits ask for a smaller version
+	// bump than the change of a package's public API needs (a removed export
+	// needs a major, an added one a minor): "warn" prints the warning and the
+	// bump to use, "error" stops the release too, "off" does not look. Plugins
+	// that cannot list a public API are never checked. Default: "warn".
+	APICheck string `toml:"api_check"`
+	// PropagationWait is the longest a release waits, before it moves a
+	// dist-tag (next, latest), for the platform packages of an npm release to
+	// be fetchable the way a person fetches them. "0" does not wait. A project
+	// sets its own with [projects.<name>.release] propagation_wait.
+	// Default: "15m".
+	PropagationWait string `toml:"propagation_wait"`
+	// Channels let a long-lived branch release its own line of prerelease
+	// versions (see ReleaseChannel). Default: none.
+	Channels []ReleaseChannel `toml:"channels"`
+}
+
+// ReleaseChannel makes a branch other than [release] branch release a line
+// of prerelease versions of its own: with branch "next", prerelease "beta" and
+// major 2 the releases are 2.0.0-beta.1, 2.0.0-beta.2 and so on, whatever
+// versions the release branch holds.
+type ReleaseChannel struct {
+	// Branch is the branch the channel releases from. It must differ from
+	// [release] branch and from the branch of every other channel.
+	Branch string `toml:"branch"`
+	// Prerelease is the prerelease identifier of the channel's versions, such
+	// as "beta" or "rc": letters, digits and hyphens, starting with a letter.
+	Prerelease string `toml:"prerelease"`
+	// Major is the major version of the channel's line. It must be 1 or more.
+	Major int `toml:"major"`
+	// DistTag is the name the channel publishes under: npm's dist-tag, which
+	// keeps latest where it is. Default: Prerelease. It must not be "latest".
+	DistTag string `toml:"dist_tag"`
+}
+
+// ChannelFor returns the channel that releases from branch.
+func (r ReleaseSection) ChannelFor(branch string) (ReleaseChannel, bool) {
+	for _, c := range r.Channels {
+		if c.Branch == branch {
+			return c, true
+		}
+	}
+	return ReleaseChannel{}, false
 }
 
 // DependenciesSection is the one-version policy: a production dependency is
@@ -217,6 +358,11 @@ type DependenciesSection struct {
 	// (a library pinned for a legacy app): doctor, smith sync and
 	// smith deps up --align leave them alone.
 	Allow []string `toml:"allow"`
+	// Presets lists the packages that carry the team's shared configuration
+	// (an ESLint config, a Jest preset, a tsconfig base): smith up shows their
+	// updates first, as one group, because a preset bump changes every project
+	// that uses it (ADR 0060). Default: none.
+	Presets []string `toml:"presets"`
 }
 
 // BoundariesSection says which projects may depend on which. smith doctor
@@ -236,7 +382,7 @@ type BoundariesSection struct {
 }
 
 // BoundaryRule is one rule of [boundaries]. A project is named the way
-// --projects names it: a name, a glob, kind:<kind>, lang:<language> or
+// --project names it: a name, a glob, kind:<kind>, lang:<language> or
 // tag:<tag>.
 type BoundaryRule struct {
 	// From is who the rule is about.
@@ -257,6 +403,15 @@ type BoundaryException struct {
 	To   string `toml:"to"`
 	// Reason is why the dependency is acceptable (required).
 	Reason string `toml:"reason"`
+}
+
+// DeriveSection configures derived files: files smith writes from facts and
+// the project graph, with an ownership record in smith.lock.
+type DeriveSection struct {
+	// Enabled turns derived files on: smith derive works, smith doctor
+	// reports drift and smith ci verify runs smith derive --check. Default:
+	// false.
+	Enabled bool `toml:"enabled"`
 }
 
 // CacheSection configures the local task cache.
@@ -281,6 +436,11 @@ type CacheSection struct {
 type PluginsSection struct {
 	// Enabled lists built-in plugins to load. Default: all of them.
 	Enabled []string `toml:"enabled"`
+	// Marketplace is the index `smith plugin search` and `smith plugin install
+	// <name>` read: an https URL or a file path. The SMITH_MARKETPLACE
+	// environment variable wins. Default: the index of
+	// github.com/monosmith-app/plugins.
+	Marketplace string `toml:"marketplace"`
 	// External plugins are executables speaking the plugin protocol.
 	External map[string]ExternalPlugin `toml:"external"`
 }
@@ -365,8 +525,20 @@ type DockerOverride struct {
 	Verify *bool `toml:"verify"`
 }
 
-// ProjectOverride adjusts one project.
+// ProjectOverride adjusts one project, or declares one that has no manifest of
+// its own (Root and Language).
 type ProjectOverride struct {
+	// Root declares a project at a workspace-relative folder that has no
+	// manifest of its own, such as a program or a library that is a package of
+	// the Go module above it. Language names the plugin that owns it. Default:
+	// none, the project is the one a plugin finds by a manifest.
+	Root string `toml:"root"`
+	// Language is the language of a declared project ("go"): the plugin that
+	// describes it. Needs Root.
+	Language string `toml:"language"`
+	// Kind is the kind of a declared project: "app", "lib" or "package".
+	// Default: the plugin's own choice (an app when the folder holds a program).
+	Kind string `toml:"kind"`
 	// TagPrefix replaces the release tag prefix ("<name>@" by default), so a
 	// converted project keeps its existing tags.
 	TagPrefix string `toml:"tag_prefix"`
@@ -377,7 +549,7 @@ type ProjectOverride struct {
 	// Stack replaces the stack the project's manifest records.
 	Stack string `toml:"stack"`
 	// Tags are added to the tags the project's plugin reports, so a
-	// [boundaries] rule or --projects tag:<tag> can name the project.
+	// [boundaries] rule or --project tag:<tag> can name the project.
 	Tags []string `toml:"tags"`
 	// Release makes an app releasable: it is versioned by its tag and its
 	// assets are built and attached to the release.
@@ -407,6 +579,9 @@ type ProjectOverride struct {
 	// ([projects.<name>.settings.<plugin>]): what a recipe's settings became
 	// when it created the project. A plugin reads its own table.
 	Settings map[string]map[string]any `toml:"settings"`
+	// Facts are shared facts for this project, the narrowest scope: they win
+	// over [facts] and over the defaults plugins publish.
+	Facts map[string]any `toml:"facts"`
 	// Recipe records the recipe the project was created from.
 	Recipe *ProjectRecipe          `toml:"recipe"`
 	Tasks  map[string]TaskOverride `toml:"tasks"`
@@ -471,6 +646,11 @@ type ProjectRelease struct {
 	// Checksums attaches, with Build, a SHA-256 checksums file of the files
 	// each runner uploads. Default: off (on for the apps whose plugin says).
 	Checksums *bool `toml:"checksums"`
+	// Install, with Build, says whether the assets job installs this
+	// project's dependencies before it runs Build. false means the build
+	// command needs none of them (it only zips files, say), so smith ci setup
+	// --assets leaves the project out. Default: true.
+	Install *bool `toml:"install"`
 	// Product fills {product}. Default: the project name.
 	Product string `toml:"product"`
 	// Platforms are os/arch pairs. Default: DefaultPlatforms.
@@ -491,6 +671,10 @@ type ProjectRelease struct {
 	// binary; the first also names the per-platform packages holding the
 	// binaries (<first>-<os>-<cpu>). Publishing needs NODE_AUTH_TOKEN.
 	NPM []string `toml:"npm"`
+	// PropagationWait overrides [release] propagation_wait for this project:
+	// the longest wait for its platform packages to be fetchable before a
+	// dist-tag moves. Empty takes the workspace's.
+	PropagationWait string `toml:"propagation_wait"`
 	// PyPI is the PyPI project the app is published as, one wheel per
 	// platform. Publishing needs PYPI_TOKEN.
 	PyPI string `toml:"pypi"`
@@ -501,6 +685,12 @@ type ProjectRelease struct {
 	// RubyGems is the gem the app is published as, one platform gem per
 	// platform. Publishing needs GEM_HOST_API_KEY.
 	RubyGems string `toml:"rubygems"`
+	// StableOnly lists the registries (pypi, nuget, rubygems) that receive
+	// stable versions only: a pre-release is skipped there and goes to the
+	// others (npm, under the channel's tag). Use it for a registry with a size
+	// limit that every pre-release would fill. Default: none, every registry
+	// receives every version.
+	StableOnly []string `toml:"stable_only"`
 	// Pub is the pub.dev package the app is published as, holding every
 	// platform's binary. pub.dev accepts it only from a GitHub Actions run on
 	// a tag matching the package's tag pattern, so the release pushes PubTag
@@ -509,6 +699,12 @@ type ProjectRelease struct {
 	// PubTag is that tag, with {name} (the release tag prefix without its
 	// "@") and {version}. Default: {name}-v{version}.
 	PubTag string `toml:"pub_tag"`
+	// Channels false keeps the project out of the release channels
+	// ([[release.channels]]): on a channel branch it is neither planned nor
+	// published. Use it for a project that cannot take a prerelease yet, such
+	// as a Go module whose path lacks the /v2 its channel's major needs.
+	// Default: true.
+	Channels *bool `toml:"channels"`
 	// Description, Homepage and License describe the app in those manifests
 	// and packages.
 	Description string `toml:"description"`
@@ -516,14 +712,24 @@ type ProjectRelease struct {
 	License     string `toml:"license"`
 }
 
-// TaskGroup is one [[task_groups]] entry: task overrides for every project
-// that all its selectors name. A selector is written the way --projects
-// writes one: a name, a glob, kind:<kind>, lang:<language> or tag:<tag>.
-type TaskGroup struct {
+// Group is one [[groups]] entry: task overrides, tags and a release for every
+// project that all its selectors name. A selector is written the way
+// --project writes one: a name, a glob (packages/*), kind:<kind>,
+// lang:<language> or tag:<tag>. A group sets at least one of Tasks, Tags and
+// Release.
+type Group struct {
 	// Select lists the selectors; a project must match every one.
 	Select []string `toml:"select"`
 	// Tasks are the overrides, by task name, with the fields of [tasks.<task>].
 	Tasks map[string]TaskOverride `toml:"tasks"`
+	// Tags are added to the tags of every project the group names, like
+	// [projects.<name>] tags.
+	Tags []string `toml:"tags"`
+	// Release is the [projects.<name>.release] table of every project the
+	// group names that sets none of its own; a project's own table replaces
+	// it whole. A group cannot name the package a project is published as
+	// (npm, pypi, nuget, rubygems, pub), because that name is the project's.
+	Release *ProjectRelease `toml:"release"`
 }
 
 // TaskOverride replaces individual fields of a plugin-inferred task. Unset

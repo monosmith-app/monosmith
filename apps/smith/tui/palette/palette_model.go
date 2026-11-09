@@ -1,20 +1,24 @@
 package palette
 
 import (
-	"fmt"
+	"slices"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Entry is a shell command (an id) listed with its shortcut, under a section.
-// Hint is the command line it runs. Unavailable is the reason it cannot be
-// used now, or "".
+// Hint is the command line it runs. Keywords are words a person may type for
+// the intent (synonyms): the search finds them, the list never shows them.
+// Unavailable is the reason it cannot be used now, or "".
 type Entry struct {
-	ID, Section, Title, Hint, Shortcut, Unavailable string
+	ID, Section, Title, Hint, Shortcut, Keywords, Unavailable string
 }
 
 // Result is what a key or a click did.
@@ -42,12 +46,16 @@ type Palette struct {
 	filter textinput.Model
 	cursor int
 	top    int
+	// guessed is true after Enter on one of several "Did you mean" rows: the
+	// next Enter runs it, so a typo never runs a command at the first press.
+	guessed bool
 }
 
 // New builds a palette of the shell's commands.
 func New(entries []Entry) Palette {
 	in := textinput.New()
-	in.Placeholder = "type to find a command"
+	in.Placeholder = words.Say("palette.placeholder")
+	in.Prompt = "" // the line draws its own pointer
 	in.Focus()
 	return Palette{filter: in}.WithEntries(entries)
 }
@@ -61,9 +69,24 @@ func (p Palette) WithEntries(entries []Entry) Palette {
 }
 
 // matches are the entries the filter finds: titles starting with it first,
-// then titles containing it, then hints and sections mentioning it. Nothing
-// typed lists the usable ones in section order.
+// then titles with it as the smith word in brackets, then titles containing it, then entries whose keywords carry every typed
+// word, then hints and sections mentioning it. Nothing typed lists the usable
+// ones in section order. When nothing is found the closest three commands are
+// returned, and suggested says so.
 func (p Palette) matches() []Entry {
+	found, _ := p.search()
+	return found
+}
+
+// suggested is true when the filter found nothing and the list holds the
+// closest commands instead.
+func (p Palette) suggested() bool {
+	_, exact := p.search()
+	return !exact
+}
+
+// search is matches with a flag: false when the list is the "Did you mean" one.
+func (p Palette) search() ([]Entry, bool) {
 	q := strings.ToLower(strings.TrimSpace(p.filter.Value()))
 	if q == "" {
 		var usable []Entry
@@ -72,17 +95,21 @@ func (p Palette) matches() []Entry {
 				usable = append(usable, e)
 			}
 		}
-		return usable
+		return usable, true
 	}
-	var prefix, name, described, blocked []Entry
+	var prefix, term, name, intent, described, blocked []Entry
 	for _, e := range p.items {
 		n := strings.ToLower(e.Title)
 		var bucket *[]Entry
 		switch {
 		case strings.HasPrefix(n, q):
 			bucket = &prefix
+		case strings.Contains(n, "("+q):
+			bucket = &term
 		case strings.Contains(n, q):
 			bucket = &name
+		case hasAllWords(strings.ToLower(e.Keywords), q):
+			bucket = &intent
 		case strings.Contains(strings.ToLower(e.Hint), q) || strings.Contains(strings.ToLower(e.Section), q):
 			bucket = &described
 		default:
@@ -93,7 +120,21 @@ func (p Palette) matches() []Entry {
 		}
 		*bucket = append(*bucket, e)
 	}
-	return append(append(append(prefix, name...), described...), blocked...)
+	found := slices.Concat(prefix, term, name, intent, described, blocked)
+	if len(found) == 0 {
+		return closest(p.items, q), false
+	}
+	return found, true
+}
+
+// hasAllWords is true when every word of query is part of text.
+func hasAllWords(text, query string) bool {
+	for _, w := range strings.Fields(query) {
+		if !strings.Contains(text, w) {
+			return false
+		}
+	}
+	return text != ""
 }
 
 // rows are the lines of the list: the matches, under their section headings
@@ -137,18 +178,24 @@ func (p Palette) Reset() Palette {
 
 // Key handles a key press.
 func (p Palette) Key(msg tea.KeyMsg) (Palette, Result) {
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	guessed := p.guessed
+	p.guessed = false
+	switch commands.NavNamed(msg.String()) {
+	case commands.NavCancel:
 		return p, Result{Closed: true}
-	case "up":
+	case commands.NavUp:
 		p.cursor = max(p.cursor-1, 0)
-	case "down":
+	case commands.NavDown:
 		p.cursor = min(p.cursor+1, max(len(p.matches())-1, 0))
-	case "pgup":
+	case commands.NavPageUp:
 		p.cursor = max(p.cursor-8, 0)
-	case "pgdown":
+	case commands.NavPageDown:
 		p.cursor = min(p.cursor+8, max(len(p.matches())-1, 0))
-	case "enter":
+	case commands.NavConfirm:
+		if found := p.matches(); p.suggested() && len(found) > 1 && !guessed && !found[min(p.cursor, len(found)-1)].unavailable() {
+			p.guessed = true
+			return p, Result{Refused: words.Say("palette.guess.confirm", "title", found[min(p.cursor, len(found)-1)].Title)}
+		}
 		return p.choose(p.cursor)
 	default:
 		p.filter, _ = p.filter.Update(msg)
@@ -167,7 +214,7 @@ func (p Palette) choose(i int) (Palette, Result) {
 	}
 	e := found[min(i, len(found)-1)]
 	if e.unavailable() {
-		return p, Result{Refused: e.Title + " is unavailable: " + e.Unavailable}
+		return p, Result{Refused: words.Say("palette.unavailable", "title", e.Title, "reason", e.Unavailable)}
 	}
 	return p, Result{CommandID: e.ID, Closed: true}
 }
@@ -223,8 +270,12 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 	out := []string{th.Accent(th.Icons.Pointer+" ") + p.filter.View()}
 	height := max(h-2, 1)
 	found := p.matches()
-	if len(found) == 0 {
-		out = append(out, th.Muted(" no command matches"))
+	switch {
+	case len(found) == 0:
+		out = append(out, th.Muted(words.Say("palette.empty")))
+	case p.suggested():
+		out = append(out, th.Muted(pane.Cut(words.Say("palette.closest", "typed", strings.TrimSpace(p.filter.Value())), w)))
+		height = max(height-1, 1)
 	}
 	rows := p.rows()
 	top := p.windowTop(rows, height)
@@ -235,9 +286,9 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 			out = append(out, p.line(th, found[r.index], r.index == p.cursor, w))
 		}
 	}
-	footer := "up/down choose · enter pick · esc close"
+	footer := words.Say("palette.footer")
 	if n := p.hidden(); n > 0 && strings.TrimSpace(p.filter.Value()) == "" {
-		footer = fmt.Sprintf("%d more not usable here: type to find them", n)
+		footer = words.Say("palette.footer.hidden", "count", n)
 	}
 	for len(out) < h-1 {
 		out = append(out, "")
@@ -254,7 +305,8 @@ func (p Palette) line(th theme.Theme, e Entry, selected bool, w int) string {
 	// One cell on each side, two after the name and one before the shortcut.
 	room := max(w-2-2-1-pane.Width(e.Title)-pane.Width(right), 0)
 	if pane.Width(desc) > room {
-		desc = strings.TrimRight(pane.Cell(desc, max(room-1, 0)), " ") + "…"
+		// Cell already ends a cut text with its own ellipsis.
+		desc = strings.TrimRight(pane.Cell(desc, room), " ")
 		if room < 2 {
 			desc = ""
 		}

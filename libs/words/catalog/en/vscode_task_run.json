@@ -1,0 +1,7 @@
+{
+  "vscode.task-run.run-finished": "Run finished",
+  "vscode.task-run.run-failed": "Run failed",
+  "vscode.task-run.affected-projects": "affected projects",
+  "vscode.task-run.all-projects": "all projects",
+  "vscode.task-run.projects": "{part} projects"
+}

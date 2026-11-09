@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -87,7 +88,7 @@ func Walk(ctx context.Context, plan []Planned, o Options) (Result, error) {
 		apply := o.Yes
 		if !apply {
 			if !o.Interactive {
-				fmt.Fprintln(o.Out, "\nPass --yes to apply these fixes.")
+				fmt.Fprintf(o.Out, "\nPass --yes to apply the %d safe fix(es) above.\n", len(safe))
 			} else {
 				apply = confirm(reader, o.Out, fmt.Sprintf("\nApply %d fix(es)?", len(safe)))
 				if !apply {
@@ -116,8 +117,15 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 	if stale(o, p, res) {
 		return nil
 	}
-	if err := ShowFix(o.Out, o.Root, p); err != nil {
-		return err
+	// The fix is shown once: before its first open question, or, when the
+	// answers given up front settle every question, as the resolved fix only.
+	shown := false
+	show := func() error {
+		if shown {
+			return nil
+		}
+		shown = true
+		return ShowFix(o.Out, o.Root, p)
 	}
 	answers := append([]int(nil), o.Choose...)
 	for {
@@ -126,6 +134,9 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 			return err
 		}
 		if question != nil {
+			if err := show(); err != nil {
+				return err
+			}
 			if !o.Interactive {
 				res.Pending = append(res.Pending, pendingFor(o, p, answers, question))
 				return nil
@@ -141,6 +152,13 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 			answers = append(answers, pick)
 			continue
 		}
+		// An answer that changes nothing ("leave it as it is") ends here: no
+		// empty review, no "Apply this fix?".
+		if len(p.Choices) > 0 && len(fix.Files) == 0 && len(fix.Steps) == 0 {
+			fmt.Fprintln(o.Out, "Left as it is.")
+			res.Skipped = append(res.Skipped, p.Description)
+			return nil
+		}
 		// Every question is answered: show what the answers add, then decide.
 		if len(p.Choices) > 0 {
 			chosen := Planned{Fix: fix, Checks: p.Checks}
@@ -148,6 +166,8 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 			if err := ShowFix(o.Out, o.Root, chosen); err != nil {
 				return err
 			}
+		} else if err := show(); err != nil {
+			return err
 		}
 		switch {
 		case o.Interactive:
@@ -176,6 +196,9 @@ func pendingFor(o Options, p Planned, answers []int, question *protocol.FixChoic
 		return pending
 	}
 	for i, opt := range question.Options {
+		if opt.Disabled != "" {
+			continue
+		}
 		pending.Commands = append(pending.Commands, o.Command(p, append(append([]int(nil), answers...), i+1))+"   # "+opt.Label)
 	}
 	return pending
@@ -193,7 +216,7 @@ func applyOne(ctx context.Context, o Options, p Planned, res *Result) error {
 		return fmt.Errorf("%s: %w", p.Description, err)
 	}
 	res.Applied = append(res.Applied, p.Description)
-	fmt.Fprintf(o.Out, "✔ %s\n", p.Description)
+	fmt.Fprintf(o.Out, marks.Passed+" %s\n", p.Description)
 	return nil
 }
 
@@ -201,6 +224,10 @@ func applyOne(ctx context.Context, o Options, p Planned, res *Result) error {
 func pickOption(in *bufio.Reader, out io.Writer, q protocol.FixChoice) (int, error) {
 	fmt.Fprintf(out, "\n%s\n", q.Question)
 	for i, opt := range q.Options {
+		if opt.Disabled != "" {
+			fmt.Fprintf(out, "  %d) %s (disabled: %s)\n", i+1, opt.Label, opt.Disabled)
+			continue
+		}
 		fmt.Fprintf(out, "  %d) %s\n", i+1, opt.Label)
 	}
 	fmt.Fprint(out, "  0) skip this fix\nChoose: ")
@@ -212,6 +239,10 @@ func pickOption(in *bufio.Reader, out io.Writer, q protocol.FixChoice) (int, err
 	}
 	if err != nil || n < 1 || n > len(q.Options) {
 		fmt.Fprintf(out, "%q is not one of the options; skipped.\n", line)
+		return 0, errDeclined
+	}
+	if reason := q.Options[n-1].Disabled; reason != "" {
+		fmt.Fprintf(out, "Option %d is disabled (%s); skipped.\n", n, reason)
 		return 0, errDeclined
 	}
 	return n, nil

@@ -2,11 +2,14 @@ package toolrun
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Log is where tool output goes; tests may replace it.
@@ -58,6 +61,36 @@ func Capture(dir string, argv []string, extraEnv ...string) (stdout, stderr stri
 	return out.String(), errOut.String(), nil
 }
 
+// ErrTimeout is wrapped by the error CaptureTimeout returns when the tool did
+// not finish in time and was stopped.
+var ErrTimeout = errors.New("timed out")
+
+// CaptureTimeout is Capture with a limit: a tool still running after timeout is
+// killed and the error wraps ErrTimeout. Only the tool is stopped.
+func CaptureTimeout(dir string, argv []string, timeout time.Duration, extraEnv ...string) (stdout, stderr string, err error) {
+	path, err := exec.LookPath(argv[0])
+	if err != nil {
+		return "", "", fmt.Errorf("%s is not installed or not on PATH", argv[0])
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, argv[1:]...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), extraEnv...)
+	var out, errOut bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errOut
+	// A killed npm can leave a child holding the pipes open; do not wait for it.
+	cmd.WaitDelay = time.Second
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return out.String(), errOut.String(), fmt.Errorf("%s %w after %s", strings.Join(argv, " "), ErrTimeout, timeout)
+		}
+		return out.String(), errOut.String(), fmt.Errorf("%s failed: %w", strings.Join(argv, " "), err)
+	}
+	return out.String(), errOut.String(), nil
+}
+
 // Available reports whether a program can be found on PATH (honouring
 // PATHEXT on Windows, so "npm" finds npm.cmd).
 func Available(program string) bool {
@@ -77,4 +110,17 @@ func command(dir string, argv []string, extraEnv []string) (*exec.Cmd, error) {
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), extraEnv...)
 	return cmd, nil
+}
+
+// Probe executes argv in dir to learn whether a tool exists and what it
+// prints, for a check such as `cargo audit --version`. It returns stdout and
+// discards stderr: a missing tool is the check's finding to word, and the
+// tool's own "no such command" lines would reach the person before it.
+//
+// Parameters: dir is where the tool runs; argv is the program and arguments;
+// extraEnv adds environment entries.
+// Returns: stdout, and an error when the tool is absent or exits non-zero.
+func Probe(dir string, argv []string, extraEnv ...string) (string, error) {
+	out, _, err := Capture(dir, argv, extraEnv...)
+	return out, err
 }

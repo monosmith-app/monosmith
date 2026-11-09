@@ -1,23 +1,25 @@
 package pane
 
-// MoveCursor is where a list cursor goes for a key in a list of n rows; page
-// is how many rows a page key moves.
-func MoveCursor(cursor, n int, key string, page int) int {
+import "github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+
+// MoveCursor is where a list cursor goes for a navigation action in a list of
+// n rows; page is how many rows a page action moves. Other actions leave it.
+func MoveCursor(cursor, n int, action commands.NavAction, page int) int {
 	if n == 0 {
 		return 0
 	}
-	switch key {
-	case "up", "k":
+	switch action {
+	case commands.NavUp:
 		cursor--
-	case "down", "j":
+	case commands.NavDown:
 		cursor++
-	case "pgup":
+	case commands.NavPageUp:
 		cursor -= max(page, 1)
-	case "pgdown":
+	case commands.NavPageDown:
 		cursor += max(page, 1)
-	case "home":
+	case commands.NavHome:
 		cursor = 0
-	case "end":
+	case commands.NavEnd:
 		cursor = n - 1
 	}
 	return min(max(cursor, 0), n-1)

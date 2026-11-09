@@ -93,6 +93,17 @@ func writeGoWork(root string, goRoots []string, out io.Writer) error {
 	if _, err := os.Stat(filepath.Join(root, "go.work")); err == nil {
 		return nil
 	}
+	// A project declared in smith.toml is a package of the root module: it has
+	// no go.mod to use, and a go.work with nothing in it breaks every go command.
+	var modules []string
+	for _, d := range goRoots {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(d), "go.mod")); err == nil {
+			modules = append(modules, d)
+		}
+	}
+	if goRoots = modules; len(goRoots) == 0 {
+		return nil
+	}
 	goBin, err := exec.LookPath("go")
 	if err != nil {
 		fmt.Fprintln(out, "  not done: go is not installed, so go.work was not written; run go work init later")

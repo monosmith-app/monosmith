@@ -1,7 +1,9 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -11,6 +13,8 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -50,6 +54,13 @@ option number. Steps run in the workspace root and stop at the first that fails.
 				return errors.New("--json prints the report and its fixes; apply them with --fix, without --json")
 			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
+			if _, old := workspace.AsRemovedKeys(err); old {
+				fixed, repairErr := repairRemovedKeys(cmd, asJSON, fix, yes)
+				if repairErr != nil || !fixed {
+					return repairErr
+				}
+				s, err = session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
+			}
 			if errors.Is(err, pluginadmit.ErrUntrusted) {
 				return reportUntrusted(cmd, asJSON)
 			}
@@ -64,6 +75,14 @@ option number. Steps run in the workspace root and stop at the first that fails.
 				enc.SetIndent("", "  ")
 				_ = enc.Encode(report)
 			} else {
+				// Without a terminal the reader is a script or an agent: the count of
+				// fixes comes first, and a long list of passed checks is folded.
+				scripted := fix && !term.IsTerminal(int(os.Stdin.Fd()))
+				if scripted {
+					if summary := doctorfix.Summary(Plan(Only(report, only))); summary != "" {
+						fmt.Fprint(out, summary+"\n")
+					}
+				}
 				var names []string
 				for _, p := range s.Graph.Projects {
 					names = append(names, p.Name, p.Root)
@@ -72,14 +91,14 @@ option number. Steps run in the workspace root and stop at the first that fails.
 					if f.OK && !verbose {
 						continue
 					}
-					mark := "✔"
+					mark := marks.Passed
 					if !f.OK {
-						mark = "✖"
+						mark = marks.Failed
 						if f.Warning {
 							mark = "!"
 						}
 					}
-					fmt.Fprintf(out, "%s %s\n", mark, f.Check)
+					fmt.Fprintf(out, "%s %s\n", mark, f.Located())
 					if !f.OK {
 						fmt.Fprintf(out, "    %s\n", f.Detail)
 						for _, step := range strings.Split(f.Remedy, "\n") {
@@ -88,11 +107,15 @@ option number. Steps run in the workspace root and stop at the first that fails.
 					}
 				}
 				if !verbose {
-					for _, line := range CollapsePassed(report.Findings, names) {
-						fmt.Fprintf(out, "✔ %s\n", line.Text)
+					passed := CollapsePassed(report.Findings, names)
+					if scripted {
+						passed = FoldPassed(passed)
+					}
+					for _, line := range passed {
+						fmt.Fprintf(out, marks.Passed+" %s\n", line.Text)
 					}
 				}
-				fmt.Fprintf(out, "\n%d passed, %d failed, %d warning(s)\n", report.Passed, report.Failed, report.Warnings)
+				fmt.Fprintf(out, "\n%d passed, %d failed, %s\n", report.Passed, report.Failed, words.Count("doctor.summary.warnings", report.Warnings))
 				if !fix && len(report.Fixes) > 0 {
 					fmt.Fprintln(out, fixesAvailable(report.Fixes))
 				}
@@ -116,7 +139,33 @@ option number. Steps run in the workspace root and stop at the first that fails.
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "with --fix, apply without asking")
 	cmd.Flags().IntSliceVar(&choose, "choose", nil, "with --fix and --only, answer the fix's questions by option number, in order (1,2)")
 	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")
-	return cmd
+	return commitableFixes(cmd)
+}
+
+// commitableFixes lets doctor --fix join the operation log (--commit, so smith
+// undo reverts the fixes). Doctor ends with ErrUnhealthy while a check still
+// fails, and a failed run is never committed, so the exit status is held back
+// until the operation has settled and returned after it.
+func commitableFixes(cmd *cobra.Command) *cobra.Command {
+	run := cmd.RunE
+	var unhealthy error
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		unhealthy = nil
+		err := run(c, args)
+		if errors.Is(err, ErrUnhealthy) {
+			unhealthy, err = err, nil
+		}
+		return err
+	}
+	wrapped := operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "fix the workspace with doctor" }})
+	settle := wrapped.RunE
+	wrapped.RunE = func(c *cobra.Command, args []string) error {
+		if err := settle(c, args); err != nil {
+			return err
+		}
+		return unhealthy
+	}
+	return wrapped
 }
 
 // reportUntrusted prints the external plugins and which of them smith will not
@@ -139,11 +188,11 @@ func reportUntrusted(cmd *cobra.Command, asJSON bool) error {
 		return ErrUnhealthy
 	}
 	for _, f := range report.Findings {
-		mark := "✔"
+		mark := marks.Passed
 		if !f.OK {
-			mark = "✖"
+			mark = marks.Failed
 		}
-		fmt.Fprintf(out, "%s %s\n", mark, f.Check)
+		fmt.Fprintf(out, "%s %s\n", mark, f.Located())
 		if !f.OK {
 			fmt.Fprintf(out, "    %s\n", f.Detail)
 			for _, step := range strings.Split(f.Remedy, "\n") {
@@ -217,6 +266,11 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 		}
 	}
 	interactive := term.IsTerminal(int(os.Stdin.Fd()))
+	// Without a terminal the summary already opened the output (see Command);
+	// the short version closes it, after the commands that apply each fix.
+	if !interactive {
+		defer func() { fmt.Fprint(out, "\n"+doctorfix.Reminder(plan)) }()
+	}
 	var applied, pending int
 	var opened *session.Session // the session a replan opened; the caller closes the first
 	defer func() {
@@ -225,6 +279,7 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 		}
 	}()
 	done := map[string]bool{} // fixes declined or left pending: not offered again
+	var clears []string       // the checks the applied fixes say they clear, to verify them
 	for round := 0; round < fixRounds && len(plan) > 0; round++ {
 		fmt.Fprintln(out)
 		res, err := doctorfix.Walk(cmd.Context(), plan, doctorfix.Options{
@@ -244,6 +299,11 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 			done[d] = true
 		}
 		applied += len(res.Applied)
+		for _, p := range plan {
+			if slices.Contains(res.Applied, p.Description) {
+				clears = append(clears, p.Checks...)
+			}
+		}
 		if err != nil {
 			return report, err
 		}
@@ -282,7 +342,11 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 	}
 	defer fresh.Close()
 	after := Run(fresh)
-	fmt.Fprintf(out, "\nafter fixing: %d passed, %d failed, %d warning(s)\n", after.Passed, after.Failed, after.Warnings)
+	fmt.Fprintf(out, "\nafter fixing: %d passed, %d failed, %s\n", after.Passed, after.Failed, words.Count("doctor.summary.warnings", after.Warnings))
+	// Every fix verifies itself: what is still wrong is said, not left to the next run.
+	for _, f := range StillFailing(after, clears) {
+		fmt.Fprintln(out, StillFailingText(f))
+	}
 	if unresolved {
 		return after, ErrFixesPending
 	}

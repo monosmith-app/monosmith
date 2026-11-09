@@ -1,0 +1,21 @@
+{
+  "vscode.install-tools.too-old": "too old",
+  "vscode.install-tools.not-installed": "not installed",
+  "vscode.install-tools.how-do-you-want-to-get": "{why}. How do you want to get it?",
+  "vscode.install-tools.monosmith-this-command-needs-administrator-rights": "MonoSmith: this command needs administrator rights.",
+  "vscode.install-tools.let-smith-run-it-opens-a": "{command}\n\n\"Let smith run it\" opens a terminal where the system or sudo asks for your permission. \"I will run it myself\" shows the command and goes on. Skipping means: {consequence}.",
+  "vscode.install-tools.monosmith-ways-to-get": "MonoSmith: ways to get {title}",
+  "vscode.install-tools.then-open-a-new-terminal": "{text}\n\nThen open a new terminal.",
+  "vscode.install-tools.copy": "Copy",
+  "vscode.install-tools.monosmith-every-tool-the-workspace-needs": "MonoSmith: every tool the workspace needs is installed.",
+  "vscode.install-tools.monosmith-the-tools-were-not-checked": "MonoSmith: the tools were not checked. {message}",
+  "vscode.install-tools.smith-tools-install-printed-something-that": "smith tools install printed something that is not a plan",
+  "vscode.install-tools.opened-install-then-open-a-new": "Opened {download}. Install {title}, then open a new terminal.",
+  "vscode.install-tools.install-yourself-then-open-a-new": "Install {title} yourself, then open a new terminal.",
+  "vscode.install-tools.running-in-the-terminal": "Running in the terminal: {command}",
+  "vscode.install-tools.run-this-yourself-then-open-a": "Run this yourself, then open a new terminal: {command}",
+  "vscode.install-tools.the-install-did-not-finish": "The install did not finish. {describeFailure}",
+  "vscode.install-tools.monosmith-is": "MonoSmith: {title} is {say}",
+  "vscode.install-tools.monosmith": "MonoSmith: {join}",
+  "vscode.install-tools.skipped": "Skipped {title}: {consequence}."
+}

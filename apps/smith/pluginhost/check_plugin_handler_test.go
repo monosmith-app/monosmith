@@ -64,7 +64,7 @@ func checkExample(t *testing.T, plugin string) {
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 	cmd.SetArgs([]string{plugin})
-	if err := cmd.Execute(); err != nil || strings.Contains(stdout.String(), "✖") {
+	if err := cmd.Execute(); err != nil || strings.Contains(stdout.String(), "×") {
 		t.Fatalf("%s does not pass under a minimal environment: %v\n%s\n%s", plugin, err, stdout.String(), stderr.String())
 	}
 }

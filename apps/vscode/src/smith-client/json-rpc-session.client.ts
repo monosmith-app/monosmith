@@ -1,5 +1,6 @@
 import type { Readable, Writable } from 'node:stream'
 import type { SmithConnection } from './smith-connection.contract.ts'
+import { say } from '../words/index.ts'
 
 interface Message {
   id?:     number
@@ -27,7 +28,7 @@ export function openSession (input: Readable, output: Writable): SmithConnection
   const waiting = new Map<number, Waiting>()
   const listeners = new Set<(event: unknown) => void>()
 
-  const close = (reason: Error = new Error('smith serve ended')): void => {
+  const close = (reason: Error = new Error(say('vscode.smith-client.smith-serve-ended'))): void => {
     closed ??= reason
     for (const call of waiting.values()) call.reject(closed)
     waiting.clear()
@@ -45,7 +46,7 @@ export function openSession (input: Readable, output: Writable): SmithConnection
     if (call !== undefined && message.id !== undefined) {
       waiting.delete(message.id)
       if (message.error === undefined) call.resolve(message.result)
-      else call.reject(new Error(message.error.message ?? 'smith serve failed the request'))
+      else call.reject(new Error(message.error.message ?? say('vscode.smith-client.smith-serve-failed-the-request')))
     } else if (message.method === 'event') {
       for (const listener of listeners) listener(message.params)
     }

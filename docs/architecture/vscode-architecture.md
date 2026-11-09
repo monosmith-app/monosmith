@@ -65,6 +65,14 @@ the `vscode` API is a `*.client.ts`; the rest runs without VS Code and is unit t
 | `health` | `doctor`, the Health tree, the fix preview and `doctor.fix` |
 | `dependencies`, `release-preview` | `updates` and `release.preview` as trees |
 | `project-insight` | `explain` and `graph` rendered as documents |
+| `empty-folder` | find a folder with no files and offer `smith new --here` in a terminal (`findBlankFolders`, `toNewArguments`) |
+| `adopt-offer` | find a folder that holds a repository smith can bring in, and offer a bare `smith` (its screen asks how far to go) or `smith adopt --dry-run` in a terminal (`findRepositoryOffers`, `toAdoptArguments`) |
+| `agent-install` | offer the MonoSmith agent and the `smith mcp` registration (`monosmith.installAgent`, `monosmith.installMcp`), run `smith agent install --claude --vscode` (or `smith mcp install --vscode`) as a preview first and write with `--yes`, open Claude Code on the agent (`monosmith.talkToAgent`), write `AGENTS.md` with `smith agent file` (`monosmith.agentFile`), and record an opt-out with `smith config set agent.enabled false` |
+| `smith-run` | what a run of the `smith` executable leaves (`SmithRun`) and how its `×` problem and `→` fixes are worded for a person (`sayProblem`, `describeFailure`) |
+| `add-project` | `monosmith.addProject`: read `smith kinds`, `choices` and `stacks` as JSON, ask with quick picks, show the plan of `smith add --dry-run`, add with `--yes` after a yes (`--fresh` offered when the plan follows the siblings) |
+| `derive-files` | read `smith derive --check` (text; no JSON yet) into rows of the Health view and Problems entries, and `--explain`, `--replace`, `--adopt`, `--eject` after a yes |
+| `why`, `undo-change`, `workspace-report` | `smith why --json` and `smith why-miss --json` as pages, `smith undo --dry-run` then `--yes`, `smith report -o <temp file>` opened in the browser |
+| `words` | the typed `say(key, values)` of the texts people read, generated from the catalogue in `libs/words` (never edited by hand), and the guard that forbids raw wording |
 | `refresh` | what makes the views stale, and a coalescer |
 | `settings`, `status-bar`, `context-keys`, `smith-terminal`, `extension-api` | `monosmith.*` settings, the status item, context keys, opening a terminal, and the small state API the integration tests read |
 
@@ -161,7 +169,7 @@ under `xvfb-run -a`.
 
 `build` bundles `src/main.ts` with esbuild into `dist/apps/vscode/main.js` (CommonJS, Node 20,
 `vscode` external) and copies the media without the README screenshots, which stay out of the
-`.vsix`. The extension is an app of this workspace with a release section
+`.vsix`, and the `package.nls*.json` files that give `package.json` its texts. The extension is an app of this workspace with a release section
 (`[projects.vscode.release]` in the repository's `smith.toml`), so it is versioned by its tag and
 the `vscode` plugin (`libs/plugin-node-toolchains/vscode`) packs and publishes it. Publishing to the
 Marketplace uses `VSCE_PAT`, or, with `[release] vsce_entra = true` as in this repository, a
@@ -179,7 +187,8 @@ also says the package goes to Open VSX; that path was not checked for this page.
 | Finding and starting smith | `apps/vscode/src/smith-client` |
 | Folder state | `apps/vscode/src/folder-session`, `workspace-folders`, `workspace-trust` |
 | Running and output | `apps/vscode/src/task-run`, `task-output`, `task-provider` |
-| Contributions (commands, views, settings, matchers) | `apps/vscode/package.json` |
+| Contributions (commands, views, settings, matchers) | `apps/vscode/package.json` (every shown text is a `%key%`) |
+| Texts people read | catalogue `libs/words/catalog/en/vscode_*.json` (keys `vscode.…`), shared keys listed in `libs/words/surface/vscode.json`; generated `apps/vscode/package.nls*.json` and `apps/vscode/src/words/smith-words.config.ts` ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)) |
 | Integration tests | `apps/vscode/integration` |
 | Server side | `apps/smith/engineserver` |
 

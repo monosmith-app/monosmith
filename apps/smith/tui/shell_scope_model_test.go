@@ -8,7 +8,7 @@ import (
 func TestTheFooterOfHomeNamesWhatBuildAndBuildAllRunOn(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"b build orders", "B build all 4", "t test orders"} {
+	for _, want := range []string{"build orders (b)", "build all 3 (B)", "test orders (t)"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
@@ -28,18 +28,31 @@ func TestShiftBBuildsEveryProjectAndBBuildsTheSelectedOne(t *testing.T) {
 	}
 }
 
-func TestOnHomeTheRunKeysCoverTheWholeWorkspaceAndSayWhichScope(t *testing.T) {
-	l := newLab(t, true, 140, 34)
+func TestOnHomeTheLowerCaseRunKeysActOnTheSelectionAndTheCapitalsOnEveryProject(t *testing.T) {
+	// 160 columns: the footer also names the arrows that move through Home.
+	l := newLab(t, true, 160, 34)
 	l.openTab("home")
 	footer := l.lines()[len(l.lines())-2]
-	if !strings.Contains(footer, "b build all 4") || strings.Contains(footer, "build orders") {
+	if !strings.Contains(footer, "build orders (b)") || !strings.Contains(footer, "build all 3 (B)") {
 		t.Fatalf("the Home footer is %q", footer)
 	}
 	l.keys("b")
-	if got := l.lastStarted(); got != "run build" {
+	if got := l.lastStarted(); got != "run build -p orders" {
 		t.Fatalf("b on Home started %q", got)
 	}
-	l.has("Build · all 4 projects")
+	l.has("orders · build")
+}
+
+func TestWithARunOpenTheKeysKeepTheSameMeaning(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("b", "t")
+	if got := l.lastStarted(); got != "run test -p orders" {
+		t.Fatalf("t with the run panel open started %q", got)
+	}
+	l.keys("T")
+	if got := l.lastStarted(); got != "run test" {
+		t.Fatalf("T with the run panel open started %q", got)
+	}
 }
 
 func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {
@@ -49,15 +62,15 @@ func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {
 	if got := l.lastStarted(); got != "run build -p orders" {
 		t.Fatalf("b on Projects started %q", got)
 	}
-	l.has("Build · orders")
+	l.has("orders · build")
 }
 
-func TestTheRunTabOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
+func TestTheProjectDetailOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.openTab("run")
-	l.has("Nothing has run yet", "Build everything (4)", "Test everything (4)")
-	l.hasNot("in the list")
-	l.clickText("Build everything")
+	l.openTab("projects")
+	l.has("Verify (V)", "Build (B)", "Test (T)", "Lint (L)", "Typecheck (C)")
+	l.hasNot("Run on every project", "in the list")
+	l.clickText("Build (B)")
 	if got := l.lastStarted(); got != "run build" {
 		t.Fatalf("the button started %q", got)
 	}
@@ -72,13 +85,15 @@ func TestThePaletteInstallOpensTheGuidedFormOnTheProjectOnScreenAndOffersNoRawCo
 	l.has("Install packages", "Project: ‹ orders ›", "development dependency")
 	l.hasNot("Command palette")
 	// Nothing to confirm until a package is typed: the form never offers a command that fails.
-	l.keys("enter")
+	// The first Enter answers the "Add" question with its default (the registry);
+	// the second, on the empty packages field, says what is missing.
+	l.keys("enter", "enter")
 	l.has("type at least one package")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v", l.started)
 	}
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders zod" {
+	if got := l.lastStarted(); got != "install -p orders --registry zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -93,7 +108,7 @@ func TestThePaletteGroupsItsCommandsAndGivesEveryKeyOnce(t *testing.T) {
 	l := newLab(t, true, 140, 42)
 	l.keys("ctrl+p")
 	l.has("Build", "Projects")
-	l.has("Build orders", "Build all 4", "smith run build -p orders")
+	l.has("Build orders", "Build all 3", "smith run build -p orders")
 	l.hasNot("uninstall >", "install >")
 	seen := map[string]int{}
 	for _, e := range l.sh().pal.Entries() {

@@ -30,9 +30,9 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			gem.Name = path.Base(root)
 		}
 		kind := projectkind.Resolve(gem.Kind, root, protocol.ProjectLib)
-		executable := ""
+		start := ""
 		if len(gem.Executables) > 0 {
-			executable = gem.Executables[0]
+			start = "exe/" + gem.Executables[0]
 		}
 		_, specErr := os.Stat(filepath.Join(dir, "spec"))
 		result.Projects = append(result.Projects, protocol.Project{
@@ -43,7 +43,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Exports:  []string{gem.Name},
 			Imports:  gem.Dependencies,
 			Version:  gem.Version,
-			Tasks:    Tasks(kind, executable, specErr == nil),
+			Tasks:    Tasks(kind, start, specErr == nil),
 			Stack:    gem.Stack,
 		})
 	}

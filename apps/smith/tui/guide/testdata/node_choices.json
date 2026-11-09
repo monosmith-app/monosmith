@@ -1,0 +1,389 @@
+[
+ {
+  "axis": "framework",
+  "name": "aws-lambda",
+  "description": "a serverless AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)",
+  "title": "AWS Lambda",
+  "aliases": [
+   "serverless",
+   "cloud",
+   "functions",
+   "faas",
+   "amazon",
+   "aws"
+  ],
+  "layer": "host",
+  "language": "node",
+  "needs": [
+   "trigger",
+   "runtime",
+   "lint",
+   "test"
+  ],
+  "conflicts": [
+   "jest"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "azure-functions",
+  "description": "a serverless Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+  "title": "Azure Functions",
+  "aliases": [
+   "serverless",
+   "cloud",
+   "functions",
+   "faas",
+   "microsoft",
+   "azure"
+  ],
+  "layer": "host",
+  "language": "node",
+  "needs": [
+   "trigger",
+   "runtime",
+   "lint",
+   "test"
+  ],
+  "conflicts": [
+   "jest"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "electron",
+  "description": "an Electron desktop app in TypeScript: a main process, a preload script that uses contextBridge, and one renderer page; start opens the window, package makes the app folder with Electron Forge",
+  "title": "Electron",
+  "aliases": [
+   "desktop",
+   "windows",
+   "mac",
+   "linux",
+   "native",
+   "app",
+   "chromium"
+  ],
+  "layer": "shell",
+  "language": "node",
+  "needs": [
+   "lint",
+   "test"
+  ],
+  "conflicts": [
+   "jest",
+   "azure-functions",
+   "aws-lambda",
+   "gcp-functions",
+   "tauri"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "gcp-functions",
+  "description": "a serverless Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app",
+  "title": "Google Cloud Functions",
+  "aliases": [
+   "serverless",
+   "cloud",
+   "functions",
+   "faas",
+   "google",
+   "gcp",
+   "cloud run"
+  ],
+  "layer": "host",
+  "language": "node",
+  "needs": [
+   "trigger",
+   "runtime",
+   "lint",
+   "test"
+  ],
+  "conflicts": [
+   "jest"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "html",
+  "description": "a page in TypeScript with no framework, built with Vite",
+  "title": "Plain page",
+  "aliases": [
+   "web",
+   "static",
+   "vanilla",
+   "no framework",
+   "browser"
+  ],
+  "language": "node",
+  "needs": [
+   "lint",
+   "test"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "react",
+  "description": "a React 19 app in TypeScript, built with Vite",
+  "title": "React",
+  "aliases": [
+   "web",
+   "frontend",
+   "ui",
+   "browser",
+   "spa",
+   "jsx"
+  ],
+  "language": "node",
+  "needs": [
+   "lint",
+   "test"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "svelte",
+  "description": "a Svelte 5 app in TypeScript, built with Vite and checked by svelte-check",
+  "title": "Svelte",
+  "aliases": [
+   "web",
+   "frontend",
+   "ui",
+   "browser",
+   "spa"
+  ],
+  "language": "node",
+  "needs": [
+   "lint",
+   "test"
+  ]
+ },
+ {
+  "axis": "framework",
+  "name": "vue",
+  "description": "a Vue 3 app in TypeScript, built with Vite and type-checked by vue-tsc",
+  "title": "Vue",
+  "aliases": [
+   "web",
+   "frontend",
+   "ui",
+   "browser",
+   "spa"
+  ],
+  "language": "node",
+  "needs": [
+   "lint",
+   "test"
+  ]
+ },
+ {
+  "axis": "library",
+  "name": "p5",
+  "description": "draw with p5: a bouncing-ball slice (pure motion, a p5 sketch, a lazy component)",
+  "title": "p5.js",
+  "aliases": [
+   "creative",
+   "drawing",
+   "canvas",
+   "art",
+   "sketch",
+   "graphics"
+  ],
+  "language": "node",
+  "many": true,
+  "requires": [
+   "react"
+  ]
+ },
+ {
+  "axis": "lint",
+  "name": "eslint",
+  "description": "lint and format with @monosmith/eslint-config",
+  "title": "ESLint",
+  "aliases": [
+   "lint",
+   "format",
+   "style guide",
+   "static analysis"
+  ],
+  "language": "node",
+  "default": true
+ },
+ {
+  "axis": "runtime",
+  "name": "node22",
+  "description": "Node.js 22, the previous LTS; all three hosts support it until April 2027",
+  "title": "Node.js 22",
+  "aliases": [
+   "serverless",
+   "runtime",
+   "version"
+  ],
+  "layer": "host",
+  "language": "node"
+ },
+ {
+  "axis": "runtime",
+  "name": "node24",
+  "description": "Node.js 24, the current LTS; all three hosts support it",
+  "title": "Node.js 24",
+  "aliases": [
+   "serverless",
+   "runtime",
+   "version"
+  ],
+  "layer": "host",
+  "language": "node",
+  "suggested": true
+ },
+ {
+  "axis": "shell",
+  "name": "tauri",
+  "description": "wraps a web app in a small native desktop program (Rust and the system web view); adds src-tauri to the app. Needs Rust to build. For an app that exists, run smith tauri add",
+  "title": "Tauri",
+  "aliases": [
+   "desktop",
+   "windows",
+   "mac",
+   "linux",
+   "native",
+   "rust",
+   "app"
+  ],
+  "layer": "shell",
+  "language": "node",
+  "conflicts": [
+   "electron",
+   "azure-functions",
+   "aws-lambda",
+   "gcp-functions"
+  ]
+ },
+ {
+  "axis": "style",
+  "name": "bootstrap",
+  "description": "Bootstrap 5 styles, imported by the entry file",
+  "title": "Bootstrap",
+  "aliases": [
+   "css",
+   "style",
+   "components",
+   "web"
+  ],
+  "language": "node"
+ },
+ {
+  "axis": "style",
+  "name": "chakra",
+  "description": "Chakra UI 3 components; the app is wrapped in its provider (React only)",
+  "title": "Chakra UI",
+  "aliases": [
+   "css",
+   "style",
+   "components",
+   "react",
+   "web"
+  ],
+  "language": "node",
+  "requires": [
+   "react"
+  ]
+ },
+ {
+  "axis": "style",
+  "name": "tailwind",
+  "description": "Tailwind CSS 4 through its Vite plugin, imported by the entry file",
+  "title": "Tailwind CSS",
+  "aliases": [
+   "css",
+   "style",
+   "utility",
+   "web"
+  ],
+  "language": "node"
+ },
+ {
+  "axis": "test",
+  "name": "jest",
+  "description": "test with Jest (ts-jest, or @swc/jest when the siblings use it)",
+  "title": "Jest",
+  "aliases": [
+   "test",
+   "unit test",
+   "testing"
+  ],
+  "language": "node"
+ },
+ {
+  "axis": "test",
+  "name": "vitest",
+  "description": "test with Vitest",
+  "title": "Vitest",
+  "aliases": [
+   "test",
+   "unit test",
+   "testing",
+   "vite"
+  ],
+  "language": "node",
+  "default": true
+ },
+ {
+  "axis": "trigger",
+  "name": "blob-trigger",
+  "description": "answers a new file in storage (Azure: a blob, AWS: an S3 event, Google: a Cloud Storage event)",
+  "title": "Blob trigger",
+  "aliases": [
+   "serverless",
+   "storage",
+   "file",
+   "bucket"
+  ],
+  "layer": "host",
+  "language": "node"
+ },
+ {
+  "axis": "trigger",
+  "name": "http-trigger",
+  "description": "answers an HTTP request (Azure: an HTTP trigger, AWS: API Gateway, Google: an HTTP function)",
+  "title": "HTTP trigger",
+  "aliases": [
+   "serverless",
+   "request",
+   "api",
+   "web"
+  ],
+  "layer": "host",
+  "language": "node",
+  "suggested": true
+ },
+ {
+  "axis": "trigger",
+  "name": "queue-trigger",
+  "description": "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)",
+  "title": "Queue trigger",
+  "aliases": [
+   "serverless",
+   "message",
+   "queue"
+  ],
+  "layer": "host",
+  "language": "node"
+ },
+ {
+  "axis": "trigger",
+  "name": "timer-trigger",
+  "description": "runs on a schedule (Azure: a timer trigger, AWS: an EventBridge schedule); Google has none, use an HTTP function that Cloud Scheduler calls",
+  "title": "Timer trigger",
+  "aliases": [
+   "serverless",
+   "schedule",
+   "cron"
+  ],
+  "layer": "host",
+  "language": "node",
+  "conflicts": [
+   "gcp-functions"
+  ]
+ }
+]

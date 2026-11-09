@@ -3,6 +3,7 @@ package updatenotice
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -21,8 +22,16 @@ type Options struct {
 	// Off is true in CI: nothing is read, said or written.
 	Off bool
 	// NoCheck is true when the person turned the registry check off
-	// (SMITH_NO_UPDATE_CHECK=1). A version change is still announced.
+	// (SMITH_NO_UPDATE_CHECK=1, SMITH_UPDATE_CHECK=off or update_check = "off").
+	// A version change is still announced.
 	NoCheck bool
+	// Announce is true when the person has not chosen yet (no update_check
+	// setting): the first run says what the check is and asks nothing for a
+	// day, so the first request never comes as a surprise.
+	Announce bool
+	// Always shows a newer version every time, not once a day. smith --version
+	// and smith doctor set it: the person asked about the version.
+	Always bool
 	// Now is the clock; time.Now when nil.
 	Now func() time.Time
 	// Fetch asks the registry for the newest version; FetchLatest with a short
@@ -35,9 +44,10 @@ type Options struct {
 // Pending is an announcement being worked out: the upgrade line is known at
 // once, the registry answer arrives later or never.
 type Pending struct {
-	o       Options
-	upgrade string
-	done    chan struct{}
+	o        Options
+	upgrade  string
+	announce string
+	done     chan struct{}
 }
 
 // Start notes which smith runs now and, when a day has passed since the last
@@ -60,12 +70,21 @@ func Start(o Options) *Pending {
 	if m.LastVersion != o.Version {
 		update(o.Home, func(m *memory) { m.LastVersion = o.Version })
 	}
-	if o.NoCheck || o.Now().Sub(m.CheckedAt) < checkEvery {
+	if o.NoCheck {
 		return p
 	}
+	if o.Announce && m.AnnouncedAt.IsZero() {
+		p.announce = "smith can ask npm once a day if a newer smith exists (one request to registry.npmjs.org, nothing about you is sent). It starts tomorrow; choose now: update_check = \"on\" or \"off\" under [workspace] in smith.toml, or SMITH_UPDATE_CHECK=on|off"
+		update(o.Home, func(m *memory) { m.AnnouncedAt, m.CheckedAt = o.Now(), o.Now() })
+		return p
+	}
+	if o.Now().Sub(m.CheckedAt) < checkEvery {
+		return p
+	}
+	channel := ChannelOf(o.Version)
 	fetch := o.Fetch
 	if fetch == nil {
-		fetch = func(ctx context.Context) (string, error) { return FetchLatest(ctx, 2*time.Second) }
+		fetch = func(ctx context.Context) (string, error) { return FetchLatest(ctx, time.Second, channel) }
 	}
 	// Marked before the question, so a slow or missing network is tried once a
 	// day and not on every command.
@@ -74,7 +93,7 @@ func Start(o Options) *Pending {
 	go func() {
 		defer close(p.done)
 		if latest, err := fetch(context.Background()); err == nil {
-			update(o.Home, func(m *memory) { m.Latest = latest })
+			update(o.Home, func(m *memory) { m.Latest, m.Channel = latest, channel })
 		}
 	}()
 	return p
@@ -87,6 +106,9 @@ func (p *Pending) Lines() []string {
 	if p.upgrade != "" {
 		lines = append(lines, p.upgrade)
 	}
+	if p.announce != "" {
+		lines = append(lines, p.announce)
+	}
 	if p.done != nil && p.o.Wait > 0 {
 		select {
 		case <-p.done:
@@ -97,10 +119,22 @@ func (p *Pending) Lines() []string {
 		return lines
 	}
 	m := load(p.o.Home)
-	if !Newer(m.Latest, p.o.Version) || p.o.Now().Sub(m.NoticeAt) < checkEvery {
+	channel := ChannelOf(p.o.Version)
+	if m.Channel != "" && m.Channel != channel {
+		return lines // read for another channel: the version was installed from a different one since
+	}
+	if !Newer(m.Latest, p.o.Version) || (!p.o.Always && p.o.Now().Sub(m.NoticeAt) < checkEvery) {
 		return lines
 	}
 	update(p.o.Home, func(m *memory) { m.NoticeAt = p.o.Now() })
-	return append(lines, fmt.Sprintf("smith %s is out, you have %s: update with %s (hide this: SMITH_NO_UPDATE_CHECK=1)",
-		m.Latest, p.o.Version, InstallCommand(p.o.Exe, p.o.GOOS)))
+	command := InstallCommand(p.o.Exe, p.o.GOOS)
+	if channel == "next" {
+		command = strings.Replace(command, "@latest", "@next", 1)
+	}
+	on := ""
+	if channel == "next" {
+		on = " on the next channel"
+	}
+	return append(lines, fmt.Sprintf("smith %s is out%s, you have %s: update with %s (turn this off: update_check = \"off\" under [workspace], or SMITH_UPDATE_CHECK=off)",
+		m.Latest, on, p.o.Version, command))
 }

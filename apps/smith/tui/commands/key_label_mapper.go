@@ -3,9 +3,9 @@ package commands
 import "strings"
 
 var keyNames = map[string]string{
-	" ": "Space", "enter": "Enter", "esc": "Esc", "tab": "Tab", "shift+tab": "Shift+Tab",
-	"up": "Up", "down": "Down", "left": "Left", "right": "Right", "pgup": "PgUp", "pgdown": "PgDn",
-	"home": "Home", "end": "End", "delete": "Delete",
+	" ": "Space", "enter": "Enter", "esc": "Esc", "tab": "Tab", "shift+tab": "Shift+Tab", // words:literal
+	"up": "Up", "down": "Down", "left": "Left", "right": "Right", "pgup": "PgUp", "pgdown": "PgDn", // words:literal
+	"home": "Home", "end": "End", "delete": "Delete", // words:literal
 }
 
 // KeyLabel is a Bubble Tea key name as it is shown: "ctrl+p" as "Ctrl+P",
@@ -21,7 +21,7 @@ func KeyLabel(key string) string {
 	for i, p := range parts {
 		parts[i] = strings.ToUpper(p[:1]) + p[1:]
 	}
-	if last := parts[len(parts)-1]; len(last) > 1 && !strings.HasPrefix(last, "F") {
+	if last := parts[len(parts)-1]; len(last) > 1 && !strings.HasPrefix(last, "F") { // words:literal
 		return strings.Join(parts, "+")
 	}
 	parts[len(parts)-1] = strings.ToUpper(parts[len(parts)-1])

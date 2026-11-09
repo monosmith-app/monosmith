@@ -11,7 +11,7 @@ The dotnet plugin makes every `.csproj` and `.fsproj` below the workspace root a
 | `--lang` values | `dotnet`, `csharp`, `fsharp` (see the note in [Creating a project](#creating-a-project)) |
 | Manifests that make a directory a project | `*.csproj`, `*.fsproj` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`. Not advertised: `remove`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `link`. Not advertised: `remove`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`dotnet-app`, `dotnet-lib`, `dotnet-package`) |
 
@@ -131,6 +131,18 @@ Wrote 6 file(s):
 
 `fsharp` is accepted as a `--lang` value, but the templates are C#: a project made with `--lang fsharp` is a C# project. Existing `.fsproj` projects are discovered and built, but the plugin does not generate F#. No F# project was run here.
 
+## Function apps
+
+`smith add app api --lang dotnet --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: the isolated worker for Azure (`Program.cs`, `host.json`, the Worker packages), a class library with `Amazon.Lambda.Core` and the serializer attribute plus `template.yaml` for AWS, a Functions Framework class (`Google.Cloud.Functions.Hosting`) for Google. Runtimes `dotnet10` (suggested) and `dotnet8` (not with Google, which retires it on 2026-11-10). `package` is `dotnet publish` into `dist/dotnet/publish/<project>/release`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 | Where | Key | Effect | Read in |
@@ -151,12 +163,12 @@ The plugin reads no `[projects.<p>.settings.dotnet]` keys. `smith recipe check` 
 The pin label is `dotnet`, probed with `dotnet --version`. Real output with `[toolchains] dotnet = "9"` on a machine whose `dotnet --version` is 10.0.401:
 
 ```
-✖ dotnet matches the pinned version 9
+× dotnet matches the pinned version 9
     [toolchains] pins dotnet 9, but this machine runs 10.0.401: tasks cached on another version are misses, and results can differ from CI
     → install dotnet 9 (`mise use dotnet@9`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] dotnet
 ```
 
-The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it also compares the SDK with CI's channel (older fails, newer warns).
+The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it also compares the SDK with CI's channel (another version, older or newer, is a warning).
 
 Output: all `bin/` and `obj/` go to `dist/dotnet` (set by the `Directory.Build.props` the plugin writes: `dist/dotnet/bin/<Project>/debug/...`); `pack` writes the `.nupkg` to `dist/<project dir>` (real: `dist/packages/kit/NetDemo.Kit.0.0.0.nupkg`).
 
@@ -170,6 +182,7 @@ Output: all `bin/` and `obj/` go to `dist/dotnet` (set by the `Directory.Build.p
 | Release assets of an app | With `[projects.<app>.release]` the plugin runs, for each of its `platforms` (Go's `os/arch`; default all six: `windows/amd64` `win-x64`, `windows/arm64` `win-arm64`, `linux/amd64` `linux-x64`, `linux/arm64` `linux-arm64`, `darwin/amd64` `osx-x64`, `darwin/arm64` `osx-arm64`), `dotnet publish <file> --nologo -c Release -r <rid> --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:Version=<version> -o dist/release/<app>/<rid>`, so the program carries the .NET runtime and runs where .NET is not installed. Each platform becomes `dist/release/<app>/<asset_name>` (a zip of what publish wrote, without `.pdb` files, plus the README and LICENSE files of the project's directory, else the workspace root, unless the publish has its own) and `checksums.txt` lists them (`sha256sum -c` format). .NET is managed code, so one machine publishes all six platforms: no native job and no linker are needed. The first publish per platform downloads that platform's runtime from NuGet (cached afterwards), so it needs network or a restored NuGet cache. The result feeds the package manager manifests, deb and rpm, npm, PyPI, NuGet tool and RubyGems packages like a Go app's. Each app of a workspace is its own asset set (`product` names it). The checks run in a dry run (`would attach dist/release/cli/cli_0.1.0_linux_arm64.zip, ...`); nothing is built. The project must be an app (`OutputType` `Exe`, or a Web or Worker SDK project), else `dotnet publish wrote no program named <name>: is the project an app (OutputType Exe)?`. A platform .NET has no runtime for: `"linux/mips" has no .NET runtime: release a .NET app for ...`. |
 | Registry | nuget.org (`https://api.nuget.org/v3/index.json`) unless `NUGET_SOURCE` is set, or `[registries.*] nuget` names a feed for the project. `published` reads `https://api.nuget.org/v3-flatcontainer/<id>/index.json` for the newest stable version; for a private feed it answers "smith does not ask a private NuGet feed for its versions yet", which doctor shows as a warning. |
 | Credentials | `NUGET_API_KEY` (required when a package goes to nuget.org). For an Azure Artifacts feed the key is the placeholder `az` and the credential provider signs the push; for GitHub Packages or a `token` feed, the token variable (`GITHUB_TOKEN`, or `token_env`). |
+| Release channel | the plugin declares `channels`: NuGet orders a prerelease below its release, so a channel version does not replace the stable one, and no tag is needed |
 | Dry run | the plugin returns "dry run" and neither packs nor pushes. Real output: |
 
 ```
@@ -211,7 +224,13 @@ Real output of `smith ci generate` (GitHub):
 
 Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`: the Azure pipeline got `- task: NuGetAuthenticate@1` before the cache step, and `smith ci check` asked for the Feed Publisher role on the project's build service.
 
+## Linking an internal library
+
+`smith install -p <project> Acme.Core` runs `dotnet add <project file> reference <library file>`, which writes a `ProjectReference` and restores the project. `smith uninstall` runs `dotnet remove ... reference`. The plugin declares the `link` capability.
+
 ## Doctor, dependencies and removal
+
+Build folder (`pipeline/check_build_dir_use_case.go`): `.NET builds into dist/dotnet` reads `ArtifactsPath` of the nearest `Directory.Build.props`, else `bin/` and `obj/`. The fix asks and adds or updates the `ArtifactsPath` block, keeping the other content; it is refused when a project sets `OutputPath` or `BaseOutputPath`, a file names `bin/` or `obj/`, or a `HintPath` reads a built file. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 Doctor checks (`pipeline/ci_contribution_use_case.go`, `registries/check_nuget_config_use_case.go`):
 
@@ -226,7 +245,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `registries/check_nuget_c
 Real, with an Azure Artifacts feed named in `smith.toml`:
 
 ```
-✖ nuget.config lists the feeds smith.toml names
+× nuget.config lists the feeds smith.toml names
     nuget.config does not match [registries] in smith.toml
     → run `smith doctor --fix`
 ! release tags are not behind the registry
@@ -240,9 +259,13 @@ Dependencies: the plugin lists the `PackageReference` of every project and of it
 - A reference without a version takes the central one and declares nothing of its own; `VersionOverride` is left alone. Ranges (`[3.0,4.0)`), floating versions (`1.*`) and MSBuild properties (`$(SerilogVersion)`) are reported and never rewritten.
 - `smith sync` brings every declaration of a package (a project, its tests project, the central file) to the highest version declared, changing only the version text: the attribute (`Version="1.0"`) or the child element (`<Version>1.0</Version>`), whichever the file uses. Package ids are compared without regard to case.
 - `smith up` asks nuget.org for the newest stable release of each package, rewrites to it and runs `dotnet restore` in each project. A package nuget.org does not have (a private feed's) is skipped; one it cannot be asked about is reported.
-- `smith install -w kit Newtonsoft.Json[@13.0.1]` runs `dotnet add <project> package`, `smith uninstall -w kit Newtonsoft.Json` runs `dotnet remove <project> package`, and a bare `smith install` runs `dotnet restore`.
+- `smith install -p kit Newtonsoft.Json[@13.0.1]` runs `dotnet add <project> package`, `smith uninstall -p kit Newtonsoft.Json` runs `dotnet remove <project> package`, and a bare `smith install` runs `dotnet restore`.
 
 Removal: the plugin cleans nothing outside the project directory. Real dry run: `Would remove core (libs/core)`, `the pipelines would be regenerated`.
+
+## Declared projects
+
+`dotnet build` and `dotnet test` need a `.csproj` or `.fsproj`; a folder without one cannot be built alone, so the folder needs a project file of its own. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 
@@ -256,7 +279,7 @@ Removal: the plugin cleans nothing outside the project directory. Real dry run: 
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, .NET SDK 10.0.401 (the machine also has SDKs 3.1.426 and 7.0.306; no `global.json` was used, so 10.0.401 ran). Throw-away workspace `net-demo` from `smith new net-demo`. Run: `smith add lib|app|package ... --lang dotnet`, `smith projects`, `smith graph` (with a `ProjectReference`), `smith explain`, `smith run build|test|lint|pack|start`, `smith doctor` (clean; wrong `[toolchains] dotnet` pin; a private feed with a stale `nuget.config`), `smith doctor --fix --yes`, `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -w` (refusal), `smith remove core --dry-run --force`, `smith plugin list --json`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, .NET SDK 10.0.401 (the machine also has SDKs 3.1.426 and 7.0.306; no `global.json` was used, so 10.0.401 ran). Throw-away workspace `net-demo` from `smith new net-demo`. Run: `smith add lib|app|package ... --lang dotnet`, `smith projects`, `smith graph` (with a `ProjectReference`), `smith explain`, `smith run build|test|lint|pack|start`, `smith doctor` (clean; wrong `[toolchains] dotnet` pin; a private feed with a stale `nuget.config`), `smith doctor --fix --yes`, `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -p` (refusal), `smith remove core --dry-run --force`, `smith plugin list --json`.
 
 Not verified:
 

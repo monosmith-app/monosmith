@@ -14,6 +14,26 @@ var Roles = []string{"handler", "use_case", "algorithm", "policy", "model", "con
 // folder is named for the outcome it serves.
 var ForbiddenFolders = map[string]bool{"util": true, "utils": true, "helper": true, "helpers": true, "common": true, "shared": true, "manager": true, "processor": true, "data": true, "misc": true}
 
+// ToolMandatedNames are file names a test tool loads by name, so a banned word
+// in them is not the project's choice: RSpec's and Minitest's setup files. The
+// file-name check skips them.
+var ToolMandatedNames = rubyTestSetup
+
+// BannedWordIn returns the first part of a file name, split on _ . and -, that
+// is a ForbiddenFolders word (compared in lowercase), or "" when there is
+// none. The name of a tool-mandated file has none.
+func BannedWordIn(name string) string {
+	if ToolMandatedNames[name] {
+		return ""
+	}
+	for _, part := range strings.FieldsFunc(strings.ToLower(name), func(r rune) bool { return r == '_' || r == '.' || r == '-' }) {
+		if ForbiddenFolders[part] {
+			return part
+		}
+	}
+	return ""
+}
+
 // Dir is a folder being checked.
 type Dir struct {
 	// Rel is its path from the project root, with forward slashes; "" is

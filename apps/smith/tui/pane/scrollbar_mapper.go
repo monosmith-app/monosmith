@@ -3,7 +3,7 @@ package pane
 import "github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 
 // Scrollbar draws a scrollbar in the last column of rows, the rows of a list
-// that shows total rows from row top on: a faint line with a brighter thumb
+// that shows total rows from row top on: a faint dashed line with a solid, muted thumb
 // whose length is the part of the list in view and whose place is where that
 // part is. A list that fits has none, and its rows come back as they are, so
 // the bar is there exactly when something is hidden.
@@ -24,7 +24,7 @@ func Scrollbar(th theme.Theme, rows []string, w, top, total int) []string {
 	for i, row := range rows {
 		glyph := th.Faint(th.Icons.Track)
 		if i >= at && i < at+size {
-			glyph = th.Accent(th.Icons.Thumb)
+			glyph = th.Muted(th.Icons.Thumb)
 		}
 		out[i] = Fit(row, w-1) + glyph
 	}

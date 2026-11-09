@@ -4,11 +4,13 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -29,14 +31,28 @@ func (r *Rust) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: r.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("rust", "cargo-audit"),
 		Languages: []string{"rust"},
 		Manifests: []string{"Cargo.toml"},
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the programs smith.toml declares, as binaries of the crate above them.
+func (r *Rust) DescribesDeclared() {}
+
+// PublishesChannels implements serve.ChannelPublisher: crates.io orders a
+// prerelease below its release, so a plain dependency never takes it, and
+// cargo takes the semver spelling as it is.
+func (r *Rust) PublishesChannels() {}
+
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the .crate and publishes nowhere.
+func (r *Rust) PacksPackages() {}
+
 // Discover implements serve.Discoverer.
 func (r *Rust) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(r.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(r.root, params.Manifests, params.Declared)
 }
 
 // Generate implements serve.Generator.
@@ -77,6 +93,16 @@ func (r *Rust) Remove(params protocol.RemoveParams) (protocol.RemoveResult, erro
 // Install implements serve.DependencyManager.
 func (r *Rust) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Install(r.root, params)
+}
+
+// Link implements serve.Linker.
+func (r *Rust) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(r.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (r *Rust) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(r.root, params)
 }
 
 // Uninstall implements serve.DependencyManager.

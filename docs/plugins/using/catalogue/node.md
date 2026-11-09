@@ -11,7 +11,7 @@ The node plugin makes every `package.json` below the workspace root a smith proj
 | `--lang` values | `node`, `javascript`, `js` |
 | Manifest that makes a directory a project | `package.json` (the one at the workspace root holds tooling only and is never a project) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `derive`, `apiSurface`, `channels`, `link`. |
 | Stacks it publishes | none itself. The add-ons publish them: `node-jest`, `node-vitest`, `node-ts`, `node-vitest-playwright`, `vscode-extension`, `react`, `vue`, `svelte`, `html`, `angular`, `docs-site`, `react-p5` (from `smith stacks --json`). `[default_stacks] node = "node-jest"` is what `smith new` writes. |
 | Project kinds it can create | `app`, `lib`, `package` (`node-app`, `node-lib`, `node-package`) |
 
@@ -33,7 +33,7 @@ Toolchain add-ons that sit on top of this plugin: [typescript](typescript.md), [
 | Imports (graph edges) | the bare package names imported by every `.ts .tsx .mts .cts .js .jsx .mjs .cjs` file under the project (`import ... from`, `import()`, `require()`; comments and string contents are ignored; `.d.ts`, relative paths, `node:` built-ins, `#` subpath imports, and `node_modules`, `dist`, `coverage`, `build` and hidden folders are skipped), plus every name declared in `dependencies`, `devDependencies`, `peerDependencies` and `optionalDependencies`. A graph edge is made where a name equals another project's export. |
 | Toolchain | `node <version>` from `node --version` |
 
-Real output after `smith install -w web @ts-demo/kit`:
+Real output after `smith install -p web @ts-demo/kit`:
 
 ```
 $ smith graph
@@ -115,7 +115,7 @@ Real runs: `smith run build|typecheck|lint|test` succeeded; `smith run prune -p 
 ```
 kit:deps-check │ src/extra.ts imports lodash, which package.json does not declare
 kit:deps-check │ smith: packages/kit imports 1 package(s) its package.json does not declare where installing it installs them: add them to dependencies (peerDependencies when the installing app provides them)
-kit:deps-check ✖ exited with code 1
+kit:deps-check × exited with code 1
 ```
 
 ## Creating a project
@@ -187,6 +187,42 @@ The plain-JavaScript starter in detail:
 
 The "Try: smith test -p util" hint is printed for plain JavaScript too, although that starter has no `test` script.
 
+## Function apps
+
+`smith add app api --lang node --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: TypeScript with the Azure Functions v4 model (`src/functions`, `host.json`), a `handler` export with `template.yaml` for AWS, the Functions Framework for Google. Runtimes `node24` (suggested) and `node22`. The files come from the [functions](functions.md) plugin, which publishes the choices for Node, as [vite](vite.md) does for browser apps. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
+
+## Electron and Tauri
+
+`smith add app desk --lang node --with electron` writes an Electron app in TypeScript: a main
+process (`src/main/app.handler.ts`), a preload script that uses `contextBridge`
+(`src/preload/bridge.handler.cts`, built to `.cjs` because a sandboxed preload cannot be a module),
+and one renderer page with a content security policy. The window has `contextIsolation` on,
+`nodeIntegration` off and `sandbox` on, and a unit test checks that. The page greets by asking the
+main process through the preload api, which uses the greeting slice. The tasks are `build`,
+`typecheck`, `lint`, `test`, `start` (builds, then opens the window from the build folder) and
+`package` (Electron Forge makes the app folder under `dist/apps/<name>/out`). There is no installer
+and no code signing in v2. The first install downloads the Electron binary, so it needs a network.
+Electron is on the framework axis with `layer = "shell"`, `needs = ["lint", "test"]`, and conflicts
+with `jest`, the function hosts and `tauri`. Packaging uses Electron Forge because the Electron
+documentation recommends it ([application distribution](https://www.electronjs.org/docs/latest/tutorial/application-distribution),
+[Forge CLI](https://www.electronforge.io/cli), [process model](https://www.electronjs.org/docs/latest/tutorial/process-model),
+[context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation)).
+Versions checked on 2026-11-02: Electron 45.2.1, Electron Forge 8.0.1.
+
+`--with react,tauri` makes a new web app that is also a Tauri app (the `tauri` plugin publishes the
+choice `tauri` on the `shell` axis); it writes `src-tauri` as the stack `react-tauri` does. Both
+choices are found with `smith compose` (search "desktop"). Checked in a scratch workspace: electron
+ran lint, typecheck, test, build and package; `react,tauri` scaffolded and built the web app (the
+Rust build was not run).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.node]` table. All configuration is in `package.json`, in the workspace files, and in `smith.toml`.
@@ -216,13 +252,26 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 - The pin label is `node`, probed with `node --version`. Real output with `[toolchains] node = "22"` on a machine running 24.12.0:
 
 ```
-✖ node matches the pinned version 22
+× node matches the pinned version 22
     [toolchains] pins node 22, but this machine runs 24.12.0: tasks cached on another version are misses, and results can differ from CI
     → install node 22 (`mise use node@22`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] node
 ```
 
-- The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it (`Node.js is 24, as in CI`: newer warns, older fails); it does not read `.nvmrc` or `engines.node`.
+- The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it (`Node.js is 24, as in CI`: another major, newer or older, is a warning, with a fix that asks: keep it or run `smith tools install node`; Node missing from the PATH fails); it does not read `.nvmrc` or `engines.node`.
 - Output: `build` writes `dist/<project dir>` (set by each project's `outDir`, which doctor checks: `kit compiles into dist/packages/kit`); `package` writes `dist/drop/<name>-<version>.tgz` (a VS Code extension: `.vsix`); `prune` writes into `dist/<app dir>`; a release asset goes to `dist/release/<app>/`.
+
+## Derived files
+
+With `[derive] enabled = true`, the plugin answers `smith derive` with three renderers of its own and the TypeScript and Vite
+plugins add two more ([Derived files](../../../reference/derived-files.md)):
+
+| Renderer | Derives |
+|---|---|
+| `node.tsconfig.references` | the `references` key of `tsconfig.lib.json`, one entry for each internal dependency of the project graph |
+| `node.jest.display-name` | the `displayName` line of a `jest.config.{ts,js,cjs,mjs}` between `smith:begin` and `smith:end` markers, from the package name |
+| `node.sibling-shape` | a config file that three or more sibling projects share in one shape (`tsconfig*.json`, `.swcrc`, `jest.config.*` and the like), for each project that has it; a file or key that differs is left alone and reported as diverging |
+| `typescript.tsconfig` (the [typescript](typescript.md) plugin) | the whole `tsconfig.json` of a project the plugin scaffolded, from the template `smith add` used |
+| `vite.tsconfig` (the [vite](vite.md) plugin) | the whole `tsconfig.json` of an app made from choices, from the same choices |
 
 ## Releasing
 
@@ -247,6 +296,10 @@ $ smith release --dry-run --json      # excerpt
 ```
 
 The release's SBOM lists the packages of the nearest `package-lock.json` (the project's or the workspace's), falling back to the ranges in `package.json`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
+A release channel (`[[release.channels]]`) publishes with `npm publish --tag <name>`, so `latest` stays on the stable version; the plugin declares the `channels` capability ([releasing](../../../reference/releasing.md)).
+
+The release compares the exported names of a package at its last tag and now, through the `api/surface` method, and warns when the commits give a smaller bump than the change needs. The plugin reads `exports`, `types`, `typings`, `module` and `main` of `package.json`, and the declaration, TypeScript or JavaScript file behind each (the source when the build output is not in the repository). It does not build. What it misses is listed in [releasing](../../../reference/releasing.md#the-bump-against-the-public-api).
 
 ## CI
 
@@ -282,6 +335,10 @@ registry=https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/
 # smith:registry-end
 ```
 
+## Linking an internal library
+
+`smith install -p <project> @acme/core` writes the library's package name in `dependencies` of the project's `package.json` and runs `npm install`, which links the workspace copy. The range follows what the workspace's libraries already use; with no habit yet, smith asks between `*` (any version, nothing to edit later) and the library's current `^x.y.z`, and `--range` decides in advance. `smith uninstall -p <project> @acme/core` removes it from every dependency section. The plugin declares the `link` capability.
+
 ## Doctor, dependencies and removal
 
 Doctor checks (`pipeline/`; shown when the workspace has Node projects):
@@ -294,7 +351,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 | `the scripts of <project> call files and tools that exist` | a script runs a file (`node x.js`, `--config x`) that does not exist, or starts a tool that is installed neither in a `node_modules/.bin` nor on PATH. Files under a build output are "not built yet", not missing. Judged once dependencies are installed; a failure when the broken script is one of `build`, `test`, `lint`, `typecheck`, `prebuild`, `postbuild`, `pretest`, `start`, `dev`, otherwise a warning. The fix asks whether to install the tools or remove the scripts. |
 | `the packages the ESLint config imports are installed` | the root `eslint.config.*` imports something not in `node_modules`; the fix installs it |
 | `npm workspaces include <dir>` | the root `workspaces` does not match the project (remedy also names `[workspace] exclude`) |
-| `<project> compiles into dist/<dir>` | the `--outDir` of the build script, or the `outDir` of `tsconfig.build.json` / `tsconfig.json`, is inside the source tree |
+| `<project> compiles into dist/<dir>` | the `--outDir`, `--outdir` or `--outfile` of the build script, or the `outDir` of the tsconfig the script names (`-p`), `tsconfig.build.json` or `tsconfig.json`, is inside the source tree. The fix asks per project (move the build, or leave it), shows every changed line, and is refused with the reason for a project that others import by name or a published package that would lose a file; see [doctor](../../../manual/doctor.md#a-build-that-writes-outside-dist) |
 | `<dir> declares the packages it imports` | a package (`kind = package`) fails `deps-check`; the fix declares the imports in `package.json` |
 | `<project> builds every file its package.json names` | only after a build: `main`, `module`, `types`, `exports` entries inside `dist/` that the build did not produce. A `.d.ts` entry that nothing writes (a bundler such as esbuild emits none) gets a remedy that names the `tsc --emitDeclarationOnly` step to append to the `build` script, and a fix that appends it (`tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <the types entry's directory>`; asked about, never `--yes` alone). A build script that already runs `tsc` or a dts option is told its declarations land elsewhere than `package.json` says. |
 
@@ -304,7 +361,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 ! web can be verified
     web has no lint task, so CI never checks it
     → add the task to the project (or in smith.toml under [projects.web.tasks])
-✖ Node projects are checked for vertical slices (@monosmith/eslint-config)
+× Node projects are checked for vertical slices (@monosmith/eslint-config)
     the workspace root has no eslint.config file, so the slice rules do not run on kit, util, web
 ```
 
@@ -313,11 +370,11 @@ Dependencies:
 | Command | What it does |
 |---|---|
 | `smith install` | `npm install --no-audit --no-fund` at the root (every workspace) |
-| `smith install -w <project> <pkg>...` | `npm install <pkg>... --workspace <dir> --no-audit --no-fund` (`-D` adds `--save-dev`) |
-| `smith uninstall -w <project> <pkg>...` | `npm uninstall <pkg>... --workspace <dir>` |
+| `smith install -p <project> <pkg>...` | `npm install <pkg>... --workspace <dir> --no-audit --no-fund` (`-D` adds `--save-dev`) |
+| `smith uninstall -p <project> <pkg>...` | `npm uninstall <pkg>... --workspace <dir>` |
 | `smith up`, `smith sync` | the plugin lists every declaration of the root and each project (`dependencies`, `devDependencies`, `optionalDependencies`, `peerDependencies`), with installed versions from `node_modules`, and rewrites plain ranges (`^1.2.3`, `~1`, `>=2`); tags, URLs, git refs, `file:`, `workspace:`, `npm:` aliases and compound ranges are reported and left alone; peers are never rewritten. Latest versions come from `npm view`, so `.npmrc` applies; it also compares Node with the newest LTS. |
 
-Real: `smith install -w web @ts-demo/kit` printed `✔ web: added @ts-demo/kit (apps/web/package.json, package-lock.json)`. `smith up --check`:
+Real: `smith install -p web @ts-demo/kit` printed `✓ web: added @ts-demo/kit (apps/web/package.json, package-lock.json)`. `smith up --check`:
 
 ```
 patch
@@ -329,10 +386,14 @@ major
   typescript                   6.0.3 → 7.0.2  (root)
 
 Tools smith pins (informational):
-  Node.js (LTS)    24 ✔ (latest 24.22.1)
+  Node.js (LTS)    24 ✓ (latest 24.22.1)
 ```
 
 Removal: `smith remove <project>` deletes the directory, drops its entries from `package-lock.json`, and runs `npm install` so `node_modules` and the lockfile forget it (npm alone would keep it, marked extraneous). Real dry run: `Would remove util (libs/util)`, `changes package-lock.json`, `would run npm install to update the lockfile`.
+
+## Declared projects
+
+A folder cannot be built by `npm run` alone: scripts, dependencies and tool configuration belong to the `package.json`, and a folder without one has no tasks smith can run in it. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 
@@ -345,7 +406,7 @@ Removal: `smith remove <project>` deletes the directory, drops its entries from 
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, node v24.12.0, npm 11.6.2. Two throw-away workspaces: `js-demo` (`--stack none`, plain JavaScript) and `ts-demo` (default stack `node-jest`: TypeScript ~6.0.3, ESLint 10.12.0 with `@monosmith/eslint-config`, Jest 30). Run: `smith add app|lib|package ... --lang node` (both stacks), `smith projects`, `smith graph`, `smith explain`, `smith run build|typecheck|lint|test|deps-check|prune|package|start`, `smith ci pack`, `smith doctor` (clean; missing lint tasks; a wrong `[toolchains] node`; an undeclared import; a registry in `.npmrc`), `smith doctor --fix --yes` (`.npmrc`), `smith ci generate`, `smith ci setup`, `smith ci audit` (with and without the `node` policy), `smith ci check`, `smith release --dry-run [--json]` (including a Node app with release assets), `smith install -w`, `smith up --check`, `smith remove util --dry-run --force`, `smith plugin list --json`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, node v24.12.0, npm 11.6.2. Two throw-away workspaces: `js-demo` (`--stack none`, plain JavaScript) and `ts-demo` (default stack `node-jest`: TypeScript ~6.0.3, ESLint 10.12.0 with `@monosmith/eslint-config`, Jest 30). Run: `smith add app|lib|package ... --lang node` (both stacks), `smith projects`, `smith graph`, `smith explain`, `smith run build|typecheck|lint|test|deps-check|prune|package|start`, `smith ci pack`, `smith doctor` (clean; missing lint tasks; a wrong `[toolchains] node`; an undeclared import; a registry in `.npmrc`), `smith doctor --fix --yes` (`.npmrc`), `smith ci generate`, `smith ci setup`, `smith ci audit` (with and without the `node` policy), `smith ci check`, `smith release --dry-run [--json]` (including a Node app with release assets), `smith install -p`, `smith up --check`, `smith remove util --dry-run --force`, `smith plugin list --json`.
 
 `smith run package` creates `dist/drop` before it runs, so an app without a `build` script packs on a fresh checkout as `smith ci pack` does.
 

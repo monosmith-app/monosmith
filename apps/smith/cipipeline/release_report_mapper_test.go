@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -32,7 +33,7 @@ func TestTheReleaseIsOneTableWithFailuresFirstThenReleasedInOrder(t *testing.T) 
 	got := strings.Join(table.render("packages", false), "\n")
 	for _, want := range []string{
 		"Project  Was", "Now", "Bump", "Why", "Published", "Tag", "Time",
-		"› 2.0.0  major  feat!: drop v1", "✗ failed",
+		"› 2.0.0  major  feat!: drop v1", "× failed",
 		"› 1.5.0  minor  feat: add search (+1 more)", "✓ npm, GitHub Release", "core@1.5.0 (pushed)", "12s",
 		"› 2.0.2  patch  dependency core 1.5.0", "✓ its tag",
 		"› 1.0.0  major  version() directive", "✓ nothing (no registry)", "tool@1.0.0 (local)",
@@ -100,16 +101,55 @@ func TestTheIntroSaysWhatWillHappenAndTheOnePlanLine(t *testing.T) {
 
 func TestThePublishedColumnSaysWhereEachPackageWent(t *testing.T) {
 	cases := map[string]release.ReportResult{
-		"1 image":               {Images: []protocol.PublishedImage{{Reference: "ghcr.io/o/api"}}},
-		"its tag":               {Publish: "published by its tag"},
-		"nothing (no registry)": {Publish: "no registry"},
-		"nothing to publish":    {},
-		"registry.npmjs.org":    {Published: true, Registry: "https://registry.npmjs.org/"},
-		"-":                     {Status: "failed"},
+		"1 image":                    {Images: []protocol.PublishedImage{{Reference: "ghcr.io/o/api"}}},
+		"its tag":                    {Publish: "published by its tag"},
+		"nothing (no registry)":      {Publish: "no registry"},
+		"nothing to publish":         {},
+		"registry.npmjs.org":         {Published: true, Registry: "https://registry.npmjs.org/"},
+		"-":                          {Status: "failed"},
+		"attached to GitHub Release": {GitHubRelease: "https://example/r", Packed: []releasepack.File{{Name: "core-1.0.0.tgz"}}},
 	}
 	for want, res := range cases {
 		if got := publishedTo(res); got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
+	}
+}
+
+func TestThePublishedColumnCountsEveryTargetFromFourUp(t *testing.T) {
+	res := release.ReportResult{Item: release.Item{Project: "smith", Next: "1.129.0", Tag: "smith@1.129.0"}, Status: "released",
+		Packages:      []string{"monosmith@1.129.0", "monosmith-1.129.0-py3-none-win_amd64.whl", "monosmith.1.129.0.nupkg", "monosmith-1.129.0-x86_64-linux.gem"},
+		GitHubRelease: "https://example/r"}
+	if got := publishedTo(res); got != "5 targets: npm, PyPI, NuGet, RubyGems, GitHub Release" {
+		t.Errorf("%q", got)
+	}
+	res.PubDispatch = "monosmith 1.129.0 from smith-v1.129.0"
+	if got := publishedTo(res); got != "6 targets: npm, PyPI, NuGet, RubyGems, GitHub Release, pub.dev (queued)" {
+		t.Errorf("%q", got)
+	}
+	res.Packages, res.PubDispatch = res.Packages[:1], ""
+	if got := publishedTo(res); got != "npm, GitHub Release" {
+		t.Errorf("%q", got)
+	}
+}
+
+func TestTheReleasedSummaryPaintsOnlyThePlatformLinesDim(t *testing.T) {
+	report := release.Report{Results: []release.ReportResult{{Item: release.Item{Project: "cli", Current: "1.0.0", Next: "1.1.0", Tag: "cli@1.1.0", Level: "minor"}, Status: "released",
+		Packages: []string{"@acme/cli-linux-x64@1.1.0", "@acme/cli@1.1.0"}}}}
+	plain := releasedSummary(report, theme.Unicode, false)
+	want := []string{
+		plain[0], "cli 1.0.0 › 1.1.0 (minor)",
+		"  npm        @acme/cli + 1 platform package    registry.npmjs.org",
+		"               linux x64",
+	}
+	if strings.Join(plain, "\n") != strings.Join(want, "\n") || !strings.HasPrefix(plain[0], "══ Released ═") {
+		t.Fatalf("%q", plain)
+	}
+	coloured := releasedSummary(report, theme.Unicode, true)
+	if coloured[3] != "\x1b[2m"+plain[3]+"\x1b[0m" || coloured[2] != plain[2] {
+		t.Errorf("%q", coloured)
+	}
+	if ascii := releasedSummary(report, theme.ASCII, false); ascii[0] != "== Released ==" {
+		t.Errorf("%q", ascii[0])
 	}
 }

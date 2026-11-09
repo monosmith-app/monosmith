@@ -140,7 +140,7 @@ nothing. Docker is on the hosted Linux images of GitHub and Azure.
 | `Docker registries of <app> agree` | `registry` and `registries` contradict each other |
 
 ```text
-✖ Docker is running
+× Docker is running
     docker version could not reach a daemon
     → install and start Docker (https://docs.docker.com/get-docker/)
 ```

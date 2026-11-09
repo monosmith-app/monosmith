@@ -1,0 +1,5 @@
+{
+  "vscode.workspace-report.monosmith-writing-the-report-of": "MonoSmith: writing the report of {name}…",
+  "vscode.workspace-report.monosmith-the-report-was-not-written": "MonoSmith: the report was not written. {message}",
+  "vscode.workspace-report.monosmith-report-of": "MonoSmith: report of {name}: {file}"
+}

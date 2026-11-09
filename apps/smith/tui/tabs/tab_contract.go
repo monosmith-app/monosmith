@@ -8,6 +8,9 @@ type Tab struct {
 	// Label is the full name; Short is a shorter one used when the full names
 	// do not fit ("" means the name cannot be shortened).
 	Label, Short string
+	// Key is the key that opens the tab, shown in parentheses after the name
+	// ("" when it has none).
+	Key string
 	// Badge is a small styled mark after the name (a failure count, a spinner),
 	// "" for none. Reserve is the room, in cells, kept for it in the fit
 	// calculation even while it is empty, so a badge appearing never changes
@@ -24,17 +27,8 @@ type Props struct {
 	Active, Hover string
 	// Width is the cells the strip may use.
 	Width int
-	// Tall draws the three-row strip that opens into the pane below; otherwise
-	// the strip is one row.
-	Tall bool
 	// ShortenOrder lists the tab ids that give up their full name first.
 	ShortenOrder []string
-	// Divider is the column where the pane below is divided in two (a ┬ is set
-	// in its top edge there), 0 for no division.
-	Divider int
-	// Title is set at the right end of the middle row of a tall strip, when it
-	// fits (the pane below has no top edge of its own to hold it).
-	Title string
 }
 
 // The ids of the scroll markers in Spans: a click on them moves to the
@@ -50,8 +44,7 @@ type Span struct {
 	X0, X1 int
 }
 
-// Strip is a drawn strip. Lines has three lines when tall and one otherwise;
-// the last line of a tall strip is the top edge of the pane below it.
+// Strip is a drawn strip: one line, and where each tab sits in it.
 type Strip struct {
 	Lines []string
 	Spans []Span

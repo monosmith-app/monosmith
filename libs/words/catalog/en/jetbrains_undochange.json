@@ -1,0 +1,7 @@
+{
+  "jetbrains.undochange.monosmith-undo-the-last-change": "MonoSmith: undo the last change",
+  "jetbrains.undochange.nothing-was-undone": "Nothing was undone. {failureTextMapper}",
+  "jetbrains.undochange.monosmith-undo-the-last-change-2": "MonoSmith: undo the last change?",
+  "jetbrains.undochange.smith-reverts-the-last-change": "smith reverts the last change it committed with git revert: a new commit, and your history stays.",
+  "jetbrains.undochange.the-last-change-is-undone": "The last change is undone."
+}

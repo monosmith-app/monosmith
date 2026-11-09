@@ -3,12 +3,15 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Python is the pip-native Python language plugin.
@@ -26,15 +29,21 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "python", Version: p.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("python", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"python", "py"},
 		Manifests: []string{"pyproject.toml"},
+		Choices:   functions.Choices(),
 	}, nil
 }
 
 // Discover implements serve.Discoverer.
 func (p *Python) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(p.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(p.root, params.Manifests, params.Declared)
 }
+
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the projects smith.toml declares, as folders of the distribution above them.
+func (p *Python) DescribesDeclared() {}
 
 // Generate implements serve.Generator.
 func (p *Python) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
@@ -51,6 +60,15 @@ func (p *Python) Publish(params protocol.PublishParams) (protocol.PublishResult,
 	return releasing.Publish(p.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: PyPI orders a
+// prerelease (2.0.0b1) below its release, so a channel never becomes the version
+// pip installs; Publish needs no tag.
+func (p *Python) PublishesChannels() {}
+
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the wheel and sdist and publishes nowhere.
+func (p *Python) PacksPackages() {}
+
 // Published implements serve.RegistryReader.
 func (p *Python) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(params)
@@ -63,7 +81,9 @@ func (p *Python) CI(params protocol.CIParams) (protocol.CIResult, error) {
 
 // Doctor implements serve.DoctorContributor.
 func (p *Python) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
-	return pipeline.Doctor(p.root, params), nil
+	res := pipeline.Doctor(p.root, params)
+	res.Findings = append(res.Findings, functions.Findings(p.root, params.Projects)...)
+	return res, nil
 }
 
 // Remove implements serve.Remover.
@@ -74,6 +94,16 @@ func (p *Python) Remove(params protocol.RemoveParams) (protocol.RemoveResult, er
 // Install implements serve.DependencyManager.
 func (p *Python) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Install(p.root, params)
+}
+
+// Link implements serve.Linker.
+func (p *Python) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(p.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (p *Python) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(p.root, params)
 }
 
 // Uninstall implements serve.DependencyManager.

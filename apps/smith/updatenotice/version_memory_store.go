@@ -16,8 +16,12 @@ type memory struct {
 	LastVersion string `json:"lastVersion,omitempty"`
 	// CheckedAt is when the registry was last asked.
 	CheckedAt time.Time `json:"checkedAt,omitzero"`
-	// Latest is the newest version the registry reported.
+	// Latest is the newest version the registry reported on Channel.
 	Latest string `json:"latest,omitempty"`
+	// Channel is the dist-tag Latest was read from.
+	Channel string `json:"channel,omitempty"`
+	// AnnouncedAt is when the request to the registry was announced.
+	AnnouncedAt time.Time `json:"announcedAt,omitzero"`
 	// NoticeAt is when a newer version was last pointed out.
 	NoticeAt time.Time `json:"noticeAt,omitzero"`
 }

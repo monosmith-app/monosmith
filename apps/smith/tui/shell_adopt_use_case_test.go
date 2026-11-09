@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"io"
 	"strings"
 	"sync"
@@ -101,7 +102,7 @@ func (f *adoptFake) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer)
 	f.mu.Unlock()
 	for _, s := range fix.Steps {
 		fmt.Fprintln(out, "… "+s.Description)
-		fmt.Fprintln(out, "✔ "+s.Description)
+		fmt.Fprintln(out, "✓ "+s.Description)
 	}
 	return nil
 }
@@ -132,9 +133,17 @@ func (f *adoptFake) Report() (string, error) { return "The report", nil }
 
 func (f *adoptFake) Install(context.Context, io.Writer) error { return nil }
 
-func (f *adoptFake) AdoptFix() doctorfix.Planned { return doctorfix.Planned{} }
+func (f *adoptFake) AdoptFixChosen(bool, string, adoptdecision.Choices) doctorfix.Planned {
+	return doctorfix.Planned{}
+}
+
+func (f *adoptFake) InitFacts() adoptdecision.Facts { return adoptdecision.Facts{} }
+
+func (f *adoptFake) InitPlan(adoptdecision.Choices) string { return "" }
 
 func (f *adoptFake) AgentFix() (doctorfix.Planned, bool) { return doctorfix.Planned{}, false }
+
+func (f *adoptFake) CommitConversion() string { return "Committed abc12345." }
 
 func (f *adoptFake) Close() {
 	f.mu.Lock()
@@ -181,7 +190,7 @@ func TestAFolderThatIsNotAWorkspaceLeadsWithAdoptionAndEnterStartsIt(t *testing.
 	l := newAdoptLab(t, f, false, 110, 34)
 	l.has("Not a smith workspace yet: Enter brings it in", "Bring this repository into MonoSmith", "Not a smith workspace yet. Press a to bring this folder in")
 	l.keys("enter")
-	l.has("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "[ Continue  Enter ]")
+	l.has("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "Continue (enter)")
 	if l.sh().adopt == nil {
 		t.Fatal("the wizard is not open")
 	}
@@ -221,7 +230,7 @@ func TestTheFullAdoptionRunsOffTheUIGoroutineAndLeavesWithTheNextStep(t *testing
 	l.keys("a", "enter", "2")                      // continue, then the full level
 	l.has("Bring in · your choices", "Lint with:") // the choices
 	l.keys("enter")                                // smith's ESLint, the suggested one
-	l.has("Nothing has changed yet", "[ Convert  Enter ]")
+	l.has("Nothing has changed yet", "Convert (enter)")
 	l.keys("enter") // convert, then the group is asked
 	l.has("We are going to delete 4 packages and 3 files", "ok?")
 	l.keys("y") // delete it, then the closing steps run and the summary shows
@@ -302,6 +311,7 @@ func TestAClickOnTheBannerOpensTheWizard(t *testing.T) {
 	sh := l.sh()
 	in := sh.mainInner()
 	l.send(tea.MouseMsg{X: in.X + 2, Y: in.Y, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	l.send(letGo(in.X+2, in.Y))
 	if l.sh().adopt == nil {
 		t.Fatal("a click on the banner did nothing")
 	}

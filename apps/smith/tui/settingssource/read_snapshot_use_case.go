@@ -101,7 +101,7 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 			return snap
 		}
 		snap.Settings = append(snap.Settings, settingsview.Setting{
-			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Choices: f.Enum,
+			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Choices: f.Enum,
 			Value: value, Set: set, Current: decode(value, set),
 		})
 	}
@@ -121,7 +121,7 @@ func decode(raw string, set bool) []string {
 		return nil
 	}
 	var doc struct{ V any }
-	if err := toml.Unmarshal([]byte("v = "+raw), &doc); err != nil {
+	if err := toml.Unmarshal([]byte("v = "+raw), &doc); err != nil { // words:literal
 		return []string{raw}
 	}
 	if list, ok := doc.V.([]any); ok {

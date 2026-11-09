@@ -9,13 +9,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
 // ErrNoToken is returned when no GitHub token is available.
-var ErrNoToken = errors.New("GITHUB_TOKEN (or GH_TOKEN) is not set; GitHub Releases need a token with contents: write")
+var ErrNoToken = errors.New("GITHUB_TOKEN (or GH_TOKEN) is not set and gh is not signed in; GitHub Releases need a token with contents: write")
 
 // Client talks to the GitHub REST API.
 type Client struct {
@@ -37,14 +38,30 @@ type Release struct {
 type Asset struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+	Size int64  `json:"size"`
 }
 
-// FromEnvironment builds a client from GITHUB_TOKEN or GH_TOKEN and
-// GITHUB_API_URL (set on GitHub Enterprise runners).
+// GhToken asks the GitHub CLI for the token it is signed in with (`gh auth
+// token`). It returns "" when gh is not installed or not signed in. Tests
+// replace it, so none runs a real gh.
+var GhToken = func() string {
+	out, err := exec.Command("gh", "auth", "token").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// FromEnvironment builds a client from GITHUB_TOKEN or GH_TOKEN, else from the
+// token of the GitHub CLI (gh auth token), and GITHUB_API_URL (set on GitHub
+// Enterprise runners). The token is never printed.
 func FromEnvironment() (*Client, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		token = os.Getenv("GH_TOKEN")
+	}
+	if token == "" {
+		token = GhToken()
 	}
 	if token == "" {
 		return nil, ErrNoToken
@@ -67,8 +84,8 @@ func (c *Client) ReleaseByTag(repo Repository, tag string) (Release, bool, error
 }
 
 // CreateRelease publishes a release for an existing tag.
-func (c *Client) CreateRelease(repo Repository, tag, name, notes string) (Release, error) {
-	body, _ := json.Marshal(map[string]any{"tag_name": tag, "name": name, "body": notes})
+func (c *Client) CreateRelease(repo Repository, tag, name, notes string, prerelease bool) (Release, error) {
+	body, _ := json.Marshal(map[string]any{"tag_name": tag, "name": name, "body": notes, "prerelease": prerelease})
 	var r Release
 	_, err := c.do(http.MethodPost, c.API+"/repos/"+repo.String()+"/releases", "application/json", body, &r)
 	return r, err
@@ -88,6 +105,31 @@ func (c *Client) UploadAsset(r Release, file string) error {
 	}
 	_, err = c.do(http.MethodPost, target, contentType, raw, nil)
 	return err
+}
+
+// DeleteAsset removes an asset from its release.
+func (c *Client) DeleteAsset(repo Repository, a Asset) error {
+	_, err := c.do(http.MethodDelete, fmt.Sprintf("%s/repos/%s/releases/assets/%d", c.API, repo, a.ID), "application/json", nil, nil)
+	return err
+}
+
+// CanPush reports whether the token may write to the repository: the
+// permissions GitHub states for it on the repository itself, a read-only
+// request. A token that may push may create releases and upload assets, unless
+// a fine-grained token or a workflow withholds contents: write, which GitHub
+// states as no push permission too.
+func (c *Client) CanPush(repo Repository) (bool, error) {
+	var r struct {
+		Permissions struct {
+			Push     bool `json:"push"`
+			Maintain bool `json:"maintain"`
+			Admin    bool `json:"admin"`
+		} `json:"permissions"`
+	}
+	if _, err := c.do(http.MethodGet, c.API+"/repos/"+repo.String(), "application/json", nil, &r); err != nil {
+		return false, err
+	}
+	return r.Permissions.Push || r.Permissions.Maintain || r.Permissions.Admin, nil
 }
 
 // DownloadAsset writes a release asset's content to a file.

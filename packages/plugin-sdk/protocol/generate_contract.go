@@ -22,6 +22,22 @@ type GenerateParams struct {
 	// same table is later the plugin's entry in Project.Settings. Nil when
 	// there are none.
 	Settings map[string]any `json:"settings,omitempty"`
+	// Facts are the shared facts that hold for the new project, from
+	// smith.toml: [projects.<name>.facts] over [facts]. A key that is absent
+	// was set by no one: the plugin scaffolds its own default. Set by the
+	// host; read only.
+	Facts map[string]any `json:"facts,omitempty"`
+	// Shape is the dialect the new project should have: the facts (see
+	// Project.Shape) that most projects of its kind and language agree on, as
+	// the host counted them. A plugin applies the keys it follows (see
+	// InitializeResult.Follows) and ignores the rest. Nil when there is
+	// nothing to follow, or the person asked for a fresh project.
+	Shape map[string]string `json:"shape,omitempty"`
+	// Choices are the choices (see Choice) the new project is built from, the
+	// stack's Choices, in the order they apply: a choice comes after those it
+	// requires. A plugin applies the choices it owns and ignores the rest.
+	// Absent when the stack is not a selection. Set by the host; read only.
+	Choices []string `json:"choices,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.

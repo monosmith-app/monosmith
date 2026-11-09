@@ -193,7 +193,7 @@ func TestPlanLegacyWorkspace(t *testing.T) {
 			t.Errorf("writes %s: @monosmith/jest-preset has it", gone)
 		}
 	}
-	if plan.AddDevDependencies["@monosmith/jest-preset"] != "^0.1.0" || len(plan.Keep) != 0 {
+	if plan.AddDevDependencies["@monosmith/jest-preset"] != "^0.2.0" || len(plan.Keep) != 0 {
 		t.Fatalf("dev dependencies %v, keeps %v", plan.AddDevDependencies, plan.Keep)
 	}
 

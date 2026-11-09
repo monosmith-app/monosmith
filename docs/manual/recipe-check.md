@@ -9,7 +9,7 @@ the result with the rules a stack is checked with: one plugin per exclusive leve
 requirements met, no conflicts, every plugin installed at a version in range.
 
 Choices are answered with `--choice name=answer`, else by their default. It prints the
-choices asked, the plugin for each level and the merged settings, each with the recipe, file
+choices asked, the plugin for each role and the merged settings, each with the recipe, file
 and line it came from, or why the recipe is not valid.
 
 ## Synopsis

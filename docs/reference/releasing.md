@@ -7,9 +7,12 @@ smith release --dry-run    # the plan; changes nothing
 smith release --dry-run --comment   # in a pull request build: also post the plan on it (docs/reference/ci.md)
 smith release              # asks before releasing (CI: smith ci release)
 smith release --status     # the release journal: what was published where
+smith release --rehearse   # ask every registry whether the release would be accepted; publishes nothing
 ```
 
 ## What releases
+
+A project releases when a `feat:`, `fix:`, `perf:` or breaking commit touches its own folder (or the folder of a lib it imports). A `chore:` commit, or a change only under `tools/` or in `smith.toml`, releases nothing.
 
 Every project of kind `package`, and every app with a release section (see
 [Apps](#apps)). For each, smith reads the commits since its last release tag that
@@ -27,6 +30,29 @@ The first release starts from the manifest's version (`0.0.0`), so a first
 `feat` gives `0.1.0`. A package whose dependency releases is released too (at
 least a patch), so its published dependency range stays correct.
 
+The minor-before-1.0 rule applies to the bump smith infers from commits. A bump you ask for with
+`--bump <project>=major` is a request and wins: on a 0.x package it gives 1.0.0. When the version smith
+reaches is not the level you asked for (a `patch` on a prerelease releases the version it leads to), the
+plan says so in a note. `--hold <project>` for a project that is not in the plan prints
+`note: <project> is not in this plan, so there is nothing to hold back`; for a name smith does not know it
+refuses, suggests the closest names and lists what the plan releases.
+
+### A release without a releasing commit
+
+Sometimes a package must be released again with no change in it: a registry problem, or a range
+that must move. `smith release --bump mvd=patch --force` adds `mvd` to the plan although no commit
+since its last tag releases it. The plan says "no commit since mvd@0.14.0 releases this: you are
+releasing the same code under a new version", the final question says that a new tag at HEAD, a
+registry publish, a GitHub Release and the assets follow and that none of it can be undone, and
+without a terminal the release needs `--yes` as well. `--force` without `--bump` is refused and
+prints the usage. For a package that already has a releasing commit, `--force` only applies the
+bump. On a release channel the version is the next number of the channel. `--dry-run --force`
+shows the plan. The report, the JSON (`manual: true`) and the tag message record that the release
+was manual. A package that depends on it is not released with it, because the code did not change.
+
+CI can start the same release by hand when the workspace opts in with `[ci] manual_release = true`
+(see [ci](ci.md#a-release-started-by-hand)).
+
 Packages publish to their ecosystem's public registry (npmjs.com, PyPI,
 nuget.org, …), or to the private registry smith.toml names with `[release]
 registry` or `[projects.<name>] registry` (npm, Python, .NET and Maven, where
@@ -34,6 +60,13 @@ registry` or `[projects.<name>] registry` (npm, Python, .NET and Maven, where
 secrets, and consumers need their own token to read it; see
 [configuration](configuration.md#private-registries)). Either way a version
 the registry already has is skipped, so a re-run completes a release.
+
+An app is never published to a registry, in any language: it is released by its tag, its
+GitHub Release with the files it attaches (`build`, `assets`, `platforms`; a plugin's own
+archives) and its deploy plugins. No `registry = "none"` is needed for it, and a Python
+app, a Rust binary crate and a .NET app behave alike. To publish a program to a registry,
+make it a package (`kind = "package"`), or give it an npm, PyPI, NuGet or RubyGems
+distribution under `[projects.<name>.release]`.
 
 A package that a registry builds from its tag (JitPack for Maven, Packagist,
 Go modules) sets `registry = "none"` under `[projects.<name>]` or `[release]`:
@@ -51,6 +84,63 @@ For JitPack, smith only tags: JitPack builds the artifact itself from a
 example through SDKMAN: `before_install: sdk install maven 3.9.11`).
 Consumers use the tag as the version.
 
+### Attach the package files to the GitHub Release
+
+A private repository must not publish to a public registry. `registry = "github-release"`, under `[release]`
+or `[projects.<name>]`, packs each package into its ecosystem's file and attaches it to the package's GitHub
+Release instead of publishing it. It needs `[release] github_releases = true` (without it smith.toml is
+refused). The version, the tag, the changelog and the journal are as for any release. No registry is asked
+and no registry credential is listed or required: the job needs `GITHUB_TOKEN` with `permissions: contents:
+write`, which the generated workflow already has, and a local `smith release` takes `GITHUB_TOKEN`,
+`GH_TOKEN` or the token of `gh auth login`. smith never prints the token.
+
+| Ecosystem | What is attached | Install |
+|---|---|---|
+| npm | the `npm pack` tarball of the package, as `npm publish` would pack it (`core-0.5.2.tgz`) | `npm i ./core-0.5.2.tgz ./cli-0.2.4.tgz` |
+| Python | the wheel and the sdist the build task wrote | `pip install ./x.whl` |
+| NuGet | the `.nupkg` | `dotnet add package <id> --version <v> --source .` |
+| RubyGems | the `.gem` | `gem install ./x.gem` |
+| crates | the `.crate` (`cargo package --no-verify`: a sibling of the same run is on no registry) | unpack it and depend on the folder by `path` |
+| Go, PHP, JVM (JitPack), Dart | no package file: they keep their tag-based behaviour. A Dart package is not dispatched to pub.dev | the tag |
+
+An app (its archives, `[release]` section) is released as before. Its npm, PyPI, NuGet and RubyGems
+distributions are skipped when its registry is `"github-release"` or `"none"`. A container image is not a package of
+this mode: `[conventions.docker]` (`registries`, `push`) still decides whether and where an app's image is pushed, and
+its credentials (`DOCKERHUB_*`) stay in the workflow until you set `push = false` or remove the registries.
+
+Each file has a `<file>.sha256` file (`sha256sum -c` reads it), uploaded after all the package files: a
+release that has a package file without its checksum file is an attach that stopped. A re-run skips what
+is attached already, the way a registry's existing version is skipped: a release that holds every file and
+checksum is read back and not packed again, a file with the same bytes is kept, and a file that differs
+(a wheel built again) is replaced. A tag at HEAD whose release lacks files is packed again; with a newer
+HEAD the release refuses and says to check out the tag. With `--no-push` the files stay in
+`dist/release/<project>/packages/` until the tag is pushed and the release runs again.
+
+**The bundle.** Dependencies keep their normal ranges inside each file. So that a consumer installs the set
+together, every GitHub Release of the run gets the same two small assets once all its packages are
+attached: `release-bundle.json` (every package with its tag, files, SHA-256 digests, the `gh release
+download` command of each tag and one install command per ecosystem) and `INSTALL.md` (the same for a
+person). It is on the release of each package, not on one of them, so whichever release a consumer opens
+holds the whole set. A re-run merges with the bundle a release holds, so finishing some packages does not drop
+the others. A private repository needs a sign-in to download (`gh auth login`, or a token that reads the
+repository's contents; see [Release files of a private
+repository](../guides/private-release-assets.md)):
+
+```sh
+gh release download "core@0.5.2" --repo acme/app --pattern '*.tgz' --pattern '*.sha256' --dir .
+gh release download "cli@0.2.4" --repo acme/app --pattern '*.tgz' --pattern '*.sha256' --dir .
+sha256sum -c *.sha256
+npm i ./core-0.5.2.tgz ./cli-0.2.4.tgz
+```
+
+`smith release --dry-run` lists the files it would attach and the bundle. `smith release --rehearse` checks,
+with read-only requests, that the token may write to the repository (the permissions GitHub states for it);
+it lists no registry. The report says `attached to GitHub Release`, and the journal
+(`dist/release/<project>/journal.json`) has a `pack` entry with each file's name and SHA-256. The lineage
+check and `smith doctor` do not ask a registry for such a package: its tags and release assets are the
+record. `smith doctor` reports the packages that attach, and warns when another package would publish to a
+public registry with a credential that is not set.
+
 A project changes between internal `lib`, published `package` and `app` with
 [`smith kind`](../manual/kind.md): it records the kind, drops or restores the publish
 guard, moves the folder and updates what names it. `smith kind core package
@@ -59,11 +149,22 @@ newest tag is named) unless `--force`, because its published versions would neve
 be updated; `smith release --dry-run` shows the project in the plan once it is a
 package and out of it once it is not.
 
-To force a version, commit a directive anywhere in the repository:
+To force a version, commit a directive anywhere in the repository. The subject is
+`version(<project>)[x.y.z]`: the project name in parentheses, then the version in square brackets,
+and any text after a colon is free. A package that was never released has no version to bump, so
+`--bump` on it refuses and points here; the directive is how its first version is chosen:
 
 ```
 version(sdk)[1.0.0]: first stable release
 ```
+
+```sh
+git commit --allow-empty -m "version(sdk)[1.0.0]"
+```
+
+Apps and internal libraries are never released: `smith release` in a workspace with only those says
+so and suggests `smith add package <name>` or `smith kind <name> package`. With `--hold` that holds
+back every package that would release, it names the held packages and does not suggest a commit.
 
 ## Apps
 
@@ -78,7 +179,13 @@ It is versioned by its tag (`cli@1.2.0`) only. Its plugin builds the release
 assets, one zip per platform and a `checksums.txt`, all under
 `dist/release/<app>/`. `platforms` are `os/arch` pairs in Go's spelling
 (`linux/amd64`, `windows/arm64`, `darwin/arm64`, the six of the default) whatever
-the language, and `asset_name` names each file the same way.
+the language, and `asset_name` names each file the same way. The default is these
+six: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`
+and `windows/arm64`. A **native** app (cgo; Go, Rust) is the exception: `platforms`
+does not apply to it. Each runner of `smith ci native` builds its own platform
+only, so with the default `[ci] native_runners` it gets three archives
+(`linux/amd64`, `windows/amd64`, `darwin/arm64`). Add `ubuntu-24.04-arm`,
+`windows-11-arm` or `macos-15-intel` to `native_runners` for the other three.
 
 | Language | What the plugin builds |
 |---|---|
@@ -128,6 +235,43 @@ release. Each runner runs the build, then uploads its own files with
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
 
+On a Linux runner the assets job first installs the apt packages of `[ci]
+native_linux_packages` (the native job installs them too), so a Linux app that
+needs GTK or WebKit headers does not call `apt-get` in its own `build`.
+
+A `build` that runs several smith tasks into one folder (a zip task and a
+`package-dmg` task that both write `dist/drop`) needs that folder in
+`[workspace] shared_outputs`. A task clears its output folders before it runs
+and when it restores them from the cache, so without the setting the second
+task deletes the files of the first. A folder listed there (or inside a listed
+folder) is kept as it is. Without the setting, `smith ci generate`, `smith
+doctor` and the assets run print a warning that names both tasks and the two
+fixes: list the folder, or give each task its own folder.
+
+A glob in `assets` may match nothing on a platform, as `dist/drop/app_*.dmg` does
+on Windows and Linux, as long as another glob of the list matches a file there:
+the runner prints `no file matches <glob> on <platform>: skipped` and uploads the
+rest. When no glob matches, the build left nothing and the job fails with
+`the build left no file matching assets "..."`, so a build that broke cannot pass
+as a platform without that file. See
+[ADR 0069](../architecture/decisions/0069-the-assets-phase-can-run-again-for-a-tag.md).
+
+To run the assets again for a release that exists, use `smith ci assets --tag
+<project@version>` or the `assets_tag` input of the workflow's manual run. When the
+tag is not at HEAD, you choose the code with `--source current|tag` (the
+`assets_source` input of the workflow, a dropdown: `current`, `tag`, or the preselected `ask me (refuses)`,
+which stops the run). `current` builds the code as it is now,
+named with the tag's version: a fix reaches the files, but they carry newer code
+under an old number. `tag` builds the tag's own commit in a temporary git
+worktree, with the smith.toml of that commit: the exact code that was released.
+Without `--source`, a terminal is asked and any other run is refused, naming both
+flags. If the tag's commit has no assets config for the project (the config did
+not exist yet), smith says so with the commit and tells you to use
+`--source current`. The files replace files of the same name in the tag's GitHub
+Release. A push that releases
+nothing starts no assets job; if it did start, the job prints `nothing released,
+skipping` and exits 0.
+
 Two settings tidy the files on upload. `asset_name` renames each file, with the
 placeholders `{product}` (default: the project name), `{version}`, `{platform}`
 (`windows-x64`) and `{ext}`; two files that get the same name keep the name of
@@ -139,6 +283,15 @@ build, each runner also writes the release's version into the project's version
 files (`package.json`, and the files a plugin keeps a version in, such as a Tauri
 app's `tauri.conf.json` and `Cargo.toml`), so what it builds carries the version
 it uploads; the files are put back afterwards.
+
+`install = false` says the build command needs none of the project's dependencies
+(it only zips files, say). The assets job then runs `smith ci setup --assets`,
+which asks the plugins to install every project except those, so a dependency
+conflict that shows on one runner only (a Windows resolver failure for a Python
+package that is only zipped) cannot stop the job before the build. If no project
+of a plugin is left, that plugin adds no setup step, its toolchain included. The
+`ci` job and the native job install every project. `install` needs `build`.
+See [ADR 0068](../architecture/decisions/0068-the-assets-job-can-skip-installing-a-project.md).
 
 A plugin can supply the settings a table leaves out. The `tauri` plugin does for
 a Tauri app, so `[projects.studio.release]` with nothing in it is enough (with
@@ -491,6 +644,60 @@ a resumed release attaches any the GitHub Release lacks. A prerelease
 
 ## npm, PyPI, NuGet and RubyGems
 
+A package whose `optionalDependencies` pin packages at the version being published (the platform
+packages of a binary launcher), and the npm packages of an app (`[projects.x.release] npm`), do not
+get their dist-tag until npm serves the platform packages. smith publishes the platform packages
+first. It reads each one back from the registry right after `npm publish` returned, three quick
+checks; a package that is not there yet is not an error, because npm takes minutes to serve it. It
+then probes once, without waiting. If
+every platform package is fetchable the way a person fetches it (`npm view <pkg>@<version>` finds
+it, and a HEAD request of its tarball URL answers), the wrapper packages (`monosmith`,
+`@monosmith/cli`) are published under `next`, or `latest` for a stable version. If not, they are
+published under the dist-tag `pending`, and the release goes on with the next project: a publish
+never waits, so a sign-in that expires in 15 minutes (Azure, PyPI or NuGet trusted publishing) is
+still valid for the projects after it.
+
+When every project has published, and after the GitHub Releases and their assets, smith runs a last
+phase: *move the dist-tags*. For each tag under `pending` it waits until each platform package is
+fetchable the way a person fetches it, on three probes in a row, 30 seconds apart, so that more than
+one npm edge has answered, with a progress line every 60 seconds naming the packages still missing.
+Then it runs `npm dist-tag add` and removes `pending`. See
+[ADR 0083](../architecture/decisions/0083-the-dist-tags-move-in-a-last-phase-after-every-project-has-published.md).
+
+The wait of that last phase is limited by `propagation_wait`, a duration, set for the workspace and,
+if needed, for one project:
+
+```toml
+[release]
+propagation_wait = "15m"        # the default; "0" does not wait: one probe, and the tag moves only if it passes
+
+[projects.smith.release]
+propagation_wait = "30m"        # this project only
+```
+
+If the limit passes first, smith moves no dist-tag, and the note names each package that npm said it
+published but the registry still does not serve (`pkg@version`); running the release again
+republishes it (a re-run treats a package as missing when `npm view` or its tarball does not
+answer). The packages stay under the dist-tag `pending`,
+the tag and the release are complete, and the report names the exact command that moves the tag
+(`npm dist-tag add <name>@<version> next`). The step prints a warning annotation in GitHub Actions
+and Azure Pipelines, and `smith release` and `smith ci release` exit with code 2, never silently.
+Run the printed command when `npm view` shows the platform packages from another machine, or run
+the release again: a re-run finds the wrapper under `pending`, publishes only the packages the
+registry lacks, waits again and moves the tag. If a later project fails, the last phase does not
+run, and the re-run does it. Without the wait, a person who runs `npm i -g monosmith@next` in those
+minutes would get a launcher with no binary. The launcher also helps in that case: see
+[the troubleshooting guide](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed).
+The last phase costs at least one minute for each such release (three probes); set
+`propagation_wait` to `"0"` to skip it. A Node package (not an app) with same-release
+`optionalDependencies` is moved the same way in the same run, but a re-run does not find its
+`pending` state: use the printed command.
+
+A plugin takes part in the last phase through the `publish` method. A publish returns
+`pendingMoves` (package, version, tag and the packages to await) instead of waiting; the host then
+calls `publish` again with `finalize` set to those moves and `propagationWait`. That call publishes
+nothing: it waits, moves the tags and returns `moved` and the moves still in `pendingMoves`.
+
 An app released with assets can also be published to npm, PyPI, NuGet and
 RubyGems from the same archives, so people install it with the package
 manager of their language, and nothing is downloaded after install:
@@ -520,6 +727,34 @@ prerelease goes to npm's `next` tag, to NuGet as is, to PyPI as `1.0.0rc1`
 (only `-alpha.N`, `-beta.N` and `-rc.N` have a Python spelling), and to
 RubyGems as `1.0.0.pre.rc.1`. Native apps are not published
 this way.
+
+#### Stable versions only: `stable_only`
+
+PyPI, NuGet and RubyGems limit the total size of a project (PyPI: 10 GB by default), and every pre-release of
+an app uploads one package per platform. A workspace with a release channel fills the limit after a few dozen
+pre-releases, and the release then fails with `Project size too large`. `stable_only` names the registries that
+receive stable versions only:
+
+```toml
+[projects.cli.release]
+npm = ["@acme/cli", "acme"]
+pypi = "acme"
+stable_only = ["pypi"]        # pypi, nuget or rubygems; each must be set in this table
+```
+
+A pre-release (`2.0.0-beta.47`) is then not published to PyPI. It still goes to npm under the channel's tag, so
+the `next` tag moves as before. A stable version goes everywhere. `npm` cannot be named: a channel is installed
+from its npm tag. The default is the old behaviour: with no `stable_only`, every registry receives every version.
+
+The setting shows in every place that knows the registries:
+
+- `smith release --dry-run` and the release itself print `PyPI acme: skipped: pre-release 2.0.0-beta.47 (stable_only in smith.toml)`.
+- The registry check before a release does not ask a skipped registry, and `PYPI_TOKEN` is not required for a pre-release.
+- The generated workflow keeps the secret, because stable releases run in it, and says so in its description.
+- The journal has a `package` entry with the outcome `skipped`, and the report lists it under `skippedPackages`.
+- `smith doctor` warns about an app in a workspace with release channels that sends pre-releases to PyPI, NuGet or RubyGems without `stable_only`, and notes the apps that set it.
+
+Pre-releases that a registry already holds stay there: smith never deletes a published version.
 
 #### RubyGems without a key: trusted publishing
 
@@ -591,7 +826,10 @@ Set up once:
    (tenant) ID**.
 2. Under **Certificates & secrets, Federated credentials**, add one for
    *GitHub Actions deploying Azure resources*: the organisation and
-   repository, and the entity **Branch** with the release branch (`main`).
+   repository, and the entity **Branch** with the release branch (`main`). If a
+   [release channel](#release-channels) publishes the extension, add one more for
+   the channel's branch (`smith-v2`, say): the sign-in step runs there too, and
+   Azure trusts only the branches it has a credential for.
 3. Find the identity's Azure DevOps ID, which is what the Marketplace
    knows it by (not the client ID): a federated app has no password to sign in
    with from a terminal, so run this once in a workflow, after `azure/login`
@@ -605,7 +843,8 @@ Set up once:
 
 With the setting on, `smith ci generate` gives the workflow `id-token: write`,
 adds a `Sign in to Azure` step (`azure/login`, with no subscription) right
-before the release step, only on a push to the release branch, tells the
+before the release step, only on a push to the release branch or a release
+channel's branch, tells the
 release step to publish with that sign-in (`VSCE_AZURE_CREDENTIAL`, which makes
 smith run `vsce publish --azure-credential`), and no longer passes `VSCE_PAT`
 as a secret. The release does not ask for `VSCE_PAT` either. The same holds
@@ -742,6 +981,121 @@ C++, Bicep, Lua, AppleScript, VBA, Swift and Objective-C projects have none). An
 registry is a warning, not a stop. `smith doctor` runs the same checks without
 fetching.
 
+## The bump against the public API
+
+A commit that says `fix` can delete an export. Before showing the plan, `smith release` asks the
+plugin of each package that has a last release for the package's public API at that release's
+tag and now, and compares the two lists of names. A removed name needs a major (a minor before
+1.0). A new name needs a minor. When the commits give a smaller bump, the plan item gets a warning
+that names the package, the names and the version to use instead:
+
+```text
+  ui    1.2.3 → 1.2.4  (1 releasing commit(s))
+  warning: ui: the commits release a patch (1.2.4), but the public API lost 1 export (parse);
+  that needs a major (2.0.0). Mark a commit as breaking (`feat!:` or a `BREAKING CHANGE:` footer),
+  or restore the export.
+```
+
+The warning shows in the text plan, in `--format markdown`, in the `--comment` preview on the
+pull request, in `--json` (`apiWarnings` on the item) and in the `smith ci release` log. It is
+advice. A release never fails because of it, unless you ask:
+
+```toml
+[release]
+api_check = "warn"   # "warn" (default), "error" stops the release too, "off" does not look
+```
+
+The check skips a package that was never released, a version a `version(...)[x]` directive forced,
+and a plugin that cannot list an API. A failing plugin, a tag that was not fetched or a package
+with no entry file give no warning. Fix the bump with a commit marker, not with `api_check`:
+`feat:` for an added export, `feat!:` or a `BREAKING CHANGE:` footer for a removed one.
+
+**Node.** The Node plugin reads the entry points `package.json` declares (`exports`, `types`,
+`typings`, `module`, `main`), takes the built declaration file when the repository holds it and
+the source it comes from otherwise (`dist/index.d.ts` is read as `src/index.ts`), and follows
+`export * from`. It never builds. A private package has no public API. A subpath export is listed
+as `./sub:name`.
+
+**Go.** The Go plugin parses the `.go` files of the module with `go/parser` (at the tag, through
+git, and now from disk). The API is every exported function, type, constant and variable, the
+exported methods of exported types, the exported fields of structs and the methods of interfaces.
+A name in a package below the module root is listed as `dir:Name`. Test files, `internal`,
+`testdata`, `vendor`, hidden folders, `package main` and the packages of a nested module are not
+part of the API. Build tags are not evaluated.
+
+**Languages checked.** Node and Go. Python, C# and the other languages give no warning yet.
+
+**Not detected.** A changed signature or type with the same name (only names are compared).
+Wildcard subpath exports (`"./*"`). A second declarator in one `export const a = 1, b = 2` and
+destructured exports. The implicit exports of an ambient `.d.ts` file. A regular expression
+literal with an unbalanced brace. Other languages: a plugin can add the same method
+(`api/surface`, see [the protocol](../architecture/plugin-protocol.md)) with no change to smith;
+until then they are not checked. The reason is in
+[ADR 0044](../architecture/decisions/0044-the-release-checks-the-bump-against-the-public-api.md).
+
+## Release channels
+
+A long-lived branch can release a line of prerelease versions of its own, while the release branch
+keeps releasing stable ones:
+
+```toml
+[[release.channels]]
+branch = "next"
+prerelease = "beta"
+major = 2
+```
+
+On `next` the plan numbers releases `2.0.0-beta.1`, `2.0.0-beta.2` and so on, from the tags that
+the branch contains. A breaking change does not start a new major there, because the major is the
+channel's. The release branch ignores these tags and keeps its `1.x` line. `smith release
+--dry-run`, `smith report` and the pull request preview plan a channel branch like any other.
+
+A real release from `next` publishes each package under the channel's name, `beta` here (set
+`dist_tag` to change it; the default is the prerelease id, not `next`, and it is never `latest`),
+so `latest` stays on the stable version. The GitHub Release of any prerelease version is marked as
+a prerelease on its own, which GitHub never offers as the latest release: there is no setting for
+it (`github_prerelease` is an unknown key). Install it with `npm install acme-kit@beta`.
+
+To promote the line, merge the channel branch into the release branch: the next release there is
+stable (`1.4.2 → 2.0.0`). Removing `prerelease` from the channel is an error, because a channel
+without a prerelease id would release stable versions from the wrong branch.
+
+Smith checks this before it publishes anything, and refuses the release when a project in the plan:
+
+- is a package whose plugin does not declare the `channels` capability (the Node, Python, .NET,
+  Rust, JVM, Ruby and Dart plugins, and those that release by tag alone, do: npm gets the
+  channel's tag, and the other registries order a prerelease below the release). The Go plugin does
+  not: a Go module needs `/vN` in its module path from major 2 on, so a `v2.0.0-beta.1` tag of a
+  module whose path lacks `/v2` is unusable for `go get`. A Go release is only a tag, so smith
+  cannot check the path before the tag exists; keep such a package out with `channels = false`,
+- is deployed by a deploy plugin (a container image's `latest` and branch tags).
+
+`smith release --dry-run`, `smith release --dry-run --comment` and the pull request preview show
+the same refusal as a real release (`Blocked:`), once.
+
+An app's binaries sent to npm (under the channel's tag), PyPI, NuGet, RubyGems and pub.dev, and its
+Linux packages, are allowed: all but npm order a prerelease version below the release. The package
+manager manifests (Homebrew, Scoop, winget) are attached to the GitHub Release as usual; that
+release is a prerelease, which GitHub never offers as the latest, so the package managers keep
+pointing at the stable version.
+
+A VS Code extension on a channel is published as a pre-release under a plain version, because the
+Marketplace takes no semver prerelease tag: `2.0.0-beta.3` becomes `2.1.3` (see the
+[vscode plugin](../plugins/using/catalogue/vscode.md)).
+
+Keep a project out of the channel with `channels = false` in its `[projects.x.release]`: on a
+channel branch it is neither planned nor published, and it keeps releasing from the release branch.
+Use it for a project that cannot take a prerelease yet. A Go module whose path lacks `/v2` is one:
+a `v2.0.0-beta.1` tag could not be used by `go get`.
+
+`smith ci generate` makes the pipelines of every provider trigger on a channel branch and run the
+release step there, with the sign-in steps before it (not pack). `smith release --dry-run` and the pull
+request preview name the channel, as the first line says: ``Release channel `beta`: prerelease
+versions, published under the `beta` tag; the stable version stays the latest.`` A pull request
+build plans for the branch it targets (GitHub, Azure, GitLab and Bitbucket say which one), so a
+pull request into `next` previews `2.0.0-beta.n`. See
+[ADR 0051](../architecture/decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md).
+
 ## Checked before anything is published
 
 Before the first publish of a real release, smith asks npm, PyPI, NuGet and
@@ -764,11 +1118,50 @@ does not run `npm publish --dry-run`, `twine check` or `cargo publish
 published by a language plugin (not an app's binaries) are not asked yet.
 A dry run does not check the registries.
 
+## Rehearse a release
+
+`smith release --rehearse` finds a wrong feed setting before the first real push, so the
+first CI run on a new feed needs no fix-and-retry commit. It looks at every package project
+(not at the commits), and for each registry its plugin publishes to it asks, with read-only
+requests:
+
+| Check | Question | How |
+|---|---|---|
+| `registry` | Does the URL resolve, and which credential does it expect? | An unauthenticated request; the `WWW-Authenticate` header gives Basic or Bearer. |
+| `credential` | Is the credential set? | The variable the publish reads, or the one `smith.toml` names (see below). |
+| `access` | Does the registry accept it? | npm `/-/whoami`, or a package read where the feed has no `whoami` (Azure Artifacts, GitHub Packages); an upload with no file to PyPI, which the index refuses after it checks the credential; a read of the feed for a private NuGet feed; `/api/v1/me` on crates.io. |
+| `identity` | In CI, which identity publishes? | The pipeline (GitHub Actions or Azure Pipelines) is detected from its environment. |
+
+The URL is what the publish uses: the registry `smith.toml` names (`registry = "<name>"`
+and `[registries.<name>]`), else `NPM_CONFIG_REGISTRY` and the `registry=` and
+`@scope:registry=` lines of `.npmrc` (user, workspace and project), `TWINE_REPOSITORY_URL`,
+`NUGET_SOURCE`, else the public registry. Credentials by sign-in kind:
+
+| Sign-in | Credential |
+|---|---|
+| `azure-artifacts` | `SYSTEM_ACCESSTOKEN` (map `$(System.AccessToken)` into the step), or an `.npmrc` token. Outside Azure Pipelines this is a warning, since the pipeline supplies it. |
+| `github-packages` | `GITHUB_TOKEN`. |
+| `token` | the variable `token_env` names. |
+| none | npm `NODE_AUTH_TOKEN` or `NPM_TOKEN` or the `.npmrc` `_authToken` for the registry (a `${VAR}` in it is expanded); PyPI `PYPI_TOKEN` or `TWINE_PASSWORD`; NuGet `NUGET_API_KEY`; crates.io `CARGO_REGISTRY_TOKEN`. |
+
+A GitHub Actions job with `id-token: write` and no token is a warning, not a failure: npm,
+PyPI and crates.io accept OIDC (trusted publishing), which cannot be checked without
+publishing. A NuGet push key on nuget.org cannot be checked without pushing either, so it is
+reported as set and nothing more. Whether the Build Service identity has Contributor on an
+Azure feed cannot be read with a read request: a refused request names the setting to change.
+Maven, RubyGems, pub.dev and Packagist projects are not rehearsed yet (the existing
+[pre-publish check](#checked-before-anything-is-published) covers RubyGems for an app's binaries).
+
+The output is in the style of `smith doctor`: what failed, why, and `→` the exact fix.
+`--verbose` lists passed checks too and `--json` prints the report (`results` with `project`,
+`registry`, `check`, `status`, `message`, `fix`). The exit code is 1 when a check fails, 0
+otherwise. No secret is printed or encoded.
+
 ## The release journal
 
 Each package's release appends what it did to `dist/release/<project>/journal.json`:
-the plugin's registry, each npm, PyPI, NuGet or RubyGems package (published, or
-already there), images, the tag, the push, the mirror and the GitHub Release,
+the plugin's registry, each npm, PyPI, NuGet or RubyGems package (published,
+already there, or skipped because `stable_only` keeps pre-releases out), images, the tag, the push, the mirror and the GitHub Release,
 and the step that failed. `smith release --status` prints it (`--json` too).
 The journal only grows and there is no rollback: registries do not let a
 published version be removed (npm unpublish is restricted, PyPI and crates.io
@@ -796,6 +1189,65 @@ a finished Release are empty, as the commits are not replanned.
 Before a real release smith refuses a shallow clone, a branch other than
 `[release] branch`, uncommitted changes, and a missing publish credential —
 before anything is tagged.
+
+## What was released
+
+After the result table, `smith release` and `smith ci release` print a block for each project that
+reached a target: the version step, then one line per target with its type, what went there and
+where. The block is outside the folded log, so it is the part of the output that stays on screen.
+Registry targets are grouped by registry, and the platforms are read from the file names (npm
+`cli-darwin-x64`, wheel tags, `.nupkg` runtime ids, gem platforms). Many files collapse to counts.
+
+```
+══ Released ════════════════════════════════════════════════
+smith 1.128.0 › 1.129.0 (minor)
+  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+               darwin x64 arm64 · linux x64 arm64 · win32 x64 arm64
+  PyPI       6 wheels (macOS, Linux, Windows x x64, arm64)    pypi.org
+  NuGet      monosmith + 6 platform packages    nuget.org
+               darwin x64 arm64 · linux x64 arm64 · windows x64 arm64
+  RubyGems   8 gems (macOS, Linux, Windows x x64, arm64)    rubygems.org
+  GitHub     release smith@1.129.0 with 17 files: 6 zips, 4 deb/rpm, checksums, SBOM, winget, brew, manifest
+  pub.dev    publish queued (pub.yml), not finished yet
+```
+
+The registry host is the default of the registry type. A registry that `smith.toml` names
+instead is not recorded in the report, so the line still shows the default host. A dry run, a
+failed project and a project that published nothing print no block. The `Published` column of the
+result table counts every target the same way: up to three are named (`npm, GitHub Release`), and
+four or more are counted first (`5 targets: npm, PyPI, NuGet, RubyGems, GitHub Release`).
+
+The pub.dev publish is queued, not waited for: the pub workflow (`pub.yml`) finishes it. Read its
+run for the result.
+
+The same block is written as Markdown to the job summary (GitHub `$GITHUB_STEP_SUMMARY`, Azure
+summary) and printed by `--format markdown`. The `--json` report holds the facts in a `targets`
+array in each result:
+
+```json
+{ "kind": "PyPI", "what": "6 wheels (macOS, Linux, Windows x x64, arm64)",
+  "platforms": ["darwin/x64", "darwin/arm64", "linux/x64", "linux/arm64", "windows/x64", "windows/arm64"],
+  "where": "pypi.org", "count": 6 }
+```
+
+`npm publish` prints a listing of the tarball (`npm notice Tarball Contents`, sizes, digests) and a
+probe for a version that is not published yet fails with `E404`. smith hides both: an `E404` probe
+is an answer, not an error, and the listing shows only with `smith release --verbose` or when the
+publish fails (then the failure message ends with npm's last lines).
+
+### GitHub deployments
+
+On GitHub Actions, after the release, smith records each registry it published to as a GitHub
+deployment: the environment is the registry (`npm`, `PyPI`, `NuGet`, `RubyGems`), the ref is the
+release tag, the description is `<package> <version>`, and a `success` status links to the package
+page (`npmjs.com/package/<name>/v/<version>`, `pypi.org/project/<name>/<version>`,
+`nuget.org/packages/<id>/<version>`, `rubygems.org/gems/<name>/versions/<version>`). The
+repository's Deployments sidebar then lists each registry with its version and a link. A registry
+that already had the version, a failed release, a local run and another CI record nothing.
+
+The call needs `deployments: write`. The generated GitHub workflow grants it when a project
+publishes to a registry. If GitHub refuses, smith prints one warning with the remedy and the
+release still passes. To switch it off, set `github_deployments = false` under `[release]`.
 
 ## The report
 

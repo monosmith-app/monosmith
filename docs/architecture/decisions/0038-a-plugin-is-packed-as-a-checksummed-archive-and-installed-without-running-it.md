@@ -20,7 +20,7 @@ scope.
 - **Only the checksums inside the archive.** Rejected as the sole defence: whoever changes a file
   changes the list too. The list protects against corruption and swaps inside one archive; the digest
   of the archive, obtained separately, is what ties it to the author's release.
-- **Install by name, from a registry or an index.** Deferred: it needs namespace ownership,
+- **Install by name, from a registry or an index.** Deferred here, and decided later by [ADR 0040](0040-plugins-are-found-by-name-in-a-marketplace-index.md). Reason for the deferral: it needs namespace ownership,
   moderation and signing infrastructure (#164).
 - **Trust the plugin at install.** Rejected: fetching code is not the decision 0036 asks a person to
   make about running it. `--trust` makes it explicit in one step.

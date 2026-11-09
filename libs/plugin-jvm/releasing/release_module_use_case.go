@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -167,8 +166,8 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	return result, nil
 }
 
-// Published reads the newest release from the repository's
-// maven-metadata.xml: the registry smith.toml names for the package (signed
+// Published reads the newest release (never a prerelease, see NewestStable)
+// from the repository's maven-metadata.xml: the registry smith.toml names for the package (signed
 // in with its credentials when it has them, as GitHub Packages needs even to
 // read), else MAVEN_REPOSITORY_URL, else Maven Central.
 func Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
@@ -196,15 +195,15 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	url := repository + "/" + strings.ReplaceAll(group, ".", "/") + "/" + artifact + "/maven-metadata.xml"
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	if password != "" {
 		req.SetBasicAuth(user, password)
 	}
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
+	resp, err := (&http.Client{Timeout: protocol.RegistryLookupTimeout}).Do(req)
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -216,13 +215,14 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 		return result, nil
 	}
 	var metadata struct {
-		Release string `xml:"versioning>release"`
+		Release  string   `xml:"versioning>release"`
+		Versions []string `xml:"versioning>versions>version"`
 	}
 	if err := xml.NewDecoder(resp.Body).Decode(&metadata); err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
-	result.Version = metadata.Release
+	result.Version = NewestStable(metadata.Release, metadata.Versions)
 	return result, nil
 }
 

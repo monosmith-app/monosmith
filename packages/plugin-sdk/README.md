@@ -25,7 +25,22 @@ minor version may change the Go API; the wire protocol is versioned on its own
 | `lineendings` | keep the line ending of an edited file; pick one for a new file from `.gitattributes`, git settings and sibling files |
 | `protocolschema` | the JSON Schema of the protocol, built from the types (see above); `schemagen` is its command |
 | `projectkind` | a project's kind when its manifest declares none, and the directory each kind lives in |
+| `registry` | `registry.GetJSON`: read a JSON document from a package registry with a 10-second timeout and a status check |
+| `discovery` | `discovery.WithDeclared`: add the projects `smith.toml` declares to a discover result |
 | `toolrun` | run toolchain commands with their output on stderr, keeping stdout for the protocol |
+| `buildrefs` | find the files that name a build folder, so a doctor fix that moves the build can refuse with the file named |
+| `components` | what every plugin's SBOM listing needs: find a lockfile or manifest up to the workspace, and write package URLs |
+| `fileedits` | collect a plugin's edits to workspace files in memory, so several rewrites of one file add up; `RetargetDependents` points the other projects' files at a moved directory |
+| `functionhost` | the local tool each function host needs (Azure Functions Core Tools, AWS SAM CLI, Functions Framework) and its doctor finding |
+| `gitrevision` | read the files of a git revision through one long-lived git process |
+| `npmpropagation` | wait until the packages of one npm release can be fetched, before a dist-tag moves |
+| `pathrefs` | rewrite the references to a project's directory (path dependency, workspace member, `go.work` entry) when it moves |
+| `releaseassets` | what every plugin does the same way for release archives: the file name pattern, the zip, the checksum lines |
+| `taskoutput` | tell whether a build task's command names an output folder inside the workspace's `dist/` |
+| `tomltext` | edit single keys of a TOML file as text, keeping its comments, order and spacing |
+| `toolcatalog` | the data of the programs the language plugins need (git, Python, the .NET SDK, Docker) and how to get each |
+| `tooldefaults` | find whether the repository brought its own linter configuration, and write the plugin's embedded default under `.smith/defaults/` |
+| `xmltext` | edit single elements of an XML file (a `.csproj`, a `pom.xml`) as text, keeping its comments, order and spacing |
 
 ## The protocol schema
 
@@ -55,6 +70,12 @@ smith run generate -p plugin-sdk-dotnet # and the C#
 schema; and `schemagen` refuses to run when the protocol has a method, an error code or a capability
 that `protocolschema`'s tables (`method_table_config.go`, `error_code_table_config.go`) do not describe
 yet, so a new method has to be given its params, result and capability on purpose.
+
+## Written exceptions
+
+| Path | Rule waived | Constraint | Owner | Temporary |
+|---|---|---|---|---|
+| `protocol` (30 files) | the 12-file review trigger for a slice | The package is the wire contract: one outcome, the JSON-RPC messages. `protocolschema` reflects over the package, and the SDKs of other languages generate their types from it, so splitting it would change the Go import path of every plugin and the schema. | the smith maintainers | no |
 
 ## A plugin
 

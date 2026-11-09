@@ -11,7 +11,7 @@ The go plugin makes every `go.mod` below the workspace root a smith project. It 
 | `--lang` values | `go`, `golang` |
 | Manifest that makes a directory a project | `go.mod` (a `go.mod` at the workspace root is skipped; see [What it detects](#what-it-detects)) |
 | Requires / conflicts / provides | none / none / no task slots (`smith plugin list` shows `-` in the SLOTS and REQUIRES columns) |
-| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`. Not advertised: `version`, `published`. |
+| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `link`, `declared`. Not advertised: `version`, `published`, `channels`. |
 | Stacks it publishes | none. The add-on [go-smith-plugin](go-smith-plugin.md) publishes the one stack whose language is `go`. |
 | Project kinds it can create | `app`, `lib`, `package` (`go-app`, `go-lib`, `go-package` in `smith kinds`) |
 
@@ -176,10 +176,11 @@ The plugin publishes no stack of its own. `--stack` for Go means `go-smith-plugi
 
 ## Settings
 
-The Go plugin has no `[projects.<p>.settings.go]` table and reads no environment variable of its own. What can be configured:
+The Go plugin reads one table, `[projects.<p>.settings.go]` (build tags), and no environment variable of its own. What can be configured:
 
 | Where | Key | Effect | Read in |
 |---|---|---|---|
+| `smith.toml` | `[projects.<p>.settings.go] tags = ["production"]`, `tags_linux`, `tags_windows`, `tags_darwin` | build tags: `tags` always, then the list of the OS smith runs on (a tag in both is passed once) | `discovery/build_tags_policy.go` |
 | `go.mod` comment | `// smith:kind app\|lib\|package` | the project kind | `discovery/go_module_mapper.go` |
 | `go.mod` comment | `// smith:stack <name>` | the stack (letters, digits, `. @ / - _`) | same |
 | `go.mod` comment | `// smith:native` | the module builds on each OS with `CGO_ENABLED=1`, and `smith ci verify` leaves it to `smith ci native` | same, `discovery/module_tasks_config.go` |
@@ -190,6 +191,16 @@ The Go plugin has no `[projects.<p>.settings.go]` table and reads no environment
 | `smith.toml` | `[ci] audit_policies = ["go"]`, `audit_warn = ["go"]` | adds `go mod verify` to the audit | `pipeline/ci_contribution_use_case.go` |
 | `smith.toml` | `[tasks.*]`, `[projects.<p>.tasks.*]` | override any task above | host |
 
+### Build tags
+
+```toml
+[projects.mvd.settings.go]
+tags       = ["production"]
+tags_linux = ["gtk3"]       # Wails 3 on Linux: -tags=production,gtk3
+```
+
+The plugin passes the tags as `-tags=a,b` to the `build`, `test`, `package` and `start` commands, and as `--build-tags a,b` to `golangci-lint`. The tags are part of the command, so changing them misses the task cache. A value that is not a list of tag names (letters, digits, `_`, `.`) stops `smith` at load with a message that names the key. This replaces `env = { GOFLAGS = "-tags=..." }` on each task. `smith ci native` is not changed.
+
 ## Toolchain
 
 The plugin reports the toolchain label `go` with the version from `go version`, once per process. That string is part of every task's cache key, so a machine on another Go version never reuses a result.
@@ -197,7 +208,7 @@ The plugin reports the toolchain label `go` with the version from `go version`, 
 To pin it, put the version in `[toolchains]` (a prefix on dot boundaries). Real output with `go = "1.23"` on a machine running 1.27.0:
 
 ```
-✖ go matches the pinned version 1.23
+× go matches the pinned version 1.23
     [toolchains] pins go 1.23, but this machine runs 1.27.0: tasks cached on another version are misses, and results can differ from CI
     → install go 1.23 (`mise use go@1.23`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] go
 ```
@@ -209,6 +220,8 @@ Where output goes: an app's `build` writes `dist/<module dir>/<name>[.exe]` (out
 ## Releasing
 
 Go has no manifest version, so the plugin has no `version` capability and nothing is written into `go.mod`.
+
+The plugin does not declare the `channels` capability, so a [release channel](../../../reference/releasing.md) refuses a Go package in its plan. Keep the module out of the channel with `[projects.<name>.release] channels = false`; a `v2.0.0-beta.1` tag could not be used by `go get` unless the module path ends in `/v2`.
 
 | Kind | What a release does |
 |---|---|
@@ -270,13 +283,19 @@ variables:
 |---|---|
 | Toolchain | Go at the `go.work` version (`1.24` when none): `actions/setup-go@v7` (with `cache: false`; the module cache is handled as a store), `GoTool@0` on Azure (a `major.minor` version gets `.0` appended), a `curl` of the release tarball for other providers, and the `go` dev container feature with `golangciLintVersion` set to the pinned version |
 | Package store | `~/go/pkg/mod` (`GOMODCACHE` on Azure), keyed on each module's `go.sum` |
-| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0` |
+| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0` |
 | Audit (`smith ci audit`) | `govulncheck` v1.9.0 (`go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`), once per module, non-blocking, cached on that module's `go.mod` and `go.sum`. With `[ci] audit_policies = ["go"]` also `go mod verify` per module, blocking unless `"go"` is in `audit_warn` |
 | Credentials, permissions | none; the plugin asks for no secret. The workflow-level `permissions` come from smith, not from this plugin. |
 
 Real audit run: `smith ci audit` printed `No vulnerabilities found.` for each module and `smith ci audit passed in 5.9s`. A `native` module is built by the extra `native` job on each OS (`smith ci native`), see [CI](../../../reference/ci.md#native-projects).
 
+## Linking an internal library
+
+`smith install -p <project> core-go` requires the library's module path in the project's `go.mod` (`require example.com/shop/libs/core-go v0.0.0`) and adds the library to `go.work` with `go work use`, which is how Go finds the folder; nothing is fetched. A workspace with no `go.work` gets a `replace` line instead. A requirement in `go.mod` is also a graph edge before any file imports the module. `smith uninstall` removes the requirement and its `replace`, and leaves `go.work` alone. The plugin declares the `link` capability.
+
 ## Doctor, dependencies and removal
+
+Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `go build` without `-o` (or with a folder outside `dist/`) is reported, with the option to pass. `go build ./...` writes no binary and is not reported. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_case.go`):
 
@@ -287,16 +306,16 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 | `go.work lists <dir>` | a Go project is not in `go.work` | `go work use ./<dir>`; `--fix` rewrites `go.work` |
 | `<dir> requires the modules it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix, `go mod tidy` in the module | `go mod tidy` |
 | `Go is at least <v> (go.work)` | the installed Go is older than the `go.work` version (`go env GOVERSION`); also fails when `go` is not on PATH | install that Go |
-| `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.14.0) | `go install ...@v2.14.0` |
+| `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.15.0) | `go install ...@v2.15.0` |
 
 Real output after `go work edit -dropuse=./libs/util`:
 
 ```
-✖ go.work lists libs/util
+× go.work lists libs/util
     libs/util has a go.mod but go.work does not use it
     → run `go work use ./libs/util`
 
-19 passed, 1 failed, 0 warning(s)
+19 passed, 1 failed, 0 warnings
 1 fix(es) available: `smith doctor --fix`
 ```
 
@@ -307,22 +326,63 @@ Dependencies:
 | Command | What the plugin runs |
 |---|---|
 | `smith install` (no package) | `go mod download` in every module |
-| `smith install -w <project> <module>[@v]` | `go get <module>` in that module; with `-D`, `go get -tool` (a Go tool dependency) |
-| `smith uninstall -w <project> <module>` | `go get <module>@none` (`go get -tool ...@none` when `go.mod` has a `tool` directive for it) |
+| `smith install -p <project> <module>[@v]` | `go get <module>` in that module; with `-D`, `go get -tool` (a Go tool dependency) |
+| `smith uninstall -p <project> <module>` | `go get <module>@none` (`go get -tool ...@none` when `go.mod` has a `tool` directive for it) |
 | `smith up` | asks the module proxy (`proxy.golang.org`) for the newest release of each module a `go.mod` requires directly, then runs `go get <module>@v<version>` in each module that declares it, so `go.mod` and `go.sum` change together. It also compares the pinned tools: Go and golangci-lint. Indirect requirements, pseudo-versions (a commit between tags) and `replace`d modules are left alone. |
 | `smith sync` | brings the direct requirements of one module that several `go.mod` files declare to the highest version any of them has, with `go get`. A `go.work` already builds every module with the highest version required, so this does not change what ships; it keeps each module building the same on its own, and makes `smith doctor`'s one-version check meaningful for Go. |
 
-Real: `smith install -w api github.com/pkg/errors@v0.9.1` printed `added github.com/pkg/errors@v0.9.1 (apps/api/go.mod, apps/api/go.sum)` and the note `go mod tidy drops a requirement nothing imports yet: import it before tidying`; the `go.mod` line was marked `// indirect` until code imports it. `smith uninstall` removed it again. `smith up --check` ended with:
+Real: `smith install -p api github.com/pkg/errors@v0.9.1` printed `added github.com/pkg/errors@v0.9.1 (apps/api/go.mod, apps/api/go.sum)` and the note `go mod tidy drops a requirement nothing imports yet: import it before tidying`; the `go.mod` line was marked `// indirect` until code imports it. `smith uninstall` removed it again. `smith up --check` ended with:
 
 ```
 Tools smith pins (informational):
-  Go               1.27 ✔ (latest 1.27.3)
-  golangci-lint    2.14.0 → 2.15.0 available
+  Go               1.27 ✓ (latest 1.27.3)
+  golangci-lint    2.15.0 ✓ (latest 2.15.0)
 ```
 
 (Those figures are read from `go.dev/dl` and `proxy.golang.org` at run time; the plugin tolerates a failed lookup by leaving "latest" empty.)
 
 Removal: `smith remove <project>` deletes the directory and the plugin drops its `use` entry from `go.work`, which would otherwise break every `go` command. Real dry run: `Would remove util (libs/util)`, `changes go.work`, `the pipelines would be regenerated`. With no matching entry it changes nothing.
+
+## Projects of one module
+
+A repository can keep one `go.mod` at the root, or one per area, with its programs and libraries
+as packages of it. smith finds a project by a manifest, so you declare such a project in
+`smith.toml`, with its folder and its language:
+
+```toml
+[projects.mvd]
+root = "apps/mvd"
+language = "go"          # kind is an app when the folder holds a program, else a lib
+
+[projects.core]
+root = "libs/core"
+language = "go"
+kind = "lib"
+```
+
+smith then treats each as a project of the module whose `go.mod` is in the folder or above it. It
+exports the package path (`example.com/mvd/libs/core`), so a program that imports it, or any
+package below it, depends on it in the graph. The tasks are those of any Go project and run in the
+folder (`go build`, `go test ./...`, `golangci-lint run`), cached on the folder's files and the
+module's `go.mod` and `go.sum`. A folder that imports a package of the module that no declared
+project holds (a shared `internal/` folder) is not part of any cache key: declare that folder as a
+`lib` too: `smith doctor` warns about it and names the folder.
+
+Limits: a module has one version, so a declared project is an app or a lib, never a package, and
+a library of the module cannot be released on its own (its apps are released by their tags and
+release files). A folder with a `go.mod` of its own is found by it and must not be declared.
+`smith adopt` and `smith convert` write the declarations for you.
+
+### Or one module per project
+
+If you would rather have a module per project (each program or library its own releasable unit), split the root module:
+
+1. In each program or library folder run `go mod init <module>/<folder>` (for example
+   `go mod init example.com/mvd/apps/mvd` in `apps/mvd`; the import paths do not change).
+2. At the root run `go work init` and `go work use ./apps/a ./libs/b ...`. The programs reach the
+   libraries through the workspace, and need a `require` of them in their `go.mod`.
+3. Remove the root `go.mod` if nothing else needs it, commit, and run `smith adopt` or
+   `smith convert` again.
 
 ## Requirements and limits
 
@@ -336,14 +396,14 @@ Removal: `smith remove <project>` deletes the directory and the plugin drops its
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, go 1.27.0 windows/amd64 (the Go version `smith new` wrote into `go.work`), a throw-away workspace made with `smith new go-demo --ci github,azure`. Run: `smith add lib|app|package ... --lang go`, `smith projects`, `smith graph`, `smith explain` (project and tasks), `smith run build|test|lint|package|start|typecheck|format`, `smith doctor` (clean, with a missing `go.work` entry, and with `[toolchains] go = "1.23"`), `smith doctor --fix` (diff only), `smith ci generate`, `smith ci setup`, `smith ci audit` (network; govulncheck), `smith ci check`, `smith release --dry-run [--json] [--notes]`, `smith install -w` / `smith uninstall -w`, `smith up --check`, `smith remove util --dry-run`, `smith plugin check go` (all 11 checks ok), `smith stacks --json`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, go 1.27.0 windows/amd64 (the Go version `smith new` wrote into `go.work`), a throw-away workspace made with `smith new go-demo --ci github,azure`. Run: `smith add lib|app|package ... --lang go`, `smith projects`, `smith graph`, `smith explain` (project and tasks), `smith run build|test|lint|package|start|typecheck|format`, `smith doctor` (clean, with a missing `go.work` entry, and with `[toolchains] go = "1.23"`), `smith doctor --fix` (diff only), `smith ci generate`, `smith ci setup`, `smith ci audit` (network; govulncheck), `smith ci check`, `smith release --dry-run [--json] [--notes]`, `smith install -p` / `smith uninstall -p`, `smith up --check`, `smith remove util --dry-run`, `smith plugin check go` (all 11 checks ok), `smith stacks --json`.
 
 Not verified by a run:
 
 - The release asset build itself (`BuildAssets` cross-compiling, zipping, checksums): a real `smith release` would tag and push; only the dry run, which lists names, was run. The behaviour above is read from `releasing/build_assets_use_case.go`.
 - A `// smith:native` module and `smith ci native` (code and unit tests only).
 - The `lint` task as `go vet` was verified; the move to golangci-lint with smith's default config was verified only by `smith run lint` on this repository (golangci-lint 2.x installed) and the unit tests.
-- GitLab CI output and the devcontainer feature on a non-Windows machine. The dev container file written for the demo workspace contained `ghcr.io/devcontainers/features/go:1` with `version` `1.27.0` and `golangciLintVersion` `2.14.0`.
+- GitLab CI output and the devcontainer feature on a non-Windows machine. The dev container file written for the demo workspace contained `ghcr.io/devcontainers/features/go:1` with `version` `1.27.0` and `golangciLintVersion` `2.15.0`.
 
 ## See also
 

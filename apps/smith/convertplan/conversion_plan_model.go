@@ -21,7 +21,7 @@ const (
 	Changed Severity = "changed"
 	// Manual is something the conversion could not do; the user must.
 	Manual Severity = "manual"
-	// Unsupported is a project or setting smith v1 has no plugin for.
+	// Unsupported is a project or setting smith has no plugin for.
 	Unsupported Severity = "unsupported"
 	// Blocker prevents the conversion.
 	Blocker Severity = "blocker"
@@ -38,6 +38,10 @@ type Finding struct {
 	// Decide marks a finding the reader should weigh before applying (CI is
 	// replaced, release rules change), not one to skim.
 	Decide bool `json:"decide,omitempty"`
+	// Edit marks a finding that is a change convert makes to one of your files
+	// (a file removed, a field rewritten), as against a note about how a
+	// setting was carried over. The report lists the two apart.
+	Edit bool `json:"edit,omitempty"`
 }
 
 // ProjectPlan is how one Nx project becomes a smith project.
@@ -55,6 +59,9 @@ type ProjectPlan struct {
 	Scripts map[string]string `json:"scripts,omitempty"`
 	// Supported is false for a language smith has no plugin for.
 	Supported bool `json:"supported"`
+	// Declared is true for a project with no manifest of its own, declared in
+	// smith.toml with a root and a language.
+	Declared bool `json:"declared,omitempty"`
 }
 
 // The tools a plan converts from.
@@ -118,10 +125,27 @@ func (p *Plan) Add(severity Severity, project, subject, message string) {
 	p.Findings = append(p.Findings, Finding{Severity: severity, Project: project, Subject: subject, Message: message})
 }
 
+// AddEdit records a change convert makes to a file of the workspace: it is
+// reported under "Changes to your files", apart from the notes.
+func (p *Plan) AddEdit(project, subject, message string) {
+	p.Findings = append(p.Findings, Finding{Severity: Mapped, Project: project, Subject: subject, Message: message, Edit: true})
+}
+
 // Decide records a behaviour change the reader should decide on before the
 // conversion is applied; the report lists it first.
 func (p *Plan) Decide(project, subject, message string) {
 	p.Findings = append(p.Findings, Finding{Severity: Changed, Project: project, Subject: subject, Message: message, Decide: true})
+}
+
+// Decided reports whether a decision finding already names the subject, so
+// one file is not announced twice.
+func (p *Plan) Decided(subject string) bool {
+	for _, f := range p.Findings {
+		if f.Decide && f.Subject == subject {
+			return true
+		}
+	}
+	return false
 }
 
 // Count returns how many findings have each severity.
@@ -174,7 +198,7 @@ func (p *Plan) Override(project string) workspace.ProjectOverride {
 
 // SetOverride stores a project section, dropping it when empty.
 func (p *Plan) SetOverride(project string, o workspace.ProjectOverride) {
-	if o.TagPrefix == "" && o.Release == nil && len(o.Tasks) == 0 {
+	if o.TagPrefix == "" && o.Release == nil && len(o.Tasks) == 0 && !o.Declared() {
 		delete(p.Config.Projects, project)
 		return
 	}

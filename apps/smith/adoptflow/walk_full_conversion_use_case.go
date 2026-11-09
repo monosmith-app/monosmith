@@ -7,14 +7,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
+	"github.com/monosmith-app/monosmith/apps/smith/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/fullconversion"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -95,6 +100,16 @@ func (s *Session) Convert(_ context.Context, c convertchoices.Choices, out io.Wr
 	return s.analysis.Convert(c.Level == convertchoices.LevelFull && c.CI == convertchoices.Keep, log)
 }
 
+// CommitConversion commits what the conversion changed as one operation that
+// smith undo reverts, and returns the line that says what happened (or why
+// nothing was committed). The tree was clean before the conversion, so the
+// commit holds the conversion and nothing else.
+func (s *Session) CommitConversion() string {
+	var b strings.Builder
+	convert.CommitConversion(s.Root, &b)
+	return strings.TrimSpace(b.String())
+}
+
 // Result is what the conversion found worth telling, once it was applied.
 func (s *Session) Result() convert.Highlights {
 	if s.analysis == nil {
@@ -148,6 +163,30 @@ func (s *Session) Report() (string, error) {
 	return string(raw), err
 }
 
+// InitFacts are the facts of the repository that shape the questions of
+// adopt --init: whether it has a .gitattributes, the CI it uses, the
+// pipelines it has of its own.
+func (s *Session) InitFacts() adoptdecision.Facts { return adoption.InitFacts(s.report) }
+
+// InitPlan is what adopt --init does for these choices, as the text the review
+// shows: the files it creates, the files of the person it edits with a diff,
+// and the pipelines it moves aside. It reads and writes nothing.
+func (s *Session) InitPlan(c adoptdecision.Choices) string {
+	var b strings.Builder
+	operationplan.Render(&b, adoption.PlanInit(s.report, c, false))
+	return b.String()
+}
+
+// AdoptFixChosen is AdoptFix with the choices of the person: the step carries
+// each as a flag, so --yes takes these and no default of its own.
+func (s *Session) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned {
+	fix := s.AdoptFix(commit, move)
+	step := &fix.Steps[0]
+	at := slices.Index(step.Argv, "--yes") + 1
+	step.Argv = slices.Insert(step.Argv, at, c.Argv()...)
+	return fix
+}
+
 // AgentFix offers the MonoSmith agent files as one step that runs smith agent
 // install --yes; ok is false when the workspace has them or opted out.
 func (s *Session) AgentFix() (doctorfix.Planned, bool) {
@@ -169,15 +208,43 @@ func (s *Session) AgentFix() (doctorfix.Planned, bool) {
 
 // AdoptFix is the conservative adoption of a plain repository as a fix: one
 // step that runs smith adopt --init, which writes smith.toml and the
-// pipelines and commits.
-func (s *Session) AdoptFix() doctorfix.Planned {
+// pipelines. With commit it also passes --commit, so the change becomes one
+// commit that smith undo can revert; without it nothing is committed.
+//
+// move is the answer to "where should the project at the root go?": a folder
+// (the step runs git mv into it first, as a commit of its own with commit),
+// adoptmove.Leave to keep it where it is, or "" when the repository has no
+// project at its root. A step that runs without a terminal never asks, so a
+// repository with a root project always gets --move.
+func (s *Session) AdoptFix(commit bool, move string) doctorfix.Planned {
+	// --yes: this step runs without a terminal. Each open choice of --init takes its
+	// safe default (no .gitattributes, no agent files, the CI the repository uses) and the
+	// output says which; the wizard offers the agent files in its own step.
+	argv := []string{convert.SmithCommand(), "adopt", "--init", "--yes"}
+	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
+	step := "adopt the repository (smith.toml, the CI pipelines)"
+	switch move {
+	case "":
+	case adoptmove.Leave:
+		argv = append(argv, "--move", move)
+		what += ", leaving the project at the root"
+	default:
+		argv = append(argv, "--move", move)
+		what = "Move the project into " + move + " (git mv; the repository's own files stay), then " + strings.ToLower(what[:1]) + what[1:]
+		step = "move the project into " + move + ", then " + step
+	}
+	if commit {
+		argv = append(argv, "--commit")
+		what += ", and commit them"
+		step += ", then one commit"
+		if move != "" && move != adoptmove.Leave {
+			what += " (the move is a commit of its own)"
+		}
+	}
 	return doctorfix.Planned{
 		Fix: protocol.Fix{
-			Description: "Make this repository a smith workspace: write smith.toml and the pipelines, and commit them",
-			Steps: []protocol.FixStep{{
-				Description: "adopt the repository (smith.toml, the CI pipelines, one commit)",
-				Argv:        []string{convert.SmithCommand(), "adopt", "--init"},
-			}},
+			Description: what,
+			Steps:       []protocol.FixStep{{Description: step, Argv: argv}},
 		},
 		Checks: []string{"adopt"},
 	}

@@ -1,0 +1,9 @@
+{
+  "palette.placeholder": "type to find a command",
+  "palette.unavailable": "{title} is unavailable: {reason}",
+  "palette.empty": " no command matches",
+  "palette.guess.confirm": "Not an exact match. Press Enter again to run \"{title}\".",
+  "palette.closest": " Nothing matches \"{typed}\". Did you mean:",
+  "palette.footer": "up/down choose · enter pick · esc close",
+  "palette.footer.hidden": "{count} more not usable here: type to find them"
+}

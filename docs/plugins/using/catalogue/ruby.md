@@ -11,7 +11,7 @@ The ruby plugin makes every `*.gemspec` below the workspace root a smith project
 | `--lang` values | `ruby` |
 | Manifest that makes a directory a project | `*.gemspec` (a gemspec at the workspace root is skipped; one gem per directory) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`ruby-app`, `ruby-lib`, `ruby-package`) |
 
@@ -34,7 +34,7 @@ Capabilities are from `smith plugin list --json`.
 | Specs | whether a `spec/` directory exists; it decides the `test` task |
 | Toolchain | `ruby <version>` from `ruby --version` |
 
-Real output after `smith install -w cli rb_demo_core`:
+Real output after `smith install -p cli rb_demo_core`:
 
 ```
 $ smith graph
@@ -162,7 +162,7 @@ The plugin has no `[projects.<p>.settings.ruby]` keys.
 The pin label is `ruby`, probed with `ruby --version`. Real output with `[toolchains] ruby = "3.3"` on a machine with 3.4.11:
 
 ```
-✖ ruby matches the pinned version 3.3
+× ruby matches the pinned version 3.3
     [toolchains] pins ruby 3.3, but this machine runs 3.4.11: tasks cached on another version are misses, and results can differ from CI
     → install ruby 3.3 (`mise use ruby@3.3`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] ruby
 ```
@@ -175,6 +175,7 @@ The machine needs `ruby` and `bundle` (Bundler). Generated gems require Ruby 3.2
 |---|---|
 | Version | `spec.version = '...'` in the gemspec. The release rewrites that assignment (keeping the quote style), builds and pushes, then restores the file. A gemspec that computes its version is left alone (no change is made). |
 | Tag | `<name>@<version>`, name being the directory name: `kit@0.1.0` (real). |
+| Release channel | the plugin declares `channels`: RubyGems orders a prerelease below its release, so `gem install` and Bundler skip it. RubyGems spells `2.0.0-beta.1` as `2.0.0.pre.beta.1`, so the release writes that into the gemspec and packs `<name>-2.0.0.pre.beta.1.gem`. A gemspec that computes its version is left alone. |
 | What is published | `package` gems only: `gem build <gemspec> --output dist/<dir>/<gem>-<version>.gem`, then `gem push <file> --host <host>`. Apps and libs are released by their tag; an app with `[projects.<app>.release]` is tagged and gets a GitHub Release, without assets (`Ruby release assets are not built yet`). |
 | Registry | `https://rubygems.org`, or `GEM_HOST`. `published` reads `<host>/api/v1/versions/<gem>/latest.json` (RubyGems answers `unknown` for a gem it has not got). |
 | Credentials | `GEM_HOST_API_KEY` (required; listed when a package exists). With `[release] rubygems_trusted_publishing = true`, GitHub only: the workflow gets `id-token: write` and a `rubygems/configure-rubygems-credentials@v2.1.0` step before the release, and the secret is no longer listed. |
@@ -229,10 +230,10 @@ Dependencies (`dependencies/`): the plugin edits the gemspec, then runs `bundle 
 | Command | What it does |
 |---|---|
 | `smith install` | `bundle install` for the workspace |
-| `smith install -w <gem> <name>...` | adds `spec.add_dependency '<name>'` before the gemspec's closing `end` (`add_development_dependency` with `-D`; a gem already declared is left as is), then `bundle install`. No version constraint is written. |
-| `smith uninstall -w <gem> <name>...` | removes those lines, then `bundle install` |
+| `smith install -p <gem> <name>...` | adds `spec.add_dependency '<name>'` before the gemspec's closing `end` (`add_development_dependency` with `-D`; a gem already declared is left as is), then `bundle install`. No version constraint is written. |
+| `smith uninstall -p <gem> <name>...` | removes those lines, then `bundle install` |
 
-Real: `smith install -w cli thor` printed `✔ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -w cli thor` removed it again.
+Real: `smith install -p cli thor` printed `✓ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -p cli thor` removed it again.
 
 **Versions: `smith sync` and `smith up`.** The plugin lists the gems with a version constraint that each gemspec declares (`add_dependency`, `add_runtime_dependency`, `add_development_dependency`) and the workspace `Gemfile` declares (`gem 'rake', '~> 13.0'`; gems inside a `development` or `test` group count as development dependencies), so `smith sync`, `smith up` and the one-version check in `smith doctor` cover Ruby.
 
@@ -241,6 +242,12 @@ Real: `smith install -w cli thor` printed `✔ cli: added thor (apps/cli/rb_demo
 - `smith up` asks rubygems.org (`/api/v1/versions/<gem>/latest.json`) for the newest release and runs `bundle install` afterwards, so `Gemfile.lock` follows. A gem rubygems.org does not have (a private server's) is skipped.
 
 Removal: `smith remove <gem>` deletes the directory and takes its `gemspec path:` line out of the root `Gemfile`. Real dry run: `Would remove core (libs/core)`, `changes Gemfile`, `the pipelines would be regenerated`.
+
+## Declared projects
+
+The plugin declares `declared`. A folder of a gem (its `exe/`, a folder of `lib/`, a folder with specs) has no gemspec of its own, so declare it in `smith.toml` with `root` and `language = "ruby"`. smith finds the gemspec above the folder and runs the gem's tasks in the folder: RuboCop, RSpec when the folder has a `spec/` directory, and for an `app` the gem's executable that is in the folder (`bundle exec ruby <file>`). The gemspec is a task input, and the project imports what the gemspec depends on. It exports nothing, because a gem is required by its name, not by a folder.
+
+smith refuses, naming the folder: a folder that does not exist, one with a gemspec of its own, one with no gemspec above it, an app with no executable of the gem in its folder, and the kind `package` (a gem has one version).
 
 ## Requirements and limits
 
@@ -252,7 +259,7 @@ Removal: `smith remove <gem>` deletes the directory and takes its `gemspec path:
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, ruby 3.4.11 (x64-mingw-ucrt), gem 3.6.9, Bundler 2.6.9; gems installed by the run: rubocop 1.92.1, rspec ~> 3.13, rake ~> 13.0. Throw-away workspace `rb-demo` from `smith new rb-demo`. Run: `smith add lib|app|package ... --lang ruby`, `smith projects`, `smith graph`, `smith explain`, `smith run build` (refusal), `test`, `lint`, `start`, `smith doctor` (clean, and with a wrong `[toolchains] ruby` pin), `smith ci generate` (and with `rubygems_trusted_publishing`), `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -w` / `smith uninstall -w`, `smith up --check`, `smith remove core --dry-run --force`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, ruby 3.4.11 (x64-mingw-ucrt), gem 3.6.9, Bundler 2.6.9; gems installed by the run: rubocop 1.92.1, rspec ~> 3.13, rake ~> 13.0. Throw-away workspace `rb-demo` from `smith new rb-demo`. Run: `smith add lib|app|package ... --lang ruby`, `smith projects`, `smith graph`, `smith explain`, `smith run build` (refusal), `test`, `lint`, `start`, `smith doctor` (clean, and with a wrong `[toolchains] ruby` pin), `smith ci generate` (and with `rubygems_trusted_publishing`), `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -p` / `smith uninstall -p`, `smith up --check`, `smith remove core --dry-run --force`.
 
 Not verified:
 

@@ -1,0 +1,17 @@
+{
+  "jetbrains.swapchoice.several-can-be-used-at": "Several can be used at once.",
+  "jetbrains.swapchoice.one-answer": "One answer.",
+  "jetbrains.swapchoice.monosmith-swap-a-choice": "MonoSmith: swap a choice",
+  "jetbrains.swapchoice.nothing-was-changed": "Nothing was changed. {message}",
+  "jetbrains.swapchoice.swap-a-choice": "swap a choice",
+  "jetbrains.swapchoice.smith-printed-its-choices-in": "smith printed its choices in a form this plugin does not read. Update the plugin, or run smith swap in a terminal.",
+  "jetbrains.swapchoice.has-no-choice-to-swap": "{name} has no choice to swap.",
+  "jetbrains.swapchoice.monosmith-swap-a-choice-of": "MonoSmith: swap a choice of {name}",
+  "jetbrains.swapchoice.which-decision-do-you-want": "Which decision do you want to change?",
+  "jetbrains.swapchoice.monosmith-swap-the-of": "MonoSmith: swap the {axis} of {name}",
+  "jetbrains.swapchoice.pick-the-answer-gets-the": "Pick the answer {name} gets. The default is marked.",
+  "jetbrains.swapchoice.monosmith-swap-the-of-to": "MonoSmith: swap the {axis} of {name} to {choice}?",
+  "jetbrains.swapchoice.nothing-was-changed-yet-by": "Nothing was changed yet. By default smith leaves the files uncommitted.",
+  "jetbrains.swapchoice.swap": "Swap",
+  "jetbrains.swapchoice.the-of-is-now": "The {axis} of {name} is now {choice}"
+}

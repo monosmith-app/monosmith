@@ -70,10 +70,17 @@ func publishExtension(workspaceRoot string, params protocol.PublishParams) (prot
 	if staged == dir {
 		return result, errors.New(params.Project.Name + " does not build into dist/: an extension app is packed from its build")
 	}
-	if err := stampVersion(staged, params.Version); err != nil {
+	// The Marketplace takes no semver prerelease: a channel's version is
+	// published as a pre-release under the plain version MarketplaceVersion gives.
+	version, err := MarketplaceVersion(params.Version)
+	if err != nil {
 		return result, err
 	}
-	vsix, err := packExtension(workspaceRoot, staged, params.Project.Name, target)
+	preRelease := isPrerelease(params.Version)
+	if err := stampVersion(staged, version); err != nil {
+		return result, err
+	}
+	vsix, err := packExtension(workspaceRoot, staged, params.Project.Name, target, preRelease)
 	if err != nil {
 		return result, err
 	}
@@ -81,7 +88,11 @@ func publishExtension(workspaceRoot string, params protocol.PublishParams) (prot
 		return result, err
 	}
 	if ovsx {
-		if err := run(staged, []string{"npx", "--no-install", "ovsx", "publish", vsix, "--skip-duplicate"}); err != nil {
+		argv := []string{"npx", "--no-install", "ovsx", "publish", vsix, "--skip-duplicate"}
+		if preRelease {
+			argv = append(argv, "--pre-release")
+		}
+		if err := run(staged, argv); err != nil {
 			return result, err
 		}
 	}
@@ -105,8 +116,8 @@ func stampVersion(staged, version string) error {
 }
 
 // packExtension packs the staged build into dist/release/<app>/<app>.vsix, or
-// <app>-<target>.vsix for one platform.
-func packExtension(workspaceRoot, staged, app, target string) (string, error) {
+// <app>-<target>.vsix for one platform, flagged as a pre-release when asked.
+func packExtension(workspaceRoot, staged, app, target string, preRelease bool) (string, error) {
 	drop := filepath.Join(workspaceRoot, "dist", "release", app)
 	if err := os.MkdirAll(drop, 0o755); err != nil {
 		return "", err
@@ -114,6 +125,9 @@ func packExtension(workspaceRoot, staged, app, target string) (string, error) {
 	name, argv := app+".vsix", append([]string{"npx", "--no-install", "vsce", "package"}, releasing.VsceFlags...)
 	if target != "" {
 		name, argv = app+"-"+target+".vsix", append(argv, "--target", target)
+	}
+	if preRelease {
+		argv = append(argv, "--pre-release")
 	}
 	vsix := filepath.Join(drop, name)
 	return vsix, run(staged, append(argv, "--out", vsix))

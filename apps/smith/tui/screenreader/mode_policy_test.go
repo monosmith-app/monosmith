@@ -29,6 +29,7 @@ func TestPlainWhenAskedWhenThemeIsPlainOrWhenOutputIsNotATerminal(t *testing.T) 
 		{"output that is not a terminal", nil, false, true},
 		{"the screen reader variable", map[string]string{Variable: "1"}, true, true},
 		{"the plain theme", map[string]string{ThemeVariable: "Plain"}, true, true},
+		{"a dumb terminal cannot draw the shell", map[string]string{"TERM": "dumb"}, true, true},
 		{"NO_COLOR alone keeps the shell", map[string]string{"NO_COLOR": "1"}, true, false},
 		{"the light theme keeps the shell", map[string]string{ThemeVariable: "light"}, true, false},
 	}

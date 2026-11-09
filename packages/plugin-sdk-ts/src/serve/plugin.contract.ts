@@ -1,8 +1,9 @@
 import type {
-  ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
+  DeriveParams, DeriveResult,
+  APISurfaceParams, APISurfaceResult, ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
   DiscoverParams, DiscoverResult, DoctorParams, DoctorResult, GenerateParams, GenerateResult, InitializeParams,
-  InitializeResult, InstallParams, LatestParams, LatestResult, PublishedParams, PublishedResult, PublishParams,
-  PublishResult, RemoveParams, RemoveResult, RewriteParams, UninstallParams, VersionParams, VersionResult,
+  InitializeResult, InstallParams, LatestParams, LatestResult, LinkParams, LinkResult, PublishedParams, PublishedResult, PublishParams,
+  PublishResult, RemoveParams, RemoveResult, RewriteParams, UninstallParams, UnlinkParams, VersionParams, VersionResult,
 } from '../protocol/index.ts'
 
 /** A result now or later: every method of a plugin may be `async`. */
@@ -67,10 +68,26 @@ export interface ComponentLister {
   components: (params: ComponentsParams, signal: AbortSignal) => Awaitable<ComponentsResult>
 }
 
+/** `derive`: the files the plugin derives from facts and the project graph (smith derive). */
+export interface Deriver {
+  derive: (params: DeriveParams, signal: AbortSignal) => Awaitable<DeriveResult>
+}
+
+/** `api/surface`: the public API names of a project at a git revision, for the release's version check. */
+export interface APISurfaceReader {
+  apiSurface: (params: APISurfaceParams, signal: AbortSignal) => Awaitable<APISurfaceResult>
+}
+
 /** `dependencies/install` and `dependencies/uninstall`: both, or the capability is not advertised. */
 export interface DependencyManager {
   install:   (params: InstallParams, signal: AbortSignal) => Awaitable<DependencyResult>
   uninstall: (params: UninstallParams, signal: AbortSignal) => Awaitable<DependencyResult>
+}
+
+/** `dependencies/link` and `dependencies/unlink`: both, or the capability is not advertised. */
+export interface Linker {
+  link:   (params: LinkParams, signal: AbortSignal) => Awaitable<LinkResult>
+  unlink: (params: UnlinkParams, signal: AbortSignal) => Awaitable<DependencyResult>
 }
 
 /** `dependencies/declared` and `dependencies/rewrite`: both, or the capability is not advertised. */
@@ -111,5 +128,5 @@ export interface Cancellable {
  */
 export type SmithPlugin = Plugin & Partial<
 Discoverer & Generator & Versioner & Publisher & RegistryReader & CIContributor & DoctorContributor &
-Remover & KindChanger & ComponentLister & DependencyManager & DeclarationEditor & LatestReader & Contributor & Cancellable
+Remover & KindChanger & ComponentLister & Deriver & APISurfaceReader & DependencyManager & Linker & DeclarationEditor & LatestReader & Contributor & Cancellable
 >

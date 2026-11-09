@@ -28,6 +28,10 @@ const (
 	MethodInstall = "dependencies/install"
 	// MethodUninstall removes packages from a project.
 	MethodUninstall = "dependencies/uninstall"
+	// MethodLink makes a project depend on another project of the workspace.
+	MethodLink = "dependencies/link"
+	// MethodUnlink removes that dependency.
+	MethodUnlink = "dependencies/unlink"
 	// MethodDeclared lists the dependencies manifests declare.
 	MethodDeclared = "dependencies/declared"
 	// MethodRewrite changes declared specs in place.
@@ -37,4 +41,10 @@ const (
 	// MethodComponents lists the components a project ships, from its
 	// lockfile or manifest, for the release's SBOM.
 	MethodComponents = "sbom/components"
+	// MethodDerive asks for the files a plugin derives from facts and the
+	// project graph (smith derive).
+	MethodDerive = "derive"
+	// MethodAPISurface lists the public API names of a project at a git
+	// revision, so a release can compare them with the last release.
+	MethodAPISurface = "api/surface"
 )

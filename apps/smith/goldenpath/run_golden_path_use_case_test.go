@@ -28,7 +28,7 @@ type workspace struct {
 // smith runs the binary and returns its output; wantOK says whether it must succeed.
 func (w *workspace) smith(wantOK bool, args ...string) string {
 	w.t.Helper()
-	cmd := exec.Command(w.bin, args...)
+	cmd := exec.Command(w.bin, withYes(args)...)
 	cmd.Dir = w.dir
 	// A smith home of its own, so the trust a test records is not the developer's.
 	cmd.Env = append(append(os.Environ(), "SMITH_HOME="+filepath.Join(filepath.Dir(w.bin), "smith-home")), w.env...)
@@ -39,6 +39,26 @@ func (w *workspace) smith(wantOK bool, args ...string) string {
 		w.t.Fatalf("smith %s: err=%v\n%s", strings.Join(args, " "), err, out)
 	}
 	return string(out)
+}
+
+// withYes adds --yes to a command that changes the workspace and refuses to run
+// without a terminal or --yes (ADR 0072), unless the test already says --yes,
+// --dry-run or --check: these tests play a person who confirms every plan.
+func withYes(args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+	changes := false
+	switch args[0] {
+	case "add", "upgrade", "derive", "undo", "convert":
+		changes = true
+	case "adopt":
+		changes = slices.Contains(args, "--init")
+	}
+	if !changes || slices.Contains(args, "--yes") || slices.Contains(args, "--dry-run") || slices.Contains(args, "--check") {
+		return args
+	}
+	return append(append([]string{}, args...), "--yes")
 }
 
 // trust trusts an external plugin the workspace declares, and pins its digest:
@@ -186,13 +206,13 @@ func TestGoldenPath(t *testing.T) {
 	if out := w.smith(false, "install", "acme-pyutil"); !strings.Contains(out, "needs a target project") {
 		t.Fatalf("install without -w:\n%s", out)
 	}
-	if out := w.smith(true, "install", "-w", "apps/worker", "acme-pyutil"); !strings.Contains(out, "✔ worker: added acme-pyutil (.venv") && !strings.Contains(out, "✔ worker: added acme-pyutil (apps/worker/pyproject.toml)") {
+	if out := w.smith(true, "install", "-p", "apps/worker", "acme-pyutil"); !strings.Contains(out, "✓ worker: added acme-pyutil (.venv") && !strings.Contains(out, "✓ worker: added acme-pyutil (apps/worker/pyproject.toml)") {
 		t.Fatalf("install:\n%s", out)
 	}
 	if after, _ := os.ReadFile(filepath.Join(w.dir, "apps", "worker", "pyproject.toml")); !strings.Contains(string(after), `dependencies = ["acme-pyutil"]`) {
 		t.Fatalf("pyproject:\n%s", after)
 	}
-	w.smith(true, "uninstall", "-w", "worker", "acme-pyutil")
+	w.smith(true, "uninstall", "-p", "worker", "acme-pyutil")
 	if after, _ := os.ReadFile(filepath.Join(w.dir, "apps", "worker", "pyproject.toml")); string(after) != string(pyproject) {
 		t.Fatalf("uninstall did not restore pyproject.toml:\n%s", after)
 	}
@@ -318,7 +338,7 @@ func TestGoldenPath(t *testing.T) {
 	if out := w.smith(false, "doctor", "--fix"); !strings.Contains(out, "-\t./libs/gone") || !strings.Contains(out, "+\t./libs/core") || !strings.Contains(out, "Pass --yes") {
 		t.Fatalf("doctor --fix without a terminal shows the diff only:\n%s", out)
 	}
-	if out := w.smith(true, "doctor", "--fix", "--yes"); !strings.Contains(out, "✔ make go.work use exactly the workspace's Go modules") || !strings.Contains(out, "after fixing:") {
+	if out := w.smith(true, "doctor", "--fix", "--yes"); !strings.Contains(out, "✓ make go.work use exactly the workspace's Go modules") || !strings.Contains(out, "after fixing:") {
 		t.Fatalf("doctor --fix --yes:\n%s", out)
 	}
 	if !strings.Contains(w.read("go.work"), "./libs/core") || strings.Contains(w.read("go.work"), "libs/gone") {
@@ -372,7 +392,7 @@ func TestGoldenPath(t *testing.T) {
 	}
 	// The dev container installs what CI installs, at the same versions.
 	devcontainer, _ := os.ReadFile(filepath.Join(w.dir, ".devcontainer", "devcontainer.json"))
-	for _, want := range []string{"features/node:1", "features/go:1", "features/python:1", `"golangciLintVersion": "2.14.0"`, "&& ", "/.local/bin/smith", ` ci setup"`} {
+	for _, want := range []string{"features/node:1", "features/go:1", "features/python:1", `"golangciLintVersion": "2.15.0"`, "&& ", "/.local/bin/smith", ` ci setup"`} {
 		if !strings.Contains(string(devcontainer), want) {
 			t.Fatalf("devcontainer lacks %s:\n%s", want, devcontainer)
 		}

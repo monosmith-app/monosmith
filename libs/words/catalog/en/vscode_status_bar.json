@@ -1,0 +1,20 @@
+{
+  "vscode.status-bar.monosmith-status-open-menu": "MonoSmith status, open menu",
+  "vscode.status-bar.monosmith-open-menu": "MonoSmith: {replaceAll}. Open menu.",
+  "vscode.status-bar.click-for-a-menu-convert-it": "Click for a menu: convert it, see what would change.",
+  "vscode.status-bar.click-for-a-menu-create-a": "Click for a menu: create a new workspace here.",
+  "vscode.status-bar.click-for-a-menu-bring-this": "Click for a menu: bring this folder in, see what would change.",
+  "vscode.status-bar.click-for-a-menu-run-affected": "Click for a menu: run affected, doctor, refresh, output, settings.",
+  "vscode.status-bar.monosmith-starting-smith": "MonoSmith: starting smith…",
+  "vscode.status-bar.monosmith-no-folder-is-open": "MonoSmith: no folder is open.",
+  "vscode.status-bar.monosmith-this-folder-is-empty": "MonoSmith: this folder is empty.\n{clickToCreate}",
+  "vscode.status-bar.monosmith-this-folder-is-not-a": "MonoSmith: this folder is not a MonoSmith workspace yet.\n{clickToBringIn}",
+  "vscode.status-bar.monosmith-this-folder-is-not-a-2": "MonoSmith: this folder is not a MonoSmith workspace yet. It can be converted.\n{clickToConvert}",
+  "vscode.status-bar.monosmith-smith-was-not-found": "MonoSmith: smith was not found.\n{click}",
+  "vscode.status-bar.monosmith-this-workspace-is-not-trusted": "MonoSmith: this workspace is not trusted, so its own smith is not used.\n{click}",
+  "vscode.status-bar.monosmith-smith-could-not-start-or": "MonoSmith: smith could not start or has stopped. See the output.\n{click}",
+  "vscode.status-bar.a-run-is-in-progress": "A run is in progress.",
+  "vscode.status-bar.failed-in-the-last-runs": "{failed} {part} failed in the last runs.",
+  "vscode.status-bar.task": "task",
+  "vscode.status-bar.tasks": "tasks"
+}

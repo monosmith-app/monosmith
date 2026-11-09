@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -30,6 +31,7 @@ func (j *JVM) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: j.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("java", "gradle", "mvn"),
 		Languages: []string{"jvm", "java"},
 		Manifests: []string{"pom.xml", "build.gradle.kts", "build.gradle"},
 		Stacks: []protocol.Stack{
@@ -38,6 +40,13 @@ func (j *JVM) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 		},
 	}, nil
 }
+
+// PublishesChannels implements serve.ChannelPublisher: Maven and Gradle order
+// 2.0.0-beta.1 below 2.0.0, both take that spelling as it is, and Published never
+// reports a prerelease as the newest release. The plugin has no
+// DescribesDeclared: a Maven or Gradle module is one build unit, and a folder of
+// packages inside it cannot be built or tested on its own.
+func (j *JVM) PublishesChannels() {}
 
 // Discover implements serve.Discoverer.
 func (j *JVM) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {

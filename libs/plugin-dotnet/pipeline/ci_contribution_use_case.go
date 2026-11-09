@@ -103,7 +103,7 @@ func hasCredential(list []protocol.Credential, env string) bool {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that the .NET SDK is installed.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
@@ -112,8 +112,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	out, err := probe(workspaceRoot, []string{"dotnet", "--version"})
 	findings := []protocol.Finding{{
-		Check: "the .NET SDK is installed", OK: err == nil,
-		Detail: "dotnet is not on PATH", Remedy: "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net)",
+		Check: "the .NET SDK is installed", Area: "toolchain", OK: err == nil,
+		Problem: toolrun.ProblemUnless(err == nil, "dotnet is not on PATH"),
+		Detail:  "dotnet is not on PATH", Remedy: "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net)",
 	}}
 	if f, ok := toolrun.CIPinFinding(".NET SDK", strings.TrimSpace(out), Version(workspaceRoot)); ok && err == nil {
 		f.Remedy = "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net), or pin the SDK in global.json and run `smith ci generate` to move CI and the dev container"
@@ -121,6 +122,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	if f, ok := registries.CheckNuGetConfig(workspaceRoot, params.Projects); ok {
 		findings = append(findings, f)
+	}
+	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
+		findings = append(findings, found...)
 	}
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleaseRuntimes(p)...)

@@ -1,13 +1,12 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // View implements tea.Model. It fills the whole terminal and can be called in
@@ -16,7 +15,7 @@ import (
 func (s Shell) View() (out string) {
 	defer func() {
 		if r := recover(); r != nil {
-			out = fmt.Sprintf("smith: the interface could not be drawn (%v). Press Ctrl+C to leave.", r)
+			out = words.Say("tui.render.smith_the_interface_could_not_be", "r", r)
 		}
 	}()
 	if s.w < 1 || s.h < 1 {
@@ -35,12 +34,18 @@ const (
 	minHeight = 9
 )
 
+// belowMinimum is true while the terminal is too small to draw the screens.
+// Its size is known (a size of zero is the start, before the first size).
+func (s Shell) belowMinimum() bool {
+	return s.w >= 1 && s.h >= 1 && (s.w < minWidth || s.h < minHeight)
+}
+
 // tooSmall is the one-line hint shown on a terminal below the minimum, cut to
 // the width when even the hint does not fit.
 func (s Shell) tooSmall() string {
-	msg := fmt.Sprintf("Terminal too small (%dx%d): enlarge it to at least %dx%d, or press Ctrl+C to leave.", s.w, s.h, minWidth, minHeight)
+	msg := words.Say("tui.render.terminal_too_small_x_enlarge_it", "w", s.w, "h", s.h, "minWidth", minWidth, "minHeight", minHeight)
 	if pane.Width(msg) > s.w {
-		msg = fmt.Sprintf("Terminal too small: need %dx%d", minWidth, minHeight)
+		msg = words.Say("tui.render.terminal_too_small_need_x", "minWidth", minWidth, "minHeight", minHeight)
 	}
 	// One line of hint; the rest stays blank, so the screen still has exactly
 	// the terminal's size.
@@ -55,18 +60,24 @@ func (s Shell) tooSmall() string {
 // the content, the footer and the status bar.
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
-	rows := make([]string, 0, h)
-	strip := s.tabStrip()
-	rows = append(rows, s.headerRow())
-	rows = append(rows, strip.Lines[:len(strip.Lines)-s.tabsInBody()]...)
-	rows = append(rows, s.body(strip)...)
-	rows = append(rows, s.footerRow())
-	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
-	rows = s.overlays(rows)
+	rows := s.overlays(s.paintSelection(s.baseRows()))
 	for i := range rows {
 		rows[i] = pane.Fit(rows[i], w)
 	}
 	return rows[:min(len(rows), h)]
+}
+
+// baseRows are the screen rows before the selection and the overlays are drawn
+// over them: the text a drag selects.
+func (s Shell) baseRows() []string {
+	rows := make([]string, 0, s.h)
+	strip := s.tabStrip()
+	rows = append(rows, s.headerRow())
+	rows = append(rows, strip.Lines...)
+	rows = append(rows, s.body()...)
+	rows = append(rows, s.footerRow())
+	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), s.w))
+	return s.paintSplits(rows)
 }
 
 // statusInfo is what the status bar shows: the exact command running or last
@@ -98,59 +109,81 @@ func (s Shell) statusInfo() statusbar.Info {
 }
 
 // body draws the list, or the detail that took its place, and, on a wide
-// screen, the detail of the selection in the same frame: one border all round,
-// the list's right border dividing the two, and the top edge shared with the
-// tabs when they are tall.
-func (s Shell) body(strip tabs.Strip) []string {
+// screen, the detail of the selection beside it. The main screen has no box: one
+// rule under the tabs across the whole width, a one-cell margin at each side,
+// and the divisions between the panels (see the layout's Frame).
+func (s Shell) body() []string {
 	l := s.lay()
-	page := s.page()
-	in := l.Main.Inner()
-	title := page.Title()
-	if l.Tall {
-		// The strip's last row is the pane's top edge, and the title sits in the strip.
-		title = ""
+	in, din := l.Main.Inner(), l.DetailInner()
+	reserve := s.toastRows(in.H)
+	spots := s.dividers()
+	list := pane.Block(s.page().View(in.W, in.H-reserve).lines, in.W, in.H)
+	var side []string
+	if l.HasDetail() {
+		side = pane.Block(s.sideContent(din.W, din.H-reserve).lines, din.W, din.H)
 	}
-	main := pane.Frame(s.th, title, page.View(in.W, in.H).lines, l.Main.W, l.Main.H, false)
-	edge := func(r string) string { return s.th.Border(r, false) }
-	if !l.HasDetail() {
-		if l.Tall {
-			main[0] = strip.Lines[len(strip.Lines)-1]
+	rows := make([]string, 0, l.Main.H)
+	rows = append(rows, s.th.Border(strings.Repeat("─", l.Main.W+l.Detail.W), false))
+	for i := range in.H {
+		y := in.Y + i
+		row := s.marginCell(spots, l.Main.X, y) + list[i]
+		if l.HasDetail() {
+			row += s.th.Border("│", false) + side[i] + s.marginCell(spots, din.X+din.W, y)
+		} else {
+			row += s.marginCell(spots, in.X+in.W, y)
 		}
-		return main
+		rows = append(rows, row)
 	}
-	din := l.DetailInner()
-	side := pane.Block(s.detailContent(din.W, din.H).lines, din.W, din.H)
-	cut := func(line string) string { return ansi.Truncate(line, l.Main.W-1, "") + "\x1b[m" }
-	out := make([]string, 0, len(main))
-	if l.Tall {
-		out = append(out, strip.Lines[len(strip.Lines)-1])
-	} else {
-		out = append(out, cut(main[0])+edge("┬"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╮"))
+	for _, j := range splitter.Junctions(spots, l.Main.Y) {
+		if at := j.Y - l.Main.Y; at >= 0 && at < len(rows) {
+			rows[at] = pane.Splice(rows[at], j.X, 1, s.th.Border(j.Glyph, false))
+		}
 	}
-	for y := 1; y < len(main)-1; y++ {
-		out = append(out, main[y]+side[y-1]+edge("│"))
-	}
-	return append(out, cut(main[len(main)-1])+edge("┴"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╯"))
+	return rows
 }
 
-// modalOpen is true while a box that takes the keyboard is drawn over the screen.
-func (s Shell) modalOpen() bool {
-	return s.palOpen || s.help != nil || s.pkg != nil || s.confirm != nil || s.fix != nil || s.adopt != nil
+// marginCell is the cell of a margin at (x, y): blank, or part of the rule when a
+// horizontal division runs through it to the edge of the screen.
+func (s Shell) marginCell(spots []splitter.Spot, x, y int) string {
+	for _, p := range spots {
+		if p.Axis == splitter.Row && p.Hit.Contains(x, y) {
+			return s.th.Border("─", false)
+		}
+	}
+	return " "
+}
+
+// toastRows is how many rows at the foot of the content stay empty while a
+// toast is shown, so the toast box never covers a line of the view. A small
+// screen keeps all its rows, and the toast then sits over the last ones.
+func (s Shell) toastRows(innerH int) int {
+	const box = 3
+	if !s.toast.Shown() || innerH < 2*box {
+		return 0
+	}
+	return box
 }
 
 // overlays composes the palette, dialogs and toast over the rendered
 // screen by cell, so nothing underneath is pushed down. Behind a modal the
-// content area is emptied (its frame stays), so no half word of the view shows
-// at the modal's edges; the toast sits inside the content area, never on its
-// frame.
+// content area is emptied (its rule and dividers stay) so no half word of the
+// view shows at the modal's edges, and the whole screen is drawn dimmed so
+// nothing behind it looks interactive. The toast sits inside the content area.
 func (s Shell) overlays(rows []string) []string {
 	l := s.lay()
 	if s.modalOpen() {
-		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y)
+		keep := []int{}
+		if l.HasDetail() {
+			keep = append(keep, l.Detail.X-1)
+		}
+		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y, keep...)
+		for i := range rows {
+			rows[i] = s.th.Dim(rows[i])
+		}
 	}
 	if s.palOpen {
 		box := s.paletteBox()
-		lines := pane.Frame(s.th, "Command palette", s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
+		lines := pane.Frame(s.th, words.Say("tui.render.command_palette"), s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
 		rows = pane.Overlay(rows, lines, box.X, box.Y)
 	}
 	if s.help != nil {
@@ -161,22 +194,41 @@ func (s Shell) overlays(rows []string) []string {
 		r := s.pkg.Rect()
 		rows = pane.Overlay(rows, s.pkg.Lines(s.th), r.X, r.Y)
 	}
+	if s.relpick != nil {
+		r := s.relpick.Rect()
+		rows = pane.Overlay(rows, s.relpick.Lines(s.th), r.X, r.Y)
+	}
 	if s.confirm != nil {
 		r := s.confirm.Rect()
-		rows = pane.Overlay(rows, s.confirm.Lines(s.th), r.X, r.Y)
+		rows = pane.Overlay(rows, s.confirm.Pulse(s.tick, s.waitedForPlan()).Lines(s.th), r.X, r.Y)
 	}
 	if s.fix != nil {
 		r := s.fix.Rect()
-		rows = pane.Overlay(rows, s.fix.Lines(s.th, s.tick), r.X, r.Y)
+		fix := s.synced(*s.fix)
+		rows = pane.Overlay(rows, fix.Lines(s.th, s.tick), r.X, r.Y)
 	}
 	if s.adopt != nil {
 		r := s.adopt.Rect()
 		rows = pane.Overlay(rows, s.adopt.Lines(s.th, s.tick), r.X, r.Y)
 	}
-	if lines := s.toast.Lines(s.th, s.w-4); lines != nil {
-		// The frame's bottom edge is the row above the footer: the toast sits
-		// on the rows above it, one cell clear of the right edge.
-		y := max(l.Footer.Y-1-len(lines), l.Main.Y+1)
+	if s.compose != nil {
+		r := s.compose.Rect()
+		rows = pane.Overlay(rows, s.compose.Lines(s.th), r.X, r.Y)
+	}
+	if s.tools != nil {
+		r := s.tools.Rect()
+		rows = pane.Overlay(rows, s.tools.Lines(s.th), r.X, r.Y)
+	}
+	if s.result != nil {
+		r := s.result.Rect()
+		rows = pane.Overlay(rows, s.result.Pulse(s.tick, s.outsideElapsed()).Lines(s.th), r.X, r.Y)
+	}
+	// The result dialog says the same in its own words: a toast over its bottom
+	// edge would cut the frame.
+	if lines := s.toast.Lines(s.th, s.w-4); lines != nil && s.result == nil {
+		// The content ends on the row above the footer: the toast sits on its
+		// last rows, one cell clear of the right edge.
+		y := max(l.Footer.Y-len(lines), l.Main.Y+1)
 		rows = pane.Overlay(rows, lines, max(s.w-2-pane.Width(lines[0]), 1), y)
 	}
 	return rows

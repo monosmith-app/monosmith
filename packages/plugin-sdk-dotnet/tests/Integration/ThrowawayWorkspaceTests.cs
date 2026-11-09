@@ -4,6 +4,7 @@ using MonoSmith.Plugin.Sdk.Tests.Testing;
 namespace MonoSmith.Plugin.Sdk.Tests.Integration;
 
 /// <summary>A real workspace that uses the C# examples as external plugins.</summary>
+[Collection(ExampleBuildsCollection.Name)]
 public sealed class ThrowawayWorkspaceTests : IClassFixture<ExampleSides>, IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("sdk-workspace-").FullName;
@@ -37,7 +38,7 @@ public sealed class ThrowawayWorkspaceTests : IClassFixture<ExampleSides>, IDisp
         }
 
         _prepared = true;
-        Assert.Equal(0, Smith("new", "ws").Status);
+        Assert.Equal(0, Smith("new", "ws", "--yes").Status);
         _directory = Path.Combine(_root, "ws");
         var widget = Examples.CSharp("language-widget-cs").CheckCommand;
         var layout = Examples.CSharp("structure-layout-cs").CheckCommand;
@@ -65,8 +66,8 @@ public sealed class ThrowawayWorkspaceTests : IClassFixture<ExampleSides>, IDisp
         Prepare();
 
         // Creates widget projects with the plugin and discovers them with their graph edge.
-        Assert.Equal(0, Smith("add", "lib", "core", "--lang", "widget").Status);
-        Assert.Equal(0, Smith("add", "app", "shop", "--lang", "widget").Status);
+        Assert.Equal(0, Smith("add", "lib", "core", "--lang", "widget", "--yes").Status);
+        Assert.Equal(0, Smith("add", "app", "shop", "--lang", "widget", "--yes").Status);
         var manifest = Path.Combine(_directory, "apps", "shop", "widget.json");
         var document = EditableJsonDocument.Parse(File.ReadAllText(manifest));
         document.SetJson("uses", new JsonList(["core"]));

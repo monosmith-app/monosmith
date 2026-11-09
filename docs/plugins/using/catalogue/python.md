@@ -11,7 +11,7 @@ The python plugin makes every `pyproject.toml` that has a `[project]` table a sm
 | `--lang` values | `python`, `py` |
 | Manifest that makes a directory a project | `pyproject.toml` with a `[project]` table that has a `name` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`, `link` |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`python-app`, `python-lib`, `python-package`) |
 
@@ -168,6 +168,18 @@ twine==7.0.0
 
 The plugin publishes no stack. `--stack` accepts a stack declared with `language = "python"` in `smith.toml`.
 
+## Function apps
+
+`smith add app api --lang python --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: the Python v2 model for Azure (`function_app.py`, `host.json`, `requirements.txt`), a `lambda_handler` with `template.yaml` for AWS, a Functions Framework entry point (`main.py`) for Google. Runtimes `python313` (suggested), `python312`, `python314`. The plugin publishes the choices itself, and finds a function app again by its files, so its `start`, `build` and `package` tasks run `start.py` and `package.py`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.python]` keys. What it reads:
@@ -197,7 +209,7 @@ The tool versions in `requirements-dev.txt` and the Python version `3.12` are co
 - `[toolchains] python = "..."` is compared with the version of the venv's interpreter, or without a venv the first system interpreter that answers `--version` (the probe order is in the table above). Real output, on a machine without a venv, with a pin of `3.13` on a machine where `py -3` is 3.12.0:
 
 ```
-✖ python matches the pinned version 3.13
+× python matches the pinned version 3.13
     [toolchains] pins python 3.13, but this machine runs 3.12.0: tasks cached on another version are misses, and results can differ from CI
     → install python 3.13 (`mise use python@3.13`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] python
 ```
@@ -216,6 +228,7 @@ The tool versions in `requirements-dev.txt` and the Python version `3.12` are co
 | Skipping | before uploading, the plugin reads the simple index (`<index>/<normalised name>/`) and uploads only files it lacks. If twine itself reports `File already exists` or `409`, the result is "already published". An unreachable index reports nothing, so the upload is attempted. |
 | Registry | PyPI (`https://upload.pypi.org/legacy/`) unless `[registries.*] pypi_upload` is set for the project, or `TWINE_REPOSITORY_URL` is set. The simple index for the existence check is derived (`upload.pypi.org` to `pypi.org/simple/`, `test.pypi.org` likewise, `.../upload/` to `.../simple/`, anything else `<url>/simple/`). |
 | Credentials | `PYPI_TOKEN` (listed as a required secret when a package publishes to PyPI itself), or `TWINE_USERNAME` / `TWINE_PASSWORD`; for a `token` registry the variable named in `token_env`; for Azure Artifacts none (the pipeline's own token through `TwineAuthenticate@1`; elsewhere twine signs in through `artifacts-keyring`). |
+| Release channel | the plugin declares `channels`: PyPI orders a prerelease (`2.0.0b1`) below its release, so a channel version never becomes the one `pip install` picks, and no tag is needed |
 | Dry run | publish returns "dry run" and uploads nothing. Real output: |
 
 ```
@@ -256,7 +269,7 @@ Real output of `smith ci generate` for the test workspace (GitHub):
 |---|---|
 | Toolchain | Python `3.12`: `actions/setup-python@v7` (GitHub), `UsePythonVersion@0` (Azure), `uv python install 3.12` plus symlinks for other providers, the `python` dev container feature at 3.12 |
 | Package store | `~/.cache/pip` (`PIP_CACHE_DIR`), keyed on `requirements-dev.txt` and each project's `pyproject.toml` |
-| Setup (`smith ci setup`) | `Create the Python venv` (`<launcher> -m venv --upgrade-deps .venv`), then, if a private index is configured, `Point pip at the private index` (`pip config --site set global.index-url <index>`), `Install the Python toolchain` (`pip install -r requirements-dev.txt`), and `Install <project>` (`pip install -e ./<root>`) per project. All blocking. Real: five steps, `smith ci setup passed in 58.9s`. |
+| Setup (`smith ci setup`) | `Create the Python venv` (`<launcher> -m venv --upgrade-deps .venv`), `Show the Python version` (`python --version`, non-blocking), then, if a private index is configured, `Point pip at the private index` (`pip config --site set global.index-url <index>`), `Install the Python toolchain` (`pip install -r requirements-dev.txt`), and `Install <project>` (`pip install -e ./<root>`, without `--quiet` so a resolver conflict is printed in full) per project. All blocking except the version. Real: five steps, `smith ci setup passed in 58.9s`. |
 | Audit | `pip-audit --skip-editable`, non-blocking, cached on `requirements-dev.txt` and the `pyproject.toml` files. With `[ci] audit_policies = ["python"]` also `smith py-policy` over `requirements-dev.txt` and each project's `requirements.txt`: every requirement in a project's `requirements.txt` must have a `--hash` (the generated `requirements-dev.txt` is exempt: it lists top-level pins only, and hash-checking mode needs a hash for every transitive dependency), none may be a URL or git reference, and the only index is the workspace's. |
 | Credentials | `PYPI_TOKEN` (required; only when a `package` publishes to PyPI itself). `smith ci check` printed `GitHub: add the repository secrets PYPI_TOKEN` and the Azure equivalent. |
 | Private index (Azure Artifacts) | `PipAuthenticate@1` (`artifactFeeds: 'libs'`) for installs and `TwineAuthenticate@1` (`artifactFeed: 'libs'`) for publishing, no secret. Real, with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`; `smith ci check` then asked for the Feed Publisher role on the build service. A `token` registry adds the variable named in `token_env` as a secret (given to setup when installs need it). |
@@ -271,7 +284,13 @@ smith ci audit passed
 
 With the `python` audit policy turned on, the generated `requirements-dev.txt` passes: the hash rule applies to each project's `requirements.txt`, while the index and URL rules still cover the toolchain file.
 
+## Linking an internal library
+
+`smith install -p <project> shop-core-py` writes the library's distribution name (the `[project] name` of its `pyproject.toml`, not its import name) in `[project] dependencies`. The library is installed editable in the shared `.venv` before the project, so pip finds the requirement there and never asks PyPI; `smith install` and `smith ci` install projects in dependency order for the same reason. `smith uninstall` removes the line and leaves the library in the venv. The plugin declares the `link` capability.
+
 ## Doctor, dependencies and removal
+
+Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `python -m build` without `--outdir` is reported, with the option to pass. The folders a build backend makes inside the project (`build/`, `*.egg-info`) are not read. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use_case.go`; shown only when the workspace has Python projects):
 
@@ -282,37 +301,41 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use
 | `<dir> declares the distributions it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix | add the distribution to `dependencies` in `<dir>/pyproject.toml` |
 | `the venv's Python is 3.12, as in CI` | a warning when the venv's Python is newer than `3.12` (or has none); a failure when it is older | delete `.venv`, then `smith ci setup` |
 
-All three passed in the test run (`17 passed, 0 failed, 0 warning(s)`).
+All three passed in the test run (`17 passed, 0 failed, 0 warnings`).
 
 Dependencies:
 
 | Command | What it does |
 |---|---|
 | `smith install` | makes `.venv` and `requirements-dev.txt` if missing, installs the tools, installs every project editable |
-| `smith install -w <project> <req>...` | adds the requirement(s) to `[project] dependencies` in that project's `pyproject.toml` (a TOML edit that keeps the rest of the file), then `pip install -e ./<dir>` |
-| `smith install -w <project> -D <req>` | adds to `[project.optional-dependencies] dev`, then `pip install <req>` by name |
-| `smith uninstall -w <project> <name>` | removes the requirement from the runtime list and the `dev` list. The package stays installed in the shared `.venv`; the note says to recreate it. Fails with `<project> does not require <name>` if neither list has it. |
+| `smith install -p <project> <req>...` | adds the requirement(s) to `[project] dependencies` in that project's `pyproject.toml` (a TOML edit that keeps the rest of the file), then `pip install -e ./<dir>` |
+| `smith install -p <project> -D <req>` | adds to `[project.optional-dependencies] dev`, then `pip install <req>` by name |
+| `smith uninstall -p <project> <name>` | removes the requirement from the runtime list and the `dev` list. The package stays installed in the shared `.venv`; the note says to recreate it. Fails with `<project> does not require <name>` if neither list has it. |
 | `smith up`, `smith sync` | the plugin lists `[project] dependencies` and the `dev` extra (`declarations`) and rewrites a plain constraint (`==`, `>=`, `~=`, `<=`, `<`, `>` with a version); compound ranges, `!=`, markers, URLs are reported and left alone. Newest versions come from the simple index (`PIP_INDEX_URL`, default PyPI); `smith up` also compares the pinned Python with the newest series (from `endoflife.date`). |
 
 Real output:
 
 ```
-$ smith install -w sdk "requests>=2.0"
-✔ sdk: added requests>=2.0 (packages/sdk/pyproject.toml)
-$ smith install -w sdk -D pytest-cov
-✔ sdk: added pytest-cov (packages/sdk/pyproject.toml)
+$ smith install -p sdk "requests>=2.0"
+✓ sdk: added requests>=2.0 (packages/sdk/pyproject.toml)
+$ smith install -p sdk -D pytest-cov
+✓ sdk: added pytest-cov (packages/sdk/pyproject.toml)
 $ smith up --check
 minor
   requests                     2.0 → 2.34.2  sdk
 
 Tools smith pins (informational):
   Python           3.12 → 3.15 available
-$ smith uninstall -w sdk requests
-✔ sdk: removed requests (packages/sdk/pyproject.toml)
+$ smith uninstall -p sdk requests
+✓ sdk: removed requests (packages/sdk/pyproject.toml)
   left installed in .venv, which every project shares; recreate it to drop requests
 ```
 
 Removal: `smith remove <project>` deletes the directory and runs `pip uninstall --yes <import name>` in `.venv` so nothing imports a package whose source is gone. Real dry run: `would uninstall py_demo_web from .venv`.
+
+## Declared projects
+
+A folder with no `pyproject.toml` of its own, under a `pyproject.toml` with a `[project]` table (the nearest one above it), can be declared with `[projects.<name>]`, a `root` and `language = "python"`. Its import name, the folder name with `-` and `.` turned into `_`, is the export, so a project that imports it depends on it. Its tasks are `lint` (ruff), `typecheck` (mypy) and `test` (pytest) run in the folder, and an app also has `start` (`python -m <import name>`). The `pyproject.toml` above is an input of each task. A declared project is an app or a lib, never a package: the distribution has one version. A missing folder, a folder with a `pyproject.toml` of its own and a missing manifest above are refused with a message that names the `[projects.<name>]` table.
 
 ## Requirements and limits
 
@@ -325,7 +348,7 @@ Removal: `smith remove <project>` deletes the directory and runs `pip uninstall 
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, Python 3.12.0 (`py -3`; `.venv` created with it; the `python` on PATH is 3.13.14, which the plugin does not use), pip-installed tools as pinned above (ruff, pytest, mypy, build, twine, pip-audit, setuptools). Throw-away workspace `py-demo` from `smith new py-demo`. Run: `smith add lib|app|package ... --lang python`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|package|start`, `smith doctor` (clean, and with a wrong `[toolchains] python` pin), `smith ci generate` (GitHub; then GitHub and Azure with an Azure Artifacts registry), `smith ci setup`, `smith ci audit` (with and without the `python` audit policy), `smith ci check`, `smith release --dry-run [--json]`, `smith install -w` (runtime and `-D`), `smith uninstall -w`, `smith up --check`, `smith remove web --dry-run`, `smith plugin check python` (11 checks ok).
+Windows 11 Pro 10.0.26300, smith 1.62.0, Python 3.12.0 (`py -3`; `.venv` created with it; the `python` on PATH is 3.13.14, which the plugin does not use), pip-installed tools as pinned above (ruff, pytest, mypy, build, twine, pip-audit, setuptools). Throw-away workspace `py-demo` from `smith new py-demo`. Run: `smith add lib|app|package ... --lang python`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|package|start`, `smith doctor` (clean, and with a wrong `[toolchains] python` pin), `smith ci generate` (GitHub; then GitHub and Azure with an Azure Artifacts registry), `smith ci setup`, `smith ci audit` (with and without the `python` audit policy), `smith ci check`, `smith release --dry-run [--json]`, `smith install -p` (runtime and `-D`), `smith uninstall -p`, `smith up --check`, `smith remove web --dry-run`, `smith plugin check python` (11 checks ok).
 
 Not verified:
 

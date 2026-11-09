@@ -47,7 +47,7 @@ What the rows mean:
   `active, read-only`, or `off: set SMITH_CACHE_KEY to use it`. Credentials, paths and query
   strings in the address are never printed.
 - **largest entries**: per task, the largest cached result and how many entries the task has.
-- Two lines with `✖` and an arrow appear when the cache is over its limit, or when some entries
+- Two lines with `×` and an arrow appear when the cache is over its limit, or when some entries
   are unreadable or name a blob that is gone; the arrow names the command that fixes it.
 
 `--json` prints one document: `dir`, `exists`, `entries`, `blobs`, `bytes`, `limitBytes` (0 for
@@ -130,9 +130,9 @@ smith cache status --json
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ there is no smith workspace here` | Run it inside a workspace, or set `SMITH_WORKSPACE_ROOT`. |
-| `✖ the cache is over its limit` with `→ smith cache prune ...` | Not an error: automatic pruning has not caught up yet. Run the command it names. |
-| `✖ 2 entries cannot be used` with `→ smith cache verify --fix ...` | Entries that can never be a hit. Run the command it names. |
+| `× there is no smith workspace here` | Run it inside a workspace, or set `SMITH_WORKSPACE_ROOT`. |
+| `× the cache is over its limit` with `→ smith cache prune ...` | Not an error: automatic pruning has not caught up yet. Run the command it names. |
+| `× 2 entries cannot be used` with `→ smith cache verify --fix ...` | Entries that can never be a hit. Run the command it names. |
 
 ## Related
 

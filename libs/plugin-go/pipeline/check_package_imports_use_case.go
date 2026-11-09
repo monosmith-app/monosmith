@@ -15,16 +15,20 @@ const shownImports = 5
 // module it imports is required by its go.mod.
 func CheckPackageImports(workspaceRoot string, p protocol.Project) protocol.Finding {
 	f := protocol.Finding{
-		Check:  p.Root + " requires the modules it imports",
-		Remedy: "run `go mod tidy` in " + p.Root + " to add what its go.mod lacks",
+		Check:   p.Root + " requires the modules it imports",
+		Project: p.Name,
+		Remedy:  "run `go mod tidy` in " + p.Root + " to add what its go.mod lacks",
 	}
 	undeclared, err := declaredimports.Check(workspaceRoot, p.Root)
 	if err != nil {
-		f.Detail = err.Error()
+		f.Problem, f.Detail = "smith could not read its files to check its imports", err.Error()
 		f.Remedy = "smith could not read " + p.Root + " to check its imports: fix what the problem says, then check again"
 		return f
 	}
 	f.OK = len(undeclared) == 0
+	if !f.OK {
+		f.Problem = fmt.Sprintf("imports %d module(s) its go.mod does not require", len(undeclared))
+	}
 	lines := make([]string, 0, shownImports+1)
 	for i, u := range undeclared {
 		if i == shownImports {

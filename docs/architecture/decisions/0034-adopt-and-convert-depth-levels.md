@@ -1,5 +1,7 @@
 # ADR 0034: Adopt and convert have depth levels, conservative and full
 
+> Update: for a repository whose project sits at the root, `smith adopt --init` asks where to move it before it writes anything ([ADR 0070](0070-adopt-asks-where-to-move-the-project-at-the-root.md)). The text below keeps the original wording.
+
 - Status: accepted for Nx and Turborepo workspaces; proposed for plain repositories
 - Date: 2026-10-25
 

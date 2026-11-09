@@ -33,7 +33,7 @@ func planTurboRemoval(plan *convertplan.Plan, w *turboworkspace.Workspace, files
 	if hasPrefix(files, ".turbo/") {
 		plan.DeletePath(".turbo")
 	}
-	plan.Add(convertplan.Mapped, "", w.Turbo.File, "removed: its tasks are the package.json scripts, with their dependencies, inputs, outputs and cache settings in smith.toml")
+	plan.AddEdit("", w.Turbo.File, "removed: its tasks are the package.json scripts, with their dependencies, inputs, outputs and cache settings in smith.toml")
 
 	var remove []string
 	for _, deps := range []map[string]string{w.RootPackage.DevDependencies, w.RootPackage.Dependencies} {
@@ -46,7 +46,7 @@ func planTurboRemoval(plan *convertplan.Plan, w *turboworkspace.Workspace, files
 	sort.Strings(remove)
 	plan.RemoveDependencies = remove
 	if len(remove) > 0 {
-		plan.Add(convertplan.Mapped, "", "package.json", "removes "+strings.Join(remove, ", "))
+		plan.AddEdit("", "package.json", "removes "+strings.Join(remove, ", "))
 	}
 
 	planPackageManager(plan, w, files, read)

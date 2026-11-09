@@ -83,8 +83,8 @@ func (p picker) View() string {
 	var b strings.Builder
 	current := ""
 	for i, u := range p.updates {
-		if u.Level != current {
-			current = u.Level
+		if u.Group() != current {
+			current = u.Group()
 			b.WriteString(groupStyle.Render(current) + "\n")
 		}
 		box := "[ ]"

@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -101,11 +102,20 @@ func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (p
 	if len(unbuilt) > 0 {
 		finding.Check += " (" + strings.Join(unbuilt, ", ") + " is built by " + label + ":build; run `smith build` first)"
 	}
+	if project.Name != "" {
+		finding.Project = project.Name
+	} else {
+		finding.Area = "config"
+	}
 	if len(problems) == 0 {
 		return finding, true
 	}
 	finding.Warning = !failing
 	finding.Detail = strings.Join(problems, "; ")
+	finding.Problem = problems[0]
+	if len(problems) > 1 {
+		finding.Problem += fmt.Sprintf(" (and %d more)", len(problems)-1)
+	}
 	var remedy []string
 	if anyFile {
 		remedy = append(remedy, "restore the file the script runs, or change or remove that script")

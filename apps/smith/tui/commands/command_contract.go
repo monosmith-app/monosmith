@@ -37,9 +37,17 @@ const (
 	// OpenAdoptWizard opens the adopt wizard on the folder: what was found,
 	// the level, the plan, the conversion and the closing checks.
 	OpenAdoptWizard
+	// OpenCompose opens the "Compose a stack" screen: search everything smith
+	// can build a project from, tick it, and end in the plan.
+	OpenCompose
 	// OpenPackagePrompt opens the guided form that asks which project and which
 	// packages to install (Action "install") or remove (Action "uninstall").
 	OpenPackagePrompt
+	// OpenUndo reads what `smith undo` would revert, shows it and asks before
+	// it reverts.
+	OpenUndo
+	// OpenReport writes the HTML report to a temporary file and opens it.
+	OpenReport
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey
@@ -49,7 +57,6 @@ const (
 const (
 	TabHome     = "home"
 	TabProjects = "projects"
-	TabRun      = "run"
 	TabDoctor   = "doctor"
 	TabDeps     = "deps"
 	TabRelease  = "release"
@@ -78,6 +85,12 @@ type Command struct {
 	// out of the footer. ShowIn are the views whose footer shows it (Views when
 	// empty); Tail puts it at the end of every footer.
 	Footer string
+	// TaskFooter replaces Footer while the log of one task is shown in the run
+	// panel (Esc then goes back to all output).
+	TaskFooter string
+	// OnFooter and OnTitle replace Footer and Title while the command is a
+	// toggle that is on (State.On): "group" becomes "ungroup".
+	OnFooter, OnTitle string
 	// ScopeInFooter puts the project a run acts on in the footer label
 	// ("build web"), so the scope is known before the key is pressed.
 	ScopeInFooter bool
@@ -110,8 +123,23 @@ type Command struct {
 	// NeedsNarrowList and NeedsDetailOpen are for the keys of the narrow
 	// layout, where the detail is opened over the list and closed again.
 	NeedsNarrowList, NeedsDetailOpen bool
+	// NeedsRunPanel makes the command work only while the Projects view shows a
+	// run in its right panel; NotInRunPanel only while it does not.
+	NeedsRunPanel, NotInRunPanel bool
+	// NeedsRecentFocus makes the command work only while the keyboard is on the
+	// list of recent runs; NotInRecentFocus only while it is not.
+	NeedsRecentFocus, NotInRecentFocus bool
+	// NeedsSideFocus makes the command work only while the keyboard is on the
+	// right panel beside the list; NotInSideFocus only while it is not.
+	NeedsSideFocus, NotInSideFocus bool
+	// NeedsSideNext makes the command work only where Tab goes to the right
+	// panel next; NotSideNext only where it goes elsewhere (to the recent runs).
+	NeedsSideNext, NotSideNext bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
+	// Yields gives the key to a command of every view while the command has a
+	// reason (State.Reasons) not to work: the key does not stop at a refusal.
+	Yields bool
 	// NeedsContent hides the command in a folder that holds nothing, where there is nothing for it to work on.
 	NeedsContent bool
 }
@@ -127,17 +155,41 @@ type State struct {
 	// Narrow is true when the detail is not beside the list; DetailOpen when it
 	// fills the pane instead of the list.
 	Narrow, DetailOpen bool
-	// Running is true while a command is running in the run view.
+	// Running is true while a command is running in the run panel.
 	Running bool
+	// RunOpen is true while the right panel of Projects shows a run; RecentFocus
+	// while the keyboard is on the list of recent runs under the projects.
+	RunOpen, RecentFocus bool
+	// SideFocus is true while the keyboard is on the right panel beside the
+	// list; SideNext when Tab would move it there next.
+	SideFocus, SideNext bool
+	// RunFailed is true when the run shown ended with a failed task: the keys
+	// that answer a failure (run again, copy the log) lead the footer.
+	RunFailed bool
+	// TaskSelected is true when the run panel shows the log of one task: Esc then
+	// goes back to all output.
+	TaskSelected bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// BrokenConfig is true when smith.toml exists but cannot be read: the
+	// folder is a workspace, so the commands that start one are hidden.
+	BrokenConfig bool
 	// Project is the project the run keys act on (the one selected in the list),
 	// and Projects how many the workspace has; the footer and the palette name
 	// the scope of a run with them.
 	Project  string
 	Projects int
+	// TaskProjects counts, by task name, the projects that have the task: ll
+	// runs only those. A nil map means every project.
+	TaskProjects map[string]int
+	// OtherTasks are the selected project's tasks that no key runs (not build,
+	// test, lint or typecheck): the palette lists them.
+	OtherTasks []string
 	// Reasons say, by command id, why the open view cannot do something now
 	// (nothing to update, no safe fix): the command is refused with that
 	// reason and the footer leaves its hint out.
 	Reasons map[string]string
+	// On says, by command id, which toggle commands are on now (the checks are
+	// grouped): a command with OnFooter or OnTitle shows that text then.
+	On map[string]bool
 }

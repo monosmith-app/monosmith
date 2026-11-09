@@ -19,7 +19,7 @@ var rustcVersion = regexp.MustCompile(`rustc (\d+\.\d+(?:\.\d+)?)`)
 // container install. A newer local Rust warns, an older one fails: a crate
 // can need a newer Cargo than the machine has, and the error then reads like
 // a dependency problem ("feature edition2024 is required"). A machine
-// without rustc gives no finding; "cargo is installed" already says so.
+// without rustc gives no finding; "Rust (cargo) is installed" already says so.
 //
 // The fix pins Rust in rust-toolchain.toml, which the generated CI, the dev
 // container and rustup all follow: an older local installs the pinned
@@ -41,13 +41,16 @@ func CheckRustVersion(workspaceRoot string) (protocol.Finding, bool) {
 	}
 	_, statErr := os.Stat(filepath.Join(workspaceRoot, ToolchainFile))
 	pinned := statErr == nil
-	if f.Warning {
+	if order, _ := toolrun.PinOrder(m[1], ci); order > 0 {
 		local := majorMinor(m[1])
 		f.Remedy = "pin Rust once in " + ToolchainFile + " (channel = \"" + local + "\") and run `smith ci generate`, so CI and the dev container follow this machine"
 		if !pinned {
 			f.Fix = &protocol.Fix{
 				Description: "pin Rust " + local + " in " + ToolchainFile,
 				Files:       []protocol.FileEdit{{Path: ToolchainFile, Content: toolchainFile(local)}},
+				// The pin is only half of the remedy: CI and the dev container follow it
+				// once smith writes them again.
+				Steps: []protocol.FixStep{{Description: "write CI and the dev container again so they follow the pin", Argv: []string{"smith", "ci", "generate", "--yes"}}},
 			}
 		}
 		return f, true

@@ -30,7 +30,7 @@ Usage: `smith release pub [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--project <project>` | string |  | the released app |
+| `-p, --project <project>` | string |  | the released app (also -w, --workspace, --projects) |
 | `--version <version>` | string |  | its released version |
 
 <!-- smith:end release pub -->

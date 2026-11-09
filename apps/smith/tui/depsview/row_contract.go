@@ -2,11 +2,14 @@ package depsview
 
 // Row is a dependency with a newer release.
 type Row struct {
-	Name     string
-	Plugin   string
-	Current  string
-	Latest   string
-	Level    string
+	Name    string
+	Plugin  string
+	Current string
+	Latest  string
+	Level   string
+	// Kinds say how projects declare the package: dev, prod, peer, optional,
+	// build or managed.
+	Kinds    []string
 	Projects []string
 }
 

@@ -1,0 +1,16 @@
+{
+  "releaseview.waiting": "Reading the commits of {projects} since the last release to work out each version.",
+  "releaseview.waiting.more": " This takes a few seconds, up to half a minute on a large workspace; you can use the other tabs meanwhile.",
+  "releaseview.blocked": "The release is blocked: its tags would give wrong versions.",
+  "releaseview.warning": "warning: {message}",
+  "releaseview.blocked.hint": "smith release --dry-run shows the same",
+  "releaseview.new": "new",
+  "releaseview.unchanged": "unchanged: {projects}",
+  "releaseview.nothing": "Nothing to release",
+  "releaseview.headline.one": "{count} package to release",
+  "releaseview.headline.other": "{count} packages to release",
+  "releaseview.tag": "tag {tag} · {level} bump · plugin {plugin}",
+  "releaseview.nocommit": "{reason} (no commit of its own releases it)",
+  "releaseview.more": "… and {count} more (smith release --dry-run --notes lists them all)",
+  "releaseview.breaking": "BREAKING: {note}"
+}

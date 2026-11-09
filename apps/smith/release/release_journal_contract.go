@@ -16,13 +16,14 @@ type JournalEntry struct {
 	Time    time.Time `json:"time"`
 	Version string    `json:"version"`
 	// Step is publish (the plugin's registry), package (an npm, PyPI, NuGet
-	// or RubyGems package), image, tag, push, mirror, github-release,
+	// or RubyGems package), pack (a package file attached to the GitHub
+	// Release, with its sha256), image, tag, push, mirror, github-release,
 	// pub-dispatch or release (the step that failed).
 	Step string `json:"step"`
 	// Target is where it went: the registry, package, image, tag or URL.
 	Target string `json:"target"`
-	// Outcome is published, existing (the registry already had it), done or
-	// failed.
+	// Outcome is published, existing (the registry already had it), skipped
+	// (stable_only left a pre-release out of the registry), done or failed.
 	Outcome string `json:"outcome"`
 	Error   string `json:"error,omitempty"`
 }
@@ -31,6 +32,7 @@ type JournalEntry struct {
 const (
 	OutcomePublished = "published"
 	OutcomeExisting  = "existing"
+	OutcomeSkipped   = "skipped"
 	OutcomeDone      = "done"
 	OutcomeFailed    = "failed"
 )

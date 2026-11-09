@@ -39,7 +39,7 @@ func RenderNotes(item Item) string {
 		}
 	}
 	if len(breaking) > 0 {
-		b.WriteString("## ⚠ Breaking changes\n\n")
+		b.WriteString("## ▲ Breaking changes\n\n")
 		for _, c := range breaking {
 			line := entry(c)
 			if c.BreakingNote != "" {

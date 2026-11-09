@@ -76,7 +76,7 @@ func Rewrite(src string, projects []Project, res Result) (text string, ok bool) 
 		out += "\n"
 	}
 	for _, g := range res.Groups {
-		out += workspace.TaskGroupText(g)
+		out += workspace.GroupText(g)
 	}
 	return out, resolvesTheSame(src, out, projects, res)
 }
@@ -93,7 +93,7 @@ func resolvesTheSame(before, after string, projects []Project, res Result) bool 
 	if err != nil {
 		return false
 	}
-	if !reflect.DeepEqual(append(old.TaskGroups[:len(old.TaskGroups):len(old.TaskGroups)], res.Groups...), now.TaskGroups) {
+	if !reflect.DeepEqual(append(old.Groups[:len(old.Groups):len(old.Groups)], res.Groups...), now.Groups) {
 		return false
 	}
 	names := map[string]bool{}

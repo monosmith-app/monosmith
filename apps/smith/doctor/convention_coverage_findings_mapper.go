@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorchecks"
 	"sort"
 	"strings"
 
@@ -41,14 +42,16 @@ func CoverageFinding(name string, declared []string, cov projectgraph.Coverage) 
 		left[i] = fmt.Sprintf("%s (%s)", p.Name, p.Language)
 	}
 	sort.Strings(left)
-	f := protocol.Finding{Warning: true}
-	list := Summary(left, ", ", shownProblems)
+	f := protocol.Finding{Warning: true, Area: doctorchecks.AreaLint}
+	list := doctorchecks.Summary(left, ", ", doctorchecks.ShownProblems)
 	applies := "it applies to " + strings.Join(declared, ", ")
 	if len(cov.Checked) == 0 {
 		f.Check = name + " checks at least one project"
+		f.Problem = name + " checks none of your projects"
 		f.Detail = name + " checks none of your projects: " + applies + ", and your projects are " + list
 	} else {
 		f.Check = name + " covers every project"
+		f.Problem = name + " does not check " + list
 		f.Detail = name + " does not check " + list + ": " + applies
 	}
 	f.Remedy = "if that is on purpose, name them in exclude = [...] under [conventions." + name + "] in smith.toml; otherwise choose a convention for their language (smith architecture lists the choices and what each applies to)"

@@ -1,0 +1,13 @@
+{
+  "dialog.commit.label": "Commit this change so it can be undone",
+  "dialog.commit.key": "  (C)",
+  "dialog.button.run": "Run",
+  "dialog.button.cancel": "Cancel",
+  "dialog.button.ok": "OK",
+  "dialog.command.will": "The command that will run:",
+  "dialog.command.running": "The command that is running:",
+  "dialog.more": "… {count} more lines (Up/Down/PgDn show them)",
+  "dialog.help.mouse": "Mouse",
+  "dialog.help.disabled": "Disabled: {reason}",
+  "dialog.help.title": "Keyboard shortcuts · Esc closes · ↑↓ scroll"
+}

@@ -29,6 +29,9 @@ const maxArgTries = 3
 // isInteractive reports whether a person is at a terminal that can answer: not
 // a pipe, and not CI.
 func isInteractive() bool {
+	if os.Getenv("SMITH_FORCE_INTERACTIVE") == "1" {
+		return true
+	}
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 }
 
@@ -91,7 +94,7 @@ func addQuestions() []argQuestion {
 			if _, _, combined := SplitKind(a); combined || a == "app" || a == "lib" || a == "package" {
 				return nil
 			}
-			return fmt.Errorf("%q is not a kind: app, lib or package (smith kinds lists the combined ones). To add a package to a project, use: smith install -w <project> <package>", a)
+			return fmt.Errorf("%q is not a kind: app, lib or package (smith kinds lists the combined ones). To add a package to a project, use: smith install -p <project> <package>", a)
 		}},
 		{Label: "Name of the project", Validate: func(a string) error { return ValidateName("project", a) }},
 	}

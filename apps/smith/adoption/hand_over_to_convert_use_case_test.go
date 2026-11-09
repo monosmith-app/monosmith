@@ -47,7 +47,7 @@ func handedOver(t *testing.T, level string, initialise, tags bool) (string, erro
 	conv.Flags().String("level", "conservative", "")
 	adopt := Command("test")
 	root.AddCommand(conv, adopt)
-	err := handOverToConvert(adopt, level, false, false, initialise, tags, false, false)
+	err := handOverToConvert(adopt, level, false, false, initialise, tags, false, false, false)
 	return strings.Join(got, " "), err
 }
 

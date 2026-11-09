@@ -44,10 +44,73 @@ branches = ["main", "dev"]   # push and pull_request triggers; default: the rele
 
 The release branch is always one of them, even if the list leaves it out. It
 stays the only branch a release runs from: the pack, upload and release steps
-keep their condition on it, so a push to `dev` runs verify and nothing more.
+keep their condition on it, so a push to `dev` runs verify and nothing more
+(the native job runs there only with [`native_on = "main"` or `"always"`](#cost-controls)).
 Pull requests into any of the listed branches get the release preview comment.
+
+A [release channel](releasing.md#release-channels) adds its branch to the triggers and to the
+release step only: a push to the channel branch runs verify and `smith ci release`, which
+publishes the channel's prerelease versions. The sign-in steps (Azure, RubyGems) run there too, since the release publishes from the branch; pack, upload, attest and the assets job stay on the release
+branch unless [`publish_on = "channels"`](#cost-controls) adds the channel branches. The preview comment on a pull request into a channel branch names the channel and shows
+the prerelease versions, because a pull request build plans for the branch it targets.
 `smith doctor` reports a pipeline that does not match the list, and
 `smith ci generate` rewrites it. GitLab, CircleCI and Bitbucket are not affected.
+
+## Cost controls
+
+A CI minute costs money on a private repository. These `[ci]` keys decide how many
+minutes a run uses. Each has a default that spends the least, and each is checked when
+smith reads `smith.toml`: an unknown value is an error that names the allowed values.
+
+```toml
+[ci]
+native_on = "release"                   # release (default) | main | always
+triggers = ["push", "pull_request"]     # the default: both; ["pull_request"] or ["push"] drop one
+audit = "always"                        # always (default) | main | schedule
+audit_cron = "0 6 * * 1"                # the schedule of audit = "schedule"; default: Mondays 06:00 UTC
+publish_on = "release"                  # release (default) | channels
+```
+
+**`native_on`** says when the native job runs.
+
+| Value | The native job runs |
+| --- | --- |
+| `release` (default) | only on a push to a release branch whose release step released a project (`released=true`) |
+| `main` | also on a push to, or a pull request into, a release branch when the ci job passed, and on a release |
+| `always` | after every successful ci job, and on a release even when a later step failed (the behaviour before this key) |
+
+A push to a branch that is not a release branch, and a pull request, run verify and nothing more
+by default. On Azure there is no output that says a release happened, so `release` runs the
+native job on every push to a release branch that passes the ci job. GitLab, CircleCI and
+Bitbucket always run their native job after the ci job: `native_on` does not apply, and
+`smith ci generate` says so.
+
+**Concurrency.** A newer run on the same ref cancels the older one, except on the release
+branch and the channel branches: a run that can release is never cancelled. This is not a
+key. It applies to GitHub only.
+
+**`triggers`** lists the events that start the GitHub and Azure pipelines. `["pull_request"]`
+runs CI on pull requests only. `["push"]` runs it on pushes only, and then there is no
+release preview comment, because the comment needs a pull request run. Without `push` nothing
+runs on the release branch, so nothing releases from it: use that only when releases start in
+another way. An empty list, an unknown name or a name twice is an error. GitLab, CircleCI and
+Bitbucket keep their own triggers: `triggers` does not apply, and `smith ci generate` says so,
+as it does for `branches`.
+
+**`audit`** says when `smith ci audit` runs. `always` runs it on every run. `main` runs it on
+a push to a release branch only. `schedule` adds a `schedule:` trigger with the cron of
+`audit_cron` (five fields, UTC) and runs the audit on that trigger and on a push to a release
+branch. A scheduled run only audits: the verify step is skipped, and so are the native and
+assets jobs. A skipped audit never blocks verify or the release. On Azure, `main` is the same
+condition. `schedule` does not apply there (the audit runs on every run), and the other
+providers always audit.
+
+**`publish_on`** says which branches pack apps, keep the packed apps, attest the release
+archives and build the release files in the assets job. `release` (default) is the release
+branch only. `channels` adds each [release channel](releasing.md#release-channels) branch, so
+a release from the channel branch gets the same files as one from the release branch. It
+applies to GitHub and Azure. A merge of a pull request is a push to the target branch, so
+"release on a merge into `main`" is a push to `main`: the two cannot be told apart.
 
 ## Sibling repositories
 
@@ -211,17 +274,43 @@ can run locally.
 | Phase | Does |
 |---|---|
 | `smith ci setup` | every setup step the plugins contributed |
-| `smith ci audit` | dependency vulnerability checks; non-blocking ones warn |
-| `smith ci verify` | `lint`, `typecheck`, `test`, `build` — affected projects only on a pull request, everything otherwise; then the tasks a plugin marks for verify, such as the docker convention's `image` (skipped, with a warning, where their program is not installed). It fails when the tasks left a tracked file changed, naming the file and the project whose tasks ran, since the release refuses a dirty tree (in CI, a file setup changed fails it too; locally, your own edits do not). `smith doctor` warns about the usual causes: a tracked file `.gitignore` ignores, and a tracked file inside a task's outputs |
+| `smith ci setup --assets` | the same, for the generated assets job: projects whose `[release] install` is `false` are left out |
+| `smith ci audit` | dependency vulnerability checks; non-blocking ones warn. A check whose tool is not installed (exit 127) is reported as skipped in the summary, and fails the audit when the check is blocking |
+| `smith ci verify` | `lint`, `typecheck`, `test`, `build` — affected projects only on a pull request, everything otherwise; then the tasks a plugin marks for verify, such as the docker convention's `image` (skipped, with a warning, where their program is not installed). When `[derive] enabled = true` it first runs `smith derive --check` and fails on a derived file or `smith.lock` that is out of date. It fails when the tasks left a tracked file changed, naming the file and the project whose tasks ran, since the release refuses a dirty tree (in CI, a file setup changed fails it too; locally, your own edits do not). `smith doctor` warns about the usual causes: a tracked file `.gitignore` ignores, and a tracked file inside a task's outputs |
 | `smith release --dry-run --comment` | on a pull request: the release preview, in the job summary and as a comment on the pull request |
 | `smith ci pack` | on a push to the release branch: every project's `package` task into `dist/drop`, kept as the run's `drop` artifact |
 | `smith ci native` | in a job per OS, after the ci job: lint, test, build and package the projects tagged native |
-| `smith ci assets` | in a job per platform, after the ci job (GitHub Actions only): run an app's `[release]` build command and upload its files to the GitHub Release ([Releasing](releasing.md#release-files-from-a-command)) |
+| `smith ci assets` | in a job per platform, after the ci job (GitHub Actions only): run an app's `[release]` build command and upload its files to the GitHub Release; `--tag <project>@<version>` runs it again for an existing release, and `--source current\|tag` chooses the code when the tag is not at HEAD ([Releasing](releasing.md#release-files-from-a-command)) |
 | `smith ci release` | on a push to the release branch: version, publish and tag; then the post-release steps plugins declare, whether or not anything was released (the docker plugin's `smith docker description`, when an app has a `description_from` file or a short description for a `docker.io` registry), each only a warning when it fails |
 
 On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,
 and each phase adds a line (passed or failed, and how long it took) and the
-release its report to the job summary.
+release its report to the job summary. When a blocking setup or audit step fails, its whole captured output (the last 64 KB) is printed again in a log group named after the step, so a cause that scrolled past (such as pip's conflict report) is one click away; the error keeps its last 30 lines.
+
+### What `smith ci release` prints
+
+The banner and the plan are visible, the tool output is folded, then come the result table, the
+`Released` block (type, what, platforms and where of each target, see
+[Releasing](releasing.md#what-was-released)) and one closing line. The same block goes to the job
+summary. The `Published` column counts every target, and a pub.dev publish reads
+`pub.dev (queued)`: the workflow was started, not finished.
+
+```
+Project  Was      Now        Bump   Why             Published                                           Tag
+smith    1.128.0  › 1.129.0  minor  feat: add ...   6 targets: npm, PyPI, NuGet, RubyGems, GitHub ...   smith@1.129.0 (pushed)
+══ Released ════════════════════════════════════════════════
+smith 1.128.0 › 1.129.0 (minor)
+  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+  ...
+✓ Release passed in 3m 8s: 1 released (smith 1.129.0), 0 unchanged, 0 failed
+```
+
+### Deployments
+
+When a workspace publishes to a registry, the GitHub workflow gets `deployments: write`, and
+`smith ci release` records each registry as a GitHub deployment (the Deployments sidebar lists npm,
+PyPI, NuGet and RubyGems with the version and a link to the package page). A refusal only warns.
+Set `[release] github_deployments = false` to leave the permission out and record nothing.
 
 ## Packing
 
@@ -249,6 +338,25 @@ projects are left to the native job. `verify = false` under
 `[projects.<name>.tasks.package]` turns it off for one app, or under
 `[tasks.package]` for all.
 
+## A release started by hand
+
+`[ci] manual_release = true` lets a person start a release of a package that no commit releases (the
+same code under a new version, ADR 0080). It is off by default, because whoever can run the pipeline
+can then publish to the registries and cannot undo it. Each provider gets one value to fill in, in the
+form `project=patch|minor|major` (several: separate them with commas). Empty means no manual release.
+
+| Provider | Where | Notes |
+|---|---|---|
+| GitHub | the `release_bump` input of "Run workflow" | the ci job, the native job and the assets jobs run for it as for a push; the step summary says it was a manual release, the value and who ran it (`github.actor`) |
+| Azure Pipelines | the `releaseBump` runtime parameter of "Run pipeline" | the Release step only; the pack step runs on pushes |
+| GitLab CI | the `RELEASE_BUMP` variable of the "Run pipeline" form | the Release step only; the pack step runs on pushes |
+| Bitbucket | the custom pipeline `release-by-hand`, which asks for `RELEASE_BUMP` | the Release step only; the pack step runs on pushes |
+| CircleCI | not supported | CircleCI has no form for a value. `smith ci generate` prints a note; run `smith release --bump p=patch --force` on a machine instead |
+
+The step runs `smith ci release --bump "$RELEASE_BUMP" --force`. The value reaches it through an
+environment variable, never inside the script text. The run must be on the release branch or a
+release channel's branch. `smith ci release --bump p=level --force` is also a command of its own.
+
 ## The release preview comment
 
 On a pull request the preview is posted as one comment, which later runs of
@@ -268,7 +376,11 @@ the workflow adds `id-token: write` and `attestations: write` and, after the
 Release step, an `Attest build provenance` step
 (`actions/attest-build-provenance`) over `dist/release/*/*`, which signs the
 archives, packages and SBOMs with SLSA provenance. Verify one with
-`gh attestation verify <file> --repo <owner>/<repo>`. Azure Pipelines and
+`gh attestation verify <file> --repo <owner>/<repo>`. A private repository of a free
+GitHub organisation has no attestations: the step fails and takes the release job with it,
+after the releases exist. Set `[ci] attest = "optional"` to let the job go on when GitHub
+refuses (the step gets `continue-on-error: true`), or `"off"` to leave the step and its two
+permissions out. The default is `"on"`. Azure Pipelines and
 GitLab CI, CircleCI and Bitbucket get the SBOM but no provenance step: they have no attestation
 service.
 
@@ -324,12 +436,14 @@ GitHub Release, so it happens on GitHub Actions only.
 ```toml
 [ci]
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # the default
-native_linux_packages = ["libsqlite3-dev"]   # apt packages installed before building on Linux
+native_linux_packages = ["libsqlite3-dev"]   # apt packages installed before building on Linux (the native job and the assets job)
 ```
 
 Every AppleScript project is native, because `osacompile` exists on macOS only: with only AppleScript projects native, set `native_runners = ["macos-latest"]`.
 
 Every Objective-C project is native too, because `pod lib lint` needs Xcode: with only such projects native, set `native_runners = ["macos-latest"]`.
+
+On GitHub Actions the native and assets jobs wait for the ci job, but they do not need all of it to succeed. `smith ci release` writes `released=true` to the step output as soon as it has released a project, and nothing else sets that output, so a push that releases nothing (a change to `smith.toml` only, say) starts no assets job. The assets jobs run when it is set, so a release that stops half way (six projects released, the seventh failed) still gets its files, and a step that fails after the release (the attestation on a repository with none, say) does not leave the releases without their files. On a pull request they still need the whole ci job to succeed. A re-run of the failed ci job finishes the release and then runs them. To attach files to a release that exists (its first assets run failed, or the fix came later), run the workflow by hand from the Actions tab with the `assets_tag` input set to the tag (`mvd@0.11.1`): the ci job is skipped, the assets job runs `smith ci assets --tag` on every platform runner from that branch, and the files of the same name in the Release are replaced. A second input, `assets_source` (`current`, `tag` or `ask me (refuses)`), says which code the job builds when the tag is not at the branch head: `current` is the branch as it is now, named with the tag's version, and `tag` is the tag's own commit in a temporary git worktree. `ask me (refuses)`, the preselected value, stops the run and names both. The workflow has these inputs only when it has an assets job.
 
 On Azure Pipelines a workspace with a native project gets a `jobs:` pipeline:
 the ci job, and the native job with a matrix of runner images. Steps kept in
@@ -354,6 +468,24 @@ and the installed one only bootstraps.
 
 ## Secrets
 
+### Your own secrets
+
+A build command that reads a token (a fetch step before a native build, say) needs it in
+the job that runs it. Name the repository secrets in `[ci] secrets`:
+
+```toml
+[ci]
+secrets = ["FETCH_TOKEN"]
+```
+
+The generated pipelines hand each one, as an environment variable of the same name, to
+every step that runs smith: setup, verify, release, the native jobs and the assets jobs
+(GitHub Actions `${{ secrets.FETCH_TOKEN }}`, Azure `$(FETCH_TOKEN)`; on GitLab, Bitbucket
+and CircleCI a CI/CD variable of that name is already in the environment). A name may not
+start with `GITHUB_`. None is required, so a local run needs none.
+
+### Secrets smith uses
+
 | Secret | Used for |
 |---|---|
 | `NODE_AUTH_TOKEN` | `npm publish` (the generated `.npmrc` reads it), and an app's npm packages |
@@ -370,7 +502,7 @@ and the installed one only bootstraps.
 | `SPLIT_REPO_TOKEN` | pushing a project with `split_repo` to its mirror repository; a token with write access to that repository (see releasing.md) |
 | `SMITH_CACHE_KEY` | the remote cache (`[cache] remote`): the secret every object is signed with. Given to every step that runs tasks, with the backend's credentials below (see [The remote cache](#the-remote-cache)) |
 | `AZURE_STORAGE_SAS_TOKEN` | an `azblob://` remote cache: a SAS token for the container |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | an `s3://` remote cache |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL_S3` | an `s3://` remote cache; the endpoint only for an S3-compatible store such as Cloudflare R2 |
 | `SMITH_CACHE_TOKEN` | an `https://` remote cache whose server wants a bearer token |
 | `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it. Also installs from and publishes to a `github-packages` registry (given to setup too) |
 | the `token_env` of a `token` registry | installing from (given to setup too) and publishing to that private registry |
@@ -497,7 +629,7 @@ credentials follows from the remote's scheme:
 | `remote` | Secrets |
 |---|---|
 | `azblob://account/container/prefix` | `SMITH_CACHE_KEY`, `AZURE_STORAGE_SAS_TOKEN` |
-| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` |
+| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL_S3` (S3-compatible stores only) |
 | `https://host/path` | `SMITH_CACHE_KEY`, `SMITH_CACHE_TOKEN` (when the server wants one) |
 
 `smith ci check` lists them, in each provider's terms, and what each one is.
@@ -521,14 +653,17 @@ so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
   `SMITH_CACHE_KEY: $(SMITH_CACHE_KEY)`. GitHub reads `${{ secrets.X }}`, and
   GitLab's CI/CD variables, CircleCI's and Bitbucket's environment variables are already environment.
 - `smith doctor` warns on a machine where the remote is configured and the key
-  is not set.
+  is not set; make a key with `smith cache key`.
+- What the key is, where it lives and how to rotate it:
+  [Set up the remote cache](tasks-and-cache.md#set-up-the-remote-cache).
 
 ### Example: Azure Pipelines with Azure Blob
 
 1. Create a storage account and a container for the cache, for example
    `smith-cache` in `acmecache`.
 2. Create a SAS token for the container with read, write and create
-   permission, and a long random string for the key.
+   permission, and make the key with `smith cache key` (see
+   [Set up the remote cache](tasks-and-cache.md#set-up-the-remote-cache)).
 3. Configure the remote (a recipe can set this once for every repository):
 
    ```toml

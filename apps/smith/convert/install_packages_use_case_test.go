@@ -46,7 +46,7 @@ func TestEnsureInstalledAsksInATerminalAndInstallsOnYes(t *testing.T) {
 		if err != nil || ran != 1 {
 			t.Fatalf("answer %q: err %v, installs %d", answer, err, ran)
 		}
-		for _, want := range []string{"couple of minutes", "[Y/n]", "Installing the packages", "Packages installed in"} {
+		for _, want := range []string{"couple of minutes", "[Y/n]", "Running `npm install --no-audit --no-fund --ignore-scripts`", "runs no script of the repository", "Packages installed in"} {
 			if !strings.Contains(out.String(), want) {
 				t.Errorf("the screen lacks %q:\n%s", want, out.String())
 			}

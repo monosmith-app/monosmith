@@ -15,6 +15,11 @@ type Stack struct {
 	// Scaffold generates new projects; empty means the language plugin does.
 	Scaffold string   `json:"scaffold,omitempty"`
 	Deploy   []string `json:"deploy,omitempty"`
+	// Choices make the stack a saved selection (see Choice). When they are
+	// set, the host derives the language, the scaffold and the toolchain from
+	// them, and Toolchain lists only the plugins to add after those. The
+	// plugins of the stack get the choices in GenerateParams.Choices.
+	Choices []string `json:"choices,omitempty"`
 }
 
 // NoStack, recorded as a project's stack, means the language plugin alone,

@@ -1,0 +1,13 @@
+{
+  "commands.doctor.group.footer.on": "ungroup",
+  "commands.doctor.group.title.on": "List the checks flat, not grouped under the workspace and each project",
+  "commands.doctor.foldall.footer.on": "collapse all",
+  "commands.doctor.foldall.title.on": "Collapse every group of checks",
+  "commands.doctor.failed.footer.on": "hide failed",
+  "commands.doctor.failed.title.on": "Hide the failed checks",
+  "commands.doctor.warnings.footer.on": "hide warnings",
+  "commands.doctor.warnings.title.on": "Hide the warnings",
+  "commands.doctor.passed.footer.on": "hide passed",
+  "commands.doctor.passed.title.on": "Hide the passed checks",
+  "tui.toggle.fold_needs_groups": "Group the checks first: press g"
+}

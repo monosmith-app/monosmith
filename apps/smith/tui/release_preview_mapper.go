@@ -2,9 +2,12 @@ package tui
 
 import (
 	"slices"
+	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // isPreview is true for the command line of the release preview.
@@ -14,26 +17,31 @@ func isPreview(argv []string) bool {
 
 // previewLines is the Release screen's own view of the preview run: what it
 // is waiting for while it runs, and its output when it has ended, so the
-// preview does not need the Run screen. room is how many lines it may take.
+// preview does not need the run panel. room is how many lines it may take.
 func (s Shell) previewLines(w, room int) []string {
+	if s.run != nil && isRelease(s.run.Command) {
+		return s.releaseRunLines(w, room)
+	}
 	if s.run == nil || !isPreview(s.run.Command) || room < 3 {
 		return nil
 	}
-	lines := []string{"", s.th.Title("Preview: " + s.run.CommandLine())}
+	lines := []string{"", s.th.Title(words.Say("tui.release_preview.preview", "commandLine", s.run.CommandLine()))}
 	if s.running() {
-		wait := "Waiting for each package's registry (is this version already published?) and for the git history. " +
-			"With many packages this takes a while. Nothing is changed. Ctrl+C stops it."
+		wait := words.Say("tui.release_preview.waiting_for_each_package_s_registry")
 		lines = append(lines, pane.Wrap(s.th.Info(s.th.Spin(s.tick))+" "+wait, w, 2)...)
 		return capTail(lines, room)
 	}
-	mark := s.th.Success(s.th.Icons.Passed) + " done"
+	mark := words.Say("tui.release_preview.done", "passed", s.th.Success(s.th.Icons.Passed))
 	if !s.run.OK() {
-		mark = s.th.Failure(s.th.Icons.Failed) + " failed"
+		mark = words.Say("tui.release_preview.failed", "failed", s.th.Failure(s.th.Icons.Failed))
 	}
-	lines = append(lines, mark+s.th.Muted(" · full output on the Run screen ("+commands.ShortcutOf("view.run")+")"))
+	lines = append(lines, mark+s.th.Muted(words.Say("tui.release_preview.full_output_in_the_run_panel", "shortcutOf", commands.ShortcutOf("view.projects"))))
 	var out []string
-	for _, l := range s.run.Lines {
+	for _, l := range s.previewOutput() {
 		out = append(out, pane.Wrap(pane.Strip(l), w-2, 2)...)
+	}
+	if s.release.CanRelease() {
+		out = append(out, s.th.Muted(words.Say("tui.release_preview.next", "key", commands.ShortcutOf("rel.release"))))
 	}
 	keep := max(room-len(lines), 1)
 	if len(out) > keep {
@@ -43,6 +51,22 @@ func (s Shell) previewLines(w, room int) []string {
 		lines = append(lines, "  "+l)
 	}
 	return lines
+}
+
+// previewOutput is what the preview printed, less what the view says itself: an
+// empty plan is the headline of the view (said once, not twice), and the closing
+// line that sends the person to a terminal is the button of the view.
+func (s Shell) previewOutput() []string {
+	if s.release.Empty() {
+		return nil
+	}
+	var out []string
+	for _, l := range s.run.Lines {
+		if strings.TrimSpace(pane.Strip(l)) != release.PublishHintLine {
+			out = append(out, l)
+		}
+	}
+	return out
 }
 
 // capTail keeps the first n lines.

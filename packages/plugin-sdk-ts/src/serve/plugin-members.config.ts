@@ -24,8 +24,12 @@ export const PLUGIN_MEMBERS: Readonly<Record<string, { member: Member, requires:
   'published':              { member: 'published', requires: ['published'] },
   'dependencies/install':   { member: 'install', requires: ['install', 'uninstall'] },
   'dependencies/uninstall': { member: 'uninstall', requires: ['install', 'uninstall'] },
+  'dependencies/link':      { member: 'link', requires: ['link', 'unlink'] },
+  'dependencies/unlink':    { member: 'unlink', requires: ['link', 'unlink'] },
   'dependencies/declared':  { member: 'declared', requires: ['declared', 'rewrite'] },
   'dependencies/rewrite':   { member: 'rewrite', requires: ['declared', 'rewrite'] },
   'dependencies/latest':    { member: 'latest', requires: ['latest'] },
   'sbom/components':        { member: 'components', requires: ['components'] },
+  'derive':                 { member: 'derive', requires: ['derive'] },
+  'api/surface':            { member: 'apiSurface', requires: ['apiSurface'] },
 }

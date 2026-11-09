@@ -136,8 +136,8 @@ smith cache prune --max-size-mb 2 --dry-run --json
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ --max-size-mb -3 is not a size` | Pass a number of megabytes, or 0 to remove only unused blobs. `smith cache clear` deletes the whole cache. |
-| `✖ could not prune the cache at <dir>: <reason>` with `→ run smith cache verify` | The store could not be read or written. Check it with `smith cache verify`, or close other smith processes and retry. |
+| `× --max-size-mb -3 is not a size` | Pass a number of megabytes, or 0 to remove only unused blobs. `smith cache clear` deletes the whole cache. |
+| `× could not prune the cache at <dir>: <reason>` with `→ run smith cache verify` | The store could not be read or written. Check it with `smith cache verify`, or close other smith processes and retry. |
 | `! 2 files could not be removed (another process has them open)` | A build was reading them. Run the command again when no build is running. |
 | `The cache at <dir> is empty: nothing to prune.` | Nothing has been cached yet, or the cache was cleared. |
 

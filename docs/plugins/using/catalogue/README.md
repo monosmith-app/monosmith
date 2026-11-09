@@ -1,7 +1,7 @@
 # The built-in plugin catalogue
 
-smith ships 25 plugins inside its binary: 12 language plugins and 13 add-ons (toolchain, structure,
-scaffold and deploy plugins). This section has one page for each, written from the plugin's code
+smith ships 39 plugins inside its binary: 18 language plugins and 21 add-ons (toolchain, structure,
+scaffold and deploy plugins, with the six architecture plugins counted one by one). This section has one page for each, written from the plugin's code
 and from real runs: what it detects, the project kinds and tasks it adds, what it scaffolds, its
 settings, how it handles the toolchain, how it releases, what it adds to CI, and where it is
 limited. Every page ends with what was and was not verified.
@@ -14,26 +14,32 @@ roles, stacks and conventions is in [What a plugin is and how plugins combine](.
 A language plugin finds projects from manifests and, by default, is also their toolchain and
 scaffold. `smith plugin enable`, `disable` and `set` switch these on and off.
 
-| Plugin | Projects it finds | Page |
-|---|---|---|
-| `node` | `package.json` projects (npm workspaces); every script is a task | [node](node.md) |
-| `go` | `go.mod` modules in a root `go.work` | [go](go.md) |
-| `python` | `pyproject.toml` projects, one root `.venv` | [python](python.md) |
-| `rust` | `Cargo.toml` crates in a root Cargo workspace | [rust](rust.md) |
-| `dotnet` | `*.csproj` and `*.fsproj` projects | [dotnet](dotnet.md) |
-| `ruby` | gems (`*.gemspec`) the root `Gemfile` lists | [ruby](ruby.md) |
-| `php` | Composer packages the root `composer.json` requires | [php](php.md) |
-| `cpp` | CMake projects (`CMakeLists.txt` that calls `project()`) | [cpp](cpp.md) |
-| `dart` | packages of a root pub workspace, Dart or Flutter | [dart](dart.md) |
-| `jvm` | Maven modules (Java) and Gradle modules (Kotlin, Android) | [jvm](jvm.md) |
-| `bicep` | Azure infrastructure: each `main.bicep` | [bicep](bicep.md) |
-| `lua` | LuaRocks projects: each `*.rockspec` | [lua](lua.md) |
-| `applescript` | AppleScript: each directory with a `.applescript` source | [applescript](applescript.md) |
-| `vba` | VBA modules exported as text (`.bas`, `.cls`, `.frm`) | [vba](vba.md) |
-| `swift` | Swift packages: each `Package.swift` | [swift](swift.md) |
-| `objc` | CocoaPods libraries (Objective-C): each `*.podspec` | [objc](objc.md) |
-| `bundle` | apps with no language: a directory with `app.json` and `flow.json` | [bundle](bundle.md) |
-| `recipe` | a `*.recipe.toml` in a folder of its own | [recipe](recipe.md) |
+The last three columns are the columns of the same names in `smith plugin list`. **Declared**: the
+plugin can describe a project that `smith.toml` declares with `[projects.<name>]` and no manifest. **Channels**: a
+package of a `[[release.channels]]` branch can be published with it, a prerelease never replacing the stable version.
+**Link**: `smith install -p <project> <library>` can make a project depend on a library of the workspace.
+The values were read from `smith plugin list` of the smith 2.0 release candidate.
+
+| Plugin | Projects it finds | Declared | Channels | Link | Page |
+|---|---|---|---|---|---|
+| `node` | `package.json` projects (npm workspaces); every script is a task | no | yes | yes | [node](node.md) |
+| `go` | `go.mod` modules in a root `go.work` | yes | no | yes | [go](go.md) |
+| `python` | `pyproject.toml` projects, one root `.venv` | yes | yes | yes | [python](python.md) |
+| `rust` | `Cargo.toml` crates in a root Cargo workspace | yes | yes | yes | [rust](rust.md) |
+| `dotnet` | `*.csproj` and `*.fsproj` projects | no | yes | yes | [dotnet](dotnet.md) |
+| `ruby` | gems (`*.gemspec`) the root `Gemfile` lists | yes | yes | no | [ruby](ruby.md) |
+| `php` | Composer packages the root `composer.json` requires | yes | yes | no | [php](php.md) |
+| `cpp` | CMake projects (`CMakeLists.txt` that calls `project()`) | no | yes | no | [cpp](cpp.md) |
+| `dart` | packages of a root pub workspace, Dart or Flutter | yes | yes | no | [dart](dart.md) |
+| `jvm` | Maven modules (Java) and Gradle modules (Kotlin, Android) | no | yes | no | [jvm](jvm.md) |
+| `bicep` | Azure infrastructure: each `main.bicep` | no | yes | no | [bicep](bicep.md) |
+| `lua` | LuaRocks projects: each `*.rockspec` | yes | yes | no | [lua](lua.md) |
+| `applescript` | AppleScript: each directory with a `.applescript` source | no | yes | no | [applescript](applescript.md) |
+| `vba` | VBA modules exported as text (`.bas`, `.cls`, `.frm`) | no | yes | no | [vba](vba.md) |
+| `swift` | Swift packages: each `Package.swift` | yes | yes | no | [swift](swift.md) |
+| `objc` | CocoaPods libraries (Objective-C): each `*.podspec` | no | yes | no | [objc](objc.md) |
+| `bundle` | apps with no language: a directory with `app.json` and `flow.json` or `flow.loom` | no | yes | no | [bundle](bundle.md) |
+| `recipe` | a `*.recipe.toml` in a folder of its own | no | yes | no | [recipe](recipe.md) |
 
 ## Toolchain, scaffold, structure and deploy plugins
 
@@ -49,6 +55,8 @@ configure.
 | `playwright` | toolchain | `e2e` | [playwright](playwright.md) |
 | `tauri` | toolchain | `tauri-build` | [tauri](tauri.md) |
 | `vite` | scaffold, toolchain | `build`, `typecheck` | [vite](vite.md) |
+| `functions` | scaffold | none | [functions](functions.md) |
+| `electron` | scaffold | none | [Electron and Tauri](node.md#electron-and-tauri) (in the node page) |
 | `angular` | scaffold, toolchain | `build`, `typecheck` | [angular](angular.md) |
 | `astro` | scaffold, toolchain | `build` | [astro](astro.md) |
 | `vscode` | scaffold, toolchain, deploy | `build`, `typecheck` | [vscode](vscode.md) |

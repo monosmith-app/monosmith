@@ -1,0 +1,13 @@
+{
+  "vscode.convert-workspace.monosmith-convert-this-workspace": "MonoSmith: convert this workspace",
+  "vscode.convert-workspace.nothing-was-changed-yet-the-plan": "Nothing was changed yet. The plan lists the files smith deletes and the changes it makes. It is one click away.",
+  "vscode.convert-workspace.smith-committed-it-as-one-change": "smith committed it as one change that Undo reverts.",
+  "vscode.convert-workspace.nothing-was-committed-review-the-files": "Nothing was committed: review the files with git.",
+  "vscode.convert-workspace.monosmith-the-workspace-is-converted": "MonoSmith: the workspace is converted. {part}",
+  "vscode.convert-workspace.monosmith-nothing-was-changed": "MonoSmith: nothing was changed. {message}",
+  "vscode.convert-workspace.monosmith-no-nx-or-turborepo-workspace": "MonoSmith: no Nx or Turborepo workspace is open here. \"Convert This Folder to MonoSmith\" brings in any other repository.",
+  "vscode.convert-workspace.update-smith-and-try-again": "{describeFailure} Update smith and try again.",
+  "vscode.convert-workspace.smith-did-not-list-the-questions": "smith did not list the questions of `smith convert`. Update smith and try again.",
+  "vscode.convert-workspace.monosmith-converting": "MonoSmith: converting {name}…",
+  "vscode.convert-workspace.convert": "Convert"
+}

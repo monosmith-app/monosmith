@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // lookPath finds a command on PATH; tests replace it.
@@ -40,19 +41,23 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		return protocol.DoctorResult{Findings: findings}
 	}
 	findings = append(findings, protocol.Finding{
-		Check:  "Playwright is installed",
-		OK:     installed,
-		Detail: "node_modules has no playwright-core, so the e2e tasks cannot start a browser",
-		Remedy: "npm ci (or npm install -D @playwright/test in the project)",
+		Check:   "Playwright is installed",
+		Area:    "toolchain",
+		OK:      installed,
+		Problem: toolrun.ProblemUnless(installed, "node_modules has no playwright-core"),
+		Detail:  "node_modules has no playwright-core, so the e2e tasks cannot start a browser",
+		Remedy:  "npm ci (or npm install -D @playwright/test in the project)",
 	})
 	if len(display) > 0 && platform == "linux" {
 		sort.Strings(display)
 		_, err := lookPath("xvfb-run")
 		findings = append(findings, protocol.Finding{
-			Check:  "a virtual display for e2e suites that open windows",
-			OK:     err == nil,
-			Detail: "xvfb-run is not on PATH; " + strings.Join(display, ", ") + " run their e2e task under it",
-			Remedy: "sudo apt-get install -y xvfb",
+			Check:   "a virtual display for e2e suites that open windows",
+			Area:    "toolchain",
+			OK:      err == nil,
+			Problem: toolrun.ProblemUnless(err == nil, "xvfb-run is not on PATH"),
+			Detail:  "xvfb-run is not on PATH; " + strings.Join(display, ", ") + " run their e2e task under it",
+			Remedy:  "sudo apt-get install -y xvfb",
 		})
 	}
 	pipeline := false
@@ -61,10 +66,16 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	findings = append(findings, protocol.Finding{
 		Check:   "a pipeline runs the e2e tasks",
+		Area:    "ci",
 		OK:      pipeline,
 		Warning: true,
+		Problem: toolrun.ProblemUnless(pipeline, "no e2e pipeline is committed"),
 		Detail:  "smith ci verify leaves e2e out, and no e2e pipeline is committed",
 		Remedy:  "smith pipeline e2e",
+		Fix: &protocol.Fix{Description: "Write the e2e pipeline", Steps: []protocol.FixStep{{
+			Description: "smith pipeline e2e writes the pipeline that runs the e2e tasks",
+			Argv:        []string{"smith", "pipeline", "e2e"},
+		}}},
 	})
 	return protocol.DoctorResult{Findings: findings}
 }

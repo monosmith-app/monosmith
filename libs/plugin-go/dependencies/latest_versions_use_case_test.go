@@ -20,7 +20,7 @@ func TestLatestTools(t *testing.T) {
 		if strings.Contains(url, "go.dev") {
 			return json.Unmarshal([]byte(`[{"version":"go1.27rc1","stable":false},{"version":"go1.26.2","stable":true}]`), v)
 		}
-		return json.Unmarshal([]byte(`{"Version":"v2.15.0"}`), v)
+		return json.Unmarshal([]byte(`{"Version":"v2.16.0"}`), v)
 	}
 	res, _ := Latest(ws, protocol.LatestParams{Tools: true})
 	if len(res.Tools) != 2 {
@@ -29,7 +29,7 @@ func TestLatestTools(t *testing.T) {
 	if g := res.Tools[0]; g.Pinned != "1.26" || g.Latest != "1.26.2" || g.Newer {
 		t.Errorf("a patch release is covered by the go.work version: %+v", g)
 	}
-	if l := res.Tools[1]; l.Pinned != strings.TrimPrefix(pipeline.GolangciLintVersion, "v") || l.Latest != "2.15.0" || !l.Newer {
+	if l := res.Tools[1]; l.Pinned != strings.TrimPrefix(pipeline.GolangciLintVersion, "v") || l.Latest != "2.16.0" || !l.Newer {
 		t.Errorf("golangci-lint %+v", l)
 	}
 	if res, _ := Latest(ws, protocol.LatestParams{}); len(res.Tools) != 0 {

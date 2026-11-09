@@ -52,7 +52,7 @@ Claude Code agent that knows these tools. See [the agent guide](../guides/agent.
 ## Tools
 
 Read-only tools (annotated `readOnlyHint`): `smith_projects`, `smith_graph` (input `focus`),
-`smith_affected` (`base`), `smith_kinds`, `smith_stacks`, `smith_commands`, `smith_info`,
+`smith_affected` (`base`), `smith_kinds`, `smith_stacks`, `smith_choices`, `smith_commands`, `smith_info`,
 `smith_doctor`, `smith_release_preview`, `smith_updates`, `smith_explain`,
 `smith_recipe_check`, `smith_plugin_list`, `smith_plugin_check`, `smith_doctor_fixes`,
 `smith_upgrade_preview`, `smith_change_kind_preview` (input `project`, `kind`).

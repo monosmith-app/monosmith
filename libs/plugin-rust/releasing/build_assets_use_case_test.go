@@ -17,7 +17,9 @@ import (
 func fakeToolchain(t *testing.T, host string, installed ...string) *[]string {
 	t.Helper()
 	realHost, realBuild, realInstalled, realLinker := hostPlatform, CargoBuild, InstalledTargets, LinkerAvailable
-	t.Cleanup(func() { hostPlatform, CargoBuild, InstalledTargets, LinkerAvailable = realHost, realBuild, realInstalled, realLinker })
+	t.Cleanup(func() {
+		hostPlatform, CargoBuild, InstalledTargets, LinkerAvailable = realHost, realBuild, realInstalled, realLinker
+	})
 	hostPlatform = host
 	InstalledTargets = func(string) ([]string, bool) { return installed, true }
 	LinkerAvailable = func(string, string, string) bool { return false }

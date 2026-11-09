@@ -1,0 +1,8 @@
+{
+  "vscode.smith-run.a-check-of-smith-doctor-fails": "a check of smith doctor fails",
+  "vscode.smith-run.it-was-committed": "It was committed.",
+  "vscode.smith-run.nothing-was-committed-the-files-are": "Nothing was committed: the files are in your work tree, so Source Control shows them as changes.",
+  "vscode.smith-run.monosmith-the-project-was-created-but": "MonoSmith: the project {name} was created{files}, but smith could not finish checking it: {why}. {commit}",
+  "vscode.smith-run.the-new-project-fails-smith-doctor": "The new project {name} fails smith doctor",
+  "vscode.smith-run.try": "Try: "
+}

@@ -5,6 +5,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -13,6 +16,7 @@ import (
 func Command(version string) *cobra.Command {
 	var opts Options
 	var ci string
+	var yes, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "pipeline [template]",
 		Short: "Add a ready-made pipeline: e2e, package-zip, deploy-pages, deploy-azure-function",
@@ -52,15 +56,25 @@ template, lists them.`,
 				return err
 			}
 			defer s.Close()
+			lines, err := PlanLines(s, args[0], opts)
+			if err != nil {
+				return err
+			}
+			goOn, err := operationplan.Gate(out, cmd.InOrStdin(), "add the "+args[0]+" pipeline", "Pipeline files", lines, yes, dryRun)
+			if err != nil || !goOn {
+				return err
+			}
 			written, err := Add(s, args[0], opts)
 			for _, f := range written {
-				fmt.Fprintf(out, "✔ wrote %s\n", f)
+				fmt.Fprintf(out, marks.Passed+" wrote %s\n", f)
 			}
 			return err
 		},
 	}
-	cmd.Flags().StringVar(&opts.Project, "project", "", "the app a deploy template builds")
+	commandflags.AddOneProjectFlag(cmd, &opts.Project, "the app a deploy template builds")
 	cmd.Flags().StringVar(&ci, "ci", "", "github, azure or both (default: the workspace's providers)")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace a pipeline file that exists")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are written only with --yes")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the files that would be written and change nothing")
 	return cmd
 }

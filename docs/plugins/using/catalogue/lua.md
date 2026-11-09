@@ -19,7 +19,7 @@ is released by its tag.
 | `--lang` value | `lua` |
 | Manifest that makes a directory a project | `*.rockspec` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `channels`, `declared` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app` and `lib`. `package` is refused (see Releasing) |
@@ -87,6 +87,7 @@ The plugin reads no `smith.toml` setting and no environment variable.
 | Version write | the `version` string is replaced in place with the new version and revision `1`, or added under `package` when absent |
 | Tag | `<project>@<version>` |
 | Publish | nothing is uploaded: "released by its tag". Publishing to luarocks.org is not supported yet, so a project cannot be a `package` |
+| Release channel | the plugin declares `channels`: nothing is uploaded, so no registry pointer can move. The rockspec gets `2.0.0-beta.1-1`, and LuaRocks orders the word `beta` below the release |
 | Credentials | none |
 
 LuaRocks expects a rockspec file to be named `<package>-<version>.rockspec`.
@@ -113,6 +114,10 @@ rockspec file name warning above.
 nothing for Lua. Edit `dependencies` in the rockspec.
 
 **Remove.** No remove support; `smith remove` deletes the project's directory.
+
+## Declared projects
+
+A folder with no rockspec of its own, under a rockspec (the nearest one above it), can be declared with `[projects.<name>]`, a `root` and `language = "lua"`. The folder name is the module it exports, and the top-level modules its `.lua` files `require` are its imports, so a project that requires it depends on it. Its tasks are `lint` (`luacheck .`) and, when it has a `spec/` folder, `test` (`busted`). The rockspec above is an input of both. There is no `build`: LuaRocks installs a rock whole, from its rockspec. A declared project is an app or a lib, never a package. A missing folder, a folder with a rockspec of its own and a missing manifest above are refused with a message that names the `[projects.<name>]` table.
 
 ## Requirements and limits
 

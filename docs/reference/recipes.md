@@ -2,7 +2,7 @@
 
 > Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). The design behind recipes: [recipes and CI](../architecture/recipes-and-ci.md).
 
-A recipe is a team's description of which plugin fills each level of a project
+A recipe is a team's description of which plugin fills each role of a project
 and with what settings. It is data: a TOML file with no code, so it can only
 choose and configure plugins, never run anything. Recipes can extend one
 another and ask a few choices, and the answers decide the rest.
@@ -54,7 +54,7 @@ With a recipe configured, `smith add <kind> <name>` creates the project from it:
    terminal (or `CI` set) a choice not given takes its default, and one with
    neither fails, naming the choice and the flag that answers it. Nothing is
    written before every choice is answered.
-2. **It shows what the recipe will use**, for each level or slot, with the
+2. **It shows what the recipe will use**, for each role or slot, with the
    recipe line that chose it, and the settings it carries:
 
    ```text
@@ -112,7 +112,7 @@ that has drifted is a warning, in the recipe's terms:
     → run `smith upgrade` (`smith upgrade --dry-run` shows what it changes first)
 ```
 
-What it compares is the project's stack (the plugins at each level: a plugin
+What it compares is the project's stack (the plugins at each role: a plugin
 the recipe adds, drops or replaces), the settings in `smith.toml` for its
 plugins, and the answers recorded. A project the recipe has not changed passes.
 Some things are reported as warnings, never as failures:
@@ -169,7 +169,7 @@ A stack declared by a recipe is named after the recipe and the answers
 version: the version is recorded for each project.
 
 **`smith explain <project>`** also lists what the project's recipe decided for
-it: its choices, the plugin at each level and the plugins' settings, each with
+it: its choices, the plugin at each role and the plugins' settings, each with
 the recipe file and line it came from. `--recipe` prints only that, and with
 `--json` prints it for tools:
 
@@ -227,7 +227,7 @@ test = "vitest"
 | `version` | the recipe's version |
 | `extends` | the parent recipe: a path relative to this file, or an `https://` URL. At most one |
 | `[choices.<name>]` | a question: `ask` (the text), `options` (the answers allowed) and `default` |
-| `[use]` | fills a level or a slot with a plugin (below) |
+| `[use]` | fills a role or a slot with a plugin (below) |
 | `[settings.<plugin>]` | configures a plugin; any TOML, tables merge |
 | `[when.<choice>.<answer>]` | a block (`choices`, `use`, `settings`, more `when`) that applies only for that answer |
 
@@ -235,25 +235,25 @@ An unknown key is an error with its file, line and column, and the keys that
 would have been accepted there. So is a `default` that is not one of the
 `options`, a missing `name`, and a `use` value that is not a plugin name.
 
-### Use: levels and slots
+### Use: roles and slots
 
-Each key of `use` is a **level** or a **slot**, and its value is a plugin name
-(`language = "python"`) or, for the levels that take several, a list
+Each key of `use` is a **role** or a **slot**, and its value is a plugin name
+(`language = "python"`) or, for the roles that take several, a list
 (`structure = ["vertical-slices"]`).
 
 | Key | Is | Takes |
 |---|---|---|
-| `language` | exclusive level | one plugin |
-| `scaffold` | exclusive level | one plugin |
-| `structure` | additive level | any number |
-| `deploy` | additive level | any number |
+| `language` | exclusive role | one plugin |
+| `scaffold` | exclusive role | one plugin |
+| `structure` | additive role | any number |
+| `deploy` | additive role | any number |
 | `toolchain` | toolchain plugins, without naming their slots | any number |
 | anything else (`lint`, `test`, `typecheck`, `e2e`, ...) | a **slot**: the task a toolchain plugin provides | one plugin, which must provide that slot |
 
 A plugin may carry a version constraint after `@`: `lint = "eslint@^1.2"`
 (`1.2.3`, `^1.2`, `~1.2` and `>=1.2` work, as in `[plugins.external]`).
 
-Which plugins can be named, and which level each plays, is what
+Which plugins can be named, and which role each plays, is what
 `smith plugin list` shows. See [plugins](plugins.md).
 
 ## Choices and `when` blocks
@@ -300,7 +300,7 @@ is checked with:
   constraint accepts
 - a slot is filled by a plugin that provides it
 - the language and the scaffold are one plugin each, and a language is chosen
-- one plugin per exclusive level and per slot, every requirement met, no
+- one plugin per exclusive role and per slot, every requirement met, no
   conflicts, and every plugin applies to the chosen language
 
 An error names both sides and the recipe lines that chose them:
@@ -414,7 +414,7 @@ smith recipe check https://example.com/recipes/team.recipe.toml --json
 
 Loads the recipe and its parents, answers the choices, resolves and validates
 it. It prints the recipes in the chain, the choices asked and how each was
-answered, the plugin for each level and the merged settings, each with its
+answered, the plugin for each role and the merged settings, each with its
 recipe, file and line, or why the recipe is not valid. The exit code is
 non-zero when it is not. A choice with no answer is listed as needing one.
 
@@ -441,16 +441,16 @@ The wizard asks:
    recipe's releases), its **version**, and the recipe it **extends**, if any
    (a path, from the new file, or an https URL). The parent is loaded at
    once, so a wrong path is caught while you type it, and the choices it asks
-   can be used by the levels below.
-2. each **level** a plugin can fill, in the order a recipe is written: the
+   can be used by the roles below.
+2. each **role** a plugin can fill, in the order a recipe is written: the
    language, the scaffold, each task slot (`lint`, `test`, ...), structure and
-   deploy. For a level you say whether its plugin is **fixed** (`f`), a
+   deploy. For a role you say whether its plugin is **fixed** (`f`), a
    **choice** the recipe's users make (`c`), or **left unset** (enter).
 3. for a choice: its name, the question, the answers (at least two) and the
-   default; and the plugin each answer picks. A later level can use the same
+   default; and the plugin each answer picks. A later role can use the same
    choice, so one `language` choice picks the linter and the test runner too.
 
-Only plugins that **fit** are offered: those that can fill the level, apply to
+Only plugins that **fit** are offered: those that can fill the role, apply to
 the language chosen so far, and agree with every plugin already chosen (the
 rules of [Validating](#validating)), in each branch of the choices. With a
 `language` choice of python and node, the linter that needs Node is offered
@@ -499,7 +499,7 @@ plugins = { node = "eslint" }            # python: unset
 fixed = ["vertical-slices"]              # any number for structure and deploy
 ```
 
-A level is `fixed` plugins or a `choice` with `plugins` by answer (a name, or
+A role is `fixed` plugins or a `choice` with `plugins` by answer (a name, or
 a list for structure and deploy), never both. A choice the parent declares may
 be used without declaring it again. Unknown keys and a name or version a
 release cannot use are refused.

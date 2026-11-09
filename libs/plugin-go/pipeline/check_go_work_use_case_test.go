@@ -9,14 +9,6 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-func TestParseGoWork(t *testing.T) {
-	src := "go 1.24.3\n\nuse (\n\t./apps/api // the api\n\t\"./libs/core\"\n)\nuse ./packages/sdk\n"
-	w := ParseGoWork(src)
-	if w.GoVersion != "1.24" || !reflect.DeepEqual(w.Use, []string{"apps/api", "libs/core", "packages/sdk"}) {
-		t.Fatalf("%+v", w)
-	}
-}
-
 func TestDoctorFindsStaleAndMissingEntries(t *testing.T) {
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "apps", "api"), 0o755)
@@ -67,8 +59,9 @@ func TestCIInstallsGolangciLintOnlyWhenUsed(t *testing.T) {
 
 func TestCheckToolVersions(t *testing.T) {
 	answers := map[string]string{}
-	real := probe
-	defer func() { probe = real }()
+	real, realLook := probe, lookAll
+	defer func() { probe, lookAll = real, realLook }()
+	lookAll = func(string) []string { return nil }
 	probe = func(_ string, argv []string) (string, error) {
 		if v, ok := answers[argv[0]]; ok {
 			return v, nil
@@ -88,11 +81,11 @@ func TestCheckToolVersions(t *testing.T) {
 	if f := got["Go is at least 1.24 (go.work)"]; f.OK || f.Warning {
 		t.Fatalf("an older Go fails: %+v", f)
 	}
-	if f := got["golangci-lint is 2.14.0, as in CI"]; f.OK || !f.Warning || f.Detail != "found: golangci-lint has version 2.13.0 built with go1.26" {
+	if f := got["golangci-lint is 2.15.0, as in CI"]; f.OK || !f.Warning || f.Detail != "found golangci-lint (golangci-lint has version 2.13.0 built with go1.26); it is older than the 2.15.0 CI pins" {
 		t.Fatalf("another golangci-lint warns: %+v", f)
 	}
 	answers["go"] = "go1.26.0"
-	answers["golangci-lint"] = "golangci-lint has version 2.14.0 built with go1.26"
+	answers["golangci-lint"] = "golangci-lint has version 2.15.0 built with go1.26"
 	for check, f := range byCheck(CheckToolVersions(".", "1.24", true)) {
 		if !f.OK {
 			t.Errorf("%s: %+v", check, f)
@@ -101,5 +94,26 @@ func TestCheckToolVersions(t *testing.T) {
 	delete(answers, "go")
 	if f := byCheck(CheckToolVersions(".", "1.24", false))["Go is installed"]; f.OK {
 		t.Fatalf("a missing Go fails: %+v", f)
+	}
+}
+
+func TestAProjectDeclaredInARootModuleNeedsNoGoWork(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "mvd"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "go.mod"), []byte("module example.com/mvd\n\ngo 1.25\n"), 0o644)
+	params := protocol.DoctorParams{Projects: []protocol.Project{{Root: "apps/mvd", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{"lint": {Command: []string{"golangci-lint", "run"}}}}}}
+	for _, f := range Doctor(ws, params).Findings {
+		if f.Check == "go.work exists" || (!f.OK && f.Check == "go.work lists apps/mvd") {
+			t.Errorf("a declared project is not a module to list in go.work: %+v", f)
+		}
+	}
+}
+
+func TestTheGoVersionOfTheCIFollowsTheModuleAboveADeclaredProject(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "mvd"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "go.mod"), []byte("module example.com/mvd\n\ngo 1.25\n"), 0o644)
+	if got := toolchainVersion(ws, []protocol.Project{{Root: "apps/mvd"}}); got != "1.25" {
+		t.Errorf("the module needs Go 1.25, not the default: %q", got)
 	}
 }

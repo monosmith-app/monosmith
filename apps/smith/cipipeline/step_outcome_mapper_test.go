@@ -15,7 +15,7 @@ func TestTheStepTableSaysWhichChecksRanWereUnchangedOrReportedProblems(t *testin
 		{Name: "bundler-audit", Verdict: stepProblem, Took: 2 * time.Second},
 	}
 	got := strings.Join(stepTable("Check", outcomes, theme.Unicode).Text("checks done"), "\n")
-	for _, want := range []string{"Check", "govulncheck smith  ✓ done", "↷ unchanged", "nothing changed since it passed on 2026-10-26", "▲ problems", "reported problems, not blocking"} {
+	for _, want := range []string{"Check", "govulncheck smith  ✓ done", "» unchanged", "nothing changed since it passed on 2026-10-26", "▲ problems", "reported problems, not blocking"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)
 		}

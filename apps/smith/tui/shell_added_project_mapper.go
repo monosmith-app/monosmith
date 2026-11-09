@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // addedProject is the name of the project a `smith add <kind> <name>` line
@@ -17,13 +18,30 @@ func addedProject(argv []string) (string, bool) {
 	return argv[2], true
 }
 
-// addedNextSteps is the line the Run tab shows under a finished add: what to
+// addedNextSteps is the line the run panel shows under a finished add: what to
 // do with the project just made, with the keys that do it.
 func addedNextSteps(th theme.Theme, name string) string {
-	return " " + th.Muted("Next: ") +
-		th.Accent(commands.ShortcutOf("run.test")) + th.Muted(" runs its tests · ") +
-		th.Accent(commands.ShortcutOf("file.add")) + th.Muted(" adds another · ") +
-		th.Accent(commands.ShortcutOf("projects.install-package")) + th.Muted(" installs a package into "+name)
+	return " " + th.Muted(words.Say("tui.added_project.next")) +
+		th.Accent(commands.ShortcutOf("run.test")) + th.Muted(words.Say("tui.added_project.runs_its_tests")) +
+		th.Accent(commands.ShortcutOf("file.add")) + th.Muted(words.Say("tui.added_project.adds_another")) +
+		th.Accent(commands.ShortcutOf("projects.install-package")) + th.Muted(words.Say("tui.added_project.installs_a_package_into", "name", name))
+}
+
+// mainLanguageWhy says in one line why the Add form starts on the language it
+// does: how many of the workspace's projects use it; "" with no projects.
+func (s Shell) mainLanguageWhy() string {
+	main := s.mainLanguage()
+	if main == "" {
+		return ""
+	}
+	n, total := 0, 0
+	for _, p := range s.list.Projects() {
+		total++
+		if p.Language == main {
+			n++
+		}
+	}
+	return words.Say("tui.added_project.preselected_of_the_projects_here_use", "n", n, "total", total, "of", languagenames.Of(main))
 }
 
 // mainLanguage is the language most of the workspace's projects use: what a

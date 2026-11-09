@@ -15,7 +15,8 @@ with [vitest](vitest.md).
 | Requires | language plugin `node` |
 | Applies to | `node` projects |
 | Capabilities | `generate` |
-| Stacks it publishes | `react`, `react-p5`, `react-tauri`, `vue`, `svelte`, `html`: scaffold `vite`; toolchain `vite`, `eslint`, `vitest` (and `tauri` for `react-tauri`) |
+| Stacks it publishes | `react`, `react-p5`, `react-tauri`, `vue`, `svelte`, `html`: each a saved selection of choices; scaffold `vite`; toolchain `vite`, `eslint`, `vitest` (and `tauri` for `react-tauri`) |
+| Choices it publishes | frameworks `react`, `vue`, `svelte`, `html`; library `p5`; styles `bootstrap`, `chakra` (requires `react`), `tailwind` |
 | Project kinds | `app` only |
 
 ## What it does
@@ -28,6 +29,19 @@ with [vitest](vitest.md).
 | `vue` | a Vue app | `vue-tsc` |
 | `svelte` | a Svelte app | `svelte-check` |
 | `html` | a page in TypeScript with no framework | `tsc` |
+
+## Choices
+
+The frameworks and the styles are data files in the plugin's `choices/` folder, not code. A stack
+is a saved selection of them, so you can mix a framework, a test runner and a style:
+
+```sh
+smith choices
+smith add app web --with react,vitest,bootstrap
+```
+
+`bootstrap` and `tailwind` add their stylesheet to the entry file of any framework; `chakra` and `p5` require `react`. To add a
+framework or a style, write one TOML file ([Writing choices](../../creating/choices.md)).
 
 The scripts it writes become tasks through the [node plugin](node.md#tasks):
 
@@ -77,9 +91,23 @@ workspace already has), so adding them to a workspace that holds Jest's Babel 7 
 `a react project is an app: smith add app <name> --stack react`. A stack name the plugin does not
 scaffold fails with `the vite plugin scaffolds the [html react react-p5 react-tauri svelte vue] stacks, not "x"`.
 
+## One build per environment
+
+Vite writes its `VITE_` values into the bundle when it builds, so smith builds a web app once per
+environment ([ADR 0081](../../../architecture/decisions/0081-a-web-app-builds-once-per-environment-and-overlap-fixes-are-presented-choices.md)).
+`smith add` asks which environments (default `lcl, dev, uat, prd`; `--environments lcl,dev,uat,prd`,
+required without a terminal, `none` for one build) and writes for each a `.env.<name>` file, a script
+`vite build --mode <name> --outDir <folder>` and, once, `vite.build.ts` with `build(mode)`. The default
+environment is the task `build`; the others are `build:<name>`, each with its own output folder
+(`dist/apps/<app>/<name>`, or `dist/<name>` in the app when asked). `smith environments` lists, adds and
+removes them: see [Environments](../../../manual/environments.md).
+
 ## Settings, releasing, CI
 
-No settings; no `publish` or `ci` method (a built app is a static site, released by its tag).
+Settings, in `[projects.<name>.settings.vite]` (written by `smith add`; they are what `smith environments`
+reads): `environments` (the names), `default_environment`, `output` (`workspace` or `project`) and
+`env_files` (`commit` or `example`). smith doctor checks that each environment has its `.env` file and warns
+about a `VITE_` name with `KEY`, `SECRET` or `TOKEN` in it. The pipelines build the default environment. No `publish` or `ci` method (a built app is a static site, released by its tag). With `[derive] enabled = true` it answers `smith derive` with the renderer `vite.tsconfig`, the whole `tsconfig.json` of an app made from choices.
 
 ## Verified
 

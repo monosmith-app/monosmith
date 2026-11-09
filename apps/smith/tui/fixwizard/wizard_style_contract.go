@@ -1,5 +1,7 @@
 package fixwizard
 
+import "github.com/monosmith-app/monosmith/libs/words/words"
+
 // Style words the dialog for a walk that is not a doctor fix. The zero Style
 // is the fix wizard itself, so a caller sets only what differs.
 type Style struct {
@@ -24,46 +26,51 @@ type Style struct {
 	Back bool
 	// NoRetry leaves Retry out of a failure: what failed cannot be run again.
 	NoRetry bool
+	// Input, when set, adds one editable text to every question, named by it
+	// ("Name"). e starts the editing, Enter or Esc ends it, and "{name}" in an
+	// option's label shows the text as it is typed. The caller reads it with
+	// Wizard.Text.
+	Input string
 }
 
 func (s Style) name() string {
 	if s.Name == "" {
-		return "Fix"
+		return words.Say("fixwizard.style.name")
 	}
 	return s.Name
 }
 
 func (s Style) review() string {
 	if s.Review == "" {
-		return "review"
+		return words.Say("fixwizard.style.review")
 	}
 	return s.Review
 }
 
 func (s Style) ask() string {
 	if s.Ask == "" {
-		return "question"
+		return words.Say("fixwizard.style.ask")
 	}
 	return s.Ask
 }
 
 func (s Style) verb() string {
 	if s.Verb == "" {
-		return "Fixing…"
+		return words.Say("fixwizard.style.verb")
 	}
 	return s.Verb
 }
 
 func (s Style) working() string {
 	if s.Working == "" {
-		return "writing the files"
+		return words.Say("fixwizard.style.working")
 	}
 	return s.Working
 }
 
 func (s Style) apply() string {
 	if s.Apply == "" {
-		return "Apply"
+		return words.Say("fixwizard.style.apply")
 	}
 	return s.Apply
 }

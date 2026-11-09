@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-docker/publishing"
 	"github.com/monosmith-app/monosmith/libs/plugin-docker/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the convention's name in smith.toml ([conventions.docker]).
@@ -32,6 +33,7 @@ func (d *Docker) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Kind:      protocol.KindConvention,
 		Roles:     []protocol.Role{protocol.RoleDeploy},
 		Languages: languages,
+		Tools:     toolcatalog.For("docker"),
 	}, nil
 }
 

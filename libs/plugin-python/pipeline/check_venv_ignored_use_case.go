@@ -39,10 +39,11 @@ func CheckVenvIgnored(workspaceRoot string) (protocol.Finding, bool) {
 	if code != 0 && code != 1 {
 		return protocol.Finding{}, false
 	}
-	f := protocol.Finding{Check: ".venv is ignored by git", OK: code == 0}
+	f := protocol.Finding{Check: ".venv is ignored by git", Area: "git", OK: code == 0}
 	if f.OK {
 		return f, true
 	}
+	f.Problem = ".venv is not in .gitignore"
 	f.Detail = ".venv is not in .gitignore, so git add . would commit the whole environment"
 	f.Remedy = "add `" + venv.IgnoreEntry + "` to .gitignore (smith doctor --fix does)"
 	current, _ := os.ReadFile(filepath.Join(workspaceRoot, ".gitignore"))

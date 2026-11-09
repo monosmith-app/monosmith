@@ -15,7 +15,7 @@ version and workspace in use.
 ## smith says it cannot find the workspace
 
 ```text
-✖ this folder is not a smith workspace yet (there is no smith.toml); it already holds a repository
+× this folder is not a smith workspace yet (there is no smith.toml); it already holds a repository
   → smith adopt --dry-run shows what bringing it under smith involves
 ```
 
@@ -136,10 +136,12 @@ lists them all. The checks, grouped by who owns them:
 | the repository has commits | releases and `--affected` need history. Make the first commit |
 | the local cache is within its limit (a warning, only once a cache exists) | the cache is bigger than `[cache] max_size_mb`. Run `smith cache prune` |
 | the local cache has no unusable entries (a warning, only once a cache exists) | entries that can never be a hit. Run `smith cache verify --fix` |
+| `derived file <path> (<renderer>) is up to date` (only with `[derive] enabled = true`) | the finding names the state and the owner. A file in `stale` or `missing`: run `smith derive`. A file in `drift` or `diverged`: read the diff with `smith derive --explain <path>`, then `--replace`, `--adopt` or `--eject` it. See [Derived files](derived-files.md) |
 | the clone has full history | a shallow clone cannot compute versions or affected projects. `git fetch --unshallow`; in CI, check out with `fetch-depth: 0` |
-| the smith the pipelines install is the smith in your dependencies (a warning) | the pipelines install the smith that generated them (or `[ci] smith_version`), but package.json resolves another `monosmith`. `smith doctor --fix` sets the dependency to the pipeline's version; then run your install |
+| the smith the pipelines install is the smith in your dependencies (a warning) | the pipelines install the smith that generated them (or `[ci] smith_version`), but package.json resolves another `monosmith`. `smith doctor --fix` lists two steps and asks first: it sets the dependency to the pipeline's version in package.json, then runs `npm install` to refresh package-lock.json. If the install fails, the package.json change stays and you can retry |
 | tracked files are not generated files | git tracks a file that .gitignore ignores or a task writes (a build output, a cache). Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
+| `<project> compiles into dist/<dir>` | a Node project builds into its own folder. `smith doctor --fix` offers to move it (per project, with a preview), or refuses with the reason. See [doctor](../manual/doctor.md#a-build-that-writes-outside-dist) |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
 | every task that serves an app can start it | `serve` must name an existing task, `serve_url` must be an `http(s)` URL, `serve_timeout` a duration like `60s`, and both only with `serve` |
 | projects do not import each other in a cycle | smith cannot order a cycle: `smith doctor` and `smith graph` still open the workspace and list it with the import to remove, while `run`, `build`, `affected` and releases stop with `smith: projects import each other in a cycle: ui → web → ui`. Remove that import, move what both need into a project neither imports back, or merge the two |
@@ -151,16 +153,17 @@ lists them all. The checks, grouped by who owns them:
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |
 | `<project> can be verified` (a warning) | the project has no `lint` or no `test` task, so CI never checks it. Add the task, or declare it under `[projects.<name>.tasks]` |
 | `<project>:<task> keeps the dependencies its plugins add` (a warning) | a `depends_on` override in `smith.toml` replaces the plugin's list, dropping dependencies it did not repeat. Add them back, or leave them out on purpose (`smith explain <project>:<task>` shows where each field came from) |
-| `task settings shared by projects are written once` (a warning) | two or more projects repeat the same task override in `smith.toml`. `smith doctor --fix` writes them once as a `[[task_groups]]` entry and keeps your comments; see [task groups](../reference/configuration.md#task-groups) |
-| `every task group names a project` (a warning) | a `[[task_groups]]` entry selects no project. Check its `select` against your project names, folders, kinds, languages and tags, or delete it |
+| `task settings shared by projects are written once` (a warning) | two or more projects repeat the same task override in `smith.toml`. `smith doctor --fix` writes them once as a `[[groups]]` entry and keeps your comments; see [groups](../reference/configuration.md#groups) |
+| `smith.toml uses current key names` | `smith.toml` has a key smith renamed (`[[task_groups]]` is now `[[groups]]`), and every command but `smith doctor` stops. Run `smith doctor --fix`: it shows the rename as a diff and keeps your comments |
+| `every group names a project` (a warning) | a `[[groups]]` entry selects no project. Check its `select` against your project names, folders, kinds, languages and tags, or delete it |
 
 ### Language checks (owned by each language plugin)
 
 | Language | Checks |
 |---|---|
-| Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed (`smith ci setup` installs it); a package requires in `go.mod` every module it imports (the `deps-check` task, `go mod tidy`) |
+| Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed at the version CI pins (`smith doctor --fix` runs `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>` and nothing else); a package requires in `go.mod` every module it imports (the `deps-check` task, `go mod tidy`) |
 | Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`; `smith add` puts a new Node project in a folder the globs already cover and runs this check before it says "Done"); a package imports only what its `package.json` declares (the `deps-check` task); the scripts of the root and of each project call files and tools that exist (a `node ./scripts/x.mjs` whose file is gone, a tool such as `oxfmt` that is not installed), and the packages the ESLint config imports are installed; `tsconfig` `outDir` points into `dist/` |
-| Python | the `.venv` exists (`smith ci setup`); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`); a package declares in `pyproject.toml` a distribution for every module it imports (the `deps-check` task) |
+| Python | the `.venv` exists (`smith doctor --fix` creates it and installs `requirements-dev.txt`, and nothing else); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`); a package declares in `pyproject.toml` a distribution for every module it imports (the `deps-check` task) |
 | Rust | `cargo` is installed; the root `Cargo.toml` is a workspace and lists every crate in `members` |
 | .NET | the .NET SDK is installed; `nuget.config` matches `[registries]` (`smith doctor --fix`) |
 | Ruby, PHP | the interpreter and Bundler or Composer are installed |
@@ -198,6 +201,23 @@ beyond the safe ones, which doctor asks about:
 A check with no fix (a file a script runs that is gone, a build that writes
 outside `dist/`) needs a decision only you can make; its remedy says what.
 `smith doctor --json` prints every finding for tools.
+
+## Adding, installing and undoing
+
+Each row is a message you can see, what it means and what to do.
+
+| smith says | What it means and what to do |
+|---|---|
+| `nobody can confirm this change: there is no terminal and --yes was not given` | A command that changes files asks first. With no terminal nobody can answer. Add `--yes` to apply the plan, or `--dry-run` to read it. |
+| `azure-functions needs a choice on the trigger axis, and none is the default: add one of ... to --with` | A function app needs the trigger and the runtime, and smith never picks them. Add one of each to `--with`, for example `--with azure-functions,http-trigger,node24`. |
+| `<name> is a project of this workspace (...) and a package on the registry` | The name exists in both places. Run `smith install -p <app> workspace:<name>` for your project, or `smith install -p <app> --registry <name>` for the registry package. |
+| the add ended with `exits with 1` and a missing tool | The project exists. Install the tool (`smith tools install`), then run `smith run build test -p <project>`. |
+| `Not committed. Review it with git status` | Expected. smith commits only with `--commit`. Run `smith commit` to commit what the last command changed. |
+| `smith undo` prints `files changed since smith add ...` | `smith undo` reverts a change that smith committed, and only when nothing touched the same files since. Undo the later changes first, then run `smith undo --dry-run`. A change that was never committed is not undone this way: commit it with `smith commit`, or discard the files with git. |
+| `smith cannot choose which files to commit: your own changes are in the work tree too` | `smith commit` found changes that are not the operation's. Name `--only-operation` to commit only the operation's files, or `--all` to commit everything git shows. |
+| `smith remove` refuses to delete a folder | The folder holds files git cannot bring back. Pass `--keep-copy` (the folder moves to `.smith/removed/`) or `--delete`. |
+| `smith add` asks nothing and picks a build tool you did not choose | The project follows its sibling projects. It says why. `--fresh` gives the stack's default, `--like <project>` copies one project. |
+| `release --rehearse` says the registry refused the credential (401) | The token is missing or cannot publish this name. Create a token for the registry and set the variable the message names. |
 
 ## Windows
 
@@ -264,6 +284,50 @@ and `smith.toml` disagree, and `smith doctor --fix` repairs it. Tokens come from
 environment variables you name, and `smith ci check` lists what to create as
 secrets. The full format is in
 [configuration](../reference/configuration.md#private-registries).
+
+## A release stops with `TLOG_CREATE_ENTRY_ERROR`
+
+npm signs a package with a provenance attestation and writes it to a public transparency log
+before the registry stores the package. If a publish stops between the two steps (a killed job, a
+network error), the attestation exists and the package does not. A second publish of the same
+version fails with `TLOG_CREATE_ENTRY_ERROR` and "(409) an equivalent entry already exists in the
+transparency log", because the same attestation cannot be written twice. That version cannot be
+published with provenance any more.
+
+The way out is the next version of the project. Add an empty commit that names it and push it:
+
+```sh
+git commit --allow-empty -m "version(smith)[2.0.0-beta.27]"
+git push
+```
+
+Replace `smith` with the project and the version with the one after the stuck one. The release
+that follows publishes new packages with new attestations. smith prints this advice when it sees the
+error.
+
+## smith says a platform package is not installed
+
+`smith` is an npm launcher. It runs the binary of the package for your system, for example
+`@monosmith/cli-win32-x64`, which npm installs as an optional dependency. If that package is missing,
+npm gives no error at install time, and the first run says "`<package>` is not installed". The
+launcher then asks npm, with a 5 second limit, whether that package exists at the same version, and
+tells you which of three situations you are in. It changes nothing without your yes.
+
+1. The package is on the registry now. The install missed it, for example an interrupted or
+   partial install. The launcher prints `npm install -g <package>@<version>` and, in a terminal, asks
+   "Install it now? [Y/n]". Enter installs it. Without a terminal it only prints the command. For a
+   CI job, set `SMITH_AUTO_FIX=1` and the launcher runs that install itself.
+2. The package is not on the registry yet. A release can take 5 to 10 minutes to spread over npm.
+   Try again in a few minutes. In a terminal the launcher offers to "Wait and retry every 30
+   seconds, for up to 10 minutes? [y/N]". The default is no. When the package appears it offers the
+   install of situation 1.
+3. npm could not be asked: npm is not in PATH, it did not answer in 5 seconds, or there is no
+   network. Run `npm install -g <package>@<version>` when you are online. Do not install with
+   `--omit=optional`, which leaves out all platform packages.
+
+For a CI job that installs `monosmith@next` right after a release, wait a few minutes or install the
+exact version. The release itself does not move `next` before every platform package can be fetched
+(`[release] propagation_wait`, see [releasing](../reference/releasing.md)).
 
 ## A release did not do what I expected
 

@@ -75,7 +75,7 @@ func TestDockerWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, ".dockerignore")); err != nil {
 		t.Fatal(".dockerignore keeps the context small")
 	}
-	if out := w.smith(true, "run", "image", "-p", "api"); !strings.Contains(out, "api:image ✔") {
+	if out := w.smith(true, "run", "image", "-p", "api"); !strings.Contains(out, "api:image ✓") {
 		t.Fatalf("image:\n%s", out)
 	}
 	// verify and the image task build the image under the name release
@@ -134,7 +134,7 @@ func TestDockerNodeApp(t *testing.T) {
 	if dockerfile := w.read("apps/svc/Dockerfile"); !strings.Contains(dockerfile, "COPY dist/apps/svc/workspace_modules ./workspace_modules") {
 		t.Fatalf("the convention writes a Node app's Dockerfile from its pruned build:\n%s", dockerfile)
 	}
-	if out := w.smith(true, "run", "image", "-p", "svc"); !strings.Contains(out, "svc:prune ✔") || !strings.Contains(out, "svc:image ✔") {
+	if out := w.smith(true, "run", "image", "-p", "svc"); !strings.Contains(out, "svc:prune ✓") || !strings.Contains(out, "svc:image ✓") {
 		t.Fatalf("image (after prune):\n%s", out)
 	}
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "apps", "svc", "workspace_modules", filepath.FromSlash(kit.Name), "package.json")); err != nil {

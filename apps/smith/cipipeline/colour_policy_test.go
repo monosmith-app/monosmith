@@ -36,8 +36,8 @@ func TestColourFollowsTheCIThatRendersItAndNeverNoColourOrDumb(t *testing.T) {
 
 func TestStatusGlyphsOfBothSetsHaveTheirColour(t *testing.T) {
 	for cell, want := range map[string]tint{
-		"✓ passed": tintGreen, "[v] passed": tintGreen, "✗ failed": tintRed, "[x] failed": tintRed,
-		"▲ problems": tintYellow, "↷ unchanged": tintDim, "○ none": tintDim, "42": tintNone, "✓": tintGreen, "✓passed": tintNone,
+		"✓ passed": tintGreen, "[v] passed": tintGreen, "× failed": tintRed, "[x] failed": tintRed,
+		"▲ problems": tintYellow, "» unchanged": tintDim, "○ none": tintDim, "42": tintNone, "✓": tintGreen, "✓passed": tintNone,
 	} {
 		if got := glyphTint(cell); got != want {
 			t.Errorf("%q: got %v, want %v", cell, got, want)
@@ -52,12 +52,12 @@ func TestColourNeverMovesAColumn(t *testing.T) {
 		Headers: []string{"Project", "Result", "Time"}, Right: []bool{false, false, true},
 		Rows: []tableRow{
 			{Cells: []string{"core", "✓ passed", "12s"}},
-			{Cells: []string{"atlassian", "✗ failed", "3m 12s"}, Bad: true, Tints: map[int]tint{0: tintDim}},
+			{Cells: []string{"atlassian", "× failed", "3m 12s"}, Bad: true, Tints: map[int]tint{0: tintDim}},
 		},
 	}
 	plain := strings.Join(table.render("passed", false), "\n")
 	coloured := strings.Join(table.render("passed", true), "\n")
-	if !strings.Contains(coloured, "\x1b[32m✓ passed\x1b[0m") || !strings.Contains(coloured, "\x1b[31m✗ failed\x1b[0m") || !strings.Contains(coloured, "\x1b[2matlassian\x1b[0m") {
+	if !strings.Contains(coloured, "\x1b[32m✓ passed\x1b[0m") || !strings.Contains(coloured, "\x1b[31m× failed\x1b[0m") || !strings.Contains(coloured, "\x1b[2matlassian\x1b[0m") {
 		t.Errorf("not painted: %q", coloured)
 	}
 	if got := ansiPattern.ReplaceAllString(coloured, ""); got != plain {

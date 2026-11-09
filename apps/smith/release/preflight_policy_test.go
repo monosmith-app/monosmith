@@ -7,6 +7,19 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
+func TestStableOnlyLeavesThePyPITokenOutOfAPrereleaseButKeepsItForTheWorkflow(t *testing.T) {
+	r := &workspace.ProjectRelease{PyPI: "acme", StableOnly: []string{"pypi"}}
+	if got := DistributionCredentials(r, "2.0.0-beta.1"); len(got) != 0 {
+		t.Fatalf("a pre-release needs no PyPI token: %+v", got)
+	}
+	if got := DistributionCredentials(r, "2.0.0"); len(got) != 1 {
+		t.Fatalf("a stable version needs it: %+v", got)
+	}
+	if got := DistributionCredentials(r, ""); len(got) != 1 || got[0].Description == "PyPI API token that can upload acme" {
+		t.Fatalf("the workflow keeps the secret and says it is for stable releases: %+v", got)
+	}
+}
+
 func TestTheRubyGemsKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T) {
 	cfg := workspace.Config{}
 	secret := &session.Session{Config: cfg}

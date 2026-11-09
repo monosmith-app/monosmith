@@ -4,6 +4,27 @@ package protocol
 // host found. Paths are workspace-relative and use forward slashes.
 type DiscoverParams struct {
 	Manifests []string `json:"manifests"`
+	// Declared are the projects smith.toml declares for this plugin's language
+	// ([projects.<name>] with a root and a language): folders with no manifest
+	// of their own, such as a program that is a package of the Go module above
+	// it. The plugin describes each one in its result, or answers with an error
+	// saying why it cannot.
+	Declared []DeclaredProject `json:"declared,omitempty"`
+	// Settings are this plugin's settings for projects, by project name, from
+	// smith.toml [projects.<project>.settings.<plugin>]. They reach the plugin
+	// here because the tasks it describes may depend on them (the Go plugin's
+	// build tags). A project with no settings is absent.
+	Settings map[string]map[string]any `json:"settings,omitempty"`
+}
+
+// DeclaredProject is a project smith.toml declares: a folder with no manifest.
+type DeclaredProject struct {
+	// Name is the project's name, the key of its [projects.<name>] table.
+	Name string `json:"name"`
+	// Root is the workspace-relative folder.
+	Root string `json:"root"`
+	// Kind is "app", "lib" or "package", or empty for the plugin's choice.
+	Kind ProjectKind `json:"kind,omitempty"`
 }
 
 // DiscoverResult describes every manifest that is a project of this plugin.
@@ -57,6 +78,14 @@ type Project struct {
 	// [projects.<project>.<name>] on top. Set by the host; a plugin reads its
 	// own entry.
 	Settings map[string]map[string]any `json:"settings,omitempty"`
+	// Shape is the dialect of the project: named facts about how it is made
+	// ("build.tool": "esbuild", "test.runner": "@swc/jest", "exports.target":
+	// "dist"), each a short string, read from the manifest and files the
+	// plugin already reads in discovery. The host counts the shapes of the
+	// projects of one kind and language to let a new project follow what they
+	// do, and knows no key itself. Nil when the plugin does not describe
+	// shapes.
+	Shape map[string]string `json:"shape,omitempty"`
 	// Registries are the private registries the project installs from and
 	// publishes to, from smith.toml [registries]; nil means the public ones.
 	// Set by the host.
@@ -66,6 +95,13 @@ type Project struct {
 	// can check (doctor) and prepare (CI) for them. Nil for a project that
 	// has no release files. Set by the host.
 	ReleaseAssets *AssetSpec `json:"releaseAssets,omitempty"`
+	// Facts are the shared facts that hold for the project, merged by the
+	// host, narrowest scope first: [projects.<name>.facts], then [facts],
+	// then the defaults plugins published through Contribution.Facts. A key
+	// that is absent was set by no one: the plugin uses its own default. A
+	// request made before every plugin has contributed carries the smith.toml
+	// facts and the defaults published so far. Set by the host; read only.
+	Facts map[string]any `json:"facts,omitempty"`
 }
 
 // SetToolchain records the toolchain on every discovered project. The probe

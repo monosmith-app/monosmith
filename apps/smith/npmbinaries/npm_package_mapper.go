@@ -94,51 +94,6 @@ func WrapperManifest(r Release, name string, platforms map[string]string) string
 	})
 }
 
-// Shim is the wrapper's bin: it finds the platform package npm installed
-// and runs its binary with the same arguments, exit code and signal.
-func Shim(binary string, platforms map[string]string) string {
-	raw, _ := json.MarshalIndent(platforms, "", "  ")
-	return strings.NewReplacer("__BINARY__", binary, "__PLATFORMS__", string(raw)).Replace(`#!/usr/bin/env node
-'use strict'
-// Runs the __BINARY__ binary npm installed for this platform, from one of the
-// optional dependencies; nothing is downloaded after install.
-const { spawnSync } = require('node:child_process')
-const fs = require('node:fs')
-
-const platforms = __PLATFORMS__
-const key = process.platform + '-' + process.arch
-const pkg = platforms[key]
-if (!pkg) {
-  console.error('__BINARY__ has no build for ' + key)
-  process.exit(1)
-}
-const file = process.platform === 'win32' ? '__BINARY__.exe' : '__BINARY__'
-let binary
-try {
-  binary = require.resolve(pkg + '/bin/' + file)
-} catch {
-  console.error('__BINARY__: ' + pkg + ' is not installed; reinstall without --omit=optional or --no-optional')
-  process.exit(1)
-}
-if (process.platform !== 'win32') {
-  try {
-    fs.accessSync(binary, fs.constants.X_OK)
-  } catch {
-    try { fs.chmodSync(binary, 0o755) } catch { /* a read-only install keeps its mode */ }
-  }
-}
-const result = spawnSync(binary, process.argv.slice(2), { stdio: 'inherit' })
-if (result.error) {
-  console.error('__BINARY__: ' + result.error.message)
-  process.exit(1)
-}
-if (result.signal) {
-  process.kill(process.pid, result.signal)
-}
-process.exit(result.status ?? 1)
-`)
-}
-
 // Readme is the wrapper's README.md, shown on its npm page.
 func Readme(r Release, name string) string {
 	var b strings.Builder

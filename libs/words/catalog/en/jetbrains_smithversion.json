@@ -1,0 +1,7 @@
+{
+  "jetbrains.smithversion.smith-answered-with-an-error": "smith answered with an error. {stderr}",
+  "jetbrains.smithversion.smith-is-not-installed-here": "smith is not installed here, or it is not on the PATH.",
+  "jetbrains.smithversion.monosmith-needs-smith-to-list": "{problem} MonoSmith needs smith to list the projects and run the flows. Install or update it with: {installcommand}",
+  "jetbrains.smithversion.copy-command": "Copy command",
+  "jetbrains.smithversion.copy-to-the-clipboard": "Copy {installcommand} to the clipboard."
+}

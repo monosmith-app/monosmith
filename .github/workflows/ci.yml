@@ -4,9 +4,9 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, smith-v2]
   pull_request:
-    branches: [main]
+    branches: [main, smith-v2]
 
 permissions:
   contents: write
@@ -14,10 +14,11 @@ permissions:
   actions: write
   id-token: write
   attestations: write
+  deployments: write
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/smith-v2' }}
 
 jobs:
   ci:
@@ -57,7 +58,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/go/pkg/mod
-          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-applescript/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-bundle/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-lua/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-objc/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-swift/go.sum', 'libs/plugin-vba/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum') }}
+          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-applescript/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-bundle/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-lua/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-objc/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-swift/go.sum', 'libs/plugin-vba/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum', 'libs/words/go.sum') }}
           restore-keys: |
             smith-go-${{ runner.os }}-
       - name: Cache the npm download store
@@ -89,7 +90,10 @@ jobs:
       # smith:slot before-setup
       # This repository is smith: every step below runs the smith built from this commit.
       - name: Build smith from this commit
-        run: go build -o "$HOME/.local/bin/smith" ./apps/smith
+        run: |
+          go build -o "$HOME/.local/bin/smith" ./apps/smith
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          smith --version
       # smith:slot-end before-setup
       - name: Setup
         run: smith ci setup
@@ -107,24 +111,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pack
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         run: smith ci pack
       - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
       - name: Sign in to Azure
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
       - name: Release
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         run: smith ci release
         env:
           GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
@@ -135,7 +139,7 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           VSCE_AZURE_CREDENTIAL: "true"
       - name: Attest build provenance
-        if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2') && hashFiles('dist/release/**') != ''
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/release/*/*

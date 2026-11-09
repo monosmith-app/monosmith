@@ -111,7 +111,33 @@ func TestNoProjectWarningExplainsARootPackage(t *testing.T) {
 	if !strings.Contains(root.Message, "package.json at the root describes the workspace, not a project") || len(root.Steps) != 2 {
 		t.Errorf("root package: %+v", root)
 	}
+	goRoot := noProjectWarning(has("go.mod"))
+	if !strings.Contains(goRoot.Message, "go.mod at the root is one module for the whole repository") || len(goRoot.Steps) != 2 || !strings.Contains(goRoot.Steps[0], "go work use") {
+		t.Errorf("root go module: %+v", goRoot)
+	}
+	if both := noProjectWarning(has("package.json", "go.mod")); !strings.Contains(both.Message, "package.json at the root") {
+		t.Errorf("a root package.json still comes first: %+v", both)
+	}
+	py := noProjectWarning(has("pyproject.toml"))
+	if !strings.Contains(py.Message, "pyproject.toml at the root describes the whole repository") || len(py.Steps) != 2 || !strings.Contains(py.Steps[1], "--lang python") {
+		t.Errorf("root python project: %+v", py)
+	}
 	if bare := noProjectWarning(has()); !strings.Contains(bare.Steps[0], "smith adopt --init makes an empty workspace") {
 		t.Errorf("no manifest: %+v", bare)
+	}
+}
+
+func TestWhatSmithItselfLeavesInTheTreeDoesNotMakeItDirty(t *testing.T) {
+	for status, want := range map[string]bool{
+		"":                                  true,
+		"?? .smith/\n":                      true,
+		"?? .smith/defaults/golangci.yml\n": true,
+		"?? .smith/\n M go.mod\n":           false,
+		"?? notes.txt\n":                    false,
+		"?? .smithy/\n":                     false,
+	} {
+		if got := cleanApartFromSmith(status); got != want {
+			t.Errorf("%q: got %v, want %v", status, got, want)
+		}
 	}
 }

@@ -5,34 +5,34 @@ const (
 	KindW  = 8
 	LangW  = 10
 	StackW = 14
-	DepsW  = 6
-	// TasksFloorW is the least the Tasks column may get while a droppable
-	// column is still shown.
-	TasksFloorW = 30
+	// VersionW holds "0.4.0 → 0.5.0" and the blank cell after it.
+	VersionW = 15
+	DepsW    = 6
 	// LeadW is the dot and the spaces before the name, and the one after.
 	LeadW = 4
+	// minNameW is the least the name column may get.
+	minNameW = 8
 )
 
-// Columns says how the Projects table spends w cells: the project
-// name (nameWanted at most, ellipsised when short of room), which of the
-// optional columns Stack, Language and Kind stay (they go in that order; Stack
-// only when some project has one, an all-empty column reads as a bug), and
-// what is left for Tasks. Tasks is never squeezed to nothing to keep an
-// optional column.
+// Columns says how the Projects table spends w cells: the project name
+// (nameWanted at most, ellipsised when short of room) and which of the
+// optional columns Kind, Language, Stack and Version stay.
 type Columns struct {
-	Name              int
-	Kind, Lang, Stack bool
-	Tasks             int
+	Name                       int
+	Kind, Lang, Stack, Version bool
 }
 
-// ColumnsFor lays the table out for w cells.
-func ColumnsFor(w, nameWanted, tasksWanted int, hasStack bool) Columns {
-	name := min(nameWanted, max(w/3, 8))
-	need := min(tasksWanted, TasksFloorW)
+// ColumnsFor lays the table out for w cells. The optional columns go in the
+// order Stack, Language, Kind, Version when the width is short; Stack only shows
+// when some project has one, and Version when some project has a version,
+// because an all-empty column reads as a bug.
+func ColumnsFor(w, nameWanted int, hasStack, hasVersion bool) Columns {
+	name := min(max(nameWanted, minNameW), max(w/3, minNameW))
 	for _, c := range []Columns{
-		{Kind: true, Lang: true, Stack: hasStack},
-		{Kind: true, Lang: true},
-		{Kind: true},
+		{Kind: true, Lang: true, Stack: hasStack, Version: hasVersion},
+		{Kind: true, Lang: true, Version: hasVersion},
+		{Kind: true, Version: hasVersion},
+		{Version: hasVersion},
 		{},
 	} {
 		optional := 0
@@ -45,13 +45,14 @@ func ColumnsFor(w, nameWanted, tasksWanted int, hasStack bool) Columns {
 		if c.Stack {
 			optional += StackW
 		}
-		left := w - LeadW - name - DepsW - optional
-		if left >= need {
-			c.Name, c.Tasks = name, left
+		if c.Version {
+			optional += VersionW
+		}
+		if w-LeadW-name-DepsW-optional >= 0 {
+			c.Name = name
 			return c
 		}
 	}
 	// Even the bare table is short of room: the name gives way.
-	name = max(w-LeadW-DepsW-need, 8)
-	return Columns{Name: name, Tasks: max(w-LeadW-name-DepsW, 0)}
+	return Columns{Name: max(w-LeadW-DepsW, minNameW)}
 }

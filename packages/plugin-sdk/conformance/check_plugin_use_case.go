@@ -64,11 +64,16 @@ func Check(c *host.Client, opts Options) Report {
 	}
 	names := map[string]bool{}
 	for _, st := range info.Stacks {
-		r.add("stack "+st.Name+" is complete", st.Name != "" && st.Language != "" && !names[st.Name], "a stack needs a unique name and a language plugin")
+		r.add("stack "+st.Name+" is complete", st.Name != "" && (st.Language != "" || len(st.Choices) > 0) && !names[st.Name], "a stack needs a unique name and a language plugin, or choices to derive it from")
 		names[st.Name] = true
 	}
 
 	checkScheduling(c, &r)
+	checkChoices(c, &r)
+	checkTools(c, &r)
+	checkCapabilityPairs(c, &r)
+	checkDeclared(c, &r)
+	checkLink(c, &r)
 
 	call := func(check, method string, params, result any) bool {
 		if !c.Supports(method) {
@@ -80,8 +85,10 @@ func Check(c *host.Client, opts Options) Report {
 	}
 	call("discover answers with no manifests", protocol.MethodDiscover, protocol.DiscoverParams{Manifests: []string{}}, &protocol.DiscoverResult{})
 	call("contribute answers with no projects", protocol.MethodContribute, protocol.ContributeParams{Projects: []protocol.Project{}}, &protocol.ContributeResult{})
+	checkFacts(c, &r)
 	call("ci answers with no projects", protocol.MethodCI, protocol.CIParams{Projects: []protocol.Project{}}, &protocol.CIResult{})
 	call("doctor answers with no projects", protocol.MethodDoctor, protocol.DoctorParams{Projects: []protocol.Project{}}, &protocol.DoctorResult{})
+	call("derive answers with no projects", protocol.MethodDerive, protocol.DeriveParams{Projects: []protocol.Project{}}, &protocol.DeriveResult{})
 
 	if opts.Workspace != "" && caps.Generate {
 		generate(c, opts.Workspace, &r)

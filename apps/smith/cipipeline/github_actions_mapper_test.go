@@ -126,7 +126,7 @@ func stepAfter(out, first string) string {
 func TestGitHubPassesTheCacheToTheStepsThatRunTasks(t *testing.T) {
 	cases := map[string][]string{
 		"azblob://acme/smith-cache/main": {"SMITH_CACHE_KEY", "AZURE_STORAGE_SAS_TOKEN"},
-		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
+		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_ENDPOINT_URL_S3", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
 		"https://cache.acme.dev/smith":   {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
 	}
 	for remote, envs := range cases {
@@ -435,5 +435,19 @@ func TestTheNativeJobSignsInToAzureOnlyWhenItPublishes(t *testing.T) {
 	c.NativePublish = true
 	if gh := RenderGitHub(NewModel(c, "dev", "main")); strings.Count(gh, "Sign in to Azure") != 2 || strings.Count(gh, "VSCE_AZURE_CREDENTIAL") != 2 {
 		t.Errorf("a native job that publishes must sign in too:\n%s", gh)
+	}
+}
+
+func TestGitHubWorkflowGrantsDeploymentsOnlyWhenARegistryIsPublishedTo(t *testing.T) {
+	m := model()
+	if gh := RenderGitHub(m); strings.Contains(gh, "deployments: write") {
+		t.Errorf("a workspace that publishes to no registry must not ask for it:\n%s", gh)
+	}
+	m.Deployments = true
+	if gh := RenderGitHub(m); !strings.Contains(gh, "permissions:\n  contents: write\n  pull-requests: write\n  deployments: write\n") {
+		t.Errorf("the permission is missing:\n%s", gh)
+	}
+	if got := NewModel(Contributions{Deployments: true}, "1.0.0", "main"); !got.Deployments {
+		t.Error("the model carries the contribution")
 	}
 }

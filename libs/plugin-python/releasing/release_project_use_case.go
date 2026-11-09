@@ -46,6 +46,9 @@ func WriteVersion(workspaceRoot string, params protocol.VersionParams) (protocol
 // API token).
 func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(params.Project.Root))
+	if params.PackDir != "" {
+		return packDistributions(workspaceRoot, params)
+	}
 	target := targetOf(params.Project)
 	result := protocol.PublishResult{Registry: target.Upload}
 	if params.DryRun {
@@ -57,7 +60,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	sort.Strings(dists)
 	var files []string
 	for _, d := range dists {
-		if strings.Contains(filepath.Base(d), "-"+params.Version) {
+		if isDistributionOf(filepath.Base(d), params.Version) {
 			files = append(files, d)
 		}
 	}

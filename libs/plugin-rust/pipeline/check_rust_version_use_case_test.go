@@ -23,10 +23,10 @@ func TestCheckRustVersionPassesOnTheCIVersion(t *testing.T) {
 	}
 }
 
-func TestCheckRustVersionFailsOnAnOlderLocalRustAndInstallsTheCIOne(t *testing.T) {
+func TestCheckRustVersionWarnsOnAnOlderLocalRustAndInstallsTheCIOne(t *testing.T) {
 	fakeRustc(t, "rustc 1.76.0 (07dca489a 2024-02-02)\n", nil)
 	f, ok := CheckRustVersion(t.TempDir())
-	if !ok || f.OK || f.Warning {
+	if !ok || f.OK || !f.Warning {
 		t.Fatalf("%v %+v", ok, f)
 	}
 	if f.Fix == nil || f.Fix.Safe || len(f.Fix.Files) != 1 || f.Fix.Files[0].Path != "rust-toolchain.toml" ||
@@ -41,7 +41,7 @@ func TestCheckRustVersionWarnsOnANewerLocalRustAndMovesThePin(t *testing.T) {
 	if !ok || f.OK || !f.Warning {
 		t.Fatalf("%v %+v", ok, f)
 	}
-	if f.Fix == nil || len(f.Fix.Steps) != 0 || !strings.Contains(f.Fix.Files[0].Content, `channel = "1.95"`) {
+	if f.Fix == nil || len(f.Fix.Steps) != 1 || strings.Join(f.Fix.Steps[0].Argv, " ") != "smith ci generate --yes" || !strings.Contains(f.Fix.Files[0].Content, `channel = "1.95"`) {
 		t.Fatalf("%+v", f.Fix)
 	}
 }

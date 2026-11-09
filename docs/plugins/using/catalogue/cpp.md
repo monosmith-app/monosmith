@@ -18,7 +18,7 @@ install CMake, Ninja, a compiler and cppcheck.
 | `--lang` values | `cpp`, `c++` |
 | Manifest that makes a directory a candidate project | `CMakeLists.txt` (it is a project only if it calls `project()`) |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `components`, `channels` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest`: `smith install`, `smith up` and `smith sync` do nothing for C++, and nothing is cleaned outside a removed project's directory |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `cpp-app`, `cpp-lib`, `cpp-package`) |
@@ -83,7 +83,7 @@ Notes from the real run:
 
 - `build` and `configure` are not cached: CMake and Ninja do their own
   incremental build in the persistent tree under `dist/`. A second
-  `smith run build` printed `core:build ✔ 86ms`.
+  `smith run build` printed `core:build ✓ 86ms`.
 - `test` is cached, so an unchanged project's second `smith run test` is
   restored.
 - With the `vertical-slices` convention (on in a new workspace) each project
@@ -206,7 +206,7 @@ are fixed in the plugin; override them with a task override.
   run on CMake 4.4.2:
 
 ```text
-✖ cmake matches the pinned version 3.28
+× cmake matches the pinned version 3.28
     [toolchains] pins cmake 3.28, but this machine runs 4.4.2: tasks cached on another version are misses, and results can differ from CI
     → install cmake 3.28 (`mise use cmake@3.28`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] cmake
 ```
@@ -229,6 +229,7 @@ are fixed in the plugin; override them with a task override.
 | Version write | at release time the number is replaced in place; with no `VERSION` argument one is inserted right after the project name. The file is restored afterwards. A dry run lists `packages/sdk/CMakeLists.txt` and writes nothing |
 | Tag | `<project>@<version>` (for example `sdk@0.1.0`); override with `[projects.<name>] tag_prefix` |
 | Publish | nothing is uploaded for any kind: "released by its tag". The consumer chooses a vcpkg registry or Conan |
+| Release channel | the plugin declares `channels`: nothing is uploaded, so no registry pointer can move. CMake accepts only numbers in `project(VERSION)`, so a channel release writes `2.0.0` there and the tag (`2.0.0-beta.1`) carries the prerelease |
 | Release assets of an app | With `[projects.<app>.release]` the plugin runs `cmake -S . -B dist/release/<app>/build -G Ninja -DCMAKE_BUILD_TYPE=Release`, `cmake --build` and `cmake --install --prefix dist/release/<app>/stage`, and writes `dist/release/<app>/<asset_name>` as a zip of what the install rules installed (or, with no install rules, the program of the first `add_executable`, named like the app's `Binary`), plus the README and LICENSE files of the project's directory, else the workspace root, and a checksum file. The version is the one the release wrote into `project(... VERSION)` (use `PROJECT_VERSION` in the code to show it). Each app of a workspace is its own asset set (`product` names it). |
 | Platforms | C++ is compiled and linked for the system it runs on, so an app is built on each system. A plain app can release only this machine's platform; another is refused, in a dry run too: `this machine (linux/amd64) cannot build darwin/arm64 ... Mark the app native (set(SMITH_NATIVE ON) in apps/tool/CMakeLists.txt) ...`. A **native** app (`set(SMITH_NATIVE ON)`) is built by each `smith ci native` runner (`ubuntu-latest`, `windows-latest`, `macos-latest`; `[ci] native_runners` adds others such as `ubuntu-24.04-arm`) for its own platform only, and attaches `<asset>.zip` and `<asset>.zip.sha256` to the GitHub Release; `smith ci verify` leaves it to those jobs. A native app has no combined `checksums.txt` (builds from different runners), no package manager manifests and no registry packages. A plain app's one platform gets `checksums.txt`, and feeds those like a Go app's. Its dry run lists what this machine's native job would attach. |
 | Credentials | none |
@@ -276,13 +277,15 @@ Azure output for cpp (generated from the same contribution, not run).
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): `<project> builds into dist/<project dir>` reads the `-B` of the configure task and `binaryDir` of each preset in `CMakePresets.json`. The fix asks and rewrites the `binaryDir` values; a wrong `-B` in a task written by hand is reported with the manual step. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 **Doctor.** Run only when the workspace has C++ projects.
 
 | Check | Fails when |
 |---|---|
 | `CMake is installed` | `cmake --version` fails |
 | `Ninja is installed` | `ninja --version` fails |
-| `a C++ compiler is installed` | none of `c++`, `g++`, `clang++`, `cl` is on `PATH` |
+| `a C and C++ compiler is installed` | none of `c++`, `g++`, `clang++`, `cl` is on `PATH` |
 | `cppcheck is installed` | `cppcheck --version` fails |
 | `<app> releases for <platform>` | a platform in `[projects.<app>.release]` is not windows, linux or darwin with amd64 or arm64; remedy: change `platforms` |
 | `<app> can build the <platform> archive here` | the platform is not this machine's and the app is not native; remedy: `set(SMITH_NATIVE ON)` in its `CMakeLists.txt` |
@@ -303,6 +306,10 @@ pipelines (`--dry-run` said `Would remove tool (apps/tool)` and
 `the pipelines would be regenerated`). The plugin cleans nothing else. A
 project that another still adds with `add_subdirectory` is refused unless
 `--force`.
+
+## Declared projects
+
+CMake builds targets that the `CMakeLists.txt` above names, not folders, and a folder with a `CMakeLists.txt` that calls `project()` is found already. smith cannot name a target from a folder. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 

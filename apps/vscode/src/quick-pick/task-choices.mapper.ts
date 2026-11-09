@@ -1,4 +1,5 @@
 import type { FolderWorkspace, WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
+import { say } from '../words/index.ts'
 
 /** One line of a quick pick, carrying what it stands for. */
 export interface Choice<T> {
@@ -36,7 +37,7 @@ export function everyProjectChoice (snapshot: WorkspaceSnapshot): Array<Choice<s
     .sort((a, b) => Number(snapshot.affected.has(b.name)) - Number(snapshot.affected.has(a.name)) || a.name.localeCompare(b.name))
     .map((project) => ({
       label:       project.name,
-      description: [project.kind, project.language].filter(Boolean).join(' · '),
+      description: [project.kind, project.language].filter(Boolean).join(' ï¿½ '),
       value:       project.name,
     }))
 }
@@ -44,7 +45,7 @@ export function everyProjectChoice (snapshot: WorkspaceSnapshot): Array<Choice<s
 /** What to run in a project: all its tasks, or one of them. `undefined` stands for all. */
 export function taskChoices (project: WorkspaceProject): Array<Choice<string | undefined>> {
   return [
-    { label: '$(run-all) All tasks', description: project.tasks.join(', '), value: undefined },
+    { label: say('vscode.quick-pick.all-tasks'), description: project.tasks.join(', '), value: undefined },
     ...project.tasks.map((task) => ({ label: task, value: task })),
   ]
 }
@@ -62,5 +63,5 @@ export function taskNameChoices (snapshot: WorkspaceSnapshot, onlyAffected: bool
 
   return [...counts]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([task, count]) => ({ label: task, description: `${count} ${count === 1 ? 'project' : 'projects'}`, value: task }))
+    .map(([task, count]) => ({ label: task, description: `${count} ${say(count === 1 ? 'vscode.quick-pick.project-2' : 'vscode.quick-pick.projects')}`, value: task }))
 }

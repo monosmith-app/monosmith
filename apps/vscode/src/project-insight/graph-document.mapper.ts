@@ -1,4 +1,5 @@
 import type { GraphAnswer, GraphProject } from './insight-answer.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Writes the neighbourhood of a project as a Markdown page with two trees in
@@ -19,17 +20,17 @@ export function toGraphDocument (project: string, answer: GraphAnswer): string {
   const self = projects.get(project)
 
   return [
-    `# Graph of ${project}`,
+    say('vscode.project-insight.graph-of', { project }),
     '',
-    `${describe(project, self)}: what it uses and what uses it. The same as \`smith graph --focus ${project}\`.`,
+    say('vscode.project-insight.what-it-uses-and-what-uses', { describe: describe(project, self), project }),
     '',
-    '## Uses',
+    say('vscode.project-insight.uses'),
     '',
-    uses.length === 0 ? 'Nothing: it depends on no other project.' : fence([project, ...uses]),
+    uses.length === 0 ? say('vscode.project-insight.nothing-it-depends-on-no-other') : fence([project, ...uses]),
     '',
-    '## Used by',
+    say('vscode.project-insight.used-by'),
     '',
-    usedBy.length === 0 ? 'Nothing: no other project depends on it.' : fence([project, ...usedBy]),
+    usedBy.length === 0 ? say('vscode.project-insight.nothing-no-other-project-depends-on') : fence([project, ...usedBy]),
     '',
   ].join('\n')
 }

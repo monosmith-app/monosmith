@@ -32,7 +32,7 @@ func TestManualStepsExplainTheRemoteCacheInEachProvidersTerms(t *testing.T) {
 	steps := strings.Join(ManualSteps(cfg, m), "\n")
 	for _, want := range []string{
 		"Azure Pipelines: add the secret variables AZURE_STORAGE_SAS_TOKEN, NODE_AUTH_TOKEN, SMITH_CACHE_KEY",
-		"SMITH_CACHE_KEY is any long random string",
+		"SMITH_CACHE_KEY is a random value you make once",
 		"never write it; only a push to main stores results",
 		"SAS token scoped to it with read, write and create permission",
 		"mark the variables secret",
