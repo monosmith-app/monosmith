@@ -771,6 +771,15 @@ func (s *Shell) reload() tea.Cmd {
 		cmds = append(cmds, s.loadRelease())
 		return tea.Batch(cmds...)
 	case commands.TabDoctor:
+		if s.doctor.Report != nil && s.sources.Doctor != nil {
+			// The list stays, with its folds, filters and cursor, until the new one replaces it.
+			if !s.doctor.Loading {
+				s.doctor.Loading, s.rechecking = true, true
+				load := s.sources.Doctor
+				return func() tea.Msg { return load() }
+			}
+			return nil
+		}
 		s.doctor = doctorview.Model{}
 	case commands.TabRelease:
 		s.release = releaseview.Model{}

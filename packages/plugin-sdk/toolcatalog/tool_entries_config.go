@@ -121,7 +121,10 @@ var entries = []protocol.ToolNeed{
 		Consequence: "smith ci audit cannot check the rust crates for known vulnerabilities",
 		Program:     "cargo", VersionArgs: []string{"audit", "--version"},
 		Optional: true,
-		Install:  []protocol.ToolInstall{{Manager: "cargo", Package: "cargo-audit", Note: "compiles it with cargo, which takes a few minutes"}},
+		Install: []protocol.ToolInstall{
+			install("brew", "cargo-audit"),
+			{Manager: "cargo", Package: "cargo-audit", Note: "compiles it with cargo, which takes a few minutes"},
+		},
 		Download: "https://crates.io/crates/cargo-audit", Source: "https://github.com/rustsec/rustsec/tree/main/cargo-audit", Checked: checked,
 	},
 	{
@@ -142,7 +145,7 @@ var entries = []protocol.ToolNeed{
 		Consequence: "smith build, test and start fail for the projects built with Gradle",
 		Program:     "gradle", Files: []string{"build.gradle.kts", "build.gradle"},
 		Install: []protocol.ToolInstall{
-			install("brew", "gradle"), install("dnf", "gradle"), install("pacman", "gradle"),
+			install("winget", "Gradle.Gradle"), install("brew", "gradle"), install("dnf", "gradle"), install("pacman", "gradle"),
 		},
 		Download: "https://gradle.org/install/", Source: "https://gradle.org/install/", Checked: checked,
 	},
@@ -174,8 +177,14 @@ var entries = []protocol.ToolNeed{
 		Why:         "the dart projects get packages, analyze and test with the Dart SDK",
 		Consequence: "smith install, build and test fail for the dart projects",
 		Program:     "dart",
-		Install:     []protocol.ToolInstall{install("winget", "Google.DartSDK")},
-		Download:    "https://dart.dev/get-dart", Source: "https://dart.dev/get-dart", Checked: checked,
+		Install: []protocol.ToolInstall{
+			install("winget", "Google.DartSDK"),
+			{
+				Manager: "brew", Package: "dart-lang/dart/dart",
+				Note: "brew adds the dart-lang/dart tap for you; if brew asks you to trust it, run brew trust dart-lang/dart",
+			},
+		},
+		Download: "https://dart.dev/get-dart", Source: "https://dart.dev/get-dart", Checked: checked,
 	},
 	{
 		Name: "ruby", Title: "Ruby",
@@ -214,6 +223,28 @@ var entries = []protocol.ToolNeed{
 		Download: "https://cmake.org/download/", Source: "https://cmake.org/download/", Checked: checked,
 	},
 	{
+		Name: "ninja", Title: "Ninja",
+		Why:         "the C and C++ projects build with CMake and the Ninja generator",
+		Consequence: "smith build and test fail for the C and C++ projects",
+		Program:     "ninja",
+		Install: []protocol.ToolInstall{
+			install("winget", "Ninja-build.Ninja"), install("brew", "ninja"),
+			install("apt", "ninja-build"), install("dnf", "ninja-build"), install("pacman", "ninja"),
+		},
+		Download: "https://ninja-build.org", Source: "https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages", Checked: checked,
+	},
+	{
+		Name: "cppcheck", Title: "Cppcheck", Optional: true,
+		Why:         "smith lint checks the C and C++ projects with Cppcheck",
+		Consequence: "smith lint of the C and C++ projects fails",
+		Program:     "cppcheck",
+		Install: []protocol.ToolInstall{
+			install("winget", "Cppcheck.Cppcheck"), install("brew", "cppcheck"),
+			install("apt", "cppcheck"), install("dnf", "cppcheck"), install("pacman", "cppcheck"),
+		},
+		Download: "https://cppcheck.sourceforge.io/", Source: "https://cppcheck.sourceforge.io/", Checked: checked,
+	},
+	{
 		Name: "docker", Title: "Docker",
 		Why:         "the docker projects build their images with Docker",
 		Consequence: "smith build fails for the docker projects",
@@ -232,7 +263,8 @@ var entries = []protocol.ToolNeed{
 		Consequence: "smith start cannot run the Azure function app locally (tests and build still work)",
 		Program:     "func",
 		Install: []protocol.ToolInstall{
-			install("winget", "Microsoft.Azure.FunctionsCoreTools"), install("npm", "azure-functions-core-tools@4"),
+			install("winget", "Microsoft.Azure.FunctionsCoreTools"), install("brew", "azure/functions/azure-functions-core-tools@4"),
+			install("npm", "azure-functions-core-tools@4"),
 		},
 		Download: "https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools",
 		Source:   "https://learn.microsoft.com/azure/azure-functions/functions-run-local", Checked: checked,

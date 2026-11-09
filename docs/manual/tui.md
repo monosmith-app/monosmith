@@ -219,6 +219,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Doctor | `x` | Show or hide the failed checks in every group. The headline has a button for it, `× 2 failed (x)`. |
 | Doctor | `w` | Show or hide the warnings in every group. The headline button reads `▲ 1 warning (w)` (`warnings` for any other count). |
 | Doctor | `p` | Show or hide the passed checks (the headline button `✓ 20 passed (p)`). By default they are one collapsed line, so this filter starts off. |
+| Doctor | `r` | Check again, for when you fixed things outside smith. The headline has a button, `Check again (r)`, beside the filter buttons. The headline stays at the top of the panel while the checks below it scroll. The list stays while doctor runs, with its groups, filters and cursor; the button gives way to `Checking again…`, and a toast says what doctor found (`Checked again: 3 failed, 5 warnings`). After a fix ends, whether it worked or not, doctor checks again by itself in the same way. |
 | Doctor | `e` | Show every line of the problem, or fewer. |
 | Doctor | `PgUp` `PgDn` | Scroll the detail. |
 | Deps | `Space` | Mark or unmark a dependency. |

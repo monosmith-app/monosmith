@@ -305,5 +305,6 @@
   "tui.detail.verb.package": "Package",
   "tui.detail.noun.app": "app",
   "tui.detail.noun.lib": "library",
-  "tui.detail.noun.package": "package"
+  "tui.detail.noun.package": "package",
+  "tui.doctor.checked_again": "Checked again: {failed} failed, {warnings}"
 }

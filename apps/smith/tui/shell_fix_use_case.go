@@ -211,6 +211,20 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 	return refresh
 }
 
+// checkedAgain runs when doctor has checked again because the person asked
+// (Check again): the toast says what doctor found. A fix that is verified has
+// said it already.
+func (s *Shell) checkedAgain(res doctorview.Result, verified bool) {
+	if !s.rechecking {
+		return
+	}
+	s.rechecking = false
+	if res.Err != nil || verified {
+		return
+	}
+	s.notify(words.Say("tui.doctor.checked_again", "failed", res.Report.Failed, "warnings", words.Count("doctor.summary.warnings", res.Report.Warnings)), toast.Info)
+}
+
 // verifyFix runs when doctor has checked again after a fix: every fix verifies
 // itself. The toast says "Fixed" only when the checks the fix clears now pass.
 // Otherwise it says what doctor found, which file and version for a tool, so
