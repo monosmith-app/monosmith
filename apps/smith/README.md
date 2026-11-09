@@ -14,6 +14,9 @@ It builds inside the repository's `go.work`, which ties it to `libs/plugin-*`
 and `packages/plugin-sdk`; `go install` from outside the repository does not
 work. Released as `smith@<version>`: see [installing](../../docs/getting-started/installing.md).
 
+Version 2.0 is the first stable release of this line. It replaces the 1.x command line,
+configuration and plugin protocol.
+
 ## Written exceptions
 
 Each package below holds more than 12 production files, the review trigger of
