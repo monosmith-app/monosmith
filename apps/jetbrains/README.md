@@ -27,7 +27,12 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
   Derived Files, Commit the Changes, Undo, Release, Release Preview, Doctor, Doctor: Apply the Safe Fixes,
   Divergences, Run Task in All Projects, Run Affected, Start Dev Servers, Update and Align Dependencies, Open the
   Report, Search and Install a Plugin, Settings, Bring This Folder In (adopt), Convert This Workspace, Try a
-  Command in a Copy, Write the smith Launcher, Install the MCP Server and Agent, Explain a Project and Why.
+  Command in a Copy, Write the smith Launcher, Set Up Tab Completion, Install the MCP Server and Agent, Explain a Project and Why.
+  **Set Up Tab Completion** types `smith completion install` in a MonoSmith tab of the terminal, which lists
+  the files and asks before it writes; the plugin writes nothing. After a project opens, a notification offers
+  it once (**Set up**, **Not now**, **Don't ask again**) when `smith completion status --json` says it is not set
+  up. The answers **Set up** and **Don't ask again** are kept for you in the IDE settings
+  (`monosmith.tabCompletionOffer`). The plugin needs the bundled Terminal plugin.
   **Why** is also in the editor and project view menus. Five groups hold the rest:
   - **Plugins**: **Turn a Plugin On…** and **Off…**. The plugins come from `smith plugin list --json`. When
     projects use a plugin, smith refuses to turn it off and names them; the plugin shows that list and runs

@@ -12,13 +12,9 @@ exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**"]
 
 [ci]
 providers = ["github"]
-# smith-v2 is the long-lived branch of the 2.0 work. It is a release channel (below), so a
-# push to it releases 2.0.0-beta.n; a pull request merged into main is a push to main and
-# releases 1.x. Pull requests only run verify, as the merge gate.
-branches = ["main", "smith-v2"]
-# Pack, attest and the assets job run on both release branches, not on main only.
-publish_on = "channels"
-# The native job runs only when a release happened (the default), on main and on smith-v2.
+# Releases come from main only. Pull requests only run verify, as the merge gate.
+branches = ["main"]
+# The native job runs only when a release happened (the default).
 native_on = "release"
 # Every step of this repository's pipelines runs the smith built from the commit:
 # the installed one only bootstraps, so it need not change with every release.
@@ -33,13 +29,6 @@ github_releases = true
 # VS Code extensions publish as a Microsoft Entra ID app signed in with the workflow
 # (federated credential), not with a VSCE_PAT secret: see docs/reference/releasing.md.
 vsce_entra = true
-
-# The 2.0 line: pushes to smith-v2 release 2.0.0-beta.n under the npm tag "next"; main keeps 1.x.
-[[release.channels]]
-branch = "smith-v2"
-prerelease = "beta"
-major = 2
-dist_tag = "next"
 
 [projects.smith.release]
 asset_name = "{product}_{version}_{os}_{arch}.{ext}"

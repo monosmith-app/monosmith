@@ -221,3 +221,20 @@ func TestEnterRunsTheFirstButtonOfTheFirstItem(t *testing.T) {
 		}
 	}
 }
+
+func TestTabCompletionWaitsAfterTheUpdatesAndNeverTakesTheGoodNewsAway(t *testing.T) {
+	q := Queue(Facts{Checked: true, DepsChecked: true, CompletionOffer: true})
+	if kindsOf(q) != "good,completion" {
+		t.Fatalf("got %s", kindsOf(q))
+	}
+	it := q[1]
+	if it.Severity != SeverityMuted || it.Title != "Tab completion is not set up" || buttonsOf(it) != "Set up:ws.completion:|Not now:ws.completion-later:" {
+		t.Fatalf("%+v", it)
+	}
+	if got := kindsOf(Queue(Facts{Checked: true, DepsChecked: true, Outdated: 2, CompletionOffer: true})); got != "updates,completion" {
+		t.Fatalf("after real work it still comes last: %s", got)
+	}
+	if got := kindsOf(Queue(Facts{Checked: true, DepsChecked: true})); got != "good" {
+		t.Fatalf("not offered by default: %s", got)
+	}
+}

@@ -173,6 +173,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	if inside {
 		s := sources.WorkspaceSources(".", version)
 		s.Settings = settingssource.New(".", pluginhost.Home(), version, os.Getenv)
+		s.CompletionWanted, s.DeclineCompletion = sources.CompletionOffer(pluginhost.Home())
 		cfg.Sources = &s
 		cfg.Start = start
 	} else if problem == "" {

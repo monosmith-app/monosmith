@@ -99,8 +99,9 @@ func TestEachFilterButtonSpanCoversItsDrawnText(t *testing.T) {
 				}
 			}
 		}
-		if seen != 3 {
-			t.Errorf("width %d: %d buttons, want 3", w, seen)
+		// The three filters and the button that checks again.
+		if seen != 4 {
+			t.Errorf("width %d: %d buttons, want 4", w, seen)
 		}
 	}
 	if narrow := m.HeadlineSpans(plainTheme, 30); len(narrow) < 2 {

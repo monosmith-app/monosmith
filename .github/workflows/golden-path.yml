@@ -8,9 +8,9 @@ name: golden-path
 
 on:
   push:
-    branches: [main, smith-v2]
+    branches: [main]
   pull_request:
-    branches: [main, smith-v2]
+    branches: [main]
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:

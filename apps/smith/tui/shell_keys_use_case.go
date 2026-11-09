@@ -424,6 +424,10 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.openUndo()
 	case commands.OpenReport:
 		return s.openReport()
+	case commands.OpenCompletion:
+		return s.openCompletion()
+	case commands.DeclineCompletion:
+		s.declineCompletion()
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
 	case commands.OpenCompose:
@@ -771,6 +775,15 @@ func (s *Shell) reload() tea.Cmd {
 		cmds = append(cmds, s.loadRelease())
 		return tea.Batch(cmds...)
 	case commands.TabDoctor:
+		if s.doctor.Report != nil && s.sources.Doctor != nil {
+			// The list stays, with its folds, filters and cursor, until the new one replaces it.
+			if !s.doctor.Loading {
+				s.doctor.Loading, s.rechecking = true, true
+				load := s.sources.Doctor
+				return func() tea.Msg { return load() }
+			}
+			return nil
+		}
 		s.doctor = doctorview.Model{}
 	case commands.TabRelease:
 		s.release = releaseview.Model{}

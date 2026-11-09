@@ -87,7 +87,13 @@ appear, in this order:
 5. **A release is ready**: `Ready to release: 8 packages, smith 1.132.0 → 1.133.0 (292 commits)`,
    naming the package with the most commits. Button: `Open Release`.
 6. **Updates**: `N dependencies have newer releases` (`Open Deps`), or `Updates not looked at yet` (`Open Deps` too: its key, `4`, opens Deps and reads the registries the first time).
-7. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
+7. **Tab completion** (only while it waits): `Tab completion is not set up`. Buttons: `Set up` and
+   `Not now`. `Set up` (also `Set up tab completion` in the palette) runs `smith completion install --dry-run`
+   and shows the files and lines in the confirmation; nothing is written until you press `Run`, and the
+   confirmed line runs in the run panel. `Not now` is remembered for you in `tui.json` (`completionOffer`),
+   and the item never comes back; so does a finished setup. The item is muted, so it never takes Enter or
+   the `All good` line away. See [`smith completion`](completion.md).
+8. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
 
 A workspace without projects shows one item with `Add a project` and `Compose a stack`.
 While the first doctor run goes on, one item says `Running the health checks…` and nothing
@@ -219,6 +225,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Doctor | `x` | Show or hide the failed checks in every group. The headline has a button for it, `× 2 failed (x)`. |
 | Doctor | `w` | Show or hide the warnings in every group. The headline button reads `▲ 1 warning (w)` (`warnings` for any other count). |
 | Doctor | `p` | Show or hide the passed checks (the headline button `✓ 20 passed (p)`). By default they are one collapsed line, so this filter starts off. |
+| Doctor | `r` | Check again, for when you fixed things outside smith. The headline has a button, `Check again (r)`, beside the filter buttons. The headline stays at the top of the panel while the checks below it scroll. The list stays while doctor runs, with its groups, filters and cursor; the button gives way to `Checking again…`, and a toast says what doctor found (`Checked again: 3 failed, 5 warnings`). After a fix ends, whether it worked or not, doctor checks again by itself in the same way. |
 | Doctor | `e` | Show every line of the problem, or fewer. |
 | Doctor | `PgUp` `PgDn` | Scroll the detail. |
 | Deps | `Space` | Mark or unmark a dependency. |

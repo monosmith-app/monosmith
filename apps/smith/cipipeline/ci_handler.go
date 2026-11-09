@@ -29,8 +29,10 @@ func changeVerb(root, path string) string {
 func Command(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ci",
-		Short: "Run a CI phase, or regenerate the pipelines",
-		Long: `The generated pipelines call these phases, so CI runs exactly what you can run locally:
+		Short: "Install what a clean checkout needs, run a CI phase, or regenerate the pipelines",
+		Long: `With no phase, smith ci installs every dependency a clean checkout needs: the setup phase below.
+
+The generated pipelines call these phases, so CI runs exactly what you can run locally:
 
   setup    install every toolchain dependency the workspace's plugins need
   audit    check dependencies for known vulnerabilities
@@ -43,6 +45,7 @@ func Command(version string) *cobra.Command {
            [release] and upload its files to their GitHub Release; the pipeline
            runs it on one runner per platform
   release  version, publish and tag every package with releasable commits`,
+		Args: cobra.NoArgs,
 	}
 	for _, phase := range Phases {
 		var assets bool
@@ -75,6 +78,13 @@ func Command(version string) *cobra.Command {
 			phaseCmd.Flags().StringVar(&run.Source, "source", "", "with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one")
 		}
 		cmd.AddCommand(phaseCmd)
+		if phase == "setup" {
+			// smith ci alone is the install of a clean checkout, like npm ci.
+			cmd.RunE = func(c *cobra.Command, _ []string) error {
+				phaseCmd.SetContext(c.Context())
+				return phaseCmd.RunE(phaseCmd, nil)
+			}
+		}
 	}
 	var check, dryRun, yes bool
 	generate := &cobra.Command{

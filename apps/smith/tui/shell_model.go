@@ -170,6 +170,10 @@ type Shell struct {
 	// another key is pressed or the tab is left.
 	pluginUndo *settingsview.PluginToggle
 
+	// completionWanted is true while Home lists "Tab completion is not set up".
+	// It is read once at the start, and cleared by "Not now" and by a setup that
+	// ends well.
+	completionWanted bool
 	// last is how the last command ended, for Home.
 	last *dashboard.Run
 	// justAdded is the project a finished `smith add` made, to be selected
@@ -178,6 +182,9 @@ type Shell struct {
 	// verifying are the checks a finished fix says it clears: the next doctor
 	// result is read to see whether they pass now.
 	verifying []string
+	// rechecking is true while a doctor run the person asked for (Check again)
+	// is out, so its result says in a toast what doctor found.
+	rechecking bool
 	// verifyingWhat is what that fix did, in words, for the "Fixed" toast.
 	verifyingWhat string
 	// run is the command the run panel shows: running or the last one.
@@ -366,6 +373,7 @@ func NewShell(cfg Config) Shell {
 		sh.doctor.Loading = sh.sources.Doctor != nil
 		// So does the release plan, for the release item of Home.
 		sh.releaseLoading = sh.sources.Release != nil
+		sh.completionWanted = sh.sources.CompletionWanted != nil && sh.sources.CompletionWanted()
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder

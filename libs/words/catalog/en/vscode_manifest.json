@@ -56,6 +56,7 @@
   "vscode.command.divergences.title": "Show Divergences from the Defaults",
   "vscode.command.try.title": "Try a Command in a Copy…",
   "vscode.command.bootstrap.title": "Write the smith Launcher…",
+  "vscode.command.tab-completion.title": "Set Up Tab Completion…",
   "vscode.command.install-tools.title": "Install the Tools the Workspace Needs…",
   "vscode.command.open-report.title": "Open Report",
   "vscode.command.why.title": "Why…",

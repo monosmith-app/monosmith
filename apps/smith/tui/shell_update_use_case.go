@@ -95,7 +95,9 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)
+		verified := len(s.verifying) > 0
 		s.verifyFix(msg)
+		s.checkedAgain(msg, verified)
 	case settingsview.Msg:
 		return s.settingsMsg(msg)
 	case fixProgressMsg:

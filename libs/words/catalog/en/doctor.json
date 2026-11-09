@@ -22,5 +22,7 @@
   "doctor.group.warnings.other": "{count} warnings",
   "doctor.group.passed": "all passed",
   "doctor.fix.one": "Fix",
-  "doctor.fix.all": "Fix all {count} projects"
+  "doctor.fix.all": "Fix all {count} projects",
+  "doctor.reload": "Check again",
+  "doctor.rechecking": "Checking again…"
 }

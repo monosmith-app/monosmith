@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/agentdoc"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
+	"github.com/monosmith-app/monosmith/apps/smith/completioncommand"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
@@ -131,7 +132,7 @@ already have), then build and doctor.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), removeproject.RemoveCommand(version), swapchoice.Command(version), environments.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
 	add("work", toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
-	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
+	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command(), completioncommand.Command(plugintrust.Home()))
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version, cipipeline.AssetsPrepare))
@@ -163,17 +164,31 @@ func canAsk(root *cobra.Command, args []string) bool {
 		cmd = cmd.Parent()
 	}
 	switch cmd.Name() {
-	case "serve", "mcp", "lsp", "tui":
+	case "serve", "mcp", "lsp", "tui", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+		// The last two are what the completion script of a shell calls on every Tab.
 		return false
 	}
 	return true
 }
 
-// Execute runs smith and returns the process exit code.
+// Execute runs smith and returns the process exit code. After the first
+// interactive run (the interface, or smith doctor in a terminal) it offers,
+// once, to set up tab completion; see offerCompletion.
 func Execute(version string, args []string) int {
 	if len(args) > 0 || !tui.Interactive() {
-		return run(version, args)
+		code := run(version, args)
+		if offersCompletionAfter(args) {
+			offerCompletion(version)
+		}
+		return code
 	}
+	code := openInterface(version)
+	offerCompletion(version)
+	return code
+}
+
+// openInterface runs the interactive shell and the commands it hands back.
+func openInterface(version string) int {
 	// A bare smith at a terminal opens the interface. A command it hands back
 	// runs here, and when that command made a workspace the interface opens
 	// again inside it: nobody should have to cd and start smith a second time.

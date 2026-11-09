@@ -100,6 +100,14 @@ on one line and offers the commit that sets its first version (`neverReleased` i
 Not in the extension: `smith plugin draft` (a plugin author works in a terminal on a sample project), and
 `smith serve`, `mcp`, `lsp`, `agent` and the dev servers, which own a terminal.
 
+### Tab completion from an editor
+
+`smith completion status --json` prints `{"shell": "zsh", "wanted": true, "answer": "", "stale": false}`: `wanted` is true when nothing is
+installed for the shell, no package ships the file and the person did not say no (see
+[`smith completion`](../manual/completion.md)). Both extensions read it to decide whether to offer the setup once, then run
+`smith completion install` in their terminal, where the person sees the files and answers the question. An editor never
+runs `install --yes`: the question is the person's.
+
 ## Committing, releasing and changing a project from an editor
 
 smith commits and releases only when asked, and each of these has a plan flag that changes nothing.

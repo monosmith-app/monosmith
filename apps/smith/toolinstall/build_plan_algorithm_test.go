@@ -106,7 +106,8 @@ func TestBuildPlanPerSystem(t *testing.T) {
 		"go on arch":                       {"go", "linux", []string{"pacman"}, []string{"install:pacman", "page", "myself", "skip"}, "install:pacman"},
 		"no package manager":               {"go", "linux", nil, []string{"page", "myself", "skip"}, "myself"},
 		"docker on mac is a cask":          {"docker", "darwin", []string{"brew"}, []string{"install:brew-cask", "page", "myself", "skip"}, "install:brew-cask"},
-		"dart on linux has no manager way": {"dart", "linux", []string{"apt-get", "brew"}, []string{"page", "myself", "skip"}, "myself"},
+		"dart on linux has no manager way": {"dart", "linux", []string{"apt-get"}, []string{"page", "myself", "skip"}, "myself"},
+		"dart on mac with brew":            {"dart", "darwin", []string{"brew"}, []string{"install:brew", "page", "myself", "skip"}, "install:brew"},
 	} {
 		plan := BuildPlan(missing(tc.tool), DetectManagers(tc.goos, onPath(append(tc.have, all[:0]...)...)), Env{OS: tc.goos})
 		if got := optionValues(plan); !reflect.DeepEqual(got, tc.wantOptions) {

@@ -163,6 +163,8 @@ var all = []Command{
 	{ID: "ws.ci", Group: GroupWorkspace, Title: words.Say("commands.ws.ci.title"), Hint: words.Say("commands.ws.ci.hint"), Kind: Execute, Argv: []string{"ci", "generate"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "ws.info", Group: GroupWorkspace, Title: words.Say("commands.ws.info.title"), Hint: words.Say("commands.ws.info.hint"), Kind: Execute, Argv: []string{"info"}, NeedsIdle: true},
 	{ID: "ws.undo", Group: GroupWorkspace, Title: words.Say("commands.ws.undo.title"), Hint: words.Say("commands.ws.undo.hint"), Kind: OpenUndo, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"undo"}},
+	{ID: "ws.completion", Group: GroupWorkspace, Title: words.Say("commands.ws.completion.title"), Hint: words.Say("commands.ws.completion.hint"), Kind: OpenCompletion, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "ws.completion-later", Group: GroupWorkspace, Title: words.Say("commands.ws.completion-later.title"), Hint: words.Say("commands.ws.completion-later.hint"), Kind: DeclineCompletion, NeedsWorkspace: true},
 	{ID: "ws.report", Group: GroupWorkspace, Title: words.Say("commands.ws.report.title"), Hint: words.Say("commands.ws.report.hint"), Kind: OpenReport, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"report"}},
 	{ID: "ws.agent-file", Group: GroupWorkspace, Title: words.Say("commands.ws.agent-file.title"), Hint: words.Say("commands.ws.agent-file.hint"), Kind: Execute, Argv: []string{"agent", "file"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "ws.commit", Group: GroupWorkspace, Title: words.Say("commands.ws.commit.title"), Hint: words.Say("commands.ws.commit.hint"), Kind: Execute, Argv: []string{"commit"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},

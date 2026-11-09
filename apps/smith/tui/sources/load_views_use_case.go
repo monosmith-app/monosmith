@@ -60,6 +60,11 @@ type Sources struct {
 	// FirstCommit makes the empty commit that starts the history of a package
 	// that was never released (release.FirstReleaseCommand).
 	FirstCommit func() error
+	// CompletionWanted says whether Home lists "Tab completion is not set up":
+	// nothing is installed and the person did not say no. Nil means never.
+	CompletionWanted func() bool
+	// DeclineCompletion remembers "Not now" in the preferences of the person.
+	DeclineCompletion func()
 }
 
 // ProjectsLoaded is the workspace's projects, loaded in the background.

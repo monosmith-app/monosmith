@@ -4,9 +4,9 @@ name: ci
 
 on:
   push:
-    branches: [main, smith-v2]
+    branches: [main]
   pull_request:
-    branches: [main, smith-v2]
+    branches: [main]
 
 permissions:
   contents: write
@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/smith-v2' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   ci:
@@ -111,24 +111,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pack
-        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
+        if: github.event_name == 'push' && github.ref_name == 'main'
         run: smith ci pack
       - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
-        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
+        if: github.event_name == 'push' && github.ref_name == 'main'
         with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
       - name: Sign in to Azure
-        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
+        if: github.event_name == 'push' && github.ref_name == 'main'
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
       - name: Release
-        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
+        if: github.event_name == 'push' && github.ref_name == 'main'
         run: smith ci release
         env:
           GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
@@ -139,7 +139,7 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           VSCE_AZURE_CREDENTIAL: "true"
       - name: Attest build provenance
-        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2') && hashFiles('dist/release/**') != ''
+        if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/release/*/*

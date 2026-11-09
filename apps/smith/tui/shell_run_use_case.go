@@ -253,6 +253,8 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 		cmds = append(cmds, reload)
 	}
 	if load := s.sources.Doctor; load != nil {
+		// The list shown stays until the result replaces it; Loading says it is out of date.
+		s.doctor.Loading = true
 		cmds = append(cmds, func() tea.Msg { return load() })
 	}
 	return tea.Batch(cmds...)
@@ -260,6 +262,9 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 
 // finished tells the user how the run ended.
 func (s *Shell) finished() {
+	if s.run.OK() && isCompletionSetup(s.run.Command) {
+		s.completionWanted = false
+	}
 	switch {
 	case s.run.Cancelled:
 		s.notify(words.Say("tui.run.cancelled", "commandLine", s.run.CommandLine()), toast.Info)
