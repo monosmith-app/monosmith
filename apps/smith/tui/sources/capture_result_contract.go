@@ -2,7 +2,7 @@ package sources
 
 // Captured is what a smith command printed and whether it succeeded. The
 // shell asks for it when it needs the text itself, to show a plan or an error
-// in a dialog, instead of showing the command in the Run tab.
+// in a dialog, instead of showing the command in the run panel.
 type Captured struct {
 	// Text is the output of the command, the error included, without colour.
 	Text string

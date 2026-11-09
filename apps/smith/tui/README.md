@@ -13,7 +13,7 @@ views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
 tab reads, and the functions it calls, which are the ones `smith plugin` and `smith config` call), `userprefs` (the
 person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix dialog),
 `adoptwizard` (the adopt and convert dialog), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `pathfinder` (the list of folders and files under a path field), `layout`,
-`progress`, `splitter` (the dividers: keys, step and spots from plain values), `selection` (drag to select text: regions cut along the dividers, the selected text and its highlight), `runhistory` (the Run tab's
+`progress`, `splitter` (the dividers: keys, step and spots from plain values), `selection` (drag to select text: regions cut along the dividers, the selected text and its highlight), `runhistory` (the run panel's
 history: ago text, header parts, recent rows, steps, the rerun-failed line) and `commandtext` (the
 text a captured command printed: plan lines, failure text, report file, not-committed line).
 
@@ -25,7 +25,11 @@ that scan this tree are in `wordsguard`: a key the code asks for must exist, its
 filled, a key must be claimed by a surface, and a migrated package holds no raw wording. The TUI
 claims a key by asking for it in code; the editors claim theirs in `libs/words/surface/<name>.json`.
 
-## The Run tab
+## The run panel
+
+There is no Run tab. While a task runs, or when the user opens a past run, the right panel of Projects
+shows the run (`shell_run_panel_mapper.go`); Recent runs sits on the bottom rows of the list's pane (three runs, or all of them while it has the keyboard). Esc or Back shows the
+project again. What follows holds for that panel.
 
 Every task run (build, test, lint, typecheck, `run <task>`, "Lint all", "changed", from the keys,
 the palette or the Home next action) stays inside the interface. The shell starts the same smith as
@@ -51,7 +55,7 @@ A task run is started with `--json-events` (one JSON event per line, see
 
 ## Commands that show their text in a dialog
 
-Some commands are not shown in the Run tab: the shell runs the same smith as a child
+Some commands are not shown in the run panel: the shell runs the same smith as a child
 (`sources.CaptureCommand`), reads what it printed and shows it in a dialog (`dialog.Confirm`,
 or `dialog.NewNotice` for a text that only tells). `smith undo --dry-run` is read this way
 before `smith undo --yes` asks; `smith add ... --dry-run` is read before the real add; `smith

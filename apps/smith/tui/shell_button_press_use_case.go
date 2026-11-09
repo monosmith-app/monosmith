@@ -20,7 +20,7 @@ func (s Shell) actionAt(x, y int) string {
 		if s.tab == commands.TabSettings {
 			return ""
 		}
-		if h, ok := s.mainContent(in.W, in.H).hits[y-in.Y]; ok && h.kind == "action" {
+		if h, ok := s.mainContent(in.W, in.H-s.toastRows(in.H)).hits[y-in.Y]; ok && h.kind == "action" {
 			if len(h.spans) > 0 {
 				// A line of several buttons: the one under the cell.
 				sp, _ := h.at(x - in.X)
@@ -31,7 +31,12 @@ func (s Shell) actionAt(x, y int) string {
 		return ""
 	}
 	if in := s.detailInner(); s.lay().HasDetail() && in.Contains(x, y) {
-		if h, ok := s.detailContent(in.W, in.H).hits[y-in.Y]; ok {
+		if h, ok := s.sideContent(in.W, in.H-s.toastRows(in.H)).hits[y-in.Y]; ok && h.kind == "action" {
+			if len(h.spans) > 0 {
+				// A line of several buttons: the one under the cell.
+				sp, _ := h.at(x - in.X)
+				return sp.id
+			}
 			return h.id
 		}
 	}

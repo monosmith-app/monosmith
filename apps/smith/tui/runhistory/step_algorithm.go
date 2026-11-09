@@ -1,6 +1,6 @@
 package runhistory
 
-// StepSelection is the choice one step from sel in the Run tab's list ids (dir
+// StepSelection is the choice one step from sel in the run panel's list ids (dir
 // -1 is up, 1 is down), kept inside the list. A choice not in the list counts as
 // the first.
 func StepSelection(ids []string, sel string, dir int) string {

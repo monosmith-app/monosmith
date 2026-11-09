@@ -28,8 +28,8 @@ const maxHistory = 200
 // execute runs a smith command line the way the user would from a shell:
 // commands that need a terminal hand over to it, commands that change the
 // workspace or publish ask first in a dialog that shows the line, and the
-// rest (task runs included) start at once in the Run tab, which captures
-// their output and shows each task's state. confirmed is true once the dialog said yes.
+// rest (task runs included) start at once in the run panel of Projects, which
+// captures their output and shows each task's state. confirmed is true once the dialog said yes.
 func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	if section, ok := settingsSectionFor(argv); ok && s.inWorkspace {
 		// What plugin, recipe and config list print is the Settings tab.
@@ -88,7 +88,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	}
 	if !s.inWorkspace {
 		if s.sources.Start != nil && runsOutside(argv) {
-			// There is no Run tab before a workspace: a dialog shows the output.
+			// There is no run panel before a workspace: a dialog shows the output.
 			return s.startOutside(argv)
 		}
 		// Anything else that starts here (smith adopt) runs in the terminal
@@ -129,7 +129,7 @@ func (s Shell) offersAdjustments(argv []string) bool {
 
 // start begins the process; the first output arrives as messages.
 func (s *Shell) start(argv []string) tea.Cmd {
-	s.run, s.runHome, s.runLines, s.resultKept = runview.NewRun(argv, nil, s.now()), false, nil, nil
+	s.run, s.runLines, s.resultKept = runview.NewRun(argv, nil, s.now()), nil, nil
 	s.formOrigin = ""
 	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
@@ -142,8 +142,13 @@ func (s *Shell) start(argv []string) tea.Cmd {
 	if isRelease(argv) {
 		s.startRelease(argv)
 	}
-	if contains(s.tabs, commands.TabRun) && !stayOnRelease {
-		s.tab = commands.TabRun
+	// The run opens in the right panel of Projects, from whichever tab it started.
+	if contains(s.tabs, commands.TabProjects) {
+		if stayOnRelease {
+			s.runOpen, s.recentFocus = true, false
+		} else {
+			s.revealRun()
+		}
 	}
 	begin := s.sources.Start
 	return func() tea.Msg {

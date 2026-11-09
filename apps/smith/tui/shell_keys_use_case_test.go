@@ -26,7 +26,7 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
 	}
-	l.keys("4")
+	l.keys("3")
 	footer = l.lines()[len(l.lines())-2]
 	for _, want := range []string{"fix all (F)", "group (g)", "reload view (r)", "quit (q)"} {
 		if !strings.Contains(footer, want) {
@@ -121,7 +121,7 @@ func TestShortcutsExplainWhenTheyCannotRun(t *testing.T) {
 
 func TestAViewsLettersAreItsOwnNotTheGlobalOnes(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("5", "a") // Deps: a marks all, it does not open the Add a project form
+	l.keys("4", "a") // Deps: a marks all, it does not open the Add a project form
 	if l.sh().tab != "deps" {
 		t.Fatalf("a left Deps for %q", l.sh().tab)
 	}
@@ -215,7 +215,7 @@ func TestYCopiesTheFocusedItemWithOSC52AndSaysSo(t *testing.T) {
 	sh.clip = &out
 	l.m = sh
 
-	l.keys("4")
+	l.keys("3")
 	l.keys("y")
 	want := "\x1b]52;c;" + base64.StdEncoding.EncodeToString([]byte("go work use ./libs/x")) + "\a"
 	if out.String() != want {
@@ -230,14 +230,14 @@ func TestYCopiesTheFocusedItemWithOSC52AndSaysSo(t *testing.T) {
 	}
 
 	out.Reset()
-	l.keys("5", "y")
+	l.keys("4", "y")
 	got := string(mustDecode(t, out.String()))
 	if !slices.ContainsFunc(sampleDeps.Rows, func(r depsview.Row) bool { return r.Name == got }) {
 		t.Fatalf("deps copies the package: %q", got)
 	}
 
 	out.Reset()
-	l.keys("b", "3", "y")
+	l.keys("b", "y")
 	if got := string(mustDecode(t, out.String())); !strings.HasPrefix(got, "smith ") {
 		t.Fatalf("run copies the command line: %q", got)
 	}
@@ -294,18 +294,18 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 
 func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 	l := newLab(t, true, 90, 30)
-	l.hasNot("Projects it needs")
+	l.hasNot("Dependencies")
 	l.keys("down", "enter") // web
 	if !l.sh().detailOpen {
 		t.Fatal("Enter should open the detail")
 	}
-	l.has("Projects it needs", "Run build", "Run test")
+	l.has("Dependencies", "Build app", "Test app")
 	l.keys("esc")
 	if l.sh().detailOpen {
 		t.Fatal("Esc should go back to the list")
 	}
 	l.has("4 projects")
-	l.keys("enter", "down", "enter") // the second action: Run test, on web
+	l.keys("enter", "down", "enter") // the second action: Test app, on web
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -314,22 +314,21 @@ func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 func TestAtTheSupportedFloorTheDetailStillOpensFullWidth(t *testing.T) {
 	l := newLab(t, true, 72, 24)
 	l.keys("enter")
-	l.has("orders", "Run build", "Explain")
+	l.has("orders", "Build app", "Explain")
 	l.keys("esc")
-	l.has("4 projects", "Tasks")
-	l.hasNot("Run build")
+	l.has("4 projects", "Project", "Language")
+	l.hasNot("Tasks")
+	l.hasNot("Build app")
 }
 
 func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("4")
-	l.has("2 failed", "2 checks passed")
-	l.keys("6")
-	l.has("1.0.0 →", "1.1.0", "unchanged: sdk")
-	l.keys("5")
-	l.has("3 with newer releases")
 	l.keys("3")
-	l.has("Nothing has run yet")
+	l.has("2 failed", "2 checks passed")
+	l.keys("5")
+	l.has("1.0.0 →", "1.1.0", "unchanged: sdk")
+	l.keys("4")
+	l.has("3 with newer releases")
 	l.keys("2")
 	l.has("4 projects")
 	l.keys("1")
@@ -356,7 +355,7 @@ func TestTheDoctorTabShowsThePassedChecksOnRequest(t *testing.T) {
 
 func TestTheReleaseDialogListsThePackagesItPublishes(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6", "x", "enter")
+	l.keys("5", "x", "enter")
 	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0", "kit 0.2.0 → 0.2.1", "registry", "It cannot")
 }
 
@@ -364,25 +363,25 @@ func TestThePreviewStaysOnTheReleaseScreenAndSaysWhatItWaitsFor(t *testing.T) {
 	l := newLab(t, true, 120, 34)
 	p := &scripted{lines: []string{"web 1.0.0 -> 1.1.0 (dry run)"}, hold: true, release: make(chan struct{})}
 	l.next = p
-	l.keys("6", "p")
+	l.keys("5", "p")
 	if l.sh().tab != "release" {
 		t.Fatalf("the preview left the Release screen for %q", l.sh().tab)
 	}
 	l.has("Preview: smith release --dry-run", "registry", "Ctrl+C stops it")
 	l.keys("ctrl+c")
 	l.send(outputMsg{proc: p, exit: &runner.Exit{Code: 1, Cancelled: true}})
-	l.has("Preview: smith release --dry-run", "full output on the Run screen")
+	l.has("Preview: smith release --dry-run", "full output in the run panel of Projects")
 }
 
 func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("6", "p")
+	l.keys("5", "p")
 	if l.lastStarted() != "release --dry-run" {
 		t.Fatalf("preview started %q", l.lastStarted())
 	}
 	l.hasNot("The command that will run:")
 	l = newLab(t, true, 120, 30)
-	l.keys("6", "x")
+	l.keys("5", "x")
 	l.has("Release: hold back or bump", "Continue (enter)")
 	l.keys("enter")
 	l.has("Release", "$ smith release --yes", "Release anyway (y)", "Cancel (esc)")
@@ -403,7 +402,7 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 		"install": {func(l *lab) { l.keys("i") }},
 		"ci":      fromPalette("Regenerate CI"),
 		"upgrade": fromPalette("Upgrade workspace"),
-		"release": {func(l *lab) { l.keys("6", "x", "enter") }},
+		"release": {func(l *lab) { l.keys("5", "x", "enter") }},
 	} {
 		l := newLab(t, true, 120, 30)
 		for _, step := range steps {

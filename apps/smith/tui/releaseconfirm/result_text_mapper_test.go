@@ -30,7 +30,7 @@ func TestTagsThatStayedLocalSayHowToPushThem(t *testing.T) {
 func TestAReleaseThatStoppedListsNoTagAndSaysWhatToDo(t *testing.T) {
 	title, why, lines := Result(false, []string{"web@1.1.0"}, ready())
 	out := strings.Join(lines, "\n")
-	if title != "The release stopped" || !strings.Contains(why, "Run screen") {
+	if title != "The release stopped" || !strings.Contains(why, "run panel of Projects") {
 		t.Fatalf("title %q, why %q", title, why)
 	}
 	if strings.Contains(out, "New tags") || !strings.Contains(out, "release again") {

@@ -42,11 +42,11 @@ func TestThePageIsAQueueWithTheFirstItemLarge(t *testing.T) {
 	for _, want := range []string{
 		"2 checks fail, 6 can be fixed now",
 		"gradle is not on PATH · ci.yml is out of date",
-		"[Fix (Enter)]  [Open Doctor (4)]",
+		"[Fix (Enter)]  [Open Doctor (3)]",
 		"Ready to release: 8 packages, smith 1.132.0 → 1.133.0 (292 commits)",
-		"[Preview (6)]",
+		"[Open Release (5)]",
 		"Updates not looked at yet",
-		"[Check for updates (5)]",
+		"[Open Deps (4)]",
 		"Recent runs   ✓ test --affected 42s   × lint 12s   ✓ build 1m 4s",
 		"monosmith · local/tui-feedback · 34 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)",
 		"[Add a project (a)]  [Compose a stack (A)]",
@@ -71,7 +71,7 @@ func TestThePageIsAQueueWithTheFirstItemLarge(t *testing.T) {
 	if at("2 checks fail") >= at("gradle") || at("gradle") >= at("[Fix (") || at("[Fix (") >= at("Ready to release") || at("Ready to release") >= at("Recent runs") || at("Recent runs") >= at("monosmith ·") {
 		t.Fatalf("the order is wrong:\n%s", all)
 	}
-	if strings.Count(all, "Preview")+strings.Count(all, "[Fix (") != 2 {
+	if strings.Count(all, "Open Release")+strings.Count(all, "[Fix (") != 2 {
 		t.Fatalf("an item shows twice:\n%s", all)
 	}
 }
@@ -115,7 +115,7 @@ func TestEachButtonTargetCoversExactlyItsText(t *testing.T) {
 	r := Page(plainTheme(), brokenWorkspace, 100, Away)
 	text := plainLines(r)
 	want := map[string]string{
-		"ws.fix": "[Fix (Enter)]", "view.doctor": "[Open Doctor (4)]", "view.release": "[Preview (6)]", "view.deps": "[Check for updates (5)]",
+		"ws.fix": "[Fix (Enter)]", "view.doctor": "[Open Doctor (3)]", "view.release": "[Open Release (5)]", "view.deps": "[Open Deps (4)]",
 		"file.add": "[Add a project (a)]", "file.compose": "[Compose a stack (A)]",
 	}
 	seen := map[string]bool{}
@@ -196,12 +196,52 @@ func TestEveryItemKeepsItsButtonsOnTheLineBelowItLeftAligned(t *testing.T) {
 		}
 	}
 	text := strings.Join(plainLines(Page(plainTheme(), f, 140, Away)), "\n")
-	for _, want := range []string{"[Fix (F)]  [Open Doctor (4)]", "[Open Deps (5)]"} {
+	for _, want := range []string{"[Fix (F)]  [Open Doctor (3)]", "[Open Deps (4)]"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q in\n%s", want, text)
 		}
 	}
-	if strings.Count(text, "[Fix (") != 2 || !strings.Contains(text, "[Fix (F)]  [Open Doctor (4)]") {
+	if strings.Count(text, "[Fix (") != 2 || !strings.Contains(text, "[Fix (F)]  [Open Doctor (3)]") {
 		t.Errorf("a warning offers the same fix and Doctor buttons as a failure, in the same wording:\n%s", text)
+	}
+}
+
+func TestTheTargetUnderTheKeyboardLooksHoveredAndCarriesEnter(t *testing.T) {
+	th := plainTheme()
+	// Without the keyboard the first button of the queue carries Enter.
+	if all := strings.Join(plainLines(PageAt(th, brokenWorkspace, 100, Away, -1)), "\n"); !strings.Contains(all, "[Fix (Enter)]  [Open Doctor (3)]") {
+		t.Fatalf("no keyboard:\n%s", all)
+	}
+	// On the second button Enter moves there, and Fix gets its own key back.
+	all := strings.Join(plainLines(PageAt(th, brokenWorkspace, 100, Away, 1)), "\n")
+	if !strings.Contains(all, "[Fix (F)]  [Open Doctor (Enter)]") {
+		t.Fatalf("the keyboard is on Open Doctor:\n%s", all)
+	}
+	if strings.Count(all, "(Enter)") != 1 {
+		t.Fatalf("only the target with the keyboard says Enter:\n%s", all)
+	}
+}
+
+func TestTheKeyboardReachesEveryTargetInReadingOrder(t *testing.T) {
+	r := Page(plainTheme(), brokenWorkspace, 100, Away)
+	for i := 1; i < len(r.Targets); i++ {
+		a, b := r.Targets[i-1], r.Targets[i]
+		if b.Row < a.Row || (b.Row == a.Row && b.From < a.To) {
+			t.Fatalf("target %d (%+v) comes before target %d (%+v) in reading order", i, b, i-1, a)
+		}
+	}
+	// Fix, Open Doctor, Open Release, Open Deps, three runs, Add a project, Compose a stack.
+	if len(r.Targets) != 9 {
+		t.Fatalf("%d targets: %+v", len(r.Targets), r.Targets)
+	}
+}
+
+func TestARunUnderTheKeyboardIsDrawnChosen(t *testing.T) {
+	th := theme.Default()
+	plain := strings.Join(plainLines(PageAt(plainTheme(), brokenWorkspace, 100, Away, 4)), "\n")
+	chosen := Page(th, brokenWorkspace, 100, Away)
+	at := PageAt(th, brokenWorkspace, 100, Away, 4)
+	if plain == "" || strings.Join(chosen.Lines, "") == strings.Join(at.Lines, "") {
+		t.Fatal("the run under the keyboard looks like the others")
 	}
 }

@@ -141,16 +141,16 @@ func cliTwin(t *testing.T, cmd *cobra.Command, args ...string) string {
 	return tomlOf(t, dir)
 }
 
-func TestTheSettingsTabIsTheLastOfTheStripAndKeySevenOpensIt(t *testing.T) {
+func TestTheSettingsTabIsTheLastOfTheStripAndKeySixOpensIt(t *testing.T) {
 	l, _ := newSettingsLab(t, 180, 40)
 	l.has("Settings") // in the strip
-	l.press("7")
+	l.press("6")
 	if l.sh().tab != commands.TabSettings {
 		t.Fatalf("on %q", l.sh().tab)
 	}
 	l.has("Sections", "Plugins", "Style", "Workspace", "Recipes", "Forms", "Built-in plugins", "[x] go", "[x] node", "+ Install a plugin", "smith plugin install <source>")
 	footer := footerOf(l)
-	for _, want := range []string{"↑↓ move", "change (Enter)", "list/sections (Tab)", "reload view (r)", "1-7 views"} {
+	for _, want := range []string{"↑↓ move", "change (Enter)", "list/sections (Tab)", "reload view (r)", "1-6 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the footer lacks %q: %q", want, footer)
 		}
@@ -162,7 +162,7 @@ func TestTheSettingsTabIsTheLastOfTheStripAndKeySevenOpensIt(t *testing.T) {
 
 func TestTurningAPluginOffInTheTabWritesWhatPluginDisableWrites(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
-	l.press("7", "space") // the first built-in plugin
+	l.press("6", "space") // the first built-in plugin
 	first := firstBuiltin(t)
 	l.has("[ ] "+first, first+" is off")
 	want := cliTwin(t, pluginhost.Command("test"), "disable", first)
@@ -180,7 +180,7 @@ func firstBuiltin(t *testing.T) string {
 
 func TestChangingASettingInTheTabWritesWhatConfigSetWrites(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
-	l.press("7", "left", "down", "down", "down", "enter") // Workspace, into its rows
+	l.press("6", "left", "down", "down", "down", "enter") // Workspace, into its rows
 	l.has("workspace.name", `"acme"`, "default")
 	l.walkTo(t, "ci.devcontainer")
 	l.press("space")
@@ -223,7 +223,7 @@ func (l *lab) selectedLine() string {
 
 func TestATypedSettingIsAnEditorThatTakesEveryKeyIncludingTheOnesThatAreShortcuts(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
-	l.press("7", "left", "down", "down", "down", "enter")
+	l.press("6", "left", "down", "down", "down", "enter")
 	l.walkTo(t, "release.branch")
 	l.press("enter")
 	if !l.sh().editing() {
@@ -245,7 +245,7 @@ func TestATypedSettingIsAnEditorThatTakesEveryKeyIncludingTheOnesThatAreShortcut
 
 func TestAnInvalidValueIsRefusedInTheEditorWithTheSchemasReason(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
-	l.press("7", "left", "down", "down", "down", "enter")
+	l.press("6", "left", "down", "down", "down", "enter")
 	l.walkTo(t, "cache.max_size_mb")
 	l.press("enter").typeText("lots").keys("enter")
 	l.has("cache.max_size_mb is a whole number")
@@ -256,7 +256,7 @@ func TestAnInvalidValueIsRefusedInTheEditorWithTheSchemasReason(t *testing.T) {
 
 func TestChoosingAThemeInTheStyleSectionRedrawsAtOnceAndKeepsItForYouAlone(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
-	l.press("7", "left", "down", "down", "right") // Style
+	l.press("6", "left", "down", "down", "right") // Style
 	l.has("Theme", "Symbols", "Preview")
 	l.press("down", "down", "enter") // light
 	if got := l.sh().th.Tokens.Name; got != "light" {
@@ -278,8 +278,8 @@ func TestChoosingAThemeInTheStyleSectionRedrawsAtOnceAndKeepsItForYouAlone(t *te
 func TestHomePointsANewUserAtTheSettingsTabUntilTheyHaveOpenedIt(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
 	l.openTab(commands.TabHome)
-	l.has("New here?", "Settings tab: press 7")
-	l.press("7")
+	l.has("New here?", "Settings tab: press 6")
+	l.press("6")
 	l.press("1")
 	l.hasNot("New here?")
 	if p, _ := userprefs.Load(ws.home); !p.SettingsTipSeen {
@@ -302,7 +302,7 @@ func TestTheSettingsTabFillsExactlyTheTerminalInEverySectionAndEditor(t *testing
 	for name, keys := range steps {
 		for _, sz := range sizes {
 			l, _ := newSettingsLab(t, sz[0], sz[1])
-			l.press("7")
+			l.press("6")
 			l.press(keys...)
 			lines := strings.Split(l.sh().View(), "\n")
 			if len(lines) != sz[1] {
@@ -329,7 +329,7 @@ func TestTheTabStripKeepsEveryTabReachableAtTheNarrowestScreen(t *testing.T) {
 
 func TestTheSettingsTabCarriesNoColourInThePlainTheme(t *testing.T) {
 	l, _ := newSettingsLab(t, 120, 40)
-	l.press("7")
+	l.press("6")
 	raw := l.sh().View()
 	if strings.Contains(raw, "\x1b[38;") || strings.Contains(raw, "\x1b[48;") {
 		t.Fatal("colour in the plain theme")
@@ -364,7 +364,7 @@ func TestTheMouseOpensTheTabPicksASectionAndADoubleClickTurnsAPluginOff(t *testi
 
 func TestAKeyThatDoesNothingOnTheRowSaysWhy(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.press("7", "t")
+	l.press("6", "t")
 	l.has("is unavailable: select an external plugin to trust")
 	l.press("u")
 	l.has("is unavailable: select a setting to reset to its default")
@@ -375,13 +375,13 @@ func TestAKeyThatDoesNothingOnTheRowSaysWhy(t *testing.T) {
 
 func TestTheHelpListsTheKeysOfTheSettingsTab(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.press("7", "?")
+	l.press("6", "?")
 	l.has("Settings view", "Reset a setting to its default", "Approve an external plugin (Trust)", "Forget that an external plugin is trusted")
 }
 
 func TestAFormOfTheFormsSectionOpensTheGuide(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.press("7", "left", "down", "down", "down", "down", "down", "right")
+	l.press("6", "left", "down", "down", "down", "down", "down", "right")
 	l.has("Guided forms")
 	l.press("enter")
 	if l.sh().tab != commands.TabGuide {
@@ -391,7 +391,7 @@ func TestAFormOfTheFormsSectionOpensTheGuide(t *testing.T) {
 
 func TestInstallingAPluginShowsTheCommandLineAsksAndRunsItInTheRunTab(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.press("7")
+	l.press("6")
 	l.walkTo(t, "+ Install a plugin")
 	l.press("enter").typed("./kiwi")
 	l.has("Install a plugin", "smith plugin install ./kiwi")
@@ -404,14 +404,14 @@ func TestInstallingAPluginShowsTheCommandLineAsksAndRunsItInTheRunTab(t *testing
 	if got := l.lastStarted(); got != "plugin install ./kiwi" {
 		t.Fatalf("started %q", got)
 	}
-	if l.sh().tab != commands.TabRun {
-		t.Fatalf("the output shows in the Run tab, on %q", l.sh().tab)
+	if l.sh().tab != commands.TabProjects || !l.sh().runShown() {
+		t.Fatalf("the output shows in the run panel of Projects, on %q", l.sh().tab)
 	}
 }
 
 func TestAPluginSwitchOffersUndoInTheStatusLineAndUTakesIt(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.press("7", "space")
+	l.press("6", "space")
 	first := firstBuiltin(t)
 	l.has(first+" is off", "undo (u)")
 	l.press("u")

@@ -3,6 +3,9 @@ package tui
 import (
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
@@ -31,32 +34,77 @@ func (s Shell) navLine(w int) string {
 	return pane.Fit(b.String(), w)
 }
 
-// navAction is the action of the header part under column x ("start", "older"
+// navAction is the action of the header part under column x ("older"
 // or "newer"), or "" when x is on plain text.
 func (s Shell) navAction(x int) string { return runhistory.ActionAt(s.navParts(), x) }
 
-// lastRun is the newest run kept, or the one shown when none is kept.
-func (s Shell) lastRun() *runview.Run {
-	if len(s.runs) == 0 {
-		return s.run
-	}
-	return s.runs[len(s.runs)-1]
-}
-
-// openStart shows the start screen of the Run tab, with the shown run chosen in
-// its list of recent runs. A run in progress keeps the screen.
-func (s *Shell) openStart() {
-	if s.running() {
+// openRecent opens the run chosen in the list of recent runs in the right panel
+// of Projects. A run in progress keeps the panel: only it can be opened then.
+func (s *Shell) openRecent() tea.Cmd {
+	at := len(s.runs) - 1 - s.recentAt
+	if s.running() && at != len(s.runs)-1 {
 		s.say(words.Say("tui.run_nav.a_run_is_in_progress_the"))
-		return
+		return nil
 	}
-	s.runSel, s.runHome = "", true
-	s.recentAt = len(s.runs) - 1 - s.runAt
+	s.showRun(at)
+	return s.revealRun()
 }
 
-// openRecent shows the run chosen in the list of recent runs.
-func (s *Shell) openRecent() {
-	s.showRun(len(s.runs) - 1 - s.recentAt)
+// revealRun shows the run panel: Projects opens with the panel beside the list,
+// or over it on a narrow screen (where Esc goes back). The keyboard moves to
+// the run.
+func (s *Shell) revealRun() tea.Cmd {
+	cmd := s.gotoTab(commands.TabProjects)
+	s.runOpen, s.recentFocus, s.sideFocus = true, false, true
+	if s.lay().Mode == layout.Narrow {
+		s.detailOpen, s.detailCursor = true, 0
+	}
+	s.keepRunVisible()
+	return cmd
+}
+
+// closeRun gives the right panel back to the detail of the project. The run
+// goes on, and the list of recent runs opens it again.
+func (s *Shell) closeRun() {
+	s.runOpen, s.detailOpen, s.zoom, s.detailTop, s.sideFocus = false, false, false, 0, false
+}
+
+// recentCollapsed is how many runs the block of recent runs shows until it is
+// opened.
+const recentCollapsed = 3
+
+// recentSection is the block of recent runs at the foot of the projects pane: a
+// rule, a title and the newest runs. Closed, it shows the last three and says
+// how many more are kept. Opened (the keyboard is on it, or a click chose a
+// run) it grows upward to list every run kept, as far as room lines allow, with
+// the cursor on the chosen run. It is empty when there is no run or no room.
+// The hits are relative to its first line.
+func (s Shell) recentSection(w, room int) content {
+	c := content{hits: map[int]hit{}}
+	n := len(s.runs)
+	if !s.recentFocus {
+		n = min(n, recentCollapsed)
+	}
+	n = min(n, room-2)
+	if n < 1 {
+		return c
+	}
+	title := s.th.Title(words.Say("tui.main.recent_runs"))
+	note := s.th.Muted(words.Say("tui.main.up_down_choose_enter_or_double"))
+	switch {
+	case s.recentFocus:
+		title = s.th.Accent(words.Say("tui.main.recent_runs"))
+		note = s.th.Muted(words.Say("tui.main.recent_runs.opened"))
+	case len(s.runs) > n:
+		note = s.th.Muted(words.Count("tui.main.recent_runs.more", len(s.runs)-n))
+	}
+	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), false), pane.Fit(" "+title+"  "+note, w))
+	rows, first := s.recentRows(w, n)
+	for i := range rows {
+		c.hits[len(c.lines)] = hit{kind: "recent", index: first + i}
+		c.lines = append(c.lines, rows[i])
+	}
+	return c
 }
 
 // recentRows are the rows of the list of recent runs that fit in rows lines,
@@ -78,13 +126,14 @@ func (s Shell) recentLine(i, w int) string {
 	if r.Finished {
 		ago = runhistory.Ago(now.Sub(r.Ended))
 	}
+	chosen := i == s.recentAt && s.recentFocus
 	pointer := " "
-	if i == s.recentAt {
+	if chosen {
 		pointer = s.th.Icons.Pointer
 	}
 	return runhistory.Line(runhistory.Row{
 		Pointer: pointer, Command: r.CommandLine(), Result: s.runResult(r),
-		Took: shortDuration(r.RunTime(now)), Ago: ago, Selected: i == s.recentAt,
+		Took: shortDuration(r.RunTime(now)), Ago: ago, Selected: chosen,
 	}, w, s.th.Muted, s.th.Selected)
 }
 

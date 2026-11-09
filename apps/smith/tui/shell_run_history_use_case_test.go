@@ -27,8 +27,8 @@ func TestATaskRunNeverHandsTheTerminalOver(t *testing.T) {
 		if len(l.started) != 1 || l.sh().quit || len(l.sh().Argv) != 0 {
 			t.Fatalf("%v: started %v, quit=%v argv=%v", keys, l.started, l.sh().quit, l.sh().Argv)
 		}
-		if l.sh().tab != "run" {
-			t.Fatalf("%v showed %q, not the Run tab", keys, l.sh().tab)
+		if l.sh().tab != "projects" || !l.sh().runShown() {
+			t.Fatalf("%v showed %q, not the run panel of Projects", keys, l.sh().tab)
 		}
 	}
 	// The palette's entries and the Home action take the same way.

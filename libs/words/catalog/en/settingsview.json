@@ -122,7 +122,7 @@
   "settingsview.installed.about": "A workspace starts it when smith.toml declares it under [plugins.external.{name}].",
   "settingsview.installed.path": "Search path: {path}",
   "settingsview.install.from": "From a directory, an archive, an https URL or a GitHub release: smith plugin install <source>.",
-  "settingsview.install.detail": "Enter asks where it comes from and shows the command line. After you confirm it, it runs in the Run view. The plugin is checked, never started, and trusted only when you say so here.",
+  "settingsview.install.detail": "Enter asks where it comes from and shows the command line. After you confirm it, it runs in the run panel of Projects. The plugin is checked, never started, and trusted only when you say so here.",
   "settingsview.search.from": "Type a word (deploy, go, scaffold) or leave it empty to list every plugin. smith searches the marketplace and lets you pick one.",
   "settingsview.search.detail": "The one you pick is installed with smith plugin install, after a confirmation that shows the command line. It is checked, never started, and trusted only when you say so here.",
   "settingsview.architecture.about": "The architecture is how the code of this workspace is laid out. smith checks that the code follows the one you choose, and the check fails when it does not.",

@@ -43,7 +43,7 @@ import (
 // tabTitles are the names of the tabs, by tab id.
 func tabTitles() map[string]string {
 	return map[string]string{
-		commands.TabHome: words.Say("tui.tab.home"), commands.TabProjects: words.Say("tui.tab.projects"), commands.TabRun: words.Say("tui.tab.run"), commands.TabDoctor: words.Say("tui.tab.doctor"),
+		commands.TabHome: words.Say("tui.tab.home"), commands.TabProjects: words.Say("tui.tab.projects"), commands.TabDoctor: words.Say("tui.tab.doctor"),
 		commands.TabDeps: words.Say("tui.tab.deps"), commands.TabRelease: words.Say("tui.tab.release"), commands.TabSettings: words.Say("tui.tab.settings"), commands.TabGuide: words.Say("tui.tab.guide"),
 	}
 }
@@ -105,7 +105,7 @@ type Config struct {
 // status bar that fill the terminal, usable with the keyboard (single keys,
 // see package commands) and the mouse. Whatever it does is a smith
 // command line, shown in the status bar and logged, run as a child process in
-// the Run tab, and confirmed first when it changes the workspace or publishes.
+// the run panel of Projects, and confirmed first when it changes the workspace or publishes.
 type Shell struct {
 	th      theme.Theme
 	version string
@@ -180,16 +180,16 @@ type Shell struct {
 	verifying []string
 	// verifyingWhat is what that fix did, in words, for the "Fixed" toast.
 	verifyingWhat string
-	// run is the command in the Run tab: running or the last one.
+	// run is the command the run panel shows: running or the last one.
 	run  *runview.Run
 	proc runner.Handle
 	// stopping is set once Ctrl+C asked the run to stop.
 	stopping bool
 	// runSel is the task whose log is shown ("" for all output); runTop scrolls the task list.
 	runSel string
-	// runHome shows the start screen of the Run tab (the buttons) over a finished run; Esc
-	// opens it, Enter, a new run or , . leave it.
-	runHome bool
+	// runOpen is true while the right panel of Projects shows the run (a run
+	// that starts opens it, a recent run is opened into it; Esc or Back closes it).
+	runOpen bool
 	runTop  int
 	log     logview.Log
 	lastArg []string
@@ -197,9 +197,20 @@ type Shell struct {
 	// runs are the runs of the session, oldest first; runAt is the one shown (run).
 	runs  []*runview.Run
 	runAt int
-	// recentAt is the row chosen in the list of recent runs on the start screen
-	// (0 is the newest run).
-	recentAt int
+	// recentAt is the row chosen in the list of recent runs under the projects
+	// (0 is the newest run); recentFocus is true while the keyboard moves in
+	// that list and not in the list of projects.
+	recentAt    int
+	recentFocus bool
+	// recentOpen is true while the list of recent runs is unfolded upward to
+	// show every run kept (the keyboard is on it, or a click opened it).
+	recentOpen bool
+	// sideFocus is true while the keyboard is on the right panel (the detail,
+	// or the run) and not on the list beside it.
+	sideFocus bool
+	// homeSel is the button or run of Home the keyboard is on, counted in
+	// reading order; homeTop is the first line of Home shown while it scrolls.
+	homeSel, homeTop int
 
 	confirm *dialog.Confirm
 	// releaseWaiting is a release command line that waits for the plan to be
@@ -379,7 +390,7 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), StartScreen: s.tab == commands.TabRun && s.runHome, RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown() && s.sideKeys(), RecentFocus: s.recentFocus && !s.sideKeys(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
 	}
 }
@@ -388,11 +399,12 @@ func (s Shell) state() commands.State {
 // then name what the key does next ("ungroup", "collapse all").
 func (s Shell) toggles() map[string]bool {
 	return map[string]bool{
-		"doctor.group":    s.doctor.Grouped,
-		"doctor.foldall":  s.doctor.Grouped && s.doctor.AllOpen(),
-		"doctor.failed":   s.doctor.Shows(doctorview.FilterFailed),
-		"doctor.warnings": s.doctor.Shows(doctorview.FilterWarnings),
-		"doctor.passed":   s.doctor.Shows(doctorview.FilterPassed),
+		"doctor.group":     s.doctor.Grouped,
+		"doctor.foldall":   s.doctor.Grouped && s.doctor.AllOpen(),
+		"run.recent-focus": s.recentFocus,
+		"doctor.failed":    s.doctor.Shows(doctorview.FilterFailed),
+		"doctor.warnings":  s.doctor.Shows(doctorview.FilterWarnings),
+		"doctor.passed":    s.doctor.Shows(doctorview.FilterPassed),
 	}
 }
 
@@ -470,6 +482,7 @@ func (s Shell) viewReasons() map[string]string {
 			r["rel.notes"] = words.Say("tui.shell.there_is_no_release_to_show")
 			r["rel.release"] = words.Say("tui.shell.there_is_nothing_to_release")
 			r["release.open"] = words.Say("tui.shell.there_is_no_bump_to_show")
+			r["release.expand"] = words.Say("tui.shell.there_is_no_bump_to_show")
 		}
 		if !s.release.Empty() {
 			r["rel.why"] = words.Say("tui.release_reason.nothing_to_explain")
@@ -484,21 +497,36 @@ func (s Shell) viewReasons() map[string]string {
 	case commands.TabHome:
 		if s.homeCommand() == "" {
 			r["home.next"] = words.Say("tui.shell.nothing_to_do_yet")
+			r["home.move"] = words.Say("tui.shell.nothing_to_do_yet")
 		}
-	case commands.TabRun:
-		for id, why := range s.runReasons() {
-			r[id] = why
+		if !s.homeScrolls() {
+			r["home.scroll"] = words.Say("tui.shell.the_page_fits")
 		}
+	}
+	for id, why := range s.runReasons() {
+		r[id] = why
 	}
 	return r
 }
 
 func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
 
+// runShown is true while the right panel of the open Projects view shows a run.
+func (s Shell) runShown() bool {
+	return s.runWanted() && (s.detailFull() || s.lay().HasDetail())
+}
+
+// runWanted is true while the open view is Projects and a run is open for it,
+// whether or not the screen has room to draw it beside the list. It is the
+// layout's own question, so it never asks the layout.
+func (s Shell) runWanted() bool {
+	return s.runOpen && s.run != nil && s.tab == commands.TabProjects && s.inWorkspace
+}
+
 // tabList is the tabs of the strip: the views of a workspace; outside one, only the guide.
 func (s Shell) tabList() []string {
 	if s.inWorkspace {
-		return []string{commands.TabHome, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings}
+		return []string{commands.TabHome, commands.TabProjects, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings}
 	}
 	return []string{commands.TabGuide}
 }

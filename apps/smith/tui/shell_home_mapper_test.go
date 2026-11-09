@@ -35,8 +35,8 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 	if first := l.lines()[0]; !strings.Contains(first, "×2") {
 		t.Fatalf("the header carries the health: %q", first)
 	}
-	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Doctor (4)]",
-		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Check for updates (5)]", "acme · main · 4 projects")
+	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Doctor (3)]",
+		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Open Deps (4)]", "acme · main · 4 projects")
 	l.hasNot("Where to go", "Health", "nothing has run yet", "Next:")
 	lines := l.lines()
 	var title, fix, affected int
@@ -54,7 +54,7 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 		t.Fatalf("the first item (row %d, buttons %d) comes before the others (row %d)", title, fix, affected)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"next (Enter)", "build all 3 (B)", "changed (w)", "doctor (d)", "1-7 views"} {
+	for _, want := range []string{"next (Enter)", "build all 3 (B)", "changed (w)", "doctor (d)", "1-6 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
@@ -185,12 +185,12 @@ func TestAffectedProjectsComeBeforeABuild(t *testing.T) {
 
 func TestOutdatedDependenciesAreCountedOnceTheyAreKnown(t *testing.T) {
 	l := healthyShell(t, false)
-	l.keys("5", "1")
+	l.keys("4", "1")
 	l.has("3 dependencies have newer releases", "[Open Deps (Enter)]")
 	sh := l.sh()
 	sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 	l.m = sh
-	l.keys("5", "r", "1")
+	l.keys("4", "r", "1")
 	l.has("All good")
 	l.hasNot("newer releases", "Updates not looked at yet")
 }
@@ -208,8 +208,8 @@ func TestHomeListsTheLastRunsAndAClickOpensOne(t *testing.T) {
 	l.has("orders:build failed", "[See why (Enter)]", "[Run it again]", "× build")
 
 	l.clickText("× build")
-	if sh := l.sh(); sh.tab != commands.TabRun || sh.runHome {
-		t.Fatalf("a click on the run opened %q (start screen %v)", sh.tab, sh.runHome)
+	if sh := l.sh(); sh.tab != commands.TabProjects || !sh.runShown() {
+		t.Fatalf("a click on the run opened %q (run panel %v)", sh.tab, sh.runShown())
 	}
 	l.has("orders:build")
 }
@@ -228,7 +228,7 @@ func TestTheOpenRunAndRunAgainButtonsOfAFailedRun(t *testing.T) {
 	l.keys("B")
 	l.keys("1")
 	l.keys("enter")
-	if l.sh().tab != commands.TabRun {
+	if l.sh().tab != commands.TabProjects || !l.sh().runShown() {
 		t.Fatalf("Enter on a failed run opened %q", l.sh().tab)
 	}
 }
@@ -253,10 +253,10 @@ func TestTheReleaseItemAppearsWhenThePlanArrivesAndHomeNeverWaitsForIt(t *testin
 		{Project: "web", Current: "1.0.0", Next: "1.1.0", Commits: []string{"a", "b", "c"}},
 		{Project: "kit", Current: "0.2.0", Next: "0.2.1", Commits: []string{"a"}},
 	}}})
-	l.has("Ready to release: 2 packages, web 1.0.0 → 1.1.0 (3 commits)", "[Preview (6)]")
-	l.clickText("[Preview")
+	l.has("Ready to release: 2 packages, web 1.0.0 → 1.1.0 (3 commits)", "[Open Release (5)]")
+	l.clickText("[Open Release")
 	if l.sh().tab != commands.TabRelease {
-		t.Fatalf("Preview opened %q", l.sh().tab)
+		t.Fatalf("Open Release opened %q", l.sh().tab)
 	}
 }
 

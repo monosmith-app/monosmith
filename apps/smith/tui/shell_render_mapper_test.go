@@ -40,20 +40,20 @@ func TestAt140ColumnsTheHeaderTheListAndTheDetailShareTheScreen(t *testing.T) {
 	l.has("acme", "main",                               // the header
 		"Projects", "Doctor", // the tabs
 		"web", "orders", "kit", "sdk", "4 projects", // the list
-		"root", "affected", "Run build", // the detail of the selected project
+		"root", "affected", "Build app", // the detail of the selected project
 		"smith 1.2.3") // the status bar
 	l.hasNot("Reading the workspace")
 }
 
 func TestAt100ColumnsTheDetailIsStillBesideTheList(t *testing.T) {
-	newLab(t, true, 100, 30).has("root", "Run build", "4 projects")
+	newLab(t, true, 100, 30).has("root", "Build app", "4 projects")
 }
 
 func TestBelow100ColumnsOnlyTheListIsShown(t *testing.T) {
 	l := newLab(t, true, 99, 30)
 	l.has("4 projects", "web")
-	l.hasNot("Run build", "language") // the detail opens with Enter
-	newLab(t, true, 80, 26).hasNot("Run build")
+	l.hasNot("Build app", "language") // the detail opens with Enter
+	newLab(t, true, 80, 26).hasNot("Build app")
 }
 
 func TestAtTheSupportedFloorEveryProjectIsStillListed(t *testing.T) {
@@ -69,16 +69,16 @@ func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
 
 func TestTheInterfaceFollowsEveryResize(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("Run build")
+	l.has("Build app")
 	l.send(tea.WindowSizeMsg{Width: 90, Height: 20})
-	l.hasNot("Run build")
+	l.hasNot("Build app")
 	if got := len(strings.Split(l.sh().View(), "\n")); got != 20 {
 		t.Fatalf("%d lines after the resize", got)
 	}
 	l.send(tea.WindowSizeMsg{Width: 72, Height: 20})
 	l.has("4 projects")
 	l.send(tea.WindowSizeMsg{Width: 140, Height: 34})
-	l.has("Run build")
+	l.has("Build app")
 }
 
 func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *testing.T) {
@@ -91,12 +91,12 @@ func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *
 	if l.sh().detailOpen {
 		t.Fatal("the detail is beside the list now")
 	}
-	l.has("Run build", "4 projects")
+	l.has("Build app", "4 projects")
 }
 
 func TestTheFirstProjectIsSelectedAndShownInTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("orders", "root", "go", "Run on orders", "Run build", "turns the source into what gets shipped", "Run test", "Explain")
+	l.has("orders", "root", "go", "Run on orders", "Build app", "turns the source into what gets shipped", "Test app", "Explain")
 }
 
 func TestALongPathInTheDetailIsShortenedInTheMiddle(t *testing.T) {
@@ -161,15 +161,15 @@ func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 		"idle":           func(*lab) {},
 		"palette":        func(l *lab) { l.keys("ctrl+p") },
 		"help":           func(l *lab) { l.keys("f1") },
-		"confirm":        func(l *lab) { l.keys("6", "x", "enter") },
-		"release choice": func(l *lab) { l.keys("6", "x") },
+		"confirm":        func(l *lab) { l.keys("5", "x", "enter") },
+		"release choice": func(l *lab) { l.keys("5", "x") },
 		"run": func(l *lab) {
 			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✓ 1s", "x:y │ z"}}
 			l.keys("b")
 		},
 		"home":   func(l *lab) { l.keys("1") },
-		"doctor": func(l *lab) { l.keys("4") },
-		"deps":   func(l *lab) { l.keys("5") },
+		"doctor": func(l *lab) { l.keys("3") },
+		"deps":   func(l *lab) { l.keys("4") },
 		"guide":  func(l *lab) { l.keys("a") },
 	}
 	for name, prep := range prepare {
@@ -215,7 +215,7 @@ var frameTabs = []struct {
 	{"doctor", func(t *testing.T, w, h int) *lab { return newLab(t, true, w, h).openTab(commands.TabDoctor) }},
 	{"settings", func(t *testing.T, w, h int) *lab {
 		l, _ := newSettingsLab(t, w, h)
-		return l.keys("7")
+		return l.keys("6")
 	}},
 	{"home", func(t *testing.T, w, h int) *lab { return newHomeLab(t, w, h) }},
 }
@@ -282,7 +282,8 @@ func TestEveryDividerIsHeldAndDrawnHeavyOnItsNewCellsAt80And120Columns(t *testin
 				sp := spots[i]
 				x, y, rest, heavy, nx, ny := sp.Hit.X, sp.Hit.Y+1, '│', '┃', sp.Hit.X-2, sp.Hit.Y+1
 				if sp.Axis == splitter.Row {
-					x, y, rest, heavy, nx, ny = sp.Hit.X+sp.Hit.W/2, sp.Hit.Y, '─', '━', sp.Hit.X+sp.Hit.W/2, sp.Hit.Y-1
+					// Near the right end: the rule of the run log carries its title in the middle.
+					x, y, rest, heavy, nx, ny = sp.Hit.X+sp.Hit.W-3, sp.Hit.Y, '─', '━', sp.Hit.X+sp.Hit.W-3, sp.Hit.Y-1
 				}
 				cell := func() rune { return []rune(l.lines()[y])[x] }
 				if cell() != rest {
@@ -356,7 +357,7 @@ func TestTheWheelScrollsTheListFromItsLastRowAt80And120Columns(t *testing.T) {
 		}
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{Rows: rows} }
 		l.m = sh
-		l.keys("5", "r")
+		l.keys("4", "r")
 		last := l.sh().mainInner().Y + l.sh().mainInner().H - 1
 		if last != l.sh().lay().Footer.Y-1 {
 			t.Fatalf("at %d the content ends on row %d, the footer is on %d", w, last, l.sh().lay().Footer.Y)

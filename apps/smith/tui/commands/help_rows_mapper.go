@@ -28,13 +28,13 @@ func HelpRows(s State, viewTitle string) []HelpRow {
 		rows = append(rows, HelpRow{Group: group, Title: c.Title, Shortcut: c.Shortcut, Disabled: why})
 	}
 	for _, c := range all {
-		if len(c.Views) > 0 && c.inView(s) && c.Shortcut != "" && (c.Kind == PaneKey || c.Visible(s)) {
+		if len(c.Views) > 0 && c.inView(s) && c.Shortcut != "" && c.gated(s) && (c.Kind == PaneKey || c.Visible(s)) {
 			add(words.Say("commands.help.view", "view", viewTitle), c)
 		}
 	}
 	for _, g := range GroupOrder {
 		for _, c := range all {
-			if c.Group == g && len(c.Views) == 0 && c.Shortcut != "" && (c.Kind == PaneKey || c.Visible(s)) {
+			if c.Group == g && len(c.Views) == 0 && c.Shortcut != "" && c.gated(s) && (c.Kind == PaneKey || c.Visible(s)) {
 				add(g, c)
 			}
 		}

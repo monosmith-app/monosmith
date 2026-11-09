@@ -292,15 +292,15 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		s.copyLog()
 	case "run-older", "run-newer":
 		s.stepRun(map[string]int{"run-older": -1, "run-newer": 1}[action])
-	case "projects":
-		return s.gotoTab(commands.TabProjects)
-	case "log":
-		s.runSel, s.runHome = "", false
-		return s.gotoTab(commands.TabRun)
+	case "run-back":
+		s.closeRun()
 	case "why-failed":
-		// The log of the task that failed, whatever the Run tab had selected.
-		s.runSel, s.runHome = s.firstFailed(), false
-		return s.gotoTab(commands.TabRun)
+		// The log of the task that failed, whatever the run panel had selected.
+		if s.run == nil {
+			return nil
+		}
+		s.runSel = s.firstFailed()
+		return s.revealRun()
 	case "graph":
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)
@@ -341,6 +341,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		s.moveSplit(-1)
 	case "split-right":
 		s.moveSplit(1)
+	case "home-up", "home-down":
+		s.pageHome(map[string]int{"home-up": -1, "home-down": 1}[action])
 	case "detail-up", "detail-down":
 		if !s.detailVisible() {
 			s.say(words.Say("tui.keys.the_detail_is_not_on_screen", "shortcutOf", commands.ShortcutOf("detail.zoom")))
@@ -515,28 +517,29 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch s.tab {
 	case commands.TabHome:
-		if commands.NavNamed(name) == commands.NavConfirm {
-			if id := s.homeCommand(); id != "" {
-				return s.activate(id)
-			}
-		}
+		return s.homeKey(name)
 	case commands.TabProjects:
-		if s.detailFull() {
+		switch {
+		case s.runShown() && s.sideKeys():
+			return s.runKey(name)
+		case s.recentFocus && !s.detailFull():
+			return s.recentKey(name)
+		case s.sideKeys():
 			return s.detailKey(name)
 		}
 		return s.projectsKey(name)
 	case commands.TabDeps:
 		s.deps = s.deps.Update(msg, s.listPage())
-	case commands.TabRun:
-		return s.runKey(name)
 	case commands.TabRelease:
 		s.release = s.release.Update(msg)
 	case commands.TabSettings:
 		return s.settingsKey(msg)
 	case commands.TabDoctor:
 		switch {
-		case s.detailFull():
+		case s.sideKeys():
 			return s.detailKey(name)
+		case (name == "tab" || (name == "right" && !s.doctor.OnHeader())) && s.beside():
+			s.focusSide()
 		case commands.NavNamed(name) == commands.NavConfirm && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
 			// Beside the detail Enter unfolds what the detail folded. On the line
 			// that hides the passed checks it shows them, as that line says.
@@ -613,18 +616,52 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 		s.list = s.list.End()
 	case commands.NavConfirm:
 		if s.lay().Mode == layout.Narrow && s.list.Len() > 0 {
-			s.detailOpen, s.detailCursor = true, 0
+			s.runOpen, s.detailOpen, s.detailCursor = false, true, 0
+		}
+	case commands.NavNext:
+		if len(s.runs) > 0 {
+			s.recentFocus = true
+		} else {
+			s.focusSide()
+		}
+	default:
+		if name == "right" {
+			s.focusSide()
 		}
 	}
 	return nil
 }
 
-// detailKey moves between the actions of the detail that fills the pane, runs
-// the highlighted one, and goes back to the list.
+// recentKey moves in the list of recent runs under the projects: arrows choose,
+// Enter opens the run in the right panel, Esc or Left give the keyboard back to
+// the projects, and Tab moves it on to the right panel (or back to the projects
+// when none is beside the list). The list is open while it has the keyboard.
+func (s *Shell) recentKey(name string) tea.Cmd {
+	switch act := commands.NavNamed(name); {
+	case act == commands.NavUp:
+		s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), -1)
+	case act == commands.NavDown:
+		s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), 1)
+	case act == commands.NavConfirm:
+		return s.openRecent()
+	case act == commands.NavNext || name == "right":
+		s.recentFocus = false
+		s.focusSide()
+	case act == commands.NavCancel || name == "left":
+		s.recentFocus = false
+	}
+	return nil
+}
+
+// detailKey moves between the actions of the detail (it fills the pane, or the
+// keyboard moved to it beside the list), runs the highlighted one, and goes back
+// to the list.
 func (s *Shell) detailKey(name string) tea.Cmd {
 	actions := s.detailActions()
 	act := commands.NavNamed(name)
 	switch {
+	case !s.detailFull() && (act == commands.NavCancel || act == commands.NavNext || name == "left" || name == "backspace"):
+		s.focusList()
 	case act == commands.NavCancel || name == "left" || name == "backspace":
 		s.detailOpen, s.zoom = false, false
 	case act == commands.NavPageUp:
@@ -633,8 +670,10 @@ func (s *Shell) detailKey(name string) tea.Cmd {
 		s.pageDetail(1)
 	case act == commands.NavUp:
 		s.detailCursor = max(s.detailCursor-1, 0)
+		s.keepDetailCursorVisible()
 	case act == commands.NavDown:
 		s.detailCursor = min(s.detailCursor+1, max(len(actions)-1, 0))
+		s.keepDetailCursorVisible()
 	case act == commands.NavConfirm:
 		if s.detailCursor < len(actions) && !actions[s.detailCursor].Disabled {
 			return s.activate(actions[s.detailCursor].ID)
@@ -643,32 +682,29 @@ func (s *Shell) detailKey(name string) tea.Cmd {
 	return nil
 }
 
-// runKey moves in the Run tab: the task list and the log.
+// runKey moves in the run panel: the task list and the log.
 func (s *Shell) runKey(name string) tea.Cmd {
 	if s.run == nil {
 		return nil
 	}
-	if s.runHome {
-		switch commands.NavNamed(name) {
-		case commands.NavConfirm:
-			s.openRecent()
-		case commands.NavUp:
-			s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), -1)
-		case commands.NavDown:
-			s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), 1)
+	ids := s.runIDs()
+	if name == "left" || commands.NavNamed(name) == commands.NavNext {
+		// Beside the list, the keyboard goes back to the list; the run stays open.
+		if s.beside() {
+			s.focusList()
 		}
 		return nil
 	}
-	ids := s.runIDs()
 	switch commands.NavNamed(name) {
 	case commands.NavUp:
 		s.runSel = runhistory.StepSelection(ids, s.runSel, -1)
 	case commands.NavDown:
 		s.runSel = runhistory.StepSelection(ids, s.runSel, 1)
 	case commands.NavCancel:
-		// The first Esc shows all output; the next, once nothing runs, the start screen.
-		if s.runSel == "" && !s.running() {
-			s.openStart()
+		// The first Esc shows all output; the next goes back to the project.
+		if s.runSel == "" {
+			s.closeRun()
+			return nil
 		}
 		s.runSel = ""
 	case commands.NavPageUp:
@@ -684,7 +720,7 @@ func (s *Shell) runKey(name string) tea.Cmd {
 	return nil
 }
 
-// runIDs are the choices in the Run tab's list: "" (all output), then the
+// runIDs are the choices in the run panel's list: "" (all output), then the
 // tasks in the order they are drawn.
 func (s *Shell) runIDs() []string {
 	ids := []string{""}

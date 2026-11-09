@@ -34,3 +34,27 @@ func RunScopeLabel(argv []string, projects int) string {
 	}
 	return verb + words.Say("commands.scope.all")
 }
+
+// RunTitle names a run for the header of the run panel: what it covers, then
+// the tasks ("web · build", "all 23 projects · lint + test"). It is "" for a
+// command line that is not a task run.
+func RunTitle(argv []string, projects int) string {
+	req, ok := ParseRun(argv)
+	if !ok {
+		return ""
+	}
+	var scope string
+	switch {
+	case len(req.Projects) > 0:
+		scope = strings.Join(req.Projects, ", ")
+	case req.Affected:
+		scope = words.Say("commands.runtitle.affected")
+	case projects == 1:
+		scope = words.Say("commands.runtitle.only")
+	case projects > 0:
+		scope = words.Say("commands.runtitle.count", "count", projects)
+	default:
+		scope = words.Say("commands.runtitle.all")
+	}
+	return words.Say("commands.runtitle", "scope", scope, "tasks", strings.Join(req.Tasks, " + "))
+}

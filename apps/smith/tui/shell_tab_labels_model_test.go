@@ -74,7 +74,7 @@ func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 
 func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 	text := stripText(newLab(t, true, 120, 30))
-	for _, name := range []string{"Home", "Projects", "Run", "Doctor", "Deps", "Release"} {
+	for _, name := range []string{"Home", "Projects", "Doctor", "Deps", "Release"} {
 		if !strings.Contains(text, name) {
 			t.Errorf("at 120 columns %q is not spelled out:\n%s", name, text)
 		}
@@ -83,8 +83,8 @@ func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 
 func TestTheDoctorTabCarriesTheCountOfFailures(t *testing.T) {
 	l := newLab(t, true, 140, 30)
-	l.keys("4")
-	if text := stripText(l); !strings.Contains(text, "Doctor (4)] ×2") {
+	l.keys("3")
+	if text := stripText(l); !strings.Contains(text, "Doctor (3)] ×2") {
 		t.Fatalf("the Doctor tab should carry its failures:\n%s", text)
 	}
 	if first := l.lines()[0]; !strings.Contains(first, "×2") {
@@ -125,18 +125,18 @@ func TestTheAddProjectWizardIsTitledAddAProject(t *testing.T) {
 	}
 }
 
-func TestADryRunNeverShowsAGreenTickOnTheRunTab(t *testing.T) {
+func TestADryRunNeverShowsAGreenTickOnTheProjectsTab(t *testing.T) {
 	s := newLab(t, true, 140, 30).sh()
 	now := time.Now()
 	s.run = runview.NewRun([]string{"release", "--dry-run"}, nil, now)
 	s.run.End(0, false, now)
-	got := pane.Strip(s.tabBadge("run"))
+	got := pane.Strip(s.tabBadge("projects"))
 	if strings.Contains(got, "✓") || got == "" {
 		t.Errorf("a dry run shows %q", got)
 	}
 	s.run = runview.NewRun([]string{"run", "build"}, nil, now)
 	s.run.End(0, false, now)
-	if got := pane.Strip(s.tabBadge("run")); got != "✓" {
+	if got := pane.Strip(s.tabBadge("projects")); got != "✓" {
 		t.Errorf("a real run that passed shows %q", got)
 	}
 }
@@ -146,7 +146,7 @@ func TestATabShowsASpinnerWhileItsWorkGoesOnInTheBackground(t *testing.T) {
 	sh := l.sh()
 	sh.depsLoading = true
 	l.m = sh
-	if tabs := l.lines()[1]; !strings.Contains(tabs, "[Deps (5)] ⠋") {
+	if tabs := l.lines()[1]; !strings.Contains(tabs, "[Deps (4)] ⠋") {
 		t.Fatalf("Deps has no badge while the registries are asked: %q", tabs)
 	}
 	if !l.sh().animating() {
@@ -154,7 +154,7 @@ func TestATabShowsASpinnerWhileItsWorkGoesOnInTheBackground(t *testing.T) {
 	}
 	sh.depsLoading = false
 	l.m = sh
-	if strings.Contains(l.lines()[1], "[Deps (5)] ⠋") {
+	if strings.Contains(l.lines()[1], "[Deps (4)] ⠋") {
 		t.Fatal("the badge stays after the work ended")
 	}
 }

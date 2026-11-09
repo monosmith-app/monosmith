@@ -152,6 +152,11 @@ func (s Shell) dialogMargins() (top, bottom int) {
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
 	s.selection = s.selection.Clear()
+	if s.runWanted() {
+		// A run open keeps the screen when it gets narrow: the panel replaces the
+		// list, as a detail does. When the screen widens, it sits beside the list.
+		s.detailOpen = s.lay().Mode == layout.Narrow
+	}
 	if s.relpick != nil {
 		placed := s.relpick.Within(s.dialogMargins()).Place(w, h)
 		s.relpick = &placed

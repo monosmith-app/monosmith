@@ -44,7 +44,7 @@ const (
 func addProjectTitle() string { return words.Say("tui.capture.add_project_title") }
 
 // capturedMsg is the end of a command the shell ran to read its text (a plan,
-// a list, an error) and not to show in the Run tab.
+// a list, an error) and not to show in the run panel.
 type capturedMsg struct {
 	purpose string
 	argv    []string

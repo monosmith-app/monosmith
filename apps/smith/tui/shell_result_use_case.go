@@ -27,7 +27,7 @@ func notCommittedMark() string { return words.Say("tui.result.not_committed") }
 
 // afterRun opens the result dialog for a run that just ended: a failed add that
 // left its project on disk because a tool is missing, or a change that was not
-// committed. Anything else keeps the toast and the Run tab as they are.
+// committed. Anything else keeps the toast and the run panel as they are.
 func (s *Shell) afterRun() {
 	if s.run == nil || s.run.Cancelled || s.result != nil || s.tools != nil || s.confirm != nil {
 		return

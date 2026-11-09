@@ -18,6 +18,7 @@ type canvas struct {
 	th      theme.Theme
 	w       int
 	ptr     Pointer
+	sel     int
 	lines   []string
 	targets []Target
 }
@@ -31,7 +32,15 @@ type canvas struct {
 // the cell under the mouse, so the button under it shows its hover state.
 // Returns: the lines and the targets of the clicks.
 func Page(th theme.Theme, f Facts, w int, ptr Pointer) Rendered {
-	c := &canvas{th: th, w: w, ptr: ptr}
+	return PageAt(th, f, w, ptr, -1)
+}
+
+// PageAt is Page with the keyboard on one target: the button or run at
+// position sel of the targets, in reading order (a negative sel is none). The
+// target looks as under the pointer, and a button carries the Enter key while
+// it has the keyboard, so the label says what Enter does.
+func PageAt(th theme.Theme, f Facts, w int, ptr Pointer, sel int) Rendered {
+	c := &canvas{th: th, w: w, ptr: ptr, sel: sel}
 	q := Queue(f)
 	c.add("")
 	for _, it := range q {
@@ -97,7 +106,7 @@ func (c *canvas) buttons(bs []Button, x0 int) {
 	row := len(c.lines)
 	line, x := strings.Repeat(" ", x0), x0
 	for i, b := range bs {
-		bw := button.Width(c.th, b.Label, b.Key)
+		bw := button.Width(c.th, b.Label, c.keyOf(b))
 		if i > 0 && x+buttonGap+bw > c.w {
 			c.add(line)
 			row++
@@ -115,11 +124,29 @@ func (c *canvas) buttons(bs []Button, x0 int) {
 // draw is a button at column x of line row, in the state the pointer gives it,
 // and records where a click on it lands.
 func (c *canvas) draw(b Button, row, x int) string {
-	bw := button.Width(c.th, b.Label, b.Key)
-	c.targets = append(c.targets, Target{Row: row, From: x, To: x + bw, Command: b.CommandID})
+	key := c.keyOf(b)
+	bw := button.Width(c.th, b.Label, key)
 	state := button.Rest
-	if c.ptr.Row == row && c.ptr.Col >= x && c.ptr.Col < x+bw {
+	if (c.ptr.Row == row && c.ptr.Col >= x && c.ptr.Col < x+bw) || len(c.targets) == c.sel {
 		state = button.Hover
 	}
-	return button.Render(c.th, b.Label, b.Key, state)
+	c.targets = append(c.targets, Target{Row: row, From: x, To: x + bw, Command: b.CommandID})
+	return button.Render(c.th, b.Label, key, state)
+}
+
+// keyOf is the key a button shows: Enter while it has the keyboard, and, once
+// the keyboard is elsewhere, the button of the queue that first carried Enter
+// shows its own key again. It is the next target to be drawn.
+func (c *canvas) keyOf(b Button) string {
+	if c.sel < 0 {
+		return b.Key
+	}
+	enter := commands.ShortcutOf("home.next")
+	switch {
+	case len(c.targets) == c.sel:
+		return enter
+	case b.Key == enter:
+		return commands.ShortcutOf(b.CommandID)
+	}
+	return b.Key
 }

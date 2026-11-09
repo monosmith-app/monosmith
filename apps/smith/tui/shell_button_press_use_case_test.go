@@ -63,7 +63,7 @@ func TestTheKeyOfAButtonDoesWhatTheButtonSays(t *testing.T) {
 
 func TestAHoveredButtonLooksDifferentAndLeavingRestoresIt(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Run test")
+	x, y := l.find("Test app")
 	rest := l.rawRow(y)
 	l.send(motion(x+2, y))
 	hover := l.rawRow(y)
@@ -78,7 +78,7 @@ func TestAHoveredButtonLooksDifferentAndLeavingRestoresIt(t *testing.T) {
 
 func TestAPressedButtonShowsTheActiveStateAndRunsOnRelease(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Run test")
+	x, y := l.find("Test app")
 	l.send(motion(x+2, y))
 	hover := l.rawRow(y)
 	l.send(click(x+2, y))
@@ -97,7 +97,7 @@ func TestAPressedButtonShowsTheActiveStateAndRunsOnRelease(t *testing.T) {
 
 func TestDraggingAwayFromAPressedButtonCancelsIt(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Run test")
+	x, y := l.find("Test app")
 	l.send(click(x+2, y)).send(drag(x+2, y+4)).send(letGo(x+2, y+4))
 	if len(l.started) != 0 {
 		t.Fatalf("a release elsewhere cancels the press, started %q", l.lastStarted())
@@ -114,8 +114,8 @@ func TestDraggingAwayFromAPressedButtonCancelsIt(t *testing.T) {
 
 func TestAPressOnOneButtonReleasedOnAnotherRunsNothing(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Run build")
-	tx, ty := l.find("Run test")
+	x, y := l.find("Build app")
+	tx, ty := l.find("Test app")
 	l.send(click(x+2, y)).send(drag(tx+2, ty)).send(letGo(tx+2, ty))
 	if len(l.started) != 0 {
 		t.Fatalf("started %q", l.lastStarted())
@@ -141,11 +141,11 @@ func TestTheKeyboardCursorOfTheOpenDetailKeepsItsMark(t *testing.T) {
 		}
 		return rows[0]
 	}
-	if !strings.Contains(markedRow(), "Run build (b)") {
+	if !strings.Contains(markedRow(), "Build app (b)") {
 		t.Fatalf("the cursor starts on the first action:\n%s", l.view())
 	}
 	l.keys("down")
-	if !strings.Contains(markedRow(), "Run test (t)") {
+	if !strings.Contains(markedRow(), "Test app (t)") {
 		t.Fatalf("the mark moves with the cursor:\n%s", l.view())
 	}
 }
@@ -154,13 +154,16 @@ func TestEveryActionOfTheRunAndDoctorDetailsShowsAKey(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
 	l.keys("b")
-	l.keys("3")
-	for _, a := range l.sh().detailPanel().Actions {
-		if a.Shortcut == "" {
-			t.Errorf("Run: %s has no key", a.Label)
+	// The buttons of the run panel, Back and Stop first.
+	if len(l.sh().runButtons()) < 2 {
+		t.Fatalf("the run panel has buttons %v", l.sh().runButtons())
+	}
+	for _, a := range l.sh().runButtons() {
+		if a.key == "" {
+			t.Errorf("Run: %s has no key", a.label)
 		}
 	}
-	l.keys("4")
+	l.keys("3")
 	for _, a := range l.sh().detailPanel().Actions {
 		if a.Shortcut == "" {
 			t.Errorf("Doctor: %s has no key", a.Label)
@@ -170,7 +173,7 @@ func TestEveryActionOfTheRunAndDoctorDetailsShowsAKey(t *testing.T) {
 
 func TestNoTabNamesTheFrameAtAnyWidth(t *testing.T) {
 	for _, w := range []int{80, 120} {
-		for _, tab := range []string{commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings} {
+		for _, tab := range []string{commands.TabProjects, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings} {
 			l := newLab(t, true, w, 34)
 			l.openTab(tab)
 			top := l.lines()[l.sh().lay().Main.Y]

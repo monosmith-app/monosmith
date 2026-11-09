@@ -15,8 +15,8 @@ import (
 )
 
 // hasDetail is true for the views whose selection has a detail: the project
-// in Projects, the finding in Doctor, the task in Run. Beside the list on a
-// wide screen; over it, opened with Enter, on a narrow one.
+// in Projects (or the run that is open there), the finding in Doctor. Beside the
+// list on a wide screen; over it, opened with Enter, on a narrow one.
 func (s Shell) hasDetail() bool {
 	if !s.inWorkspace {
 		return false
@@ -24,8 +24,6 @@ func (s Shell) hasDetail() bool {
 	switch s.tab {
 	case commands.TabProjects, commands.TabDoctor:
 		return s.tab == commands.TabProjects || s.doctor.Report != nil
-	case commands.TabRun:
-		return s.run != nil
 	}
 	return false
 }
@@ -58,7 +56,7 @@ func (s Shell) detailRect() layout.Rect {
 func (s Shell) detailContent(w, h int) content {
 	panel := s.detailPanel()
 	panel.Pressed = s.pressed
-	if a := panel.Actions; s.detailFull() && s.detailCursor < len(a) {
+	if a := s.detailActions(); s.sideKeys() && s.detailCursor < len(a) {
 		panel.Cursor = a[s.detailCursor].ID
 	}
 	all, rows := panel.View(s.th, w, "")
@@ -75,6 +73,15 @@ func (s Shell) detailContent(w, h int) content {
 		c.hits[row] = hit{kind: "action", id: id}
 	}
 	return c
+}
+
+// sideContent is what the right panel shows: the run while one is open in
+// Projects, else the detail of the selection.
+func (s Shell) sideContent(w, h int) content {
+	if s.runShown() {
+		return s.runPanelContent(w, h)
+	}
+	return s.detailContent(w, h)
 }
 
 // scrollDetail moves the detail by delta lines, never past its ends.
@@ -121,6 +128,7 @@ func (s Shell) detailPanel() detail.Panel {
 	p.Expanded = s.detailAll
 	p.ListVisible = !s.detailFull() && s.lay().HasDetail()
 	p.Actions = s.withKeys(p.Actions)
+	p.More = s.withKeys(p.More)
 	return p
 }
 
@@ -136,45 +144,8 @@ func (s Shell) selectionPanel() detail.Panel {
 		// A check is about the workspace or one project, not about the project
 		// last selected in the list.
 		return s.doctorPanel()
-	case commands.TabRun:
-		return s.runPanel()
 	}
 	return s.projectPanel()
-}
-
-// runPanel describes the task selected in the Run view, or the run as a whole.
-func (s Shell) runPanel() detail.Panel {
-	if s.run == nil {
-		return s.workspacePanel()
-	}
-	if t := s.run.Task(s.runSel); t != nil && s.runSel != "" {
-		// The list row of the task draws its state, its time and its reason when
-		// they fit: beside the list the detail leaves those out.
-		now := s.now()
-		inState, inTime, inReason := s.taskRowShows(t, s.mainInner().W, now)
-		rows := []detail.Row{{Label: "state", Value: s.statusIcon(t.Status) + " " + t.Status.String(), ShownByList: inState}}
-		if d := s.run.Elapsed(t, now); d > 0 {
-			rows = append(rows, detail.Row{Label: "time", Value: shortDuration(d), ShownByList: inTime})
-		}
-		if t.Command != "" {
-			rows = append(rows, detail.Row{Label: "command", Value: t.Command})
-		}
-		if t.Reason != "" {
-			rows = append(rows, detail.Row{Label: "reason", Value: t.Reason, ShownByList: inReason})
-		}
-		rows = append(rows, detail.Row{Label: "log", Value: words.Say("tui.detail.lines", "len", len(t.Log))})
-		return detail.Panel{
-			Sections: []detail.Section{{Heading: t.ID, Rows: rows}},
-			Actions:  s.runActions(),
-		}
-	}
-	// The command and the task counts are in the run's own lines beside this, so
-	// the detail does not say them again.
-	rows := []detail.Row{{Label: "output", Value: words.Say("tui.detail.lines", "len", len(s.run.Lines))}}
-	return detail.Panel{
-		Sections: []detail.Section{{Heading: words.Say("tui.detail.this_run"), Rows: rows}},
-		Actions:  s.runActions(),
-	}
 }
 
 // projectPanel describes the selected project, its tasks and what it can do.
@@ -208,8 +179,12 @@ func (s Shell) projectPanel() detail.Panel {
 	var actions []detail.Action
 	keys := s.taskKeys(p)
 	for _, t := range p.Tasks {
-		a := s.taskAction(t.Name, keys[t.Name])
+		a := s.taskAction(t.Name, keys[t.Name], p.Kind)
 		a.Hint = taskHint(t)
+		if _, named := taskVerbs[t.Name]; named {
+			// The button names what the task does to this kind; the task keeps its own name here.
+			a.Hint += words.Say("tui.detail.task_command", "task", t.Name)
+		}
 		actions = append(actions, a)
 	}
 	actions = append(actions,
@@ -224,12 +199,29 @@ func (s Shell) projectPanel() detail.Panel {
 	if len(p.Tasks) > 0 {
 		title = words.Say("tui.detail.run_on", "name", p.Name)
 	}
-	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title}
+	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, More: s.everyProjectActions(), MoreTitle: words.Say("tui.run_panel.run_on_everything")}
+}
+
+// everyProjectActions are the runs that cover every project, offered under the
+// actions of the selected one: the verify run and each task of the capital keys.
+func (s Shell) everyProjectActions() []detail.Action {
+	n := s.list.Len()
+	var out []detail.Action
+	for _, b := range []struct{ id, label string }{
+		{"run.verify", words.Say("tui.main.verify_everything_lint_typecheck_test")},
+		{"run.build-all", words.Say("tui.main.build_everything", "len", n)},
+		{"run.test-all", words.Say("tui.main.test_everything", "len", n)},
+		{"run.lint-all", words.Say("tui.main.lint_everything", "len", n)},
+		{"run.typecheck-all", words.Say("tui.main.typecheck_everything", "len", n)},
+	} {
+		out = append(out, s.action(b.id, b.label))
+	}
+	return out
 }
 
 // taskHint says in plain words what running a task does, what has to run
 // before it, and whether smith remembers its result. The command behind it is
-// in the Run tab once it ran.
+// in the run panel once it ran.
 func taskHint(t projectlist.Task) string {
 	var parts []string
 	switch {
@@ -283,7 +275,7 @@ func needsText(deps []string) string {
 	for _, d := range deps {
 		switch {
 		case strings.HasPrefix(d, "^"):
-			parts = append(parts, words.Say("tui.detail.the_of_the_projects_it_needs", "d", d[1:]))
+			parts = append(parts, words.Say("tui.detail.the_of_the_dependencies", "d", d[1:]))
 		case strings.Contains(d, ":"):
 			parts = append(parts, d)
 		default:
@@ -293,15 +285,48 @@ func needsText(deps []string) string {
 	return words.Say("tui.detail.runs_after", "tasks", strings.Join(parts, words.Say("tui.detail.and")))
 }
 
-// taskAction is the action that runs a task on the selected project; the
-// common four are the commands with their keys.
-func (s Shell) taskAction(task, key string) detail.Action {
+// taskVerbs are the catalog key of the verb of each well-known task, and
+// kindNouns the catalog key of what a project of each kind is called.
+var (
+	taskVerbs = map[string]string{
+		"build":     "tui.detail.verb.build",
+		"test":      "tui.detail.verb.test",
+		"lint":      "tui.detail.verb.lint",
+		"typecheck": "tui.detail.verb.typecheck",
+		"package":   "tui.detail.verb.package",
+	}
+	kindNouns = map[string]string{
+		"app":     "tui.detail.noun.app",
+		"lib":     "tui.detail.noun.lib",
+		"package": "tui.detail.noun.package",
+	}
+)
+
+// taskLabel is the label of the button that runs a task on a project of a kind:
+// the well-known tasks say what they do to that kind ("Build app", "Package
+// library"), because "package" is also a kind of project. Any other task, or
+// any other kind, reads "Run <task>".
+func taskLabel(task, kind string) string {
+	verb, noun := taskVerbs[task], kindNouns[kind]
+	switch {
+	case verb == "" || noun == "":
+		return words.Say("tui.detail.run", "task", task)
+	case task == "package" && kind == "package":
+		return words.Say("tui.detail.pack_package")
+	}
+	return words.Say("tui.detail.task_label", "verb", words.Say(verb), "kind", words.Say(noun))
+}
+
+// taskAction is the action that runs a task on the selected project, whose kind
+// names the button; the common four are the commands with their keys.
+func (s Shell) taskAction(task, key, kind string) detail.Action {
+	label := taskLabel(task, kind)
 	for _, id := range []string{"run.build", "run.test", "run.lint", "run.typecheck"} {
 		if c, _ := commands.ByID(id); c.Task == task {
-			return s.action(id, words.Say("tui.detail.run", "task", task))
+			return s.action(id, label)
 		}
 	}
-	return detail.Action{ID: "x:run:" + task, Label: words.Say("tui.detail.run", "task", task), Shortcut: key, Disabled: s.running()}
+	return detail.Action{ID: "x:run:" + task, Label: label, Shortcut: key, Disabled: s.running()}
 }
 
 // doctorPanel tells the selected check in full: the list beside it has one
@@ -415,4 +440,8 @@ func (s Shell) action(id, label string) detail.Action {
 	return detail.Action{ID: id, Label: label, Shortcut: s.shortcutHere(id), Disabled: c.Unavailable(s.state()) != ""}
 }
 
-func (s Shell) detailActions() []detail.Action { return s.detailPanel().Actions }
+// detailActions are the buttons of the detail, in the order the keyboard cursor visits them.
+func (s Shell) detailActions() []detail.Action {
+	p := s.detailPanel()
+	return append(append([]detail.Action(nil), p.Actions...), p.More...)
+}

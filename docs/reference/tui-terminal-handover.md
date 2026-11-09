@@ -14,10 +14,10 @@ fails when an action needs a terminal without one.
 | `graph --format tui` | By nature: a full-screen browser of its own. |
 | `compose`, `recipe new` (bare) | A questionnaire. The shell has its own Compose screen and recipe form, which run the same command with the answers. |
 | `up` (bare) | An interactive picker. The shell opens the Dependencies tab, which shows the same candidates. |
-| `new`, `adopt`, `convert` outside a workspace | Open gap: there is no Run tab before a workspace exists, so the command runs in the terminal after the shell quits. `new` and `adopt` have a guided form and a wizard. `convert` has neither. |
+| `new`, `adopt`, `convert` outside a workspace | Open gap: there is no run panel before a workspace exists, so the command runs in the terminal after the shell quits. `new` and `adopt` have a guided form and a wizard. `convert` has neither. |
 
 Every other action runs in place: a confirmation dialog shows the plan (`--dry-run` or
-`--check`) and the exact command, then the Run tab streams the output. Commands that ask on
+`--check`) and the exact command, then the run panel streams the output. Commands that ask on
 a terminal get `--yes` after the person agreed. This covers `upgrade`, `upgrade --defaults`,
 `adopt` (in a workspace), `ci generate`, `kind`, `eject`, `derive` (`--reclaim`, `--replace`),
 `release`, `sync`, `deps up`, `bootstrap`, `agent file`, `agent install`, `plugin install`,

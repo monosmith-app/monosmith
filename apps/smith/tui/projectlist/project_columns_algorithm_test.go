@@ -2,23 +2,21 @@ package projectlist
 
 import "testing"
 
-func TestTheProjectTableDropsOptionalColumnsBeforeCuttingTasks(t *testing.T) {
+func TestTheProjectTableDropsOptionalColumnsWhenTheWidthIsShort(t *testing.T) {
 	for _, tc := range []struct {
 		w                 int
 		kind, lang, stack bool
 	}{
 		{140, true, true, true},
-		{64, true, false, false},
-		{50, false, false, false},
+		{64, true, true, true},
+		{40, true, false, false},
+		{24, false, false, false},
 	} {
-		c := ColumnsFor(tc.w, 20, 25, true)
+		c := ColumnsFor(tc.w, 20, true)
 		if c.Kind != tc.kind || c.Lang != tc.lang || c.Stack != tc.stack {
 			t.Errorf("w=%d: got %+v", tc.w, c)
 		}
-		if c.Tasks < TasksFloorW && c.Tasks < 25 {
-			t.Errorf("w=%d: tasks squeezed to %d", tc.w, c.Tasks)
-		}
-		used := LeadW + c.Name + DepsW + c.Tasks
+		used := LeadW + c.Name + DepsW
 		if c.Kind {
 			used += KindW
 		}
@@ -34,14 +32,14 @@ func TestTheProjectTableDropsOptionalColumnsBeforeCuttingTasks(t *testing.T) {
 	}
 }
 
-func TestAShortTasksListIsNotAReasonToDropColumns(t *testing.T) {
-	if c := ColumnsFor(80, 10, 4, true); !c.Stack || !c.Lang || !c.Kind {
-		t.Errorf("got %+v", c)
+func TestTheNameColumnTakesTheRoomItWantsAndNoMore(t *testing.T) {
+	if c := ColumnsFor(200, 12, true); c.Name != 12 {
+		t.Errorf("a wide table gives the name %d, want 12", c.Name)
 	}
 }
 
 func TestTheStackColumnIsHiddenWhenNoProjectHasAStack(t *testing.T) {
-	if c := ColumnsFor(200, 10, 20, false); c.Stack || !c.Lang || !c.Kind {
+	if c := ColumnsFor(200, 10, false); c.Stack || !c.Lang || !c.Kind {
 		t.Errorf("got %+v", c)
 	}
 }

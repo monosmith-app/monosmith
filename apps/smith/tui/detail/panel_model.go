@@ -48,6 +48,10 @@ type Panel struct {
 	Actions  []Action
 	// ActionsTitle is the heading over the actions; "Actions" when empty.
 	ActionsTitle string
+	// More are a second group of actions, drawn under the first with the heading
+	// MoreTitle (the runs that cover every project, under those of one project).
+	More      []Action
+	MoreTitle string
 	// After are the sections drawn under the actions: what is long and
 	// secondary, so it can never push the actions off the screen.
 	After []Section

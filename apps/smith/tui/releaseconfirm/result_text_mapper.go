@@ -15,7 +15,7 @@ import (
 func Result(ok bool, tags []string, f Facts) (title, why string, lines []string) {
 	if !ok {
 		return words.Say("tui.release_result.stopped"),
-			words.Say("tui.release_result.why_stopped", "shortcutOf", commands.ShortcutOf("view.run")),
+			words.Say("tui.release_result.why_stopped", "shortcutOf", commands.ShortcutOf("view.projects")),
 			[]string{words.Say("tui.release_result.next_failed")}
 	}
 	lines = append(lines, words.Say("tui.release_result.tags"))

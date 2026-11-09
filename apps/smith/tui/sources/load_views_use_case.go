@@ -250,7 +250,7 @@ func planTasks(open func() (*session.Session, error), argv []string) []string {
 }
 
 // withEventStream asks a task run for its event stream (`--json-events`): the
-// Run tab then reads each task's state and output as structured events instead
+// run panel then reads each task's state and output as structured events instead
 // of parsing smith's text. The command shown and copied stays the one the user
 // would type; any other command is started as it is.
 func withEventStream(argv []string) []string {

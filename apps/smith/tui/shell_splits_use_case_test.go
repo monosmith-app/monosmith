@@ -110,7 +110,7 @@ func TestDraggingTheRunDividerResizesTheTaskList(t *testing.T) {
 	l := newLab(t, true, 140, 36)
 	l.next = failingRun()
 	l.keys("b")
-	in := l.sh().mainInner()
+	in := l.sh().detailRect()
 	before := l.sh().runGeom(in.W, in.H).listRows
 	sepY := in.Y + l.sh().runGeom(in.W, in.H).sepRow
 	l.send(click(in.X+3, sepY)).send(drag(in.X+3, sepY-2)).send(letGo(in.X+3, sepY-2))
@@ -121,7 +121,7 @@ func TestDraggingTheRunDividerResizesTheTaskList(t *testing.T) {
 
 func TestTheSettingsDividersMoveWithTheKeys(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.keys("7")
+	l.keys("6")
 	in := l.sh().mainInner()
 	before := l.sh().settings.Geometry(in.W, in.H)
 	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
@@ -146,7 +146,7 @@ func TestBackslashSelectsTheNextDividerAndTheBarThePrevious(t *testing.T) {
 	l.next = failingRun()
 	l.keys("b")
 	l.keys(`\`)
-	if l.sh().split.Selected != "run.detail" {
+	if l.sh().split.Selected != "projects.detail" {
 		t.Fatalf("first: %q", l.sh().split.Selected)
 	}
 	l.keys(`\`)
@@ -154,7 +154,7 @@ func TestBackslashSelectsTheNextDividerAndTheBarThePrevious(t *testing.T) {
 		t.Fatalf("second: %q", l.sh().split.Selected)
 	}
 	l.keys("|")
-	if l.sh().split.Selected != "run.detail" {
+	if l.sh().split.Selected != "projects.detail" {
 		t.Fatalf("the bar goes back: %q", l.sh().split.Selected)
 	}
 }

@@ -53,7 +53,8 @@ func FromResult(r Result) Model {
 	return Model{Loaded: true, Plan: r.Plan, Blockers: r.Blockers, Warnings: r.Warnings, Err: r.Err, Git: r.Git}
 }
 
-// Update handles a key.
+// Update handles a key: Up, Down, Home and End choose a project, Enter shows or
+// hides its commits, Right shows them and Left hides them.
 func (v Model) Update(key tea.KeyMsg) Model {
 	n := len(v.Plan.Items)
 	if !v.Loaded || v.Err != nil || len(v.Blockers) > 0 || n == 0 {
@@ -70,6 +71,14 @@ func (v Model) Update(key tea.KeyMsg) Model {
 		v.Cursor, v.Open = n-1, false
 	case commands.NavConfirm:
 		v.Open = !v.Open
+	default:
+		// Right shows the commits behind the bump, Left hides them.
+		switch key.String() {
+		case "right":
+			v.Open = true
+		case "left":
+			v.Open = false
+		}
 	}
 	return v
 }

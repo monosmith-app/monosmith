@@ -29,15 +29,15 @@ func (s Shell) selectionRegions() []layout.Rect {
 }
 
 // onButton is true when a press at (x, y) does something other than select: it
-// runs an action or a step of the Run history.
+// runs an action or a step of the history of runs.
 func (s Shell) onButton(x, y int) bool {
 	if in := s.mainInner(); in.Contains(x, y) && s.tab != commands.TabSettings {
-		h, ok := s.mainContent(in.W, in.H).hits[y-in.Y]
+		h, ok := s.mainContent(in.W, in.H-s.toastRows(in.H)).hits[y-in.Y]
 		return ok && (h.kind == "action" || h.kind == "nav")
 	}
 	if in := s.detailInner(); s.lay().HasDetail() && in.Contains(x, y) {
-		_, ok := s.detailContent(in.W, in.H).hits[y-in.Y]
-		return ok
+		h, ok := s.sideContent(in.W, in.H-s.toastRows(in.H)).hits[y-in.Y]
+		return ok && (h.kind == "action" || h.kind == "nav")
 	}
 	return false
 }

@@ -24,7 +24,7 @@ func (s *Shell) taskKey(name string) (tea.Cmd, bool) {
 		}
 		run, _ := commands.ByID("run.build")
 		if reason := run.Unavailable(s.state()); reason != "" {
-			s.say(words.Say("tui.keys.is_unavailable", "title", words.Say("tui.detail.run", "task", task), "reason", reason))
+			s.say(words.Say("tui.keys.is_unavailable", "title", taskLabel(task, p.Kind), "reason", reason))
 			return nil, true
 		}
 		return s.activate("x:run:" + task), true

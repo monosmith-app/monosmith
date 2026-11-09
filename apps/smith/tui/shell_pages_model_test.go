@@ -52,7 +52,7 @@ func TestThePaletteFindsTheSettingsTabByWhatItHolds(t *testing.T) {
 	l.has("Settings", "plugins, style and the settings of smith.toml")
 }
 
-func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunTab(t *testing.T) {
+func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunPanel(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	sh := l.sh()
 	cmd := sh.execute([]string{"config", "set", "ci.devcontainer", "false"}, false)
@@ -70,7 +70,7 @@ func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunTab(t *testing.T)
 
 func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 	l := newLab(t, true, 230, 30)
-	l.keys("3")
+	l.keys("2")
 	footer := footerOf(l)
 	for _, key := range []string{"follow", "task", "again", "failed", "copy log", "older"} {
 		if strings.Contains(footer, key) {
@@ -98,7 +98,7 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 
 func TestTheDoctorExpandsACheckInPlaceOnANarrowScreen(t *testing.T) {
 	l := newLab(t, true, 95, 30)
-	l.keys("4")
+	l.keys("3")
 	l.has("2 failed", "go.work lists every module")
 	l.hasNot("libs/x is missing")
 	if !strings.Contains(footerOf(l), "expand (Enter)") {
@@ -115,7 +115,7 @@ func TestTheDoctorExpandsACheckInPlaceOnANarrowScreen(t *testing.T) {
 
 func TestBesideTheDetailTheDoctorTellsEachCheckOnceAndEnterIsNotOffered(t *testing.T) {
 	l := newLab(t, true, 140, 30)
-	l.keys("4")
+	l.keys("3")
 	if strings.Contains(footerOf(l), "Enter") {
 		t.Fatalf("the detail is already beside the list: %q", footerOf(l))
 	}
@@ -130,7 +130,7 @@ func TestBesideTheDetailTheDoctorTellsEachCheckOnceAndEnterIsNotOffered(t *testi
 
 func TestTheDepsFooterOffersOnlyWhatWorksHere(t *testing.T) {
 	l := newLab(t, true, 200, 30)
-	l.keys("5")
+	l.keys("4")
 	if footer := footerOf(l); !strings.Contains(footer, "update (u)") || !strings.Contains(footer, "align (v)") {
 		t.Fatalf("with something to update: %q", footer)
 	}
@@ -147,7 +147,7 @@ func TestTheDepsFooterOffersOnlyWhatWorksHere(t *testing.T) {
 
 func TestTheReleaseFooterOffersReleaseOnlyWhenThereIsSomethingToRelease(t *testing.T) {
 	l := newLab(t, true, 200, 30)
-	l.keys("6")
+	l.keys("5")
 	if footer := footerOf(l); !strings.Contains(footer, "release (x)") || !strings.Contains(footer, "notes (n)") {
 		t.Fatalf("with a plan: %q", footer)
 	}
@@ -162,7 +162,7 @@ func TestLongNamesAreShortenedInTheMiddleInDepsAndRelease(t *testing.T) {
 		return depsview.Result{Rows: []depsview.Row{{Name: long, Current: "1.0.0", Latest: "1.0.1", Level: "patch", Projects: []string{"web"}}}}
 	}
 	l.m = sh
-	l.keys("5")
+	l.keys("4")
 	l.has("@acme-pl")
 	l.has("-react")
 	l.hasNot(long)

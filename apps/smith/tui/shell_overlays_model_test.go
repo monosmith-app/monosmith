@@ -12,16 +12,18 @@ import (
 var overlayCases = map[string]struct {
 	tab  string
 	open func(l *lab)
+	// before runs once the tab is open and before the screen is kept as the base.
+	before func(l *lab)
 }{
-	"palette":        {commands.TabProjects, func(l *lab) { l.keys("ctrl+p") }},
-	"palette typed":  {commands.TabProjects, func(l *lab) { l.keys("ctrl+p").typeText("e") }},
-	"palette home":   {commands.TabHome, func(l *lab) { l.keys("ctrl+p") }},
-	"help":           {commands.TabProjects, func(l *lab) { l.keys("f1") }},
-	"package form":   {commands.TabProjects, func(l *lab) { l.keys("+") }},
-	"release choice": {commands.TabRelease, func(l *lab) { l.keys("x") }},
-	"confirmation":   {commands.TabRelease, func(l *lab) { l.keys("x", "enter") }},
-	"toast":          {commands.TabProjects, func(l *lab) { l.toast("Passed in 734ms", toast.Success) }},
-	"long toast":     {commands.TabRun, func(l *lab) { l.toast(strings.Repeat("a very long message ", 12), toast.Error) }},
+	"palette":        {commands.TabProjects, func(l *lab) { l.keys("ctrl+p") }, nil},
+	"palette typed":  {commands.TabProjects, func(l *lab) { l.keys("ctrl+p").typeText("e") }, nil},
+	"palette home":   {commands.TabHome, func(l *lab) { l.keys("ctrl+p") }, nil},
+	"help":           {commands.TabProjects, func(l *lab) { l.keys("f1") }, nil},
+	"package form":   {commands.TabProjects, func(l *lab) { l.keys("+") }, nil},
+	"release choice": {commands.TabRelease, func(l *lab) { l.keys("x") }, nil},
+	"confirmation":   {commands.TabRelease, func(l *lab) { l.keys("x", "enter") }, nil},
+	"toast":          {commands.TabProjects, func(l *lab) { l.toast("Passed in 734ms", toast.Success) }, nil},
+	"long toast":     {commands.TabProjects, func(l *lab) { l.toast(strings.Repeat("a very long message ", 12), toast.Error) }, func(l *lab) { l.keys("b") }},
 }
 
 // toast raises a toast the way a finished run does.
@@ -41,6 +43,9 @@ func TestOverlaysStayInsideTheFrameAtEverySize(t *testing.T) {
 		for name, c := range overlayCases {
 			l := newLab(t, true, w, h)
 			l.openTab(c.tab)
+			if c.before != nil {
+				c.before(l)
+			}
 			base := l.lines()
 			c.open(l)
 			lines := l.lines()

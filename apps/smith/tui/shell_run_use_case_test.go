@@ -34,7 +34,7 @@ func rowOf(l *lab, text string) int {
 }
 
 func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
-	l := newLab(t, true, 140, 36)
+	l := newLab(t, true, 180, 36)
 	l.next = failingRun()
 	l.keys("b")
 	if l.lastStarted() != "run build -p orders" {
@@ -50,7 +50,7 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	l.has("Log: orders:build", "main.go:12: undefined: Foo")
 	l.hasNot("ok example.com/kit")
 	// The tab carries a badge, the status bar the result, the Projects list a mark.
-	l.has("Run (3)] ×1")
+	l.has("Projects (2)] ×1")
 }
 
 func TestTheStatusBarShowsTheExactCommandWhileAndAfterItRuns(t *testing.T) {
@@ -241,14 +241,14 @@ func TestBareUpOpensTheDependenciesTabInsteadOfHandingOver(t *testing.T) {
 	}
 }
 
-func TestEscOnAFinishedRunOpensTheStartScreenAndEnterGoesBack(t *testing.T) {
+func TestEscOnAFinishedRunGoesBackToTheProjectAndEnterOnARecentRunOpensItAgain(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✓ 1s"}}
 	l.keys("b")
 	l.has("passed")
-	l.keys("esc")
-	l.has("Verify everything", "Last run: ")
-	l.keys("enter")
-	l.has("passed")
+	closeRunPanel(l)
+	l.has("Recent runs", "Verify everything")
+	l.keys("tab", "enter")
+	l.has("passed", "Back (Esc)")
 	l.hasNot("Verify everything")
 }

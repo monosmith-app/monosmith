@@ -1,29 +1,39 @@
 package tui
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 )
 
 // maxRecentOnHome is how many runs of the history Home reads.
 const maxRecentOnHome = 3
 
-// homeContent is the Home page: the attention queue, the last runs and the
-// buttons that add a project. A click on a button runs its command and a click
-// on a run opens it; a click anywhere else does nothing.
-func (s Shell) homeContent(w int) content {
+// homeContent is the Home page in a pane of w by h cells: the attention queue,
+// the last runs and the buttons that add a project. The keyboard is on one
+// button or run (homeSel); a click on a button runs its command and a click on
+// a run opens it; a click anywhere else does nothing. A page taller than the
+// pane scrolls (homeTop), and the first and last rows tell what is cut.
+func (s Shell) homeContent(w, h int) content {
 	ptr := dashboard.Away
 	if in := s.mainInner(); in.Contains(s.mouseX, s.mouseY) {
 		ptr = dashboard.Pointer{Col: s.mouseX - in.X, Row: s.mouseY - in.Y}
 	}
-	page := dashboard.Page(s.th, s.dashboardFacts(), w, ptr)
-	c := content{lines: page.Lines, hits: map[int]hit{}}
+	page := s.homePage(w, ptr)
+	top := pane.ClampTop(s.homeTop, len(page.Lines), h)
+	if top > 0 && ptr.Row >= 0 {
+		// The pointer is over a window row; the page is drawn from the top row.
+		ptr.Row += top
+		page = s.homePage(w, ptr)
+	}
+	hits := map[int]hit{}
 	for _, t := range page.Targets {
-		h, ok := c.hits[t.Row]
+		h, ok := hits[t.Row]
 		if !ok {
 			h = hit{kind: "action"}
 			if t.Command == "" {
@@ -31,9 +41,34 @@ func (s Shell) homeContent(w int) content {
 			}
 		}
 		h.spans = append(h.spans, hitSpan{from: t.From, to: t.To, id: t.Command, index: t.Run})
-		c.hits[t.Row] = h
+		hits[t.Row] = h
+	}
+	rows := map[int]string{}
+	for row := range hits {
+		rows[row] = strconv.Itoa(row)
+	}
+	lines, shown := pane.WindowMarked(s.th, page.Lines, rows, top, h)
+	c := content{lines: lines, hits: map[int]hit{}}
+	for y, id := range shown {
+		row, _ := strconv.Atoi(id)
+		c.hits[y] = hits[row]
 	}
 	return c
+}
+
+// homePage draws the page of Home in w cells with the keyboard on the target
+// homeSel (none while nothing can be pressed).
+func (s Shell) homePage(w int, ptr dashboard.Pointer) dashboard.Rendered {
+	facts := s.dashboardFacts()
+	sel := -1
+	if dashboard.Primary(dashboard.Queue(facts)) != "" {
+		sel = max(s.homeSel, 0)
+	}
+	page := dashboard.PageAt(s.th, facts, w, ptr, sel)
+	if n := len(page.Targets); sel >= n && n > 0 {
+		page = dashboard.PageAt(s.th, facts, w, ptr, n-1)
+	}
+	return page
 }
 
 // homeCommand is the id of the command Enter runs on Home: the first button of

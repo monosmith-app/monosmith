@@ -30,7 +30,7 @@ func doctorLab(t *testing.T, w, h int) *lab {
 		{Finding: protocol.Finding{Check: "second check", Detail: "short", Remedy: "do this"}, Source: "go"},
 	}}
 	l.send(doctorview.Result{Report: report})
-	l.keys("4")
+	l.keys("3")
 	return l
 }
 
@@ -52,7 +52,7 @@ func TestEnterOnThePassedLineShowsThePassedChecksBesideTheDetail(t *testing.T) {
 		{Finding: protocol.Finding{Check: "git is installed", OK: true}},
 		{Finding: protocol.Finding{Check: "smith.toml reads", OK: true}},
 	}}})
-	l.keys("4")
+	l.keys("3")
 	l.has("2 checks passed")
 	l.hasNot("git is installed")
 	l.keys("enter")
@@ -115,7 +115,7 @@ func TestBracketsMoveTheDividerAndTheWidthIsKeptForThatView(t *testing.T) {
 	if got := l.sh().lay().Detail.W; got == before+splitter.Step {
 		t.Fatalf("each view keeps its own width, Projects has %d", got)
 	}
-	l.keys("4")
+	l.keys("3")
 	if got := l.sh().lay().Detail.W; got != before+splitter.Step {
 		t.Fatalf("Doctor keeps the width it was given: %d", got)
 	}

@@ -63,7 +63,12 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 				cursor = th.Accent(choicerow.Cursor(th, true))
 			}
 			rowOf[len(lines)] = i
-			lines = append(lines, cursor+pane.MiddleCell(item.Project, nameW+1)+from+" → "+th.Bold(item.Next)+"  "+levelMark(th, item.Level)+"  "+th.Muted(item.Reason))
+			// The mark says the row opens: ▸ closed, ▾ while its commits show.
+			mark := th.Icons.Closed
+			if selected && v.Open {
+				mark = th.Icons.Open
+			}
+			lines = append(lines, cursor+th.Muted(mark)+" "+pane.MiddleCell(item.Project, nameW+1)+from+" → "+th.Bold(item.Next)+"  "+levelMark(th, item.Level)+"  "+th.Muted(item.Reason))
 			if selected && v.Open {
 				lines = append(lines, v.commits(th, item)...)
 			}
