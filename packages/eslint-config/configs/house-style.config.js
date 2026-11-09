@@ -119,7 +119,7 @@ export default [
         multiline:  { delimiter: 'none' },
         singleline: { delimiter: 'comma', requireLast: false },
       }],
-      '@stylistic/no-multi-spaces':         ['error', {
+      '@stylistic/no-multi-spaces': ['error', {
         ignoreEOLComments: true,
         exceptions:        {
           Property:           true,
