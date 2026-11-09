@@ -176,6 +176,27 @@
         "enabled": { "type": "boolean", "description": "Turn derived files on: smith derive works, smith doctor reports drift and smith ci verify runs smith derive --check. Default: false." }
       }
     },
+    "doctor": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the workspace has decided about smith doctor.",
+      "properties": {
+        "accept": {
+          "type": "array",
+          "description": "Warnings the workspace keeps on purpose. Doctor shows each as passed with its reason, and warns when an entry matches nothing any more.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["check", "reason"],
+            "properties": {
+              "check": { "type": "string", "minLength": 1, "description": "The warning's check, as smith doctor lists it." },
+              "project": { "type": "string", "description": "Limit the entry to one project. Default: wherever the warning is raised." },
+              "reason": { "type": "string", "minLength": 1, "x-reason": "a warning nobody can explain is one nobody can judge later.", "description": "Why the warning stays." }
+            }
+          }
+        }
+      }
+    },
     "facts": {
       "type": "object",
       "description": "Shared facts every project gets: typed values under namespaced keys that plugins read when they set a project up. They win over the defaults plugins publish and lose to [projects.<name>.facts]. smith explain <project> --facts shows each value and where it came from.",
