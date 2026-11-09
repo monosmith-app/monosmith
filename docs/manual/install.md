@@ -15,6 +15,34 @@ package needs a target: `smith install -p <project> <package>`.
 To remove a dependency use [`smith uninstall`](uninstall.md); to update, [`smith up`](up.md);
 to make versions agree, [`smith sync`](sync.md).
 
+## The output of a plain install
+
+A plain `smith install` runs one toolchain after the other and gives each its own section, so the
+output of npm, pip and go never mixes. A section opens with a rule that holds the toolchain name and
+the number of projects, then shows the toolchain's own lines, then closes with one status line. A failure
+names the cause and the way forward, and the other toolchains still run. At the end, a table has one row per
+toolchain: name, projects, status and time.
+
+```
+Installing 3 projects with node, python, go.
+══ node (1 project) ════════════════════════════════════════
+...npm output...
+✓ node: installed 1 project(s)
+✓ node done in 4.2s
+══ python (1 project) ══════════════════════════════════════
+...pip output...
+× python failed: no matching distribution found for nope
+→ fix the cause above, then run it again; the other toolchains are not affected
+
+Toolchain  Projects  Status    Time
+node              1  ✓ done    4.2s
+python            1  × failed  1.1s
+```
+
+The rule is `== node (1 project) ==` and the symbols are `[v]` and `[x]` when the terminal cannot draw
+Unicode (`SMITH_ASCII=1`, `TERM=dumb`). Colour is off with `NO_COLOR` or when the output is not a terminal. In a
+GitHub Actions or Azure Pipelines log, each section is a fold (`::group::`, `##[group]`) instead of a rule.
+
 ## Asking first
 
 Naming a package (`smith install -p web zod`) shows the project manifests it changes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. A plain `smith install` only restores what the workspace already declares and asks nothing.

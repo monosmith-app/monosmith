@@ -111,8 +111,12 @@ type Contributions struct {
 	Toolchains   []protocol.Toolchain
 	Authenticate []protocol.Toolchain
 	Setup        []protocol.Step
-	Audit        []protocol.Step
-	Stores       []protocol.PackageStore
+	// SetupSections say which plugin gave which of the Setup steps, in order,
+	// so smith ci setup can show one section per plugin. Their Steps add up to
+	// len(Setup) when every step came from collect.
+	SetupSections []SetupSection
+	Audit         []protocol.Step
+	Stores        []protocol.PackageStore
 	// PostRelease are the steps smith ci release runs after the release.
 	PostRelease []protocol.Step
 	Credentials []protocol.Credential
@@ -157,6 +161,16 @@ func (c *Contributions) UseRubyGemsTrustedPublishing() {
 func (c *Contributions) UseVSCEEntra() {
 	c.VSCEEntra = true
 	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "VSCE_PAT" })
+}
+
+// SetupSection is the run of setup steps one plugin contributed.
+type SetupSection struct {
+	// Plugin is the plugin (language) name.
+	Plugin string
+	// Projects is how many projects the plugin was asked about.
+	Projects int
+	// Steps is how many of Contributions.Setup are the plugin's.
+	Steps int
 }
 
 // Add merges one plugin's contribution, keeping the first of duplicates.

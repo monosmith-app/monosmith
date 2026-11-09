@@ -10,9 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -178,8 +180,19 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer, re
 	return nil
 }
 
+// installAll installs every project of every plugin that can, one toolchain
+// after the other. Each toolchain has its own section in the log (a rule with
+// its name, its own output, a status line), and a summary table closes the
+// command, so the output of npm, pip and go never mixes. One language that
+// cannot install does not stop the others.
 func installAll(s *session.Session, log io.Writer) error {
-	var failed []string
+	type job struct {
+		client   *host.Client
+		name     string
+		projects []protocol.Project
+	}
+	var jobs []job
+	count := 0
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
 		if !c.Supports(protocol.MethodInstall) {
@@ -194,17 +207,33 @@ func installAll(s *session.Session, log io.Writer) error {
 		if len(projects) == 0 {
 			continue
 		}
+		jobs = append(jobs, job{c, name, projects})
+		count += len(projects)
+	}
+	if len(jobs) == 0 {
+		return nil
+	}
+	names := make([]string, len(jobs))
+	for i, j := range jobs {
+		names[i] = j.name
+	}
+	fmt.Fprintf(log, "Installing %d projects with %s.\n", count, strings.Join(names, ", "))
+	sections := cipipeline.NewSectionLog(log)
+	var failed []string
+	for _, j := range jobs {
+		sections.Begin(j.name, len(j.projects))
 		var res protocol.DependencyResult
-		if err := c.Call(protocol.MethodInstall, protocol.InstallParams{Projects: projects}, &res, timeout); err != nil {
-			// One language that cannot install must not stop the others.
-			fmt.Fprintf(log, "! %s: skipped, %v\n", name, err)
-			failed = append(failed, name)
+		if err := j.client.Call(protocol.MethodInstall, protocol.InstallParams{Projects: j.projects}, &res, timeout); err != nil {
+			sections.End(err)
+			failed = append(failed, j.name)
 			continue
 		}
-		report(log, fmt.Sprintf("%s: installed %d project(s)", name, len(projects)), res)
+		report(log, fmt.Sprintf("%s: installed %d project(s)", j.name, len(j.projects)), res)
+		sections.End(nil)
 	}
+	sections.Summary()
 	if len(failed) > 0 {
-		return fmt.Errorf("the other languages were installed, but %s could not be: fix the line above, then run smith install again", strings.Join(failed, ", "))
+		return fmt.Errorf("the other languages were installed, but %s could not be: fix the cause in its section above, then run smith install again", strings.Join(failed, ", "))
 	}
 	return nil
 }
