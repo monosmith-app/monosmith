@@ -87,7 +87,7 @@ as a comment, so it is readable without opening node_modules.
 | `monosmith/nx-dependency-checks`              | `@nx/eslint-plugin` on publishable packages' manifests — only when `workspaceRoot` is passed   |
 | `monosmith/vertical-slices`                   | Vertical feature slices: role-suffixed kebab-case files, a subfeature reached only through its index, no two subfeatures importing each other — unless `verticalSlices: false`. See below |
 | `monosmith/standard`                          | JavaScript Standard Style as ~60 `@stylistic` rules — **this is the formatter.** See below     |
-| `monosmith/house-style`                       | The deliberate departures from Standard: trailing commas, aligned object values, `consistent-as-needed` quote-props, a blank line before `return`, two statements per line. Composed after `monosmith/standard`, so it wins |
+| `monosmith/house-style`                       | The deliberate departures from Standard: trailing commas, aligned object values, no separator after type and interface members, `consistent-as-needed` quote-props, a blank line before `return`, two statements per line. Composed after `monosmith/standard`, so it wins |
 
 `configs/named.mapper.js` fills a name in for the blocks upstream presets ship
 anonymously, keeping any name upstream does provide. A test resolves the real
@@ -379,7 +379,7 @@ something `lint` already gates.
 
 ### Where this differs from Standard
 
-`monosmith/standard` is a faithful port of `neostandard`. Five deliberate departures
+`monosmith/standard` is a faithful port of `neostandard`. Six deliberate departures
 live in `monosmith/house-style`, composed after it so they win:
 
 | Rule | Standard | Here |
@@ -388,6 +388,7 @@ live in `monosmith/house-style`, composed after it so they win:
 | `key-spacing` | no alignment | aligned on `value` |
 | `quote-props` | `as-needed` | `consistent-as-needed` |
 | `max-statements-per-line` | 1 (@stylistic default) | 2 |
+| `member-delimiter-style` | not enforced | no `;` between multiline type and interface members, a comma on one line |
 | blank line before `return` | not enforced | required |
 
 Two of those interact, and it is the thing to know before touching either.
