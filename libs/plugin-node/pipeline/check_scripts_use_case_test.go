@@ -68,6 +68,24 @@ func TestCheckScriptsDoesNotJudgeToolsBeforeInstall(t *testing.T) {
 	}
 }
 
+// An operator inside quotes is part of an argument: the code of node -e is not
+// a list of commands, so none of its words is a tool the script starts.
+func TestCheckScriptsReadsNoCommandsInsideQuotes(t *testing.T) {
+	ws := t.TempDir()
+	writeFile(t, ws, "package.json", `{"scripts":{"prepack":"node -e \"const {execFileSync}=require('node:child_process'); execFileSync('git', ['status'])\" && oxfmt --check ."}}`)
+	writeFile(t, ws, "node_modules/.bin/eslint", "")
+	f, ok := CheckScripts(ws, "", "the root package.json", protocol.Project{})
+	if !ok || f.OK {
+		t.Fatalf("oxfmt after the quoted code is still a missing tool: %+v", f)
+	}
+	if strings.Contains(f.Detail, "const") || strings.Contains(f.Detail, "execFileSync") {
+		t.Errorf("code inside quotes was read as a command:\n%s", f.Detail)
+	}
+	if !strings.Contains(f.Detail, "prepack starts oxfmt, which is not installed") {
+		t.Errorf("the command after the quotes is still judged:\n%s", f.Detail)
+	}
+}
+
 func TestCheckScriptsPassesWhenEverythingExists(t *testing.T) {
 	ws := t.TempDir()
 	writeFile(t, ws, "packages/a/package.json", `{"scripts":{"build":"tsc -p tsconfig.json && node scripts/post.mjs","test":"vitest run"}}`)
