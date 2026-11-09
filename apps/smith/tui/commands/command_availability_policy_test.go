@@ -137,8 +137,11 @@ func TestNewWorkspaceIsOnlyOutsideAndAddProjectOnlyInside(t *testing.T) {
 func TestAViewsOwnKeyWinsOverTheSameGlobalKey(t *testing.T) {
 	deps := inside
 	deps.View = TabDeps
-	if _, _, ok := ByKey("a", deps); ok {
-		t.Fatal("a marks all in Deps, a pane key: no command runs")
+	if _, _, ok := ByKey("p", deps); ok {
+		t.Fatal("p shows the patch releases in Deps, a pane key: no command runs")
+	}
+	if c, _, _ := ByKey("a", deps); c.ID != "file.add" {
+		t.Fatalf("a is no key of Deps any more, so it adds a project: %s", c.ID)
 	}
 	if c, _, _ := ByKey("c", inside); c.ID != "run.typecheck" {
 		t.Fatalf("c in Projects is %s", c.ID)
@@ -206,7 +209,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
 		TabDoctor:   "Enter expand · f fix · F fix all · g group · E expand all · r reload view · x show failed · w show warnings · p show passed · b build · B build all · t test · z zoom · y copy",
 		TabHome:     "Enter next · ←↑↓→ move · PgUp/PgDn scroll · r reload view · b build · B build all · t test · w changed · d doctor",
-		TabDeps:     "Space mark · s safe · a all · u update · i install · x remove · v align · o one version · r reload view · b build · B build all · t test · y copy",
+		TabDeps:     "Space mark · u update · i install · x remove · v align · o one version · r reload view · b build · B build all · t test · y copy",
 		TabRelease:  "←→ expand/collapse · p preview · n notes · x release · w why · c first commit · r reload view · b build · B build all · t test",
 		TabSettings: "↑↓ move · Enter change · Tab list/sections · Esc back · t trust · f forget · u reset · r reload view",
 	} {

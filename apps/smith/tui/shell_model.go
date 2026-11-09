@@ -458,7 +458,7 @@ func (s Shell) viewReasons() map[string]string {
 	case commands.TabDeps:
 		if !s.deps.Loaded {
 			// Until the registries answer no key but reload has anything to act on.
-			for _, id := range []string{"deps.mark", "deps.mark-safe", "deps.mark-all", "deps.update", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
+			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major", "deps.update", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
 				r[id] = words.Say("tui.shell.deps_not_loaded")
 			}
 			break

@@ -32,7 +32,7 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 func TestTheDepsViewListsNewerReleasesAndThePolicy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4")
-	l.has("3 with newer releases: 1 patch · 1 minor · 1 major", "axios", "1.6.8", "zod", "react", "web, api",
+	l.has("3 with newer releases", "All 3 (e)", "Patch 1 (p)", "Minor 1 (n)", "Major 1 (M)", "axios", "1.6.8", "zod", "react", "web, api",
 		"One version", "every production dependency has one version", "axios (node) should be ^1.6.8 everywhere")
 }
 
@@ -61,9 +61,12 @@ func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T)
 
 func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "a")
+	l.keys("4")
+	x, y := l.find("Package")
+	l.send(click(x-3, y)) // the box in the heading marks every row shown
 	l.has("[x] axios", "[x] zod", "[x] react", "3 marked")
-	l.keys("a")
+	x, y = l.find("Package")
+	l.send(click(x-3, y))
 	l.has("0 marked")
 	l.keys("v")
 	l.has("Which version wins?")
@@ -462,8 +465,9 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 	thumbRow := func(l *lab) int {
 		for y, line := range l.lines() {
 			// The thumb is the solid line where the dashed track would be, in the
-			// last content column, inside the right margin.
-			if r := []rune(line); len(r) > 2 && r[len(r)-2] == '│' {
+			// last content column of the list, left of the detail.
+			col := long.sh().mainInner().X + long.sh().mainInner().W - 1
+			if r := []rune(line); len(r) > col && r[col] == '│' {
 				return y
 			}
 		}
@@ -476,5 +480,43 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 	}
 	if after := thumbRow(long); after <= before {
 		t.Fatalf("the thumb stayed at row %d after scrolling down (now %d)", before, after)
+	}
+}
+
+func TestTheChipsOfDepsShowOneLevelAndTheKeysAndClicksAgree(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4", "n")
+	l.has("[ ] zod")
+	l.hasNot("[ ] axios", "[ ] react")
+	l.keys("p")
+	l.has("[ ] axios")
+	l.hasNot("[ ] zod", "[ ] react")
+	l.clickText("Major 1 (M)")
+	l.has("[ ] react")
+	l.hasNot("[ ] axios", "[ ] zod")
+	l.keys("e")
+	l.has("[ ] axios", "[ ] zod", "[ ] react")
+}
+
+func TestTheMajorWarningSitsUnderTheSummaryAndThePolicyBesideTheList(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4", "down", "down", "space")
+	lines := l.lines()
+	var summary, warning, header int
+	for i, line := range lines {
+		switch {
+		case strings.Contains(line, "3 with newer releases"):
+			summary = i
+		case strings.Contains(line, "of the chosen packages are major"), strings.Contains(line, "1 of the chosen package"):
+			warning = i
+		case strings.Contains(line, "Package") && strings.Contains(line, "Latest"):
+			header = i
+		}
+	}
+	if warning == 0 || warning <= summary || warning >= header {
+		t.Fatalf("the warning is at %d, the summary at %d and the heading at %d:\n%s", warning, summary, header, l.view())
+	}
+	if !strings.Contains(lines[summary], "│") && !strings.Contains(l.view(), "One version") {
+		t.Fatal("the policy is not beside the list")
 	}
 }

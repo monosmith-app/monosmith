@@ -11,7 +11,8 @@ func TestKeyTakenSeesGlobalAndViewKeysOnly(t *testing.T) {
 		{"e", TabProjects, true}, // Projects: explain
 		{"e", TabRelease, false}, // only Doctor and Projects use it
 		{"s", TabProjects, false},
-		{"s", TabDeps, true},
+		{"s", TabDeps, false}, // Deps no longer has the safe key
+		{"p", TabDeps, true},  // Deps: the Patch chip
 	} {
 		if got := KeyTaken(tc.key, tc.view); got != tc.want {
 			t.Errorf("KeyTaken(%q, %s) = %v, want %v", tc.key, tc.view, got, tc.want)

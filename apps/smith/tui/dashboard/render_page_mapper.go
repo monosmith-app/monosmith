@@ -43,6 +43,11 @@ func PageAt(th theme.Theme, f Facts, w int, ptr Pointer, sel int) Rendered {
 	c := &canvas{th: th, w: w, ptr: ptr, sel: sel}
 	q := Queue(f)
 	c.add("")
+	if f.ProjectsLoaded && f.Projects > 0 {
+		// What the workspace holds comes first; its name and branch are in the header.
+		c.add(pane.Wrap(" "+th.Muted(projectsText(f)), w, 1)...)
+		c.add("")
+	}
 	for _, it := range q {
 		c.item(it)
 		c.add("")
@@ -55,9 +60,6 @@ func PageAt(th theme.Theme, f Facts, w int, ptr Pointer, sel int) Rendered {
 		tip := words.Say("dashboard.settings.tip", "new", th.Accent(words.Say("dashboard.settings.new")), "shortcut", commands.ShortcutOf("view.settings"))
 		c.add(pane.Wrap(" "+th.Muted(tip), w, 1)...)
 		c.add("")
-	}
-	if f.ProjectsLoaded && f.Projects > 0 {
-		c.add(pane.Wrap(" "+th.Muted(workspaceText(f)), w, 1)...)
 	}
 	if q[0].Kind != KindEmpty {
 		c.buttons([]Button{queueButton("dashboard.add.label", "file.add"), queueButton("dashboard.compose.label", "file.compose")}, 1)

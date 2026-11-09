@@ -18,6 +18,8 @@ const (
 	editText editorKind = iota
 	// editMulti picks any of a fixed set of values.
 	editMulti
+	// editChoose picks one of a fixed set of values for a setting.
+	editChoose
 	// editReview is the review of an external plugin, with the keys that decide.
 	editReview
 	// editInstall asks what plugin to install.
@@ -41,6 +43,9 @@ type editor struct {
 	choices []string
 	marked  []bool
 	at      int
+	// current is the index of the value the setting has now in a picker of one
+	// value (editChoose), -1 when it has none of the choices.
+	current int
 	// text and top are the review and the first line shown of it.
 	text    string
 	top     int
@@ -119,6 +124,21 @@ func newPicker(st Setting) *editor {
 	return e
 }
 
+// newChooser edits a setting that takes one of a fixed set of values: the arrows
+// move, Enter saves the one under the cursor. The cursor starts on the value the
+// setting has now, which is its default while it is not set.
+func newChooser(st Setting) *editor {
+	e := &editor{kind: editChoose, title: st.Path, about: st.Explanation, setting: st, choices: st.Choices, current: -1}
+	now := strings.Trim(st.Default, `"`)
+	if st.Set && len(st.Current) > 0 {
+		now = st.Current[0]
+	}
+	if i := slices.Index(st.Choices, now); i >= 0 {
+		e.current, e.at = i, i
+	}
+	return e
+}
+
 func newReview(name string, r TrustReview) *editor {
 	return &editor{kind: editReview, title: words.Say("settingsview.editor.trust.title", "name", name), plugin: name, text: r.Text, trusted: r.Trusted}
 }
@@ -181,6 +201,8 @@ func (e editor) values() []string {
 			}
 		}
 		return out
+	case editChoose:
+		return []string{e.choices[e.at]}
 	case editText:
 		if e.setting.Type == "array" {
 			var out []string
@@ -248,6 +270,22 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		if e.finder != nil {
 			f := e.finder.Sync(e.input.Value())
 			e.finder = &f
+		}
+	case editChoose:
+		switch commands.Nav(name) {
+		case commands.NavUp:
+			e.at = max(e.at-1, 0)
+		case commands.NavDown:
+			e.at = min(e.at+1, len(e.choices)-1)
+		case commands.NavHome:
+			e.at = 0
+		case commands.NavEnd:
+			e.at = len(e.choices) - 1
+		case commands.NavConfirm:
+			e.err = ""
+			m.ed = &e
+			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
+			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
 	case editMulti:
 		switch commands.Nav(name) {

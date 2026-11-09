@@ -10,8 +10,9 @@ import (
 )
 
 // Model lists the dependencies that have newer releases, patch before
-// minor before major, and the one-version policy's verdict. Space marks a row;
-// updating ends as `smith deps up <packages>`, aligning as `smith deps up --align`.
+// minor before major, and the one-version policy's verdict. A row of chips at
+// the top (All, Patch, Minor, Major) limits the list to one level. Space marks
+// a row; updating ends as `smith deps up <packages>`, aligning as `smith deps up --align`.
 type Model struct {
 	Loaded bool
 	// Waited is how long the load has taken so far, set by the shell for drawing.
@@ -20,11 +21,23 @@ type Model struct {
 	Tick int
 	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
 	Projects int
-	Rows     []Row
-	Policy   []PolicyLine
-	Err      error
-	Cursor   int
-	Marked   map[string]bool
+	// All are every release found, patch before minor before major. Rows are the
+	// ones the chip that is on lets through: the rows the list draws and the
+	// cursor moves over.
+	All  []Row
+	Rows []Row
+	// Filter is the chip that is on; FilterNone shows every release, as All does.
+	Filter Filter
+	// Under and Pressed are the chip under the pointer and the one held down,
+	// set by the shell for drawing.
+	Under, Pressed Filter
+	// Beside is true when the shell draws the one-version policy in the detail
+	// beside the list, so the list leaves it out; set by the shell for drawing.
+	Beside bool
+	Policy []PolicyLine
+	Err    error
+	Cursor int
+	Marked map[string]bool
 	// Anchor is the row a shift-click or shift-arrow extends the marks from.
 	Anchor int
 	// scroll is where the list's window starts, apart from the cursor, so the
@@ -49,7 +62,7 @@ func FromResult(r Result) Model {
 	slices.SortStableFunc(rows, func(a, b Row) int {
 		return levelRank(a.Level) - levelRank(b.Level)
 	})
-	return Model{Loaded: true, Rows: rows, Policy: r.Policy, Err: r.Err, scroll: &pane.Scroll{}}
+	return Model{Loaded: true, All: rows, Rows: rows, Policy: r.Policy, Err: r.Err, scroll: &pane.Scroll{}}
 }
 
 func levelRank(level string) int {
@@ -64,13 +77,12 @@ func levelRank(level string) int {
 
 // Update handles a key; page is how many rows a page key moves.
 func (v Model) Update(key tea.KeyMsg, page int) Model {
+	if f := filterOfKey(key.String()); f != FilterNone {
+		return v.SetFilter(f)
+	}
 	switch key.String() {
 	case " ", "space":
 		return v.toggle()
-	case "a":
-		return v.markAll()
-	case "s":
-		return v.markSafe()
 	case "shift+up":
 		return v.extend(-1)
 	case "shift+down":
@@ -78,6 +90,16 @@ func (v Model) Update(key tea.KeyMsg, page int) Model {
 	}
 	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), commands.Nav(key.String()), page)
 	v.Anchor = v.Cursor
+	return v
+}
+
+// SetFilter turns a chip on: the list shows the releases of that level, the
+// cursor goes to the first of them and the marks stay, hidden ones too.
+func (v Model) SetFilter(f Filter) Model {
+	v.Filter = f
+	v.Rows = rowsAt(v.All, f)
+	v.Cursor, v.Anchor = 0, 0
+	v.scroll = &pane.Scroll{}
 	return v
 }
 
@@ -212,23 +234,30 @@ func (v Model) toggle() Model {
 	return v
 }
 
-// markSafe marks every patch and minor row (what can be taken together), or
-// unmarks them when they are all marked already. Marked majors stay as they are.
-func (v Model) markSafe() Model {
+// chosenMajors counts the major releases among the packages an update would move.
+func (v Model) chosenMajors() int {
+	chosen := map[string]bool{}
+	for _, n := range v.chosen() {
+		chosen[n] = true
+	}
+	n := 0
+	for _, r := range v.All {
+		if r.Level == "major" && chosen[r.Name] {
+			n++
+		}
+	}
+	return n
+}
+
+// markAll marks every row shown, or unmarks them when every row shown is
+// marked already. Marks on rows the chip hides stay as they are.
+func (v Model) markAll() Model {
+	all := v.MarkState() == 2
 	marked := map[string]bool{}
 	for k := range v.Marked {
 		marked[k] = true
 	}
-	all := true
 	for _, r := range v.Rows {
-		if r.Level != "major" && !marked[r.Name] {
-			all = false
-		}
-	}
-	for _, r := range v.Rows {
-		if r.Level == "major" {
-			continue
-		}
 		if all {
 			delete(marked, r.Name)
 		} else {
@@ -239,38 +268,11 @@ func (v Model) markSafe() Model {
 	return v
 }
 
-// chosenMajors counts the major releases among the packages an update would move.
-func (v Model) chosenMajors() int {
-	chosen := map[string]bool{}
-	for _, n := range v.chosen() {
-		chosen[n] = true
-	}
-	n := 0
-	for _, r := range v.Rows {
-		if r.Level == "major" && chosen[r.Name] {
-			n++
-		}
-	}
-	return n
-}
-
-// markAll marks every row, or none when every row is already marked.
-func (v Model) markAll() Model {
-	marked := map[string]bool{}
-	if len(v.Marked) < len(v.Rows) {
-		for _, r := range v.Rows {
-			marked[r.Name] = true
-		}
-	}
-	v.Marked = marked
-	return v
-}
-
-// chosen are the packages an update would move: the marked rows, or the row
-// under the cursor when none is marked.
+// chosen are the packages an update would move: the marked rows (also the ones
+// the chip hides), or the row under the cursor when none is marked.
 func (v Model) chosen() []string {
 	var names []string
-	for _, r := range v.Rows {
+	for _, r := range v.All {
 		if v.Marked[r.Name] {
 			names = append(names, r.Name)
 		}
@@ -288,7 +290,7 @@ func (v Model) UpArgv() []string {
 		return nil
 	}
 	argv := append([]string{"deps", "up"}, names...)
-	for _, r := range v.Rows {
+	for _, r := range v.All {
 		if r.Level == "major" && slices.Contains(names, r.Name) {
 			// A major update was marked on purpose: the command takes it only with --major.
 			return append(argv, "--major")

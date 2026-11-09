@@ -420,3 +420,37 @@ func TestAPluginSwitchOffersUndoInTheStatusLineAndUTakesIt(t *testing.T) {
 	l.press("space", "down", "u")
 	l.hasNot("undo (u)")
 }
+
+func TestTheInformationOfTheSelectedOptionIsInTheSidePanelOnAWideScreen(t *testing.T) {
+	l, _ := newSettingsLab(t, 140, 40)
+	l.keys("6")
+	l.send(tea.KeyMsg{Type: tea.KeyDown})
+	in := l.sh().detailInner()
+	if !l.sh().lay().HasDetail() {
+		t.Fatal("a wide Settings screen has a side panel")
+	}
+	var side, main []string
+	for _, line := range l.lines() {
+		r := []rune(line)
+		if len(r) > in.X {
+			main, side = append(main, string(r[:in.X])), append(side, string(r[in.X:]))
+		}
+	}
+	if !strings.Contains(strings.Join(side, "\n"), "Default") && !strings.Contains(strings.Join(side, "\n"), "Enter") {
+		t.Fatalf("the side panel does not tell the option:\n%s", l.view())
+	}
+	if strings.Contains(strings.Join(main, "\n"), "(smith config set") {
+		t.Fatalf("the tab still draws its own detail:\n%s", l.view())
+	}
+}
+
+func TestOnANarrowScreenSettingsKeepsItsDetailUnderTheRows(t *testing.T) {
+	l, _ := newSettingsLab(t, 90, 40)
+	l.keys("6")
+	if l.sh().lay().HasDetail() {
+		t.Fatal("a narrow screen has no side panel")
+	}
+	l.keys("tab")
+	l.keys("down")
+	l.has("Sections")
+}

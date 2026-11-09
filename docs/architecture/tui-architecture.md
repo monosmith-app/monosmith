@@ -88,7 +88,7 @@ Because one list feeds all of them, a hint cannot name a key that does nothing; 
 claim of [ADR 0032](decisions/0032-single-key-tui-keymap.md). Keys are single keys, no plain key
 fires while a text field or form has the keyboard (`plain(key)` in `command_availability_policy.go`),
 and the keys of a view's own pane come first in the list so they win over a global key of the same letter
-(Deps marks all with `a`, which elsewhere adds a project). `PaneKey` entries are listed for the footer
+(Deps shows the major releases with `M`, a key no other view uses). `PaneKey` entries are listed for the footer
 and help but never run by the shell: the open view handles them.
 
 ### Which panel has the keyboard
@@ -119,6 +119,15 @@ open tab for its `Page` and draws nothing else of the view. The layout is adapti
 columns the list takes the whole width and Enter opens the detail; wider, the list and the detail
 sit side by side (`layout.divide_screen_algorithm.go`). Tabs shorten their names before the strip
 would scroll, and below 24 rows they become one plain row.
+
+The detail beside the list is the same panel for four tabs: the finding of Doctor, the project of Projects, the
+one-version policy of Deps and the option of Settings (`hasDetail`, `selectionPanel`). Only Projects and
+Doctor take the keyboard there (`beside`, `Tab`); in Deps and Settings the panel scrolls with `Ctrl+U` `Ctrl+D` and the wheel. Below the wide
+layout Deps and Settings keep their text under the list (`depsview.Model.Beside`, `settingsview.WithSideDetail`).
+The detail of a project has two parts (`shell_detail_split_mapper.go`): the facts, drawn at the top and never scrolled, and the
+actions, which scroll and keep `keepDetailCursorVisible` in the part under the rule. Deps filters with the chips of
+`depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from
+the plan of the Release tab (`pendingNext`), never computed again.
 
 Views load lazily: Doctor, Deps and Release load on first open; Doctor also starts in the
 background when the shell opens, so the header shows its counts before any tab is visited.

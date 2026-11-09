@@ -67,7 +67,7 @@ func (s Shell) settingsRefusal(key string) string {
 // settingsClick gives the tab a click at (x, y) of its body.
 func (s *Shell) settingsClick(w, h, x, y int, double bool) tea.Cmd {
 	var res settingsview.Result
-	s.settings, res = s.settings.Click(w, h, x, y, double)
+	s.settings, res = s.settings.WithSideDetail(s.lay().HasDetail()).Click(w, h, x, y, double)
 	return s.settingsResult(res)
 }
 

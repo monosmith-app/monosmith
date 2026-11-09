@@ -88,7 +88,7 @@ func TestClickingARowSelectsItAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("● web")
 	l.send(click(x+2, y))
-	l.has("Dependencies", "kit", "affected", "yes")
+	l.has("dependencies", "kit", "affected", "yes")
 	if l.sh().list.SelectedName() != "web" {
 		t.Fatalf("selected %q", l.sh().list.SelectedName())
 	}
@@ -111,12 +111,12 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
 	l := newLab(t, true, 90, 30)
 	x, y := l.find("○ kit")
-	l.hasNot("Dependants")
+	l.hasNot("Test library")
 	l.send(click(x+2, y))
-	l.hasNot("Dependants")
+	l.hasNot("Test library")
 	l.advance(2 * time.Second)
 	l.doubleClick(x+2, y)
-	l.has("Dependants", "Test library")
+	l.has("dependants", "Test library")
 	// A click on an action of the detail does it.
 	ax, ay := l.find("Test library")
 	l.send(click(ax+2, ay)).send(letGo(ax+2, ay))
@@ -181,7 +181,7 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("○ kit")
 	l.send(click(x+2, y))
-	l.has("Dependants")
+	l.has("dependants")
 }
 
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {

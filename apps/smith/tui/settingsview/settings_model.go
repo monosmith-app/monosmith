@@ -29,6 +29,9 @@ type Model struct {
 	// listW and detailRows are the width of the list of sections and the rows of
 	// the detail the person gave by moving a divider; 0 is automatic.
 	listW, detailRows int
+	// sideDetail is true when the shell draws the detail of the row in the panel
+	// beside the tab, so the tab keeps its rows and leaves the detail out.
+	sideDetail bool
 	// ed is the editor over the right pane, nil when none is open.
 	ed *editor
 	// note is the last thing that happened, shown under the list; failed makes it an error.

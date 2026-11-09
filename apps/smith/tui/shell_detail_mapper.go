@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
@@ -15,8 +16,10 @@ import (
 )
 
 // hasDetail is true for the views whose selection has a detail: the project
-// in Projects (or the run that is open there), the finding in Doctor. Beside the
-// list on a wide screen; over it, opened with Enter, on a narrow one.
+// in Projects (or the run that is open there), the finding in Doctor, the
+// one-version policy in Deps and the option in Settings. Beside the list on a
+// wide screen. On a narrow one Projects and Doctor open it over the list with
+// Enter; Deps and Settings keep their text under the list.
 func (s Shell) hasDetail() bool {
 	if !s.inWorkspace {
 		return false
@@ -24,6 +27,10 @@ func (s Shell) hasDetail() bool {
 	switch s.tab {
 	case commands.TabProjects, commands.TabDoctor:
 		return s.tab == commands.TabProjects || s.doctor.Report != nil
+	case commands.TabDeps:
+		return s.deps.Loaded && s.deps.Err == nil
+	case commands.TabSettings:
+		return s.settings.Available()
 	}
 	return false
 }
@@ -59,18 +66,20 @@ func (s Shell) detailContent(w, h int) content {
 	if a := s.detailActions(); s.sideKeys() && s.detailCursor < len(a) {
 		panel.Cursor = a[s.detailCursor].ID
 	}
+	// The fixed top of a project's detail (see detailSplit) is drawn above the body that scrolls.
+	top, h := s.detailSplit(w, h)
 	all, rows := panel.View(s.th, w, "")
 	_, hits := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
 	hover := ""
 	if r := s.detailRect(); r.Contains(s.mouseX, s.mouseY) {
-		hover = hits[s.mouseY-r.Y]
+		hover = hits[s.mouseY-r.Y-len(top)]
 	}
 	all, _ = panel.View(s.th, w, hover)
 	lines, _ := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
 	lines = pane.Scrollbar(s.th, lines, w, pane.ClampTop(s.detailTop, len(all), h), len(all))
-	c := content{lines: lines, hits: map[int]hit{}}
+	c := content{lines: append(top, lines...), hits: map[int]hit{}}
 	for row, id := range hits {
-		c.hits[row] = hit{kind: "action", id: id}
+		c.hits[len(top)+row] = hit{kind: "action", id: id}
 	}
 	return c
 }
@@ -88,7 +97,8 @@ func (s Shell) sideContent(w, h int) content {
 func (s *Shell) scrollDetail(delta int) {
 	r := s.detailRect()
 	lines, _ := s.detailPanel().View(s.th, r.W, "")
-	s.detailTop = pane.ClampTop(s.detailTop+delta, len(lines), r.H)
+	_, h := s.detailSplit(r.W, r.H)
+	s.detailTop = pane.ClampTop(s.detailTop+delta, len(lines), h)
 }
 
 // pageDetail scrolls the detail by a page up (dir -1) or down (dir 1).
@@ -99,7 +109,7 @@ func (s *Shell) pageDetail(dir int) {
 // detailIdentity changes when the selection the detail tells about changes,
 // so the scroll and the expansion start over for the next one.
 func (s Shell) detailIdentity() string {
-	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel)
+	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel, "|", s.settings.Identity())
 }
 
 // forgetDetailPlace starts the detail at its top, folded, when what it shows changed.
@@ -125,6 +135,9 @@ func (s *Shell) zoomDetail() {
 // detailPanel describes what is selected in the open view.
 func (s Shell) detailPanel() detail.Panel {
 	p := s.selectionPanel()
+	if s.splitsDetail() {
+		_, p = splitPanel(p)
+	}
 	p.Expanded = s.detailAll
 	p.ListVisible = !s.detailFull() && s.lay().HasDetail()
 	p.Actions = s.withKeys(p.Actions)
@@ -140,12 +153,26 @@ func (s Shell) selectionPanel() detail.Panel {
 		}
 	}
 	switch s.tab {
+	case commands.TabDeps:
+		return detail.Panel{Sections: []detail.Section{{Heading: depsview.PolicyTitle(), Items: s.deps.PolicyItems(s.th)}}}
+	case commands.TabSettings:
+		return s.settingsPanel()
 	case commands.TabDoctor:
 		// A check is about the workspace or one project, not about the project
 		// last selected in the list.
 		return s.doctorPanel()
 	}
 	return s.projectPanel()
+}
+
+// settingsPanel tells the selected option of Settings in the panel beside the
+// tab: what it is, what it does and which key changes it.
+func (s Shell) settingsPanel() detail.Panel {
+	lines := s.settings.DetailLines(s.th, max(s.detailInner().W-4, 20))
+	if len(lines) == 0 {
+		return detail.Panel{}
+	}
+	return detail.Panel{Sections: []detail.Section{{Items: lines}}}
 }
 
 // projectPanel describes the selected project, its tasks and what it can do.
@@ -162,19 +189,22 @@ func (s Shell) projectPanel() detail.Panel {
 		rows = append(rows, detail.Row{Label: "stack", Value: stackText(p.Stack), ShownByList: cols.Stack})
 	}
 	rows = append(rows, detail.Row{Label: "root", Value: p.Root})
-	if p.Version != "" {
-		rows = append(rows, detail.Row{Label: "version", Value: p.Version})
+	if v := s.versionOf(p, 1<<10); v != "" {
+		// The pending release of the Release tab shows as "current → next".
+		rows = append(rows, detail.Row{Label: "version", Value: v})
 	}
 	rows = append(rows, detail.Row{Label: "affected", Value: yesNoMark(s, p.Affected)})
-	secs := []detail.Section{{Heading: p.Name, Rows: rows}}
+	// The neighbours are names in a line that wraps, which takes fewer rows than a list.
 	if len(p.Deps) > 0 {
-		secs = append(secs, detail.Section{Heading: words.Say("tui.detail.depends_on"), Items: p.Deps})
+		rows = append(rows, detail.Row{Label: words.Say("tui.detail.row.dependencies"), Value: strings.Join(p.Deps, ", ")})
 	}
 	if len(p.Dependents) > 0 {
-		secs = append(secs, detail.Section{Heading: words.Say("tui.detail.used_by"), Items: p.Dependents})
+		rows = append(rows, detail.Row{Label: words.Say("tui.detail.row.dependants"), Value: strings.Join(p.Dependents, ", ")})
 	}
+	secs := []detail.Section{{Heading: p.Name, Rows: rows}}
+	var after []detail.Section
 	if sec, ok := s.derivedSection(p); ok {
-		secs = append(secs, sec)
+		after = append(after, sec)
 	}
 	var actions []detail.Action
 	keys := s.taskKeys(p)
@@ -199,24 +229,7 @@ func (s Shell) projectPanel() detail.Panel {
 	if len(p.Tasks) > 0 {
 		title = words.Say("tui.detail.run_on", "name", p.Name)
 	}
-	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, More: s.everyProjectActions(), MoreTitle: words.Say("tui.run_panel.run_on_everything")}
-}
-
-// everyProjectActions are the runs that cover every project, offered under the
-// actions of the selected one: the verify run and each task of the capital keys.
-func (s Shell) everyProjectActions() []detail.Action {
-	n := s.list.Len()
-	var out []detail.Action
-	for _, b := range []struct{ id, label string }{
-		{"run.verify", words.Say("tui.main.verify_everything_lint_typecheck_test")},
-		{"run.build-all", words.Say("tui.main.build_everything", "len", n)},
-		{"run.test-all", words.Say("tui.main.test_everything", "len", n)},
-		{"run.lint-all", words.Say("tui.main.lint_everything", "len", n)},
-		{"run.typecheck-all", words.Say("tui.main.typecheck_everything", "len", n)},
-	} {
-		out = append(out, s.action(b.id, b.label))
-	}
-	return out
+	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, After: after}
 }
 
 // taskHint says in plain words what running a task does, what has to run

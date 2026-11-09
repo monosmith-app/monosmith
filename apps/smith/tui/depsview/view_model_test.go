@@ -50,15 +50,19 @@ func TestSafeAndMajorReleasesAreSeparatedAndExplained(t *testing.T) {
 	}
 }
 
-func TestMarkingTheSafeOnesLeavesTheMajorsUnmarked(t *testing.T) {
-	m := sample().Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")}, 10)
+func TestMarkingEveryRowOfAChipLeavesTheMajorsUnmarked(t *testing.T) {
+	m := sample().Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")}, 10).TickAll()
+	if len(m.Marked) != 12 {
+		t.Fatalf("marked %d, want the 12 patch rows", len(m.Marked))
+	}
+	m = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}, 10).TickAll()
 	if len(m.Marked) != 18 {
 		t.Fatalf("marked %d, want the 18 patch and minor rows", len(m.Marked))
 	}
 	if strings.Contains(strings.Join(render(m, 90, 40), "\n"), "major releases: they can break") {
 		t.Fatal("no major is chosen, so no warning")
 	}
-	m = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")}, 10)
+	m = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")}, 10).TickAll()
 	if !strings.Contains(strings.Join(render(m, 90, 40), "\n"), "4 of the chosen packages are major releases") {
 		t.Fatalf("marking everything must warn about the majors:\n%s", strings.Join(render(m, 90, 40), "\n"))
 	}

@@ -1,6 +1,9 @@
 package dashboard
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestTheWorkspaceLineNamesTheMostUsedLanguagesInWords(t *testing.T) {
 	langs := []string{"node", "node", "node", "python", "jvm", "jvm", "go", "rust", "dotnet"}
@@ -14,13 +17,14 @@ func TestTheWorkspaceLineNamesTheMostUsedLanguagesInWords(t *testing.T) {
 	}
 }
 
-func TestTheWorkspaceLineStartsWithTheNameAndTheBranch(t *testing.T) {
-	f := Facts{Workspace: "acme", Branch: "main", Projects: 2, Languages: []string{"go", "go"}}
-	if got, want := workspaceText(f), "acme · main · 2 projects (2 Go)"; got != want {
-		t.Fatalf("got %q, want %q", got, want)
+func TestTheSummaryLineIsTheFirstLineAndHasNoNameOrBranch(t *testing.T) {
+	f := Facts{ProjectsLoaded: true, Projects: 2, Languages: []string{"go", "go"}, Checked: true, DepsChecked: true}
+	text := plainLines(Page(plainTheme(), f, 100, Away))
+	all := strings.Join(text, "\n")
+	if len(text) < 2 || strings.TrimSpace(text[1]) != "2 projects (2 Go)" {
+		t.Fatalf("the first line is not the summary:\n%s", all)
 	}
-	f.Branch = ""
-	if got, want := workspaceText(f), "acme · 2 projects (2 Go)"; got != want {
-		t.Fatalf("no branch: got %q, want %q", got, want)
+	if strings.Count(all, "projects (") != 1 {
+		t.Fatalf("the summary shows more than once:\n%s", all)
 	}
 }

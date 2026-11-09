@@ -44,6 +44,7 @@ func (s *Shell) keepDetailCursorVisible() {
 		return
 	}
 	r := s.detailRect()
+	_, bodyH := s.detailSplit(r.W, r.H)
 	// Drawn with the cursor mark, as the panel is: the mark narrows the notes.
 	panel := s.detailPanel()
 	panel.Cursor = actions[s.detailCursor].ID
@@ -65,6 +66,6 @@ func (s *Shell) keepDetailCursorVisible() {
 	if first < 0 {
 		return
 	}
-	top := pane.KeepVisible(s.detailTop, last, len(lines), r.H)
-	s.detailTop = pane.KeepVisible(top, first, len(lines), r.H)
+	top := pane.KeepVisible(s.detailTop, last, len(lines), bodyH)
+	s.detailTop = pane.KeepVisible(top, first, len(lines), bodyH)
 }

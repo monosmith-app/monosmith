@@ -36,7 +36,10 @@ func TestTheStackRowSaysWhatTheStackGives(t *testing.T) {
 // detailLabels are the labels of the rows the detail draws, from the text of
 // its lines: the first word of a line that has a label and a value.
 func detailLabels(s Shell) map[string]bool {
-	lines, _ := s.detailPanel().View(s.th, 60, "")
+	// The fixed top and the part that scrolls, as one panel.
+	p := s.selectionPanel()
+	p.ListVisible = !s.detailFull() && s.lay().HasDetail()
+	lines, _ := p.View(s.th, 60, "")
 	got := map[string]bool{}
 	for _, l := range lines {
 		if f := strings.Fields(pane.Strip(l)); len(f) > 1 {

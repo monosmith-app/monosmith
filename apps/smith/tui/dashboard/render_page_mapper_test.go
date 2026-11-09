@@ -30,7 +30,7 @@ func textAt(line string, from, to int) string {
 
 var brokenWorkspace = Facts{
 	Checked: true, Failed: 2, Fixable: 6, Problems: []string{"gradle is not on PATH", "ci.yml is out of date"}, Passed: 20,
-	ProjectsLoaded: true, Projects: 34, Languages: []string{"go", "go", "node", "python"}, Workspace: "monosmith", Branch: "local/tui-feedback",
+	ProjectsLoaded: true, Projects: 34, Languages: []string{"go", "go", "node", "python"},
 	Release: &Ready{Packages: 8, Name: "smith", From: "1.132.0", To: "1.133.0", Commits: 292},
 	Recent:  []Run{{Command: "run test --affected", OK: true, Took: "42s", Index: 0}, {Command: "run lint", Took: "12s", Index: 1}, {Command: "run build", OK: true, Took: "1m 4s", Index: 2}},
 }
@@ -48,7 +48,7 @@ func TestThePageIsAQueueWithTheFirstItemLarge(t *testing.T) {
 		"Updates not looked at yet",
 		"[Open Deps (4)]",
 		"Recent runs   ✓ test --affected 42s   × lint 12s   ✓ build 1m 4s",
-		"monosmith · local/tui-feedback · 34 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)",
+		"34 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)",
 		"[Add a project (a)]  [Compose a stack (A)]",
 	} {
 		if !strings.Contains(all, want) {
@@ -68,7 +68,7 @@ func TestThePageIsAQueueWithTheFirstItemLarge(t *testing.T) {
 		}
 		return -1
 	}
-	if at("2 checks fail") >= at("gradle") || at("gradle") >= at("[Fix (") || at("[Fix (") >= at("Ready to release") || at("Ready to release") >= at("Recent runs") || at("Recent runs") >= at("monosmith ·") {
+	if at("34 projects") >= at("2 checks fail") || at("2 checks fail") >= at("gradle") || at("gradle") >= at("[Fix (") || at("[Fix (") >= at("Ready to release") || at("Ready to release") >= at("Recent runs") {
 		t.Fatalf("the order is wrong:\n%s", all)
 	}
 	if strings.Count(all, "Open Release")+strings.Count(all, "[Fix (") != 2 {
@@ -81,7 +81,7 @@ func TestEveryLineFitsAndEveryButtonKeepsItsTextInThePlainTheme(t *testing.T) {
 		"broken":   brokenWorkspace,
 		"waiting":  {Projects: 34, Recent: brokenWorkspace.Recent},
 		"empty":    {ProjectsLoaded: true},
-		"good":     {Checked: true, DepsChecked: true, ProjectsLoaded: true, Projects: 3, Workspace: "a-very-long-workspace-name-for-the-line", Branch: "feature/a-branch-with-a-long-name"},
+		"good":     {Checked: true, DepsChecked: true, ProjectsLoaded: true, Projects: 3},
 		"failed":   {Checked: true, DepsChecked: true, Affected: 2, Last: &Run{Command: "run lint test build typecheck --affected -p a-project-with-a-long-name", Repeatable: true}, SettingsTip: true},
 		"many":     {Checked: true, Failed: 12, Fixable: 12, Problems: []string{strings.Repeat("a long problem ", 8)}, Affected: 3, Release: &Ready{Packages: 30, Name: "a-package-with-a-long-name", From: "10.20.30", To: "10.21.0", Commits: 1234}, Outdated: 99, DepsChecked: true, Last: &Run{Command: "run build", Repeatable: true}},
 		"checkerr": {CheckErr: strings.Repeat("doctor failed because ", 10)},

@@ -8,20 +8,8 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// maxLanguages is how many languages the workspace line names before "more".
+// maxLanguages is how many languages the summary line names before "more".
 const maxLanguages = 3
-
-// workspaceText says which workspace this is: its name, its branch and what it
-// holds ("monosmith · main · 34 projects (26 Go, 5 Python, 3 more)").
-func workspaceText(f Facts) string {
-	var parts []string
-	for _, p := range []string{f.Workspace, f.Branch, projectsText(f)} {
-		if p != "" {
-			parts = append(parts, p)
-		}
-	}
-	return strings.Join(parts, " · ")
-}
 
 // projectsText says what the workspace holds: how many projects, and in which
 // languages, most used first ("23 projects (18 TypeScript / JavaScript, 3 Python)").

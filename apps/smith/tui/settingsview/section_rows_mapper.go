@@ -68,6 +68,10 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(iconsAbout[it.key]))
 	case kindSetting:
 		st := m.snap.Settings[it.idx]
+		if st.Type == "boolean" {
+			// A switch shows its state as a box, then the word the file holds.
+			return "   " + pane.Cell(st.Path, m.pathWidth(w)) + choicerow.Box(boolValue(st), false) + " " + shownValue(th, st)
+		}
 		return "   " + pane.Cell(st.Path, m.pathWidth(w)) + shownValue(th, st)
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
@@ -200,10 +204,7 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		if !st.Set {
 			now += th.Muted(words.Say("settingsview.setting.isdefault"))
 		}
-		keys := words.Say("settingsview.setting.keys.change")
-		if st.Set {
-			keys = words.Say("settingsview.setting.keys.reset")
-		}
+		keys := enterKey(st) + resetTail(st)
 		add(th.Muted(words.Say("settingsview.setting.now"))+now, th.Muted(words.Say("settingsview.setting.command", "keys", keys, "path", st.Path)))
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
@@ -268,6 +269,17 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 		if e.kind == editSearch {
 			keys = words.Say("settingsview.keys.search")
 		}
+	case editChoose:
+		lines = append(lines, "")
+		for i, c := range e.choices {
+			row := " " + choicerow.Cursor(th, i == e.at) + choicerow.Radio(th, i == e.current) + " " + c
+			if i == e.at {
+				row = th.Selected(pane.Fit(pane.Strip(row), w))
+			}
+			rowOf[len(lines)] = i
+			lines = append(lines, row)
+		}
+		keys = words.Say("settingsview.keys.choose")
 	case editMulti:
 		lines = append(lines, "")
 		for i, c := range e.choices {
@@ -303,6 +315,27 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	}
 	lines = lines[:min(len(lines), max(h-1, 0))]
 	return append(lines, " "+th.Muted(fmt.Sprint(keys))), rowOf
+}
+
+// enterKey says what Enter does to a setting: a switch flips, a value of a fixed
+// set is picked, anything else is changed.
+func enterKey(st Setting) string {
+	switch {
+	case st.Type == "boolean":
+		return words.Say("settingsview.setting.keys.flip")
+	case st.Type == "string" && len(st.Choices) > 0:
+		return words.Say("settingsview.setting.keys.pick")
+	}
+	return words.Say("settingsview.setting.keys.change")
+}
+
+// resetTail is the sentence about the u key after the one about Enter: it is
+// there only while a value is written, as the key does nothing otherwise.
+func resetTail(st Setting) string {
+	if !st.Set {
+		return ""
+	}
+	return words.Say("settingsview.setting.keys.reset")
 }
 
 // shownValue is what a setting is now: the value written in smith.toml, or,

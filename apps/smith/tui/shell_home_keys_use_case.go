@@ -69,7 +69,7 @@ func (s *Shell) keepHomeVisible() {
 	// Near the top of the page, show the page from its first line.
 	context := max(row-homeContext, 0)
 	want := pane.KeepVisible(top, context, total, h)
-	if context <= homeContext {
+	if context <= homeContext+homeSummaryLines {
 		want = 0
 	}
 	if want < top && pane.KeepVisible(want, row, total, h) == want {
@@ -77,6 +77,9 @@ func (s *Shell) keepHomeVisible() {
 	}
 	s.homeTop = top
 }
+
+// homeSummaryLines is the lines of the summary of the workspace that Home may show above its first item.
+const homeSummaryLines = 2
 
 // homeContext is how many lines above a button its headline is: the title and
 // its note, which the page shows with the button when it can.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -125,14 +126,24 @@ func (s Shell) mainContent(w, h int) content {
 	case commands.TabDeps:
 		deps := s.deps
 		deps.Waited, deps.Projects, deps.Tick = s.waited(), len(s.list.Projects()), s.tick
+		deps.Beside = s.lay().HasDetail()
+		deps.Under, deps.Pressed = depsview.FilterOf(s.actionAt(s.mouseX, s.mouseY)), depsview.FilterOf(s.pressed)
 		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
+		// The chips at the top answer a click with their own key.
+		for line, spans := range deps.HeadlineSpans(s.th, w) {
+			chips := hit{kind: "action"}
+			for _, sp := range spans {
+				chips.spans = append(chips.spans, hitSpan{from: sp.From, to: sp.To, id: sp.Filter.CommandID()})
+			}
+			c.hits[len(c.lines)+line] = chips
+		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabSettings:
 		in := s.mainInner()
-		c.lines = s.settings.Pulse(s.tick, s.settingsWaited()).View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
+		c.lines = s.settings.WithSideDetail(s.lay().HasDetail()).Pulse(s.tick, s.settingsWaited()).View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
 	case commands.TabGuide:
 		broken := s.brokenConfigBanner(w)
 		banner := append(broken, s.adoptBanner(w)...)
@@ -172,15 +183,19 @@ func (s Shell) projectsContent(w, h int) content {
 			affected++
 		}
 	}
-	// The explanations wrap instead of running off the pane.
+	// The summary and the legend share a line, and wrap onto the next when the pane is narrow.
 	noun := "projects"
 	if len(projects) == 1 {
 		noun = "project"
 	}
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.affected_by_the_changes", "len", len(projects), "noun", noun, "affected", affected, "dot", s.th.Icons.Dot)), w, 0)...)
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted(words.Say("tui.main.dependencies_dependants_legend")), w, 0)...)
-	c.hits[len(c.lines)] = hit{kind: "action", id: "file.add"}
-	c.lines = append(c.lines, s.newProjectButton(under), "")
+	summary := words.Say("tui.main.affected_by_the_changes", "len", len(projects), "noun", noun, "affected", affected, "dot", s.th.Icons.Dot)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted(summary+"   "+words.Say("tui.main.dependencies_dependants_legend")), w, 0)...)
+	// Every action on the workspace sits on one line, or on as few as the width needs.
+	for _, row := range s.workspaceButtons(w, under) {
+		c.hits[len(c.lines)] = row.hit
+		c.lines = append(c.lines, row.line)
+	}
+	c.lines = append(c.lines, "")
 
 	cols := s.projectColumns(w)
 	head := "   " + pane.Cell(words.Say("tui.main.project"), cols.Name+1)
@@ -192,6 +207,9 @@ func (s Shell) projectsContent(w, h int) content {
 	}
 	if cols.Stack {
 		head += pane.Cell(words.Say("tui.main.stack"), projectlist.StackW)
+	}
+	if cols.Version {
+		head += pane.Cell(words.Say("tui.main.version"), projectlist.VersionW)
 	}
 	head += pane.Cell("↑ ↓", projectlist.DepsW)
 	c.lines = append(c.lines, s.th.Muted(pane.Fit(head, w)))
@@ -219,6 +237,9 @@ func (s Shell) projectsContent(w, h int) content {
 		}
 		if cols.Stack {
 			line += pane.Cell(p.Stack, projectlist.StackW)
+		}
+		if cols.Version {
+			line += pane.Cell(s.versionOf(p, projectlist.VersionW-1), projectlist.VersionW)
 		}
 		line += pane.Cell(words.Say("tui.main.text", "len", len(p.Deps), "len2", len(p.Dependents)), projectlist.DepsW)
 		if p.Name == s.selectedProject() {
@@ -250,7 +271,7 @@ func (s Shell) projectColumns(w int) projectlist.Columns {
 		hasStack = hasStack || p.Stack != ""
 		nameW = max(nameW, pane.Width(p.Name)+2) // the room for the last run's mark
 	}
-	return projectlist.ColumnsFor(w, nameW, hasStack)
+	return projectlist.ColumnsFor(w, nameW, hasStack, s.hasVersions())
 }
 
 // newProjectButton is the row that starts the Add wizard from the list of projects.

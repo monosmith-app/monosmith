@@ -36,7 +36,7 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 		t.Fatalf("the header carries the health: %q", first)
 	}
 	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Doctor (3)]",
-		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Open Deps (4)]", "acme · main · 4 projects")
+		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Open Deps (4)]", "4 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)")
 	l.hasNot("Where to go", "Health", "nothing has run yet", "Next:")
 	lines := l.lines()
 	var title, fix, affected int

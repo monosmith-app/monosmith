@@ -19,6 +19,7 @@ func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
 	s.keepSelection()
 	s.forgetDetailPlace()
+	s.settings = s.settings.WithSideDetail(s.tab == commands.TabSettings && s.lay().HasDetail())
 	s.refreshPalette()
 	s.trackWait()
 	if s.quit {

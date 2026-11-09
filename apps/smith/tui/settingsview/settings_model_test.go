@@ -597,7 +597,7 @@ func TestAnUnsetSettingShowsItsDefaultValueAndASetOneShowsItsOwn(t *testing.T) {
 		rows = append(rows, strings.Join(strings.Fields(l), " "))
 	}
 	screenText := strings.Join(rows, "\n")
-	for _, want := range []string{"ci.devcontainer false", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
+	for _, want := range []string{"ci.devcontainer [ ] false", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
 		if !strings.Contains(screenText, want) {
 			t.Fatalf("the list lacks %q:\n%s", want, screenText)
 		}
@@ -760,5 +760,75 @@ func TestASettingShowsWhyItsDefaultIsWhatItIs(t *testing.T) {
 	got := text(m, 120, 30)
 	if !strings.Contains(got, "Why: a devcontainer is only useful") {
 		t.Fatalf("the reason is not next to the setting: %s", got)
+	}
+}
+
+// enumSample is a snapshot with one setting that takes one word of a fixed set, last in the list.
+func enumSample() *fake {
+	f := sample()
+	f.snap.Settings = append(f.snap.Settings, Setting{Path: "ci.provider", Type: "string", Explanation: "The CI system.", Default: `"github"`, Choices: []string{"github", "azure", "gitlab"}})
+	return f
+}
+
+func TestASettingWithOneOfAFixedSetOfValuesIsPickedFromAListNotTyped(t *testing.T) {
+	f := enumSample()
+	m := opened(t, f).Show(Workspace)
+	m, _ = press(m, "end", "enter")
+	out := text(m, 100, 28)
+	for _, want := range []string{"( ) azure", "( ) gitlab", "↑ ↓ move · Enter picks · Esc cancels"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("the pick list lacks %q:\n%s", want, out)
+		}
+	}
+	if !strings.Contains(out, "(●) github") && !strings.Contains(out, "(*) github") {
+		t.Fatalf("the current value is not marked:\n%s", out)
+	}
+	m, _ = press(m, "down", "enter") // azure: written like any other value
+	if got := f.calls[len(f.calls)-1]; got != "set ci.provider azure" {
+		t.Fatalf("saved %q", got)
+	}
+	if m.Modal() {
+		t.Fatal("the pick list stays open after the choice")
+	}
+}
+
+func TestEscLeavesThePickListWithoutWriting(t *testing.T) {
+	f := enumSample()
+	m := opened(t, f).Show(Workspace)
+	m, _ = press(m, "end", "enter", "down", "esc")
+	if m.Modal() || len(f.calls) != 0 {
+		t.Fatalf("modal %v, calls %v", m.Modal(), f.calls)
+	}
+}
+
+func TestASwitchShowsABoxAndEnterFlipsIt(t *testing.T) {
+	f := sample()
+	m := opened(t, f).Show(Workspace)
+	if out := text(m, 100, 28); !strings.Contains(out, "[ ] false") {
+		t.Fatalf("no box on the switch:\n%s", out)
+	}
+	m, _ = press(m, "enter")
+	if got := f.calls[len(f.calls)-1]; got != "set ci.devcontainer true" {
+		t.Fatalf("saved %q", got)
+	}
+	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Enter flips it") {
+		t.Fatalf("the detail does not say what Enter does:\n%s", lines)
+	}
+}
+
+func TestWithTheDetailBesideTheTabTheTabDrawsNoDetailOfItsOwn(t *testing.T) {
+	m := opened(t, sample()).Show(Workspace)
+	if out := text(m, 100, 28); !strings.Contains(out, "Default: false") {
+		t.Fatalf("the tab alone draws its detail:\n%s", out)
+	}
+	m = m.WithSideDetail(true)
+	if out := text(m, 100, 28); strings.Contains(out, "Default: false") || strings.Contains(out, "Why:") {
+		t.Fatalf("the detail is drawn twice:\n%s", out)
+	}
+	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Default: false") || !strings.Contains(lines, "Why:") {
+		t.Fatalf("the lines for the side panel lack the facts:\n%s", lines)
+	}
+	if g := m.Geometry(100, 28); g.SepRow >= 0 {
+		t.Fatalf("a divider is left for a detail that is not there: %+v", g)
 	}
 }
