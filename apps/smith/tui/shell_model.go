@@ -178,6 +178,9 @@ type Shell struct {
 	// verifying are the checks a finished fix says it clears: the next doctor
 	// result is read to see whether they pass now.
 	verifying []string
+	// rechecking is true while a doctor run the person asked for (Check again)
+	// is out, so its result says in a toast what doctor found.
+	rechecking bool
 	// verifyingWhat is what that fix did, in words, for the "Fixed" toast.
 	verifyingWhat string
 	// run is the command the run panel shows: running or the last one.

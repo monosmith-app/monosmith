@@ -29,7 +29,7 @@ func (c *Cpp) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: c.Version},
 		Kind:      protocol.KindLanguage,
-		Tools:     toolcatalog.For("cmake", "cpp-compiler", "msvc-build-tools", "xcode-clt"),
+		Tools:     toolcatalog.For("cmake", "ninja", "cppcheck", "cpp-compiler", "msvc-build-tools", "xcode-clt"),
 		Languages: []string{"cpp", "c++"},
 		Manifests: []string{"CMakeLists.txt"},
 	}, nil

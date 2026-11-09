@@ -30,7 +30,8 @@ type Model struct {
 	// All is what the person chose for every group at once: above 0 opens
 	// them, below 0 closes them, 0 leaves each as it is by default.
 	All int
-	// Loading is true while doctor runs for the first time.
+	// Loading is true while doctor runs: for the first time, or again after a
+	// fix or a click on Check again (the list shown stays until the new one arrives).
 	Loading bool
 	// Waited is how long that run has taken so far, set by the shell for drawing.
 	Waited time.Duration
@@ -45,6 +46,8 @@ type Model struct {
 	// Under and Pressed are the filter button under the pointer and the one held
 	// down, set by the shell for drawing.
 	Under, Pressed Filter
+	// UnderReload and PressedReload are the same for the button that checks again.
+	UnderReload, PressedReload bool
 }
 
 // FromResult is the model for a finished check.

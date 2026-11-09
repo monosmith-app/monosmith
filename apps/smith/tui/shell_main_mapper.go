@@ -76,7 +76,9 @@ func (s Shell) mainContent(w, h int) content {
 		// Beside the list the detail tells a check in full; alone, the list expands it.
 		doctor := s.doctor
 		doctor.Waited, doctor.Covered = s.waited(), len(s.list.Projects())
-		doctor.Under, doctor.Pressed = doctorview.FilterOf(s.actionAt(s.mouseX, s.mouseY)), doctorview.FilterOf(s.pressed)
+		under := s.actionAt(s.mouseX, s.mouseY)
+		doctor.Under, doctor.Pressed = doctorview.FilterOf(under), doctorview.FilterOf(s.pressed)
+		doctor.UnderReload, doctor.PressedReload = under == doctorview.ReloadID, s.pressed == doctorview.ReloadID
 		lines, rowOf := doctor.View(s.th, w, !s.lay().HasDetail())
 		sel := 0
 		for row, i := range rowOf {
@@ -84,26 +86,33 @@ func (s Shell) mainContent(w, h int) content {
 				sel = row
 			}
 		}
-		total := len(lines)
-		top := s.doctorScroll.Show(sel, max(h, 1), total)
+		// The headline (the filter buttons and its blank line) stays at the top;
+		// only the checks below it scroll.
+		fixed := min(doctor.HeadHeight(s.th, w), max(h-1, 0))
+		body := max(h-fixed, 1)
+		total := len(lines) - fixed
+		top := s.doctorScroll.Show(max(sel-fixed, 0), body, total)
 		for row, i := range rowOf {
-			if row >= top && row < top+h {
-				c.hits[row-top] = hit{kind: "finding", index: i}
+			if r := row - fixed - top; r >= 0 && r < body {
+				c.hits[fixed+r] = hit{kind: "finding", index: i}
 			}
 		}
 		// The headline is the filter buttons: each answers a click with its own key.
 		for line, spans := range doctor.HeadlineSpans(s.th, w) {
-			if line < top || line >= top+h {
+			if line >= fixed {
 				continue
 			}
 			filters := hit{kind: "action"}
 			for _, sp := range spans {
-				filters.spans = append(filters.spans, hitSpan{from: sp.From, to: sp.To, id: sp.Filter.CommandID()})
+				if sp.ID != "" {
+					filters.spans = append(filters.spans, hitSpan{from: sp.From, to: sp.To, id: sp.ID})
+				}
 			}
-			c.hits[line-top] = filters
+			c.hits[line] = filters
 		}
-		lines = lines[top:min(top+h, len(lines))]
-		c.lines = append(c.lines, pane.Scrollbar(s.th, lines, w, top, total)...)
+		scrolled := lines[fixed+top : min(fixed+top+body, len(lines))]
+		c.lines = append(c.lines, lines[:fixed]...)
+		c.lines = append(c.lines, pane.Scrollbar(s.th, scrolled, w, top, total)...)
 	case commands.TabRelease:
 		release := s.release
 		release.Waited, release.Projects = s.waited(), len(s.list.Projects())
