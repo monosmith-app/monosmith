@@ -1,5 +1,46 @@
 package settingsview
 
+import (
+	"fmt"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+)
+
+// WithSideDetail says whether the shell shows the detail of the selected row in
+// a panel beside the tab. The tab then draws no detail of its own and gives its
+// rows the room.
+//
+// Parameters: beside is true when that panel is on screen.
+// Returns: the tab with the choice.
+func (m Model) WithSideDetail(beside bool) Model {
+	m.sideDetail = beside
+	return m
+}
+
+// DetailLines tell the selected row for the panel beside the tab: what it is,
+// what it does and which key changes it, in lines of at most w cells. They are
+// empty while there is no row.
+//
+// Parameters: th styles the lines; w is the width of the panel.
+// Returns: the lines.
+func (m Model) DetailLines(th theme.Theme, w int) []string {
+	if !m.loaded && m.section != Style && m.section != Forms {
+		return nil
+	}
+	list := m.items(m.section)
+	cursor := m.cursor[m.section]
+	if cursor >= len(list) {
+		return nil
+	}
+	return m.detail(th, list[cursor], w)
+}
+
+// Identity changes when the selected row changes, so the panel beside the tab
+// starts at its top for each row.
+func (m Model) Identity() string {
+	return fmt.Sprint(int(m.section), "|", m.cursor[m.section])
+}
+
 // Geometry is where the tab's two dividers are, in the cells of the tab.
 type Geometry struct {
 	// ListW is the width of the list of sections, between ListMin and ListMax.

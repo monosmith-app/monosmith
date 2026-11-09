@@ -12,7 +12,7 @@ import (
 
 // levelCounts counts the rows of each level.
 func (v Model) levelCounts() (patch, minor, major int) {
-	for _, r := range v.Rows {
+	for _, r := range v.All {
 		switch r.Level {
 		case "patch":
 			patch++
@@ -45,27 +45,12 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		return pane.Wrap(wait+th.Muted(words.Say("depsview.waiting.more")), w, 0), rowOf
 	}
 	var tail []string
-	tail = append(tail, "", th.Title(words.Say("depsview.policy.title")))
-	if len(v.Policy) == 0 {
-		tail = append(tail, "  "+th.Muted(words.Say("depsview.policy.empty")))
-	}
-	for _, p := range v.Policy {
-		mark := th.Success(th.Icons.Passed)
-		switch {
-		case !p.OK && p.Warning:
-			mark = th.Warning(th.Icons.Warning)
-		case !p.OK:
-			mark = th.Failure(th.Icons.Failed)
+	if !v.Beside {
+		// A narrow screen has no detail: the policy goes under the list.
+		tail = append(tail, "", th.Title(PolicyTitle()))
+		for _, it := range v.PolicyItems(th) {
+			tail = append(tail, "  "+it)
 		}
-		tail = append(tail, "  "+mark+" "+p.Check)
-		if !p.OK && p.Detail != "" {
-			for _, d := range strings.Split(p.Detail, "; ") {
-				tail = append(tail, "      "+th.Muted(d))
-			}
-		}
-	}
-	if n := v.chosenMajors(); n > 0 {
-		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+words.Say("depsview.chosen.majors", "count", n)))
 	}
 	var wrapped []string
 	for _, l := range tail {
@@ -73,11 +58,17 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	}
 	tail = wrapped
 
-	if len(v.Rows) == 0 {
+	if len(v.All) == 0 {
 		lines = append(lines, th.Success(th.Icons.Passed+" "+words.Say("depsview.latest")))
 	} else {
+		head, _ := v.headlineRows(th, w)
+		lines = append(lines, head...)
 		patch, minor, major := v.levelCounts()
-		lines = append(lines, th.Bold(words.Say("depsview.summary", "count", len(v.Rows), "patch", patch, "minor", minor, "major", major))+th.Muted(words.Say("depsview.marked", "count", len(v.Marked))))
+		lines = append(lines, th.Bold(words.Say("depsview.summary", "count", len(v.All)))+th.Muted(words.Say("depsview.marked", "count", len(v.Marked))))
+		// What an update of the chosen packages risks is said under the summary, where no scrolling hides it.
+		if n := v.chosenMajors(); n > 0 {
+			lines = append(lines, pane.Wrap(th.Warning(th.Icons.Warning+" "+words.Say("depsview.chosen.majors", "count", n)), w, 2)...)
+		}
 		if safe := patch + minor; safe > 0 {
 			lines = append(lines, pane.Wrap(th.Success(words.Say("depsview.safe", "count", safe))+th.Muted(majorWarning(major)), w, 0)...)
 		}
@@ -95,6 +86,9 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		headBox := choicerow.Box(v.MarkState() == 2, v.MarkState() == 1)
 		rowOf[len(lines)] = HeadingRow
 		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols(words.Say("depsview.column.package"), words.Say("depsview.column.now"), words.Say("depsview.column.latest"), words.Say("depsview.column.level"), words.Say("depsview.column.kind"), words.Say("depsview.column.projects")), w)))
+		if len(v.Rows) == 0 {
+			lines = append(lines, "", " "+th.Muted(v.noneText()))
+		}
 		// Two group headings may sit among the rows: they take room too.
 		avail := max(h-len(lines)-len(tail)-2, 3)
 		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
@@ -139,6 +133,17 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		lines[i] = pane.Fit(lines[i], w)
 	}
 	return lines, rowOf
+}
+
+// noneText says that the chip that is on holds no release.
+func (v Model) noneText() string {
+	switch v.Filter {
+	case FilterPatch:
+		return words.Say("depsview.none.patch")
+	case FilterMinor:
+		return words.Say("depsview.none.minor")
+	}
+	return words.Say("depsview.none.major")
 }
 
 // majorWarning is the sentence about major releases after the count of the safe

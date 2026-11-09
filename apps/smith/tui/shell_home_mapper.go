@@ -78,7 +78,7 @@ func (s Shell) homeCommand() string { return dashboard.Primary(dashboard.Queue(s
 // dashboardFacts gathers what the shell already knows; nothing is loaded here.
 func (s Shell) dashboardFacts() dashboard.Facts {
 	f := dashboard.Facts{ProjectsLoaded: s.loadedProjects && s.projectsErr == nil, Last: s.last, SettingsTip: s.settings.TipWanted(),
-		Workspace: s.header, Branch: s.branch, Release: readyRelease(s.release)}
+		Release: readyRelease(s.release)}
 	if r := s.doctor.Report; r != nil {
 		f.Checked, f.Failed, f.Warnings, f.Passed = true, r.Failed, r.Warnings, r.Passed
 		f.Fixable = len(s.doctor.Plan())
@@ -109,7 +109,7 @@ func (s Shell) dashboardFacts() dashboard.Facts {
 		}
 	}
 	if s.deps.Loaded && s.deps.Err == nil {
-		f.DepsChecked, f.Outdated = true, len(s.deps.Rows)
+		f.DepsChecked, f.Outdated = true, len(s.deps.All)
 	}
 	now := s.now()
 	for i := range s.runs {

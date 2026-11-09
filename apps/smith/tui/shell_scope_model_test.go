@@ -68,9 +68,9 @@ func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {
 func TestTheProjectDetailOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.openTab("projects")
-	l.has("Run on every project", "Build everything (4)", "Test everything (4)")
-	l.hasNot("in the list")
-	l.clickText("Build everything")
+	l.has("Verify (V)", "Build (B)", "Test (T)", "Lint (L)", "Typecheck (C)")
+	l.hasNot("Run on every project", "in the list")
+	l.clickText("Build (B)")
 	if got := l.lastStarted(); got != "run build" {
 		t.Fatalf("the button started %q", got)
 	}

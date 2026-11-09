@@ -50,7 +50,8 @@ func (s Shell) spots() []splitter.Spot {
 func (s Shell) dividers() []splitter.Spot {
 	var out []splitter.Spot
 	l := s.lay()
-	if l.HasDetail() {
+	// Settings has dividers of its own: they come first, so the first key selects the one inside the tab.
+	if l.HasDetail() && s.tab != commands.TabSettings {
 		out = append(out, splitter.DetailSpot(s.tab, l, s.w))
 	}
 	in := l.Main.Inner()
@@ -61,11 +62,14 @@ func (s Shell) dividers() []splitter.Spot {
 		g := s.runGeom(r.W, r.H)
 		out = append(out, splitter.RunListSpot(r, g.listTop, g.sepRow, g.listRows))
 	case s.tab == commands.TabSettings:
-		g := s.settings.Geometry(in.W, in.H)
+		g := s.settings.WithSideDetail(l.HasDetail()).Geometry(in.W, in.H)
 		out = append(out, splitter.SettingsListSpot(in, g.ListW, g.ListMin, g.ListMax))
 		if g.SepRow >= 0 {
 			out = append(out, splitter.SettingsDetailSpot(in, g.ListW, g.SepRow, g.DetailRows, g.DetailMin, g.DetailMax))
 		}
+	}
+	if l.HasDetail() && s.tab == commands.TabSettings {
+		out = append(out, splitter.DetailSpot(s.tab, l, s.w))
 	}
 	return out
 }

@@ -164,7 +164,7 @@ func (m Model) activate() (Model, Result) {
 }
 
 // editSetting changes a setting the way its type asks: a switch flips, a
-// fixed list is ticked, anything else is typed.
+// fixed list is ticked, one value of a fixed set is picked, anything else is typed.
 func (m Model) editSetting(st Setting) (Model, Result) {
 	switch {
 	case st.Type == "boolean":
@@ -172,6 +172,8 @@ func (m Model) editSetting(st Setting) (Model, Result) {
 		return m, Result{Cmd: m.setSetting(st.Path, []string{fmt.Sprint(!boolValue(st))})}
 	case st.Type == "array" && len(st.Choices) > 0:
 		m.ed = newPicker(st)
+	case st.Type == "string" && len(st.Choices) > 0:
+		m.ed = newChooser(st)
 	default:
 		m.ed = newTextEditor(st)
 	}

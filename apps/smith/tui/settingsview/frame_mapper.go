@@ -186,7 +186,7 @@ func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
 		noteRow = 1
 	}
 	avail := body - noteRow
-	if avail >= 9 {
+	if avail >= 9 && !m.sideDetail {
 		detailH = min(detailWant[m.section], avail-5)
 		if m.detailRows > 0 {
 			detailH = pane.Clamp(m.detailRows, minDetailRows, avail-5)
@@ -273,6 +273,14 @@ func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 			e := *m.ed
 			sel := e.finder.Select(i)
 			e.finder = &sel
+			m.ed = &e
+			if double {
+				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
+			}
+		} else if ok && m.ed.kind == editChoose && x >= f.listW {
+			// A click on a value of a pick list puts the cursor there; a double click picks it.
+			e := *m.ed
+			e.at = i
 			m.ed = &e
 			if double {
 				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})

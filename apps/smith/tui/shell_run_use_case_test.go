@@ -247,8 +247,8 @@ func TestEscOnAFinishedRunGoesBackToTheProjectAndEnterOnARecentRunOpensItAgain(t
 	l.keys("b")
 	l.has("passed")
 	closeRunPanel(l)
-	l.has("Recent runs", "Verify everything")
+	l.has("Recent runs", "Verify (V)")
 	l.keys("tab", "enter")
 	l.has("passed", "Back (Esc)")
-	l.hasNot("Verify everything")
+	l.hasNot("Install a package") // the right panel shows the run, not the project
 }

@@ -22,8 +22,6 @@ type Facts struct {
 	Projects, Affected int
 	// Languages is the language of each project, to say what the workspace holds.
 	Languages []string
-	// Workspace is the name of the workspace and Branch the branch it is on ("" when unknown).
-	Workspace, Branch string
 	// Last is the last command that ran, nil before the first.
 	Last *Run
 	// Recent are the runs of the session that ended, the newest first.

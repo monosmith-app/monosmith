@@ -62,12 +62,12 @@ goes away by itself. A result toast belongs to the view it was raised on.
 
 | View | Key | Shows |
 |---|---|---|
-| Home | `1` | An attention queue: what needs a look, the most urgent first, each with the buttons that deal with it (see [Home](#home)). Under it: the last three runs, the workspace, and two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
-| Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties (beside the list it leaves out the kind, language and stack, which the list shows as columns; opened full-screen it shows them), its derived files (when the workspace derives files) and the actions that apply to it. At the foot of the pane, under a rule, **Recent runs** lists the last three runs of this session and says how many more are kept; `Tab` or a click opens it upward to list every kept run. The list has the columns Project, Kind, Language, Stack and `↑ ↓` (the number of dependencies and of dependants); under it a line explains the arrows (`↑ = dependencies · ↓ = dependants`), and the detail names the tasks. While a task runs, or when you open a run, the detail pane shows that run instead (see [The run panel](#the-run-panel)). |
+| Home | `1` | An attention queue: what needs a look, the most urgent first, each with the buttons that deal with it (see [Home](#home)). The first line says what the workspace holds (`24 projects (23 TypeScript / JavaScript, 1 Go)`; its name and branch are in the header). Under the queue: the last three runs and two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
+| Projects | `2` | The top panel is the workspace: one line with the count (`24 projects · 0 affected by the changes (●)`) and the legend of the arrows (`↑ = dependencies · ↓ = dependants`), then one line of buttons for the whole workspace: `+ New project (a)` (opens the Add wizard), `Verify (V)`, `Build (B)`, `Test (T)`, `Lint (L)` and `Typecheck (C)`, each on every project; a button that does not fit moves to the next line. Then every project, ordered by kind and then name, with its language. The detail pane has two parts split by a thin rule. The top part never scrolls: the project's name, kind, language and stack (beside the list it leaves out the ones the list shows as columns; opened full-screen it shows them), root, version, whether it is affected, and its dependencies and dependants as names in a line that wraps. The bottom part scrolls (`Ctrl+U` `Ctrl+D`, the wheel, or the keyboard cursor after `Tab`): the actions that apply to the project, under `Run on <project>`, and its derived files (when the workspace derives files). The version reads `current → next` while the plan of the Release tab releases the project, and the current version alone otherwise; the list has the same Version column, which shortens to `→ next` when it is narrow. At the foot of the pane, under a rule, **Recent runs** lists the last three runs of this session and says how many more are kept; `Tab` or a click opens it upward to list every kept run. The list has the columns Project, Kind, Language, Stack, Version and `↑ ↓` (the number of dependencies and of dependants); a narrow pane drops Stack, Language and Kind before Version. While a task runs, or when you open a run, the detail pane shows that run instead (see [The run panel](#the-run-panel)). |
 | Doctor | `3` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Doctor detail](#the-doctor-detail)); fixes open the fix wizard. |
-| Deps | `4` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
+| Deps | `4` | A row of chips at the top, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), limits the list to one level. Under it the summary, the warning about major releases among the chosen packages (so it shows without scrolling), and the dependencies with newer releases, grouped patch and minor, then major (columns Package, Now, Latest, Level, Kind, Projects), with the `smith deps up` command line for a selection. The one-version policy's verdict (`One version`) is in the detail beside the list; on a narrow screen it is under the list. |
 | Release | `5` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump, and a button `Release now (x)` that releases it. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
-| Settings | `6` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
+| Settings | `6` | Plugins, style and the settings of `smith.toml`, changed in place; what the selected row is and does is in the detail beside the list (under the list on a narrow screen); see [Settings](#settings). |
 
 ### Home
 
@@ -156,8 +156,8 @@ lower-case key covers the workspace.
 
 A run opens in the right panel of Projects, from any view: the keys work in every workspace view and
 switch to Projects. The footer shows only
-the ones that make sense for the open view (the column above). The detail of a project
-also has Build everything and Test everything as buttons, and the palette names the scope in
+the ones that make sense for the open view (the column above). The top panel of Projects
+has Verify, Build, Test, Lint and Typecheck of every project as buttons, and the palette names the scope in
 each title (`Build orders`, `Build all 23`).
 
 ### The run panel
@@ -203,7 +203,7 @@ failed, and the toast says "Cancelled". `R` runs the tasks that did not finish a
 | Projects | `e`, `o`, `g` | The buttons of the detail: Explain the project, Why (who owns its files) and Graph (the dependencies and the dependants). A project with derived files also has `E` explain them, `u` update them, `K` keep my edit, `O` own the files I edited and `r` replace them. `+` and `-` install and remove a package. A task with no key of its own takes a free letter shown on its button. The buttons of the well-known tasks (`build`, `test`, `lint`, `typecheck`, `package`) name what the task does to the kind of the project: `Build app`, `Test library`, `Package app`, `Package library`, and `Pack for publishing` for a project of kind `package`, because `package` is also a kind. The hint under the button keeps the raw task name (`smith run package`). Any other task (`stage-web`, `package-dmg`) reads `Run <task>`. The keys do not change. |
 | Projects, Run, Doctor, Settings | `\` `|`, `[` `]` | `\` selects the next divider between two panels and `|` the previous one. `Shift`+arrows select one too. `[` moves it left or up and `]` right or down. `Tab` picks the next divider and `Esc` lets go. With one divider, `[` and `]` need no selection. Drag a divider with the mouse to do the same. A divider you drag goes back to its resting look when
 you let go; a divider you select with the keys stays lit until `Esc`. Each view keeps its sizes in the preferences file. |
-| Projects, Doctor | `Ctrl+U` `Ctrl+D` | Scroll the detail. |
+| Projects, Doctor, Deps, Settings | `Ctrl+U` `Ctrl+D` | Scroll the detail (in Projects its bottom part: the top part stays). |
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
@@ -222,8 +222,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Doctor | `e` | Show every line of the problem, or fewer. |
 | Doctor | `PgUp` `PgDn` | Scroll the detail. |
 | Deps | `Space` | Mark or unmark a dependency. |
-| Deps | `s` | Mark the patch and minor ones. |
-| Deps | `a` | Mark all, or none. |
+| Deps | `e`, `p`, `n`, `M` | Show every release, only the patch, only the minor or only the major ones (the chips at the top). Marks stay when the filter changes; the box in the heading marks the rows shown, or unmarks them when all are marked. |
 | Deps | `u`, `Enter` | Update the marked ones (`smith deps up`). |
 | Deps | `i` | Install a package (`smith install -p <project> <package>`). It asks the names (a name or name@version, several with spaces), then the projects (space ticks; the projects that declare the package under the cursor start ticked, and nothing runs before you confirm), then the kind: production or development (`-D`). Each project is listed with its language and folder, so for a project with several parts, such as a Tauri app (a Rust part and a web part), you pick the part that gets the package. The confirmation opens at once and shows the plan: the latest release of each name and the section it goes into. The first choice of the projects step is `Workspace root: shared by every project, in the root package.json` (`-p .`), shown only in a workspace with a Node project; it can be ticked together with projects, starts ticked when the cursor is on a `(root)` row, and the kind step applies to it. The plan and the confirmation list it with the exact `npm install` command. Machine-wide installs (`npm -g`), peer and optional dependencies are not offered: `smith install` has no way to do them. |
 | Deps | `x` | Remove the package under the cursor (`smith uninstall -p <project> <package>`). A package that one project declares goes straight to the confirmation with that project as `-p`; the workspace root, shown as `(root)`, is `-p .`. When several projects declare it, a multiple choice asks from which ones (space toggles); smith never picks for you. A development dependency is removed like any other. |
@@ -493,8 +492,8 @@ and does are on the right. `Tab` (or `Left` and `Right`) moves between the two; 
 the same, and a double-click does what `Enter` does. Everything it writes is what the
 matching command writes: a test compares `smith.toml` byte for byte with the result of
 `smith plugin disable`, `smith plugin trust --pin` and `smith config set`, and comments and
-every other line stay as they are. A setting whose default has a recorded reason shows it under
-the setting as "Why:", the same text as `smith why <setting>`.
+every other line stay as they are. The name, type, description, default and current value of the selected row, and the key that changes it, are in the detail beside the list on a wide screen. A setting whose default has a recorded reason shows it there
+as "Why:", the same text as `smith why <setting>`.
 
 **Plugins.** The built-in language plugins, each on or off (`Space`; at least one must stay
 on, as with `smith plugin disable`). The status line says what changed and offers `undo (u)`:
@@ -538,8 +537,10 @@ says so when one is set. `auto` means what smith did before: the terminal's back
 `TERM` decide.
 
 **Workspace.** Every setting [`smith config list`](config-list.md) knows, grouped by the
-table of `smith.toml` it belongs to, with what it does and its default. A switch flips with
-`Space`; a list with fixed choices (`ci.providers`) is ticked with `Space` and saved with
+table of `smith.toml` it belongs to, with what it does and its default. A switch shows a box
+(`[x]` or `[ ]`) and flips with `Enter` or `Space`; a setting that takes one word of a fixed set
+(`ci.attest`, `ci.audit`, `release.api_check`) opens a pick list: the arrows move, `Enter` picks, `Esc`
+cancels; a list with fixed choices (`ci.providers`) is ticked with `Space` and saved with
 `Enter`; text, numbers and lists without fixed choices (separate the items with commas) are
 typed. The value is checked against the schema before anything is written, and the reason
 stays in the editor when it is refused. `u` removes the setting, so it has its default.
@@ -769,7 +770,7 @@ words and marks the defaults: "React, ESLint (default), Vitest (default); no des
 ticked, the project takes the stack's defaults and the confirmation says so. While the confirmation is open the
 tab bar names the form ("Add a project"), not "Start"; "Decide in the next question" leaves the choices list empty. In Deps, click a row's box to
 mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shift+Down do the same from the keyboard),
-and click the box in the heading to mark all or none. Only
+and click the box in the heading to mark every row shown, or none. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
 turns the mouse off.
 

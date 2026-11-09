@@ -53,7 +53,7 @@ func TestTheRunHeaderStepsThroughTheRunsWithTheMouse(t *testing.T) {
 	l.clickText("newer ›")
 	l.has("run 2 of 2")
 	l.clickText("Back (Esc)")
-	l.has("Recent runs", "Verify everything")
+	l.has("Recent runs", "Verify (V)")
 }
 
 func TestTheRunFooterNamesTheKeysThatMoveBetweenRuns(t *testing.T) {

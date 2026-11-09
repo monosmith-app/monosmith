@@ -121,9 +121,9 @@ func TestShortcutsExplainWhenTheyCannotRun(t *testing.T) {
 
 func TestAViewsLettersAreItsOwnNotTheGlobalOnes(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("4", "a") // Deps: a marks all, it does not open the Add a project form
+	l.keys("4", "p") // Deps: p shows the patch releases, a letter of the view
 	if l.sh().tab != "deps" {
-		t.Fatalf("a left Deps for %q", l.sh().tab)
+		t.Fatalf("p left Deps for %q", l.sh().tab)
 	}
 }
 
@@ -294,12 +294,12 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 
 func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 	l := newLab(t, true, 90, 30)
-	l.hasNot("Dependencies")
+	l.hasNot("Build app")   // the detail is not open
 	l.keys("down", "enter") // web
 	if !l.sh().detailOpen {
 		t.Fatal("Enter should open the detail")
 	}
-	l.has("Dependencies", "Build app", "Test app")
+	l.has("dependencies", "Build app", "Test app")
 	l.keys("esc")
 	if l.sh().detailOpen {
 		t.Fatal("Esc should go back to the list")

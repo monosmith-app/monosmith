@@ -9,7 +9,7 @@ The pieces that stand alone are subfeatures with their own `doc.go`: `commands`
 (the keymap), `theme` (tokens, themes and symbols), `pane` (frames, wrapping,
 truncation), `dialog`, `palette`, `tabs`, `footer`, `statusbar`, `toast`, the
 views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
-`detail`, `runview`, `logview`, `guide`, `settingsview` (the Settings tab)), `settingssource` (what the Settings
+`detail`, `runview`, `logview`, `guide`, `settingsview` (the Settings tab; its detail is drawn in the side panel of the shell, `WithSideDetail`)), `settingssource` (what the Settings
 tab reads, and the functions it calls, which are the ones `smith plugin` and `smith config` call), `userprefs` (the
 person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix dialog),
 `adoptwizard` (the adopt and convert dialog), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `pathfinder` (the list of folders and files under a path field), `layout`,

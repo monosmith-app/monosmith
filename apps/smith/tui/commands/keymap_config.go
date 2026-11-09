@@ -38,6 +38,9 @@ var (
 	vCopy      = []string{TabProjects, TabDoctor, TabDeps}
 	// vSplit are the views whose selection has a detail pane beside the list.
 	vSplit = []string{TabProjects, TabDoctor}
+	// vSide are the views whose side panel scrolls with Ctrl+U and Ctrl+D: the
+	// detail of Projects and Doctor, the policy of Deps and the option of Settings.
+	vSide = []string{TabProjects, TabDoctor, TabDeps, TabSettings}
 	// vSplitters are the views with a divider between panels.
 	vSplitters = []string{TabProjects, TabDoctor, TabSettings}
 	// vZoom are the views whose detail can fill the pane.
@@ -47,7 +50,7 @@ var (
 // all is the keymap; the order is the order within each group and in the footer.
 var all = []Command{
 	// The keys of each view's own pane come first: they win over a global key
-	// that is the same letter (Deps marks all with a, which adds a project elsewhere).
+	// that is the same letter (Deps shows the major releases with M, which no other view uses).
 	{ID: "home.next", Group: GroupRun, Title: words.Say("commands.home.next.title"), Keys: []string{"enter"}, Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.next.footer"), Glyph: words.Say("commands.home.next.glyph")},
 	{ID: "home.move", Group: GroupRun, Title: words.Say("commands.home.move.title"), Keys: []string{"down", "up", "left", "right"}, Shortcut: words.Say("commands.home.move.shortcut"), Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.move.footer"), Glyph: words.Say("commands.home.move.glyph")},
 	{ID: "home.scroll", Group: GroupRun, Title: words.Say("commands.home.scroll.title"), Keys: []string{"pgdown", "pgup"}, Shortcut: words.Say("commands.home.scroll.shortcut"), Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.scroll.footer"), Glyph: words.Say("commands.home.scroll.glyph")},
@@ -109,8 +112,10 @@ var all = []Command{
 	{ID: "rel.forced", Group: GroupRelease, Title: words.Say("commands.rel.forced.title"), Hint: words.Say("commands.rel.forced.hint"), Keys: []string{"f"}, Kind: Guided, Guide: words.Say("commands.rel.forced.guide"), Views: vRelease, NeedsWorkspace: true, NeedsIdle: true},
 
 	{ID: "deps.mark", Group: GroupProjects, Title: words.Say("commands.deps.mark.title"), Keys: []string{" "}, Shortcut: words.Say("commands.deps.mark.shortcut"), Kind: PaneKey, Views: vDeps, Footer: words.Say("commands.deps.mark.footer")},
-	{ID: "deps.mark-safe", Group: GroupProjects, Title: words.Say("commands.deps.mark-safe.title"), Keys: []string{"s"}, Kind: PaneKey, Views: vDeps, Footer: words.Say("commands.deps.mark-safe.footer")},
-	{ID: "deps.mark-all", Group: GroupProjects, Title: words.Say("commands.deps.mark-all.title"), Keys: []string{"a"}, Kind: PaneKey, Views: vDeps, Footer: words.Say("commands.deps.mark-all.footer")},
+	{ID: "deps.filter-all", Group: GroupProjects, Title: words.Say("commands.deps.filter-all.title"), Keys: []string{"e"}, Kind: PaneKey, Views: vDeps},
+	{ID: "deps.filter-patch", Group: GroupProjects, Title: words.Say("commands.deps.filter-patch.title"), Keys: []string{"p"}, Kind: PaneKey, Views: vDeps},
+	{ID: "deps.filter-minor", Group: GroupProjects, Title: words.Say("commands.deps.filter-minor.title"), Keys: []string{"n"}, Kind: PaneKey, Views: vDeps},
+	{ID: "deps.filter-major", Group: GroupProjects, Title: words.Say("commands.deps.filter-major.title"), Keys: []string{"M"}, Kind: PaneKey, Views: vDeps}, // words:literal
 	{ID: "deps.update", Group: GroupProjects, Title: words.Say("commands.deps.update.title"), Hint: words.Say("commands.deps.update.hint"), Keys: []string{"u", "enter"}, Kind: ViewAction, Action: "deps-up", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.deps.update.footer")},
 	{ID: "deps.install", Group: GroupProjects, Title: words.Say("commands.deps.install.title"), Hint: words.Say("commands.deps.install.hint"), Keys: []string{"i"}, Kind: ViewAction, Action: "deps-install", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.deps.install.footer")},
 	{ID: "deps.remove", Group: GroupProjects, Title: words.Say("commands.deps.remove.title"), Hint: words.Say("commands.deps.remove.hint"), Keys: []string{"x"}, Kind: ViewAction, Action: "deps-remove", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.deps.remove.footer")},
@@ -219,8 +224,8 @@ var all = []Command{
 	{ID: "split.right", Group: GroupViews, Title: words.Say("commands.split.right.title"), Hint: words.Say("commands.split.right.hint"), Keys: []string{"]"}, Kind: ViewAction, Action: "split-right", Views: vSplitters},
 	{ID: "split.left", Group: GroupViews, Title: words.Say("commands.split.left.title"), Hint: words.Say("commands.split.left.hint"), Keys: []string{"["}, Kind: ViewAction, Action: "split-left", Views: vSplitters},
 	{ID: "split.select", Group: GroupViews, Title: words.Say("commands.split.select.title"), Hint: words.Say("commands.split.select.hint"), Keys: []string{"\\", "|", "shift+left", "shift+right", "shift+up", "shift+down"}, Shortcut: words.Say("commands.split.select.shortcut"), Kind: PaneKey, Views: vSplitters},
-	{ID: "detail.up", Group: GroupViews, Title: words.Say("commands.detail.up.title"), Keys: []string{"ctrl+u"}, Kind: ViewAction, Action: "detail-up", Views: vSplit},
-	{ID: "detail.down", Group: GroupViews, Title: words.Say("commands.detail.down.title"), Keys: []string{"ctrl+d"}, Kind: ViewAction, Action: "detail-down", Views: vSplit},
+	{ID: "detail.up", Group: GroupViews, Title: words.Say("commands.detail.up.title"), Keys: []string{"ctrl+u"}, Kind: ViewAction, Action: "detail-up", Views: vSide},
+	{ID: "detail.down", Group: GroupViews, Title: words.Say("commands.detail.down.title"), Keys: []string{"ctrl+d"}, Kind: ViewAction, Action: "detail-down", Views: vSide},
 	{ID: "view.copy", Group: GroupViews, Title: words.Say("commands.view.copy.title"), Hint: words.Say("commands.view.copy.hint"), Keys: []string{"y"}, Kind: CopyFocused, Footer: words.Say("commands.view.copy.footer"), ShowIn: vCopy},
 	{ID: "view.mouse", Group: GroupViews, Title: words.Say("commands.view.mouse.title"), Hint: words.Say("commands.view.mouse.hint"), Keys: []string{"m"}, Kind: ToggleMouse, Footer: words.Say("commands.view.mouse.footer"), Tail: true},
 
