@@ -15,7 +15,7 @@ func parentProgramName(pid int) string {
 	if err != nil {
 		return ""
 	}
-	defer windows.CloseHandle(snap)
+	defer func() { _ = windows.CloseHandle(snap) }()
 	entry := windows.ProcessEntry32{Size: uint32(unsafe.Sizeof(windows.ProcessEntry32{}))}
 	for err = windows.Process32First(snap, &entry); err == nil; err = windows.Process32Next(snap, &entry) {
 		if int(entry.ProcessID) == pid {
