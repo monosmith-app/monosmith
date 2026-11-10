@@ -35,6 +35,7 @@ func Command(version string) *cobra.Command {
 	var asJSON, tags, initialise, dryRun, install, eslint, commit, yes bool
 	var move string
 	var hoist []string
+	var eslintSetup string
 	var decided adoptdecision.Flags
 	level := LevelConservative
 	cmd := &cobra.Command{
@@ -65,7 +66,8 @@ files (.git, .github, README, LICENSE, the .code-workspace file, ...) and the to
 configuration (prettier, ESLint, ...) stay at the root, documents go to doc/, and a
 Node project's tools (typescript, jest, ...) move from its package.json to the
 workspace's, with a root tsconfig.base.json it extends. A development dependency
-smith does not know is asked about (--hoist <name> sends it to the workspace).
+smith does not know is asked about (--hoist <name> sends it to the workspace), and so is
+the project's own ESLint setup (--eslint-setup shared|keep answers; it is kept without an answer).
 With --commit the move is a commit of its own, before the adoption's. --dry-run
 lists the git mv commands for the suggested folder, or for --move.
 
@@ -127,7 +129,7 @@ non-zero while something blocks.`,
 			if initialise && !dryRun && report.Adoptable() {
 				decided.CIGiven = cmd.Flags().Changed("ci")
 				if settled, err = SettleInit(report, InitSettings{
-					Move: MoveOptions{Dir: move, Hoist: hoist}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
+					Move: MoveOptions{Dir: move, Hoist: hoist, EslintSetup: eslintSetup}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
 				}); err != nil {
 					return err
 				}
@@ -213,6 +215,7 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
 	cmd.Flags().StringVar(&move, "move", "", "with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is")
 	cmd.Flags().StringSliceVar(&hoist, "hoist", nil, "with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway)")
+	cmd.Flags().StringVar(&eslintSetup, "eslint-setup", "", "with --init and --move, what happens to the project's own ESLint setup: shared (the shared config replaces it, the old file is kept as .pre-smith) or keep (it stays in the project)")
 	commandflags.AddYesFlag(cmd, &yes, "do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it")
 	cmd.Flags().StringVar(&decided.Gitattributes, "gitattributes", "", "with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it)")
 	cmd.Flags().StringVar(&decided.Agent, "agent", "", "with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false)")

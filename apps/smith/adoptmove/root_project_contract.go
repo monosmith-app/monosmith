@@ -72,6 +72,11 @@ type Plan struct {
 	// Unsure are the dependencies of development smith does not know as tools,
 	// which the person places (Settle).
 	Unsure []string `json:"unsure,omitempty"`
+	// Lint is true while the person has not said whether the project's own
+	// ESLint setup stays or the shared one replaces it (SettleLint).
+	Lint bool `json:"lint,omitempty"`
+	// KeepLint is true when the person keeps the project's own ESLint setup.
+	KeepLint bool `json:"keepLint,omitempty"`
 	// Keep are the Unsure ones the person left in the project.
 	Keep []string `json:"keep,omitempty"`
 	// Notes are things the person should know, one sentence each.

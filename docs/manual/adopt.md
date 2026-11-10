@@ -42,6 +42,7 @@ Usage: `smith adopt [flags]`
 | `--commit` | boolean | off | with --init, commit the change as one operation, so smith undo can revert it |
 | `--dry-run` | boolean | off | only report (this is the default; the flag makes it explicit) |
 | `--eslint` | boolean | off | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies |
+| `--eslint-setup <eslint-setup>` | string |  | with --init and --move, what happens to the project's own ESLint setup: shared (the shared config replaces it, the old file is kept as .pre-smith) or keep (it stays in the project) |
 | `--gitattributes <gitattributes>` | string |  | with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it) |
 | `--hoist <hoist>` | string, repeatable |  | with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway) |
 | `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
@@ -141,9 +142,11 @@ Move it into a folder of its own so smith can manage it?
   default and the answer without a terminal), and `--hoist <name>` answers for it. The compiler
   options every project shares move to a root `tsconfig.base.json`, which the project's
   `tsconfig.json` extends, keeping `outDir`, `rootDir`, `paths` and `include`. The build is
-  pointed at `dist/<project>`. A legacy `.eslintrc*` is kept as `.pre-smith`, the root gets the
-  shared flat config, and the ESLint packages leave the project because the shared config brings
-  its own. Go, Python and Rust move their manifest whole for now.
+  pointed at `dist/<project>`. A project with its own ESLint setup is asked: use the
+  shared config (the old file is kept as `.pre-smith`, the root gets the shared flat config, and the
+  ESLint packages leave the project because the shared config brings their own), or keep the
+  setup in the project. `--eslint-setup shared|keep` answers; without a terminal or with `--yes`
+  your own setup is kept, and `smith doctor` then reports that the slice rules do not run. Go, Python and Rust move their manifest whole for now.
 - It refuses, and changes nothing, when the root holds two manifests (a Go module and a
   `package.json`), when the folder already holds files, or when the folder's first part is a
   file or a folder that would move.
