@@ -11,8 +11,9 @@ var nodeToolNames = map[string]bool{
 }
 
 // nodeToolPrefixes are the families of tools: formatter plugins, test-runner
-// packages, commit tools, and the type packages the compiler reads.
-var nodeToolPrefixes = []string{"@types/", "@commitlint/", "prettier-", "@jest/", "jest-", "@vitest/"}
+// packages, commit tools, the type packages the compiler reads, and smith's
+// own packages (@monosmith/eslint-config and the plugin SDKs).
+var nodeToolPrefixes = []string{"@types/", "@commitlint/", "prettier-", "@jest/", "jest-", "@vitest/", "@monosmith/"}
 
 // IsNodeTool says whether a devDependency is a tool of the workspace: a
 // compiler, formatter, test runner, or something that belongs to one. A name
