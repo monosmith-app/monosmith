@@ -24,7 +24,10 @@ type Report struct {
 	// Providers falls back to github when it is empty.
 	Detected []string `json:"detected,omitempty"`
 	// Clean is true when git has no uncommitted changes; the steps need it.
-	Clean    bool          `json:"clean"`
+	Clean bool `json:"clean"`
+	// Split is true when this run cut the root project's manifest, so the
+	// lockfile no longer matches it (not part of the report's JSON).
+	Split    bool          `json:"-"`
 	Projects []ProjectLine `json:"projects"`
 	// Declared are the projects --init declares in smith.toml for a repository
 	// whose Go code is one module at the root (ADR 0052).

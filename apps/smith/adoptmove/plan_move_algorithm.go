@@ -41,6 +41,17 @@ func PlanMove(c Candidate, dir string, files []string) (Plan, error) {
 			p.Stays = append(p.Stays, name)
 			continue
 		}
+		if Classify(c.Ecosystem, name) == RoleDocs {
+			target := DocsDir + "/" + name
+			for _, f := range files {
+				if f == target || strings.HasPrefix(f, target+"/") {
+					return Plan{}, problem.New(fmt.Sprintf("%s is in the project and in %s, and moving it would overwrite one", name, DocsDir),
+						"rename one of them first (git mv)")
+				}
+			}
+			p.Docs = append(p.Docs, Step{From: name, To: target})
+			continue
+		}
 		if name == first {
 			return Plan{}, problem.New(fmt.Sprintf("the project has a folder or file named %s, and %s is inside that name", first, dir),
 				"choose a folder whose first part is not "+first+", or rename it first (git mv)")
@@ -48,7 +59,11 @@ func PlanMove(c Candidate, dir string, files []string) (Plan, error) {
 		p.Moves = append(p.Moves, Step{From: name, To: dir + "/" + name})
 	}
 	sort.Slice(p.Moves, func(i, j int) bool { return p.Moves[i].From < p.Moves[j].From })
+	sort.Slice(p.Docs, func(i, j int) bool { return p.Docs[i].From < p.Docs[j].From })
 	p.Notes = notesFor(c, top)
+	if len(p.Docs) > 0 {
+		p.Notes = append(p.Notes, fmt.Sprintf("documents go to the workspace's %s folder (%d): README, LICENSE and the other repository documents stay at the root.", DocsDir, len(p.Docs)))
+	}
 	return p, nil
 }
 
@@ -75,8 +90,8 @@ func notesFor(c Candidate, top []string) []string {
 // Lines are the plan as the commands a person would type, one per line, for a
 // dry run.
 func (p Plan) Lines() []string {
-	out := make([]string, 0, len(p.Moves))
-	for _, m := range p.Moves {
+	out := make([]string, 0, len(p.Moves)+len(p.Docs))
+	for _, m := range append(append([]Step{}, p.Moves...), p.Docs...) {
 		out = append(out, "git mv "+m.From+" "+m.To)
 	}
 	return out

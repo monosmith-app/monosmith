@@ -34,6 +34,7 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 func Command(version string) *cobra.Command {
 	var asJSON, tags, initialise, dryRun, install, eslint, commit, yes bool
 	var move string
+	var hoist []string
 	var decided adoptdecision.Flags
 	level := LevelConservative
 	cmd := &cobra.Command{
@@ -59,7 +60,12 @@ because smith manages one folder per project. --init asks where (apps/<name>,
 packages/<name>, libs/<name> or another folder) and never picks for you. Without
 a terminal, or with --yes, it moves nothing unless --move <folder> says where
 (--move none keeps the project where it is). The move is git mv of the project's
-files; the repository's own files (.git, .github, README, LICENSE, ...) stay.
+files, and what belongs to the workspace stays or goes there: the repository's own
+files (.git, .github, README, LICENSE, the .code-workspace file, ...) and the tool
+configuration (prettier, ESLint, ...) stay at the root, documents go to doc/, and a
+Node project's tools (typescript, jest, ...) move from its package.json to the
+workspace's, with a root tsconfig.base.json it extends. A development dependency
+smith does not know is asked about (--hoist <name> sends it to the workspace).
 With --commit the move is a commit of its own, before the adoption's. --dry-run
 lists the git mv commands for the suggested folder, or for --move.
 
@@ -121,7 +127,7 @@ non-zero while something blocks.`,
 			if initialise && !dryRun && report.Adoptable() {
 				decided.CIGiven = cmd.Flags().Changed("ci")
 				if settled, err = SettleInit(report, InitSettings{
-					Move: MoveOptions{Dir: move}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
+					Move: MoveOptions{Dir: move, Hoist: hoist}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
 				}); err != nil {
 					return err
 				}
@@ -206,6 +212,7 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
 	cmd.Flags().StringVar(&move, "move", "", "with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is")
+	cmd.Flags().StringSliceVar(&hoist, "hoist", nil, "with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway)")
 	commandflags.AddYesFlag(cmd, &yes, "do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it")
 	cmd.Flags().StringVar(&decided.Gitattributes, "gitattributes", "", "with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it)")
 	cmd.Flags().StringVar(&decided.Agent, "agent", "", "with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false)")

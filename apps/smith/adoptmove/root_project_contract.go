@@ -1,13 +1,17 @@
 package adoptmove
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/monosmith-app/monosmith/apps/smith/adoptsplit"
+)
 
 // The ecosystems of the project found at the root.
 const (
-	EcosystemNode   = "node"
-	EcosystemGo     = "go"
-	EcosystemPython = "python"
-	EcosystemRust   = "rust"
+	EcosystemNode   = adoptsplit.Node
+	EcosystemGo     = adoptsplit.Go
+	EcosystemPython = adoptsplit.Python
+	EcosystemRust   = adoptsplit.Rust
 )
 
 // Leave is the --move value that keeps the project where it is.
@@ -54,8 +58,22 @@ type Plan struct {
 	Ecosystem string `json:"ecosystem"`
 	// Moves are the git mv commands, in order.
 	Moves []Step `json:"moves"`
+	// Docs are the git mv commands that put the project's documents in the
+	// workspace's doc folder.
+	Docs []Step `json:"docs,omitempty"`
 	// Stays are the top-level entries that stay at the root.
 	Stays []string `json:"stays"`
+	// Hoist are the dependencies of development that go to the workspace
+	// manifest: the tools, and the ones the person chose.
+	Hoist []string `json:"hoist,omitempty"`
+	// Replaced are the dependencies that leave the project because the
+	// workspace's shared tooling replaces them.
+	Replaced []string `json:"replaced,omitempty"`
+	// Unsure are the dependencies of development smith does not know as tools,
+	// which the person places (Settle).
+	Unsure []string `json:"unsure,omitempty"`
+	// Keep are the Unsure ones the person left in the project.
+	Keep []string `json:"keep,omitempty"`
 	// Notes are things the person should know, one sentence each.
 	Notes []string `json:"notes,omitempty"`
 }

@@ -2,8 +2,11 @@ package adoption
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
@@ -15,6 +18,9 @@ import (
 type MoveOptions struct {
 	// Dir is --move: a folder, adoptmove.Leave, or "" when it was not given.
 	Dir string
+	// Hoist is --hoist: development dependencies the person sends to the
+	// workspace without being asked.
+	Hoist []string
 	// Yes is --yes: do not ask.
 	Yes bool
 	// In and Out are where a question is read and written.
@@ -73,7 +79,41 @@ func ChooseMove(r Report, opts MoveOptions) (*adoptmove.Candidate, *adoptmove.Pl
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := placeDependencies(&plan, opts); err != nil {
+		return nil, nil, err
+	}
 	return &c, &plan, nil
+}
+
+// placeDependencies settles the development dependencies smith cannot place
+// itself: the ones named by --hoist go to the workspace, a terminal asks about
+// each of the rest, and without a terminal (or with --yes) they stay in the
+// project, which the output says, since that changes the least.
+func placeDependencies(p *adoptmove.Plan, opts MoveOptions) error {
+	var workspace []string
+	var open []string
+	for _, name := range p.Unsure {
+		if slices.Contains(opts.Hoist, name) {
+			workspace = append(workspace, name)
+		} else {
+			open = append(open, name)
+		}
+	}
+	if len(open) > 0 && !opts.Yes && interactive() {
+		for _, name := range open {
+			toWorkspace, err := adoptmove.AskWorkspace(name, opts.In, opts.Out)
+			if err != nil {
+				return err
+			}
+			if toWorkspace {
+				workspace = append(workspace, name)
+			}
+		}
+	} else if len(open) > 0 && opts.Out != nil {
+		fmt.Fprintf(opts.Out, "  stays in the project (nobody was asked; --hoist <name> sends one to the workspace): %s\n", strings.Join(open, ", "))
+	}
+	p.Settle(workspace)
+	return nil
 }
 
 // PlanFor is the move of c into dir (checked) against the repository's files.
@@ -86,5 +126,9 @@ func PlanFor(root string, c adoptmove.Candidate, dir string) (adoptmove.Plan, er
 	if err != nil {
 		return adoptmove.Plan{}, err
 	}
-	return adoptmove.PlanMove(c, clean, files)
+	plan, err := adoptmove.PlanMove(c, clean, files)
+	if err != nil {
+		return plan, err
+	}
+	return plan, adoptmove.SortDependencies(root, c, &plan)
 }

@@ -20,14 +20,22 @@ func Apply(root string, p Plan, out io.Writer) error {
 	if err := os.MkdirAll(filepath.Join(root, filepath.FromSlash(p.Dir)), 0o755); err != nil {
 		return err
 	}
+	if len(p.Docs) > 0 {
+		if err := os.MkdirAll(filepath.Join(root, DocsDir), 0o755); err != nil {
+			return err
+		}
+	}
 	moved := make([]string, 0, len(p.Moves))
-	for _, m := range p.Moves {
+	for _, m := range append(append([]Step{}, p.Moves...), p.Docs...) {
 		if _, err := git.Run("mv", m.From, m.To); err != nil {
 			return fmt.Errorf("git mv %s %s: %w", m.From, m.To, err)
 		}
 		moved = append(moved, m.From)
 	}
 	fmt.Fprintf(out, "  moved %d entries into %s\n", len(p.Moves), p.Dir)
+	if len(p.Docs) > 0 {
+		fmt.Fprintf(out, "  moved %d document(s) into %s\n", len(p.Docs), DocsDir)
+	}
 	path := filepath.Join(root, ".gitignore")
 	raw, err := os.ReadFile(path)
 	if err != nil {

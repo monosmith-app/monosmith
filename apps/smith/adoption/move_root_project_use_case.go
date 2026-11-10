@@ -34,6 +34,9 @@ func MoveRootProject(r Report, c adoptmove.Candidate, p adoptmove.Plan, commit b
 	if err := adoptmove.Apply(r.Root, p, out); err != nil {
 		return r, err
 	}
+	if err := SplitRootProject(r, c, p, out); err != nil {
+		return r, fmt.Errorf("the project moved but the split of workspace and project failed (%w): git reset --hard puts the tree back as it was", err)
+	}
 	if commit {
 		subject, err := adoptmove.Commit(r.Root, c, p)
 		if err != nil {
@@ -49,5 +52,6 @@ func MoveRootProject(r Report, c adoptmove.Candidate, p adoptmove.Plan, commit b
 		return r, err
 	}
 	next.Clean = true
+	next.Split = len(p.Hoist) > 0 || len(p.Replaced) > 0
 	return next, nil
 }

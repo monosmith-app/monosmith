@@ -56,7 +56,7 @@ func CompleteWorkspace(r Report, install, eslint bool, out io.Writer) error {
 			return err
 		}
 	}
-	settleLockfile(lockfilesync.Options{Root: r.Root, Out: out, Create: install, LockOnly: !install}, install || changed, out)
+	settleLockfile(lockfilesync.Options{Root: r.Root, Out: out, Create: install, LockOnly: !install}, install || changed || r.Split, out)
 	return nil
 }
 

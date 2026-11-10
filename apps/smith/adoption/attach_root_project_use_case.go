@@ -30,6 +30,10 @@ func attachRootProject(r *Report, files []string) bool {
 		r.Warnings = append(r.Warnings, itemOfProblem(err))
 		return true
 	}
+	if err := adoptmove.SortDependencies(r.Root, c, &plan); err != nil {
+		r.Warnings = append(r.Warnings, itemOfProblem(err))
+		return true
+	}
 	r.MovePlan = &plan
 	return true
 }
