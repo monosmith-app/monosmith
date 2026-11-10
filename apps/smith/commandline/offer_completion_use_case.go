@@ -15,9 +15,20 @@ import (
 
 // offersCompletionAfter is true for the commands whose run is a first look at
 // smith that a person reads in a terminal: smith doctor, without a
-// machine-readable format. The interface offers it too (see Execute).
+// machine-readable format and without the flags of a person who already knows
+// what they are doing (naming a fix, answering for it, or saying yes to all): a
+// prompt after that would interrupt a task, not welcome a newcomer. The
+// interface offers it too (see Execute).
 func offersCompletionAfter(args []string) bool {
-	return len(args) > 0 && args[0] == "doctor" && !slices.Contains(args, "--json")
+	if len(args) == 0 || args[0] != "doctor" {
+		return false
+	}
+	for _, flag := range []string{"--json", "--yes", "-y", "--only", "--choose"} {
+		if slices.Contains(args, flag) {
+			return false
+		}
+	}
+	return true
 }
 
 // offerCompletion asks once whether to set up tab completion. It never asks in

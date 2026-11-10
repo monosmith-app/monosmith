@@ -7,7 +7,10 @@ import (
 )
 
 func TestOnlyADoctorRunInATerminalOffersCompletion(t *testing.T) {
-	for args, want := range map[string]bool{"doctor": true, "doctor --fix": true, "doctor --json": false, "build": false, "": false, "completion install": false} {
+	for args, want := range map[string]bool{
+		"doctor": true, "doctor --fix": true, "doctor --json": false, "build": false, "": false, "completion install": false,
+		"doctor --fix --yes": false, "doctor --fix -y": false, "doctor --fix --only x": false, "doctor --fix --only x --choose 1": false,
+	} {
 		if got := offersCompletionAfter(strings.Fields(args)); got != want {
 			t.Errorf("%q: got %v", args, got)
 		}
