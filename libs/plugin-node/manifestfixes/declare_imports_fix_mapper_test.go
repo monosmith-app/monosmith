@@ -107,7 +107,7 @@ func TestFixesKeepTheLineEndingsOfThePackageJSON(t *testing.T) {
 	})
 	fix := DeclareImportsFix(root, project("a"), []declaredimports.UndeclaredImport{{File: "src/index.ts", Package: "lodash"}})
 	got := fix.Files[0].Content
-	if strings.Contains(strings.ReplaceAll(got, "\r\n", ""), "\n") || !strings.Contains(got, "\r\n") {
+	if strings.Contains(strings.ReplaceAll(got, "\r\n", ""), "\n") || strings.Contains(got, "\r\r") || !strings.Contains(got, "\r\n") {
 		t.Fatalf("a CRLF file stays CRLF, so the diff shows only what changed: %q", got)
 	}
 }
