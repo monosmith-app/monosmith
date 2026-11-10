@@ -1,0 +1,57 @@
+name: catalogue
+
+# Once a week, ask the package managers whether every package id in the tool
+# catalogue still exists, and raise an issue when one does not.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ids:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Refresh the apt lists
+        if: runner.os == 'Linux'
+        run: sudo apt-get update
+      - name: Ask the package managers
+        id: ask
+        shell: bash
+        run: |
+          set +e
+          SMITH_CATALOGUE_CHECK=1 go test ./packages/plugin-sdk/toolcatalog -run TestInstallIDsExistInTheirCatalogue -v 2>&1 | tee catalogue.log
+          status=${PIPESTATUS[0]}
+          {
+            echo 'failures<<EOF'
+            grep -E '^\s*install_ids_online_test.go:[0-9]+:' catalogue.log || true
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit $status
+      - name: Raise an issue
+        if: failure() && steps.ask.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILURES: ${{ steps.ask.outputs.failures }}
+          OS_NAME: ${{ matrix.os }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Tool catalogue: a package id is gone on $OS_NAME" \
+            --body "The weekly catalogue check found install ids that the package manager no longer knows.
+
+          $FAILURES
+
+          Run: $RUN_URL"
