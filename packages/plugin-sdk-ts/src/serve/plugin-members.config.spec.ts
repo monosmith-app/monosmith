@@ -6,7 +6,7 @@ import type { SmithPlugin } from './plugin.contract.ts'
 
 describe('PLUGIN_MEMBERS', () => {
   it('covers every method of the schema except the two the serve loop answers itself and the cancel notification it handles', () => {
-    const methods = Object.keys(protocolSchema['x-methods']).filter(m => m !== 'initialize' && m !== 'shutdown' && m !== 'cancel')
+    const methods = Object.keys(protocolSchema['x-methods']).filter(m => !['initialize', 'shutdown', 'cancel'].includes(m))
     expect(new Set(Object.keys(PLUGIN_MEMBERS))).toEqual(new Set(methods))
   })
 
