@@ -1,0 +1,10 @@
+[package]
+name = "orders-cli"
+version = "0.3.0"
+edition = "2021"
+
+[dependencies]
+itoa = "1"
+
+[dev-dependencies]
+pretty_assertions = "1"
