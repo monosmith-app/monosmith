@@ -37,9 +37,16 @@ func Stage(workspaceRoot, root string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// The build is the package: no files list to filter it, and no scripts,
-	// which would run in a directory they were not written for.
-	doc.Delete("files")
+	// A package that keeps ./dist/... in its package.json while the workspace
+	// builds it into dist/<project dir> (the Nx layout) is published from that
+	// folder: ./dist/index.js is ./index.js there.
+	if _, err := os.Stat(filepath.Join(built, "dist")); errors.Is(err, fs.ErrNotExist) {
+		doc.RewriteStrings(publishedPathKeys, ownDistRelative)
+	}
+	// The build is the package: no files list to select it (the exclusions of
+	// the list, "!**/*.map", stay), and no scripts, which would run in a
+	// directory they were not written for.
+	keepExclusions(doc)
 	doc.Delete("scripts")
 	// Inside the workspace a package is read from its sources
 	// (exports: ./src/index.ts); what is published is their build.
@@ -74,6 +81,40 @@ func Stage(workspaceRoot, root string) (string, error) {
 		}
 	}
 	return built, nil
+}
+
+// publishedPathKeys are the package.json keys whose strings name built files.
+var publishedPathKeys = []string{"main", "module", "browser", "types", "typings", "bin", "exports"}
+
+// ownDistRelative makes a path into the package's own dist folder
+// (./dist/index.js) relative to the folder that is packed (./index.js).
+func ownDistRelative(v string) string {
+	switch {
+	case v == "./dist" || v == "dist":
+		return "."
+	case strings.HasPrefix(v, "./dist/"):
+		return "./" + strings.TrimPrefix(v, "./dist/")
+	case strings.HasPrefix(v, "dist/"):
+		return "./" + strings.TrimPrefix(v, "dist/")
+	}
+	return v
+}
+
+// keepExclusions replaces the files list with one that selects everything of
+// the packed folder and keeps the exclusions of the original list
+// ("!**/*.tsbuildinfo"); a list without exclusions goes.
+func keepExclusions(doc *jsondoc.Document) {
+	var kept []string
+	doc.RewriteStrings([]string{"files"}, func(v string) string {
+		if strings.HasPrefix(v, "!") {
+			kept = append(kept, v)
+		}
+		return v
+	})
+	doc.Delete("files")
+	if len(kept) > 0 {
+		_ = doc.SetJSON("files", append([]string{"**"}, kept...))
+	}
 }
 
 // RelativeToBuild rewrites the paths a package.json gives into the project's
