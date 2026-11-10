@@ -23,6 +23,19 @@ type Option struct{ Label, Value, Hint string }
 // Value Enter takes; in and out are the terminal.
 // Returns: the Value of the answer.
 func Ask(prompt string, options []Option, def string, in *bufio.Reader, out io.Writer) string {
+	value, _ := AskOrBack(prompt, options, def, in, out, false)
+	return value
+}
+
+// AskOrBack is Ask with one more answer: b (or back) says the person wants the
+// question before this one. An option whose value or label is "b" or "back"
+// keeps its meaning. The list shows the b line only when canBack is true; with
+// canBack false it is Ask.
+//
+// Parameters: as Ask, and canBack is true when a question before this one exists.
+// Returns: the Value of the answer, and true when the person asked to go back
+// (the value is then "").
+func AskOrBack(prompt string, options []Option, def string, in *bufio.Reader, out io.Writer, canBack bool) (string, bool) {
 	fmt.Fprintf(out, "\n%s\n", prompt)
 	width := 0
 	for _, o := range options {
@@ -39,19 +52,26 @@ func Ask(prompt string, options []Option, def string, in *bufio.Reader, out io.W
 			shown = strconv.Itoa(i + 1)
 		}
 	}
+	if canBack {
+		fmt.Fprintf(out, "  b) %-*s  %s\n", width, "Back", "the question before this one")
+	}
 	for range maxTries {
 		fmt.Fprintf(out, "Choice [%s]: ", shown)
 		line, err := in.ReadString('\n')
-		if value, ok := pick(options, def, strings.TrimSpace(line)); ok {
-			return value
+		typed := strings.TrimSpace(line)
+		if value, ok := pick(options, def, typed); ok {
+			return value, false
+		}
+		if canBack && (strings.EqualFold(typed, "b") || strings.EqualFold(typed, "back")) {
+			return "", true
 		}
 		if err != nil {
-			return def
+			return def, false
 		}
 		fmt.Fprintf(out, "type a number from 1 to %d, or Enter for the default\n", len(options))
 	}
 	fmt.Fprintf(out, "Using the default, %s.\n", def)
-	return def
+	return def, false
 }
 
 // pick turns what a person typed into the value of an answer; ok is false for

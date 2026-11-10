@@ -1,0 +1,12 @@
+{
+  "cachewizard.button.back": "Back",
+  "cachewizard.button.cancel": "Cancel",
+  "cachewizard.button.next": "Next",
+  "cachewizard.escape.back": "esc goes back",
+  "cachewizard.escape.close": "esc closes",
+  "cachewizard.hint.choose": "up/down choose · enter confirm · 1-9 pick · {escape}",
+  "cachewizard.hint.choose.click": "click an entry, double-click to select",
+  "cachewizard.hint.text": "enter confirms · {escape}",
+  "cachewizard.hint.confirm": "y or n · tab moves · enter takes the marked one · {escape}",
+  "cachewizard.hint.page": "{escape}"
+}

@@ -24,19 +24,30 @@ type Confirmation struct {
 	// so it can be undone" with the question; the answer says whether it was
 	// ticked. The terminal has the --commit flag instead and never ticks it.
 	OfferCommit bool
+	// Earlier is the answer the person gave before going back to this
+	// question; an interface marks it again. nil when the question is new.
+	Earlier *ConfirmAnswer
+}
+
+// ConfirmAnswer is the answer to a Confirmation.
+type ConfirmAnswer struct {
+	// Yes is true for the yes answer; Commit is true when the commit box was ticked.
+	Yes, Commit bool
 }
 
 // Dialogue is how the setup talks to the person. The terminal of `smith cache
 // setup` and the screens of the interactive shell each implement it, so both
 // show the same decisions from the same engine. Every method may block until
-// the person answers.
+// the person answers. Choose, Text, Confirm and Show may panic with
+// BackRequest when the person asks for the question before (see BackAware).
 type Dialogue interface {
 	// Say tells the person something; it asks nothing.
 	Say(text string)
 	// Choose asks for one option; def is the Value of the default. It returns that Value.
 	Choose(prompt string, options []Option, def string) string
-	// Text asks for a typed line and returns it trimmed.
-	Text(prompt string) string
+	// Text asks for a typed line and returns it trimmed; def is the line to
+	// start from ("" for none), kept when the person only confirms.
+	Text(prompt, def string) string
 	// Confirm asks a yes or no question; yes is true only for yes, and commit
 	// says that the box offered by OfferCommit was ticked.
 	Confirm(c Confirmation) (yes, commit bool)

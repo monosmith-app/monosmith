@@ -9,6 +9,20 @@ shows the exact command first. The background (what the key is, rotation, SAS to
 one prefix for each workspace) is in
 [Set up the remote cache](../reference/tasks-and-cache.md#set-up-the-remote-cache).
 
+## Going back
+
+You can go back to the question before the one on screen and change the answer. In the
+interactive shell, press Esc, `b` or Left, or click **Back (b)**; the earlier answer is marked
+again. In a list, `b` goes back only when no entry starts with `b`; Left and the button always
+do. On the first question Esc closes the setup and nothing more is changed. Ctrl+C or the
+**Cancel** button closes it from any screen. In a terminal, type `b` at a choice.
+
+A step that ran something is a point of no return: a listing with `az` or `aws`, a sign-in, the
+write to `smith.toml`, the key or token screen, and the pipeline variables. smith does not go
+back over such a step and does not run it again. It says "That step already ran; nothing was
+undone." and asks the same question again. A key or token is never shown again after you leave its
+screen.
+
 ## The steps
 
 1. **The kind of storage:** Azure Blob, S3 or an HTTPS server. Google Cloud Storage is not

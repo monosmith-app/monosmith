@@ -44,6 +44,11 @@ type Screen struct {
 	// Noun names the secret ("Key", "SAS token") and Buttons are its choices.
 	Noun    string
 	Buttons []Button
+	// Typed is the line a Text screen starts with ("" for none).
+	Typed string
+	// CanBack is true when a question before this one exists: Esc, b and Left
+	// then go back. On the first question Esc closes the wizard.
+	CanBack bool
 }
 
 // Event is news from the engine, which runs off the interface's goroutine.
@@ -78,6 +83,8 @@ type Reply struct {
 	Yes bool
 	// Commit is true when the commit box was ticked.
 	Commit bool
+	// Back asks for the question before this one; the other fields are empty.
+	Back bool
 }
 
 // Outcome is what the host must do after a key or a click.

@@ -252,3 +252,83 @@ func TestClickingTheCommitBoxTicksIt(t *testing.T) {
 		t.Fatalf("commit %v", c.commits)
 	}
 }
+
+func TestEscapeGoesBackOneQuestionWithTheEarlierAnswerMarkedAndClosesOnlyTheFirst(t *testing.T) {
+	c := newCacheLab(t)
+	c.open()
+	c.has("esc closes")
+	c.hasNot("[Back (b)]")
+	c.press("3")
+	c.text("https://cache.acme.dev/x")
+	c.press("enter")
+	c.has("This changes smith.toml:", "esc goes back", "[Back (b)]", "[Cancel (ctrl+c)]")
+
+	c.press("esc") // the address again, as it was typed
+	c.has("Address of the cache server", "https://cache.acme.dev/x")
+	if c.sh().cache == nil || len(c.written) != 0 {
+		t.Fatal("esc on a later question goes back and writes nothing")
+	}
+	c.press("esc") // the kind again, with HTTPS marked
+	c.has("What kind of remote storage?", "esc closes", "any server that takes PUT, GET and HEAD")
+	c.hasNot("a container in an Azure storage account")
+	c.press("esc")
+	if c.sh().cache != nil || len(c.written) != 0 {
+		t.Fatal("esc on the first question closes the setup and writes nothing")
+	}
+}
+
+func TestBackKeysAndTheBackButtonGoBackOnEveryKindOfScreen(t *testing.T) {
+	c := newCacheLab(t)
+	c.open()
+	c.press("3")
+	c.text("https://cache.acme.dev/x")
+	c.press("enter")
+	c.press("b") // Confirm: b goes back to the address
+	c.has("Address of the cache server")
+	c.press("enter")
+	c.press("left") // Confirm: Left goes back
+	c.has("Address of the cache server")
+	c.press("enter")
+	c.clickText("[Back (b)]") // Confirm: the button
+	c.pump()
+	c.has("Address of the cache server")
+	c.press("esc")
+	c.has("What kind of remote storage?")
+	c.press("1") // Azure: the listing question is a Confirm
+	c.has("smith will run this command. It only reads:")
+	c.press("left") // Confirm: back to the kind
+	c.has("What kind of remote storage?")
+	c.press("left") // Choose: Left goes back; on the first question there is no back
+	c.has("What kind of remote storage?")
+	c.press("3")
+	c.has("Address of the cache server")
+	c.press("left") // Text holding a line: Left keeps the line
+	c.has("Address of the cache server", "https://cache.acme.dev/x")
+}
+
+func TestAfterTheKeyWasMadeBackIsRefusedAndTheKeyScreenNeverComesBack(t *testing.T) {
+	c := newCacheLab(t)
+	c.open()
+	c.press("3")
+	c.text("https://cache.acme.dev/x")
+	c.press("enter", "n") // do not write
+	c.press("y")          // make the key
+	key := c.clip.text
+	c.has("Key ready")
+	c.hasNot(key)
+	c.press("q") // Done clears the clipboard
+	c.has("GitHub Actions", "[Back (b)]")
+	for _, k := range []string{"esc", "b", "left"} {
+		c.press(k)
+		c.has("That step already ran; nothing was undone.", "GitHub Actions")
+		c.hasNot("Key ready", "Make the shared key")
+		if c.clip.text != "" || len(c.ran) != 0 {
+			t.Fatalf("%s: the clipboard holds %q and ran %v: nothing is made or run again", k, c.clip.text, c.ran)
+		}
+	}
+	c.press("enter")
+	c.has("Developer machines")
+	c.press("esc") // back to the steps page: no action between, so it is allowed
+	c.has("GitHub Actions")
+	c.hasNot("Key ready")
+}

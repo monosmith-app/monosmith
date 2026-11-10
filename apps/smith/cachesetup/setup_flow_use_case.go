@@ -52,7 +52,7 @@ func (f flow) yesNo(prompt, yes, yesHint, no, noHint string) bool {
 	return ok
 }
 
-func (f flow) text(prompt string) string { return f.Text(prompt) }
+func (f flow) text(prompt string) string { return f.Text(prompt, "") }
 
 // run starts a program while the person sees that smith is working.
 func (f flow) run(what string, stdin string, argv ...string) (string, string, error) {
@@ -177,10 +177,54 @@ func orTop(s string) string {
 // Run walks the whole setup: where, the setting, the key, the Azure SAS
 // token, and the steps of each CI provider.
 //
+// The person may go back to the question before the one on screen (the
+// dialogue panics with BackRequest). Run then walks the flow again, answers the
+// steps before that question from what it recorded, and asks the question with
+// the old answer chosen. A step that ran something (see Steps) is a point of
+// no return: Run does not go back over it, and says so.
+//
 // Parameters: facts are what smith knows of the workspace; ports connect it to the world.
 // Returns: the remote the person chose, "" when none; an error when the setup could not go on.
 func Run(facts Facts, ports Ports) (remote string, err error) {
-	f := flow{Ports: ports, facts: facts, azure: &azureState{}}
+	h := &history{}
+	for {
+		var again bool
+		if remote, again, err = walkOnce(facts, ports, h); !again {
+			return remote, err
+		}
+	}
+}
+
+// walkOnce walks the flow from its start, answering from the history first. It
+// returns again true when the person went back and the flow must start over.
+func walkOnce(facts Facts, ports Ports, h *history) (remote string, again bool, err error) {
+	az := &azureState{}
+	s := &stepper{inner: ports.Dialogue, run: ports.Run, write: ports.WriteRemote, h: h, azure: az}
+	p := ports
+	p.Dialogue, p.Run, p.WriteRemote = s, s.runProgram, s.writeRemote
+	defer func() {
+		r := recover()
+		if r == nil {
+			return
+		}
+		if _, ok := r.(BackRequest); !ok {
+			panic(r)
+		}
+		again = true
+		switch h.goBack() {
+		case refusedBack:
+			ports.Say(words.Say("cachesetup.back.refused"))
+		case firstQuestion:
+			ports.Say(words.Say("cachesetup.back.first"))
+		}
+	}()
+	remote, err = flow{Ports: p, facts: facts, azure: az}.walk()
+	return remote, false, err
+}
+
+// walk is the setup from the first question to the last page.
+func (f flow) walk() (remote string, err error) {
+	facts := f.facts
 	f.say("Remote cache setup. Every decision is yours: smith shows a command before it runs and writes nothing until you say yes.")
 	if facts.Remote != "" {
 		f.say("[cache] remote is %s today.", facts.Remote)

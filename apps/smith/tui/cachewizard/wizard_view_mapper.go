@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Title is the frame title of the dialog.
@@ -30,6 +31,8 @@ type hit struct {
 	toggle bool
 	// page is true for the button that goes on from a Page.
 	page bool
+	// back and cancel are the Back and Cancel buttons.
+	back, cancel bool
 	// press is the key a secret button sends.
 	press rune
 }
@@ -81,12 +84,12 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		head := append(m.noteLines(th, inner, max(height/4, 2)), "")
 		head = append(head, pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
 		add(head...)
-		foot := []string{"", th.Muted("up/down choose · enter confirm · 1-9 pick · esc closes (nothing more is changed)"), th.Muted("click an entry, double-click to select")}
+		foot := []string{"", th.Muted(words.Say("cachewizard.hint.choose", "escape", m.escapeHint())), th.Muted(words.Say("cachewizard.hint.choose.click"))}
 		hint := m.scr.Options[m.cursor].Hint
 		if hint != "" {
 			foot = append([]string{""}, append(pane.Wrap(th.Muted(hint), inner, 2), foot[1:]...)...)
 		}
-		room := max(height-len(lines)-len(foot), 3)
+		room := max(height-len(lines)-len(foot)-2, 3)
 		top := m.list.Show(m.cursor, room, len(m.scr.Options))
 		for i := top; i < min(top+room, len(m.scr.Options)); i++ {
 			mark, label := choicerow.Cursor(th, false), fmt.Sprintf("%d. %s", i+1, m.scr.Options[i].Label)
@@ -100,11 +103,14 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 			add(th.Muted(fmt.Sprintf("  %d of %d", m.cursor+1, n)))
 		}
 		add(foot...)
+		add("")
+		hits = append(hits, m.navHits(th, len(lines))...)
+		add(m.navRow(th))
 	case Text:
 		add(m.noteLines(th, inner, max(height/3, 2))...)
 		add("")
 		add(pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
-		add("", th.Accent(choicerow.Cursor(th, true))+string(m.input)+th.Accent("▌"), "", th.Muted("enter confirms · esc closes (nothing more is changed)"))
+		add("", th.Accent(choicerow.Cursor(th, true))+string(m.input)+th.Accent("▌"), "", th.Muted(words.Say("cachewizard.hint.text", "escape", m.escapeHint())))
 	case Confirm:
 		c := m.scr.Confirmation
 		add(m.noteLines(th, inner, max(height/5, 1))...)
@@ -153,18 +159,22 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		if hint != "" {
 			add(pane.Wrap(th.Muted(hint), inner, 2)...)
 		}
-		add("", th.Muted("y or n · tab moves · enter takes the marked one · esc closes"))
+		hits = append(hits, m.navHits(th, len(lines))...)
+		add(m.navRow(th), "")
+		add(th.Muted(words.Say("cachewizard.hint.confirm", "escape", m.escapeHint())))
 	case Page:
 		var all []string
 		for _, l := range m.scr.Lines {
 			all = append(all, pane.Wrap(l, inner, 3)...)
 		}
-		room := max(height-3, 3)
+		notes := m.noteLines(th, inner, 2)
+		room := max(height-4-len(notes), 3)
 		top := min(m.scroll, max(len(all)-room, 0))
+		add(notes...)
 		add(th.Bold(m.scr.Prompt), "")
 		add(all[top:min(top+room, len(all))]...)
 		if len(all) > room {
-			for len(lines) < height-2 {
+			for len(lines) < height-3 {
 				add("")
 			}
 		} else {
@@ -174,8 +184,11 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		if len(all) > room {
 			more = fmt.Sprintf("up/down scroll (%d of %d) · ", min(top+room, len(all)), len(all))
 		}
-		hits = append(hits, hit{row: len(lines), x0: 0, x1: button.Width(th, "Next", "Enter"), option: -1, page: true})
-		add(button.Render(th, "Next", "Enter", stateOf(true)) + "  " + th.Muted(more+"esc closes"))
+		next := words.Say("cachewizard.button.next")
+		hits = append(hits, hit{row: len(lines), x0: 0, x1: button.Width(th, next, "Enter"), option: -1, page: true})
+		hits = append(hits, m.navHits(th, len(lines), button.Width(th, next, "Enter")+2)...)
+		add(button.Render(th, next, "Enter", stateOf(true)) + "  " + m.navRow(th))
+		add(th.Muted(more + words.Say("cachewizard.hint.page", "escape", m.escapeHint())))
 	case Secret:
 		noun := m.scr.Noun
 		if len(m.notes) == 0 {
@@ -207,6 +220,52 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		add("", spin("One moment"), "", th.Muted("esc closes"))
 	}
 	return lines, hits
+}
+
+// escapeHint says what Esc does on this screen: back, or close on the first question.
+func (m Model) escapeHint() string {
+	if m.scr.CanBack {
+		return words.Say("cachewizard.escape.back")
+	}
+	return words.Say("cachewizard.escape.close")
+}
+
+// navButtons are the Back and Cancel buttons of a screen: Back only when a
+// question before this one exists. Cancel closes the wizard; its key is Esc on
+// the first question and Ctrl+C after, where Esc goes back.
+func (m Model) navButtons() (labels, keys []string) {
+	cancelKey := "esc"
+	if m.scr.CanBack {
+		labels, keys = append(labels, words.Say("cachewizard.button.back")), append(keys, "b")
+		cancelKey = "ctrl+c"
+	}
+	return append(labels, words.Say("cachewizard.button.cancel")), append(keys, cancelKey)
+}
+
+// navRow draws the Back and Cancel buttons on one line.
+func (m Model) navRow(th theme.Theme) string {
+	labels, keys := m.navButtons()
+	var row string
+	for i := range labels {
+		row += button.Render(th, labels[i], keys[i], stateOf(false)) + "  "
+	}
+	return row
+}
+
+// navHits are the clickable spans of navRow on body line row, from column x0.
+func (m Model) navHits(th theme.Theme, row int, x0 ...int) []hit {
+	x := 0
+	if len(x0) > 0 {
+		x = x0[0]
+	}
+	labels, keys := m.navButtons()
+	var hits []hit
+	for i := range labels {
+		w := button.Width(th, labels[i], keys[i])
+		hits = append(hits, hit{row: row, x0: x, x1: x + w, option: -1, back: i < len(labels)-1, cancel: i == len(labels)-1})
+		x += w + 2
+	}
+	return hits
 }
 
 // keyName is the key of a button as the person presses it.

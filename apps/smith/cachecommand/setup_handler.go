@@ -80,7 +80,7 @@ stay in memory and go to the clipboard, never into a file.
 			_, err = cachesetup.Run(
 				cachesetup.Facts{WorkspaceName: name, Remote: cfg.Cache.Remote, Providers: cfg.CI.Providers},
 				cachesetup.Ports{
-					Dialogue: cachesetup.Terminal{In: bufio.NewReader(editor), Out: out, SecretFn: func(noun, variable string, produce func() (string, error), actions []cachekey.KeyAction) error {
+					Dialogue: &cachesetup.Terminal{In: bufio.NewReader(editor), Out: out, SecretFn: func(noun, variable string, produce func() (string, error), actions []cachekey.KeyAction) error {
 						s := newSession(out, clearAfter)
 						s.Noun, s.Variable, s.Produce, s.Actions = noun, variable, produce, actions
 						return runSecretSession(s, out, keys)
