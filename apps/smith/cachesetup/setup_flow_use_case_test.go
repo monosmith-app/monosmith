@@ -147,7 +147,7 @@ func TestTheLoginWayExplainsItsSevenDaysAndBackAsksTheWayAgain(t *testing.T) {
 	az, out, written := &fakeAz{}, &bytes.Buffer{}, []string(nil)
 	// yes; default way (login); Back; default way (login); 7 days; skip the command.
 	input := strings.Join([]string{"1", "", "2", "", "1", "2"}, "\n") + "\n"
-	flow{ports(input, az, out, &written), Facts{}}.sasToken(sasTarget{subscription: "s", account: "acme", container: "cache"})
+	flow{Ports: ports(input, az, out, &written), azure: &azureState{}}.sasToken(sasTarget{subscription: "s", account: "acme", container: "cache"})
 	text := out.String()
 	if strings.Count(text, "How should the token be signed?") != 2 || strings.Count(text, "7 days is the only choice") != 2 {
 		t.Fatalf("Back did not ask the way again:\n%s", text)

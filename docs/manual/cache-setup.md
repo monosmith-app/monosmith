@@ -35,6 +35,23 @@ one prefix for each workspace) is in
    with the account key (`--auth-mode key`; it can last months, and rotating the account key voids
    it). Signing in to Azure through `az` directly, with no token, is not supported by the backend
    today.
+   **Azure Pipelines.** When `azure` is in `[ci] providers`, smith offers to set the secret
+   variables in the pipeline itself, before the key or token screen opens. You say yes, and smith
+   reads `git remote get-url origin` (the `dev.azure.com`, `ssh.dev.azure.com` and
+   `<org>.visualstudio.com` forms) and runs `az pipelines list --organization ... --project ...
+   --repository ... --repository-type tfsgit`. It needs `az` signed in, with the `azure-devops`
+   extension. When several pipelines match, you choose one. smith reads the pipeline's variables:
+   for a name that exists you choose "Replace it" or "Leave it", and nothing is overwritten
+   unasked. The key screen (and the token screen) then has the button `a`, "set it in Azure
+   Pipelines (az)". It shows the organisation, project, pipeline and the variable name, with "will
+   be created" or "will be replaced" (never the value), and writes only after `y`. Each variable is
+   a secret (`isSecret`). The value never goes on a command line: smith reads the pipeline's
+   definition with `az devops invoke --area build --resource definitions`, adds the variable, and
+   writes it back with `--http-method put --in-file <file>`. The file lives in a private temporary
+   folder that only you can read, and smith removes it when the call ends. When Azure says the
+   definition changed in between, smith reads it again once. When `az`, the extension or the
+   sign-in is missing, smith names which one and shows the manual steps. `smith ci generate`
+   already maps `SMITH_CACHE_KEY` and `AZURE_STORAGE_SAS_TOKEN` into the steps with `env:`.
 6. **Each CI provider** in `[ci] providers` (GitHub, Azure Pipelines, GitLab, CircleCI,
    Bitbucket): the web steps for the secrets, which secrets (`SMITH_CACHE_KEY` and the backend's
    credential), the command-line form where there is one, and how pull requests and forks behave.
@@ -77,7 +94,8 @@ commands and the order are the ones above, because both read the same engine:
 - A command is shown in full before it runs, with the buttons "Run it" (`y`) and "Type it by hand"
   (`n`). While `az` or `aws` answers, the screen shows a spinner and says what it waits for.
 - The key screen has the buttons `[ Copy again  c ]`, `[ Generate another  g ]`, the user variable
-  button `u`, one button for each provider that has a command (`h` GitHub, `l` GitLab) and
+  button `u`, one button for each provider that has a command (`h` GitHub, `l` GitLab, `a` Azure
+  Pipelines, when you said yes to its offer) and
   `[ Done  q ]`. Click a button or press its key. The key is on the clipboard and never on the
   screen. It stays in memory only while the screen is open. After 60 seconds, or on Done, the
   clipboard is cleared if it still holds the key. A command that sends the key shows the command

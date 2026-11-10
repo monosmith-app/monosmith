@@ -54,7 +54,7 @@ func ProviderGuides(providers []string, remote string) []ProviderGuide {
 			g.Title = "Azure Pipelines"
 			g.Steps = []string{"Open the pipeline and choose Edit, then Variables, then New variable.", "Create one variable for each name below, and tick \"Keep this value secret\".", "smith ci generate already maps each secret into the steps with env:, because Azure exposes a secret only that way."}
 			g.ByHand = "az pipelines variable create --name SMITH_CACHE_KEY --secret true --pipeline-name <your pipeline>   (it asks for the value; check `az pipelines variable create --help`)"
-			g.Notes = []string{"In a build of a fork Azure leaves the variable's name in place of its value. smith reads that as unset, so the remote is off. Pull requests read the cache and never write it."}
+			g.Notes = []string{"smith can set these variables for you: say yes when the setup offers it (it needs az with the azure-devops extension).", "In a build of a fork Azure leaves the variable's name in place of its value. smith reads that as unset, so the remote is off. Pull requests read the cache and never write it."}
 		case "gitlab":
 			g.Title = "GitLab CI"
 			g.Steps = []string{"Open the project: Settings, CI/CD, Variables, Add variable.", "Create one variable for each name below. Turn on Masked. Leave Protected off, or merge request pipelines will not see it."}

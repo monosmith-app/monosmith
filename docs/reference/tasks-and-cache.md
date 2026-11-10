@@ -312,8 +312,14 @@ credential, and the setting. You make the key yourself; smith never stores it.
 [`smith cache setup`](../manual/cache-setup.md) walks through all four with
 choices: it lists the places with `az` or `aws` (each command shown before it
 runs), writes `[cache] remote` after you confirm, makes the key and the Azure
-SAS token, and prints the steps for each CI provider in `[ci] providers`. The
-interactive shell shows the same setup as screens (Enter on `cache.remote` in
+SAS token, and prints the steps for each CI provider in `[ci] providers`. For
+Azure Pipelines the setup sets the secret variables itself when you agree: it
+finds the pipeline from the git remote, asks before it replaces a variable that
+exists, and shows the organisation, project, pipeline and names (never the
+values) before it writes. The value reaches Azure through a private temporary
+file, never a command line. If `az` or its `azure-devops` extension is missing,
+or nobody is signed in, the setup says which and shows the steps to do by hand.
+The interactive shell shows the same setup as screens (Enter on `cache.remote` in
 the Settings tab, or the command palette), and VS Code opens it in a terminal.
 The sections below say the same by hand.
 
