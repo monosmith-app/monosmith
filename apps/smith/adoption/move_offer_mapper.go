@@ -23,6 +23,15 @@ func printMoveOffer(w io.Writer, r Report) {
 	if len(r.MovePlan.Stays) > 0 {
 		fmt.Fprintf(w, "and leave at the root: %s\n", joinNames(r.MovePlan.Stays))
 	}
+	if len(r.MovePlan.Hoist) > 0 {
+		fmt.Fprintf(w, "and move these development dependencies to the workspace package.json: %s\n", joinNames(r.MovePlan.Hoist))
+	}
+	if len(r.MovePlan.Replaced) > 0 {
+		fmt.Fprintf(w, "and replace the lint packages by the shared lint config: %s\n", joinNames(r.MovePlan.Replaced))
+	}
+	if len(r.MovePlan.Unsure) > 0 {
+		fmt.Fprintf(w, "and ask where each of these goes (workspace or project): %s\n", joinNames(r.MovePlan.Unsure))
+	}
 	for _, note := range r.MovePlan.Notes {
 		fmt.Fprintf(w, "  note: %s\n", note)
 	}

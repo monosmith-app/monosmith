@@ -4,6 +4,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/adoptsplit"
 )
 
 // Role says where a top-level entry of the repository goes.
@@ -12,9 +14,16 @@ type Role int
 const (
 	// RoleProject is an entry that belongs to the project and moves with it.
 	RoleProject Role = iota
-	// RoleRepository is an entry that belongs to the whole repository and stays.
+	// RoleRepository is an entry that belongs to the whole repository, or is
+	// workspace tool configuration, and stays at the root.
 	RoleRepository
+	// RoleDocs is a document of the project that goes to the workspace's doc
+	// folder.
+	RoleDocs
 )
+
+// DocsDir is the workspace folder the project's documents go to.
+const DocsDir = "doc"
 
 // repositoryEntries are the top-level names that describe the repository, not
 // the project: version control, CI, editor and agent settings, smith's own
@@ -33,7 +42,7 @@ var repositoryEntries = map[string]bool{
 	"commitlint.config.js": true, "commitlint.config.mjs": true, "commitlint.config.cjs": true, "commitlint.config.ts": true,
 	".npmrc": true, ".nvmrc": true, ".node-version": true, ".tool-versions": true,
 	"renovate.json": true, ".renovaterc": true, ".renovaterc.json": true,
-	"codeowners": true, "docs": true, "docker-compose.yml": true, "docker-compose.yaml": true,
+	"codeowners": true, "docs": true, "doc": true, "docker-compose.yml": true, "docker-compose.yaml": true,
 	"compose.yml": true, "compose.yaml": true,
 }
 
@@ -42,19 +51,25 @@ var repositoryEntries = map[string]bool{
 // again per project by smith, and the documents here describe the repository.
 var repositoryPrefixes = []string{"readme", "license", "licence", "copying", "notice", "contributing", "code_of_conduct", "security", "changelog", "authors", "docker-compose."}
 
-// foreignLockfiles are the lockfiles of the package managers smith does not use
-// for Node: they stay at the root and the move tells the person to write
-// package-lock.json. package-lock.json stays too: with npm workspaces the one
-// lockfile lives at the root, and npm install rewrites it for the new layout.
-var foreignLockfiles = map[string]bool{"yarn.lock": true, "pnpm-lock.yaml": true, "bun.lockb": true, "bun.lock": true, "package-lock.json": true, "npm-shrinkwrap.json": true}
+// documentExtensions are the files of a project that are documents: they go to
+// the doc folder. README, LICENSE and the other repository documents keep
+// their names at the root (repositoryPrefixes).
+var documentExtensions = map[string]bool{".md": true, ".markdown": true, ".mdx": true, ".rst": true, ".adoc": true}
 
-// Classify says where the top-level entry name goes for the ecosystem.
-// Everything not named as the repository's moves, because a project's own
-// folders and config files have no fixed names (src, lib, app, tests, .env,
-// tsconfig.json, jest.config.js, Dockerfile, ...). The Node lockfiles stay.
+// documentFolders are folders of documents that go to the doc folder whole.
+var documentFolders = map[string]bool{"documentation": true, "wiki": true}
+
+// Classify says where the top-level entry name goes for the ecosystem. What
+// the repository or the language names as the workspace's stays at the root:
+// version control, CI, editor settings, the .code-workspace file, repository
+// documents, and the tool configuration and lockfiles the language declares
+// (adoptsplit.Rules). Documents go to the doc folder. Everything else moves,
+// because a project's own folders and config files have no fixed names (src,
+// lib, app, tests, .env, jest.config.js, Dockerfile, ...). The language's
+// Split then cuts the manifest and tsconfig.json that move.
 func Classify(ecosystem, name string) Role {
 	lower := strings.ToLower(name)
-	if repositoryEntries[lower] {
+	if repositoryEntries[lower] || strings.HasSuffix(lower, ".code-workspace") {
 		return RoleRepository
 	}
 	for _, prefix := range repositoryPrefixes {
@@ -62,8 +77,11 @@ func Classify(ecosystem, name string) Role {
 			return RoleRepository
 		}
 	}
-	if ecosystem == EcosystemNode && foreignLockfiles[lower] {
+	if adoptsplit.For(ecosystem).StaysAtRoot(lower) {
 		return RoleRepository
+	}
+	if documentExtensions[path.Ext(lower)] || documentFolders[lower] {
+		return RoleDocs
 	}
 	return RoleProject
 }
