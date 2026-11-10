@@ -131,7 +131,7 @@ func TestBackAsksTheEarlierQuestionAgainWithTheEarlierAnswer(t *testing.T) {
 func TestBackToTheKindOfStorageKeepsTheEarlierChoiceMarked(t *testing.T) {
 	d := &scripted{script: []any{KindHTTPS, goBack{}, KindS3}}
 	var written []string
-	walk(Facts{}, d, &fakeAz{}, &written)
+	_, _ = walk(Facts{}, d, &fakeAz{}, &written)
 	var kinds []asked
 	for _, a := range d.asked {
 		if a.op == StepChoose && strings.HasPrefix(a.prompt, "What kind") {
@@ -149,7 +149,7 @@ func TestBackToTheKindOfStorageKeepsTheEarlierChoiceMarked(t *testing.T) {
 func TestBackOnTheFirstQuestionAsksItAgain(t *testing.T) {
 	d := &scripted{script: []any{goBack{}}}
 	var written []string
-	walk(Facts{}, d, &fakeAz{}, &written)
+	_, _ = walk(Facts{}, d, &fakeAz{}, &written)
 	if len(d.asked) != 2 || d.asked[0].prompt != d.asked[1].prompt {
 		t.Fatalf("asked %+v", d.asked)
 	}
@@ -161,7 +161,7 @@ func TestBackOnTheFirstQuestionAsksItAgain(t *testing.T) {
 func TestBackOnAConfirmationMarksTheEarlierAnswer(t *testing.T) {
 	d := &scripted{script: []any{KindHTTPS, "https://a.dev/x", false, goBack{}, false}}
 	var written []string
-	walk(Facts{}, d, &fakeAz{}, &written)
+	_, _ = walk(Facts{}, d, &fakeAz{}, &written)
 	var writes []asked
 	for _, a := range d.asked {
 		if a.op == StepConfirm && a.prompt == "Write it?" {
@@ -183,7 +183,7 @@ func TestBackOverAProgramThatRanIsRefusedAndNothingRunsTwice(t *testing.T) {
 		// the account choice comes again; the script then ends
 	}}
 	var written []string
-	walk(Facts{WorkspaceName: "shop"}, d, az, &written)
+	_, _ = walk(Facts{WorkspaceName: "shop"}, d, az, &written)
 	if !strings.Contains(strings.Join(d.said, "\n"), "That step already ran; nothing was undone.") {
 		t.Fatalf("the refusal was not said: %v", d.said)
 	}
@@ -253,7 +253,7 @@ func TestBackOverASecretScreenIsRefused(t *testing.T) {
 		"", "",
 	}}
 	var written []string
-	walk(Facts{}, d, &fakeAz{}, &written)
+	_, _ = walk(Facts{}, d, &fakeAz{}, &written)
 	if d.secrets != 1 || !strings.Contains(strings.Join(d.said, "\n"), "nothing was undone") {
 		t.Fatalf("secrets %d said %v", d.secrets, d.said)
 	}
