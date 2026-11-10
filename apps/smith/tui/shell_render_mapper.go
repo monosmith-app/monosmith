@@ -60,7 +60,13 @@ func (s Shell) tooSmall() string {
 // the content, the footer and the status bar.
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
-	rows := s.overlays(s.paintSelection(s.baseRows()))
+	var rows []string
+	if s.cache != nil {
+		// A selection inside the dialog is drawn over the dialog.
+		rows = s.paintSelection(s.overlays(s.baseRows()))
+	} else {
+		rows = s.overlays(s.paintSelection(s.baseRows()))
+	}
 	for i := range rows {
 		rows[i] = pane.Fit(rows[i], w)
 	}
