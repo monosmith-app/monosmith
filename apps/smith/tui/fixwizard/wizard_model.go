@@ -202,6 +202,18 @@ func (w Wizard) Fail(err error) Wizard {
 	return w
 }
 
+// FailVerify shows a fix whose steps all passed but whose check still fails:
+// the finding doctor reads after the fix, and what the steps printed, so the
+// person sees why (a package manager that exited 0 but did not install).
+//
+// Parameters: finding is the finding that survived the fix, in words; output
+// is the lines the steps printed, oldest first.
+func (w Wizard) FailVerify(finding string, output []string) Wizard {
+	w.phase, w.top = Failed, 0
+	w.headline, w.output = words.Say("fixwizard.failed.verify", "finding", finding), output
+	return w
+}
+
 // FailureText is the failure as plain text, for the clipboard.
 func (w Wizard) FailureText() string {
 	return strings.TrimRight(w.headline+"\n"+strings.Join(w.output, "\n"), "\n")

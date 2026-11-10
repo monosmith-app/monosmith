@@ -190,6 +190,10 @@ type Shell struct {
 	rechecking bool
 	// verifyingWhat is what that fix did, in words, for the "Fixed" toast.
 	verifyingWhat string
+	// verifiedFix and verifiedOutput are the wizard and the output of that fix,
+	// kept so a fix whose check still fails can show what its steps printed.
+	verifiedFix    fixwizard.Wizard
+	verifiedOutput []string
 	// run is the command the run panel shows: running or the last one.
 	run  *runview.Run
 	proc runner.Handle

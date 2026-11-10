@@ -45,7 +45,8 @@ func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T
 	l.fixStaysBroken = true
 	l = withInstallFix(l)
 	l.keys("f", "enter", "enter")
-	l.has("Still not fixed: dependencies are installed")
+	l.has("The fix ran, but this check still fails")
+	l.has("dependencies are installed")
 	l.has("node_modules is missing")
 }
 
