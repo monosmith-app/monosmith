@@ -94,7 +94,7 @@ func (s *Shell) endSelection() {
 	if !ok {
 		return
 	}
-	text := next.Text(s.baseRows())
+	text := next.Text(s.selectableRows())
 	if text == "" {
 		s.selection = s.selection.Clear()
 		return
@@ -120,9 +120,45 @@ func (s *Shell) keepSelection() {
 	if !s.selection.Held {
 		return
 	}
-	if s.overlaid() || s.selection.Text(s.baseRows()) != s.selected {
+	if s.belowMinimum() || (s.modalOpen() && s.cache == nil) || s.selection.Text(s.selectableRows()) != s.selected {
 		s.selection = s.selection.Clear()
 	}
+}
+
+// selectableRows are the rows a selection reads its text from: the screen as
+// drawn, the dialog over it included while a dialog that can be selected in is
+// open.
+func (s Shell) selectableRows() []string {
+	if s.cache != nil {
+		return s.overlays(s.baseRows())
+	}
+	return s.baseRows()
+}
+
+// cacheSelect lets a drag select text inside the remote cache dialog, where the
+// mouse otherwise only clicks: a press on text starts it, the drag follows it
+// and the release copies it. A press on an option or a button is a click. It
+// reports whether the event was taken.
+func (s *Shell) cacheSelect(e tea.MouseEvent) bool {
+	r := s.cache.Rect()
+	inner := layout.Rect{X: r.X + 2, Y: r.Y + 1, W: r.W - 4, H: r.H - 2}
+	switch {
+	case e.Action == tea.MouseActionPress && e.Button == tea.MouseButtonLeft:
+		s.selection = s.selection.Clear()
+		if inner.Contains(e.X, e.Y) && !s.cache.OnControl(s.th, e.X, e.Y) {
+			s.selection = s.selection.Press(inner, e.X, e.Y)
+			return true
+		}
+		return false
+	case !s.selection.Active:
+		return false
+	case e.Action == tea.MouseActionMotion && e.Button == tea.MouseButtonLeft:
+		s.selection = s.selection.Drag(e.X, e.Y)
+	default:
+		// A release, or a motion with no button held: the terminal lost it.
+		s.endSelection()
+	}
+	return true
 }
 
 // paintSelection draws the highlight over the screen rows.
