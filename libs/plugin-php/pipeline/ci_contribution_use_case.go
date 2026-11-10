@@ -65,7 +65,7 @@ const auditScript = "if composer --version >/dev/null 2>&1; then composer audit 
 	"else echo 'composer is not installed: install it (https://getcomposer.org/download) to check packages for known vulnerabilities' >&2; exit 1; fi"
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that PHP and Composer are installed.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
@@ -75,7 +75,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	_, phpErr := probe(workspaceRoot, []string{"php", "--version"})
 	_, composerErr := probe(workspaceRoot, []string{"composer", "--version"})
 	return protocol.DoctorResult{Findings: []protocol.Finding{
-		{Check: "PHP is installed", OK: phpErr == nil, Detail: "php is not on PATH", Remedy: "install PHP " + Version(workspaceRoot) + " (https://www.php.net/downloads)"},
-		{Check: "Composer is installed", OK: composerErr == nil, Detail: "composer is not on PATH", Remedy: "install Composer (https://getcomposer.org/download)"},
+		{Check: "PHP is installed", Area: "toolchain", OK: phpErr == nil, Problem: toolrun.ProblemUnless(phpErr == nil, "php is not on PATH"), Detail: "php is not on PATH", Remedy: "install PHP " + Version(workspaceRoot) + " (https://www.php.net/downloads)"},
+		{Check: "Composer is installed", Area: "toolchain", OK: composerErr == nil, Problem: toolrun.ProblemUnless(composerErr == nil, "composer is not on PATH"), Detail: "composer is not on PATH", Remedy: "install Composer (https://getcomposer.org/download)"},
 	}}
 }

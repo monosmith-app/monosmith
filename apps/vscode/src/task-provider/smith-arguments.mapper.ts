@@ -1,4 +1,5 @@
 import type { SmithTaskDefinition } from './smith-task-definition.contract.ts'
+import { flag } from '../smith-flags/index.ts'
 
 const WORD = /^[^\s-]\S*$/
 
@@ -15,7 +16,7 @@ export function toSmithArguments (definition: Pick<SmithTaskDefinition, 'task' |
   return [
     'run',
     definition.task,
-    ...(definition.project === undefined || definition.project === '' ? [] : ['-p', definition.project]),
+    ...(definition.project === undefined || definition.project === '' ? [] : [flag.project, definition.project]),
     ...(definition.affected === true ? ['--affected'] : []),
     ...(definition.bail === true ? ['--bail'] : []),
     ...(definition.noCache === true ? ['--no-cache'] : []),

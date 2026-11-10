@@ -10,7 +10,7 @@ import (
 // many terminals set. It does not query the terminal, which can stall; with no
 // hint it assumes dark. SMITH_THEME=light|dark overrides it (see Choose).
 func DarkBackground(getenv func(string) string) bool {
-	parts := strings.Split(getenv("COLORFGBG"), ";")
+	parts := strings.Split(getenv(envFgBg), ";")
 	if len(parts) < 2 {
 		return true
 	}

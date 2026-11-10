@@ -15,10 +15,11 @@ import (
 
 // askSaveRecipe offers to keep the answers as a recipe, and returns the name
 // the person gives it, or "" for no. A recipe needs a main language; without
-// one it says so instead of asking. Any other answer than y is no.
+// one it does not ask and prints nothing. Any other answer than y is no.
 func askSaveRecipe(opts NewOptions, in *bufio.Reader, out io.Writer) string {
 	if _, err := renderRecipe(opts, opts.Name); err != nil {
-		fmt.Fprintf(out, "No recipe to save: %v.\n", err)
+		// Nobody asked for a recipe, so there is nothing to explain: the offer
+		// is only made when these answers can become one.
 		return ""
 	}
 	fmt.Fprint(out, "Save these answers as a recipe to reuse on other workspaces? [y/N]: ")

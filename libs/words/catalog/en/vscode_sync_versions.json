@@ -1,0 +1,10 @@
+{
+  "vscode.sync-versions.the-version-the-package-manager-has": "the version the package manager has installed",
+  "vscode.sync-versions.monosmith-which-version-wins": "MonoSmith: which version wins?",
+  "vscode.sync-versions.monosmith-write-these-versions-wins": "MonoSmith: write these versions ({rule} wins)?",
+  "vscode.sync-versions.nothing-is-committed": "{plan}\n\nNothing is committed.",
+  "vscode.sync-versions.write-them": "Write them",
+  "vscode.sync-versions.monosmith-the-versions-are-written-nothing": "MonoSmith: the versions are written. Nothing is committed: review the change with git.",
+  "vscode.sync-versions.monosmith-nothing-was-synced": "MonoSmith: nothing was synced. {message}",
+  "vscode.sync-versions.syncing-dependency-versions": "syncing dependency versions"
+}

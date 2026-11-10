@@ -33,7 +33,7 @@ func TestDotnetWorkspace(t *testing.T) {
 		t.Fatal("a project reference is a graph edge")
 	}
 	out := w.smith(true, "run", "lint", "test", "build")
-	for _, want := range []string{"api:build ✔", "core:test ✔", "api:test ✔", "core:lint ✔"} {
+	for _, want := range []string{"api:build ✓", "core:test ✓", "api:test ✓", "core:lint ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -53,7 +53,7 @@ func TestDotnetWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "dotnet")); err != nil {
 		t.Error("the builds are under dist/dotnet")
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ the .NET SDK is installed") || !strings.Contains(out, "✔ every build writes to dist/") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ the .NET SDK is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "actions/setup-dotnet") || !strings.Contains(ci, "NUGET_API_KEY") {

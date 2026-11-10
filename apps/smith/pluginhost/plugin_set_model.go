@@ -3,11 +3,13 @@ package pluginhost
 import (
 	"context"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"slices"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -38,7 +40,7 @@ func (s *PluginSet) ForLanguage(lang string) (*host.Client, error) {
 			return c, nil
 		}
 	}
-	return nil, fmt.Errorf("no plugin handles language %q; available: %s", lang, strings.Join(s.Languages(), ", "))
+	return nil, fmt.Errorf("no plugin handles language %q; available: %s.%s", lang, strings.Join(s.Languages(), ", "), nearmatch.Suggestion(lang, s.Languages()))
 }
 
 // Languages lists every language plugin that can generate.
@@ -91,4 +93,16 @@ func (s *PluginSet) Close() {
 	for _, c := range s.Clients {
 		_ = c.Close()
 	}
+}
+
+// Offers lists the choices every loaded plugin publishes, each with the
+// plugin that owns it, in the order the plugins load.
+func (s *PluginSet) Offers() []choiceselect.Offer {
+	var out []choiceselect.Offer
+	for _, c := range s.Clients {
+		for _, choice := range c.Info.Choices {
+			out = append(out, choiceselect.Offer{Choice: choice, Plugin: c.Info.Plugin.Name})
+		}
+	}
+	return out
 }

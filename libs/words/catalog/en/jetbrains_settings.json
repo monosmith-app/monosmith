@@ -1,0 +1,17 @@
+{
+  "jetbrains.settings.monosmith-settings": "MonoSmith: settings",
+  "jetbrains.settings.no-setting-was-changed": "No setting was changed. {failureTextMapper}",
+  "jetbrains.settings.smith-printed-its-settings-in": "smith printed its settings in a form this plugin does not read. Update the plugin.",
+  "jetbrains.settings.no-setting-was-changed-this": "No setting was changed. This smith has no setting {path}. Update smith.",
+  "jetbrains.settings.it-is-set-to": "{value}It is set to {settingsJsonMapper}.",
+  "jetbrains.settings.change-it": "Change it",
+  "jetbrains.settings.write-a-new-value-in": "Write a new value in smith.toml.",
+  "jetbrains.settings.go-back-to-the-default": "Go back to the default",
+  "jetbrains.settings.remove-the-line-from-smith": "Remove the line from smith.toml.",
+  "jetbrains.settings.nothing-was-changed-yet-smith": "{value}Nothing was changed yet. smith edits smith.toml.",
+  "jetbrains.settings.reset-it": "Reset it",
+  "jetbrains.settings.the-current-value-is-first": "{words}\nThe current value is first.",
+  "jetbrains.settings.type-a-value": "Type a value.",
+  "jetbrains.settings.pick-a-setting-type-in": "Pick a setting. Type in the box to narrow the list.",
+  "jetbrains.settings.why-the-default": "Why the default: {reason}"
+}

@@ -120,6 +120,18 @@ var Methods = []MethodSpec{
 		Capability: "Dependencies",
 	},
 	{
+		Method:      protocol.MethodLink,
+		Description: "Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.",
+		Params:      reflect.TypeFor[protocol.LinkParams](), Result: reflect.TypeFor[protocol.LinkResult](),
+		Capability: "Link",
+	},
+	{
+		Method:      protocol.MethodUnlink,
+		Description: "Removes the dependency of a project on a library of the same workspace.",
+		Params:      reflect.TypeFor[protocol.UnlinkParams](), Result: reflect.TypeFor[protocol.DependencyResult](),
+		Capability: "Link",
+	},
+	{
 		Method:      protocol.MethodDeclared,
 		Description: "Lists the dependencies the manifests of the plugin's projects declare.",
 		Params:      reflect.TypeFor[protocol.DeclaredParams](), Result: reflect.TypeFor[protocol.DeclaredResult](),
@@ -142,5 +154,17 @@ var Methods = []MethodSpec{
 		Description: "Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.",
 		Params:      reflect.TypeFor[protocol.ComponentsParams](), Result: reflect.TypeFor[protocol.ComponentsResult](),
 		Capability: "Components",
+	},
+	{
+		Method:      protocol.MethodDerive,
+		Description: "Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.",
+		Params:      reflect.TypeFor[protocol.DeriveParams](), Result: reflect.TypeFor[protocol.DeriveResult](),
+		Capability: "Derive",
+	},
+	{
+		Method:      protocol.MethodAPISurface,
+		Description: "Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.",
+		Params:      reflect.TypeFor[protocol.APISurfaceParams](), Result: reflect.TypeFor[protocol.APISurfaceResult](),
+		Capability: "APISurface",
 	},
 }

@@ -60,7 +60,7 @@ func TestNoLanguageNoRecipe(t *testing.T) {
 }
 
 func TestSavingARecipeAtTheEndWritesItInTheFirstCommit(t *testing.T) {
-	dir, out, err := runNew(t, true, "\nnode\n2\n\n\n\nyes\nteam\n")
+	dir, out, err := runNew(t, true, "\nnode\n2\n\n\n\n\nyes\nteam\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,13 +89,14 @@ func TestNotSavingIsTheDefaultAndNeedsALanguage(t *testing.T) {
 		t.Error("a recipe was saved without a yes")
 	}
 	_, out, err := runNew(t, true, "\n\n\n\n")
-	if err != nil || !strings.Contains(out, "No recipe to save: a recipe needs a main language") || strings.Contains(out, "Save these answers") {
+	if err != nil || strings.Contains(out, "No recipe to save") || strings.Contains(out, "Save these answers") {
 		t.Errorf("%v\n%s", err, out)
 	}
 }
 
 func TestANewWorkspaceFromASavedRecipeSkipsWhatItAnswers(t *testing.T) {
-	first, _, err := runNew(t, false, "", "--language", "node", "--default-stack", "node=node-vitest", "--architecture", "hexagonal", "--save-recipe", "team")
+	first, _, err := runNew(t, false, "", "--lang", "node", "--default-stack", "node=node-vitest", "--architecture", "hexagonal", "--save-recipe", "team",
+		"--ci", "github", "--agent", "--devcontainer", "--first-commit", "smith")
 	if err != nil {
 		t.Fatal(err)
 	}

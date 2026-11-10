@@ -1,6 +1,9 @@
 package protocol
 
-import "strings"
+import (
+	"path"
+	"strings"
+)
 
 // BuildDir is the directory at the workspace root every build writes into:
 // smith's opinion, so all output is in one place, outside every source tree,
@@ -23,4 +26,16 @@ func BuildDirFromProject(root string) string {
 // InBuildDir reports whether a workspace-relative path is inside BuildDir.
 func InBuildDir(path string) bool {
 	return path == BuildDir || strings.HasPrefix(path, BuildDir+"/")
+}
+
+// BuildOutputDir is the folder a project's "build" task writes, workspace-
+// relative: its one declared output, or ProjectBuildDir when the task declares
+// none or several. A web app built once per environment writes the default
+// environment into a folder below ProjectBuildDir (dist/apps/web/prd), and it
+// is that folder that a release asset or a package is made from.
+func BuildOutputDir(p Project) string {
+	if t, ok := p.Tasks["build"]; ok && len(t.Outputs) == 1 {
+		return path.Clean(path.Join(p.Root, t.Outputs[0]))
+	}
+	return ProjectBuildDir(p.Root)
 }

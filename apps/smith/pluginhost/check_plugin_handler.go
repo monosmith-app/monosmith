@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/conformance"
@@ -122,9 +123,9 @@ declare. A built-in plugin keeps the whole environment.`,
 			} else {
 				fmt.Fprintf(out, "%s %s\n", report.Plugin.Name, report.Plugin.Version)
 				for _, r := range report.Results {
-					mark := "✔"
+					mark := marks.Passed
 					if !r.OK {
-						mark = "✖"
+						mark = marks.Failed
 					}
 					fmt.Fprintf(out, "  %s %s\n", mark, r.Check)
 					if !r.OK {

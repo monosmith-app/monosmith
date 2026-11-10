@@ -12,8 +12,8 @@ Code and VS Code can call smith's tools instead of guessing command names.
 | `.mcp.json` | Claude Code | Registers `smith mcp` as a project MCP server |
 | `.vscode/mcp.json` | VS Code | Registers `smith mcp` for agent mode (`servers`, with `"type": "stdio"`) |
 
-`smith new` writes all three. In an existing repository, `smith adopt` and `smith convert`
-tell you about `smith agent install`, and `smith doctor` warns until it is done. The adopt and
+`smith new` and `smith adopt --init` write all three. In a converted repository, `smith convert`
+tells you about `smith agent install`, and `smith doctor` warns until it is done. The adopt and
 convert wizard in the terminal interface offers it as its last step, before the result: it shows
 the command it will run and installs on Enter. In the interface, "Install the MonoSmith agent"
 is also in the menus of a workspace and in the command palette (`smith agent install`).
@@ -65,6 +65,14 @@ To keep a workspace without the files, set this in `smith.toml`; `smith doctor` 
 [agent]
 enabled = false
 ```
+
+## Rules for any agent: AGENTS.md
+
+`smith agent install` adds the MonoSmith agent. To give every coding agent the rules of the
+workspace (where code goes, how files are named, which commands mean done, which files not to
+edit), run `smith agent file`. It writes `AGENTS.md` between region markers, so your own text
+survives, and `--check` fails in CI when the file is stale. See
+[Know your files, share the workspace and brief your agents](know-your-files-and-brief-your-agents.md).
 
 ## Use it
 
@@ -129,7 +137,7 @@ These came from real sessions, recorded on
 - **A dependency belongs to a project, never the root.** In a converted Node project, install
   with `smith i`, which uses npm.
 - **Run the project's own tasks and `smith slices check` before pushing.** CI runs them.
-- **Errors come as the `problem` shape.** `✖ problem`, then one `→ way out` per line. The
+- **Errors come as the `problem` shape.** `× problem`, then one `→ way out` per line. The
   agent reports it and follows a `→` line.
 - **Releases come from conventional commits.** `version(<project>)[x.y.z]: message` forces a
   version. It never creates or pushes tags for you; a naming conflict is a rule smith should

@@ -2,6 +2,7 @@ package pipelinetemplate
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -32,7 +33,7 @@ func written(name, extra string) string {
 func Render(name, provider string, m cipipeline.Model, app App) (string, bool) {
 	project := ""
 	if app.Name != "" {
-		project = " --project " + app.Name
+		project = " " + flagvocabulary.Long("project") + " " + app.Name
 	}
 	githubOn := fmt.Sprintf("on:\n  push:\n    branches: [%s]\n  workflow_dispatch:\n", m.ReleaseBranch)
 	azureOn := fmt.Sprintf("trigger:\n  branches:\n    include:\n      - %s\npr: none\n\npool:\n  vmImage: ubuntu-latest\n", m.ReleaseBranch)

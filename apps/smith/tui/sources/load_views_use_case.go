@@ -5,6 +5,7 @@ import (
 	"io"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
@@ -50,6 +51,20 @@ type Sources struct {
 	// Start launches a smith command line as a child process (the smith
 	// binary itself) in the workspace.
 	Start func(argv []string) (runner.Handle, error)
+	// Capture runs a smith command line to its end and returns what it
+	// printed, for the plans and errors the shell shows in a dialog. Cancelling
+	// ctx stops the command.
+	Capture func(ctx context.Context, argv []string) Captured
+	// Open opens a file with the program the system chooses (the report).
+	Open func(path string) error
+	// FirstCommit makes the empty commit that starts the history of a package
+	// that was never released (release.FirstReleaseCommand).
+	FirstCommit func() error
+	// CompletionWanted says whether Home lists "Tab completion is not set up":
+	// nothing is installed and the person did not say no. Nil means never.
+	CompletionWanted func() bool
+	// DeclineCompletion remembers "Not now" in the preferences of the person.
+	DeclineCompletion func()
 }
 
 // ProjectsLoaded is the workspace's projects, loaded in the background.
@@ -66,6 +81,8 @@ func WorkspaceSources(dir, version string) Sources {
 		return session.Open(session.Options{Dir: dir, Version: version, Log: io.Discard})
 	}
 	return Sources{
+		Capture: func(ctx context.Context, argv []string) Captured { return CaptureCommand(ctx, dir, argv) },
+		Open:    OpenPath,
 		Start: func(argv []string) (runner.Handle, error) {
 			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir})
 			if err != nil {
@@ -88,6 +105,15 @@ func WorkspaceSources(dir, version string) Sources {
 				return err
 			}
 			return doctorfix.Apply(ctx, root, fix, out)
+		},
+		FirstCommit: func() error {
+			s, err := open()
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			_, err = s.Git.Run("commit", "--allow-empty", "-m", release.FirstReleaseMessage)
+			return err
 		},
 		Projects: func() ProjectsLoaded { return loadProjects(open) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
@@ -118,10 +144,24 @@ func WorkspaceSources(dir, version string) Sources {
 					out.Warnings = append(out.Warnings, f.Message)
 				}
 			}
-			out.Plan, out.Err = release.MakePlan(s.Git, s.Graph)
+			out.Plan, out.Err = release.PlanFor(s)
+			out.Git = gitState(s)
 			return out
 		},
 	}
+}
+
+// gitState reads where the release tags would go and how far the branch is from
+// its upstream. A failing read leaves the field empty: the checks then say what
+// is not known.
+func gitState(s *session.Session) releaseview.GitState {
+	remote := s.Config.Release.Remote
+	g := releaseview.GitState{Known: true, Branch: s.Git.CurrentBranch(), Remote: remote, HasRemote: s.Git.HasRemote(remote)}
+	if out, err := s.Git.Run("rev-list", "--count", "@{upstream}..HEAD"); err == nil {
+		g.Upstream = true
+		g.Ahead, _ = strconv.Atoi(strings.TrimSpace(out))
+	}
+	return g
 }
 
 // fixRoot is the workspace root a fix's paths are relative to.
@@ -143,11 +183,13 @@ func loadProjects(open func() (*session.Session, error)) ProjectsLoaded {
 	for _, n := range affected.Compute(s.Git, s.Graph, base).Projects {
 		hit[n] = true
 	}
+	derived := loadDerivedFiles(s)
 	var out []projectlist.Project
 	for _, name := range s.Graph.Names() {
 		p := s.Graph.Get(name)
 		np := projectlist.Project{
-			Name: name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
+			Derived: derived[name],
+			Name:    name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
 			Stack: projectgraph.StackOf(p, s.Config), Deps: p.Deps, Dependents: s.Graph.Dependents(name), Affected: hit[name],
 		}
 		var tasks []string
@@ -213,7 +255,7 @@ func planTasks(open func() (*session.Session, error), argv []string) []string {
 }
 
 // withEventStream asks a task run for its event stream (`--json-events`): the
-// Run tab then reads each task's state and output as structured events instead
+// run panel then reads each task's state and output as structured events instead
 // of parsing smith's text. The command shown and copied stays the one the user
 // would type; any other command is started as it is.
 func withEventStream(argv []string) []string {

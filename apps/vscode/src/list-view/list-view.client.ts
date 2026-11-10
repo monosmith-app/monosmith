@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { ListNode, ListResult } from './list-node.contract.ts'
+import { say } from '../words/index.ts'
 
 /** A view of rows that are read when the view is looked at, and again on request. */
 export interface ListView extends vscode.Disposable {
@@ -64,7 +65,7 @@ export function createListView (options: ListViewOptions): ListView {
       try {
         result = await options.load()
       } catch (error) {
-        result = { nodes: [], message: `Could not load: ${error instanceof Error ? error.message : String(error)}` }
+        result = { nodes: [], message: say('vscode.list-view.could-not-load', { part: error instanceof Error ? error.message : String(error) }) }
       }
       if (mine !== generation) return
       nodes = result.nodes

@@ -55,11 +55,52 @@ VS Code 1.140 or newer. An older editor keeps the version it has and does not of
   rewrites a manifest itself.
 - **Release Preview.** What `smith release` would publish: each package with
   the version it moves to, why, its tag and the commits. It publishes nothing.
+  On a release channel (a branch that publishes `next` or `beta`), the first row
+  says **Release channel next**, with the notice of smith: the versions are
+  prereleases and the stable version stays the latest. The view title repeats
+  the channel.
+- **Add a project.** **MonoSmith: Add Project…** (the `+` button of the Projects
+  view) asks the kind (app, lib or package), the language, how it is built
+  (the default of the language, a stack, or choices such as a framework, a test
+  runner and a style; only the choices that fit the kind are listed, and smith checks the set before you leave the list) and the name. It then shows the plan of
+  `smith add --dry-run` and adds only after you agree. When the new project
+  would follow its sibling projects, the question also offers **Add with the
+  stack defaults** (`--fresh`). The output channel keeps what smith printed, and
+  a notice offers **Undo** afterwards.
+- **Derived files.** When `[derive] enabled = true` is set in `smith.toml`, the
+  Health view lists the derived files that drifted (someone edited them) or are
+  out of date, each with its state and what to do, and the Problems panel gets
+  an entry on the file. The context menu of such a file, in the Health view, the
+  Explorer or the editor, has **Explain Derived File** (who owns it and the
+  diff), **Apply Derived File** (smith writes it, or overwrites it for a file it
+  holds back), **Adopt Edit of Derived File** (keep your edit as the new
+  baseline) and **Eject Derived File (Own It)**. Each one asks first. See
+  [derived files](https://github.com/monosmith-app/monosmith/blob/main/docs/guides/derived-files.md).
+- **Why.** **MonoSmith: Why…** on a file (Explorer or editor context menu) says
+  who owns it, what produced it and how to change it (`smith why`). On a task row
+  it says why the task runs again instead of coming from the cache
+  (`smith why-miss`). On a project row it opens the explain page.
+- **Undo, report and AGENTS.md.** **MonoSmith: Undo the Last Change…** shows
+  what `smith undo --dry-run` would revert and reverts only after you agree; it
+  needs `commit_operations = true` under `[workspace]`, and says so when it is
+  off. **MonoSmith: Open Report** writes the HTML report of `smith report` to a
+  temp file and opens it in your browser. **MonoSmith: Write AGENTS.md for AI
+  agents** runs `smith agent file` after you agree; the notice after the agent
+  install offers it too.
 - **Explain** and **Show Project Graph** on a project (context menu or the
   palette) open a page: how each task of the project resolved and where each
   field came from, and what the project uses and what uses it.
 
   ![Explain page of a project](https://github.com/monosmith-app/monosmith/raw/main/apps/vscode/media/screenshot-explain.png)
+
+- **Tab completion.** **MonoSmith: Set Up Tab Completion** opens a MonoSmith terminal on
+  `smith completion install`: the terminal lists the files and lines it will write and asks
+  before it writes anything, so the editor itself writes nothing. Once, after smith starts in
+  a folder, the extension also asks in a notification (**Set up**, **Not now**, **Don't ask
+  again**), but only when `smith completion status --json` says it is not set up and you did not
+  say no on the command line. **Don't ask again** and **Set up** are kept for you in the global
+  state of the editor (`monosmith.tabCompletionOffer`); **Not now** asks again in the next session.
+  See [`smith completion`](https://github.com/monosmith-app/monosmith/blob/main/docs/manual/completion.md).
 
 - **The MonoSmith agent.** A workspace without the agent files shows one line
   in the Projects view, **Add the MonoSmith agent**, and the extension offers
@@ -146,6 +187,14 @@ once, with an offer to restart it.
 It talks to `smith serve` (JSON-RPC over stdin and stdout, no network port) and
 works with any smith whose protocol it knows; see
 [Serve and the event stream](https://github.com/monosmith-app/monosmith/blob/main/docs/reference/serve.md).
+
+## Where the texts live
+
+Every text a person reads comes from the catalogue in `libs/words` ([ADR 0089](https://github.com/monosmith-app/monosmith/blob/main/docs/architecture/decisions/0089-one-text-catalogue-for-every-interface.md)). Do not write wording in `package.json` or in the code.
+
+- Add or change a text in `libs/words/catalog/en/vscode_<area>.json`. A text that the terminal screen already has keeps its key: list it in `libs/words/surface/vscode.json`.
+- `package.json` holds `%key%` references. `package.nls.json` and `src/words/smith-words.config.ts` are generated: run `go run ./wordgen -surface vscode` in `libs/words`. Do not edit them.
+- In TypeScript, call `say('key', { name: value })` from `src/words`. The guard `src/words/no-raw-text.policy.spec.ts` fails on raw wording in a prompt and on a `package.json` label that is not a `%key%`.
 
 ## Developing
 

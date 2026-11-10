@@ -52,13 +52,17 @@ flowchart TD
 
 | Package | Responsibility |
 |---|---|
-| `tui` (root, 21 production files) | the `Shell` model: keys, mouse, runs, render, detail panel. One type's methods cannot be split across Go packages, which is the written reason the root exceeds the slice size limit (`apps/smith/tui/README.md`, temporary) |
+| `tui` (root, 31 production files) | the `Shell` model: keys, mouse, runs, render, detail panel. One type's methods cannot be split across Go packages, which is the written reason the root exceeds the slice size limit (`apps/smith/tui/README.md`, temporary) |
 | `tui/commands` | the keymap and everything computed from it: availability, footer hints, help rows, key labels, parsing a run request |
 | `tui/theme` | tokens (dark, light, plain), icons (Unicode, ASCII), the theme chosen from the environment |
 | `tui/layout`, `pane`, `tabs`, `footer`, `statusbar`, `toast`, `detail` | geometry and drawing of the pieces |
-| `tui/dialog`, `palette`, `guide` | confirmation and help dialogs, the command palette, guided forms |
+| `tui/dialog`, `helpdialog`, `palette`, `guide` | the confirmation dialog, the shortcuts overlay, the command palette, guided forms |
 | `tui/dashboard`, `projectlist`, `runview`, `logview`, `doctorview`, `depsview`, `releaseview` | the views |
 | `tui/fixwizard`, `tui/adoptwizard` | the doctor fix dialog and the adopt dialog |
+| `tui/composer` | the screen of `smith compose` and of the first question of `add` ("What are you building?"), over the catalogue of the `compose` slice ([ADR 0076](decisions/0076-one-composer-for-the-stack-of-a-project.md), [ADR 0078](decisions/0078-the-first-run-is-a-set-of-choices-not-a-manual.md)) |
+| `tui/resultdialog` | the dialog that closes a run that changed the workspace: what happened and the next steps as choices, the first being the one that does nothing (leave uncommitted, install a missing tool, check again) |
+| `tui/toolsdialog` | the "Install the missing tools" dialog: one question per tool with the exact command and the marked default, then the administrator question, the streamed output and a result per tool ([ADR 0077](decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)) |
+| `tui/packageprompt`, `tui/languagenames` | which packages to install on or remove from a project; language and kind ids said the way people say them |
 | `tui/runner` | starting and stopping child smith processes |
 | `tui/sources` | loading what the views show (replaceable in tests) |
 | `tui/screenreader`, `clipboard`, `pointer`, `progress` | plain mode, OSC 52 copy, double-click detection, progress bars |
@@ -84,8 +88,28 @@ Because one list feeds all of them, a hint cannot name a key that does nothing; 
 claim of [ADR 0032](decisions/0032-single-key-tui-keymap.md). Keys are single keys, no plain key
 fires while a text field or form has the keyboard (`plain(key)` in `command_availability_policy.go`),
 and the keys of a view's own pane come first in the list so they win over a global key of the same letter
-(Deps marks all with `a`, which elsewhere adds a project). `PaneKey` entries are listed for the footer
+(Deps shows the major releases with `M`, a key no other view uses). `PaneKey` entries are listed for the footer
 and help but never run by the shell: the open view handles them.
+
+### Which panel has the keyboard
+
+A view with two panels (Projects and Doctor beside their detail) has one more piece of state, and the
+keymap reads it the same way as the run panel: `State.SideFocus` (the keyboard is on the right panel),
+`State.SideNext` (Tab goes to the right panel next, not to the recent runs) and `State.RecentFocus`.
+A command says where it works with `NeedsSideFocus`, `NotInSideFocus`, `NeedsSideNext` and `NotSideNext`
+(like `NeedsRecentFocus`), so the footer, the help and the key dispatch agree. The shell sets them in
+`state()` from `sideFocus` and `recentFocus` (`shell_focus_use_case.go`): `sideKeys()` says whether the
+keys go to the detail or the run, `beside()` whether the detail is beside the list at all. The cycle of
+Tab in Projects is list, recent runs (when a run is kept), detail, list; in Doctor it is list, detail.
+`Right` and `Left` do the same as `Tab` where they have no other meaning (a Doctor group header folds).
+A run that opens takes the keyboard (`revealRun`), a click gives it to the panel it lands on.
+
+Home has no second panel. Its keys are `home.move`, `home.scroll` and `Ctrl+U`/`Ctrl+D`
+(`shell_home_keys_use_case.go`): the keyboard is on one target of the page (`homeSel`, counted in
+reading order over the `Targets` that `dashboard.PageAt` returns), and a page taller than its pane
+scrolls (`homeTop`). `pane.WindowMarked` draws the `↑ more` and `↓ more` rows and `pane.KeepVisible`
+moves the window just enough to show the target under no marker. The footer offers `PgUp/PgDn scroll`
+only while the page is taller than the pane (`Reasons["home.scroll"]`).
 
 ## Pages
 
@@ -95,6 +119,15 @@ open tab for its `Page` and draws nothing else of the view. The layout is adapti
 columns the list takes the whole width and Enter opens the detail; wider, the list and the detail
 sit side by side (`layout.divide_screen_algorithm.go`). Tabs shorten their names before the strip
 would scroll, and below 24 rows they become one plain row.
+
+The detail beside the list is the same panel for four tabs: the finding of Doctor, the project of Projects, the
+one-version policy of Deps and the option of Settings (`hasDetail`, `selectionPanel`). Only Projects and
+Doctor take the keyboard there (`beside`, `Tab`); in Deps and Settings the panel scrolls with `Ctrl+U` `Ctrl+D` and the wheel. Below the wide
+layout Deps and Settings keep their text under the list (`depsview.Model.Beside`, `settingsview.WithSideDetail`).
+The detail of a project has two parts (`shell_detail_split_mapper.go`): the facts, drawn at the top and never scrolled, and the
+actions, which scroll and keep `keepDetailCursorVisible` in the part under the rule. Deps filters with the chips of
+`depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from
+the plan of the Release tab (`pendingNext`), never computed again.
 
 Views load lazily: Doctor, Deps and Release load on first open; Doctor also starts in the
 background when the shell opens, so the header shows its counts before any tab is visited.
@@ -123,18 +156,18 @@ sequenceDiagram
   R->>X: smith argv
   X-->>R: lines: events or text
   R-->>S: runview turns them into task states
-  S-->>P: Run tab: rows, progress, log
+  S-->>P: run panel: rows, progress, log
 ```
 
 `Shell.execute` (`shell_run_use_case.go`) classifies the command line with
 `libs/actions/catalog.Classify` into three kinds: needs a terminal (a command that asks questions;
 the shell quits and smith runs it), changes the workspace (ask first), and the rest. The rest,
 which includes every task run and the commands that print and end (`plugin`, `config`, `graph`,
-`explain`...), runs through `runner.Process` and stays in the Run tab: the interface never gives up
-the terminal for them (`tea.Exec` is not used for runs). Outside a workspace there is no Run tab,
+`explain`...), runs through `runner.Process` and stays in the run panel of Projects: the interface never gives up
+the terminal for them (`tea.Exec` is not used for runs). Outside a workspace there is no run panel,
 so `smith new`, `adopt` and `convert` quit the shell and run in the terminal.
 
-### The Run tab
+### The run panel
 
 A run shows one row per task (queued, running with a spinner and its elapsed time, passed, failed,
 cached, skipped), a progress bar with totals, and the captured log of the selected row (all output
@@ -142,7 +175,7 @@ when none is selected). Failures are listed first and the first failed task is s
 run ends, so its output is the first thing read. The runs of the session (the last 20) are kept
 in memory and shown again with `,` and `.`; `r` runs the shown run again, `R` runs the tasks that
 failed or were skipped, `Ctrl+C` stops the run. `y` copies the command line, `Y` the log shown (one
-task's output or all of it). The status bar and the Run header keep the exact command line, as
+task's output or all of it). The status bar and the run panel header keep the exact command line, as
 typed. Full logs stay reachable: `Y` puts them on the clipboard, `m` turns mouse reporting off so
 the terminal selects text with a plain drag, and `smith run ...` with the copied command line
 prints them in any terminal.
@@ -156,8 +189,8 @@ is one JSON event per line (`run.started` with the planned tasks, `task.queued`,
 status, and the plan arrives with the first line. `runview.ParseLine` reads such a line
 (`parse_run_event_algorithm.go`) and turns it into the same events the text lines give; any line
 that is not an event (smith's own messages and errors before the run starts) is read as text. The
-text parser (`<task> ▶ <command>`, `<task> ✔ <duration>`, `<task> ✔ from cache`, `<task> ✖ <reason>`,
-the skip and failure lines of the closing summary, the `✔ 3/4 tasks succeeded` line) stays for
+text parser (`<task> ▶ <command>`, `<task> ✓ <duration>`, `<task> ✓ from cache`, `<task> × <reason>`,
+the skip and failure lines of the closing summary, the `✓ 3/4 tasks succeeded` line) stays for
 every command that has no event stream (`smith doctor`, `plugin list`...) and for tests. The log
 shows each event as the text format would print it. `smith run --json` was not used: since #589 it
 prints the task output to stderr and the summary as one JSON document at the end, which gives no
@@ -212,7 +245,7 @@ terminal sequence, which also works over SSH.
 |---|---|
 | Single-key keymap, one adaptive pane, no menu bar | [ADR 0032](decisions/0032-single-key-tui-keymap.md) |
 | One list of actions shared by shell, MCP and serve | [ADR 0029](decisions/0029-one-list-of-actions.md) |
-| Event stream and `smith serve` (the Run tab reads it for task runs) | [ADR 0026](decisions/0026-event-stream-and-smith-serve.md) |
+| Event stream and `smith serve` (the run panel reads it for task runs) | [ADR 0026](decisions/0026-event-stream-and-smith-serve.md) |
 | Doctor fixes with steps and choices | [ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md) |
 | Adopt and convert depth levels | [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md) |
 

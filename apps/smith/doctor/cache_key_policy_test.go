@@ -23,3 +23,14 @@ func TestTheRemoteCacheKeyIsOnlyAWarning(t *testing.T) {
 		t.Errorf("with the key set the check passes: %+v", got)
 	}
 }
+
+func TestCacheKeyFindingNamesTheProblemOnlyWhenItFails(t *testing.T) {
+	failed := cacheKeyFinding("s3://b", func(string) string { return "" })[0]
+	if failed.OK || failed.Problem != "SMITH_CACHE_KEY is not set, so the remote cache s3://b is off" {
+		t.Errorf("failed: %+v", failed)
+	}
+	passed := cacheKeyFinding("s3://b", func(string) string { return "k" })[0]
+	if !passed.OK || passed.Problem != "" {
+		t.Errorf("passed: %+v", passed)
+	}
+}

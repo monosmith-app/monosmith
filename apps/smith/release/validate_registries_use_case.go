@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -15,7 +16,7 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 	var out []RegistryTarget
 	for _, item := range plan.Items {
 		p := s.Graph.Get(item.Project)
-		if p == nil || p.Release == nil || Native(p) || s.Git.TagCommit(item.Tag) != "" {
+		if p == nil || p.Release == nil || Native(p) || PublishesToNoRegistry(p) || s.Git.TagCommit(item.Tag) != "" {
 			continue // a tagged package is finished: only its GitHub Release resumes
 		}
 		r := p.Release
@@ -25,13 +26,13 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 		if len(r.NPM) > 0 {
 			add("npm", r.NPM...)
 		}
-		if r.PyPI != "" {
+		if r.PyPI != "" && !r.SkipsPrerelease("pypi", item.Next) {
 			add("PyPI", r.PyPI)
 		}
-		if r.NuGet != "" {
+		if r.NuGet != "" && !r.SkipsPrerelease("nuget", item.Next) {
 			add("NuGet", r.NuGet)
 		}
-		if r.RubyGems != "" {
+		if r.RubyGems != "" && !r.SkipsPrerelease("rubygems", item.Next) {
 			add("RubyGems", r.RubyGems)
 		}
 	}
@@ -43,9 +44,21 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 // last registry is found here, not after the first ones published. It
 // returns every finding; the blocking ones stop the release.
 func ValidateRegistries(targets []RegistryTarget, probe *RegistryProbe) []RegistryFinding {
+	// The registries are asked at the same time; the findings keep the order of
+	// the targets. The probe holds no state that a call changes.
+	found := make([][]RegistryFinding, len(targets))
+	var wg sync.WaitGroup
+	for i, t := range targets {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			found[i] = probe.Check(t)
+		}()
+	}
+	wg.Wait()
 	var out []RegistryFinding
-	for _, t := range targets {
-		out = append(out, probe.Check(t)...)
+	for _, f := range found {
+		out = append(out, f...)
 	}
 	return out
 }

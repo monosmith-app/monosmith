@@ -1,0 +1,7 @@
+{
+  "tui.commit.cannot_save": "smith cannot save that here. Run smith config set workspace.commit_operations true in a terminal.",
+  "tui.commit.saved_yes": "smith commits each change now. Undo is on.",
+  "tui.commit.saved_no": "Saved: smith does not commit your changes, so undo stays off.",
+  "tui.commit.saved_ask": "Saved: each change asks if smith commits it.",
+  "tui.commit.not_saved": "smith could not save that setting"
+}

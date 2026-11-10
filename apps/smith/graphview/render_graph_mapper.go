@@ -115,9 +115,11 @@ func DOT(g *projectgraph.Graph, marked map[string]bool) string {
 	return b.String()
 }
 
-// HTML renders a self-contained page: projects in layers, each above the
+// SVG renders the graph as an inline SVG: projects in layers, each above the
 // projects it depends on, with arrows to them; a marked project is filled.
-func HTML(g *projectgraph.Graph, title string, marked map[string]bool) string {
+// Each box says the project's name, kind and language in text, so the colour
+// is never the only signal. The SVG has a title and a description.
+func SVG(g *projectgraph.Graph, marked map[string]bool) string {
 	nodes := Nodes(g, marked)
 	layer := map[string]int{}
 	var depth func(string) int
@@ -156,7 +158,7 @@ func HTML(g *projectgraph.Graph, title string, marked map[string]bool) string {
 	}
 	colors := map[string]string{"app": "#2563eb", "lib": "#64748b", "package": "#16a34a"}
 	var svg strings.Builder
-	fmt.Fprintf(&svg, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`, width, height, width, height)
+	fmt.Fprintf(&svg, `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="graph-title graph-desc" viewBox="0 0 %d %d" width="%d" height="%d"><title id="graph-title">Project dependency graph</title><desc id="graph-desc">Each box is a project; an arrow points from a project to one it depends on.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`, width, height, width, height)
 	for _, n := range nodes {
 		from := pos[n.Name]
 		for _, d := range n.Deps {
@@ -174,6 +176,13 @@ func HTML(g *projectgraph.Graph, title string, marked map[string]bool) string {
 			html.EscapeString(n.Root), p[0], p[1], w, h, fill, colors[n.Kind], p[0]+w/2, p[1]+22, html.EscapeString(n.Name), p[0]+w/2, p[1]+40, n.Kind, html.EscapeString(n.Language))
 	}
 	svg.WriteString("</svg>")
+	return svg.String()
+}
+
+// HTML renders a self-contained page around the SVG of the graph.
+func HTML(g *projectgraph.Graph, title string, marked map[string]bool) string {
+	nodes := Nodes(g, marked)
+	svg := SVG(g, marked)
 	return fmt.Sprintf(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%[1]s project graph</title>
@@ -187,5 +196,5 @@ h1 { font-size: 18px; margin: 0 0 4px; } p { margin: 0 0 16px; opacity: .7; }
 <h1>%[1]s</h1><p>%[2]d projects · arrows point to what a project depends on · blue app, grey lib, green package</p>
 <div class="graph">%[3]s</div>
 </body></html>
-`, html.EscapeString(title), len(nodes), svg.String())
+`, html.EscapeString(title), len(nodes), svg)
 }

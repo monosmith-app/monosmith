@@ -8,10 +8,26 @@ ones you pick, in every project that declares them. The full description, the ex
 examples are on [`smith up`](up.md); the two commands share one implementation and one set of
 flags.
 
+## Registry page of a package
+
+`smith deps up --json` gives each update a `url`: the package's page on its registry (npmjs.com,
+pypi.org, nuget.org, crates.io, Maven Central, pub.dev, rubygems.org, packagist.org, pkg.go.dev, or an
+Azure Artifacts feed named in `smith.toml`). It is left out when the registry is private and smith
+cannot work out its web address. In the interactive shell, the Deps view shows the address of the
+selected package; `g` opens it in the browser and `Y` copies it
+([details](tui.md#the-registry-link-in-the-deps-view)).
+
+## Major updates are a choice of their own
+
+`--yes` takes patch and minor updates only. A major update can break the project, so smith
+leaves it out, lists it ("name 1.2.0 -> 3.0.0") and says that `--major` takes it. A package you
+name that has only a major update asks in a terminal and needs `--major` without one. With
+`--align`, the plan and the questions are those of `smith sync`.
+
 ## Synopsis
 
 ```sh
-smith deps up [package]... [--yes] [--check] [--json] [--no-install] [--align]
+smith deps up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--align [--dry-run] [--prefer highest|lowest|installed] [--to <name>=<version>]]
 ```
 
 ## Arguments and flags
@@ -29,11 +45,26 @@ Usage: `smith deps up [packages...] [flags]`
 |---|---|---|---|
 | `--align` | boolean | off | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ |
 | `--check` | boolean | off | report only; never prompt, never write |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | with --align: show the plan and change nothing |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
-| `--no-install` | boolean | off | rewrite the manifests without installing |
-| `-y, --yes` | boolean | off | take every update without prompting |
+| `--major` | boolean | off | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version |
+| `--no-install` | boolean | off | rewrite the manifests without installing (also --skip-install) |
+| `--prefer <prefer>` | string |  the installed one, else the highest | with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |
+| `--to <to>` | string, repeatable |  | with --align: the version of one dependency, as <name>=<version> |
+| `-y, --yes` | boolean | off | take every patch and minor update without prompting; major updates stay out unless --major is given |
 
 <!-- smith:end deps up -->
+
+## The Kind column
+
+Each row of the report, and of the Deps tab in the terminal UI, says how the projects declare the
+package, taken from the manifest section: `prod` (dependencies, `require`, a package reference),
+`dev` (devDependencies, `dev_dependencies`, `dev-dependencies`, `require-dev`), `peer`, `optional`,
+`build` (Cargo build-dependencies) or `managed` (a version table that only pins a version, such as
+`workspace.dependencies` or `dependencyManagement`). A package declared in several projects with
+different kinds lists each one, for example `dev, prod`. In `--json`, every update has a `kinds`
+array with the same words (added; nothing else changed).
 
 ## Example
 

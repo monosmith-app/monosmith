@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/derive"
+	"github.com/monosmith-app/monosmith/apps/smith/dialect"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -30,11 +33,25 @@ type AddOptions struct {
 	// Stack is the stack the project is built with; empty means the
 	// workspace default for its language, if any.
 	Stack string
+	// With names the choices the project is built from (smith add --with
+	// react,vitest,bootstrap): the solver checks them, adds the default of an axis
+	// they need, and saves the result as a stack. It replaces Stack and the recipe.
+	With []string
 	// Recipe answers the workspace's recipe ([workspace] recipe), which
 	// creates the project unless Stack names one. Nil: no answers, no one to
 	// ask.
 	Recipe *RecipeUse
-	Out    io.Writer
+	// Fresh gives the project the built-in default of its stack and does not
+	// look at the sibling projects (smith add --fresh).
+	Fresh bool
+	// Like names a project whose shape (build, test, layout, lint) the new
+	// project copies, instead of what most of its siblings share (smith add
+	// --like).
+	Like string
+	// Environments are the environment builds of a web app (ADR 0081), settled
+	// by CompleteEnvironments; nil for a project that has a single build.
+	Environments *webenv.Settings
+	Out          io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -47,12 +64,20 @@ type AddOptions struct {
 // are answered, the plugins it picks become a stack declared in smith.toml
 // with the recipe's settings, and the project is made exactly as a stack's
 // project is. If making it fails, smith.toml is put back.
+//
+// With --with the stack comes from the choices (ADR 0045): they are solved,
+// saved in smith.toml as a stack (or matched to a stack that has them), and
+// the project is made as that stack's project is.
+//
+// Unless opts.Fresh is set, the project follows the dialect of its siblings,
+// the projects of its kind and language: it is told the shape most of them
+// share, and a warning names each key it could not follow (ADR 0041).
 func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateResult, err error) {
 	kind := protocol.ProjectKind(opts.Kind)
 	switch kind {
 	case protocol.ProjectApp, protocol.ProjectLib, protocol.ProjectPackage:
 	default:
-		return nil, fmt.Errorf("kind %q is not app, lib or package. To add a package (a dependency) to a project, use: smith install -w <project> <package>", opts.Kind)
+		return nil, fmt.Errorf("kind %q is not app, lib or package. To add a package (a dependency) to a project, use: smith install -p <project> <package>", opts.Kind)
 	}
 	if err := ValidateName(opts.Kind, opts.Name); err != nil {
 		return nil, err
@@ -61,6 +86,10 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		return nil, fmt.Errorf("a project named %q already exists (%s)", opts.Name, s.Graph.Get(opts.Name).Root)
 	}
 	plan, err := planRecipe(s, opts)
+	if err != nil {
+		return nil, err
+	}
+	selection, err := planSelection(s, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +108,25 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 				undo()
 			}
 		}()
+	} else if selection != nil {
+		language, st = s.Plugins.Get(selection.stack.Language), selection.stack
+		fmt.Fprintln(opts.Out, selection.describe())
+		var undo func()
+		if undo, err = selection.declare(s); err != nil {
+			return nil, err
+		}
+		// A project that could not be made leaves no stack in smith.toml.
+		defer func() {
+			if err != nil {
+				undo()
+			}
+		}()
 	} else if language, st, err = chooseStack(s, opts); err != nil {
 		return nil, err
 	}
 	// A Node project goes where the root package.json workspaces reach it.
 	parent := projectkind.Directory(kind)
+	conventional := parent
 	if language.Info.Plugin.Name == "node" {
 		parent = nodeWorkspaceDirectory(s.Root, parent, opts.Name)
 	}
@@ -95,17 +138,13 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if st.Scaffold != "" {
 		generator = s.Plugins.Get(st.Scaffold)
 	}
-	if !generator.Supports(protocol.MethodGenerate) {
-		return nil, fmt.Errorf("plugin %s cannot generate projects", generator.Info.Plugin.Name)
-	}
-	if !generator.Info.Scaffolds(kind) {
-		var can []string
-		for _, k := range generator.Info.ScaffoldKinds() {
-			can = append(can, string(k))
-		}
-		return nil, fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s", generator.Info.Plugin.Name, kind, strings.Join(can, " and "))
+	if err := checkScaffolds(generator, kind); err != nil {
+		return nil, err
 	}
 	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
+	if reason := directoryReason(opts.Kind, conventional, parent); reason != "" {
+		fmt.Fprintln(opts.Out, reason)
+	}
 	var res protocol.GenerateResult
 	// A workspace without a module prefix (a converted one) takes the one its
 	// git remote gives, so the Go module path is the repository's own.
@@ -116,11 +155,38 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
 	}}
+	params.Choices = st.Choices
 	params.Settings = settings[generator.Info.Plugin.Name]
-	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
+	if opts.Environments != nil {
+		if generator.Info.Plugin.Name != webenv.PluginName {
+			return nil, fmt.Errorf("environments are for a web app built with Vite, and %s is made by the %s plugin", opts.Name, generator.Info.Plugin.Name)
+		}
+		params.Settings = maps.Clone(params.Settings)
+		if params.Settings == nil {
+			params.Settings = map[string]any{}
+		}
+		maps.Copy(params.Settings, opts.Environments.ToMap())
+	}
+	if params.Facts, err = projectgraph.ConfigFacts(s.Config, opts.Name); err != nil {
+		return nil, err
+	}
+	var siblings dialect.Dialect
+	if !opts.Fresh {
+		siblings = siblingDialect(s, opts, kind, language, st)
+		params.Shape = siblings.Shape
+	}
+	var times stepTimes
+	if err := times.Do("create", func() error {
+		return generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute)
+	}); err != nil {
 		return nil, err
 	}
 	pending := res.InstallPending
+	if opts.Environments != nil {
+		if err := recordEnvironments(s, opts.Name, *opts.Environments); err != nil {
+			return &res, err
+		}
+	}
 	if err := s.Refresh(); err != nil {
 		return &res, err
 	}
@@ -131,20 +197,41 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if project.Stack != st.Name {
 		return &res, fmt.Errorf("%s generated %s, but its manifest does not record stack %s", generator.Info.Plugin.Name, opts.Name, st.Name)
 	}
-	if err := addParts(s, project, st, params, settings, &res, &pending, opts.Out); err != nil {
+	if err := times.Do("tools", func() error {
+		return addParts(s, project, st, params, settings, &res, &pending, opts.Out)
+	}); err != nil {
 		return &res, err
 	}
-	if err := installPending(language, pending, &res, opts.Out); err != nil {
+	if project = s.Graph.Get(opts.Name); project != nil {
+		for _, warning := range siblings.Warnings(project.Shape) {
+			fmt.Fprintln(opts.Out, warning)
+		}
+	}
+	if err := times.Do("install", func() error { return installPending(language, pending, &res, opts.Out) }); err != nil {
 		return &res, err
 	}
 	fmt.Fprintln(opts.Out, "Updating the CI pipelines")
-	changed, _, err := cipipeline.Regenerate(s)
-	if err != nil {
+	var changed []string
+	if err := times.Do("pipelines", func() (err error) {
+		changed, _, err = cipipeline.Regenerate(s)
+		return err
+	}); err != nil {
 		return &res, err
 	}
 	res.Files = append(res.Files, changed...)
+	// With derived files on, the files the scaffold wrote are recorded from the start.
+	recorded, err := derive.Sync(s)
+	if err != nil {
+		return &res, err
+	}
+	if len(recorded) > 0 {
+		res.Files = append(res.Files, "smith.lock")
+	}
 	sort.Strings(res.Files)
 	res.Files = slices.Compact(res.Files)
+	if line := times.Line(); line != "" {
+		fmt.Fprintln(opts.Out, line)
+	}
 	return &res, nil
 }
 
@@ -255,6 +342,8 @@ func installPending(language *host.Client, pending bool, res *protocol.GenerateR
 		return fmt.Errorf("plugin %s left the dependencies to install but cannot install them", name)
 	}
 	fmt.Fprintln(out, "Installing packages (once, for everything added above)")
+	stop := heartbeat(out, "installing", 5*time.Second)
+	defer stop()
 	var installed protocol.DependencyResult
 	if err := language.Call(protocol.MethodInstall, protocol.InstallParams{Quiet: true}, &installed, 20*time.Minute); err != nil {
 		return fmt.Errorf("installing dependencies with %s: %w", name, err)

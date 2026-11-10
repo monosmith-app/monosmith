@@ -1,0 +1,11 @@
+{
+  "projectlist.status.current": "up to date",
+  "projectlist.status.stale": "out of date: derive rewrites it",
+  "projectlist.status.missing": "missing: derive writes it back",
+  "projectlist.status.unrecorded": "not recorded yet: derive records it",
+  "projectlist.status.drift": "edited by hand: derive keeps your edit until you choose",
+  "projectlist.status.diverged": "differs from what smith derives: kept until you choose",
+  "projectlist.status.broken": "smith cannot edit it: see Explain",
+  "projectlist.status.ejected": "yours: smith does not touch it",
+  "projectlist.status.differs": "the project's own: it differs from its siblings"
+}

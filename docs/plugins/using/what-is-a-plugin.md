@@ -43,8 +43,8 @@ request at a time unless it says it can take more. See [Troubleshooting plugins]
 
 ## The five roles
 
-A plugin declares the roles it can play when it starts. A **role** is a level in a project's
-make-up; a project is built from one plugin at some levels and any number at others.
+A plugin declares the roles it can play when it starts. A **role** is the part a plugin plays in a project's
+make-up; a project is built from one plugin at some roles and any number at others.
 
 | Role | What it does | A project has | Typical methods |
 |---|---|---|---|
@@ -94,7 +94,7 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 |---|---|---|
 | where it lives | inside the `smith` binary | any executable you provide |
 | how it is started | `smith plugin serve <name>` (a child of smith) | its `command` from `smith.toml`, or its `plugin.json` on the search path |
-| how many | 12 language plugins and 13 add-ons | as many as you declare |
+| how many | 18 language plugins and 21 add-ons | as many as you declare |
 | switch | `[plugins] enabled` (the language plugins) | declare or remove `[plugins.external.<name>]` |
 | trust | none needed: it is the smith binary | you trust it before smith starts it: `smith plugin trust <name>` |
 | environment | the whole environment smith runs in | a minimal one, plus the variables it declares and you grant |
@@ -102,9 +102,9 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 The **18 language plugins** are `applescript`, `bicep`, `bundle`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `lua`, `node`, `objc`, `php`,
 `python`, `recipe`, `ruby`, `rust`, `swift` and `vba`. They load unless `[plugins] enabled` names fewer.
 
-The **13 add-ons** are the built-in toolchain, structure, scaffold and deploy plugins: `angular`,
-`astro`, `docker`, `eslint`, `go-smith-plugin`, `jest`, `playwright`, `tauri`, `typescript`,
-`vertical-slices`, `vite`, `vitest` and `vscode`. They are always loaded, so the stacks they
+The **21 add-ons** are the built-in toolchain, structure, scaffold and deploy plugins: `angular`,
+`astro`, `docker`, `electron`, `eslint`, `functions`, `go-smith-plugin`, `jest`, `playwright`, `tauri`, `typescript`,
+`vertical-slices`, `vite`, `vitest` and `vscode`, and the six other architectures (`clean`, `ddd`, `hexagonal`, `modular-monolith`, `mvc` and `package-by-layer`, one plugin each). They are always loaded, so the stacks they
 publish are always available, but they act only on projects whose stack names them, or as a
 convention you configure with `[conventions.<name>]`. They cannot be enabled or disabled with
 `smith plugin`.
@@ -146,13 +146,13 @@ Plugins publish ready-made stacks (`node-jest`, `react`, `docs-site`, `vscode-ex
 stack is built by its language plugin alone. See [Stacks](../../reference/stacks.md).
 
 A **recipe** is a team's choice of plugins and settings, written as a TOML file with no code. It
-asks a few questions and the answers decide which plugin fills each level of a new project. When
+asks a few questions and the answers decide which plugin fills each role of a new project. When
 `smith add` creates a project from a recipe, the plugins the recipe picked become a stack. See
 [Recipes](../../reference/recipes.md) and [Creating a recipe and a stack](../creating/recipe-and-stack.md).
 
 ```mermaid
 flowchart TB
-  recipe["recipe: kind = service"] -->|"answers pick a plugin per level"| stack
+  recipe["recipe: kind = service"] -->|"answers pick a plugin per role"| stack
   subgraph stack["stack widget-team-service"]
     direction TB
     L["language: widget<br/>(exactly one)"]
@@ -182,7 +182,7 @@ Each plugin declares, in its handshake, what it needs and what it cannot share a
 
 | Field | Meaning | Example |
 |---|---|---|
-| `roles` | the levels it can be chosen for | `["toolchain"]` |
+| `roles` | the roles it can be chosen for | `["toolchain"]` |
 | `languages` | the language plugins (by name or `--lang` value) it applies to | `["node"]` |
 | `provides` | the slots it fills: task names, one plugin per slot | `["test"]` |
 | `requires` | plugins that must also be in the project | `[{"level": "language", "name": "node"}]` |
@@ -193,7 +193,7 @@ and every field it sets must match. For a language plugin, `name` also matches a
 `--lang` values.
 
 smith checks a project's plugins in one place, whatever chose them (a stack or a recipe). It checks
-that there is one language plugin and at most one scaffold; that every plugin plays the level it
+that there is one language plugin and at most one scaffold; that every plugin plays the role it
 is chosen for and applies to the language; that each slot has one plugin; that every requirement
 is met and no two plugins conflict. The errors name both sides:
 
@@ -201,7 +201,7 @@ is met and no two plugins conflict. The errors name both sides:
 |---|---|
 | two plugins fill one slot | `jest and vitest both provide the test task; keep one` |
 | a plugin does not apply to the language | `jest applies to [node], not to widget projects` |
-| a plugin is listed at a level it does not play | `eslint is listed as structure, but it plays [toolchain]` |
+| a plugin is listed at a role it does not play | `eslint is listed as structure, but it plays [toolchain]` |
 | a plugin is not loaded | `plugin "nope" is not loaded` |
 | two scaffolds, or two languages | `<a> and <b> are both chosen as the scaffold; keep one` |
 | a plugin is listed twice at one level | `<name> is listed twice as <level>` |

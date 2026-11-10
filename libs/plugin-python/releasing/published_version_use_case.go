@@ -25,7 +25,7 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	version, err := NewestOn(index, project)
 	if err != nil {
 		result.Unreachable = true
-		result.Detail = err.Error()
+		result.Detail = protocol.LookupFailure(err)
 		return result, nil
 	}
 	result.Version = version

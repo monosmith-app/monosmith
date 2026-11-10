@@ -1,4 +1,5 @@
 import type { ExplainedTask } from './insight-answer.contract.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Writes how a project's tasks resolved as a Markdown page: one section per
@@ -13,7 +14,7 @@ export function toExplainDocument (project: string, tasks: readonly ExplainedTas
       : [
           '',
           '',
-          '| Field | Value | Comes from |',
+          say('vscode.project-insight.field-value-comes-from'),
           '| --- | --- | --- |',
           ...fields.map((field) => `| ${cell(field.name)} | ${code(field.value)} | ${cell(field.source)} |`),
         ].join('\n')
@@ -22,11 +23,11 @@ export function toExplainDocument (project: string, tasks: readonly ExplainedTas
   })
 
   return [
-    `# Explain ${project}`,
+    say('vscode.project-insight.explain', { project }),
     '',
-    `How the tasks of \`${project}\` resolved, and where each field came from. The same as \`smith explain ${project}\`.`,
+    say('vscode.project-insight.how-the-tasks-of-resolved-and', { project, project2: project }),
     '',
-    ...(tasks.length === 0 ? ['This project has no tasks.'] : sections.flatMap((section) => [section, ''])),
+    ...(tasks.length === 0 ? [say('vscode.project-insight.this-project-has-no-tasks')] : sections.flatMap((section) => [section, ''])),
   ].join('\n').trimEnd() + '\n'
 }
 

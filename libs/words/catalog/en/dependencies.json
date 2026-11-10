@@ -1,0 +1,6 @@
+{
+  "dependencies.up.summary.one": "{count} update: {levels}",
+  "dependencies.up.summary.other": "{count} updates: {levels}",
+  "dependencies.up.level": "{count} {level}",
+  "dependencies.up.level_separator": ", "
+}

@@ -1,32 +1,18 @@
 package dependencies
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
 )
 
 // FlatContainer is nuget.org's package-content API; tests replace FetchJSON.
 const FlatContainer = "https://api.nuget.org/v3-flatcontainer"
 
 // FetchJSON reads a JSON document over HTTP; tests replace it.
-var FetchJSON = func(url string, v any) error {
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s: %s", url, resp.Status)
-	}
-	return json.NewDecoder(resp.Body).Decode(v)
-}
+var FetchJSON = registry.GetJSON
 
 // newestStable is the last version without a pre-release label in a list
 // nuget.org keeps in ascending order.

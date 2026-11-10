@@ -32,7 +32,7 @@ const agentHabits = `
 3. To make or change anything smith owns (a project, a pipeline, smith.toml, the root files), use its command, then read the diff before you commit. Look for versions going backwards and a changed ` + "`go`" + ` line in go.work or go.mod.
 4. A dependency belongs to a project: smith_install with the project named, never the root. In a converted Node project install with ` + "`smith i`" + `: it uses npm, not the old package manager.
 5. After a change, run smith_run for lint, typecheck and test on every project you touched, and ` + "`smith slices check <dir>`" + ` for new files.
-6. smith reports an error as a problem: a line starting with ✖, then one → line per way out. Tell the person the problem and follow a → line. Do not hide the remedy.
+6. smith reports an error as a problem: a line starting with ×, then one → line per way out. Tell the person the problem and follow a → line. Do not hide the remedy.
 7. Releases come from conventional commits. A commit ` + "`version(<project>)[1.2.3]: message`" + ` forces a project's version. Use smith_release_preview to see the next one.
 8. Never create, move or push a tag for the person. If a release hits a naming conflict, look for a rule smith can learn first. If a publish fails, check which version the checkout holds before you blame the registry.
 9. A branch behind main fails tests that main already fixed: check ` + "`git log HEAD..origin/main`" + ` before you treat a failure as yours.

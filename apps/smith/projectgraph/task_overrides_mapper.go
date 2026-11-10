@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/releasetable"
+	"github.com/monosmith-app/monosmith/apps/smith/releasetag"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -54,7 +56,13 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		}
 	}
 	p.Registries = ProjectRegistries(cfg, p.Name)
-	if po, ok := cfg.Projects[p.Name]; ok {
+	groupTags, groupRelease := p.groupSettings(cfg)
+	po, ok := cfg.Projects[p.Name]
+	if groupRelease != nil && po.Release == nil {
+		po.Release, ok = groupRelease, true
+	}
+	if ok {
+		po.Tags = append(slices.Clone(po.Tags), groupTags...)
 		if po.TagPrefix != "" {
 			p.TagPrefix = po.TagPrefix
 		}
@@ -66,7 +74,7 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		}
 		sort.Strings(p.Tags)
 		p.BareTags = po.BareTags
-		release, err := workspace.ResolveRelease(p.Name, po, p.releaseDefaults, cfg.Release.GitHubReleases)
+		release, err := releasetable.ResolveRelease(p.Name, po, p.releaseDefaults, cfg.Release.GitHubReleases)
 		if err != nil {
 			return err
 		}
@@ -78,7 +86,7 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 			}
 			p.SplitRepo = po.SplitRepo
 		}
-		p.applyTaskGroups(cfg)
+		p.applyGroups(cfg)
 		taskNames := make([]string, 0, len(po.Tasks))
 		for name := range po.Tasks {
 			taskNames = append(taskNames, name)
@@ -94,12 +102,12 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 			p.override(name, o, fmt.Sprintf("smith.toml [projects.%s.tasks.%s]", p.Name, name))
 		}
 	} else {
-		p.applyTaskGroups(cfg)
+		p.applyGroups(cfg)
 	}
 	// [release] tag_format names the prefix of a project that sets none. A
 	// prefix a plugin reports (a Go module's <dir>/v) stays, and so do bare tags.
 	if cfg.Release.TagFormat != "" && p.TagPrefix == "" && !p.BareTags {
-		p.TagPrefix = workspace.ExpandTagFormat(cfg.Release.TagFormat, cfg.Workspace.Scope, p.Name)
+		p.TagPrefix = releasetag.ExpandTagFormat(cfg.Release.TagFormat, cfg.Workspace.Scope, p.Name)
 		p.TagPrefixSet = true
 	}
 	return nil

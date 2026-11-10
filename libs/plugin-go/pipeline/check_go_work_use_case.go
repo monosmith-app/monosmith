@@ -4,22 +4,39 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Doctor checks that go.work lists every Go project and that every entry it
 // lists still exists: a stale entry breaks every go command in the workspace.
-func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	if len(params.Projects) == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
+	// A project declared in smith.toml is a package of a module above its
+	// folder: it has no go.mod to list in go.work, and a repository whose
+	// projects are all declared needs no go.work.
+	all := params.Projects
+	var modules []protocol.Project
+	for _, p := range all {
+		if !gowork.DeclaredInModule(workspaceRoot, p.Root) {
+			modules = append(modules, p)
+		}
+	}
+	if len(modules) == 0 {
+		findings := CheckUncoveredImports(workspaceRoot, all)
+		return protocol.DoctorResult{Findings: append(findings, CheckToolVersions(workspaceRoot, toolchainVersion(workspaceRoot, all), usesGolangciLint(all))...)}
+	}
+	params.Projects = modules
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
 	if err != nil {
 		return protocol.DoctorResult{Findings: []protocol.Finding{{
-			Check: "go.work exists", Detail: "the workspace has Go projects but no go.work", Remedy: "run `go work init` then `go work use` for each Go project",
+			Check: "go.work exists", Area: "config", Problem: "the workspace has Go projects but no go.work", Detail: "the workspace has Go projects but no go.work", Remedy: "run `go work init` then `go work use` for each Go project",
 		}}}
 	}
-	work := ParseGoWork(string(src))
+	work := gowork.ParseGoWork(string(src))
 	listed := map[string]bool{}
 	var findings []protocol.Finding
 	fixed := string(src)
@@ -27,20 +44,20 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		listed[entry] = true
 		_, err := os.Stat(filepath.Join(workspaceRoot, filepath.FromSlash(entry), "go.mod"))
 		if err != nil {
-			fixed, _ = DropUse(fixed, entry)
+			fixed, _ = gowork.DropUse(fixed, entry)
 		}
 		findings = append(findings, protocol.Finding{
-			Check: "go.work entry " + entry + " exists", OK: err == nil,
+			Check: "go.work entry " + entry + " exists", Area: "config", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "go.work lists "+entry+", which has no go.mod"),
 			Detail: entry + " is listed in go.work but has no go.mod", Remedy: "remove `" + entry + "` from go.work (`go work edit -dropuse=./" + entry + "`)",
 		})
 	}
 	lints := false
 	for _, p := range params.Projects {
 		if !listed[p.Root] {
-			fixed = AddUse(fixed, p.Root)
+			fixed = gowork.AddUse(fixed, p.Root)
 		}
 		findings = append(findings, protocol.Finding{
-			Check: "go.work lists " + p.Root, OK: listed[p.Root],
+			Check: "go.work lists " + p.Root, Project: p.Name, OK: listed[p.Root], Problem: toolrun.ProblemUnless(listed[p.Root], "is not listed in go.work"),
 			Detail: p.Root + " has a go.mod but go.work does not use it", Remedy: "run `go work use ./" + p.Root + "`",
 		})
 		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {
@@ -61,10 +78,20 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			findings = append(findings, CheckPackageImports(workspaceRoot, p))
 		}
 	}
+	lints = lints || usesGolangciLint(all)
+	findings = append(findings, CheckUncoveredImports(workspaceRoot, all)...)
 	required := work.GoVersion
 	if required == "" {
 		required = DefaultGoVersion
 	}
 	findings = append(findings, CheckToolVersions(workspaceRoot, required, lints)...)
 	return protocol.DoctorResult{Findings: findings}
+}
+
+// Doctor runs the checks of the plugin and adds the build-location check: a
+// build task that writes outside the workspace's dist/.
+func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+	res := doctorChecks(workspaceRoot, params)
+	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	return res
 }

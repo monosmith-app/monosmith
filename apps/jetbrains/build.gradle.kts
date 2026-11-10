@@ -34,10 +34,18 @@ repositories {
 dependencies {
     intellijPlatform {
         create(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
+        bundledPlugin("org.jetbrains.plugins.terminal")
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation("junit:junit:4.13.2")
     testImplementation(kotlin("test"))
+}
+
+// Print the violations in the log: CI keeps the report file on the agent.
+ktlint {
+    // Pinned: the plugin's default ktlint changes between its releases.
+    version.set("1.8.0")
+    outputToConsole.set(true)
 }
 
 intellijPlatform {

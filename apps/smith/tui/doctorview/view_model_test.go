@@ -35,6 +35,19 @@ func key(s string) tea.KeyMsg {
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 }
 
+// nextFinding moves the cursor down until it rests on a finding, skipping the
+// group headings in between.
+func nextFinding(m Model) Model {
+	for range m.rows() {
+		if m = m.Update(key("down")); m.Cursor >= 0 {
+			if _, ok := m.Selected(); ok {
+				return m
+			}
+		}
+	}
+	return m
+}
+
 var plainTheme = theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
 
 // plain is the page alone in the pane: a check expands in place.
@@ -68,8 +81,8 @@ func TestGTurnsTheGroupingOffAndOn(t *testing.T) {
 	if m = m.Update(key("g")); !m.Grouped {
 		t.Fatal("g again groups again")
 	}
-	if FromResult(Result{}).Grouped {
-		t.Fatal("the list starts flat")
+	if !FromResult(Result{}).Grouped {
+		t.Fatal("the list starts grouped")
 	}
 }
 
@@ -78,15 +91,15 @@ func TestTheSelectedFindingHasAPlannedFixOnlyWhenItCarriesOne(t *testing.T) {
 	if p, ok := m.SelectedFix(); ok {
 		t.Fatalf("a finding without a fix offered %+v", p)
 	}
-	m = m.Update(key("down")) // web's Docker finding
+	m = nextFinding(m) // web's Docker finding
 	p, ok := m.SelectedFix()
 	if !ok || p.Description != "restore web's Dockerfile" || p.Ask {
 		t.Fatalf("web's fix: %+v ok=%v", p, ok)
 	}
-	if FixLabel(p) != "Fix: restore web's Dockerfile" {
+	if FixLabel(p) != "Fix" {
 		t.Fatalf("label %q", FixLabel(p))
 	}
-	m = m.Update(key("down")) // api's finding: its fix is not safe, so the wizard asks
+	m = nextFinding(m) // api's finding: its fix is not safe, so the wizard asks
 	if p, ok := m.SelectedFix(); !ok || !p.Ask {
 		t.Fatalf("a fix that is not safe is still a fix, and asks: %+v ok=%v", p, ok)
 	}
@@ -118,15 +131,14 @@ func TestAFixFoldedFromManyProjectsIsLabelledByTheirNumber(t *testing.T) {
 }
 
 func TestOpeningAFindingShowsItsFixAndWhetherItIsSafe(t *testing.T) {
-	m := sample()
-	m = m.Update(key("down"))
+	m := nextFinding(sample())
 	out := plain(m.Update(key("enter")))
 	for _, want := range []string{"→ pick one", "fix: restore web's Dockerfile", "f shows what changes, then applies it", "writes apps/web/Dockerfile"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
 	}
-	m = m.Update(key("down")).Update(key("enter"))
+	m = nextFinding(m).Update(key("enter"))
 	if out := plain(m); !strings.Contains(out, "f asks, shows what changes") {
 		t.Fatalf("a fix that is not safe says so:\n%s", out)
 	}
@@ -162,8 +174,8 @@ func TestPassedChecksAreOneCollapsedLineThatEnterOrPOpens(t *testing.T) {
 	if strings.Contains(out, "install Go") || strings.Contains(out, "go is not on PATH") {
 		t.Fatalf("a check is one line until it is expanded:\n%s", out)
 	}
-	// Three problems, then the collapsed line: enter on it opens the passes.
-	for range 3 {
+	// The headings and three problems, then the collapsed line: enter on it opens the passes.
+	for i := 0; i < m.rows() && !m.OnPassedLine(); i++ {
 		m = m.Update(key("down"))
 	}
 	if !m.OnPassedLine() {
@@ -246,7 +258,7 @@ func TestBesideTheDetailTheListDoesNotRepeatWhatTheDetailSays(t *testing.T) {
 }
 
 func TestTextTellsTheProblemTheRemedyAndTheFixOnce(t *testing.T) {
-	f, _ := sample().Update(key("down")).Selected()
+	f, _ := nextFinding(sample()).Selected()
 	got := strings.Join(Text(plainTheme, f, 2), "\n")
 	for _, want := range []string{"two registries", "pick one", "fix: restore web's Dockerfile", "writes apps/web/Dockerfile"} {
 		if strings.Count(got, want) != 1 {

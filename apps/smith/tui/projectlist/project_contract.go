@@ -22,6 +22,9 @@ type Project struct {
 	Deps, Dependents []string
 	// Affected is true when the current changes touch it.
 	Affected bool
+	// Derived are the files of the project that smith derives, when the
+	// workspace turned derived files on.
+	Derived []DerivedFile
 }
 
 // Task returns the project's task with a name.

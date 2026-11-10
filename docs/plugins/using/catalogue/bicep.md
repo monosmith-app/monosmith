@@ -21,7 +21,7 @@ anything: the pipeline that owns your environment does that with the files in
 | `--lang` value | `bicep` |
 | Manifest that makes a directory a project | `main.bicep` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `channels` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app` and `lib`. `package` is refused (see below) |
@@ -105,7 +105,7 @@ Real run and its output files:
 ```text
 $ smith run lint build
 ...
-✔ 5/5 tasks succeeded (0 from cache) in 8.996s
+✓ 5/5 tasks succeeded (0 from cache) in 8.996s
 
 dist/apps/infra/parameters/main.parameters.json
 dist/apps/infra/template/main.json
@@ -211,6 +211,7 @@ variable.
 | Version write | the statement is replaced in place, or added as the first line of the file when absent. A dry run lists `libs/network/main.bicep` and writes nothing |
 | Tag | `<project>@<version>` (override with `tag_prefix`) |
 | Publish | nothing is uploaded, for any kind: "released by its tag". Deployment is up to the pipeline that owns the environment |
+| Release channel | the plugin declares `channels`: nothing is uploaded, so no registry pointer can move, and the version is a metadata string that takes `2.0.0-beta.1` as it is |
 | Registry query | none (`published` is not advertised) |
 | Credentials | none |
 | Private registry | none |
@@ -263,7 +264,7 @@ separately by me for Bicep).
 Both passed. Doctor also warned, from the host, once per project:
 `! infra can be verified: infra has no test task, so CI never checks it`
 (and the same for `network`), because Bicep projects have no `test` task. The
-run ended `16 passed, 0 failed, 2 warning(s)`.
+run ended `16 passed, 0 failed, 2 warnings`.
 
 **Dependencies.** Not supported: `smith install`, `smith sync` and `smith up`
 do nothing for Bicep. Module versions live in `br:` references you edit.
@@ -272,6 +273,10 @@ do nothing for Bicep. Module versions live in `br:` references you edit.
 project's directory and regenerates the pipelines. A deployment's `module`
 statement pointing at a removed lib is not edited (the host refuses to remove a
 project others import unless `--force`).
+
+## Declared projects
+
+`az bicep build` and `az bicep lint` take one file, so a folder of templates has no entry file to build unless it has a `main.bicep`, which makes it a project. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 

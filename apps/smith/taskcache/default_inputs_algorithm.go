@@ -19,7 +19,7 @@ func DefaultInputs(selected, globs []string) []string {
 			continue
 		}
 		g = strings.TrimPrefix(g, WorkspacePrefix)
-		if strings.HasPrefix(g, defaultsPrefix) &&!strings.ContainsAny(g, "*?[{!") && !slices.Contains(selected, g) && !slices.Contains(out, g) {
+		if strings.HasPrefix(g, defaultsPrefix) && !strings.ContainsAny(g, "*?[{!") && !slices.Contains(selected, g) && !slices.Contains(out, g) {
 			out = append(out, g)
 		}
 	}

@@ -1,6 +1,7 @@
 package dockerdescription
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ warning (the images are already published); --strict makes it an error.`,
 			return Run(s.Root, s.Graph.Projects, req, cmd.OutOrStdout())
 		},
 	}
-	description.Flags().StringSliceVarP(&req.Projects, "project", "p", nil, "only these apps")
+	commandflags.AddProjectFlag(description, &req.Projects, "only these apps")
 	description.Flags().BoolVar(&req.DryRun, "dry-run", false, "name the repositories without calling Docker Hub")
 	description.Flags().BoolVar(&req.Strict, "strict", false, "exit non-zero when a description could not be set")
 	docker.AddCommand(description)

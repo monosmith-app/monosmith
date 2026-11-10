@@ -1,0 +1,8 @@
+{
+  "vscode.smith-version.the-monosmith-path-setting": "the monosmith.path setting",
+  "vscode.smith-version.this-workspace-node-modules-bin-or": "this workspace (node_modules/.bin or .smith/bin)",
+  "vscode.smith-version.the-path": "the PATH",
+  "vscode.smith-version.this-workspace-has-its-own-smith": "This workspace has its own smith, which is not used because the workspace is not trusted.",
+  "vscode.smith-version.a-terminal-runs-smith-from-the": "A terminal runs smith {terminalVersion} from the PATH.",
+  "vscode.smith-version.monosmith-runs-smith-from-but-a": "MonoSmith runs smith {editorVersion} from {sourceName}, but a terminal here runs smith {terminalVersion} from the PATH. Results can differ."
+}

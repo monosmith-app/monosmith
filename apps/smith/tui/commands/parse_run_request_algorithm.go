@@ -1,6 +1,9 @@
 package commands
 
-import "strings"
+import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
+	"strings"
+)
 
 // RunRequest is what a `smith run` style command line asks for.
 type RunRequest struct {
@@ -13,7 +16,7 @@ type RunRequest struct {
 var taskShortcuts = map[string]bool{"build": true, "test": true, "lint": true, "typecheck": true}
 
 // valueFlags are the run flags that take a value.
-var valueFlags = map[string]bool{"-p": true, "--projects": true, "--base": true, "--parallel": true}
+var valueFlags = map[string]bool{"--base": true, "--parallel": true}
 
 // ParseRun reads a command line (without the program name) of smith run, or
 // of build, test, lint or typecheck, so the shell can tell which tasks it will
@@ -32,13 +35,13 @@ func ParseRun(argv []string) (req RunRequest, ok bool) {
 		switch {
 		case a == "--affected":
 			req.Affected = true
-		case a == "-p" || a == "--projects":
+		case flagvocabulary.Is("project", a):
 			if i+1 < len(argv) {
 				i++
 				req.Projects = append(req.Projects, strings.Split(argv[i], ",")...)
 			}
-		case strings.HasPrefix(a, "--projects="):
-			req.Projects = append(req.Projects, strings.Split(strings.TrimPrefix(a, "--projects="), ",")...)
+		case inlineProjects(a) != nil:
+			req.Projects = append(req.Projects, inlineProjects(a)...)
 		case a == "--base":
 			if i+1 < len(argv) {
 				i++
@@ -67,7 +70,17 @@ func ParseRun(argv []string) (req RunRequest, ok bool) {
 func RunArgv(task, project string) []string {
 	argv := []string{"run", task}
 	if project != "" {
-		argv = append(argv, "-p", project)
+		argv = append(argv, flagvocabulary.Arg("project"), project)
 	}
 	return argv
+}
+
+// inlineProjects reads the "--project=a,b" form of the project flag (in any of
+// its spellings) and returns the names; nil when arg is not that form.
+func inlineProjects(arg string) []string {
+	value, ok := flagvocabulary.Inline("project", arg)
+	if !ok {
+		return nil
+	}
+	return strings.Split(value, ",")
 }

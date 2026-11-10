@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pruning"
 	"github.com/spf13/cobra"
@@ -35,6 +36,6 @@ func Command() *cobra.Command {
 			return err
 		},
 	}
-	cmd.Flags().StringVar(&out, "out", "", "the build directory to write into, workspace-relative (default dist/<project dir>)")
+	commandflags.AddOutputFlag(cmd, &out, "", "the build directory to write into, workspace-relative (default dist/<project dir>)")
 	return cmd
 }

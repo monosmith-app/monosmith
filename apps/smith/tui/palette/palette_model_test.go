@@ -121,3 +121,77 @@ func TestEveryLineFitsTheWidthAtAnySize(t *testing.T) {
 		}
 	}
 }
+
+var intents = []Entry{
+	{ID: "deps.update", Section: "Dependencies", Title: "Update the marked ones", Hint: "smith deps up", Keywords: "update, outdated, upgrade packages, newer versions"},
+	{ID: "ws.undo", Section: "Health", Title: "Undo the last change…", Hint: "smith undo", Keywords: "revert, rollback, go back"},
+	{ID: "ws.doctor", Section: "Health", Title: "Check my project (Doctor)", Hint: "smith doctor", Keywords: "broken, problems, health, doctor"},
+	{ID: "ws.cache-clear", Section: "Health", Title: "Speed-up storage (Cache): delete it all…", Hint: "smith cache clear", Keywords: "speed, slow, cache"},
+}
+
+func TestAnIntentWordFindsTheCommandThatHoldsItAsAKeyword(t *testing.T) {
+	for typedText, want := range map[string]string{"outdated": "deps.update", "upgrade packages": "deps.update", "rollback": "ws.undo", "broken": "ws.doctor", "slow": "ws.cache-clear", "doctor": "ws.doctor"} {
+		if _, res := typed(New(intents), typedText).Key(enter()); res.CommandID != want {
+			t.Errorf("%q chose %q, want %q", typedText, res.CommandID, want)
+		}
+	}
+}
+
+func TestKeywordsAreSearchableButNeverShown(t *testing.T) {
+	text := strings.Join(New(intents).Lines(theme.Default(), 90, 14), "\n")
+	if strings.Contains(text, "rollback") || strings.Contains(text, "outdated") {
+		t.Fatalf("keywords must stay hidden:\n%s", text)
+	}
+}
+
+func TestNothingFoundShowsTheClosestThreeCommandsToChooseFrom(t *testing.T) {
+	p := typed(New(intents), "doctr")
+	text := strings.Join(p.Lines(theme.Default(), 90, 14), "\n")
+	if !strings.Contains(text, "Did you mean") || strings.Contains(text, "no command matches") {
+		t.Fatalf("a close typo offers commands:\n%s", text)
+	}
+	if got := p.matches(); len(got) == 0 || len(got) > 3 {
+		t.Fatalf("suggestions: %d", len(got))
+	}
+	if len(p.matches()) > 1 {
+		var res Result
+		if p, res = p.Key(enter()); res.CommandID != "" || res.Closed || res.Refused == "" {
+			t.Fatalf("with several guesses the first Enter only asks: %+v", res)
+		}
+	}
+	if _, res := p.Key(enter()); res.CommandID != "ws.doctor" {
+		t.Fatalf("the closest is the first: %+v", res)
+	}
+}
+
+func TestTypingAfterTheGuessQuestionAsksAgain(t *testing.T) {
+	p := typed(New(intents), "doctr")
+	if len(p.matches()) < 2 {
+		t.Skip("one guess runs at once")
+	}
+	p, _ = p.Key(enter())
+	p, _ = p.Key(tea.KeyMsg{Type: tea.KeyDown})
+	if _, res := p.Key(enter()); res.CommandID != "" {
+		t.Fatalf("moving to another guess asks again: %+v", res)
+	}
+}
+
+func TestNothingCloseStillSaysNoCommandMatches(t *testing.T) {
+	text := strings.Join(typed(New(intents), "zzqxj").Lines(theme.Default(), 90, 14), "\n")
+	if !strings.Contains(text, "no command matches") {
+		t.Fatalf("%s", text)
+	}
+}
+
+func TestTheInputHasOnePointerAndACutRowHasOneEllipsis(t *testing.T) {
+	long := []Entry{{ID: "a", Section: "S", Title: "Name", Hint: strings.Repeat("a long hint ", 12), Shortcut: "x"}}
+	lines := New(long).Lines(theme.Default(), 50, 6)
+	if got := pane.Strip(lines[0]); strings.Count(got, ">")+strings.Count(got, "›") != 1 {
+		t.Fatalf("one pointer in the input line: %q", got)
+	}
+	for _, l := range lines {
+		if strings.Contains(l, "……") {
+			t.Fatalf("doubled ellipsis: %q", l)
+		}
+	}
+}

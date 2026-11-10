@@ -2,6 +2,7 @@ package release
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -21,11 +22,17 @@ func (r Report) Text() string {
 		}
 	}
 	for _, res := range r.Results {
+		if res.Manual {
+			fmt.Fprintf(&b, "Manual release: no commit releases %s.\n", res.Project)
+		}
 		for _, image := range res.Images {
 			fmt.Fprintf(&b, "Image pushed for %s: %s\n", res.Project, ImageLine(image))
 		}
+		for _, f := range res.Packed {
+			fmt.Fprintf(&b, "Attached to GitHub Release %s: %s (sha256 %s)\n", res.Tag, f.Name, f.SHA256[:12])
+		}
 		if res.PubDispatch != "" {
-			fmt.Fprintf(&b, "Dispatched pub.dev publish for %s.\n", res.PubDispatch)
+			fmt.Fprintf(&b, "Queued the pub.dev publish for %s (%s). It is not finished yet.\n", res.PubDispatch, PubWorkflow)
 		}
 		if res.Mirror != "" {
 			verb := "Mirrored"
@@ -34,6 +41,19 @@ func (r Report) Text() string {
 			}
 			fmt.Fprintf(&b, "%s %s to %s\n", verb, res.Project, res.Mirror)
 		}
+	}
+	if lines := r.SummaryLines(asciiWanted()); len(lines) > 0 {
+		b.WriteString("\n")
+		for _, line := range lines {
+			b.WriteString(line.Text + "\n")
+		}
+	}
+	if pending := r.PendingTags(); len(pending) > 0 {
+		b.WriteString("\nWarning: npm did not serve every platform package in time, so a dist-tag was not moved.\nThe packages are published under the dist-tag \"pending\". When npm serves them, run:\n")
+		for _, command := range pending {
+			fmt.Fprintf(&b, "  %s\n", command)
+		}
+		b.WriteString("The release exits with code 2 so that CI shows a warning.\n")
 	}
 	if r.Error != "" && r.DryRun {
 		b.WriteString("\nThe real release would fail for:\n")
@@ -46,7 +66,18 @@ func (r Report) Text() string {
 		fmt.Fprintf(&b, "\nStopped: %s\nRe-run the release: finished packages are kept and the rest resume.\n", r.Error)
 	}
 	if r.DryRun && len(r.Results) > 0 && r.Error == "" {
-		b.WriteString("\n→ Push to the release branch and CI releases these; or run smith release here to publish them yourself.\n")
+		b.WriteString("\n" + PublishHintLine + "\n")
 	}
 	return b.String()
+}
+
+// PublishHintLine ends the report of a preview: it says how the release goes on.
+// The shell leaves it out, because its own screen has the button that releases.
+const PublishHintLine = "→ Push to the release branch and CI releases these; or run smith release here to publish them yourself."
+
+// asciiWanted reports whether the terminal needs the ASCII banner: the same
+// signals the TUI icon set reads (SMITH_ASCII=1, TERM=dumb or linux).
+func asciiWanted() bool {
+	term := os.Getenv("TERM")
+	return os.Getenv("SMITH_ASCII") == "1" || term == "dumb" || term == "linux"
 }

@@ -37,7 +37,7 @@ func TestRubyWorkspace(t *testing.T) {
 		t.Fatal("a gem dependency is a graph edge")
 	}
 	out := w.smith(true, "run", "lint", "test")
-	for _, want := range []string{"cli:lint ✔", "core:lint ✔", "cli:test ✔", "core:test ✔"} {
+	for _, want := range []string{"cli:lint ✓", "core:lint ✓", "cli:test ✓", "core:test ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -48,7 +48,7 @@ func TestRubyWorkspace(t *testing.T) {
 	if out := w.smith(true, "run", "start", "-p", "cli"); !strings.Contains(out, "Hello, world! Hello, core!") {
 		t.Fatalf("start:\n%s", out)
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ Bundler is installed") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ Bundler is installed") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "ruby/setup-ruby") || !strings.Contains(ci, "GEM_HOST_API_KEY") {

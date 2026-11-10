@@ -196,7 +196,7 @@ These are what `smith slices check` reports today, and what the code shows.
 
 | Where | Departure | Written down? |
 |---|---|---|
-| `apps/smith/tui` | 21 production files in the package root (limit 12): the methods of the one Bubble Tea model `Shell` | yes, as a temporary exception with a removal condition in `apps/smith/tui/README.md` |
+| `apps/smith/tui` | 31 production files in the package root (limit 12): the methods of the one Bubble Tea model `Shell` | yes, as a temporary exception with a removal condition in `apps/smith/tui/README.md` |
 | `apps/smith/convertplan` (29), `release` (21), `cipipeline` (17), `projectgraph` (15), `workspace` (14), `doctor` (13) | over the size limit; reported as `review:` | no |
 | `packages/plugin-sdk/protocol` | 17 files: the protocol types, by nature one slice | no |
 | `libs/plugin-node-toolchains` | imports `libs/plugin-node/scaffolding` | no |

@@ -10,7 +10,7 @@ import (
 
 func TestThePanelListsRowsAndClickableActions(t *testing.T) {
 	p := Panel{
-		Sections: []Section{{Heading: "web", Rows: []Row{{"kind", "app"}, {"language", "node"}}, Items: nil}, {Heading: "Depends on", Items: []string{"kit"}}},
+		Sections: []Section{{Heading: "web", Rows: []Row{{Label: "kind", Value: "app"}, {Label: "language", Value: "node"}}, Items: nil}, {Heading: "Depends on", Items: []string{"kit"}}},
 		Actions:  []Action{{ID: "run.build", Label: "Run build", Shortcut: "Ctrl+B"}, {ID: "stop", Label: "Stop", Disabled: true}},
 	}
 	lines, hits := p.View(theme.Default(), 30, "")
@@ -31,7 +31,7 @@ func TestThePanelListsRowsAndClickableActions(t *testing.T) {
 }
 
 func TestALongPathIsShortenedInTheMiddleNotCutIntoFragments(t *testing.T) {
-	p := Panel{Sections: []Section{{Rows: []Row{{"root", "apps/markobot-vscode-extension/src"}}}}}
+	p := Panel{Sections: []Section{{Rows: []Row{{Label: "root", Value: "apps/markobot-vscode-extension/src"}}}}}
 	lines, _ := p.View(theme.Default(), 26, "")
 	if len(lines) != 1 || !strings.Contains(lines[0], "…") || !strings.Contains(lines[0], "apps/") || !strings.Contains(lines[0], "/src") {
 		t.Fatalf("the path should keep both ends on one line:\n%s", strings.Join(lines, "\n"))
@@ -39,7 +39,7 @@ func TestALongPathIsShortenedInTheMiddleNotCutIntoFragments(t *testing.T) {
 }
 
 func TestAValueOfSeveralWordsWrapsAtTheSpaces(t *testing.T) {
-	p := Panel{Sections: []Section{{Rows: []Row{{"about", "builds the web app and its worker for the cloud"}}}}}
+	p := Panel{Sections: []Section{{Rows: []Row{{Label: "about", Value: "builds the web app and its worker for the cloud"}}}}}
 	lines, _ := p.View(theme.Default(), 26, "")
 	if len(lines) < 2 {
 		t.Fatalf("expected a wrap:\n%s", strings.Join(lines, "\n"))
@@ -64,7 +64,7 @@ func TestALongHeadingAndALongActionWrapInsteadOfBeingCut(t *testing.T) {
 	const heading = "the scripts of the root package.json call files and tools that exist"
 	const label = "Fix: install the tools the scripts start, or remove those scripts"
 	p := Panel{
-		Sections: []Section{{Heading: heading, Rows: []Row{{"state", "warning"}}}},
+		Sections: []Section{{Heading: heading, Rows: []Row{{Label: "state", Value: "warning"}}}},
 		Actions:  []Action{{ID: "fix", Label: label}, {ID: "again", Label: "Check again", Shortcut: "r"}},
 	}
 	const w = 40

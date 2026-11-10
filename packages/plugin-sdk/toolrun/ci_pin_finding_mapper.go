@@ -15,8 +15,10 @@ import (
 //   - the same version is a pass;
 //   - a newer local one is a warning: it builds, but can accept what CI's
 //     older tool rejects;
-//   - an older local one fails: the tool may refuse what CI builds, with an
-//     error that reads like a dependency problem.
+//   - an older local one is a warning too: the tool may refuse what CI builds,
+//     with an error that reads like a dependency problem. A team can run
+//     another version on purpose, so a difference is never a failure; a tool
+//     that is missing is, and the caller reports that.
 //
 // A ci that is not a number ("stable", "nightly") gives no finding (ok is
 // false): there is nothing to compare. The caller adds the remedy, and a Fix
@@ -28,8 +30,12 @@ func CIPinFinding(name, have, ci string) (f protocol.Finding, ok bool) {
 	}
 	f = protocol.Finding{
 		Check: name + " is " + ci + ", as in CI",
-		OK:    order == 0, Warning: order > 0,
+		Area:  "toolchain",
+		OK:    order == 0, Warning: order != 0,
 		Detail: "found " + name + " " + have,
+	}
+	if order != 0 {
+		f.Problem = name + " is " + have + ", CI uses " + ci
 	}
 	switch {
 	case order < 0:
@@ -39,6 +45,11 @@ func CIPinFinding(name, have, ci string) (f protocol.Finding, ok bool) {
 	}
 	return f, true
 }
+
+// PinOrder orders have against ci over ci's components: -1 older, 0 the same,
+// 1 newer. ok is false when either is not a dotted number. A caller that must
+// tell an older tool from a newer one (both are warnings) asks here.
+func PinOrder(have, ci string) (order int, ok bool) { return comparePin(have, ci) }
 
 // comparePin orders have against ci over ci's components: -1 older, 0 the
 // same, 1 newer. ok is false when either is not a dotted number.

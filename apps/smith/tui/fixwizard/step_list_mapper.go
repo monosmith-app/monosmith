@@ -1,13 +1,13 @@
 package fixwizard
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -33,9 +33,9 @@ func stepListRows(th theme.Theme, steps []protocol.FixStep, current, inner int) 
 		}
 		mark := th.Muted("·")
 		if n < current {
-			mark = th.Muted("✓")
+			mark = th.Muted(marks.Passed)
 		}
-		rows = append(rows, pane.Wrap(fmt.Sprintf("%s step %d: %s", mark, n, s.Description), inner, 2)...)
+		rows = append(rows, pane.Wrap(words.Say("fixwizard.steps.done", "mark", mark, "number", n, "description", s.Description), inner, 2)...)
 	}
 	return rows
 }
@@ -47,15 +47,6 @@ func capitalFirst(s string) string {
 		return s
 	}
 	return strings.ToUpper(string(r[0])) + string(r[1:])
-}
-
-// elapsedText says how long the step has been running, once it is long enough
-// to matter: nothing under three seconds.
-func elapsedText(d time.Duration) string {
-	if d < 3*time.Second {
-		return ""
-	}
-	return "Running for " + progress.Elapsed(d)
 }
 
 // elapsed is how long the applying phase has lasted.

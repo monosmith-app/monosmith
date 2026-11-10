@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -19,8 +20,36 @@ type Update struct {
 	Latest  string `json:"latest"`
 	// Level is patch, minor or major: how far Latest is from Current.
 	Level string `json:"level"`
+	// Kinds say how projects declare it: dev, prod, peer, optional, build or
+	// managed, sorted and distinct across every project that declares it.
+	Kinds []string `json:"kinds,omitempty"`
 	// Sites are the declarations up rewrites, each keeping its operator.
 	Sites []protocol.Declaration `json:"sites"`
+	// Preset is true for a package listed in [dependencies] presets: a team's
+	// shared preset, bumped as one change in every project (ADR 0060).
+	Preset bool `json:"preset,omitempty"`
+	// URL is the package's page on its registry (npmjs.com, pypi.org, an Azure
+	// Artifacts feed named in smith.toml...); empty when it cannot be known, for
+	// example a private registry whose web address cannot be derived.
+	URL string `json:"url,omitempty"`
+}
+
+// Group is the heading of the update in the up report: "preset" for a preset
+// package, else its Level.
+func (u Update) Group() string {
+	if u.Preset {
+		return "preset"
+	}
+	return u.Level
+}
+
+// MarkPresets sets Preset on the updates whose package is in presets and puts
+// them first, keeping the order of the others.
+func MarkPresets(updates []Update, presets []string) {
+	for i := range updates {
+		updates[i].Preset = slices.Contains(presets, updates[i].Name)
+	}
+	sort.SliceStable(updates, func(i, j int) bool { return updates[i].Preset && !updates[j].Preset })
 }
 
 // Projects names the declaring projects, "(root)" for the root manifest.
@@ -37,6 +66,10 @@ func (u Update) Projects() []string {
 // does not rewrite are left out.
 func FindUpdates(plugin string, declared protocol.DeclaredResult, latest map[string]string, local map[string]bool) []Update {
 	byName := map[string]*Update{}
+	byDecl := map[string][]protocol.Declaration{}
+	for _, d := range declared.Declarations {
+		byDecl[d.Name] = append(byDecl[d.Name], d)
+	}
 	for _, d := range declared.Declarations {
 		l, known := latest[d.Name]
 		if d.Peer || !d.Rewritable || local[d.Name] || !known {
@@ -59,6 +92,7 @@ func FindUpdates(plugin string, declared protocol.DeclaredResult, latest map[str
 	var out []Update
 	for _, u := range byName {
 		u.Level = level(u.Current, u.Latest)
+		u.Kinds = KindsOf(byDecl[u.Name])
 		out = append(out, *u)
 	}
 	sort.Slice(out, func(i, j int) bool {

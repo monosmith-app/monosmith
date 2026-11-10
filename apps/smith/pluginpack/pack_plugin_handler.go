@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginarchive"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
@@ -68,6 +69,6 @@ use "smith plugin check" for that.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&out, "out", "o", ".", "directory to write the archive to")
+	commandflags.AddOutputFlag(cmd, &out, ".", "directory to write the archive to")
 	return cmd
 }

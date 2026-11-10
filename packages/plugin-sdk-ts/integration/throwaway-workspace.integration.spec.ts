@@ -28,7 +28,7 @@ function run (...args: string[]): { status: number | null, out: string } {
 describe.skipIf(!smith)('a throwaway workspace using the TypeScript example plugins', () => {
   beforeAll(() => {
     root = mkdtempSync(join(tmpdir(), 'sdk-workspace-'))
-    expect(run('new', 'ws').status).toBe(0)
+    expect(run('new', 'ws', '--yes').status).toBe(0)
     workspace = join(root, 'ws')
     appendFileSync(join(workspace, 'smith.toml'), [
       '',
@@ -54,8 +54,8 @@ describe.skipIf(!smith)('a throwaway workspace using the TypeScript example plug
   })
 
   it('creates widget projects with the plugin, and discovers them with their graph edge', () => {
-    expect(run('add', 'lib', 'core', '--lang', 'widget').status).toBe(0)
-    expect(run('add', 'app', 'shop', '--lang', 'widget').status).toBe(0)
+    expect(run('add', 'lib', 'core', '--lang', 'widget', '--yes').status).toBe(0)
+    expect(run('add', 'app', 'shop', '--lang', 'widget', '--yes').status).toBe(0)
     const manifest = join(workspace, 'apps', 'shop', 'widget.json')
     const document = JsonDocument.parse(readFileSync(manifest, 'utf8'))
     document.setJson('uses', ['core'])

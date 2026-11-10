@@ -142,7 +142,7 @@ func executorCommand(w *nxworkspace.Workspace, p *nxworkspace.Project, t nxworks
 		if c := rel("tsConfig"); c != "" {
 			return "tsc -p " + c, nil, true
 		}
-		return "tsc -p tsconfig.lib.json", nil, true
+		return "tsc -p " + existingTsconfig(w, p), nil, true
 	case "@nx/jest:jest":
 		line := "jest"
 		if c := rel("jestConfig"); c != "" {

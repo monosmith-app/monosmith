@@ -4,7 +4,7 @@ One page for every `smith` command and subcommand, for the terminal interface an
 VS Code extension. Each command page says what the command is for, when to use it and when
 not to, its synopsis, every argument and flag (type, default, effect, how flags interact),
 exit codes, the files it reads and writes, the environment variables it uses, worked
-examples whose output was captured from a real run of smith 1.62.0, the common errors with
+examples whose output was captured from a real run of smith, the common errors with
 their remedies, and related commands.
 
 The flag tables are generated from `smith commands --json` by
@@ -22,7 +22,7 @@ Python package). Paths in output are shortened.
   names another folder. Outside a workspace, a command that needs one fails with:
 
   ```text
-  ✖ there is no smith workspace here (no smith.toml in this folder or above it)
+  × there is no smith workspace here (no smith.toml in this folder or above it)
     → smith new <name> creates one
     → in an existing repository, smith adopt --dry-run brings it in
   ```
@@ -34,7 +34,14 @@ Python package). Paths in output are shortened.
   task, a refusal, an invalid flag or a blocker. There are no other codes. Pages list what
   makes a command exit 1.
 - **Errors.** Two shapes: `smith: <message>` for a plain error, and a block that starts with
-  `✖` followed by one or more `→` lines naming the remedy.
+  `×` followed by one or more `→` lines naming the remedy.
+- **smith asks, and never commits unasked.** A command that changes files prints a plan and, in a
+  terminal, asks `Go ahead? [y/N]`; `--yes` answers it and `--dry-run` stops at the plan. A decision
+  smith must not make for you (where to move a project, which files to commit, how to install a tool) is
+  a choice in a terminal. Without a terminal smith refuses and names the flag that answers. The files a
+  command wrote stay uncommitted unless you pass `--commit` (or set `commit_operations = true` under
+  `[workspace]`); [`smith commit`](commit.md) commits them afterwards and [`smith undo`](undo.md) reverts
+  a committed operation.
 - **`--json`.** Commands that report something print a stable JSON document with `--json`, for
   editors and scripts.
 - **Missing arguments.** `smith new` and `smith add` ask for a missing argument in a terminal
@@ -58,9 +65,14 @@ Python package). Paths in output are shortened.
 | [`smith remove`](remove.md) | Remove a project: its directory, its traces in the workspace, its CI. |
 | [`smith kind`](kind.md) | Make a project an app, an internal lib or a published package: the manifest, the folder (with `git mv`), every reference to it, the CI. |
 | [`smith tauri`](tauri.md) | Tauri desktop apps: [`tauri add`](tauri-add.md) wraps an existing Node app, [`tauri icon`](tauri-icon.md) makes its icons. |
+| [`smith environments`](environments.md) | List, add and remove the environments a web app is built for: [`list`](environments-list.md), [`add`](environments-add.md), [`remove`](environments-remove.md). |
 | [`smith config`](config.md) | Read and change settings of `smith.toml`: [`list`](config-list.md), [`get`](config-get.md), [`set`](config-set.md), [`unset`](config-unset.md). |
 | [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices`, `hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer` or `none`), or choose another. |
 | [`smith upgrade`](upgrade.md) | Bring the workspace up to this smith and its recipes. |
+| [`smith divergences`](divergences.md) | List where the workspace differs from smith's defaults, each with why and how to undo it. |
+| [`smith copies`](copies.md) | Count the files that projects keep as exact copies of each other, and the lines they cost. |
+| [`smith try`](try.md) | Try a command that changes files in a temporary copy, check the result, then offer to run it for real. |
+| [`smith bootstrap`](bootstrap.md) | Write the launcher that runs the smith version the workspace pins. |
 
 ## Work
 
@@ -69,6 +81,9 @@ Python package). Paths in output are shortened.
 | [`smith run`](run.md) | Run tasks on projects, in dependency order, from cache when nothing changed. |
 | [`smith build`](build.md), [`smith test`](test.md), [`smith lint`](lint.md), [`smith typecheck`](typecheck.md) | `smith run` with the task fixed. |
 | [`smith dev`](dev.md) | Start several projects together. |
+| [`smith derive`](derive.md) | Write the files that follow from facts and the project graph (tsconfig references, Jest display name), keep their owner in `smith.lock`, and report hand edits. |
+| [`smith undo`](undo.md) | Revert the last operation smith committed (`add`, `remove`, `upgrade`, `derive`, `sync`), with `git revert`. |
+| [`smith commit`](commit.md) | Commit the changes of the work tree as one operation that `smith undo` can revert, after the fact. |
 | [`smith eject`](eject.md) | Copy smith's default configuration of a tool (ruff, mypy, pytest, golangci-lint, rustfmt, phpstan) into the repository, to own it. |
 | [`smith install`](install.md), [`smith uninstall`](uninstall.md) | Add or remove packages in a project, or install the whole workspace. |
 | [`smith up`](up.md) | Show dependencies with newer releases and update the ones you pick. |
@@ -82,7 +97,7 @@ Python package). Paths in output are shortened.
 | [`smith ci`](ci.md) | Run a CI phase, or regenerate the pipelines: [`ci generate`](ci-generate.md), [`ci check`](ci-check.md). |
 | [`smith pipeline`](pipeline.md) | Add a ready-made pipeline: e2e, package-zip, deploy-pages, deploy-azure-function. |
 | [`smith docker`](docker.md) | Docker image commands: [`docker description`](docker-description.md). |
-| [`smith release`](release.md) | Version, publish and tag every package with releasable commits: [`release pub`](release-pub.md). |
+| [`smith release`](release.md) | Version, publish and tag every package with releasable commits: [`release pub`](release-pub.md), [`release assets`](release-assets.md). |
 
 ## Inspect
 
@@ -92,12 +107,17 @@ Python package). Paths in output are shortened.
 | [`smith graph`](graph.md) | Show how projects depend on each other. |
 | [`smith affected`](affected.md) | List the projects affected by changes since a base branch. |
 | [`smith explain`](explain.md) | Show how a project's tasks resolved, and where each setting came from. |
+| [`smith prompt`](prompt.md) | Print a one-line status for a shell prompt, from the last doctor run. |
+| [`smith why`](why.md) | Say who owns a file, what produced it and how to change it. |
+| [`smith report`](report.md) | Write one HTML page: the workspace map, health, derived-file drift, choices and release plan. |
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
-| [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md). |
+| [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md), [`key`](cache-key.md), [`setup`](cache-setup.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
+| [`smith tools`](tools.md), [`smith tools install`](tools-install.md) | The programs the workspace needs on this machine, and the presented choice to install what is missing. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
-| [`smith kinds`](kinds.md), [`smith stacks`](stacks.md) | What `smith add` accepts. |
-| [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`install`](plugin-install.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
+| [`smith kinds`](kinds.md), [`smith stacks`](stacks.md), [`smith choices`](choices.md) | What `smith add` accepts. |
+| [`smith compose`](compose.md) | Search everything a project can be built from, compose the stack and see the plan. |
+| [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`draft`](plugin-draft.md), [`install`](plugin-install.md), [`search`](plugin-search.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
 | [`smith recipe`](recipe.md) | Check recipes: [`check`](recipe-check.md), [`new`](recipe-new.md). |
 | [`smith boundaries`](boundaries.md) | Check which projects depend on which against your rules in `[boundaries]`. |
 | [`smith slices`](slices.md) | Check the vertical-slice layout: [`slices check`](slices-check.md). |
@@ -106,13 +126,13 @@ Python package). Paths in output are shortened.
 | [`smith serve`](serve.md) | Serve the engine to an editor over JSON-RPC (stdio). |
 | [`smith lsp`](lsp.md) | Serve `smith.toml` to an editor over the Language Server Protocol (stdio): diagnostics, completion, hover. |
 | [`smith mcp`](mcp.md) | Serve the workspace to an AI assistant over the Model Context Protocol (stdio); [`mcp install`](mcp-install.md) registers it for Claude Code and VS Code. |
-| [`smith agent`](agent.md) | Start the MonoSmith agent in Claude Code; [`agent install`](agent-install.md) adds it, with its MCP registration, to a workspace. |
+| [`smith agent`](agent.md) | Start the MonoSmith agent in Claude Code; [`agent install`](agent-install.md) adds it, with its MCP registration, to a workspace; [`agent file`](agent-file.md) writes `AGENTS.md` from the workspace's rules. |
 
 ## Shell, interface and editor
 
 | Page | About |
 |---|---|
-| [`smith completion`](completion.md) | The autocompletion script for bash, fish, PowerShell and zsh. |
+| [`smith completion`](completion.md) | Set up, check and remove tab completion for bash, zsh, fish and PowerShell (`install` asks first); prints the scripts. |
 | [The smith terminal interface](tui.md) | The full-screen shell a bare `smith` opens: views, every key, the wizards. |
 | [The MonoSmith VS Code extension](vscode.md) | Every command, view, setting, task field and key. |
 

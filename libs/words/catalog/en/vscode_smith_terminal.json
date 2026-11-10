@@ -1,0 +1,4 @@
+{
+  "vscode.smith-terminal.monosmith-smith-is-not-installed-on": "MonoSmith: smith is not installed on this computer. Install it, then try again.",
+  "vscode.smith-terminal.copy": "Copy \"{installGlobalCommand}\""
+}

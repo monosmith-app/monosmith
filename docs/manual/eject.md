@@ -14,10 +14,20 @@ reads it, replaces the default whole, and smith stops passing a configuration of
 
 Without arguments it only lists what could be ejected, so it is safe to run to see what smith owns.
 
+## Files that are replaced
+
+A file that exists with other content is never replaced silently. Without `--force` smith refuses
+and names the file. With `--force` it prints a diff of what is lost, then replaces it. `--dry-run`
+prints the same diffs and copies nothing.
+
+## Asking first
+
+`smith eject <tool>` shows the file it copies. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. The listing (no tool named) asks nothing.
+
 ## Synopsis
 
 ```sh
-smith eject [tool...] [--all] [--force]
+smith eject [tool...] [--all] [--force] [--dry-run]
 ```
 
 ## Arguments and flags
@@ -34,7 +44,9 @@ Usage: `smith eject [tool...] [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--all` | boolean | off | eject every default that applies |
-| `--force` | boolean | off | replace a file that exists already |
+| `--dry-run` | boolean | off | show what would be copied and what would be replaced; change nothing |
+| `--force` | boolean | off | replace a file that exists already (the diff of what is lost is printed first) |
+| `-y, --yes` | boolean | off | do not ask; without a terminal the files are copied only with --yes |
 
 <!-- smith:end eject -->
 
@@ -102,9 +114,9 @@ Copied the default of mypy to mypy.ini: it is yours now, and smith passes no con
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ smith has no default for <name>` | The name is not one of the tools in the table above. |
-| `✖ smith has no default for <tool> to copy: the repository already configures it, or no project uses it` | Nothing to eject: the file is yours already, or no project runs the tool. |
-| `✖ <file> exists already and differs from smith's default` | Edit the file, or pass `--force` to replace it with the default. |
+| `× smith has no default for <name>` | The name is not one of the tools in the table above. |
+| `× smith has no default for <tool> to copy: the repository already configures it, or no project uses it` | Nothing to eject: the file is yours already, or no project runs the tool. |
+| `× <file> exists already and differs from smith's default` | Edit the file, or pass `--force` to replace it with the default. |
 
 ## Related
 

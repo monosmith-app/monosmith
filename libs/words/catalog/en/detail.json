@@ -1,0 +1,10 @@
+{
+  "detail.nothing": " Nothing selected.",
+  "detail.actions": "Actions",
+  "detail.folded": "  {count}, e shows all",
+  "detail.fold": "  hidden, e shows it",
+  "detail.hidden": "  +{count} more (e shows all)",
+  "detail.fewer": "  (e shows fewer)",
+  "detail.scroll.up": " ↑ more (PgUp, Ctrl+U)",
+  "detail.scroll.down": " ↓ more (PgDn, Ctrl+D)"
+}

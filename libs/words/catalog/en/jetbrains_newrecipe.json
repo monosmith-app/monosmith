@@ -1,0 +1,18 @@
+{
+  "jetbrains.newrecipe.monosmith-new-recipe": "MonoSmith: new recipe",
+  "jetbrains.newrecipe.no-recipe-was-written": "No recipe was written. {failureTextMapper}",
+  "jetbrains.newrecipe.smith-printed-its-levels-in": "smith printed its levels in a form this plugin does not read. Update the plugin, or run smith recipe new in a terminal.",
+  "jetbrains.newrecipe.smith-knows-no-plugin-a": "smith knows no plugin a recipe can fix. Update smith, or run smith recipe new in a terminal.",
+  "jetbrains.newrecipe.the-name-of-the-recipe": "The name of the recipe (for example team):",
+  "jetbrains.newrecipe.the-first-version-of-the": "The first version of the recipe (empty takes 0.1.0):",
+  "jetbrains.newrecipe.the-recipe-this-one-extends": "The recipe this one extends (empty for none):",
+  "jetbrains.newrecipe.tick-the-plugins-the-recipe": "Tick the plugins the recipe fixes at the {level} level. Tick none to leave it to the users of the recipe.",
+  "jetbrains.newrecipe.leave-it-to-the-users": "Leave it to the users of the recipe",
+  "jetbrains.newrecipe.the-recipe-fixes-no-plugin": "The recipe fixes no plugin at the {level} level.",
+  "jetbrains.newrecipe.pick-the-plugin-the-recipe": "Pick the plugin the recipe fixes at the {level} level.",
+  "jetbrains.newrecipe.smith-runs-this-command-and": "smith runs this command and writes {recipeLevelsMapper} in the workspace folder. Nothing is committed.",
+  "jetbrains.newrecipe.write-the-recipe": "Write the recipe",
+  "jetbrains.newrecipe.is-written": "{recipeLevelsMapper} is written.",
+  "jetbrains.newrecipe.use-lowercase-words-joined-by": "Use lowercase words joined by dashes, for example \"team\" or \"team-node\". The name is the name of the recipe's releases.",
+  "jetbrains.newrecipe.use-major-minor-patch-for": "Use major.minor.patch, for example 0.1.0."
+}

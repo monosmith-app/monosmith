@@ -22,6 +22,17 @@ var (
 // versions and tags the project and creates its GitHub Release only.
 const NoRegistry = "none"
 
+// GitHubReleaseRegistry is the registry name for "attach the package file to
+// the GitHub Release": the release packs each package and publishes it to no
+// registry, for a repository that must not publish to a public registry.
+const GitHubReleaseRegistry = protocol.RegistryGitHubRelease
+
+// isRegistryKeyword reports whether name is one of the two values that name
+// no [registries.<name>] entry.
+func isRegistryKeyword(name string) bool {
+	return name == NoRegistry || name == GitHubReleaseRegistry
+}
+
 // validateRegistries checks [registries] and every name that refers to one,
 // and fills the PyPI upload URL's default.
 func validateRegistries(cfg *Config) error {
@@ -38,6 +49,9 @@ func validateRegistries(cfg *Config) error {
 		}
 		if name == NoRegistry {
 			return fmt.Errorf("%s: %q is reserved: registry = %q publishes to no registry", at, NoRegistry, NoRegistry)
+		}
+		if name == GitHubReleaseRegistry {
+			return fmt.Errorf("%s: %q is reserved: registry = %q attaches the package file to the GitHub Release", at, GitHubReleaseRegistry, GitHubReleaseRegistry)
 		}
 		switch r.Auth {
 		case "azure-artifacts", "github-packages":
@@ -79,13 +93,19 @@ func validateRegistries(cfg *Config) error {
 		if name == "" || name == NoRegistry {
 			return nil
 		}
+		if name == GitHubReleaseRegistry {
+			if !cfg.Release.GitHubReleases {
+				return fmt.Errorf("%s: %s registry = %q attaches package files to GitHub Releases: set github_releases = true under [release]", FileName, where, name)
+			}
+			return nil
+		}
 		if _, ok := cfg.Registries[name]; !ok {
 			return fmt.Errorf("%s: %s registry = %q names no [registries.%s]", FileName, where, name, name)
 		}
 		return nil
 	}
-	if cfg.Workspace.Registry == NoRegistry {
-		return fmt.Errorf("%s: [workspace] registry = %q: installs always come from somewhere; %q is for [release] and project settings", FileName, NoRegistry, NoRegistry)
+	if isRegistryKeyword(cfg.Workspace.Registry) {
+		return fmt.Errorf("%s: [workspace] registry = %q: installs always come from somewhere; %q is for [release] and project settings", FileName, cfg.Workspace.Registry, cfg.Workspace.Registry)
 	}
 	if err := known("[workspace]", cfg.Workspace.Registry); err != nil {
 		return err

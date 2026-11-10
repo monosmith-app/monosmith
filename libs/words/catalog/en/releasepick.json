@@ -1,0 +1,17 @@
+{
+  "releasepick.button.go": "Continue",
+  "releasepick.button.stop": "Cancel",
+  "releasepick.title": "Release: hold back or bump",
+  "releasepick.intro": "Enter releases the plan as it is. To change it first: Space holds a package back (it stays at its version), B changes its bump.",
+  "releasepick.command.label": "The command that will run (it asks once more before it runs):",
+  "releasepick.version.new": "new",
+  "releasepick.row.held": "{box} {name} {from}  held back: it stays at {from}",
+  "releasepick.row.fixed": "{box} {name} {from} → {to}  (no bump: {because})",
+  "releasepick.row.dependency": "{box} {name} {from}  held back: a package it depends on is held back",
+  "releasepick.bump.commits": "as the commits ask",
+  "releasepick.row.bump": "{box} {name} {from} → {to}  bump: ‹ {choice} ›",
+  "releasepick.fixed.channel": "release channel",
+  "releasepick.fixed.forced": "a version() commit sets it",
+  "releasepick.fixed.first": "first release",
+  "releasepick.shown": "{shown} of {total} packages shown (Up and Down show the rest)"
+}

@@ -1,4 +1,4 @@
-# The widget team's recipe: which plugin fills each level of a widget project,
+# The widget team's recipe: which plugin fills each role of a widget project,
 # and with what settings. A recipe is data, it runs nothing.
 #
 # Check it for every answer:  smith recipe check widget-team.recipe.toml --all

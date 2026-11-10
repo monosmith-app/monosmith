@@ -79,5 +79,14 @@ func Cut(s string, w int) string {
 	return ansi.Truncate(Printable(s), w, "")
 }
 
+// CutEllipsis shortens s to at most w cells, ending it in an ellipsis when it
+// had to be cut, and does not pad it.
+func CutEllipsis(s string, w int) string {
+	if w <= 0 {
+		return ""
+	}
+	return ansi.Truncate(Printable(s), w, "…")
+}
+
 // Strip removes the colour codes from s.
 func Strip(s string) string { return ansi.Strip(s) }

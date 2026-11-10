@@ -31,7 +31,7 @@ already has a `smith.toml` (use [`smith upgrade`](upgrade.md)).
 ## Synopsis
 
 ```sh
-smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--skip-install] [--skip-verify] [--json] [--verbose]
+smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--commit] [--skip-install] [--skip-verify] [--json] [--verbose]
 ```
 
 ## Arguments and flags
@@ -46,38 +46,73 @@ Usage: `smith convert [flags]`
 | `--allow-dirty` | boolean | off | convert even with uncommitted changes (not with --level full) |
 | `--build <build>` | `smith` or `keep` | `smith` | full level: build with smith's stack build (smith) or keep the current build setup (keep) |
 | `--ci <ci>` | `smith` or `keep` | `smith` | full level: the pipeline smith generates (smith) or keep the current one (keep) |
+| `--commit` | boolean | off | commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | report the plan without changing anything |
-| `--json` | boolean | off | print the plan as JSON |
+| `--json` | boolean | off | print the plan as JSON (with --questions, the questions) |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) |
 | `--lint <lint>` | `smith` or `keep` | `smith` when the ESLint config imports a shared config smith replaces, else `keep` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) |
-| `--skip-install` | boolean | off | do not run npm install afterwards |
+| `--no-install` | boolean | off | do not run npm install afterwards (also --skip-install) |
+| `--questions` | boolean | off | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--skip-verify` | boolean | off | full level: install, but do not build, test, lint and run doctor afterwards |
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
 | `--test <test>` | `jest`, `vitest` or `keep` | the runner the workspace uses, else `keep` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep |
 | `--verbose` | boolean | off | name every project a finding applies to, not just a few |
-| `--yes` | boolean | off | apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything) |
+| `-y, --yes` | boolean | off | apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything) |
 
 <!-- smith:end convert -->
 
 Interactions:
 
 - Run it with `--dry-run` first. An Nx workspace's packages must be installed, because Nx
-  itself describes the projects: in a terminal smith asks "Install them now?" and does it
-  (about two minutes), `--yes` installs without asking, and elsewhere it stops and says so.
+  itself describes the projects. A dry run never installs and never asks, with or without
+  `--yes`: it stops and says "to read the dependency graph smith would run `yarn install
+  --immutable` (it runs no script of the repository)". A real run in a terminal asks "Install
+  them now?" with the same command in the question and does it (about two minutes), `--yes`
+  installs without asking, and elsewhere it stops and says so. The install never runs a
+  lifecycle script of the repository: npm, pnpm and Yarn Classic get `--ignore-scripts`, Yarn
+  Berry gets `YARN_ENABLE_SCRIPTS=false`, and the output names the exact command before it
+  runs. `smith adopt` installs with the same command. A pnpm or yarn workspace is installed
+  with its own tool (`pnpm install`, `yarn install`), because npm cannot read its `catalog:`
+  and `workspace:` ranges: install it that way first, or let `--yes` do it. The install can leave `.nx/` and `package-lock.json`
+  untracked; the dirty-tree check ignores both.
   A Turborepo workspace is read from its files, so nothing needs to be installed.
+- A long read prints its stages (asking Nx to describe the projects, planning, checking
+  the result). The dry run also applies the plan to a copy and checks that the converted
+  workspace loads; a failure is a blocker in the report. Cycles of devDependencies are
+  allowed and `smith doctor` reports them. When applying fails after it started, the
+  files it touched are put back and the message says so.
+- Nothing is committed unless `--commit` is given: the conversion is then one commit
+  (`chore: convert to smith`) that `smith undo` reverts.
 - `--lint`, `--test`, `--build` and `--ci` are the choices behind `--level full`. In a
   terminal the ones you do not give are asked; elsewhere the plan is printed with
   the default for each (`lint: keep   tests: keep   build: smith   CI: smith`) and the
   output ends with the exact command that applies them. Giving any of them with
   the conservative level is an error (`--lint only apply with --level full, ...`).
+- `smith convert --questions --json` prints the questions convert asks and changes nothing, so an editor
+  draws the same choices without a list of its own. It has the shape of `smith new --questions --json`:
+  for each question its `key`, `prompt`, `default`, the `flag` that answers it, `when` (the four choices
+  apply only when `level` is `full`) and `options`, each with a `value` and a `label`; the default is the
+  first. It reads no folder, so each default is the one smith suggests when it knows nothing about the
+  workspace; the plan of `--level full --dry-run` shows what the workspace's own tooling suggests.
 - `--build smith` (the default) also moves every project that compiles with `tsc` to the
   workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
   passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own
   group (nothing is deleted, files are edited) and is skipped with `--build keep`.
+- `--level full` moves a tsc project only when doctor would: a package that another project imports by
+  name, whose `main`, `types` or `exports` lead into the old folder, stays where it is, and the plan
+  says why (a note of the review); so does a published package that needs a file outside the build
+  folder.
+- Without `--level full`, convert keeps the build scripts as they are, so a package may still build
+  into its own `dist/`. `smith doctor` reports each such project (`kit compiles into
+  dist/packages/kit`) and offers the move per project, with a preview and a "leave it as it is"
+  answer; see [doctor](doctor.md#a-build-that-writes-outside-dist). `smith adopt` keeps scripts
+  the same way.
 - `--allow-dirty` converts with uncommitted changes. It is refused with
   `--level full`, which needs a clean git tree so that git can undo everything.
 - `--strict` turns any item that needs manual work or is unsupported into a failure.
-- `--yes` applies without asking; a terminal otherwise asks before changing anything.
+- `--yes` applies without asking. Without a terminal and without `--yes` convert refuses. In a
+  terminal it lists the files it deletes and says when a pnpm or yarn workspace switches to npm,
+  then offers: apply, show the report and stop, or cancel.
 - `--skip-install` skips the `npm install` afterwards. `--skip-verify` (full level)
   installs but does not build, test, lint and run `smith doctor` afterwards.
 - `--json` prints the plan: `root`, `source`, `projects`, `findings` (each with a
@@ -105,12 +140,12 @@ conversion is saved to `.smith/convert-report.txt`. Runs `npm install` unless
 
 When two or more projects of one language and kind (every Node library, say)
 come out with the same settings for a task, `smith.toml` states them once, as a
-`[[task_groups]]` entry that selects them (`select = ["lang:node", "kind:lib"]`),
+`[[groups]]` entry that selects them (`select = ["lang:node", "kind:lib"]`),
 instead of once per project. A project whose settings differ keeps its own
 `[projects.<name>.tasks.<task>]`, completed with the group's other fields, so
 every task still runs as before. The report lists each group it wrote. A group is only
 written when no project it selects would start taking settings it did not have.
-See [Task groups](../reference/configuration.md#task-groups). A workspace
+See [Groups](../reference/configuration.md#groups). A workspace
 converted earlier can fold its repeated settings with `smith doctor --fix`.
 
 ## Examples
@@ -213,7 +248,7 @@ smith: the conversion is blocked; see the report
 | `convert cancelled: nothing changed` | You answered anything but `y` to the confirmation prompt. |
 | `--test "mocha" is not one of jest, vitest, keep` | `--test` takes `jest`, `vitest` or `keep`. |
 | `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | A check after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
-| `the build writes to dist inside the package ...` (a finding, not an error) | Point the tool at the workspace's `dist/<project dir>` and set `outputs` to match, or `smith doctor` will fail the build. |
+| `the build writes to dist inside the package ...` (a finding, not an error) | Run `smith doctor --fix`: it offers to move each project's build into `dist/<project dir>` (scripts, tsconfig, `main`, `types`, `exports`, and the `outputs` in `smith.toml`) and shows every changed line first. Or do it by hand. |
 
 ## Related
 

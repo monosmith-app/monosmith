@@ -2,6 +2,7 @@ package agentfiles
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -16,11 +17,13 @@ func Finding(root string) protocol.Finding {
 	files, err := Plan(Options{Root: root, Claude: claude, VSCode: vscode, Agent: true})
 	if err != nil {
 		detail := err.Error()
+		problem := "the agent files cannot be planned: " + err.Error()
 		remedy := "fix the JSON by hand, or write the smith entry yourself (see docs/manual/agent.md)"
 		if errors.Is(err, ErrNotJSON) {
 			detail = "an MCP file is not plain JSON (comments?): " + err.Error()
+			problem = "an MCP file is not plain JSON"
 		}
-		return protocol.Finding{Check: check, Warning: true, Detail: detail, Remedy: remedy}
+		return protocol.Finding{Check: check, Warning: true, Area: "config", Problem: problem, Detail: detail, Remedy: remedy}
 	}
 	var todo []File
 	var names []string
@@ -31,16 +34,17 @@ func Finding(root string) protocol.Finding {
 		}
 	}
 	if len(todo) == 0 {
-		return protocol.Finding{Check: check, OK: true, Warning: true}
+		return protocol.Finding{Check: check, OK: true, Warning: true, Area: "config"}
 	}
 	fix := &protocol.Fix{Description: "write the MonoSmith agent files (smith agent install)", Safe: true}
 	for _, f := range todo {
 		fix.Files = append(fix.Files, protocol.FileEdit{Path: f.Path, Content: f.New})
 	}
 	return protocol.Finding{
-		Check: check, Warning: true, Fix: fix,
-		Detail: strings.Join(names, "; "),
-		Remedy: "run `smith agent install`, or set `enabled = false` under [agent] in smith.toml if you do not want them",
+		Check: check, Warning: true, Area: "config", Fix: fix,
+		Problem: strconv.Itoa(len(todo)) + " agent file(s) are missing or out of date",
+		Detail:  strings.Join(names, "; "),
+		Remedy:  "run `smith agent install`, or set `enabled = false` under [agent] in smith.toml if you do not want them",
 	}
 }
 

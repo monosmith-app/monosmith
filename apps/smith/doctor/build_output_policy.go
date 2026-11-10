@@ -6,14 +6,17 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // OutsideBuildDir lists the task outputs that fall outside the workspace's
 // build directory, each with where the output was set: every build goes to
-// dist/, so nothing is written into a source tree.
-func OutsideBuildDir(projects []*projectgraph.Project) []string {
+// dist/, so nothing is written into a source tree. A path in allowed
+// ([workspace] allowed_outputs, workspace-relative) and anything under it is
+// accepted: a folder a tool needs the output in, such as a go:embed folder.
+func OutsideBuildDir(projects []*projectgraph.Project, allowed ...string) []string {
 	var out []string
 	for _, p := range projects {
 		names := make([]string, 0, len(p.Tasks))
@@ -28,7 +31,7 @@ func OutsideBuildDir(projects []*projectgraph.Project) []string {
 				// A package whose smith.toml declares the dist/ beside its
 				// package.json (main and types point there) has chosen it.
 				ownDist := resolved == path.Join(p.Root, "dist") || strings.HasPrefix(resolved, path.Join(p.Root, "dist")+"/")
-				if protocol.InBuildDir(resolved) || (ownDist && strings.HasPrefix(from, "smith.toml")) {
+				if buildoutputs.InsideAny(resolved, allowed) || protocol.InBuildDir(resolved) || (ownDist && (strings.HasPrefix(from, "smith.toml") || keepsBuildsInProject(p))) {
 					continue
 				}
 				if from == "" {
@@ -39,4 +42,11 @@ func OutsideBuildDir(projects []*projectgraph.Project) []string {
 		}
 	}
 	return out
+}
+
+// keepsBuildsInProject reports whether a web app built per environment was
+// given dist/<env> inside its own folder when it was added (ADR 0081).
+func keepsBuildsInProject(p *projectgraph.Project) bool {
+	v, _ := p.Settings["vite"]["output"].(string)
+	return v == "project"
 }

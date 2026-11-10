@@ -57,6 +57,19 @@ type InitializeResult struct {
 	// as an app, lists them, so the host offers and the conformance suite
 	// asks for just those.
 	Kinds []ProjectKind `json:"kinds,omitempty"`
+	// Follows are the shape keys (see Project.Shape) the plugin applies when
+	// it generates a project with GenerateParams.Shape. Where siblings split
+	// on a key, the host asks the person only for a key that a plugin of the
+	// stack follows. Absent means the plugin follows none.
+	Follows []string `json:"follows,omitempty"`
+	// Choices are the options on an axis (framework, test, style) the plugin
+	// owns. The host lists them (smith choices) and checks a selection of them
+	// (smith add --with). Absent means the plugin owns none.
+	Choices []Choice `json:"choices,omitempty"`
+	// Tools are the programs the plugin needs on the person's machine. The
+	// host detects them and, when one is missing, presents the ways to get it
+	// (smith tools). Absent means the plugin declares none.
+	Tools []ToolNeed `json:"tools,omitempty"`
 }
 
 // Scaffolds says whether the plugin can scaffold a project of the kind.
@@ -120,6 +133,12 @@ type Capabilities struct {
 	Published bool `json:"published,omitempty"`
 	// Dependencies installs and uninstalls packages in its projects.
 	Dependencies bool `json:"dependencies,omitempty"`
+	// Link makes a project depend on a library of the same workspace in the
+	// ecosystem's own form (a workspace dependency, a path dependency, a
+	// project reference), and takes it out again. A plugin without it is
+	// refused by the host with one sentence that tells the user to add the
+	// dependency by hand.
+	Link bool `json:"link,omitempty"`
 	// Declarations lists and rewrites declared dependency specs (sync, up).
 	Declarations bool `json:"declarations,omitempty"`
 	// Latest reports the newest releases of dependencies and pinned tools.
@@ -131,6 +150,30 @@ type Capabilities struct {
 	Cancel bool `json:"cancel,omitempty"`
 	// Components lists a project's dependencies for its SBOM.
 	Components bool `json:"components,omitempty"`
+	// Derive says which files the plugin derives from facts and the project
+	// graph (smith derive).
+	Derive bool `json:"derive,omitempty"`
+	// APISurface lists the names a project exports, at a git revision, so a
+	// release can warn when the commits ask for a smaller bump than the API
+	// change needs.
+	APISurface bool `json:"apiSurface,omitempty"`
+	// Channels says a prerelease version the plugin publishes never takes the
+	// place of the stable one: the plugin publishes under PublishParams.Tag, a
+	// release channel's name, without moving the registry's stable pointer
+	// (npm's latest), or its registry orders a prerelease below the release
+	// (PyPI, NuGet) and needs no tag. A host does not publish a package of a
+	// release channel with a plugin that lacks it.
+	Channels bool `json:"channels,omitempty"`
+	// Packs says publish honours PublishParams.PackDir: it writes the
+	// package file and publishes nowhere (registry = "github-release"). A host
+	// never calls publish with the setting on a plugin that lacks it, since the
+	// plugin would publish to the public registry.
+	Packs bool `json:"packs,omitempty"`
+	// Declared says the plugin describes the projects smith.toml declares for
+	// its language (DiscoverParams.declared): folders with no manifest of their
+	// own. A plugin without it finds a project by its manifest only, and the host
+	// refuses a declaration for its language with a message that says so.
+	Declared bool `json:"declared,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

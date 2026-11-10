@@ -44,7 +44,7 @@ missing. See [Installing](../getting-started/installing.md).
 | You have | Run | What happens |
 |---|---|---|
 | nothing | `smith new acme` | writes `smith.toml`, the CI pipeline, a dev container, runs `git init` and commits |
-| a repository with npm workspaces, Go modules or Python projects | `smith adopt --dry-run`, then `smith adopt --init` | the dry run lists the projects smith would see and what blocks; `--init` writes `smith.toml` and the pipelines and commits |
+| a repository with npm workspaces, Go modules or Python projects | `smith adopt --dry-run`, then `smith adopt --init` | the dry run lists the projects smith would see and what blocks; `--init` writes `smith.toml` and the pipelines, and commits only with `--commit` |
 | an Nx or Turborepo workspace, or one made by mnci | `smith convert --dry-run`, then `smith convert` | see [Migration stories](migration-stories.md) |
 
 ## 3. Add projects
@@ -62,8 +62,11 @@ A project has one of three **kinds**, which decides what release does with it:
 project comes with one worked example that already passes lint, type-check, test
 and build, and adding it regenerates the CI pipeline.
 
-To use one project from another you import it; there is no manifest to edit.
-smith reads the imports to learn the graph (`smith graph`, or
+In a terminal, `smith add` starts from "What are you building?" (a website, an API, a function
+app, a desktop app, a library or a package) instead of from settings.
+To use one library from another project, run `smith install -p web workspace:core`: smith writes
+the dependency in the form of the language and downloads nothing.
+smith reads the dependencies and the imports to learn the graph (`smith graph`, or
 `smith graph --format tui` to browse it). Ask the graph what a change reaches with
 `smith graph --blast-radius <project or file>`, and what a branch did to it with
 `smith graph --diff main`. Shared schemas (OpenAPI, protobuf, GraphQL, AsyncAPI) link
@@ -77,13 +80,13 @@ smith build
 ```
 
 ```text
-core:build ✔ 298ms
-api:build ✔ 908ms
-✔ 2/2 tasks succeeded (0 from cache) in 980ms
+core:build ✓ 298ms
+api:build ✓ 908ms
+✓ 2/2 tasks succeeded (0 from cache) in 980ms
 
-core:build ✔ from cache
-api:build ✔ from cache
-✔ 2/2 tasks succeeded (2 from cache, 1.206s saved) in 5ms
+core:build ✓ from cache
+api:build ✓ from cache
+✓ 2/2 tasks succeeded (2 from cache, 1.206s saved) in 5ms
 ```
 
 The second run replays the stored output and log. The key behind each result is
@@ -119,12 +122,12 @@ smith doctor
 ```
 
 ```text
-✔ release tags are not behind the registry
-✔ every production dependency has one version across the workspace
-✔ go.work lists each project (2 projects)
-✔ Go is at least 1.27 (go.work)
+✓ release tags are not behind the registry
+✓ every production dependency has one version across the workspace
+✓ go.work lists each project (2 projects)
+✓ Go is at least 1.27 (go.work)
 
-19 passed, 0 failed, 0 warning(s)
+19 passed, 0 failed, 0 warnings
 ```
 
 A failing check prints a `→` line with the remedy. `smith doctor --fix` shows each
@@ -179,8 +182,8 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 
 ## 10. Plugins, stacks and recipes
 
-- A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 24 built-in
-  plugins (eleven language plugins and one for recipes, and twelve add-ons for toolchains,
+- A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 37 built-in
+  plugins (eighteen language plugins, among them one for recipes and one for projects with no language, and nineteen add-ons for toolchains,
   scaffolds, structure rules and deploy targets) ship inside the binary; `smith plugin list`
   shows them. You can write a plugin in any language (SDKs exist for Go, TypeScript, Python and C#) and
   check it with `smith plugin check`. A plugin a repository names does not start until you
@@ -193,6 +196,29 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 
 See [Plugins](../reference/plugins.md), [Stacks](../reference/stacks.md) and
 [Recipes](../reference/recipes.md).
+
+## 11. What smith 2.0 adds
+
+The commands in steps 1 to 10 were run on 1.62.0. These features are new on the 2.0 line
+(`smith-v2` branch); each is described in the [architecture notes](../architecture/derived-files-facts-and-siblings.md).
+
+- **Derived files.** With `[derive] enabled = true`, `smith derive` writes the files that follow from the
+  project graph and shared facts (for a Node workspace a `tsconfig.json`, the `references` of a
+  `tsconfig.lib.json`, the `displayName` of a Jest config that has markers). `smith.lock` records who owns each file, so smith never
+  overwrites a hand edit: it shows a diff and asks you to replace, adopt or eject. `smith ci verify` runs
+  `smith derive --check`.
+- **New projects follow their siblings.** `smith add` reads how the existing projects of the same kind and
+  language are made (test runner, build tool, tsconfig files) and copies what most of them agree on.
+  `smith add --with react,vitest,bootstrap` picks frameworks, tests and styles from `smith choices`.
+- **A plan before a write, and undo.** `add`, `remove`, `upgrade` and `derive` print what they create, change
+  and remove. smith never commits unasked. With `--commit` (or `[workspace] commit_operations = true`) each is
+  one commit, `smith commit` commits the last one afterwards, and `smith undo` reverts it.
+- **Understand the workspace.** `smith why <file>` says who owns a file and how to change it; `smith report` writes
+  one HTML page (graph, health, drift, choices, release plan); `smith agent file` writes `AGENTS.md`.
+- **Release channels and checks.** `[[release.channels]]` gives a branch its own line of prerelease versions
+  (`2.0.0-beta.1`) published without moving the stable version; `smith release --rehearse` checks the registries
+  before a first release; the release warns when the commits ask for a smaller version bump than the change to a
+  Node package's public API needs.
 
 ## What to read next
 

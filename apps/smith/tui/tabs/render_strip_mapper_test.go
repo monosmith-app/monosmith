@@ -4,17 +4,24 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/muesli/termenv"
 )
+
+func init() {
+	// Draw escape codes even though the tests have no terminal, so the states can be told apart.
+	lipgloss.SetColorProfile(termenv.TrueColor)
+}
 
 func sample() []Tab {
 	return []Tab{
-		{ID: "projects", Label: "Projects", Short: "Proj"},
-		{ID: "run", Label: "Run", Reserve: 3},
-		{ID: "doctor", Label: "Doctor", Reserve: 3},
-		{ID: "release", Label: "Release", Short: "Rel"},
-		{ID: "settings", Label: "Settings", Short: "Sett"},
+		{ID: "projects", Label: "Projects", Short: "Proj", Key: "2"},
+		{ID: "run", Label: "Run", Key: "3", Reserve: 3},
+		{ID: "doctor", Label: "Doctor", Key: "4", Reserve: 3},
+		{ID: "release", Label: "Release", Short: "Rel", Key: "6"},
+		{ID: "settings", Label: "Settings", Short: "Sett", Key: "7"},
 	}
 }
 
@@ -26,69 +33,37 @@ func plain(lines []string) []string {
 	return out
 }
 
-func props(width int, tall bool, active string) Props {
-	return Props{Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), Tabs: sample(), Active: active, Width: width, Tall: tall,
+func props(width int, active string) Props {
+	return Props{Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), Tabs: sample(), Active: active, Width: width,
 		ShortenOrder: []string{"settings", "release", "projects"}}
 }
 
-func TestTheTallStripOpensTheActiveTabIntoThePane(t *testing.T) {
-	s := Render(props(60, true, "run"))
-	lines := plain(s.Lines)
-	if len(lines) != 3 {
-		t.Fatalf("a tall strip has three rows, got %d", len(lines))
-	}
-	for i, l := range lines {
-		if pane.Width(l) != 60 {
-			t.Fatalf("row %d is %d cells wide: %q", i, pane.Width(l), l)
-		}
-	}
-	if !strings.HasPrefix(lines[0], "╭──────────╮╭─────╮") || !strings.Contains(lines[1], "│ Projects ││ Run │") {
-		t.Fatalf("the boxes are wrong:\n%s", strings.Join(lines, "\n"))
-	}
-	// Under Projects the pane's edge is closed; under Run it is open.
-	if !strings.HasPrefix(lines[2], "├──────────┴┘     └") {
-		t.Fatalf("the active tab should be open into the pane:\n%s", strings.Join(lines, "\n"))
-	}
-	if !strings.HasSuffix(lines[2], "╮") {
-		t.Fatalf("the edge ends in the pane's corner: %q", lines[2])
-	}
-}
-
-func TestTheFirstTabOpensIntoTheLeftEdge(t *testing.T) {
-	lines := plain(Render(props(60, true, "projects")).Lines)
-	if !strings.HasPrefix(lines[2], "│          └") {
-		t.Fatalf("the first tab, active, joins the pane's left edge:\n%s", strings.Join(lines, "\n"))
-	}
-}
-
-func TestTheFlatStripIsOneRowOfNames(t *testing.T) {
-	s := Render(props(80, false, "run"))
+func TestTheStripIsOneRowOfButtonsWithTheirKeysAndABlankBetweenThem(t *testing.T) {
+	s := Render(props(90, "run"))
 	if len(s.Lines) != 1 {
 		t.Fatalf("rows: %d", len(s.Lines))
 	}
 	line := plain(s.Lines)[0]
-	if pane.Width(line) != 80 || !strings.Contains(line, " Projects   Run   Doctor   Release   Settings ") {
+	if pane.Width(line) != 90 || !strings.Contains(line, "[Projects (2)] [Run (3)] [Doctor (4)] [Release (6)] [Settings (7)]") {
 		t.Fatalf("%q", line)
 	}
 }
 
 func TestEverySpanFindsItsTab(t *testing.T) {
-	for _, tall := range []bool{true, false} {
-		s := Render(props(80, tall, "doctor"))
-		for _, sp := range s.Spans {
-			if got := s.At(sp.X0); got != sp.ID {
-				t.Errorf("tall=%v: column %d is %q, want %q", tall, sp.X0, got, sp.ID)
-			}
+	s := Render(props(90, "doctor"))
+	for _, sp := range s.Spans {
+		if got := s.At(sp.X0); got != sp.ID {
+			t.Errorf("column %d is %q, want %q", sp.X0, got, sp.ID)
 		}
-		if s.At(79) != "" {
-			t.Errorf("tall=%v: the far end belongs to no tab", tall)
-		}
+	}
+	if s.At(89) != "" {
+		t.Errorf("the far end belongs to no tab")
 	}
 }
 
 func TestNamesAreShortenedBeforeTheStripScrolls(t *testing.T) {
 	// Wide enough for the short names, not for the full ones.
-	s := Render(props(52, true, "run"))
+	s := Render(props(68, "run"))
 	text := strings.Join(plain(s.Lines), "\n")
 	if strings.Contains(text, "‹") || strings.Contains(text, "›") {
 		t.Fatalf("shortening is enough, no scrolling:\n%s", text)
@@ -102,47 +77,47 @@ func TestNamesAreShortenedBeforeTheStripScrolls(t *testing.T) {
 }
 
 func TestTheActiveTabIsAlwaysInViewWhenTheStripScrolls(t *testing.T) {
-	for _, tall := range []bool{true, false} {
-		for w := 24; w <= 90; w++ {
-			for _, a := range sample() {
-				s := Render(props(w, tall, a.ID))
-				found := false
-				for _, sp := range s.Spans {
-					found = found || sp.ID == a.ID
+	for w := 34; w <= 110; w++ {
+		for _, a := range sample() {
+			s := Render(props(w, a.ID))
+			found := false
+			for _, sp := range s.Spans {
+				found = found || sp.ID == a.ID
+			}
+			for _, l := range s.Lines {
+				if pane.Width(l) != w {
+					t.Fatalf("width %d: a row is %d cells", w, pane.Width(l))
 				}
-				for _, l := range s.Lines {
-					if pane.Width(l) != w {
-						t.Fatalf("tall=%v width %d: a row is %d cells", tall, w, pane.Width(l))
-					}
-				}
-				if !found {
-					t.Fatalf("tall=%v width %d: %s is not in view:\n%s", tall, w, a.ID, strings.Join(plain(s.Lines), "\n"))
-				}
+			}
+			if !found {
+				t.Fatalf("width %d: %s is not in view:\n%s", w, a.ID, strings.Join(plain(s.Lines), "\n"))
 			}
 		}
 	}
 }
 
 func TestMarkersShowWhatIsHiddenAndAreClickable(t *testing.T) {
-	s := Render(props(28, true, "doctor"))
+	s := Render(props(40, "doctor"))
 	text := strings.Join(plain(s.Lines), "\n")
 	if !strings.Contains(text, "‹") || !strings.Contains(text, "›") {
 		t.Fatalf("tabs hidden on both sides need both markers:\n%s", text)
 	}
-	if s.At(0) != Prev {
-		t.Fatalf("the left marker is clickable: %q", s.At(0))
+	for _, sp := range s.Spans {
+		if sp.ID == Prev && s.At(sp.X0) != Prev {
+			t.Fatalf("the left marker is clickable: %q", s.At(sp.X0))
+		}
 	}
 }
 
-func TestABadgeSitsInsideTheTabAndNeverChangesTheNamesSpelledOut(t *testing.T) {
-	without := props(52, true, "run")
+func TestABadgeSitsAfterTheButtonAndNeverChangesTheNamesSpelledOut(t *testing.T) {
+	without := props(68, "run")
 	with := without
 	with.Tabs = sample()
-	with.Tabs[2].Badge = "✗2"
+	with.Tabs[2].Badge = "×2"
 	a := strings.Join(plain(Render(without).Lines), "\n")
 	b := strings.Join(plain(Render(with).Lines), "\n")
-	if !strings.Contains(b, "Doctor ✗2") {
-		t.Fatalf("the badge is in the tab:\n%s", b)
+	if !strings.Contains(b, "Doctor (4)] ×2") {
+		t.Fatalf("the badge follows the button:\n%s", b)
 	}
 	for _, name := range []string{"Sett", "Rel", "Proj"} {
 		if strings.Contains(a, name) != strings.Contains(b, name) {
@@ -151,23 +126,33 @@ func TestABadgeSitsInsideTheTabAndNeverChangesTheNamesSpelledOut(t *testing.T) {
 	}
 }
 
-func TestTheTitleSitsAtTheRightOfTheMiddleRowWhenItFits(t *testing.T) {
-	p := props(80, true, "projects")
-	p.Title = "Projects (4)"
-	mid := plain(Render(p).Lines)[1]
-	if !strings.Contains(mid, "Projects (4)") || pane.Width(mid) != 80 {
-		t.Fatalf("%q", mid)
+func TestSpansCoverTheButtonAndItsBadge(t *testing.T) {
+	p := props(90, "run")
+	p.Tabs[2].Badge = "×2"
+	s := Render(p)
+	for _, sp := range s.Spans {
+		if sp.ID == "doctor" && s.At(sp.X1-1) != "doctor" {
+			t.Fatalf("the badge is part of the tab: %+v", sp)
+		}
 	}
-	p.Width = 40
-	if mid := plain(Render(p).Lines)[1]; strings.Contains(mid, "(4)") {
-		t.Fatalf("no room for the title: %q", mid)
+}
+
+func TestTheActiveAndTheHoveredTabLookDifferentFromTheOthers(t *testing.T) {
+	p := props(90, "run")
+	p.Theme = theme.Default()
+	rest := Render(p).Lines[0]
+	p.Hover = "doctor"
+	if Render(p).Lines[0] == rest {
+		t.Fatal("a hovered tab must be drawn differently from a resting one")
+	}
+	p.Hover, p.Active = "", "doctor"
+	if Render(p).Lines[0] == rest {
+		t.Fatal("the active tab must be drawn differently from a resting one")
 	}
 }
 
 func TestTinyWidthsDoNotPanic(t *testing.T) {
 	for w := 0; w < 12; w++ {
-		for _, tall := range []bool{true, false} {
-			Render(props(w, tall, "run"))
-		}
+		Render(props(w, "run"))
 	}
 }

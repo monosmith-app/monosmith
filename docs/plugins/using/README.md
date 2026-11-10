@@ -8,6 +8,7 @@ in [Creating plugins](../creating/README.md).
 |---|---|
 | [What a plugin is and how plugins combine](what-is-a-plugin.md) | you want the model: roles, built-in and external plugins, where smith finds them, stacks and recipes, and what happens when two plugins disagree |
 | [Installing, enabling and configuring plugins](managing-plugins.md) | you want to add an external plugin, switch a built-in language plugin off, give a plugin settings, or check a plugin |
+| [Using the plugin marketplace](marketplace.md) | you want to find an external plugin by name, install it with its checksum verified, or point smith at another index |
 | [The built-in plugin catalogue](catalogue/README.md) | you want to know what a built-in plugin detects, which tasks it adds, what it scaffolds, how it releases and what it needs installed |
 | [Plugin security](plugin-security.md) | you want to know what smith does and does not do about an external plugin that runs on your machine: trust, the environment it gets, CI, and the limits |
 | [Troubleshooting plugins](troubleshooting-plugins.md) | a plugin did not start, did not answer, conflicts with another, or reports a version it should not |

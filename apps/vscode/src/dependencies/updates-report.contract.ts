@@ -15,6 +15,8 @@ export interface DependencyUpdate {
   latest:  string
   /** `patch`, `minor` or `major`. */
   level:   string
+  /** The package's page on its registry; absent when it cannot be known. */
+  url?:    string
   sites?:  UpdateSite[]
 }
 

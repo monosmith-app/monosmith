@@ -4,14 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
 
 // Command is `smith upgrade`.
 func Command(version string) *cobra.Command {
-	var check, dryRun, asJSON bool
+	var check, dryRun, asJSON, defaults bool
 	cmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: "Bring the workspace up to this smith and its recipes: migrate smith.toml, regenerate the files smith owns",
@@ -29,11 +33,38 @@ files, which a plugin wrote once when the project was created, are never
 touched; when the recipe adds a plugin whose starter files the project lacks,
 upgrade says so.
 
+A workspace keeps the defaults of the vintage it records in [workspace] defaults,
+whatever smith version runs; --defaults is the deliberate move to the latest
+vintage, with a plan, and does nothing else.
+
 --dry-run shows the plan, including the change to smith.toml, and changes
 nothing. --check does the same and fails when something would change, for CI.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			check = check || dryRun
+			yes, _ := cmd.Flags().GetBool("yes")
+			if defaults {
+				return runAdoptDefaults(cmd, check, dryRun, yes)
+			}
+			if !check {
+				// The plan comes from a dry run. A person confirms it; without a terminal
+				// and without --yes the run is refused.
+				preview, err := Upgrade(".", version, true, io.Discard)
+				if err != nil {
+					return err
+				}
+				if preview.Changed() {
+					root, err := workspace.FindRoot(".")
+					if err != nil {
+						return err
+					}
+					if _, err := operationplan.Present(cmd.OutOrStdout(), cmd.InOrStdin(), PlanUpgrade(root, preview), operationplan.Options{
+						Yes: yes, Ask: true, Env: operationplan.DetectEnvironment(),
+					}); err != nil {
+						return err
+					}
+				}
+			}
 			r, err := Upgrade(".", version, check, cmd.ErrOrStderr())
 			if err != nil {
 				return err
@@ -100,7 +131,53 @@ nothing. --check does the same and fails when something would change, for CI.`,
 	cmd.Flags().BoolVar(&check, "check", false, "change nothing; fail when something would change")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the plan, with the change to smith.toml, and change nothing")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the result as JSON")
-	return cmd
+	cmd.Flags().BoolVar(&defaults, "defaults", false, "move the workspace to the latest defaults vintage (smith doctor says which it uses)")
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(*cobra.Command, []string) string { return "upgrade the workspace" }})
+}
+
+// runAdoptDefaults is smith upgrade --defaults: plan, confirm, record the
+// latest vintage.
+func runAdoptDefaults(cmd *cobra.Command, check, dryRun, yes bool) error {
+	root, err := workspace.FindRoot(".")
+	if err != nil {
+		return err
+	}
+	out := cmd.OutOrStdout()
+	change, err := AdoptDefaults(root, true)
+	if err != nil {
+		return err
+	}
+	if !change.Changed() {
+		fmt.Fprintf(out, "The workspace already uses the defaults of %s, the latest.\n", change.To)
+		return nil
+	}
+	if check {
+		fmt.Fprintf(out, "would change: the defaults of %s to %s\n", orUnrecorded(change.From), change.To)
+		if dryRun {
+			fmt.Fprintln(out, "Dry run: nothing was changed.")
+			return nil
+		}
+		return errors.New("the workspace does not use the latest defaults: run smith upgrade --defaults")
+	}
+	{
+		plan := operationplan.Plan{Title: "move to the latest defaults"}
+		plan.Add("smith.toml", operationplan.Line{Action: operationplan.Change, Path: "smith.toml", Note: "[workspace] defaults: " + orUnrecorded(change.From) + " to " + change.To})
+		if _, err := operationplan.Present(out, cmd.InOrStdin(), operationplan.WithOwners(root, plan), operationplan.Options{Yes: yes, Ask: true, Env: operationplan.DetectEnvironment()}); err != nil {
+			return err
+		}
+	}
+	if _, err := AdoptDefaults(root, false); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "The workspace now uses the defaults of %s.\n", change.To)
+	return nil
+}
+
+func orUnrecorded(v string) string {
+	if v == "" {
+		return "none recorded"
+	}
+	return v
 }
 
 func versionOf(v string) string {

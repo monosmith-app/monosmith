@@ -13,7 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// otherEcosystems name the manifests of languages smith v1 has no plugin for.
+// otherEcosystems name the manifests of languages smith has no plugin for.
 var otherEcosystems = []struct{ suffix, label string }{
 	{"pubspec.yaml", "Flutter/Dart"}, {".csproj", ".NET"}, {".fsproj", ".NET"}, {"Cargo.toml", "Rust"},
 	{"pom.xml", "Java (Maven)"}, {"build.gradle.kts", "JVM (Gradle)"}, {"build.gradle", "JVM (Gradle)"},

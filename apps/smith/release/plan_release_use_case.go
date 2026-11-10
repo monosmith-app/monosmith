@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/session"
 )
 
 // Item is one package's planned release.
@@ -21,15 +22,31 @@ type Item struct {
 	Reason  string   `json:"reason"`
 	Commits []string `json:"commits,omitempty"`
 	Forced  bool     `json:"forced,omitempty"`
+	// Manual is true for a release the person forced although no commit releases
+	// the package (smith release --bump p=level --force).
+	Manual bool `json:"manual,omitempty"`
 	// Changes are the releasing commits, for the release notes.
 	Changes []Change `json:"changes,omitempty"`
+	// APIWarnings say that the commits ask for a smaller bump than the change
+	// of the public API needs, and which bump to use (see CheckAPI).
+	APIWarnings []string `json:"apiWarnings,omitempty"`
 }
 
 // Plan is every package that will release, in dependency order.
 type Plan struct {
 	Items []Item `json:"items"`
+	// Channel names the release channel the plan is for (its publish name, such
+	// as "beta"); empty for the stable line.
+	Channel string `json:"channel,omitempty"`
 	// Unchanged lists packages with nothing to release.
 	Unchanged []string `json:"unchanged,omitempty"`
+	// NeverReleased lists the unchanged packages that have no release yet: smith
+	// refuses to force a bump for them, because there is no version to bump. A
+	// version(<name>)[x.y.z] commit sets the first one.
+	NeverReleased []string `json:"neverReleased,omitempty"`
+	// Held lists the packages the person held back with --hold (and the ones that
+	// release only because a held one does): they would have released.
+	Held []string `json:"held,omitempty"`
 }
 
 // TagPrefix is the release tag prefix of a project.
@@ -66,18 +83,63 @@ func LatestTag(git *gitclient.Git, p *projectgraph.Project) (Version, string, bo
 // that touched it since its last tag. A package whose dependency releases is
 // released too (at least a patch), so its published range stays correct.
 func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
+	return MakeChannelPlan(git, graph, nil)
+}
+
+// PlanFor plans the release of the branch the session is on (see PlanBranch): a
+// channel branch plans prerelease versions of its channel, any other branch
+// stable ones.
+func PlanFor(s *session.Session) (Plan, error) {
+	return MakeChannelPlan(s.Git, s.Graph, ChannelOf(s.Config.Release, PlanBranch(s)))
+}
+
+// MakeChannelPlan is MakePlan for a release channel (nil: stable releases).
+// On a channel the next version is the channel's counter, raised once whatever
+// the commits ask for, and the commits counted are those since the channel's
+// last release, or since the last stable release when it has none.
+func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel) (Plan, error) {
 	order, err := graph.Order()
 	if err != nil {
 		return Plan{}, err
 	}
 	var plan Plan
-	releasing := map[string]string{}
+	if ch != nil {
+		plan.Channel = ch.Tag
+	}
+	git = git.WithRefCache()
+	// First every project's last release, then one read of the history that
+	// answers for all of them.
+	type lastRelease struct {
+		latest              Version
+		tag                 string
+		released, onChannel bool
+	}
+	last := map[string]lastRelease{}
+	var tags []string
 	for _, name := range order {
 		p := graph.Get(name)
-		if !p.Releases() {
+		if !p.Releases() || (ch != nil && p.Release != nil && p.Release.Channels != nil && !*p.Release.Channels) {
 			continue
 		}
 		latest, tag, released := LatestTag(git, p)
+		onChannel := false
+		if ch != nil {
+			if v, t, ok := latestChannelTag(git, p, *ch); ok {
+				latest, tag, released, onChannel = v, t, true, true
+			}
+		}
+		last[name] = lastRelease{latest, tag, released, onChannel}
+		tags = append(tags, tag)
+	}
+	index := newCommitIndex(git, tags)
+	releasing := map[string]string{}
+	for _, name := range order {
+		l, ok := last[name]
+		if !ok {
+			continue
+		}
+		p := graph.Get(name)
+		latest, tag, released, onChannel := l.latest, l.tag, l.released, l.onChannel
 		current := latest
 		if !released {
 			current = Version{}
@@ -85,8 +147,10 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 				current = v
 			}
 		}
-		raw, err := git.Log(tag, SourceRoots(graph, p)...)
-		if err != nil {
+		var raw []gitclient.Commit
+		if index.answers(tag) {
+			raw = index.log(tag, SourceRoots(graph, p))
+		} else if raw, err = git.Log(tag, SourceRoots(graph, p)...); err != nil {
 			return Plan{}, err
 		}
 		var commits []Commit
@@ -114,11 +178,14 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 		if released {
 			item.Current = latest.String()
 		}
-		forced, err := directiveFor(git, tag, name)
+		forced, err := directiveFrom(index, git, tag, name)
 		if err != nil {
 			return Plan{}, err
 		}
 		next := current.Bump(level)
+		if ch != nil {
+			next = ch.Next(latest, onChannel)
+		}
 		if forced != "" {
 			v, err := ParseVersion(forced)
 			if err != nil {
@@ -127,6 +194,9 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 			next, item.Forced, item.Reason, item.Level = v, true, "forced by version("+name+")["+forced+"]", "forced"
 		} else if level == None {
 			plan.Unchanged = append(plan.Unchanged, name)
+			if !released {
+				plan.NeverReleased = append(plan.NeverReleased, name)
+			}
 			continue
 		}
 		if released && !latest.Less(next) {
@@ -151,6 +221,19 @@ func SourceRoots(graph *projectgraph.Graph, p *projectgraph.Project) []string {
 		}
 	}
 	return roots
+}
+
+// directiveFrom is directiveFor answered from the index when it can.
+func directiveFrom(index *commitIndex, git *gitclient.Git, since, project string) (string, error) {
+	if !index.answers(since) {
+		return directiveFor(git, since, project)
+	}
+	for _, c := range index.log(since, []string{""}) {
+		if d, ok := ParseDirective(c.Subject); ok && d.Project == project {
+			return d.Version, nil
+		}
+	}
+	return "", nil
 }
 
 // directiveFor finds the newest version(<project>)[x] directive since a tag,

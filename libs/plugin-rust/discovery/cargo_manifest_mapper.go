@@ -26,6 +26,11 @@ type Crate struct {
 	PathDependencies []string
 	// Members are [workspace] members, for a workspace root.
 	Members []string
+	// Exclude are [workspace] exclude entries: directories cargo leaves out.
+	Exclude []string
+	// HasWorkspace is true when the manifest has a [workspace] table: a crate
+	// that has one is the root of its own workspace, not a member of another.
+	HasWorkspace bool
 }
 
 type manifest struct {
@@ -44,6 +49,7 @@ type manifest struct {
 	} `toml:"package"`
 	Workspace *struct {
 		Members []string `toml:"members"`
+		Exclude []string `toml:"exclude"`
 	} `toml:"workspace"`
 	Dependencies      map[string]any `toml:"dependencies"`
 	DevDependencies   map[string]any `toml:"dev-dependencies"`
@@ -70,6 +76,8 @@ func ParseCargo(src []byte) (Crate, error) {
 	}
 	if m.Workspace != nil {
 		c.Members = m.Workspace.Members
+		c.Exclude = m.Workspace.Exclude
+		c.HasWorkspace = true
 	}
 	seen := map[string]bool{}
 	for _, deps := range []map[string]any{m.Dependencies, m.DevDependencies, m.BuildDependencies} {

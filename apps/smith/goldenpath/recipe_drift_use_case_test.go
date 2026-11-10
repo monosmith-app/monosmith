@@ -58,7 +58,7 @@ func TestRecipeDriftAndUpgrade(t *testing.T) {
 	if got := w.read("apps/basket/kiwi.owned.txt"); !strings.Contains(got, "greeting = hello from 1.2.0") {
 		t.Fatalf("the plugin did not write the file it owns: %q", got)
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ basket follows its recipe team") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ basket follows its recipe team") {
 		t.Fatalf("a project that follows its recipe passes:\n%s", out)
 	}
 	if out := w.smith(true, "upgrade"); !strings.Contains(out, "up to date") && strings.Contains(out, "upgraded basket") {
@@ -134,7 +134,7 @@ func TestRecipeDriftAndUpgrade(t *testing.T) {
 			t.Errorf("the second upgrade changed %s", rel)
 		}
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ basket follows its recipe team") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ basket follows its recipe team") {
 		t.Errorf("after the upgrade the project follows its recipe:\n%s", out)
 	}
 

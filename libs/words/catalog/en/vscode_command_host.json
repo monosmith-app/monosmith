@@ -1,0 +1,9 @@
+{
+  "vscode.command-host.choose-a-folder": "Choose a folder",
+  "vscode.command-host.folder": "Folder",
+  "vscode.command-host.monosmith-smith-is-not-running-in": "MonoSmith: smith is not running in a folder, so there is nothing to do yet. Open a folder with a smith.toml and wait for the MonoSmith view to say it is ready.",
+  "vscode.command-host.monosmith-writes-files-and-needs-a": "MonoSmith: {what} writes files and needs a trusted workspace. Trust the workspace, then try again.",
+  "vscode.command-host.which-folder": "Which folder?",
+  "vscode.command-host.smith-was-not-found-install-smith": "× smith was not found\n  → install smith in the workspace, or set monosmith.path\n",
+  "vscode.command-host.monosmith-in": "MonoSmith: {operation} in {name}: {kind}{part}"
+}

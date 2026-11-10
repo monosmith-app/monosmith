@@ -242,6 +242,7 @@ func (k *kiwi) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, erro
 			Detail: rel + " is not what the greeting setting says", Remedy: "rewrite it from the setting",
 		}
 		if !finding.OK {
+			finding.Problem = rel + " is not what the greeting setting says"
 			finding.Fix = &protocol.Fix{Description: "rewrite " + rel + " from the greeting setting", Safe: true, Files: []protocol.FileEdit{{Path: rel, Content: want}}}
 		}
 		res.Findings = append(res.Findings, finding)

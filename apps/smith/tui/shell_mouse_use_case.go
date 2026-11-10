@@ -16,21 +16,62 @@ const wheelStep = 3
 
 // paletteBox is where the command palette is drawn.
 func (s Shell) paletteBox() layout.Rect {
-	// Inside the frame of the content, whatever the size: never over the tabs,
-	// the footer or the frame's own edges.
-	main := s.lay().Main
-	w, h := min(max(s.w-8, 10), 76), min(max(main.H-2, 5), 28)
-	return layout.Rect{X: (s.w - w) / 2, Y: main.Y + 1 + max((main.H-2-h)/3, 0), W: w, H: h}
+	// Inside the content, whatever the size: never over the tabs or the footer.
+	in := s.mainInner()
+	w, h := min(max(s.w-8, 10), 100), min(max(in.H, 5), 28)
+	return layout.Rect{X: (s.w - w) / 2, Y: in.Y + max((in.H-h)/3, 0), W: w, H: h}
 }
 
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 	e := tea.MouseEvent(msg)
+	if s.modalOpen() {
+		return s.modalMouse(e)
+	}
 	s.mouseX, s.mouseY, s.mouseShift = e.X, e.Y, e.Shift
+	if s.splitMouse(e) || s.selectMouse(e) {
+		return nil
+	}
+	switch {
+	case e.Action == tea.MouseActionMotion:
+		if e.Button != tea.MouseButtonLeft {
+			// A motion with no button held means the terminal lost the release.
+			s.pressed = ""
+		}
+		s.hover(e.X, e.Y)
+	case e.Action == tea.MouseActionRelease && s.pressed != "":
+		return s.releaseButton(e.X, e.Y)
+	case e.Action != tea.MouseActionPress:
+		// Releases need no handling: everything happens on the press.
+	case e.Button == tea.MouseButtonWheelUp:
+		s.selection = s.selection.Clear()
+		return s.wheel(e.X, e.Y, -1)
+	case e.Button == tea.MouseButtonWheelDown:
+		s.selection = s.selection.Clear()
+		return s.wheel(e.X, e.Y, 1)
+	case e.Button == tea.MouseButtonLeft:
+		if s.pressButton(e.X, e.Y) {
+			return nil
+		}
+		return s.pressAndSelect(e.X, e.Y)
+	}
+	return nil
+}
+
+// modalMouse handles a mouse event while a modal is open. Only the modal sees
+// it: nothing behind it gets a hover, a press, a release, a wheel step, a drag
+// or a click, and the pointer position the screen draws its hover looks from
+// stays where it was. A press outside the modal does what the modal does with
+// it (the palette closes; the other dialogs ignore it or follow their own rule).
+func (s *Shell) modalMouse(e tea.MouseEvent) tea.Cmd {
+	s.mouseShift = e.Shift
+	// A press or a drag that began before the modal opened ends here.
+	s.pressed = ""
+	s.selection = s.selection.Clear()
+	s.letGoSplit()
 	switch {
 	case e.Action == tea.MouseActionMotion:
 		s.hover(e.X, e.Y)
 	case e.Action != tea.MouseActionPress:
-		// Releases need no handling: everything happens on the press.
 	case e.Button == tea.MouseButtonWheelUp:
 		return s.wheel(e.X, e.Y, -1)
 	case e.Button == tea.MouseButtonWheelDown:
@@ -45,6 +86,7 @@ func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 // cursor; panes read the pointer position when they are drawn.
 func (s *Shell) hover(x, y int) {
 	switch {
+	case s.tools != nil, s.compose != nil, s.result != nil:
 	case s.adopt != nil:
 		m := s.adopt.Hover(x, y)
 		s.adopt = &m
@@ -54,6 +96,9 @@ func (s *Shell) hover(x, y int) {
 	case s.pkg != nil:
 		p := s.pkg.Hover(x, y)
 		s.pkg = &p
+	case s.relpick != nil:
+		m := s.relpick.Hover(x, y)
+		s.relpick = &m
 	case s.confirm != nil:
 		c := s.confirm.Hover(x, y)
 		s.confirm = &c
@@ -74,18 +119,30 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		s.lastClick = pointer.Click{}
 	}
 	switch {
+	case s.compose != nil:
+		return nil
+	case s.tools != nil:
+		m, out := s.tools.Click(s.th, x, y, double)
+		s.tools = &m
+		return s.afterTools(out)
+	case s.result != nil:
+		return s.resultClick(x, y, double)
 	case s.adopt != nil:
 		m, out := s.adopt.Click(x, y)
 		s.adopt = &m
 		return s.afterAdopt(out)
 	case s.fix != nil:
-		w, out := s.fix.Click(x, y)
+		w, out := s.synced(*s.fix).Click(x, y)
 		s.fix = &w
 		return s.afterFix(out)
 	case s.pkg != nil:
 		p, out := s.pkg.Click(x, y)
 		s.pkg = &p
 		return s.afterPackages(p, out)
+	case s.relpick != nil:
+		m, out := s.relpick.Click(x, y)
+		s.relpick = &m
+		return s.afterReleasePick(m, out)
 	case s.confirm != nil:
 		c, out := s.confirm.Click(x, y)
 		s.confirm = &c
@@ -119,14 +176,17 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		return s.tabClick(x)
 	case layout.Main:
 		if in := s.mainInner(); in.Contains(x, y) {
+			s.sideFocus = false
 			return s.contentClick(x-in.X, y-in.Y, double)
 		}
 	case layout.Detail:
 		in := s.detailInner()
 		if in.Contains(x, y) {
-			if h, ok := s.detailContent(in.W, in.H).hits[y-in.Y]; ok {
-				return s.activate(h.id)
-			}
+			// The click lands on the rows as they were drawn: the cursor mark of a detail
+			// that has the keyboard changes how its notes wrap. The keyboard moves after.
+			cmd := s.clickHit(s.sideContent(in.W, in.H-s.toastRows(in.H)), x-in.X, y-in.Y, double)
+			s.sideFocus = s.beside()
+			return cmd
 		}
 	}
 	return nil
@@ -159,13 +219,29 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	if s.tab == commands.TabSettings {
 		return s.settingsClick(in.W, in.H, rx, ry, double)
 	}
-	c := s.mainContent(in.W, in.H)
+	return s.clickHit(s.mainContent(in.W, in.H-s.toastRows(in.H)), rx, ry, double)
+}
+
+// clickHit handles a click at (rx, ry) in a body c that was drawn: on a project,
+// a task, a recent run, a part of the run header, a finding, a dependency, an
+// option or a button.
+func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 	h, ok := c.hits[ry]
 	if !ok {
 		return nil
 	}
+	if len(h.spans) > 0 {
+		sp, ok := h.at(rx)
+		if !ok {
+			return nil
+		}
+		h.id, h.index = sp.id, sp.index
+	}
 	switch h.kind {
 	case "project":
+		// A project clicked shows its own detail: a run that was open goes on in
+		// the background and stays in the list of recent runs.
+		s.runOpen, s.recentFocus = false, false
 		s.list = s.list.SelectProject(h.id)
 		s.detailCursor = 0
 		if double {
@@ -174,6 +250,23 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	case "task":
 		s.runSel = h.id
 		s.keepRunVisible()
+	case "recent":
+		s.recentAt = h.index
+		if s.tab == commands.TabHome {
+			// A run on Home opens at one click, in the run panel of Projects.
+			return s.openRecent()
+		}
+		s.recentFocus = true
+		if double {
+			return s.openRecent()
+		}
+	case "nav":
+		switch s.navAction(rx) {
+		case "older":
+			s.stepRun(-1)
+		case "newer":
+			s.stepRun(1)
+		}
 	case "finding":
 		s.doctor = s.doctor.SelectRow(h.index)
 	case "release":
@@ -210,15 +303,21 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
+	case s.compose != nil:
+		c := s.compose.Wheel(dir * wheelStep)
+		s.compose = &c
+		return nil
+	case s.tools != nil, s.result != nil:
+		return nil
 	case s.adopt != nil:
 		m := s.adopt.Wheel(dir * wheelStep)
 		s.adopt = &m
 		return nil
 	case s.fix != nil:
-		w := s.fix.Wheel(dir * wheelStep)
+		w := s.synced(*s.fix).Wheel(dir * wheelStep)
 		s.fix = &w
 		return nil
-	case s.pkg != nil, s.confirm != nil:
+	case s.pkg != nil, s.relpick != nil, s.confirm != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))
@@ -230,24 +329,15 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	}
 	switch s.lay().AreaAt(x, y) {
 	case layout.Detail:
-		s.scrollDetail(dir * wheelStep)
+		s.wheelSide(y, dir)
 	case layout.Main:
-		in := s.mainInner()
 		if s.detailFull() {
-			s.scrollDetail(dir * wheelStep)
+			s.wheelSide(y, dir)
 			return nil
 		}
 		switch s.tab {
-		case commands.TabRun:
-			if s.run == nil {
-				return nil
-			}
-			g := s.runGeom(in.W, in.H)
-			if y-in.Y >= g.logTop {
-				s.log = s.log.Scroll(dir*wheelStep, s.logTotal(), g.logRows)
-			} else {
-				s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
-			}
+		case commands.TabHome:
+			s.scrollHome(dir * wheelStep)
 		case commands.TabDeps:
 			s.deps = s.deps.Wheel(dir * wheelStep)
 		case commands.TabProjects:
@@ -262,7 +352,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 				s.doctorScroll = &pane.Scroll{}
 			}
 			s.doctorScroll.By(dir * wheelStep)
-		case commands.TabGuide, commands.TabRelease:
+		case commands.TabGuide:
+			// The wheel scrolls the list of the question; the selection stays.
+			s.guide = s.guide.Wheel(dir * wheelStep)
+		case commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
 				key = tea.KeyMsg{Type: tea.KeyUp}
@@ -271,4 +364,20 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// wheelSide scrolls what the right panel shows: the log of the run (or its task
+// list, above the log) while a run is open, else the detail.
+func (s *Shell) wheelSide(y, dir int) {
+	if !s.runShown() {
+		s.scrollDetail(dir * wheelStep)
+		return
+	}
+	r := s.detailRect()
+	g := s.runGeom(r.W, r.H)
+	if y-r.Y >= g.logTop {
+		s.log = s.log.Scroll(dir*wheelStep, s.logTotal(), g.logRows)
+		return
+	}
+	s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
 }

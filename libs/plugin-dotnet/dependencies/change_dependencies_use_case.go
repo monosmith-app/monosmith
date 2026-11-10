@@ -63,6 +63,12 @@ func Uninstall(workspaceRoot string, params protocol.UninstallParams) (protocol.
 	return protocol.DependencyResult{Files: []string{file}}, nil
 }
 
+// ProjectFileOf is the project's own project file, workspace-relative, or an
+// error that names the folder when it has none.
+func ProjectFileOf(workspaceRoot string, p protocol.Project) (string, error) {
+	return projectFile(workspaceRoot, p)
+}
+
 // projectFile is the project's own .csproj or .fsproj, workspace-relative.
 func projectFile(workspaceRoot string, p protocol.Project) (string, error) {
 	for _, f := range ProjectFiles(workspaceRoot, p) {

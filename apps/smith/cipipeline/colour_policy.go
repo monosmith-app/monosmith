@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"golang.org/x/term"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // tint is a colour a log word or glyph may carry; tintNone leaves it plain.
@@ -57,9 +59,9 @@ var glyphTints = []struct {
 	prefix string
 	tint   tint
 }{
-	{"✓", tintGreen}, {"[v]", tintGreen}, {"✗", tintRed}, {"[x]", tintRed},
-	{"▲", tintYellow}, {"[!]", tintYellow}, {"↷", tintDim}, {"[-]", tintDim},
-	{"○", tintDim}, {"[ ]", tintDim}, {"⚡", tintDim}, {"[c]", tintDim},
+	{marks.Passed, tintGreen}, {"[v]", tintGreen}, {marks.Failed, tintRed}, {"[x]", tintRed},
+	{marks.Warning, tintYellow}, {"[!]", tintYellow}, {marks.Skipped, tintDim}, {"[-]", tintDim},
+	{"○", tintDim}, {"[ ]", tintDim}, {marks.Cached, tintDim}, {"[c]", tintDim},
 }
 
 func glyphTint(cell string) tint {

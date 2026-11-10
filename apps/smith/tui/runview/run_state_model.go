@@ -2,6 +2,7 @@ package runview
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"sort"
 	"strings"
 	"time"
@@ -107,6 +108,7 @@ func (r *Run) Feed(line string, now time.Time) Event {
 		if ev.Status == Failed && t.Reason == "" {
 			t.Reason = "failed"
 		}
+		t.logReason()
 	case Stopped:
 		t := r.task(ev.Task)
 		t.Log = appendCapped(t.Log, "stopped", maxTaskLines)
@@ -119,6 +121,7 @@ func (r *Run) Feed(line string, now time.Time) Event {
 		if t.Reason == "" || t.Reason == "failed" {
 			t.Reason = ev.Text
 		}
+		t.logReason()
 	case Warned:
 		t := r.task(ev.Task)
 		t.Log = appendCapped(t.Log, "! "+ev.Text, maxTaskLines)
@@ -133,25 +136,27 @@ func (r *Run) Feed(line string, now time.Time) Event {
 }
 
 // End records that the process exited. A cancelled run marks what was still
-// running as failed and what was still queued as skipped, so nothing is left
-// spinning.
+// running as cancelled (not failed: the person stopped it) and what was still
+// queued as skipped, so nothing is left spinning.
 func (r *Run) End(exit int, cancelled bool, now time.Time) {
 	r.Finished, r.Exit, r.Cancelled, r.Ended = true, exit, cancelled, now
 	for _, t := range r.Tasks {
 		switch {
-		case t.Status == Running && (cancelled || exit != 0):
-			t.Status, t.Reason, t.Duration = Failed, "interrupted", now.Sub(t.Started)
+		case t.Status == Running && cancelled:
+			t.Status, t.Reason, t.Duration = Cancelled, words.Say("runview.reason.interrupted"), now.Sub(t.Started)
+		case t.Status == Running && exit != 0:
+			t.Status, t.Reason, t.Duration = Failed, words.Say("runview.reason.interrupted"), now.Sub(t.Started)
 		case t.Status == Queued && cancelled:
-			t.Status, t.Reason = Skipped, "cancelled"
+			t.Status, t.Reason = Skipped, words.Say("runview.reason.cancelled")
 		case t.Status == Queued && exit != 0:
-			t.Status, t.Reason = Skipped, "the run ended before it started"
+			t.Status, t.Reason = Skipped, words.Say("runview.reason.unstarted")
 		}
 	}
 }
 
 // Counts are how many tasks are in each state.
 type Counts struct {
-	Queued, Running, Cached, Passed, Failed, Skipped int
+	Queued, Running, Cached, Passed, Failed, Skipped, Cancelled int
 	// Total is every task known; Done is those with an outcome.
 	Total, Done int
 }
@@ -173,13 +178,15 @@ func (r *Run) Counts() Counts {
 			c.Failed++
 		case Skipped:
 			c.Skipped++
+		case Cancelled:
+			c.Cancelled++
 		}
 	}
 	c.Total = len(r.Tasks)
 	if r.total > c.Total {
 		c.Total = r.total
 	}
-	c.Done = c.Cached + c.Passed + c.Failed + c.Skipped
+	c.Done = c.Cached + c.Passed + c.Failed + c.Skipped + c.Cancelled
 	return c
 }
 
@@ -208,7 +215,7 @@ func (r *Run) RunTime(now time.Time) time.Duration {
 }
 
 // rank orders the list: failures first, then what is going on, then the rest.
-var rank = map[Status]int{Failed: 0, Running: 1, Queued: 2, Skipped: 3, Cached: 4, Passed: 5}
+var rank = map[Status]int{Failed: 0, Running: 1, Cancelled: 2, Queued: 3, Skipped: 4, Cached: 5, Passed: 6}
 
 // Ordered is the tasks with failures first, then running, queued, skipped and
 // finished ones; within a state, in the order they were first seen.
@@ -232,4 +239,12 @@ func appendCapped(lines []string, line string, limit int) []string {
 		lines = append([]string(nil), lines[len(lines)-limit:]...)
 	}
 	return lines
+}
+
+// logReason puts the reason a task failed into its empty log, so the pane that
+// shows the log is not blank while the reason sits in the detail beside it.
+func (t *Task) logReason() {
+	if t.Status == Failed && len(t.Log) == 0 && t.Reason != "" && t.Reason != "failed" {
+		t.Log = []string{t.Reason}
+	}
 }

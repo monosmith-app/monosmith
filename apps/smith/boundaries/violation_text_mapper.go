@@ -2,7 +2,10 @@ package boundaries
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
 // Text is the violations as the lines a person reads: the edge, the rule and
@@ -13,7 +16,7 @@ func Text(vs []Violation) string {
 	}
 	var b strings.Builder
 	for _, v := range vs {
-		mark := "✖"
+		mark := marks.Failed
 		if v.Warning {
 			mark = "!"
 		}
@@ -24,6 +27,6 @@ func Text(vs []Violation) string {
 		fmt.Fprintf(&b, "%s %s: %s %s %s\n    rule: %s\n    → %s\n", mark, v.Edge(), v.From, how, v.To, v.Rule, v.Hint)
 	}
 	errs := len(Errors(vs))
-	fmt.Fprintf(&b, "\n%d error(s), %d warning(s)\n", errs, len(vs)-errs)
+	fmt.Fprintf(&b, "\n%d error(s), %s\n", errs, words.Count("doctor.summary.warnings", len(vs)-errs))
 	return b.String()
 }

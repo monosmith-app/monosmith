@@ -1,16 +1,21 @@
 package pluginhost
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/plugindraft"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/plugininstall"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginmarket"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginpack"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -140,7 +145,7 @@ func Command(version string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rows)
 			}
-			fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", "PLUGIN", "LEVELS", "SLOTS", "REQUIRES")
+			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %-6s %s\n", "PLUGIN", "ROLES", "SLOTS", "DECLARED", "CHANNELS", "LINK", "REQUIRES")
 			for _, r := range rows {
 				if r.Source != "built-in" {
 					continue
@@ -156,7 +161,11 @@ func Command(version string) *cobra.Command {
 				for _, ref := range r.Conflicts {
 					needs = append(needs, "not "+ref.String())
 				}
-				fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), orDash(strings.Join(needs, "; ")))
+				declared, channels, link := "-", "-", "-"
+				if caps, ok := r.Capabilities.(protocol.Capabilities); ok && slices.Contains(r.Roles, protocol.RoleLanguage) {
+					declared, channels, link = yesNo(caps.Declared), yesNo(caps.Channels), yesNo(caps.Link)
+				}
+				fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %-6s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), declared, channels, link, orDash(strings.Join(needs, "; ")))
 			}
 			fmt.Fprintf(out, "\nExternal plugins this workspace uses (smith starts them only when trusted):\n")
 			if len(statuses) == 0 {
@@ -184,11 +193,11 @@ func Command(version string) *cobra.Command {
 		},
 	}
 	list.Flags().BoolVar(&asJSON, "json", false, "print JSON")
-	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand())
+	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand(), searchCommand(), plugindraft.Command())
 	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]
-		cmd.AddCommand(&cobra.Command{
+		switchCommand := &cobra.Command{
 			Use:   verb + " <name>...",
 			Short: strings.ToUpper(verb[:1]) + verb[1:] + " built-in plugins in smith.toml",
 			Args:  cobra.MinimumNArgs(1),
@@ -202,9 +211,15 @@ func Command(version string) *cobra.Command {
 					return err
 				}
 				fmt.Fprintf(c.OutOrStdout(), "enabled plugins: %s\n", strings.Join(enabled, ", "))
+				if !enable {
+					fmt.Fprintf(c.ErrOrStderr(), "warning: %s\n", SwitchOffWarning(args))
+				}
 				return nil
 			},
-		})
+		}
+		cmd.AddCommand(operation.Wrap(switchCommand, operation.Spec{Describe: func(_ *cobra.Command, args []string) string {
+			return "turn " + strings.Join(args, " ") + " " + map[bool]string{true: "on", false: "off"}[enable]
+		}}))
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "set <name>...",
@@ -219,7 +234,7 @@ func Command(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := workspace.SetEnabledPlugins(root, enabled); err != nil {
+			if err := writeEnabled(root, enabled); err != nil {
 				return err
 			}
 			fmt.Fprintf(c.OutOrStdout(), "enabled plugins: %s\n", strings.Join(enabled, ", "))
@@ -227,34 +242,6 @@ func Command(version string) *cobra.Command {
 		},
 	})
 	return cmd
-}
-
-// Toggle returns the enabled list after enabling or disabling names. An empty
-// current list means every built-in plugin.
-func Toggle(current, names []string, enable bool) ([]string, error) {
-	if len(current) == 0 {
-		current = BuiltinNames()
-	}
-	set := map[string]bool{}
-	for _, n := range current {
-		set[n] = true
-	}
-	for _, n := range names {
-		if _, ok := Builtins[n]; !ok {
-			return nil, fmt.Errorf("no built-in plugin %q (built-in: %s)", n, strings.Join(BuiltinNames(), ", "))
-		}
-		set[n] = enable
-	}
-	var out []string
-	for _, n := range BuiltinNames() {
-		if set[n] {
-			out = append(out, n)
-		}
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("at least one plugin must stay enabled")
-	}
-	return out, nil
 }
 
 // packCommand is `smith plugin pack`, reading manifests the way the host does.
@@ -268,7 +255,8 @@ func packCommand() *cobra.Command {
 	})
 }
 
-// installCommand is `smith plugin install`, reading manifests the way the host does.
+// installCommand is `smith plugin install`, reading manifests the way the host
+// does and resolving plugin names through the marketplace.
 func installCommand() *cobra.Command {
 	return plugininstall.Command(func(dir string) (plugininstall.Described, error) {
 		m, err := readInstalled(dir)
@@ -276,24 +264,33 @@ func installCommand() *cobra.Command {
 			return plugininstall.Described{}, err
 		}
 		return plugininstall.Described{Plugin: plugininstall.Plugin{Name: m.Name, Version: m.Version}, Argv: m.Argv, Command0: m.Command[0]}, nil
+	}, func(ctx context.Context, arg string) (plugininstall.Resolved, bool, error) {
+		if _, _, ok := pluginmarket.ParseName(arg); !ok {
+			return plugininstall.Resolved{}, false, nil
+		}
+		configured, err := configuredMarketplace()
+		if err != nil {
+			return plugininstall.Resolved{}, false, err
+		}
+		return pluginmarket.NewResolver(plugininstall.NewClient(), pluginmarket.Location(configured), pluginmarket.GitHubToken)(ctx, arg)
 	})
 }
 
-// EnablePlugins turns built-in plugins on or off in the smith.toml at root:
-// what `smith plugin enable|disable` does. It returns the list now enabled;
-// the file changes only on its `enabled = [...]` line, and an error (an
-// unknown plugin, the last one switched off) leaves it alone.
-func EnablePlugins(root string, names []string, enable bool) ([]string, error) {
+// searchCommand is `smith plugin search`.
+func searchCommand() *cobra.Command {
+	return pluginmarket.SearchCommand(plugininstall.NewClient(), configuredMarketplace)
+}
+
+// configuredMarketplace is the [plugins] marketplace value of the workspace
+// around the current directory, or "" when there is none.
+func configuredMarketplace() (string, error) {
+	root, _ := workspace.FindRoot(".")
+	if root == "" {
+		return "", nil
+	}
 	cfg, err := workspace.Load(root)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	enabled, err := Toggle(cfg.Plugins.Enabled, names, enable)
-	if err != nil {
-		return nil, err
-	}
-	if err := workspace.SetEnabledPlugins(root, enabled); err != nil {
-		return nil, err
-	}
-	return enabled, nil
+	return cfg.Plugins.Marketplace, nil
 }

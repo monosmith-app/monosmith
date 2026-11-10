@@ -29,6 +29,12 @@ func (s Shell) waitKind() string {
 // trackWait starts the clock when a wait begins and stops it when it ends, so
 // the screen can say how long the user has been waiting.
 func (s *Shell) trackWait() {
+	switch {
+	case !s.settings.Busy():
+		s.settingsSince = time.Time{}
+	case s.settingsSince.IsZero():
+		s.settingsSince = s.now()
+	}
 	kind := s.waitKind()
 	if kind == "" {
 		s.waitFor, s.waitSince = "", time.Time{}
@@ -45,4 +51,12 @@ func (s Shell) waited() time.Duration {
 		return 0
 	}
 	return time.Since(s.waitSince)
+}
+
+// settingsWaited is how long the Settings tab has waited for its change.
+func (s Shell) settingsWaited() time.Duration {
+	if s.settingsSince.IsZero() {
+		return 0
+	}
+	return s.now().Sub(s.settingsSince)
 }

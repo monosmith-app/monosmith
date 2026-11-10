@@ -40,7 +40,7 @@ func CI(projects []protocol.Project) (result protocol.CIResult, publicPublish bo
 		if p.Registries != nil {
 			use(p.Registries.Install, true)
 		}
-		if p.Kind != protocol.ProjectPackage {
+		if !p.Publishes() {
 			continue
 		}
 		if p.Registries == nil || p.Registries.Publish == nil || p.Registries.Publish.NPM == "" {

@@ -72,7 +72,7 @@ func TestRewriteKeepsCommentsAndWritesTheGroups(t *testing.T) {
 			t.Errorf("still has %q:\n%s", gone, got)
 		}
 	}
-	for _, added := range []string{"[[task_groups]]", `select = ["lang:node", "kind:lib"]`, "[task_groups.tasks.build]", "[task_groups.tasks.test]"} {
+	for _, added := range []string{"[[groups]]", `select = ["lang:node", "kind:lib"]`, "[groups.tasks.build]", "[groups.tasks.test]"} {
 		if !strings.Contains(got, added) {
 			t.Errorf("missing %q:\n%s", added, got)
 		}

@@ -8,7 +8,8 @@ func (v Model) Replace(r Result) Model {
 	if r.Err != nil || v.Report == nil {
 		return next
 	}
-	next.Grouped, next.ShowPassed = v.Grouped, v.ShowPassed
+	next.Grouped, next.ShowPassed, next.Folds, next.All = v.Grouped, v.ShowPassed, v.Folds, v.All
+	next.HideFailed, next.HideWarnings = v.HideFailed, v.HideWarnings
 	next.Cursor = min(v.Cursor, max(next.rows()-1, 0))
 	return next
 }

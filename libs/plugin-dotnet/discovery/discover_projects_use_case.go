@@ -90,7 +90,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Exports:  []string{p.PackageID},
 			Imports:  importList,
 			Version:  p.Version,
-			Tasks:    Tasks(root, path.Base(manifest), testsFile, kind),
+			Tasks:    tasksOf(workspaceRoot, root, path.Base(manifest), testsFile, kind),
 			Stack:    p.Stack,
 		})
 	}

@@ -1,4 +1,3 @@
-// Package pipeline describes what CI needs for Node projects (the Node
-// toolchain, npm ci, the npm audit gate, the publish token) and checks a
-// workspace's Node health for smith doctor.
+// Package pipeline checks a workspace's Node health for smith doctor and the
+// npm audit gate. What CI needs for Node projects is in the ci slice.
 package pipeline

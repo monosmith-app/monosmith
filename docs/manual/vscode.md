@@ -82,6 +82,25 @@ The checks of `smith doctor` that failed or warn, each with the problem and the 
 **Fix Health Problems…** (shown when a fix exists) shows the changes smith proposes and
 applies them only after you agree. **Refresh Health** reads again.
 
+When `[derive] enabled = true` is set in `smith.toml`, a **Derived files** row follows the
+checks. It says how many files are up to date, or lists each file that needs action with its
+state (`drift`, `diverged`, `stale`, `missing`, `unrecorded` or `broken`), the renderer and the
+fix. The same files get a warning in the Problems panel (when `monosmith.output.problems` is on).
+The editor reads them from `smith derive --check`, which has no JSON form yet, so an older or
+newer smith that words the lines differently shows the failure as one row instead. Without
+`[derive] enabled` the row is left out.
+
+Right-click a derived file in the Health view, in the Explorer or in an editor:
+
+| Action | Runs | Does |
+|---|---|---|
+| **Explain Derived File** | `smith derive --explain <file>` | A page with the owner, the renderer, the state and the diff. |
+| **Apply Derived File** | `smith derive`, or `smith derive --replace <file>` | Writes a stale or missing file. For a drifted or diverged file, overwrites it with the derived content. |
+| **Adopt Edit of Derived File** | `smith derive --adopt <file>` | Keeps your edit as the new baseline (only for a file smith owns by keys). |
+| **Eject Derived File (Own It)** | `smith derive --eject <file>` | The file is yours; smith stops touching it. |
+
+Each action names its effect and asks first. Commit the file together with `smith.lock`.
+
 ### Dependencies
 
 What has a newer release, grouped patch, minor and major, and the tools smith pins.
@@ -94,11 +113,63 @@ itself: smith has no method for it in the editor protocol.
 What `smith release` would publish: each package with the version it moves to, why, its tag
 and the commits. It publishes nothing. **Refresh Release Preview** reads again.
 
+On a release channel (see [`smith release`](release.md)), the first row reads **Release channel
+`next`** and carries the notice of smith: the versions are prereleases, published under the
+channel tag, and the stable version stays the latest. The title of the view repeats it
+(`2 to release · channel next`), so nobody mistakes a prerelease line for the stable one.
+
 ### Explain and graph pages
 
 **Explain Project** opens a page with how each task of the project resolved and where each
 field came from ([`smith explain`](explain.md)). **Show Project Graph** opens what the project
 uses and what uses it ([`smith graph`](graph.md)).
+
+### Why pages
+
+**Why…** answers "who owns this, and why is it so?" in a page:
+
+- On a **file** (Explorer or editor context menu, or the palette with a file open): `smith why
+  <file> --json`. It names the owner (smith or you), what produced the file and how to change
+  it. For a file smith does not know it says so.
+- On a **task** row of the Projects view: `smith why-miss <project>:<task> --json`. It says
+  whether the task would come from the cache or run again, and which inputs changed since the
+  last run.
+- On a **project** row: the explain page above.
+
+From the palette, **Why…** asks what you want to know about.
+
+### Add a project
+
+**Add Project…** (the `+` button of the Projects view, the palette and the status-bar menu)
+asks four things with quick picks: the kind (`app`, `lib` or `package`), the language, how the
+project is built (the default of the language; a stack from `smith stacks`; or **Pick
+choices…**, which asks one question per axis such as framework, test and style, from `smith
+choices`), and the name (kebab-case). Then it runs `smith add --dry-run` and shows the plan in a
+dialog; **Open the plan** puts it in an editor. Nothing is written until you choose **Add
+project**. When the plan says the project follows its sibling projects, **Add with the stack
+defaults** adds it with `--fresh` instead. The add runs in the background with a progress
+notice (smith installs and tests the new project, which can take minutes) and its output goes to
+the MonoSmith output channel. smith leaves the files uncommitted, or commits them when
+`commit_operations = true` is set under `[workspace]`.
+
+If the workspace uses a recipe (`[workspace] recipe`), the recipe asks its own questions in a
+terminal. The command does not answer them: use `smith add` in a terminal, or pass `--choice`
+there.
+
+### Undo, report and the agent file
+
+- **Undo the Last Change…** runs `smith undo --dry-run`, shows what it would revert and asks.
+  Only then does it run `smith undo --yes`, which reverts with `git revert`: a new commit and
+  your history stays. A notice offers it after **Add Project…** and after **Convert This
+  Folder to MonoSmith** (the offer after a conversion needs the shell integration of the
+  terminal). smith refuses when a later commit or an uncommitted change touches the same
+  files, and when `commit_operations` is not set; the message says how to fix it.
+- **Open Report** runs `smith report -o <temp file>` and opens the page in your browser. The
+  report is not written into the workspace.
+- **Write AGENTS.md for AI agents** runs `smith agent file --check`, names what is missing or
+  old, and writes `AGENTS.md` and the `CLAUDE.md` region only after you agree. Text you wrote
+  outside the markers stays. The notice after **Install the MCP server and agent** offers it,
+  and it is in the Projects view menu and the palette.
 
 ## Commands
 
@@ -135,6 +206,15 @@ hidden there.
 | `monosmith.dependencies.up` | Run smith up… | |
 | `monosmith.dependencies.update` | Update Dependency… | A row action; hidden from the palette. |
 | `monosmith.release.refresh` | Refresh Release Preview | |
+| `monosmith.addProject` | Add Project… | Quick picks, the plan of `smith add --dry-run`, then the add. |
+| `monosmith.undo` | Undo the Last Change… | `smith undo --dry-run`, then `smith undo --yes` after you agree. |
+| `monosmith.openReport` | Open Report | Write `smith report` to a temp file and open it in the browser. |
+| `monosmith.why` | Why… | Who owns a file, why a task runs again, how a project resolved. |
+| `monosmith.agentFile` | Write AGENTS.md for AI agents | `smith agent file`, after you agree. |
+| `monosmith.derive.explain` | Explain Derived File | Hidden from the palette unless the open file needs action. |
+| `monosmith.derive.apply` | Apply Derived File | Same. |
+| `monosmith.derive.adopt` | Adopt Edit of Derived File | Same. |
+| `monosmith.derive.eject` | Eject Derived File (Own It) | Same. |
 | `monosmith.openWalkthrough` | Open Getting Started | Open the walkthrough. |
 
 `Re-run Last`, `Cancel Run` and similar commands are enabled by the context keys

@@ -94,15 +94,30 @@ func publishedExtension(workspaceRoot string, m ExtensionManifest) protocol.Publ
 	}
 	var shown struct {
 		Versions []struct {
-			Version string `json:"version"`
+			Version    string `json:"version"`
+			Properties []struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			} `json:"properties"`
 		} `json:"versions"`
 	}
 	if json.Unmarshal([]byte(out), &shown) != nil {
 		result.Unreachable, result.Detail = true, "vsce show returned no JSON"
 		return result
 	}
-	if len(shown.Versions) > 0 {
-		result.Version = shown.Versions[0].Version
+	// The newest release: a pre-release (a release channel's) is not what the
+	// tags of the stable line are compared with, as for every other registry.
+	for _, v := range shown.Versions {
+		preRelease := false
+		for _, prop := range v.Properties {
+			if prop.Key == "Microsoft.VisualStudio.Code.PreRelease" && prop.Value == "true" {
+				preRelease = true
+			}
+		}
+		if !preRelease {
+			result.Version = v.Version
+			break
+		}
 	}
 	return result
 }

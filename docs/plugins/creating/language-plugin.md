@@ -32,6 +32,7 @@ way, a [scaffold](scaffold-plugin.md) or a [recipe](recipe-and-stack.md) is enou
 | `doctor` | optional | collect health findings, with fixes |
 | `remove` | optional | clean up outside a project's directory after `smith remove` |
 | `project/kind` | optional | say what changing a project between app, lib and package edits, for `smith kind` |
+| `derive` | optional | say which files you derive from facts and the project graph (tsconfig references, a test config's name), for `smith derive`; see [Rendering derived files](derived-files.md) |
 | `sbom/components` | optional | list the components a project ships (lockfile, else manifest) as package URLs, for the SBOM a release attaches |
 | `dependencies/*` | optional | `smith install`, `uninstall`, `sync`, `up` |
 
@@ -164,6 +165,17 @@ shop  app · widget · apps/shop
   └─ core
 ```
 
+### Optional: report a shape so new projects follow their siblings
+
+A project in `discover` may carry `shape`: a map of short facts about how it is made, for example
+`"build.tool": "esbuild"`, `"test.runner": "@swc/jest"`, `"exports.target": "dist"`. Choose the keys
+and values; the host knows none of them. `smith add` counts the shapes of the projects of the new
+project's kind and language. When at least 3 of them, and at least two thirds, share a value, it
+prints the reason and sends the value back in `generate` as `params.shape`. Apply the keys you can,
+list them in `initialize.follows` (the host asks about a split only for those keys), and ignore the
+rest. The host reads the shape of the new project after `generate` and warns for each key that
+differs. See [ADR 0041](../../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md).
+
 ## Step 3: tasks that cache honestly
 
 A task is a command smith runs, hashes and caches. The plugin describes it; it never runs it.
@@ -203,11 +215,11 @@ shop:test │ shop 0.0.0 is valid
 core:test │ core 0.0.0 is valid
 core:build │ wrote ../../dist/libs/core/widget.txt
 ...
-✔ 4/4 tasks succeeded (0 from cache) in 48ms
+✓ 4/4 tasks succeeded (0 from cache) in 48ms
 $ smith run build test
 shop:build │ wrote ../../dist/apps/shop/widget.txt
-shop:build ✔ from cache
-✔ 4/4 tasks succeeded (4 from cache, 65ms saved) in 6ms
+shop:build ✓ from cache
+✓ 4/4 tasks succeeded (4 from cache, 65ms saved) in 6ms
 $ smith explain core:build
 core:build — write widget.txt into the build directory
   command    <dir>\smith-plugin-widget.exe build ../../dist/libs/core
@@ -344,7 +356,7 @@ The example's finding, run:
 
 ```text
 $ smith doctor
-✖ core names a license
+× core names a license
     libs/core/widget.json has no license field
     → add "license": "MIT" (or your license) to libs/core/widget.json
 ...
@@ -372,6 +384,7 @@ show how; the shapes are in [the cheat sheet](protocol-cheat-sheet.md).
 | `remove` | after smith deleted the project's directory, clean what you own outside it (a workspace file, a lockfile) and list the files you changed |
 | `project/kind` | `smith kind`: answer, without writing anything, the whole new content of every file the change edits (the manifest's kind and publish guard, the references other projects and the workspace make to the folder `newRoot`), as paths before the move; the host applies them and moves the folder. Say `refused` when the kind makes no sense for the language, and `warnings` for what the change loses. The SDK helpers `pathrefs` (retarget, rebase and follow relative paths), `tomltext`, `xmltext` and `jsondoc` (edit one key or element and keep the file as written) and `fileedits` (the set of edited files) do the rewriting |
 | `dependencies/install`, `/uninstall` | add and remove packages with the ecosystem's own tool |
+| `dependencies/link`, `/unlink` | `smith install -p <project> <library>`: make a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference). With `Plan` set, write nothing and answer the manifest, the line and the `Options` of the version range; without it, write, and install or lock as needed. The host has already refused a link to itself, to an app, to another language and a cycle. A plugin without the `link` capability is refused with a sentence that tells the user to edit the manifest by hand ([ADR 0071](../../architecture/decisions/0071-smith-install-links-a-library-of-the-workspace.md)) |
 | `dependencies/declared`, `/rewrite`, `/latest` | list declared dependency specs, rewrite them in place, and report the newest releases: what `smith sync` and `smith up` need |
 
 A plugin that reads `Project.Registries` points its package manager at the private registry smith.toml
@@ -391,28 +404,28 @@ list it; on Windows the file is `smith-plugin-widget.exe`.) Real output:
 
 ```text
 widget 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ plays a known role: scaffold
-  ✔ a language plugin discovers projects
-  ✔ a scaffold generates projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ doctor answers with no projects
-  ✔ generates an app
-  ✔ generates a lib
-  ✔ generates a package
-  ✔ discovers the generated app
-  ✔ the generated app keeps its kind
-  ✔ the generated app records its stack
-  ✔ the generated app's tasks have commands
-  ✔ writes the app's version (dry run)
-  ✔ discovers the generated lib
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ plays a known role: scaffold
+  ✓ a language plugin discovers projects
+  ✓ a scaffold generates projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ doctor answers with no projects
+  ✓ generates an app
+  ✓ generates a lib
+  ✓ generates a package
+  ✓ discovers the generated app
+  ✓ the generated app keeps its kind
+  ✓ the generated app records its stack
+  ✓ the generated app's tasks have commands
+  ✓ writes the app's version (dry run)
+  ✓ discovers the generated lib
   ...
-  ✔ writes the package's version (dry run)
-  ✔ shuts down when asked
+  ✓ writes the package's version (dry run)
+  ✓ shuts down when asked
 ```
 
 With `--generate` the plugin writes an app, a lib and a package in a temporary directory and a
@@ -451,11 +464,11 @@ See [Testing a plugin](testing-a-plugin.md) for the approach and the golden-file
 
 | You see | Cause and remedy |
 |---|---|
-| `✖ a scaffold generates projects` | the plugin declares no `Roles`, so it is also a scaffold, but has no `Generate`. Declare `Roles: [language]`, or implement `Generate` |
-| `✖ a language plugin discovers projects` | `Manifests` is empty or `Discover` is not implemented |
-| `✖ the generated lib records its stack` / `discovered with stack ""; generate must record params.stack in the manifest` | `Generate` ignores `p.Stack`, or `Discover` does not return the manifest's stack in `Project.Stack` |
-| `✖ the generated app's tasks have commands` | a task has an empty `Command` |
-| `✖ generates a lib`: `files reported but not written` | `Files` names a path that does not exist under the workspace |
+| `× a scaffold generates projects` | the plugin declares no `Roles`, so it is also a scaffold, but has no `Generate`. Declare `Roles: [language]`, or implement `Generate` |
+| `× a language plugin discovers projects` | `Manifests` is empty or `Discover` is not implemented |
+| `× the generated lib records its stack` / `discovered with stack ""; generate must record params.stack in the manifest` | `Generate` ignores `p.Stack`, or `Discover` does not return the manifest's stack in `Project.Stack` |
+| `× the generated app's tasks have commands` | a task has an empty `Command` |
+| `× generates a lib`: `files reported but not written` | `Files` names a path that does not exist under the workspace |
 | the project appears but has the wrong root on Windows | `Root` used `filepath.Dir`; use `path.Dir` on the forward-slash path smith gave you |
 | `smith doctor`: an output outside `dist/` | a build writes somewhere else; use `protocol.ProjectBuildDir` |
 | every call fails after a good start | something wrote to stdout. Log to stderr |

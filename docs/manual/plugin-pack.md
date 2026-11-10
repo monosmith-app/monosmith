@@ -35,7 +35,7 @@ Usage: `smith plugin pack [dir] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `-o, --out <out>` | string | the current directory | directory to write the archive to |
+| `-o, --output <output>` | string |  | directory to write the archive to (also --out) |
 
 <!-- smith:end plugin pack -->
 
@@ -96,8 +96,8 @@ The plugin was not started. Publish the archive and its .sha256 file together; u
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ <dir> has no plugin.json` | Run it in the plugin's directory, or give the directory. |
-| `✖ <dir>/plugin.json has no version` | Add `"version"` to `plugin.json`: it names the archive. |
+| `× <dir> has no plugin.json` | Run it in the plugin's directory, or give the directory. |
+| `× <dir>/plugin.json has no version` | Add `"version"` to `plugin.json`: it names the archive. |
 | `plugin.json runs ./bin/..., but no file in <dir> matches it` | Build the program for at least one platform first. |
 | `<path> is a link or special file` | Replace the link with a copy of the file. |
 

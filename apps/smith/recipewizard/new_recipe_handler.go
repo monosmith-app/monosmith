@@ -23,11 +23,15 @@ type Options struct {
 	// FromAnswers is a Plan file; set, nothing is asked.
 	FromAnswers string
 	// Name, RecipeVersion, Extends and Fixed describe a recipe whose plugins
-	// are all fixed (see PlanFromFlags); with Name or Fixed set, nothing is asked.
+	// are all fixed (see PlanFromFlags); with Name, Fixed or Chosen set, nothing is asked.
 	Name, RecipeVersion, Extends string
-	Fixed                        []string
+	Fixed, Chosen                []string
 	// Force replaces an existing file without asking.
 	Force bool
+	// ListLevels prints the levels and the plugins of each instead of writing
+	// a recipe; AsJSON prints them as JSON (the forms of the interface and
+	// the editors read that).
+	ListLevels, AsJSON bool
 	// Interactive says a person is there to answer.
 	Interactive bool
 	In          io.Reader
@@ -47,7 +51,7 @@ func NewCommand(version string) *cobra.Command {
 		Use:   "new [path]",
 		Short: "Write a recipe by answering questions",
 		Long: `Asks for a recipe's name, version and the recipe it extends, then goes through
-the levels (language, scaffold, each task slot such as lint and test,
+the roles (language, scaffold, each task slot such as lint and test,
 structure, deploy). For each it lists the plugins that fit what is chosen so
 far, and you say whether one is fixed, a choice the recipe's users make
 (python or csharp, say, with a plugin per answer), or left unset.
@@ -59,9 +63,12 @@ replaced only after you confirm, or with --force.
 
 Without a terminal, --from-answers reads the same answers from a file, so a
 script or a test gets the same recipe the questions would. A recipe whose
-plugins are all fixed needs no file either: --name and --fixed level=plugin
+plugins are all fixed needs no file either: --name and --fixed role=plugin
 (as often as needed) write it, which is what the interface's form runs. A
-choice the recipe's users make still needs the questions or an answers file.`,
+choice the recipe's users make still needs the questions or an answers file.
+
+--list-levels writes nothing: it lists the levels and the plugins each can
+take (--json for programs, such as the forms of the interface and the editors).`,
 		Example: `  smith recipe new
   smith recipe new recipes/team/team.recipe.toml
   smith recipe new --from-answers answers.toml
@@ -80,8 +87,11 @@ choice the recipe's users make still needs the questions or an answers file.`,
 	cmd.Flags().StringVar(&opts.Name, "name", "", "the recipe's name; with --fixed, nothing is asked")
 	cmd.Flags().StringVar(&opts.RecipeVersion, "recipe-version", "", "the recipe's version (0.1.0 when not given)")
 	cmd.Flags().StringVar(&opts.Extends, "extends", "", "the recipe this one extends: a path from the new file, or an https URL")
-	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a level's plugin, as level=plugin (language=python, structure=slices,layers); repeat for each level")
+	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role")
+	cmd.Flags().StringArrayVar(&opts.Chosen, "chosen", nil, "a role the recipe's users choose, as role=question:answer=plugin,answer=plugin (language=Which language?:python=python,csharp=dotnet; + joins plugins of one answer); repeat for each role")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
+	cmd.Flags().BoolVar(&opts.ListLevels, "list-levels", false, "list the levels and the plugins each can take, and write nothing")
+	cmd.Flags().BoolVar(&opts.AsJSON, "json", false, "with --list-levels, print the list as JSON")
 	return cmd
 }
 
@@ -97,6 +107,22 @@ func Run(o Options) error {
 	lookup := o.Lookup
 	if lookup == nil {
 		lookup = recipe.Catalog{Root: root, Version: o.Version, External: external}.Lookup
+	}
+	if o.AsJSON && !o.ListLevels {
+		return errors.New("--json goes with --list-levels")
+	}
+	if o.ListLevels {
+		names := o.Names
+		if names == nil {
+			names = PluginNames(root, external)
+		}
+		candidates, skipped := NewCandidates(names, lookup)
+		if !o.AsJSON {
+			for _, s := range skipped {
+				fmt.Fprintf(o.Out, "not offered, %s\n", s)
+			}
+		}
+		return WriteCatalog(o.Out, candidates.Catalog(), o.AsJSON)
 	}
 	loader := &recipe.Loader{Root: root}
 	in := bufio.NewReader(o.In)
@@ -115,9 +141,9 @@ func Run(o Options) error {
 		if plan, err = ReadPlan(data, o.FromAnswers); err != nil {
 			return err
 		}
-	case o.Name != "" || len(o.Fixed) > 0:
+	case o.Name != "" || len(o.Fixed) > 0 || len(o.Chosen) > 0:
 		var err error
-		if plan, err = PlanFromFlags(o.Name, o.RecipeVersion, o.Extends, o.Fixed); err != nil {
+		if plan, err = PlanFromFlags(o.Name, o.RecipeVersion, o.Extends, o.Fixed, o.Chosen); err != nil {
 			return err
 		}
 	case o.Interactive:

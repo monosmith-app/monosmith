@@ -2,7 +2,7 @@
 
 `smith release` versions, publishes and tags every package that has releasable
 conventional commits since its last tag. The bump follows the commits: `feat` is a minor
-bump, `fix` and `perf` a patch, a breaking change a major (a minor before 1.0). Packages
+bump, `fix` and `perf` a patch, a breaking change a major (a minor before 1.0). A project releases when a `feat:`, `fix:`, `perf:` or breaking commit touches its own folder (or the folder of a lib it imports). A `chore:` commit, or a change only under `tools/` or in `smith.toml`, releases nothing. `--bump <project>=major` is a request, not an inference: it gives 1.0.0 on a 0.x package. Packages
 release in dependency order. Each is stamped with its new version, built, published and
 tagged; manifests are restored afterwards, because the tag is the record. A re-run after
 a failure resumes where it stopped.
@@ -20,15 +20,51 @@ branch. Running `smith release` by hand is the same thing from your machine.
 - `smith release --dry-run` locally or on a pull request, to see what would be released.
 - `smith release` from the release branch when you publish by hand.
 - `smith release --status` to see what a failed release already published.
+- `smith release --rehearse` before the first release on a new feed, or after changing a token, to find a wrong URL, credential type or identity without publishing.
 
 Do not use it to cut a release from a feature branch: `releases run from main, not
 <branch>` (see the environment variables). Versions come from commit messages; there is no
 flag to set one.
 
+## What smith asks before it publishes
+
+Publishing and tagging cannot be undone, so smith shows each package with the reason it
+releases (the commits) and asks. In a terminal you can release all of them, change the bump
+of one package (patch, minor or major), hold a package back (it keeps its version and does
+not release this time), or cancel. A package that releases only because a package it depends
+on releases is held back with it. The last question says what cannot be undone: the tags
+that are created and pushed and the registries that receive the packages. Without a
+terminal smith refuses unless `--yes` is given. `--hold <project>` and
+`--bump <project>=minor` give the same answers as flags, in a terminal or in CI.
+A project that exists but is not in the plan has nothing to hold back: `--hold` prints one note
+saying so. `--bump` refuses it with "is not in this plan", and offers a "Did you mean" only for a
+name that is not a project.
+
+A package that no commit releases is "not in this plan", and `--bump` offers a way out: add `--force`
+(`smith release --bump mvd=patch --force`) to release the same code under a new version. smith shows
+it as a manual release ("no commit since mvd@0.14.0 releases this"), and the last question says that
+a new tag at HEAD, a registry publish, a GitHub Release and the assets follow and cannot be undone.
+Without a terminal it needs `--yes` as well. `--force` alone is refused and prints the usage. The
+report and the tag message say the release was manual. The terminal UI (key `f` in the Release view) and the VS Code release command offer the same path as a choice, with the consequences shown. CI can start it with `[ci] manual_release`
+(see [CI](../reference/ci.md#a-release-started-by-hand)).
+
+A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a
+release channel decide their version themselves, so `--bump` refuses them and names why. For a
+package that was never released the message explains the commit that sets its first version: the
+subject is `version(<project>)[x.y.z]` (the project name, then the version in square brackets), a
+commit anywhere in the repository counts, for example
+`git commit --allow-empty -m "version(sdk)[1.0.0]"`. smith never makes that commit.
+
+In the terminal UI, `x` on the Release view first asks which packages to hold back (any number:
+Space) and which bump to change (pick the package, then B or Left and Right to choose patch, minor,
+major or "as the commits ask"). The line it builds, with `--hold` and `--bump`, is shown as it
+changes. Enter goes on to the confirmation, which lists the packages and versions that go out and
+the ones held back, and says that the release cannot be undone.
+
 ## Synopsis
 
 ```sh
-smith release [--dry-run [--comment]] [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [-y]
+smith release [--dry-run [--comment]] [--hold <project>]... [--bump <project>=patch|minor|major [--force]]... [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
 smith release pub --project <app> --version <version>
 ```
 
@@ -46,12 +82,16 @@ Usage: `smith release <command> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--bump <bump>` | string, repeatable |  | release a package with this bump instead of the one its commits ask for: <project>=patch\|minor\|major |
 | `--comment` | boolean | off | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment |
 | `--dry-run` | boolean | off | show what would be released; change nothing |
+| `--force` | boolean | off | with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal |
 | `--format <format>` | `text` or `markdown` | `text` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |
+| `--hold <hold>` | string, repeatable |  | do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too |
 | `--json` | boolean | off | print the release report as JSON |
 | `--no-push` | boolean | off | create tags locally only |
 | `--notes` | boolean | off | also print each release's notes (what its GitHub Release says) |
+| `--rehearse` | boolean | off | check every registry the release publishes to (it resolves, which credential it expects, that yours is accepted, that the CI identity may publish) with read-only requests; publish nothing |
 | `--status` | boolean | off | show the release journal: what was published where (dist/release/<project>/journal.json) |
 | `--verbose` | boolean | off | name every unchanged package |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
@@ -69,6 +109,11 @@ Interactions:
   say). `--comment` needs `--dry-run` (`--comment posts a preview: use it with --dry-run`)
   and posts the markdown preview on the pull request, updating smith's earlier comment
   (GitHub and Azure Repos).
+- The plan also checks the bump against the public API. If a `fix` commit removes an export
+  (a major) or adds one (a minor), the plan, the `--comment` preview and the `--json`
+  `apiWarnings` carry a warning with the version to use. It is advice; `[release] api_check =
+  "error"` stops the release, `"off"` skips the check. Node packages only for now (see
+  [releasing](../reference/releasing.md#the-bump-against-the-public-api)).
 - `--format markdown` is what the CI job summary and `--comment` use. In the trial the
   plan line was printed first in text and the markdown table after it.
 - `--json` prints the report as JSON (`dryRun`, `started`, `finished`, `results` with
@@ -76,6 +121,16 @@ Interactions:
   `published`, `registry`, `pushed`).
 - `--status` prints the release journal and exits; it ignores the other flags except
   `--json`.
+- `--rehearse` asks every registry the packages publish to (npm-compatible feeds including
+  Azure Artifacts, GitHub Packages and `.npmrc` registries, PyPI, NuGet, crates.io) whether
+  the URL resolves, which credential it expects, whether the credential is set and accepted,
+  and, in CI, which identity publishes. It sends read-only requests, never prints a secret,
+  ignores the commit history and the other flags except `--json` and `--verbose`, and exits 1
+  when a check fails. Each failure names the exact fix.
+- With `registry = "github-release"` (a private repository), `--dry-run` lists the package files and the
+  bundle it would attach, and `--rehearse` checks that the token may write to the repository; no registry
+  is asked and no registry credential is needed. See
+  [Releasing](../reference/releasing.md#attach-the-package-files-to-the-github-release).
 - `--no-push` creates the tags locally only.
 - Without a terminal a real release must be confirmed with `-y`/`--yes` (CI passes it).
 - `--verbose` names the unchanged packages.
@@ -87,12 +142,24 @@ missing (`NODE_AUTH_TOKEN` or `NPM_TOKEN`, `PYPI_TOKEN`, `NUGET_API_KEY`, `GEM_H
 `VSCE_PAT`, `GITHUB_TOKEN` when `[release] github_releases` is on, and what a deploy plugin
 such as docker needs).
 
+A rehearsal prints, for each failure or warning, the reason and the fix:
+
+```text
+Release rehearsal: asking 1 registry with read-only requests; nothing is published.
+× core: credential on pkgs.dev.azure.com
+    SYSTEM_ACCESSTOKEN is not set, so @acme/core cannot be published to pkgs.dev.azure.com
+    → map the pipeline token into the release step: env: SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+0 passed, 1 failed, 0 warnings
+```
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | Released, or the dry run printed, or there was nothing to release. |
-| 1 | A preflight problem, a wrong release tag, a failed publish, a declined confirmation, or `--comment` without `--dry-run`. |
+| 2 | The release is done, but npm did not serve every platform package within `[release] propagation_wait`, so a dist-tag was not moved: the report names the `npm dist-tag add` command to run later (CI shows a warning). The wait runs once, after every project has published, so it never delays another publish. Run the release again to finish it: it publishes only what is missing, waits and moves the tag. |
+| 1 | A failed `--rehearse` check, a preflight problem, a wrong release tag, a failed publish, a declined confirmation, or `--comment` without `--dry-run`. |
 
 ## Files and environment
 
@@ -169,11 +236,26 @@ smith release --dry-run --format markdown
 | tools | new → **0.1.0** | 1 releasing commit(s) | planned |
 ```
 
-When no commit releases anything:
+A workspace with no package (only apps and internal libraries, which are never released) says so,
+and names the two ways to get one, without suggesting an empty commit:
+
+```text
+Nothing to release: this workspace has no package. Apps and internal libraries are never released.
+  → Add a package with smith add package <name> --lang <language>.
+  → Or turn a project that other projects import into a package with smith kind <name> package. It is then published to a registry.
+```
+
+When every package that would release is held back with `--hold`, it says that and names them:
+`Nothing to release: you held back sdk, and no other package has a feat: or fix: commit.` It does not
+suggest a commit. Only a workspace that has a package, none of them releasing, prints this:
 
 ```text
 Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).
-  → Releases come from conventional commits: commit with a message like "feat: add search" or "fix: handle empty input" ...
+  → A project releases when a feat:, fix: or breaking commit touches its own folder (or a lib it imports). A chore: commit, or a change only under tools/ or in smith.toml, releases nothing.
+  → Only feat: (a minor version) and fix: (a patch) commits make a release. The commits smith makes itself, such as "chore: add app web", never do.
+  → Commit your own work with a message like "feat: add search" or "fix: handle empty input" ...
+  → For a first release of projects that were never released, this is the commit that counts (smith does not make it for you):
+      git commit --allow-empty -m "feat: first version"
 Unchanged: 1 packages (--verbose names them)
 ```
 

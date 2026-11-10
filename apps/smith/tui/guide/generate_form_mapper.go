@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // notAsked are the flags a form never offers: the output format for tools,
@@ -18,16 +19,16 @@ var notAsked = []string{"json", "help", "yes"}
 // and each option that takes a value, all of which may be left empty. path is
 // the command's words under smith (["deps", "up"]) and id the action it presents.
 func FormFor(c clicontract.CommandDescription, path []string, id string) Action {
-	a := Action{Title: c.Description, Hint: "smith " + strings.Join(path, " "), NeedsWorkspace: true, Presents: id}
+	a := Action{Title: c.Description, Hint: words.Say("guide.generate_form.command", "path", strings.Join(path, " ")), NeedsWorkspace: true, Presents: id}
 	args := slices.Clone(c.Arguments)
 	slices.SortStableFunc(args, func(x, y clicontract.ArgumentDescription) int { return rank(y.Required) - rank(x.Required) })
 	for _, arg := range args {
-		step := Step{Key: "arg:" + arg.Name, Prompt: arg.Name, Placeholder: arg.Name, Optional: !arg.Required}
+		step := Step{Key: "arg:" + arg.Name, Prompt: arg.Name, Placeholder: arg.Name, Optional: !arg.Required, Path: asksForPath(arg.Name)}
 		if arg.Variadic {
-			step.Prompt += " (one or more, separated by spaces)"
+			step.Prompt += words.Say("guide.generate_form.one_or_more_separated_by_spaces")
 		}
 		if !arg.Required {
-			step.Prompt += " (optional)"
+			step.Prompt += words.Say("guide.generate_form.optional")
 		}
 		for _, choice := range arg.Choices {
 			step.Options = append(step.Options, Option{Label: choice, Value: choice})
@@ -46,15 +47,15 @@ func FormFor(c clicontract.CommandDescription, path []string, id string) Action 
 		}
 	}
 	if len(switches) > 0 {
-		none := Option{Label: "none", Value: "", Hint: "run it as it is"}
-		a.Steps = append(a.Steps, Step{Key: "switches", Prompt: "Options? (space toggles, enter confirms)", Multi: true, Options: append([]Option{none}, switches...)})
+		none := Option{Label: "none", Value: "", Hint: words.Say("guide.generate_form.run_it_as_it_is")}
+		a.Steps = append(a.Steps, Step{Key: "switches", Prompt: words.Say("guide.generate_form.options_space_toggles_enter_confirms"), Multi: true, Options: append([]Option{none}, switches...)})
 	}
 	for _, o := range valued {
-		prompt := "--" + o.Name + " (optional)"
+		prompt := words.Say("guide.generate_form.flag_optional", "name", o.Name)
 		if o.Description != "" {
-			prompt = "--" + o.Name + ": " + o.Description + " (optional)"
+			prompt = words.Say("guide.generate_form.optional_described", "name", o.Name, "description", o.Description)
 		}
-		a.Steps = append(a.Steps, Step{Key: "flag:" + o.Name, Prompt: prompt, Optional: true})
+		a.Steps = append(a.Steps, Step{Key: "flag:" + o.Name, Prompt: prompt, Optional: true, Path: asksForPath(o.Name)})
 	}
 	a.Argv = func(answers map[string][]string) []string {
 		argv := slices.Clone(path)

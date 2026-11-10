@@ -3,6 +3,7 @@ package taskrun
 import (
 	"context"
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"io"
 	"os"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 )
 
 // Request is what to run in an open workspace.
@@ -26,7 +28,10 @@ type Request struct {
 	Parallel int
 	Bail     bool
 	NoCache  bool
-	Out      io.Writer
+	// Quiet keeps the output of tasks that succeed (and of cache hits) off
+	// the screen; a failed task still shows all of its output.
+	Quiet bool
+	Out   io.Writer
 	// Events, when set, receives the run's event stream. RunID names the run
 	// in it; empty means a generated one.
 	Events runevents.Sink
@@ -37,7 +42,7 @@ type Request struct {
 func (r Request) Command() string {
 	parts := append([]string{"smith", "run"}, r.Tasks...)
 	if len(r.Projects) > 0 {
-		parts = append(parts, "-p", strings.Join(r.Projects, ","))
+		parts = append(parts, flagvocabulary.Arg("project"), strings.Join(r.Projects, ","))
 	}
 	if r.Affected {
 		parts = append(parts, "--affected")
@@ -132,8 +137,9 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	meter := cachemaintenance.NewWriteMeter(store)
 	summary := Run(ctx, g, Options{
 		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: meter,
-		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Out: req.Out, ToolVersion: s.Version,
-		Events: stream, Command: req.Command(),
+		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
+		Events: stream, Command: req.Command(), SharedOutputs: s.Config.Workspace.SharedOutputs,
+		Installable: func(name string) bool { return toolinstall.Declares(s, name) },
 	})
 	pruneAfterRun(s, meter, os.Stderr)
 	return summary, nil

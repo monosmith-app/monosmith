@@ -1,0 +1,294 @@
+package guide
+
+import (
+	"encoding/json"
+	"fmt"
+	"slices"
+	"sort"
+	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/libs/words/words"
+)
+
+// ChoiceOffer is one choice of a project as `smith choices --json` lists it:
+// a framework, a test runner or a style that a plugin publishes.
+type ChoiceOffer struct {
+	Axis        string `json:"axis"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	// Title and Aliases are what smith compose searches: the display name and the
+	// words that find the choice ("desktop", "serverless").
+	Title   string   `json:"title"`
+	Aliases []string `json:"aliases"`
+	// Layer is where the choice sits in the stack (framework, shell, host); empty
+	// means the layer of its axis.
+	Layer    string `json:"layer"`
+	Language string `json:"language"`
+	Default  bool   `json:"default"`
+	// Many lets the choice sit next to other choices of its axis that are Many
+	// too; any other axis takes one choice.
+	Many bool `json:"many"`
+	// Suggested marks the answer a question pre-selects; Needs are the axes the
+	// choice needs an answer on (a function host needs a trigger and a runtime).
+	Suggested bool     `json:"suggested"`
+	Needs     []string `json:"needs"`
+	Requires  []string `json:"requires"`
+	Conflicts []string `json:"conflicts"`
+	// Problem says why the choice cannot be used here; empty when it can.
+	Problem string `json:"problem"`
+	// Plugin and Roles are what the solver needs to check a ticked set in the
+	// form; Kinds are the project kinds the choice is for (app, lib, package), and
+	// none means every kind.
+	Plugin string   `json:"plugin"`
+	Roles  []string `json:"roles"`
+	Kinds  []string `json:"kinds"`
+}
+
+// ParseChoices reads the output of `smith choices --json`.
+//
+// text is that output. It returns the offers that can be used, and an error
+// when the text is not the JSON list smith prints.
+func ParseChoices(text string) ([]ChoiceOffer, error) {
+	var all []ChoiceOffer
+	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &all); err != nil {
+		return nil, fmt.Errorf("%s: %w", words.Say("guide.add_project_choices.unreadable"), err) // words:literal
+	}
+	var usable []ChoiceOffer
+	for _, o := range all {
+		if o.Problem == "" {
+			usable = append(usable, o)
+		}
+	}
+	return usable, nil
+}
+
+// withKeyPrefix starts the answer key of the choices asked for one language.
+const withKeyPrefix = "with:"
+
+// siblingsMin is how many projects a workspace needs before the form asks
+// whether the new project should match them: smith follows siblings only from
+// three projects of one kind and language on.
+const siblingsMin = 3
+
+// AddProjectAction is the "Add a project" form with the questions the
+// workspace's plugins add: after the name, the choices (a framework, a test
+// runner, a style) of the language picked, and, when the workspace already
+// has projects to follow, whether the new one matches them or takes the
+// stack's own defaults (`--fresh`).
+//
+// base is the plain form, offers the usable choices and existing the names of
+// the projects the workspace has: a name that one of them has is refused as
+// the person types it. The questions are only added when there is something
+// to ask.
+func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Action {
+	steps := slices.Clone(base.Steps)
+	for i := range steps {
+		if steps[i].Key == "name" && steps[i].Check != nil {
+			check := steps[i].Check
+			steps[i].Check = func(a map[string][]string, value string) string {
+				if slices.Contains(existing, value) {
+					return words.Say("guide.add_project_choices.exists", "name", value)
+				}
+				return check(a, value)
+			}
+		}
+	}
+	for i := range steps {
+		if steps[i].Key == "lang" {
+			steps[i].Options = withChoiceNames(steps[i].Options, offers)
+		}
+	}
+	steps = withOutcomes(steps, offers)
+	base.Steps = slices.Clone(steps)
+	if len(offerLanguages(offers)) > 0 || len(existing) >= siblingsMin {
+		steps = append(steps, addSetupStep())
+	}
+	var needs map[string]string
+	if i := slices.IndexFunc(base.Steps, func(s Step) bool { return s.Key == "lang" }); i >= 0 {
+		needs = layerNeeds(compose.Outcomes(catalogueItems(base.Steps[i].Options, offers)))
+	}
+	for _, lang := range offerLanguages(offers) {
+		own := offersOf(offers, lang)
+		// One list per kind, so a package is not offered a framework that cannot
+		// write one; the last list, for a form with no kind, holds them all.
+		for _, kind := range append(slices.Clone(projectKinds), "") {
+			if listed := fitting(own, kind); len(listed) > 0 {
+				steps = append(steps, choicesStep(lang, kind, listed, picksCheck(lang, own, needs)))
+			}
+		}
+		steps = append(steps, axisSteps(lang, own)...)
+	}
+	if len(existing) >= siblingsMin {
+		steps = append(steps, Step{Key: "follow", Prompt: words.Say("guide.add_project_choices.should_it_do_what_the_other"),
+			Take: func(a map[string][]string) ([]string, bool) {
+				return []string{"follow"}, first(a, addSetupKey) == setupDefaults
+			},
+			Options: []Option{
+				{Label: words.Say("guide.add_project_choices.yes_match_the_other_projects"), Value: "follow", Hint: words.Say("guide.add_project_choices.when_most_projects_of_this_kind")},
+				{Label: words.Say("guide.add_project_choices.follow_one_project"), Value: "like", Hint: words.Say("guide.add_project_choices.smith_add_like_project_take_its")},
+				{Label: words.Say("guide.add_project_choices.no_use_the_stack_s_own"), Value: "fresh", Hint: words.Say("guide.add_project_choices.smith_add_fresh")},
+			}})
+		like := Step{
+			Key: "like", Prompt: words.Say("guide.add_project_choices.follow_which_project"), Filter: len(existing) > 10,
+			Skip: func(a map[string][]string) bool { return first(a, "follow") != "like" },
+		}
+		for _, n := range existing {
+			like.Options = append(like.Options, Option{Label: n, Value: n})
+		}
+		steps = append(steps, like)
+	}
+	if len(steps) == len(base.Steps) {
+		return base
+	}
+	out := base
+	out.Steps = steps
+	out.Argv = func(a map[string][]string) []string {
+		argv := base.Argv(a)
+		var picked []string
+		for _, lang := range offerLanguages(offers) {
+			picked = append(picked, a[withKeyPrefix+lang]...)
+			for _, axis := range askedAxes(offersOf(offers, lang)) {
+				picked = append(picked, a[axisKey(lang, axis)]...)
+			}
+		}
+		if len(picked) > 0 {
+			argv = append(argv, "--with", strings.Join(picked, ","))
+		}
+		switch first(a, "follow") {
+		case "fresh":
+			argv = append(argv, "--fresh")
+		case "like":
+			argv = append(argv, "--like", first(a, "like"))
+		}
+		return argv
+	}
+	return withWebEnvironments(out, offers)
+}
+
+// withChoiceNames gives each language option the names of the choices its
+// language offers, so filtering the list by "react" or "fastapi" finds the
+// language that offers it.
+func withChoiceNames(options []Option, offers []ChoiceOffer) []Option {
+	out := slices.Clone(options)
+	for i := range out {
+		own := offersOf(offers, out[i].Value)
+		asked := askedAxes(own)
+		for _, o := range own {
+			// The language filter is a view of the catalogue (ADR 0076): a choice is
+			// found by its name, its title and its aliases, the words smith compose
+			// searches ("desktop", "serverless", "google", "cloud run").
+			words := append([]string{o.Name, o.Title}, o.Aliases...)
+			if needsAsked(o, asked) {
+				words = append(words, o.Description)
+			}
+			for _, w := range words {
+				if w != "" && !slices.Contains(out[i].Also, w) {
+					out[i].Also = append(slices.Clone(out[i].Also), w)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// RemoveProjectAction is the "Remove a project" form with a list of the
+// projects to pick from, in place of a free-text name that can be mistyped.
+// names are the workspace's projects; a form with no project is returned as
+// it is.
+func RemoveProjectAction(base Action, names []string) Action {
+	if len(names) == 0 {
+		return base
+	}
+	pick := Step{Key: "name", Prompt: words.Say("guide.add_project_choices.which_project"), Filter: len(names) > 10}
+	for _, n := range names {
+		pick.Options = append(pick.Options, Option{Label: n, Value: n})
+	}
+	out := base
+	out.Steps = slices.Clone(base.Steps)
+	for i := range out.Steps {
+		if out.Steps[i].Key == "name" {
+			out.Steps[i] = pick
+		}
+	}
+	return out
+}
+
+// choicesStep asks for the choices of one language, and is left out for any
+// other language.
+func choicesStep(lang, kind string, offers []ChoiceOffer, check func(map[string][]string, string) string) Step {
+	step := Step{
+		Key:      withKeyPrefix + lang,
+		Prompt:   words.Say("guide.add_project_choices.build_it_from_choices_space_ticks"),
+		Glossary: true,
+		Multi:    true,
+		Optional: true,
+		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang || kindOfAnswers(a) != kind },
+		Check:    check,
+		// With the defaults, what the person picked above is ticked and nothing is asked.
+		Take: func(a map[string][]string) ([]string, bool) {
+			if first(a, addSetupKey) != setupDefaults || first(a, "lang") != lang {
+				return nil, false
+			}
+			if first(a, pickKey) == pickNone {
+				return nil, true
+			}
+			return a[pickKey], true
+		},
+		// What the outcome question picked (Tauri, React, Azure Functions) starts ticked.
+		Ticked: func(a map[string][]string) []string {
+			if first(a, pickKey) == pickNone {
+				return nil
+			}
+			return a[pickKey]
+		},
+	}
+	asked := askedAxes(offers)
+	var listed []ChoiceOffer
+	for _, o := range offers {
+		if slices.Contains(asked, o.Axis) {
+			continue // asked in its own question, once a choice that needs it is ticked
+		}
+		listed = append(listed, o)
+		hint := o.Description
+		if len(o.Requires) > 0 {
+			hint += words.Say("guide.add_project_choices.needs", "names", strings.Join(o.Requires, ", "))
+		}
+		if o.Default {
+			hint += words.Say("guide.add_project_choices.default")
+		}
+		step.Options = append(step.Options, Option{Label: o.Axis + ": " + o.Name, Value: o.Name, Hint: hint, Group: o.Axis, Many: o.Many})
+	}
+	// The words are the ones of the rows on the list, not of every offer.
+	step.Note = choiceWords(listed)
+	return step
+}
+
+// offerLanguages are the languages that have choices, in a stable order.
+func offerLanguages(offers []ChoiceOffer) []string {
+	var langs []string
+	for _, o := range offers {
+		if !slices.Contains(langs, o.Language) {
+			langs = append(langs, o.Language)
+		}
+	}
+	sort.Strings(langs)
+	return langs
+}
+
+// offersOf are the offers of one language, by axis and then name.
+func offersOf(offers []ChoiceOffer, lang string) []ChoiceOffer {
+	var out []ChoiceOffer
+	for _, o := range offers {
+		if o.Language == lang {
+			out = append(out, o)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Axis != out[j].Axis {
+			return out[i].Axis < out[j].Axis
+		}
+		return out[i].Name < out[j].Name
+	})
+	return out
+}

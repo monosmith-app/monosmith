@@ -27,7 +27,7 @@ They make two promises.
   "not verified".
 - **Every claim about another tool comes from that tool's own documentation
   or repository.** Each comparison page ends with its sources and the date they
-  were read. A cell in the comparison tables is marked "absent" (❌) for a
+  were read. A cell in the comparison tables is marked "absent" (×) for a
   competitor only where a documentation page says so, or describes a
   different mechanism for the same job and a search found nothing else, and "not verified" (❔)
   where the sources were searched and say nothing either way.
@@ -62,7 +62,7 @@ conventional commits. It is one static binary, licensed MIT.
 
 It is not a replacement for everything. It has no remote execution and no
 hermetic sandbox, its graph is per project and not per file, its Node plugin runs
-npm only, and it has no plugin registry yet. If you need those, the
+npm only, and it has no registry of third-party plugins yet (only a marketplace index). If you need those, the
 [decision guide](comparison/choosing.md) says which tool to look at.
 
 ## For engineers who want the technical documentation

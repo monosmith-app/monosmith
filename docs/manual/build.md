@@ -38,13 +38,19 @@ Usage: `smith build [project]... [flags]`
 | `--json-events` | boolean | off | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else |
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
-| `-p, --projects <projects>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude |
+| `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end build -->
 
 Positional `project` names and `-p` are two ways to select projects; the selector syntax
 (`web`, `apps/*`, `kind:app`, `lang:go`, `tag:x`, `!api`) and every interaction between the
 flags are described on [`smith run`](run.md#arguments-and-flags).
+
+## Output
+
+A project that builds shows one line with its time. The log of a project that fails is shown in full,
+and so is every log with `--verbose`. A result taken from the cache shows no log.
 
 ## Exit codes
 
@@ -69,8 +75,8 @@ smith build -p web
 
 ```text
 web:build ▶ npm run build --silent
-web:build ✔ 935ms
-✔ 1/1 tasks succeeded (0 from cache) in 959ms
+web:build ✓ 935ms
+✓ 1/1 tasks succeeded (0 from cache) in 959ms
 ```
 
 ```sh
@@ -78,7 +84,7 @@ smith build web
 ```
 
 ```text
-web:build ✔ from cache
+web:build ✓ from cache
 ...
 ```
 
@@ -94,7 +100,7 @@ smith build -p kind:package
 |---|---|
 | `no project matches "nope" (projects: ...)` | `smith projects` lists the names. |
 | `ui:build → the command tsc was not found: install it, ...` | Dependencies are not installed. `smith install`. |
-| `✖ web:build exited with code 2` | The compiler failed; read the lines above it. |
+| `× web:build exited with code 2` | The compiler failed; read the lines above it. |
 
 ## Related
 

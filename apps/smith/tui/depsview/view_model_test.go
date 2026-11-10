@@ -50,15 +50,19 @@ func TestSafeAndMajorReleasesAreSeparatedAndExplained(t *testing.T) {
 	}
 }
 
-func TestMarkingTheSafeOnesLeavesTheMajorsUnmarked(t *testing.T) {
-	m := sample().Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")}, 10)
+func TestMarkingEveryRowOfAChipLeavesTheMajorsUnmarked(t *testing.T) {
+	m := sample().Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")}, 10).TickAll()
+	if len(m.Marked) != 12 {
+		t.Fatalf("marked %d, want the 12 patch rows", len(m.Marked))
+	}
+	m = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}, 10).TickAll()
 	if len(m.Marked) != 18 {
 		t.Fatalf("marked %d, want the 18 patch and minor rows", len(m.Marked))
 	}
 	if strings.Contains(strings.Join(render(m, 90, 40), "\n"), "major releases: they can break") {
 		t.Fatal("no major is chosen, so no warning")
 	}
-	m = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")}, 10)
+	m = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")}, 10).TickAll()
 	if !strings.Contains(strings.Join(render(m, 90, 40), "\n"), "4 of the chosen packages are major releases") {
 		t.Fatalf("marking everything must warn about the majors:\n%s", strings.Join(render(m, 90, 40), "\n"))
 	}
@@ -67,5 +71,15 @@ func TestMarkingTheSafeOnesLeavesTheMajorsUnmarked(t *testing.T) {
 func TestColumnsStayInsideTheirWidth(t *testing.T) {
 	for _, w := range []int{50, 72, 110} {
 		render(sample(), w, 24) // panics on an overlong line
+	}
+}
+
+func TestKindColumnFitsEightyColumns(t *testing.T) {
+	m := FromResult(Result{Rows: []Row{{Name: "zod", Current: "3.22.0", Latest: "3.24.1", Level: "minor", Kinds: []string{"dev", "prod"}, Projects: []string{"web", "api"}}}})
+	text := strings.Join(render(m, 80, 30), "\n")
+	for _, want := range []string{"Kind", "dev, prod"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q:\n%s", want, text)
+		}
 	}
 }

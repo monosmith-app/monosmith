@@ -1,0 +1,11 @@
+{
+  "pathfinder.hint": "type to filter · up/down choose · tab completes · enter opens or confirms · esc back",
+  "pathfinder.here": "here (the folder smith started in)",
+  "pathfinder.in": "in {where}",
+  "pathfinder.unreadable": "this folder cannot be read: enter uses what you typed",
+  "pathfinder.nomatch": "nothing here matches: enter uses what you typed",
+  "pathfinder.more": "{count} more: keep typing to narrow the list",
+  "pathfinder.more.truncated": "{count} more, and the folder holds more than {max} names: keep typing to narrow the list",
+  "pathfinder.note": "… {note}",
+  "pathfinder.up": "up one folder"
+}

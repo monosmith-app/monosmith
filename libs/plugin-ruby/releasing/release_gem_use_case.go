@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -69,6 +68,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if params.Project.Kind != protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "released by its tag"}, nil
 	}
+	if params.PackDir != "" {
+		return packGem(workspaceRoot, params)
+	}
 	result := protocol.PublishResult{Registry: host()}
 	if params.DryRun {
 		result.Skipped = "dry run"
@@ -86,7 +88,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if len(params.Project.Exports) > 0 {
 		name = params.Project.Exports[0]
 	}
-	packed := filepath.Join(out, name+"-"+params.Version+".gem")
+	packed := filepath.Join(out, name+"-"+GemVersion(params.Version)+".gem")
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(params.Project.Root))
 	if err := GemRunner(dir, []string{"gem", "build", file, "--output", packed}); err != nil {
 		return result, err
@@ -104,9 +106,9 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 		return protocol.PublishedResult{}, nil
 	}
 	result := protocol.PublishedResult{Registry: host()}
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(result.Registry + "/api/v1/versions/" + params.Project.Exports[0] + "/latest.json")
+	resp, err := (&http.Client{Timeout: protocol.RegistryLookupTimeout}).Get(result.Registry + "/api/v1/versions/" + params.Project.Exports[0] + "/latest.json")
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -119,7 +121,7 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	}
 	var body struct{ Version string }
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	// RubyGems answers "unknown" for a gem it does not have.

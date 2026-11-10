@@ -22,6 +22,9 @@ const (
 type Variant struct {
 	When   []string
 	Safety Safety
+	// Terminal is why a NeedsTerminal variant cannot run in an interface's own
+	// dialog. It is required for that safety.
+	Terminal string
 }
 
 // Action is one smith command.
@@ -29,11 +32,22 @@ type Action struct {
 	// Command is the command's path under smith: {"plugin", "set"}.
 	Command []string
 	Safety  Safety
+	// Terminal is why the action needs a terminal and cannot run in the
+	// interface's own dialogs: a child program that is interactive by nature
+	// (a password, an editor, a protocol on stdio). It is required when Safety
+	// is NeedsTerminal and says what the interface does instead.
+	Terminal string
 	// Variants are the forms of it with another safety, the first match wins.
 	Variants []Variant
 	// Asks means that, when it changes the workspace, it asks for a yes on a
 	// terminal, so an interface that has confirmed it itself passes --yes.
 	Asks bool
+	// Plan is the flag that prints what the action would do and changes
+	// nothing (--dry-run, or --check for a report). An interface that confirms
+	// the action itself runs it first and shows the text in the dialog, so the
+	// person answers yes to a plan and not to a sentence. Empty means the
+	// action has no such flag.
+	Plan string
 	// NotInTUI is why the interactive shell's menus and guided forms leave
 	// it out (it stays reachable from the command palette). Empty means a
 	// menu entry or a guided form presents it.

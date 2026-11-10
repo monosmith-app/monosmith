@@ -106,6 +106,52 @@ type ComponentLister interface {
 	Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error)
 }
 
+// Deriver says which files the plugin derives from facts and the project graph
+// (smith derive). It writes nothing: the host owns the writes.
+type Deriver interface {
+	Derive(params protocol.DeriveParams) (protocol.DeriveResult, error)
+}
+
+// APISurfaceReader lists the public API names of a project at a git revision.
+type APISurfaceReader interface {
+	APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error)
+}
+
+// ChannelPublisher is implemented by a plugin whose Publish honours
+// PublishParams.Tag: it publishes under that release channel and does not move
+// the registry's stable pointer. Serve advertises the channels capability for it.
+type ChannelPublisher interface {
+	Publisher
+	// PublishesChannels is a marker; it does nothing.
+	PublishesChannels()
+}
+
+// PackPublisher is implemented by a plugin whose Publish honours
+// PublishParams.PackDir: it writes the package file and publishes nothing.
+// Serve advertises the packs capability for it.
+type PackPublisher interface {
+	Publisher
+	// PacksPackages is a marker; it does nothing.
+	PacksPackages()
+}
+
+// Linker is implemented by a plugin that makes a project depend on a library
+// of the same workspace, and takes the dependency out. Serve advertises the
+// link capability for it.
+type Linker interface {
+	Link(params protocol.LinkParams) (protocol.LinkResult, error)
+	Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error)
+}
+
+// DeclaredDescriber is implemented by a plugin whose Discover also describes
+// the projects smith.toml declares (DiscoverParams.Declared): folders with no
+// manifest of their own. Serve advertises the declared capability for it.
+type DeclaredDescriber interface {
+	Discoverer
+	// DescribesDeclared is a marker; it does nothing.
+	DescribesDeclared()
+}
+
 // Contributor is a convention: it adds tasks to the projects it applies to.
 type Contributor interface {
 	Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error)

@@ -1,5 +1,6 @@
 import type { SmithSource } from '../smith-client/index.ts'
 import { sourceName } from './smith-origin.mapper.ts'
+import { say } from '../words/index.ts'
 
 /** The smith the editor runs and the one a terminal would run. */
 export interface SkewCheck {
@@ -19,5 +20,5 @@ export interface SkewCheck {
 export function judgeSkew (check: SkewCheck): string | undefined {
   if (check.terminalSmith === undefined || check.terminalVersion === undefined || check.editorSource === 'path' || check.terminalSmith === check.editorSmith) return undefined
 
-  return check.terminalVersion === check.editorVersion ? undefined : `MonoSmith runs smith ${check.editorVersion} from ${sourceName(check.editorSource)}, but a terminal here runs smith ${check.terminalVersion} from the PATH. Results can differ.`
+  return check.terminalVersion === check.editorVersion ? undefined : say('vscode.smith-version.monosmith-runs-smith-from-but-a', { editorVersion: check.editorVersion, sourceName: sourceName(check.editorSource), terminalVersion: check.terminalVersion })
 }

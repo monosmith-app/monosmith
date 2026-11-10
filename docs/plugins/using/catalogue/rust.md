@@ -11,7 +11,7 @@ The rust plugin makes every crate in a root Cargo workspace a smith project. It 
 | `--lang` values | `rust` |
 | Manifest that makes a directory a project | `Cargo.toml` with a `[package]` table. A root `Cargo.toml`, and a manifest without `[package]` (a virtual workspace), are not projects. |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`, `link`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`rust-app`, `rust-lib`, `rust-package`) |
 
@@ -175,12 +175,12 @@ The plugin has no `[projects.<p>.settings.rust]` keys.
 The pin label is `rustc`, probed with `rustc --version`. Real output with `[toolchains] rustc = "1.90"` on a machine with 1.76.0:
 
 ```
-✖ rustc matches the pinned version 1.90
+× rustc matches the pinned version 1.90
     [toolchains] pins rustc 1.90, but this machine runs 1.76.0: tasks cached on another version are misses, and results can differ from CI
     → install rustc 1.90 (`mise use rust@1.90`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] rustc
 ```
 
-smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): older fails, newer warns. A machine on 1.76.0 fails the check instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
+smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): another version is a warning, older or newer. A machine on 1.76.0 is warned (with the fix that installs the pinned toolchain) instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
 
 Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes): `dist/cargo/debug/` for builds, `dist/cargo/package/` for `cargo package`.
 
@@ -190,6 +190,7 @@ Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes):
 |---|---|
 | Version | `[package] version` in the crate's `Cargo.toml`. The release writes the literal version there (keeping formatting), and also updates the `version = "..."` requirement of inline path dependencies on other released crates in the workspace (`dep = { path = "...", version = "..." }`), then publishes and restores. A crate with `version.workspace = true` has no literal to write; nothing is changed for it. |
 | Tag | `<name>@<version>`, name being the directory name: `kit@0.1.0` (real). |
+| Release channel | the plugin declares `channels`: crates.io orders a prerelease (`2.0.0-beta.1`) below its release, so a dependency on the crate never takes it, and `cargo publish` needs no tag. The release writes the semver spelling as it is into `Cargo.toml` and into the path dependencies. |
 | What is published | `package` crates only, with `cargo publish -p <crate> --allow-dirty` (the manifests carry the release version while smith releases, and cargo would refuse the dirty tree). Libs are released by their tag. |
 | Release assets of an app | With `[projects.<app>.release]` the plugin builds, for each of its `platforms` (Go's `os/arch`: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`; default all six), `cargo build --release -p <crate> --target <triple> --message-format=json-render-diagnostics` (triples `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `x86_64-apple-darwin`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc`), reads the programs from cargo's messages (so a changed `target-dir` is no problem), and writes `dist/release/<app>/<asset_name>` as a zip holding every program the crate builds, plus the README and LICENSE/COPYING files of the crate's directory (else the workspace root), and `checksums.txt` (`sha256sum -c` format). The version is the one in `Cargo.toml`, which the release has set: `env!("CARGO_PKG_VERSION")` is the tag's version. Each app of a workspace is its own asset set, named by `product` (default: the project name). The result also feeds the package manager manifests, deb and rpm, npm, PyPI, NuGet and RubyGems packages, exactly as a Go app's does. The checks run in a dry run (`would attach dist/release/cli/cli_0.1.0_linux_amd64.zip, dist/release/cli/checksums.txt`); nothing is built. |
 | Platforms this machine cannot build | This machine builds its own platform, the other Windows or Mac processor, and the other Linux processor when a linker is available (`aarch64-linux-gnu-gcc` or `x86_64-linux-gnu-gcc` on PATH, `CARGO_TARGET_<TRIPLE>_LINKER`, or a `linker` in `[target.<triple>]` of `.cargo/config.toml`). Anything else stops the release: `this machine (linux/amd64) cannot build windows/amd64: a Rust program is built on the system it is for. Mark the app native ...`; a Rust target `rustup` has not installed: `the Rust target x86_64-apple-darwin is not installed: run rustup target add x86_64-apple-darwin`; a missing linker: `needs a linker for it: install aarch64-linux-gnu-gcc (apt install gcc-aarch64-linux-gnu), or set CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER, or ... marking the app native`. |
@@ -248,13 +249,19 @@ Real output of `smith ci generate` (GitHub):
 
 `smith rust-policy --max-unsafe=0` over the three generated crates printed nothing and exited 0. cargo-deny is not installed here, so the full opt-in audit was not run.
 
+## Linking an internal library
+
+`smith install -p <project> shop-core` runs `cargo add --path <library>` in the project's `Cargo.toml`, so the dependency is a path dependency and `Cargo.lock` follows. `smith uninstall` runs `cargo remove`. The plugin declares the `link` capability.
+
 ## Doctor, dependencies and removal
+
+Build folder (`pipeline/check_build_dir_use_case.go`): `Rust builds into dist/cargo` reads `build.target-dir` of the nearest `.cargo/config.toml` (else the default `target/`; `CARGO_TARGET_DIR` wins). A workspace that builds into `target/` gets a fix that asks and writes `[build] target-dir = "dist/cargo"`, keeping the other lines; it is refused, with the reason, when a Dockerfile, script or pipeline names `target/` or the environment sets the folder. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 Doctor checks (`pipeline/check_workspace_use_case.go`), shown only when the workspace has Rust crates:
 
 | Check | Fails when |
 |---|---|
-| `cargo is installed` | `cargo --version` fails; remedy: install Rust with rustup |
+| `Rust (cargo) is installed` | `cargo --version` fails; remedy: install Rust with rustup |
 | `cargo-audit is installed` | a warning when `cargo audit --version` fails; remedy: `cargo install --locked cargo-audit` |
 | `Rust is <version>, as in CI` | `rustc --version`, as rustup resolves it in the workspace (so a `rust-toolchain.toml` counts), is older than the version CI and the dev container install (`1.90`, or the `channel` of `rust-toolchain.toml`); a newer local Rust is a warning. Nothing is reported when `rustc` is absent (the `cargo` check says so) or the channel is `stable` or `nightly`. Fix: write `rust-toolchain.toml` (never over an existing one) and `rustup toolchain install` the pinned version; for a newer local Rust, pin what the machine runs |
 | `the root Cargo.toml is a workspace` | there is no root `Cargo.toml` |
@@ -275,9 +282,15 @@ Dependencies: the plugin lists what every crate's `Cargo.toml` declares (`[depen
 - A dependency from a `path` or a repository URL, and one a crate inherits with `workspace = true`, declares no version of its own and is left alone. A renamed dependency (`package = "reqwest"`) counts under its crate name.
 - `smith sync` brings every declaration of a crate to the highest version declared, rewriting only the version string (features, comments and spacing stay). A requirement that is a range (`>=0.11, <0.13`) or a wildcard is reported and left alone. A version a crate declares for a dependency that the root `[workspace.dependencies]` also declares counts as a difference; moving the dependency to the workspace table and writing `workspace = true` in the crates ends it for good.
 - `smith up` asks crates.io for the newest stable release of each crate and rewrites to it, keeping each requirement's operator. It then runs `cargo fetch`, so `Cargo.lock` follows.
-- `smith install -w kit serde` runs `cargo add` in the crate (`-D` adds a dev-dependency) and `smith uninstall -w kit serde` runs `cargo remove`; a bare `smith install` runs `cargo fetch`.
+- `smith install -p kit serde` runs `cargo add` in the crate (`-D` adds a dev-dependency) and `smith uninstall -p kit serde` runs `cargo remove`; a bare `smith install` runs `cargo fetch`.
 
 Removal: `smith remove <project>` deletes the directory and takes its entry out of `members` in the root `Cargo.toml`. Real dry run: `Would remove core (libs/core)`, `changes Cargo.toml`, `the pipelines would be regenerated`.
+
+## Declared projects
+
+The plugin declares `declared`. A program of a crate has no `Cargo.toml` of its own, so declare it in `smith.toml` with `root` set to its `src/bin/<name>` folder (it holds a `main.rs`) and `language = "rust"`. smith finds the crate whose `Cargo.toml` is above the folder and runs its tasks for that one program: `cargo build`, `test`, `clippy` and `check` with `-p <crate> --bin <name>`, and `cargo run` for an app (the default kind). The crate's `Cargo.toml` and `src/` are task inputs, and the project imports the crates the manifest depends on by path. It exports nothing, since a binary cannot be imported, and it has no `format` task, because `cargo fmt` covers a whole crate.
+
+smith refuses, naming the folder: a folder that does not exist, one with a `Cargo.toml` of its own, one with no crate above it, one that is not `src/bin/<name>/main.rs`, and the kind `package` (a crate has one version).
 
 ## Requirements and limits
 
@@ -289,7 +302,7 @@ Removal: `smith remove <project>` deletes the directory and takes its entry out 
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, cargo 1.76.0, rustc 1.76.0, clippy 0.1.76, rustfmt 1.7.0-stable. Throw-away workspace `rs-demo` from `smith new rs-demo`. Run: `smith add lib|app|package ... --lang rust`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|format|package`, `smith doctor` (clean, and with a wrong `[toolchains] rustc` pin), `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]` (including the real `cargo publish --dry-run` against crates.io), `smith install -w`, `smith up --check`, `smith remove core --dry-run`, `smith rust-policy`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, cargo 1.76.0, rustc 1.76.0, clippy 0.1.76, rustfmt 1.7.0-stable. Throw-away workspace `rs-demo` from `smith new rs-demo`. Run: `smith add lib|app|package ... --lang rust`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|format|package`, `smith doctor` (clean, and with a wrong `[toolchains] rustc` pin), `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]` (including the real `cargo publish --dry-run` against crates.io), `smith install -p`, `smith up --check`, `smith remove core --dry-run`, `smith rust-policy`.
 
 Not verified:
 

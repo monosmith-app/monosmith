@@ -31,6 +31,7 @@ func (p *Astro) Describe(params protocol.InitializeParams) (protocol.InitializeR
 		Languages: []string{"node"},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
+		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 		Provides:  []string{"build"},
 		Stacks: []protocol.Stack{{
 			Name:        DocsSite,

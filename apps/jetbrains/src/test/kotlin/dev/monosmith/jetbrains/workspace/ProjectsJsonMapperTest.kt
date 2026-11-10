@@ -14,6 +14,12 @@ class ProjectsJsonMapperTest {
     }
 
     @Test
+    fun readsTheProjectsADependsOn() {
+        val json = """[{"name":"web","dir":"apps/web","kind":"app","language":"node","deps":["ui","core"],"tasks":[]}]"""
+        assertEquals(listOf("ui", "core"), ProjectsJsonMapper.toProjects(json).single().deps)
+    }
+
+    @Test
     fun toleratesMissingOptionalFields() {
         assertEquals(
             listOf(SmithProjectContract("x", "x", "", "", emptyList())),

@@ -8,7 +8,7 @@ from typing import Any
 
 from ..protocol import GenerateParams, GenerateResult
 from ..templating import write_templates
-from .scaffold_data_mapper import scaffold_data
+from .template_fields_mapper import scaffold_data
 
 
 def scaffold_project(

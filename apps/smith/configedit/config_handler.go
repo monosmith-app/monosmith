@@ -6,6 +6,8 @@ import (
 	"sort"
 	"text/tabwriter"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +18,7 @@ func Command() *cobra.Command {
 		Use:   "config",
 		Short: "Read and change settings of smith.toml",
 		Long: `Read and change the settings of smith.toml's [workspace], [ci], [release],
-[cache], [plugins] and [agent] tables. Values are checked against smith.toml's schema,
+[cache], [plugins], [agent] and [dependencies] tables. Values are checked against smith.toml's schema,
 and only the setting's value changes in the file: comments and every other
 line stay as they are. A default stack is set per language, as in
 default_stacks.node. Edit stacks, conventions, tasks and projects in the file
@@ -80,7 +82,11 @@ itself.`,
 				if !r.Set {
 					value = "(default)"
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", r.Path, value, r.Description)
+				text := r.Description
+				if r.Reason != "" {
+					text += " Why: " + r.Reason
+				}
+				fmt.Fprintf(w, "%s\t%s\t%s\n", r.Path, value, text)
 			}
 			return w.Flush()
 		},
@@ -121,7 +127,7 @@ itself.`,
 				return err
 			}
 			value, _, _ := Get(dir, args[0])
-			fmt.Fprintf(cmd.OutOrStdout(), "✔ %s = %s\n", args[0], value)
+			fmt.Fprintf(cmd.OutOrStdout(), marks.Passed+" %s = %s\n", args[0], value)
 			return nil
 		},
 	}
@@ -138,10 +144,12 @@ itself.`,
 			if err := Unset(dir, args[0]); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "✔ %s removed: it has its default\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), marks.Passed+" %s removed: it has its default\n", args[0])
 			return nil
 		},
 	}
+	operation.Wrap(set, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "set " + args[0] }})
+	operation.Wrap(unset, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "unset " + args[0] }})
 	cmd.AddCommand(list, get, set, unset)
 	return cmd
 }

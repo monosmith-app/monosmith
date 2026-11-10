@@ -6,7 +6,7 @@ import "regexp"
 // its backends.
 var cacheEnvironment = []string{
 	"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN", "AZURE_STORAGE_SAS_TOKEN",
-	"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_REGION",
+	"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_REGION", "AWS_ENDPOINT_URL_S3",
 }
 
 // azureMacro is how Azure Pipelines leaves a variable it has no value for:

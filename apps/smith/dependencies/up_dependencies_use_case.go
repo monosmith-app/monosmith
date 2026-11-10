@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/apps/smith/registrypage"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -56,7 +58,12 @@ func FindAvailable(s *session.Session) (UpReport, error) {
 		if err := c.Call(protocol.MethodLatest, protocol.LatestParams{Names: names, Tools: true}, &latest, timeout); err != nil {
 			return report, fmt.Errorf("plugin %s: %w", name, err)
 		}
-		report.Updates = append(report.Updates, FindUpdates(name, declared, latest.Latest, local)...)
+		found := FindUpdates(name, declared, latest.Latest, local)
+		ambient := registrypage.AmbientPrivate(name, s.Root)
+		for i := range found {
+			found[i].URL = pageOf(found[i], projects, ambient)
+		}
+		report.Updates = append(report.Updates, found...)
 		if len(latest.Unreachable) > 0 {
 			report.Unreachable[name] = latest.Unreachable
 		}
@@ -67,6 +74,7 @@ func FindAvailable(s *session.Session) (UpReport, error) {
 	sort.SliceStable(report.Updates, func(i, j int) bool {
 		return levelIndex(report.Updates[i].Level) < levelIndex(report.Updates[j].Level)
 	})
+	MarkPresets(report.Updates, s.Config.Dependencies.Presets)
 	return report, nil
 }
 
@@ -115,15 +123,19 @@ func Choose(updates []Update, names []string) (chosen []Update, unknown []string
 // not be asked, and the pinned tools.
 func PrintUp(w io.Writer, r UpReport) {
 	if len(r.Updates) == 0 {
-		fmt.Fprintln(w, "✔ Every declared dependency is at its latest release.")
+		fmt.Fprintln(w, marks.Passed+" Every declared dependency is at its latest release.")
 	}
 	current := ""
 	for _, u := range r.Updates {
-		if u.Level != current {
-			current = u.Level
-			fmt.Fprintln(w, current)
+		if u.Group() != current {
+			current = u.Group()
+			if current == "preset" {
+				fmt.Fprintln(w, "preset (your team's shared config, bumped in every project that uses it)")
+			} else {
+				fmt.Fprintln(w, current)
+			}
 		}
-		fmt.Fprintf(w, "  %-28s %s → %s  %s\n", u.Name, u.Current, u.Latest, strings.Join(u.Projects(), ", "))
+		fmt.Fprintf(w, "  %-28s %s → %s  %-9s %s\n", u.Name, u.Current, u.Latest, strings.Join(u.Kinds, ", "), strings.Join(u.Projects(), ", "))
 	}
 	for plugin, names := range r.Unreachable {
 		for name, why := range names {
@@ -139,7 +151,7 @@ func PrintUp(w io.Writer, r UpReport) {
 			case t.Newer:
 				fmt.Fprintf(w, "  %-16s %s → %s available\n", t.Name, t.Pinned, t.Latest)
 			default:
-				fmt.Fprintf(w, "  %-16s %s ✔ (latest %s)\n", t.Name, t.Pinned, t.Latest)
+				fmt.Fprintf(w, "  %-16s %s ✓ (latest %s)\n", t.Name, t.Pinned, t.Latest)
 			}
 		}
 	}

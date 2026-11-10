@@ -21,8 +21,8 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 	if got := l.lastStarted(); !strings.Contains(got, "build") {
 		t.Fatalf("b started %q", got)
 	}
-	l.keys("2")
-	l.clickText("Graph: needs and used by")
+	l.clickText("Back (Esc)") // the run panel gives the right side back to the project
+	l.clickText("Graph: dependencies and dependants")
 	if got := l.lastStarted(); got != "graph --focus orders" {
 		t.Fatalf("the graph action started %q", got)
 	}
@@ -31,14 +31,14 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 
 func TestTheDepsViewListsNewerReleasesAndThePolicy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5")
-	l.has("3 with newer releases: 1 patch · 1 minor · 1 major", "axios", "1.6.8", "zod", "react", "web, api",
+	l.keys("4")
+	l.has("3 with newer releases", "All 3 (e)", "Patch 1 (p)", "Minor 1 (n)", "Major 1 (M)", "axios", "1.6.8", "zod", "react", "web, api",
 		"One version", "every production dependency has one version", "axios (node) should be ^1.6.8 everywhere")
 }
 
 func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "space", "down", "down", "space") // axios and react
+	l.keys("4", "space", "down", "down", "space") // axios and react
 	l.has("[x] axios", "[ ] zod", "[x] react", "2 marked")
 	l.keys("u")
 	l.has("smith deps up axios react")
@@ -46,27 +46,32 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 		t.Fatalf("started %v before the confirmation", l.started)
 	}
 	l.keys("y")
-	if got := l.lastStarted(); got != "deps up axios react" {
+	if got := l.lastStarted(); got != "deps up axios react --major --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
 
 func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "down", "enter", "y")
-	if got := l.lastStarted(); got != "deps up zod" {
+	l.keys("4", "down", "enter", "y")
+	if got := l.lastStarted(); got != "deps up zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
 
 func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "a")
+	l.keys("4")
+	x, y := l.find("Package")
+	l.send(click(x-3, y)) // the box in the heading marks every row shown
 	l.has("[x] axios", "[x] zod", "[x] react", "3 marked")
-	l.keys("a")
+	x, y = l.find("Package")
+	l.send(click(x-3, y))
 	l.has("0 marked")
-	l.keys("v", "y")
-	if got := l.lastStarted(); got != "deps up --align" {
+	l.keys("v")
+	l.has("Which version wins?")
+	l.keys("enter", "y")
+	if got := l.lastStarted(); got != "deps up --align --prefer installed --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -78,7 +83,7 @@ func TestTheDepsViewSaysWhenThereIsNothingToUpdateAndWhenThePolicyIsOff(t *testi
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 		return sh
 	}()
-	l.keys("5")
+	l.keys("4")
 	l.has("Every dependency is on its latest release.", "not required")
 	l.keys("u", "v")
 	if len(l.started) != 0 || l.sh().confirm != nil {
@@ -93,23 +98,23 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{Err: errString("the registry is unreachable")} }
 		return sh
 	}()
-	l.keys("5")
+	l.keys("4")
 	l.has("the registry is unreachable")
 }
 
 func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "g")
-	l.has("workspace", "web  1 failed", "2 checks passed", "F fix all")
-	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
+	l.keys("3") // the checks are grouped by default
+	l.has("workspace", "web  1 failed", "2 checks passed", "fix all (F)")
+	l.hasNot("fix (f)", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
 	l.has("Check again")
 	l.keys("f")
 	if l.sh().fix != nil || len(l.started) != 0 {
 		t.Fatal("a finding without a fix opened a wizard")
 	}
 	l.has("no fix")
-	l.keys("down")
-	l.has("f fix", "Fix: write web's registry", "writes apps/web/Dockerfile")
+	l.keys("down", "down") // past web's heading
+	l.has("fix (f)", "[Fix (f)]", "write web's registry", "writes apps/web/Dockerfile")
 	l.keys("f") // web's Docker finding
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
@@ -117,19 +122,19 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	}
 }
 
-func TestTheDoctorTabListsFlatUntilGroupingIsOn(t *testing.T) {
+func TestTheDoctorTabListsGroupedUntilGroupingIsOff(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4")
-	l.hasNot("orders  all passed", "web  1 failed")
-	l.has("Docker registries of web agree")
+	l.keys("3")
+	l.has("web  1 failed", "Docker registries of web agree")
 	l.keys("g")
-	l.has("web  1 failed")
+	l.hasNot("web  1 failed")
+	l.has("Docker registries of web agree")
 }
 
 func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6")
-	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "n notes")
+	l.keys("5")
+	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "notes (n)")
 	l.hasNot("a1b2c3d")
 	l.keys("enter")
 	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old cookie format")
@@ -140,6 +145,20 @@ func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.
 		t.Fatalf("the notes started %q", got)
 	}
 	l.has("$ smith release --dry-run --notes")
+}
+
+func TestAPreviewKeepsThePlanSoTheReleaseCanStartFromIt(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("5")
+	sh := l.sh()
+	sh.refreshAfter([]string{"release", "--dry-run", "--notes"})
+	if !sh.release.CanRelease() {
+		t.Fatal("a preview dropped the plan: x would say there is nothing to release")
+	}
+	sh.refreshAfter([]string{"add", "app", "x"})
+	if sh.release.Loaded {
+		t.Fatal("a change to the workspace must read the plan again")
+	}
 }
 
 type errString string
@@ -154,12 +173,12 @@ func TestRReloadsTheViewsThatLoadFromTheWorkspace(t *testing.T) {
 		sh.sources.Deps = func() depsview.Result { calls++; return sampleDeps }
 		return sh
 	}()
-	l.keys("5")
+	l.keys("4")
 	l.keys("r")
 	if calls != 2 {
 		t.Fatalf("the dependencies were looked up %d times, want 2", calls)
 	}
-	l.keys("4", "r")
+	l.keys("3", "r")
 	l.has("go.work lists every module")
 }
 
@@ -170,10 +189,9 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 	}{
 		{"1", "Do the suggested next action"},
 		{"2", "Open the detail of the project"},
-		{"3", "Run the last command again"},
-		{"4", "Read the view again"},
-		{"5", "Update the marked ones"},
-		{"6", "Print the release notes"},
+		{"3", "Reload this view: read the files again, run nothing"},
+		{"4", "Update the marked ones"},
+		{"5", "Print the release notes"},
 	}
 	for _, c := range cases {
 		l := newLab(t, true, 100, 40)
@@ -189,8 +207,8 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
 	// Nine tabs do not fit 79 cells: the long names are shortened and the strip scrolls.
-	l.has("Proj", "Run", "Doctor")
-	for _, key := range []string{"1", "2", "3", "4", "5", "6"} {
+	l.has("Proj", "Doctor")
+	for _, key := range []string{"1", "2", "3", "4", "5"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
 			if w := pane.Width(line); w != 80 {
@@ -213,10 +231,13 @@ func TestEveryTabFitsEightyColumns(t *testing.T) {
 
 func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 	l := newLab(t, true, 79, 24)
-	l.keys("5")
+	l.keys("4")
 	l.has("Deps", "3 with newer releases")
+	for i := 0; i < 8 && !strings.Contains(l.view(), "Home"); i++ {
+		l.clickText("‹") // the strip scrolls: the marker leads to the tabs before
+	}
 	l.clickText("Home")
-	l.has("Next:")
+	l.has("Fix (Enter)")
 }
 
 // longDeps is a lab with n outdated dependencies named pkg00, pkg01, ...
@@ -230,7 +251,7 @@ func longDeps(t *testing.T, n int) *lab {
 	}
 	sh.sources.Deps = func() depsview.Result { return depsview.Result{Rows: rows} }
 	l.m = sh
-	l.keys("5")
+	l.keys("4")
 	l.keys("r")
 	return l
 }
@@ -266,7 +287,7 @@ func TestTheWheelScrollsTheDepsListAndNeverMovesItsCursor(t *testing.T) {
 	if d := l.sh().deps; d.Cursor != 0 {
 		t.Fatalf("the wheel moved the cursor to %d", d.Cursor)
 	}
-	l.hasNot("pkg00")
+	l.hasNot("[ ] pkg00")
 	l.hasNot("pkg01 ")
 }
 
@@ -346,7 +367,7 @@ func TestTheBoxInTheHeadingMarksEveryRowThenNoneAndShowsSome(t *testing.T) {
 func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
 	for key, want := range map[string][]string{
 		"2": {"Projects view", "Open the detail of the project"},
-		"5": {"Deps view", "Update the marked ones", "Bring drifting versions to one"},
+		"4": {"Deps view", "Update the marked ones", "Use the same version everywhere (Align)"},
 	} {
 		l := newLab(t, true, 100, 40)
 		l.keys(key, "?")
@@ -368,8 +389,9 @@ func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testi
 	l := newLab(t, true, 140, 34)
 	l.keys("+")
 	l.has("Install packages", "Project: ‹ orders ›", "Packages, separated by spaces", "development dependency")
+	// Typing while the "Add" answer is the registry goes straight to the packages field.
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders zod" {
+	if got := l.lastStarted(); got != "install -p orders --registry zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -387,19 +409,65 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l.clickText("Remove a package")
 	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
-	if got := l.lastStarted(); got != "uninstall -w orders left-pad" {
+	// Removing asks once more, with the command line and what it touches.
+	l.has("uninstall -p orders left-pad", "Removes left-pad")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before the confirmation", l.started)
+	}
+	l.keys("y")
+	if got := l.lastStarted(); got != "uninstall -p orders left-pad --yes" {
 		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheDepsViewRemovesAPackageOfOneProjectWithThatProjectAsTarget(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4", "down", "x") // zod, declared in web only
+	l.has("uninstall -p web zod")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before the confirmation", l.started)
+	}
+	l.keys("y")
+	if got := l.lastStarted(); got != "uninstall -p web zod --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheDepsViewTargetsTheWorkspaceRootForARootPackage(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	sh := l.sh()
+	sh.sources.Deps = func() depsview.Result {
+		return depsview.Result{Rows: []depsview.Row{{Name: "@swc/core", Plugin: "node", Current: "1.0.0", Latest: "1.1.0", Level: "minor", Projects: []string{"(root)"}}}}
+	}
+	l.m = sh
+	l.keys("4", "x")
+	l.has("uninstall -p . @swc/core", "the workspace root")
+	l.keys("y")
+	if got := l.lastStarted(); got != "uninstall -p . @swc/core --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheDepsViewAsksWhichProjectsWhenSeveralDeclareThePackage(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4", "x") // axios, declared in web and api
+	l.has("declared in more than one project", "web", "api")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before anything was picked", l.started)
 	}
 }
 
 func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T) {
 	short := longDeps(t, 8)
-	short.hasNot("┃")
+	short.hasNot("┆")
 	long := longDeps(t, 60)
-	long.has("┃")
+	long.has("┆")
 	thumbRow := func(l *lab) int {
 		for y, line := range l.lines() {
-			if strings.Contains(line, "┃") {
+			// The thumb is the solid line where the dashed track would be, in the
+			// last content column of the list, left of the detail.
+			col := long.sh().mainInner().X + long.sh().mainInner().W - 1
+			if r := []rune(line); len(r) > col && r[col] == '│' {
 				return y
 			}
 		}
@@ -412,5 +480,43 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 	}
 	if after := thumbRow(long); after <= before {
 		t.Fatalf("the thumb stayed at row %d after scrolling down (now %d)", before, after)
+	}
+}
+
+func TestTheChipsOfDepsShowOneLevelAndTheKeysAndClicksAgree(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4", "n")
+	l.has("[ ] zod")
+	l.hasNot("[ ] axios", "[ ] react")
+	l.keys("p")
+	l.has("[ ] axios")
+	l.hasNot("[ ] zod", "[ ] react")
+	l.clickText("Major 1 (M)")
+	l.has("[ ] react")
+	l.hasNot("[ ] axios", "[ ] zod")
+	l.keys("e")
+	l.has("[ ] axios", "[ ] zod", "[ ] react")
+}
+
+func TestTheMajorWarningSitsUnderTheSummaryAndThePolicyBesideTheList(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4", "down", "down", "space")
+	lines := l.lines()
+	var summary, warning, header int
+	for i, line := range lines {
+		switch {
+		case strings.Contains(line, "3 with newer releases"):
+			summary = i
+		case strings.Contains(line, "of the chosen packages are major"), strings.Contains(line, "1 of the chosen package"):
+			warning = i
+		case strings.Contains(line, "Package") && strings.Contains(line, "Latest"):
+			header = i
+		}
+	}
+	if warning == 0 || warning <= summary || warning >= header {
+		t.Fatalf("the warning is at %d, the summary at %d and the heading at %d:\n%s", warning, summary, header, l.view())
+	}
+	if !strings.Contains(lines[summary], "│") && !strings.Contains(l.view(), "One version") {
+		t.Fatal("the policy is not beside the list")
 	}
 }

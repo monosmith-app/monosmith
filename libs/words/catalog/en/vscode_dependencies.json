@@ -1,0 +1,14 @@
+{
+  "vscode.dependencies.monosmith-updating-dependencies-needs-a-trusted": "MonoSmith: updating dependencies needs a trusted workspace.",
+  "vscode.dependencies.monosmith-update-to-its-latest-version": "MonoSmith: update {name} to its latest version?",
+  "vscode.dependencies.smith-rewrites-the-manifests-of-every": "smith rewrites the manifests of every project that declares it, then installs again. It runs in a terminal so you can read what it does.",
+  "vscode.dependencies.update": "Update",
+  "vscode.dependencies.patch": "Patch",
+  "vscode.dependencies.minor": "Minor",
+  "vscode.dependencies.major": "Major",
+  "vscode.dependencies.tools": "Tools",
+  "vscode.dependencies.is-pinned-at-is-out": "{name} is pinned at {pinned}; {latest} is out.",
+  "vscode.dependencies.every-dependency-is-up-to-date": "Every dependency is up to date.",
+  "vscode.dependencies.update-2": "update",
+  "vscode.dependencies.updates": "updates"
+}

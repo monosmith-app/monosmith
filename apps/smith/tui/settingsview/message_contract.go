@@ -20,6 +20,8 @@ type (
 	}
 	// Reviewed carries the review of a plugin the person asked to trust.
 	Reviewed struct {
+		// Ticket is the number of the request: an answer to a stopped one is dropped.
+		Ticket int
 		Name   string
 		Review TrustReview
 		Err    error
@@ -38,6 +40,13 @@ func (Applied) settingsMsg()    {}
 func (Reviewed) settingsMsg()   {}
 func (StyleSaved) settingsMsg() {}
 
+// PluginToggle is a switch of a built-in plugin that just ended: the plugin
+// and the state it was switched to. The shell offers to switch it back.
+type PluginToggle struct {
+	Name    string
+	Enabled bool
+}
+
 // Result is what the shell does after the tab handled a key, a click or a
 // message.
 type Result struct {
@@ -46,11 +55,18 @@ type Result struct {
 	// Note is a sentence for a toast; Failed makes it an error.
 	Note   string
 	Failed bool
+	// Toggled is set when the change was a plugin switch that went through: the
+	// shell says it in the status line and offers to undo it.
+	Toggled *PluginToggle
 	// Theme is set when the interface must redraw in another theme.
 	Theme *theme.Choice
 	// Form is the title of a guided form to open.
 	Form string
 	// Run is a smith command line (without the leading smith) the shell
-	// shows, asks about and runs in the Run view: the tab never runs it.
+	// shows, asks about and runs in the run panel: the tab never runs it.
 	Run []string
+	// Search asks the shell to search the plugin marketplace for Term (empty:
+	// every plugin) and offer the plugins it finds.
+	Search bool
+	Term   string
 }

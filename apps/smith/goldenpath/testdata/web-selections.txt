@@ -1,0 +1,6 @@
+# One smith add app --with selection per line. TestWebChoices builds each one and runs
+# lint, typecheck, test, build and the doctor. A new choice is data (ADR 0045): add its
+# files to the plugin's choices/ folder and one line here.
+react,vitest,bootstrap
+vue,jest,tailwind
+react,chakra

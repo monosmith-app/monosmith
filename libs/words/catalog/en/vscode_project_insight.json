@@ -1,0 +1,14 @@
+{
+  "vscode.project-insight.field-value-comes-from": "| Field | Value | Comes from |",
+  "vscode.project-insight.how-the-tasks-of-resolved-and": "How the tasks of `{project}` resolved, and where each field came from. The same as `smith explain {project2}`.",
+  "vscode.project-insight.this-project-has-no-tasks": "This project has no tasks.",
+  "vscode.project-insight.graph-of": "# Graph of {project}",
+  "vscode.project-insight.what-it-uses-and-what-uses": "{describe}: what it uses and what uses it. The same as `smith graph --focus {project}`.",
+  "vscode.project-insight.nothing-it-depends-on-no-other": "Nothing: it depends on no other project.",
+  "vscode.project-insight.used-by": "## Used by",
+  "vscode.project-insight.nothing-no-other-project-depends-on": "Nothing: no other project depends on it.",
+  "vscode.project-insight.explain-a-project": "Explain a project",
+  "vscode.project-insight.show-the-graph-of-a-project": "Show the graph of a project",
+  "vscode.project-insight.explain": "# Explain {project}",
+  "vscode.project-insight.uses": "## Uses"
+}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Findings warns for each Tauri app whose package.json, tauri.conf.json
@@ -47,8 +48,10 @@ func Findings(workspaceRoot string, projects []protocol.Project) []protocol.Find
 		sort.Strings(files)
 		findings = append(findings, protocol.Finding{
 			Check:   "the versions of " + p.Name + " agree",
+			Project: p.Name,
 			OK:      len(versions) <= 1,
 			Warning: true,
+			Problem: toolrun.ProblemUnless(len(versions) <= 1, "has more than one version: "+strings.Join(files, ", ")),
 			Detail:  p.Root + " has " + strings.Join(files, ", ") + "; smith release writes one version into all of them",
 			Remedy:  `set "version": "../package.json" in ` + p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json and the same version as package.json in " + p.Root + "/" + tauriapp.SrcDir + "/Cargo.toml, or let smith release write them",
 		})

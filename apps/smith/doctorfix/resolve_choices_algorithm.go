@@ -29,6 +29,9 @@ func Resolve(fix protocol.Fix, answers []int) (protocol.Fix, *protocol.FixChoice
 		if pick < 1 || pick > len(q.Options) {
 			return resolved, nil, fmt.Errorf("%q has options 1 to %d, not %d", q.Question, len(q.Options), pick)
 		}
+		if reason := q.Options[pick-1].Disabled; reason != "" {
+			return resolved, nil, fmt.Errorf("option %d of %q is disabled: %s", pick, q.Question, reason)
+		}
 		option := q.Options[pick-1].Fix
 		resolved.Files = append(resolved.Files, option.Files...)
 		resolved.Steps = append(resolved.Steps, option.Steps...)

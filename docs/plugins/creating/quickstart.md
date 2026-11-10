@@ -85,8 +85,8 @@ smith test -p my-plugin
 my-plugin:test ▶ go test ./...
 my-plugin:test │ ?   	example.com/demo/apps/my-plugin	[no test files]
 my-plugin:test │ ok  	example.com/demo/apps/my-plugin/plugin	0.365s
-my-plugin:test ✔ 1.148s
-✔ 1/1 tasks succeeded (0 from cache) in 1.155s
+my-plugin:test ✓ 1.148s
+✓ 1/1 tasks succeeded (0 from cache) in 1.155s
 ```
 
 The test in `plugin/` runs the conformance suite in process. To run the same suite against the
@@ -99,14 +99,14 @@ smith plugin check apps/my-plugin/my-plugin.exe
 
 ```text
 my-plugin 0.0.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ shuts down when asked
 ```
 
 ## 4. Use it
@@ -135,8 +135,8 @@ smith explain my-plugin:hello
 my-plugin            app      go       apps/my-plugin
 my-plugin:hello ▶ {smith} --version
 my-plugin:hello │ smith version 1.62.0
-my-plugin:hello ✔ 35ms
-✔ 1/1 tasks succeeded (0 from cache) in 38ms
+my-plugin:hello ✓ 35ms
+✓ 1/1 tasks succeeded (0 from cache) in 38ms
 my-plugin:hello — says hello from my-plugin
   command    smith --version
   cwd        apps/my-plugin

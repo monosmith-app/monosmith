@@ -26,6 +26,7 @@ shortcuts, which do not run installs or the tracked-changes guard.
 ## Synopsis
 
 ```sh
+smith ci                      # the same as smith ci setup: install what a clean checkout needs
 smith ci setup | audit | verify | pack | native | release
 smith ci generate [--check]
 smith ci check
@@ -34,7 +35,7 @@ smith ci check
 ## Subcommands
 
 <!-- smith:begin ci -->
-Run a CI phase, or regenerate the pipelines
+Install what a clean checkout needs, run a CI phase, or regenerate the pipelines
 
 Usage: `smith ci <command>`
 
@@ -43,7 +44,7 @@ Usage: `smith ci <command>`
 | `smith ci assets` | Run the assets phase |
 | `smith ci audit` | Run the audit phase |
 | `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
-| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
+| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift, --dry-run shows a diff) |
 | `smith ci native` | Run the native phase |
 | `smith ci pack` | Run the pack phase |
 | `smith ci release` | Run the release phase |
@@ -62,14 +63,19 @@ The phases take no flags. [`smith ci generate`](ci-generate.md) has `--check`;
 <!-- smith:begin ci setup -->
 Run the setup phase
 
-Usage: `smith ci setup`
+Usage: `smith ci setup [flags]`
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--assets` | boolean | off | install for the assets job: leave out the projects whose [release] install is false |
 
 <!-- smith:end ci setup -->
 
 Collects the setup steps the plugins contribute (Go modules, Node dependencies, the Python
-venv and toolchain, other tools) and runs them in order. With nothing to do it prints
+venv and toolchain, other tools) and runs them in order. Each plugin's steps are one section: a rule
+with the plugin name and its project count, the steps' own output, and one status line (`✓ node done in
+37s`, or `× node failed: cause` and a `→` remedy). A GitHub Actions or Azure Pipelines log folds each section
+as a group instead of a rule. The phase ends with one row per plugin. With nothing to do it prints
 `nothing to setup`.
 
 ### audit
@@ -144,25 +150,33 @@ Builds the projects tagged `native` for the current OS. See [CI pipelines](../re
 <!-- smith:begin ci assets -->
 Run the assets phase
 
-Usage: `smith ci assets`
+Usage: `smith ci assets [flags]`
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--source <source>` | string |  | with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one |
+| `--tag <tag>` | string |  | run again for an existing release tag (project@version) and replace the files of its GitHub Release |
 
 <!-- smith:end ci assets -->
 
 Runs [`smith release assets`](release-assets.md) for the platform in `SMITH_PLATFORM`, which the
 generated GitHub Actions job sets from its matrix: the build command of each app released by
-this commit, then `gh release upload --clobber` of the files it left. With nothing to build it
-prints `no release files to build`.
+this commit, then `gh release upload --clobber` of the files it left. When this commit released
+nothing it prints `nothing released, skipping: ...`, writes the same words to the job summary
+and exits 0. With `--tag` (the `assets_tag` input of the workflow's manual run) it builds for
+that existing tag instead; see [Release assets](release-assets.md#run-it-again-for-a-tag).
 
 ### release
 
 <!-- smith:begin ci release -->
 Run the release phase
 
-Usage: `smith ci release`
+Usage: `smith ci release [flags]`
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--bump <bump>` | string, repeatable |  | release a package with this bump: <project>=patch\|minor\|major (a manual release from the CI provider's input) |
+| `--force` | boolean | off | with --bump: release a package although no commit releases it (the same code under a new version) |
 
 <!-- smith:end ci release -->
 
@@ -208,7 +222,7 @@ words read the same without it; the job summary is always plain. `SMITH_ASCII=1`
 Auditing 26 projects with 22 checks.
 Rules: smith's default policies ([ci] audit_policies).
 Check                             Result       Time  Note
-govulncheck actions               ↷ unchanged     -  nothing changed since it passed on 2026-10-27
+govulncheck actions               » unchanged     -  nothing changed since it passed on 2026-10-27
 govulncheck plugin-sdk           ✓ done       1.5s
 npm audit (runtime dependencies)  ✓ done       2.7s
 pip-audit                         ▲ problems   0.0s  reported problems, not blocking
@@ -224,11 +238,21 @@ smith ci setup
 ══ Setup ═══════════════════════════════════════════════════
 smith 1.102.2 on windows/amd64
 Installing dependencies for 4 toolchains (dotnet 10.0, go 1.26, node 24, python 3.12) and preparing 26 projects: 8 steps.
-Step                          Result  Time
-Download Go modules           ✓ done  0.1s
-Install Node dependencies     ✓ done   37s
-Create the Python venv        ✓ done   15s
-Install plugin-sdk-py         ✓ done  4.9s
+══ go (3 projects) ═════════════════════════════════════════
+▶ Download Go modules
+✓ go done in 0.1s
+══ node (12 projects) ══════════════════════════════════════
+▶ Install Node dependencies
+✓ node done in 37s
+══ python (2 projects) ═════════════════════════════════════
+▶ Create the Python venv
+▶ Install plugin-sdk-py
+✓ python done in 20s
+
+Toolchain  Projects  Status  Time
+go                 3  ✓ done  0.1s
+node              12  ✓ done   37s
+python             2  ✓ done   20s
 ✓ Setup passed in 1m 32s: 8 steps ran, 26 projects ready
 ```
 
@@ -242,14 +266,14 @@ packages:
 Checking 26 projects (lint, typecheck, test, build).
 The dependency boundaries between projects are checked first.
 Project            Lint      Types   Tests              Build     Time
-jest-preset        ✗ failed  ✓       ✓ 19 passed        ○ none  1m 27s
+jest-preset        × failed  ✓       ✓ 19 passed        ○ none  1m 27s
 smith              ✓         ○ none  ✓ 116 packages ok  ✓       2m 49s
 eslint-config      ✓         ✓       ✓ 75 passed        ○ none  2m 37s
 vscode             ✓         ✓       ✓ 220 passed       ✓          56s
 last output of jest-preset:lint:
   Oops! Something went wrong! :(
 → repeat it with `smith run lint -p jest-preset`
-✗ Verify failed after 2m 37s
+× Verify failed after 2m 37s
 ```
 
 `smith ci pack` runs the `package` task of the apps (here a Go app and a VS Code extension), then

@@ -3,8 +3,11 @@ package settingsview
 import (
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // frame is the tab drawn in w by h cells, and what each row stands for.
@@ -24,21 +27,16 @@ func (m Model) View(th theme.Theme, w, h, px, py int) []string {
 	return m.frame(th, w, h, px, py).lines
 }
 
-func clamp(v, lo, hi int) int { return min(max(v, lo), max(lo, hi)) }
-
 func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 	f := frame{rowItem: map[int]int{}, rowSection: map[int]Section{}}
 	if w < 1 || h < 1 {
 		f.lines = pane.Block(nil, max(w, 0), max(h, 0))
 		return f
 	}
-	f.listW = clamp(w/5, 11, 16)
-	if w < 30 {
-		f.listW = max(w/3, 0)
-	}
+	f.listW = m.sectionsWidth(w)
 	rw := max(w-f.listW-1, 0)
 	left := make([]string, h)
-	left[0] = th.Muted(" Sections")
+	left[0] = th.Muted(words.Say("settingsview.sections.title"))
 	for i, s := range Sections {
 		row := i + 1
 		if row >= h {
@@ -70,6 +68,23 @@ func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 // right is the right pane in w by h cells: the heading, then an editor or the
 // rows and the detail of the selected one.
 func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
+	rows, rowItem := m.rightRows(th, w, h, px, py)
+	if m.busy != "" && h >= 3 {
+		// A change is under way: the last row says so, with a spinner and the time after 2 s.
+		rows[h-1] = " " + th.Accent(th.Spin(m.tick)) + " " + progress.Waiting(capital(m.busy)+"…", m.waited)
+	}
+	return rows, rowItem
+}
+
+// capital puts the first letter of a sentence in capitals.
+func capital(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	rows := make([]string, h)
 	rowItem := map[int]int{}
 	rows[0] = " " + th.Title(m.section.Title()) + "  " + th.Muted(m.section.About())
@@ -85,7 +100,11 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 		}
 	}
 	if m.ed != nil {
-		put(1, m.editorLines(th, w, body))
+		lines, rowOf := m.editorLines(th, w, body)
+		put(1, lines)
+		for line, i := range rowOf {
+			rowItem[1+line] = i
+		}
 		return rows, rowItem
 	}
 	if lines, blocked := m.unavailable(th, w); blocked {
@@ -98,19 +117,7 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	if len(all) == 0 {
 		all = m.emptyList(th, w)
 	}
-	noteRow := 0
-	if body >= 5 {
-		noteRow = 1
-	}
-	avail := body - noteRow
-	detailH := 0
-	if avail >= 9 {
-		detailH = min(detailWant[m.section], avail-5)
-	}
-	listH := avail
-	if detailH > 0 {
-		listH = avail - detailH - 1
-	}
+	listH, detailH, noteRow := m.rowSplit(body)
 	top := 0
 	if cursor < len(lineOf) {
 		top = m.scroll[m.section].Show(lineOf[cursor], listH, len(all))
@@ -129,7 +136,7 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	}
 	copy(rows[1:1+listH], pane.Scrollbar(th, rows[1:1+listH], w, top, len(all)))
 	if detailH > 0 {
-		rows[1+listH] = th.Faint(" " + strings.Repeat("─", max(w-2, 0)))
+		rows[1+listH] = th.Faint(strings.Repeat("─", w))
 		var detail []string
 		if cursor < len(list) {
 			detail = m.detail(th, list[cursor], w-2)
@@ -138,6 +145,10 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 		}
 		for i := 0; i < detailH && i < len(detail); i++ {
 			rows[2+listH+i] = " " + detail[i]
+		}
+		if hidden := len(detail) - detailH; hidden > 0 && detailH >= 2 {
+			// Say that the detail goes on instead of cutting it in the middle.
+			rows[1+listH+detailH] = " " + th.Muted(words.Say("settingsview.detail.more", "count", hidden+1))
 		}
 	}
 	if noteRow > 0 {
@@ -153,6 +164,47 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	}
 	return rows, rowItem
 }
+
+// sectionsWidth is the width of the list of sections in a tab w cells wide:
+// the width the person gave it, else a fifth of the tab.
+func (m Model) sectionsWidth(w int) int {
+	switch {
+	case w < 30:
+		return max(w/3, 0)
+	case m.listW > 0:
+		return pane.Clamp(m.listW, minSections, max(w-minRight, minSections))
+	}
+	return pane.Clamp(w/5, minSections, 16)
+}
+
+// rowSplit divides the body of the right pane (the rows under its heading) into
+// the rows of the list, the rows of the detail under it, and the row of the
+// note. The detail has the rows the person gave it, else what its section
+// wants; a body too short for both shows the list alone.
+func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
+	if body >= 5 {
+		noteRow = 1
+	}
+	avail := body - noteRow
+	if avail >= 9 && !m.sideDetail {
+		detailH = min(detailWant[m.section], avail-5)
+		if m.detailRows > 0 {
+			detailH = pane.Clamp(m.detailRows, minDetailRows, avail-5)
+		}
+	}
+	listH = avail
+	if detailH > 0 {
+		listH = avail - detailH - 1
+	}
+	return listH, detailH, noteRow
+}
+
+// The least the list of sections, the right pane and the detail may be.
+const (
+	minSections   = 11
+	minRight      = 24
+	minDetailRows = 2
+)
 
 // detailWant is how many rows the detail of each section would like.
 var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Forms: 3}
@@ -192,9 +244,9 @@ func (m Model) unavailable(th theme.Theme, w int) (lines []string, blocked bool)
 	}
 	switch {
 	case m.b.Load == nil:
-		return []string{"", " " + th.Muted("The settings of this workspace are not available here.")}, true
+		return []string{"", " " + th.Muted(words.Say("settingsview.unavailable"))}, true
 	case !m.loaded:
-		return []string{"", " " + th.Muted("Reading the workspace…")}, true
+		return []string{"", " " + th.Muted(words.Say("settingsview.reading"))}, true
 	case m.snap.Err != nil:
 		lines = append([]string{""}, indent(pane.Wrap(th.Failure(m.snap.Err.Error()), w-2, 0))...)
 		return lines, true
@@ -213,11 +265,29 @@ func indent(lines []string) []string {
 // Click selects what is at (x, y) of the body: a section, or a row; a double
 // click does what Enter does on a row.
 func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
-	if m.ed != nil {
-		return m, Result{}
-	}
 	plain := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
 	f := m.frame(plain, w, h, -1, -1)
+	if m.ed != nil {
+		// Only the rows of a path finder take a click while a value is edited.
+		if i, ok := f.rowItem[y]; ok && m.ed.finder != nil && x >= f.listW {
+			e := *m.ed
+			sel := e.finder.Select(i)
+			e.finder = &sel
+			m.ed = &e
+			if double {
+				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
+			}
+		} else if ok && m.ed.kind == editChoose && x >= f.listW {
+			// A click on a value of a pick list puts the cursor there; a double click picks it.
+			e := *m.ed
+			e.at = i
+			m.ed = &e
+			if double {
+				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
+			}
+		}
+		return m, Result{}
+	}
 	if x < f.listW {
 		if s, ok := f.rowSection[y]; ok {
 			m.section, m.onItems = s, double

@@ -60,3 +60,41 @@ func TestMatchesFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestFilteringByAFrameworkFindsItsLanguage(t *testing.T) {
+	node := Option{Label: "Node.js / TypeScript", Value: "node", Hint: "web apps"}
+	py := Option{Label: "Python", Value: "python", Hint: "scripts"}
+	offers := []ChoiceOffer{
+		{Axis: "framework", Name: "react", Language: "node"},
+		{Axis: "framework", Name: "fastapi", Language: "python"},
+	}
+	base := Action{Steps: []Step{{Key: "lang", Options: []Option{node, py}, Filter: true}}, Argv: func(map[string][]string) []string { return nil }}
+	opts := AddProjectAction(base, offers, nil).Steps[0].Options
+	for typed, want := range map[string]string{"react": "node", "fastapi": "python", "fast": "python"} {
+		var got []string
+		for _, o := range opts {
+			if MatchesFilter(o, typed) {
+				got = append(got, o.Value)
+			}
+		}
+		if len(got) != 1 || got[0] != want {
+			t.Errorf("%q finds %v, want %s", typed, got, want)
+		}
+	}
+	if via := MatchedVia(opts[0], "react"); len(via) != 1 || via[0] != "react" {
+		t.Errorf("the match must say it came from react: %v", via)
+	}
+	if via := MatchedVia(opts[0], "node"); via != nil {
+		t.Errorf("a plain match needs no note: %v", via)
+	}
+}
+
+func TestNothingMatchesSuggestsTheClosestNames(t *testing.T) {
+	opts := []Option{{Label: "Python", Value: "python", Also: []string{"fastapi", "flask"}}, {Label: "Node", Value: "node", Also: []string{"react", "vue"}}}
+	if got := NothingMatches(opts, "reakt"); !strings.Contains(got, "Did you mean react?") {
+		t.Errorf("%q", got)
+	}
+	if got := NothingMatches(opts, "zzzzzz"); !strings.Contains(got, "such as fastapi, flask, react") {
+		t.Errorf("%q", got)
+	}
+}

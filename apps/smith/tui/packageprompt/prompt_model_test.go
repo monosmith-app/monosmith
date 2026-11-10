@@ -25,10 +25,10 @@ func screen(p Prompt) string { return pane.Strip(strings.Join(p.Lines(plain()), 
 
 func TestTypedPackagesEndAsTheInstallCommandOfTheProject(t *testing.T) {
 	p := typeText(NewInstall("web", []string{"web"}).Place(100, 30), "zod @types/node")
-	if got := strings.Join(p.Argv(), " "); got != "install -w web zod @types/node" {
+	if got := strings.Join(p.Argv(), " "); got != "install -p web zod @types/node" {
 		t.Fatalf("argv %q", got)
 	}
-	if !strings.Contains(screen(p), "$ smith install -w web zod @types/node") {
+	if !strings.Contains(screen(p), "$ smith install -p web zod @types/node") {
 		t.Fatalf("the dialog shows the command that will run:\n%s", screen(p))
 	}
 	_, out := key(p, tea.KeyEnter)
@@ -41,11 +41,11 @@ func TestTheDevelopmentBoxAddsDAndRemoveHasNoBox(t *testing.T) {
 	p := typeText(NewInstall("api", []string{"api"}).Place(100, 30), "pytest-cov")
 	p, _ = key(p, tea.KeyTab) // to the box
 	p, _ = p.Key(tea.KeyMsg{Type: tea.KeySpace})
-	if got := strings.Join(p.Argv(), " "); got != "install -w api -D pytest-cov" || !strings.Contains(screen(p), "[x] a development") {
+	if got := strings.Join(p.Argv(), " "); got != "install -p api -D pytest-cov" || !strings.Contains(screen(p), "[x] a development") {
 		t.Fatalf("argv %q\n%s", got, screen(p))
 	}
 	r := typeText(NewRemove("api", []string{"api"}).Place(100, 30), "left-pad")
-	if got := strings.Join(r.Argv(), " "); got != "uninstall -w api left-pad" || strings.Contains(screen(r), "development") {
+	if got := strings.Join(r.Argv(), " "); got != "uninstall -p api left-pad" || strings.Contains(screen(r), "development") {
 		t.Fatalf("argv %q\n%s", got, screen(r))
 	}
 	if r.Title() != "Remove packages" || !strings.Contains(screen(r), "Project: api") {
@@ -116,7 +116,7 @@ func TestTheProjectIsPreselectedAndLeftRightChooseAnother(t *testing.T) {
 	p, _ = key(p, tea.KeyLeft)
 	p, _ = key(p, tea.KeyEnter) // from the project to the packages
 	p = typeText(p, "zod")
-	if got := strings.Join(p.Argv(), " "); got != "install -w kit zod" {
+	if got := strings.Join(p.Argv(), " "); got != "install -p kit zod" {
 		t.Fatalf("argv %q", got)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
@@ -29,6 +30,9 @@ type Flow interface {
 	// ShowChanges writes the files Changes listed as diffs, the way the review
 	// of a fix shows them; it needs Prepare to have run.
 	ShowChanges(c adoptflow.Changes) (string, error)
+	// CommitConversion commits what the conversion changed as one operation
+	// that smith undo reverts, and says what happened.
+	CommitConversion() string
 	// Result is what the applied conversion found worth telling.
 	Result() convert.Highlights
 	// Install installs the packages the repository lists.
@@ -44,8 +48,16 @@ type Flow interface {
 	FinishFix(withLint bool) doctorfix.Planned
 	// Report is the full report of the applied conversion, as it was saved.
 	Report() (string, error)
-	// AdoptFix is the conservative adoption of a plain repository.
-	AdoptFix() doctorfix.Planned
+	// AdoptFix is the conservative adoption of a plain repository; commit makes
+	// it one commit that smith undo can revert, otherwise nothing is committed.
+	// move is the folder the project at the root goes into, adoptmove.Leave to
+	// keep it there, or "" when the repository has no project at its root.
+	AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned
+	// InitFacts are the facts of the repository that shape the decisions of
+	// adopt --init; InitPlan is what it does for the choices, as the review
+	// shows it, with a diff of each file of the person it edits.
+	InitFacts() adoptdecision.Facts
+	InitPlan(c adoptdecision.Choices) string
 	// AgentFix is the offer to add the MonoSmith agent (smith agent install);
 	// ok is false when the workspace has it, or opted out.
 	AgentFix() (fix doctorfix.Planned, ok bool)
@@ -82,6 +94,9 @@ type Outcome struct {
 	// Finished is set when the repository is a workspace now: the shell opens
 	// it, because it was started outside one.
 	Finished string
+	// Committed is true when the finished change is a commit, so smith undo can
+	// revert it. It is false when the person left the box unticked.
+	Committed bool
 	// Build asks the shell to start building everything once it is open.
 	Build bool
 }
@@ -103,6 +118,11 @@ const (
 	StageInstalling
 	// StageListing works out the files a conservative conversion changes.
 	StageListing
+	// StageMove asks where the project at the repository root goes.
+	StageMove
+	// StageInit asks the decisions of adopt --init: line endings, the CI
+	// provider and a pipeline of the person's own.
+	StageInit
 	// StageChoices asks the full level's choices.
 	StageChoices
 	// StagePlanning plans the removals for the choices.

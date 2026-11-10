@@ -8,7 +8,6 @@ import (
 
 var (
 	workspaceHeader = regexp.MustCompile(`(?m)^\[workspace\][ \t]*(#.*)?\r?\n?`)
-	membersStart    = regexp.MustCompile(`(?m)^[ \t]*members[ \t]*=[ \t]*\[`)
 	quotedItem      = regexp.MustCompile(`"((?:[^"\\]|\\.)*)"`)
 )
 
@@ -20,6 +19,13 @@ func NewWorkspace(member string) string {
 // members finds the members array of the [workspace] table: where it sits,
 // what it lists, and whether it spans lines.
 func members(src string) (start, end int, items []string, multiline bool, err error) {
+	return keyList(src, "members")
+}
+
+// keyList is members for any array key of the [workspace] table ("members",
+// "exclude").
+func keyList(src, key string) (start, end int, items []string, multiline bool, err error) {
+	keyStart := regexp.MustCompile(`(?m)^[ \t]*` + regexp.QuoteMeta(key) + `[ \t]*=[ \t]*\[`)
 	h := workspaceHeader.FindStringIndex(src)
 	if h == nil {
 		return 0, 0, nil, false, fmt.Errorf("the root Cargo.toml has no [workspace] table")
@@ -28,7 +34,7 @@ func members(src string) (start, end int, items []string, multiline bool, err er
 	if next := regexp.MustCompile(`(?m)^\[`).FindStringIndex(body); next != nil {
 		body = body[:next[0]]
 	}
-	m := membersStart.FindStringIndex(body)
+	m := keyStart.FindStringIndex(body)
 	if m == nil {
 		return h[1], h[1], nil, false, nil
 	}
@@ -57,8 +63,14 @@ func render(items []string, multiline bool) string {
 
 // AddMember lists a crate directory in the workspace's members; listing it
 // again changes nothing.
-func AddMember(src, member string) (string, error) {
-	start, end, items, multiline, err := members(src)
+func AddMember(src, member string) (string, error) { return addToList(src, "members", member) }
+
+// AddExclude lists a directory in the workspace's exclude array, so cargo
+// leaves a crate there out of the workspace; listing it again changes nothing.
+func AddExclude(src, dir string) (string, error) { return addToList(src, "exclude", dir) }
+
+func addToList(src, key, member string) (string, error) {
+	start, end, items, multiline, err := keyList(src, key)
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +81,7 @@ func AddMember(src, member string) (string, error) {
 	}
 	items = append(items, member)
 	if start == end { // no members key yet
-		return src[:start] + "members = " + render(items, false) + "\n" + src[start:], nil
+		return src[:start] + key + " = " + render(items, false) + "\n" + src[start:], nil
 	}
 	return src[:start] + render(items, multiline) + src[end:], nil
 }

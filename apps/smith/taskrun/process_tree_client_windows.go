@@ -47,6 +47,9 @@ func track(cmd *exec.Cmd) (release func(), err error) {
 	}, nil
 }
 
+// forceKillTree ends the job again: Windows has no gentle first step.
+func forceKillTree(cmd *exec.Cmd) { killTree(cmd) }
+
 // killTree terminates every process in the child's job.
 func killTree(cmd *exec.Cmd) {
 	if h, ok := jobs.Load(cmd); ok {

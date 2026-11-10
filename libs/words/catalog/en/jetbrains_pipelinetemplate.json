@@ -1,0 +1,11 @@
+{
+  "jetbrains.pipelinetemplate.monosmith-add-a-pipeline": "MonoSmith: add a pipeline",
+  "jetbrains.pipelinetemplate.no-pipeline-was-added": "No pipeline was added. {failureTextMapper}",
+  "jetbrains.pipelinetemplate.smith-listed-no-pipeline-update": "smith listed no pipeline. Update smith.",
+  "jetbrains.pipelinetemplate.pick-a-pipeline-it-is": "Pick a pipeline. It is written beside the generated CI.",
+  "jetbrains.pipelinetemplate.the-app-this-pipeline-builds": "The app this pipeline builds (the name of a project):",
+  "jetbrains.pipelinetemplate.name-the-app": "Name the app.",
+  "jetbrains.pipelinetemplate.the-file-is-yours-from": "The file is yours from then on: smith upgrade never rewrites it. A file that exists is kept. Nothing was written yet.",
+  "jetbrains.pipelinetemplate.write-the-pipeline": "Write the pipeline",
+  "jetbrains.pipelinetemplate.the-pipeline-is-written": "The {name} pipeline is written"
+}

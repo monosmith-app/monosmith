@@ -1,0 +1,5 @@
+{
+  "jetbrains.dockerhub.monosmith-docker-hub-descriptions": "MonoSmith: Docker Hub descriptions",
+  "jetbrains.dockerhub.smith-calls-docker-hub-with": "smith calls Docker Hub with your login and replaces the description of each image. Nothing was called yet.",
+  "jetbrains.dockerhub.the-docker-hub-descriptions-are": "The Docker Hub descriptions are set"
+}

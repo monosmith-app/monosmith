@@ -1,11 +1,14 @@
 package settingsview
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 type editorKind int
@@ -15,10 +18,14 @@ const (
 	editText editorKind = iota
 	// editMulti picks any of a fixed set of values.
 	editMulti
+	// editChoose picks one of a fixed set of values for a setting.
+	editChoose
 	// editReview is the review of an external plugin, with the keys that decide.
 	editReview
 	// editInstall asks what plugin to install.
 	editInstall
+	// editSearch asks what to look for in the plugin marketplace.
+	editSearch
 )
 
 // editor is what fills the right pane while a value is being changed.
@@ -29,10 +36,16 @@ type editor struct {
 	about   string
 	setting Setting
 	input   textinput.Model
+	// finder, when set, lists the folders and files under the field: the value
+	// is a path (a setting such as cache.dir, or the source of a plugin).
+	finder *pathfinder.Model
 	// choices, marked and at are the picker's values, which are ticked and the cursor.
 	choices []string
 	marked  []bool
 	at      int
+	// current is the index of the value the setting has now in a picker of one
+	// value (editChoose), -1 when it has none of the choices.
+	current int
 	// text and top are the review and the first line shown of it.
 	text    string
 	top     int
@@ -64,9 +77,37 @@ func newTextEditor(st Setting) *editor {
 	}
 	placeholder := st.Default
 	if placeholder == "" {
-		placeholder = "a " + st.Type
+		placeholder = words.Say("settingsview.editor.placeholder", "type", st.Type)
 	}
-	return &editor{kind: editText, title: st.Path, about: st.Explanation, setting: st, input: newInput(value, placeholder)}
+	e := &editor{kind: editText, title: st.Path, about: st.Explanation, setting: st, input: newInput(value, placeholder)}
+	if takesPath(st) {
+		e.withFinder()
+	}
+	return e
+}
+
+// withFinder puts the list of folders and files under the field.
+func (e *editor) withFinder() {
+	f := pathfinder.New("", nil).Sync(e.input.Value())
+	e.finder = &f
+}
+
+// takesPath reports whether a setting holds a path, by the name of its key:
+// cache.dir, workspace.recipe.
+func takesPath(st Setting) bool {
+	if st.Type != "string" {
+		return false
+	}
+	key := st.Path[strings.LastIndex(st.Path, ".")+1:]
+	if key == "recipe" {
+		return true
+	}
+	for _, suffix := range []string{"dir", "file", "path", "folder"} {
+		if strings.HasSuffix(key, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 // newPicker edits a list of fixed choices: Space ticks, Enter saves. When the
@@ -83,30 +124,56 @@ func newPicker(st Setting) *editor {
 	return e
 }
 
+// newChooser edits a setting that takes one of a fixed set of values: the arrows
+// move, Enter saves the one under the cursor. The cursor starts on the value the
+// setting has now, which is its default while it is not set.
+func newChooser(st Setting) *editor {
+	e := &editor{kind: editChoose, title: st.Path, about: st.Explanation, setting: st, choices: st.Choices, current: -1}
+	now := strings.Trim(st.Default, `"`)
+	if st.Set && len(st.Current) > 0 {
+		now = st.Current[0]
+	}
+	if i := slices.Index(st.Choices, now); i >= 0 {
+		e.current, e.at = i, i
+	}
+	return e
+}
+
 func newReview(name string, r TrustReview) *editor {
-	return &editor{kind: editReview, title: "Trust " + name + "?", plugin: name, text: r.Text, trusted: r.Trusted}
+	return &editor{kind: editReview, title: words.Say("settingsview.editor.trust.title", "name", name), plugin: name, text: r.Text, trusted: r.Trusted}
 }
 
 func newInstall() *editor {
-	return &editor{
+	e := &editor{
 		kind:  editInstall,
-		title: "Install a plugin",
-		about: "A plugin directory or archive, an https URL or github:owner/repo@tag. An archive or URL also needs its sha256: type it after the source.",
-		input: newInput("", "source [sha256]"),
+		title: words.Say("settingsview.install.title"),
+		about: words.Say("settingsview.install.about"),
+		input: newInput("", words.Say("settingsview.install.placeholder")),
+	}
+	e.withFinder()
+	return e
+}
+
+func newSearch() *editor {
+	return &editor{
+		kind:  editSearch,
+		title: words.Say("settingsview.search.title"),
+		about: words.Say("settingsview.search.about"),
+		input: newInput("", words.Say("settingsview.search.placeholder")),
 	}
 }
 
 // installArgv is the command line the typed text stands for, or why it is not one.
 func installArgv(typed string) ([]string, string) {
-	words := strings.Fields(typed)
-	if len(words) == 0 {
-		return []string{"plugin", "install", "<source>"}, "Say where the plugin comes from."
+	fields := strings.Fields(typed)
+	if len(fields) == 0 {
+		return []string{"plugin", "install", "<source>"}, words.Say("settingsview.install.missing")
 	}
 	argv := []string{"plugin", "install"}
-	if n := len(words); n > 1 && isSHA256(words[n-1]) {
-		argv = append(argv, strings.Join(words[:n-1], " "), "--sha256", words[n-1])
+	if n := len(fields); n > 1 && isSHA256(fields[n-1]) {
+		argv = append(argv, strings.Join(fields[:n-1], " "), "--sha256", fields[n-1])
 	} else {
-		argv = append(argv, strings.Join(words, " "))
+		argv = append(argv, strings.Join(fields, " "))
 	}
 	return argv, ""
 }
@@ -134,6 +201,8 @@ func (e editor) values() []string {
 			}
 		}
 		return out
+	case editChoose:
+		return []string{e.choices[e.at]}
 	case editText:
 		if e.setting.Type == "array" {
 			var out []string
@@ -157,7 +226,29 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		return m, Result{}
 	}
 	switch e.kind {
+	case editSearch:
+		if name == "enter" {
+			m.ed = nil
+			return m, Result{Search: true, Term: strings.TrimSpace(e.input.Value())}
+		}
+		e.input, _ = e.input.Update(msg)
 	case editText, editInstall:
+		if e.finder != nil {
+			f, out := e.finder.Handle(msg)
+			e.finder = &f
+			if out.Handled {
+				if out.Set {
+					e.input.SetValue(out.Value)
+					e.input.CursorEnd()
+					e.err = ""
+				}
+				if !out.Confirm {
+					m.ed = &e
+					return m, Result{}
+				}
+				name = "enter"
+			}
+		}
 		if name == "enter" {
 			e.err = ""
 			m.ed = &e
@@ -171,45 +262,76 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 				m.ed = nil
 				return m, Result{Run: argv}
 			}
+			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
 		e.err = ""
 		e.input, _ = e.input.Update(msg)
-	case editMulti:
-		switch name {
-		case "up", "k":
+		if e.finder != nil {
+			f := e.finder.Sync(e.input.Value())
+			e.finder = &f
+		}
+	case editChoose:
+		switch commands.Nav(name) {
+		case commands.NavUp:
 			e.at = max(e.at-1, 0)
-		case "down", "j":
+		case commands.NavDown:
 			e.at = min(e.at+1, len(e.choices)-1)
-		case " ":
-			e.marked = slices.Clone(e.marked)
-			e.marked[e.at] = !e.marked[e.at]
-		case "enter":
+		case commands.NavHome:
+			e.at = 0
+		case commands.NavEnd:
+			e.at = len(e.choices) - 1
+		case commands.NavConfirm:
 			e.err = ""
 			m.ed = &e
+			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
-	case editReview:
-		switch name {
-		case "y":
-			m.ed = &e
-			return m, Result{Cmd: m.trust(e.plugin, false)}
-		case "p":
-			m.ed = &e
-			return m, Result{Cmd: m.trust(e.plugin, true)}
-		case "f", "u":
-			if e.trusted {
+	case editMulti:
+		switch commands.Nav(name) {
+		case commands.NavUp:
+			e.at = max(e.at-1, 0)
+		case commands.NavDown:
+			e.at = min(e.at+1, len(e.choices)-1)
+		default:
+			switch name {
+			case " ":
+				e.marked = slices.Clone(e.marked)
+				e.marked[e.at] = !e.marked[e.at]
+			case "enter":
+				e.err = ""
 				m.ed = &e
-				return m, Result{Cmd: m.untrust(e.plugin)}
+				m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
+				return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 			}
-		case "up", "k":
+		}
+	case editReview:
+		switch commands.Nav(name) {
+		case commands.NavUp:
 			e.top = max(e.top-1, 0)
-		case "down", "j":
+		case commands.NavDown:
 			e.top++
-		case "pgup":
+		case commands.NavPageUp:
 			e.top = max(e.top-8, 0)
-		case "pgdown":
+		case commands.NavPageDown:
 			e.top += 8
+		default:
+			switch name {
+			case "y":
+				m.ed = &e
+				m = m.begin(words.Say("settingsview.busy.trusting", "name", e.plugin), false)
+				return m, Result{Cmd: m.trust(e.plugin, false)}
+			case "p":
+				m.ed = &e
+				m = m.begin(words.Say("settingsview.busy.pinning", "name", e.plugin), false)
+				return m, Result{Cmd: m.trust(e.plugin, true)}
+			case "f", "u":
+				if e.trusted {
+					m.ed = &e
+					m = m.begin(words.Say("settingsview.busy.forgetting", "name", e.plugin), false)
+					return m, Result{Cmd: m.untrust(e.plugin)}
+				}
+			}
 		}
 	}
 	m.ed = &e

@@ -98,6 +98,22 @@ def lazy():
 	}
 }
 
+func TestCheckSkipsBuildFolders(t *testing.T) {
+	ws := workspace(t)
+	write(t, ws, "packages/ocr/src/ocr/__init__.py", "")
+	for _, dir := range []string{"build/lib", "dist", "acme_ocr-1.0.0/src", "acme_ocr.egg-info"} {
+		write(t, ws, "packages/ocr/"+dir+"/staged.py", "import numpy\n")
+	}
+
+	got, err := Check(ws, "packages/ocr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("build folders must not be scanned, got\n%s", strings.Join(lines(got), "\n"))
+	}
+}
+
 func TestCheckFlagsADevelopmentDependencyInShippedCode(t *testing.T) {
 	ws := workspace(t)
 	write(t, ws, "packages/ocr/src/ocr/read.py", "import requests, pytest_cov\n")

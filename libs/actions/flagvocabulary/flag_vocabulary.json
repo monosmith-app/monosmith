@@ -1,0 +1,88 @@
+{
+  "concepts": [
+    {
+      "id": "project",
+      "flag": "project",
+      "short": "p",
+      "type": "stringSlice",
+      "synonyms": [{ "name": "workspace", "short": "w" }, { "name": "projects" }],
+      "near": ["app", "apps", "target", "targets", "for", "in"],
+      "meaning": "the project or projects a command acts on; repeat it or separate names with commas (in smith the workspace is the whole repository, so -w is only a synonym)",
+      "commands": ["build", "docker description", "install", "lint", "pipeline", "release assets", "release pub", "run", "tauri icon", "test", "typecheck", "uninstall"]
+    },
+    {
+      "id": "lang",
+      "flag": "lang",
+      "short": "l",
+      "type": "string",
+      "synonyms": [{ "name": "language" }],
+      "near": ["lng"],
+      "meaning": "a programming language, by the name its plugin has",
+      "commands": ["add", "compose", "new", "plugin draft", "slices check"]
+    },
+    {
+      "id": "output",
+      "flag": "output",
+      "short": "o",
+      "type": "string",
+      "synonyms": [{ "name": "out" }],
+      "near": ["outfile", "out-file", "outdir", "out-dir", "dest", "destination"],
+      "meaning": "the file or folder a command writes its result to",
+      "commands": ["graph", "npm-prune", "plugin draft", "plugin pack", "report"]
+    },
+    {
+      "id": "yes",
+      "flag": "yes",
+      "short": "y",
+      "type": "bool",
+      "synonyms": [],
+      "near": ["confirm", "assume-yes", "no-confirm", "noconfirm", "non-interactive"],
+      "meaning": "do not ask for confirmation: take the safe answer",
+      "commands": []
+    },
+    {
+      "id": "no-install",
+      "flag": "no-install",
+      "short": "",
+      "type": "bool",
+      "synonyms": [{ "name": "skip-install" }],
+      "near": ["noinstall"],
+      "meaning": "change the manifests but do not run the package manager",
+      "commands": ["convert", "deps up", "sync", "up"]
+    },
+    {
+      "id": "dry-run",
+      "flag": "dry-run",
+      "short": "",
+      "type": "bool",
+      "synonyms": [],
+      "near": ["plan", "preview", "simulate", "noop", "what-if", "dryrun"],
+      "meaning": "show what the command would do and change nothing",
+      "commands": []
+    },
+    {
+      "id": "json",
+      "flag": "json",
+      "short": "",
+      "type": "bool",
+      "synonyms": [],
+      "near": ["as-json", "output-json", "format"],
+      "meaning": "print the result as JSON",
+      "commands": []
+    },
+    {
+      "id": "commit",
+      "flag": "commit",
+      "short": "",
+      "type": "bool",
+      "synonyms": [],
+      "near": ["git-commit", "commit-changes"],
+      "meaning": "commit the change as one operation so smith undo can revert it",
+      "commands": []
+    }
+  ],
+  "exceptions": [
+    { "command": "graph", "flag": "format", "why": "text, json, dot, html or tui: a choice of drawing, of which JSON is one, not the JSON switch" },
+    { "command": "release", "flag": "format", "why": "text or markdown: the layout of the report; --json is its own switch" }
+  ]
+}

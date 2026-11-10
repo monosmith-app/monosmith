@@ -1,32 +1,19 @@
 package dependencies
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pipeline"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
 )
 
 // FetchJSON reads a JSON document over HTTP; tests replace it.
-var FetchJSON = func(url string, v any) error {
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s: %s", url, resp.Status)
-	}
-	return json.NewDecoder(resp.Body).Decode(v)
-}
+var FetchJSON = registry.GetJSON
 
 // Latest asks the module proxy for the newest release of each module, and
 // compares the tools the Go plugin pins with their newest releases: Go (the
@@ -40,7 +27,7 @@ func Latest(workspaceRoot string, params protocol.LatestParams) (protocol.Latest
 		return res, nil
 	}
 	src, _ := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
-	goPin := protocol.ToolPin{Name: "Go", Pinned: pipeline.ParseGoWork(string(src)).GoVersion}
+	goPin := protocol.ToolPin{Name: "Go", Pinned: gowork.ParseGoWork(string(src)).GoVersion}
 	var releases []struct {
 		Version string `json:"version"`
 		Stable  bool   `json:"stable"`

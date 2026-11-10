@@ -7,6 +7,10 @@ const probe = (files: Record<string, string>) => ({
 })
 
 describe('detectRepository', () => {
+  it('does not offer a folder that has a smith.toml, even one that cannot be read', () => {
+    expect(detectRepository('/repo', probe({ '/repo/nx.json': '{}', '/repo/smith.toml': 'broken = ' }))).toBeUndefined()
+  })
+
   it('recognises an Nx workspace by nx.json', () => {
     expect(detectRepository('/repo', probe({ '/repo/nx.json': '{}' }))).toEqual({ kind: 'nx', marker: 'nx.json' })
   })

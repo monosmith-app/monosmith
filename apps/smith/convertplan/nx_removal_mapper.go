@@ -3,6 +3,7 @@ package convertplan
 import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
+	"github.com/monosmith-app/monosmith/apps/smith/legacyjestsupport"
 	"path"
 	"regexp"
 	"sort"
@@ -30,10 +31,6 @@ func NxPackage(name string) bool {
 // plugins provided: the preset values, the resolver that falls back to
 // TypeScript, and the asset transform for React projects.
 const JestPresetPackage = "@monosmith/jest-preset"
-
-// JestPresetRange is the range convert adds it at: the first release of the
-// package (0.1.0) and the compatible ones after it.
-const JestPresetRange = "^0.1.0"
 
 // JestPreset replaces a jest.preset.js that re-exported @nx/jest/preset
 // whole: it re-exports the package that provides the same values, with the
@@ -195,7 +192,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			plan.Add(Manual, "", f, "imports Nx ("+nxImport(text)+"), which convert removes; rewrite it without Nx")
 		}
 	}
-	planSharedESLintConfig(plan, files, read)
+	planLegacyESLintConfig(plan, files, read)
 	if w.Nx.NxCloudID != "" || w.Nx.NxCloudToken != "" {
 		plan.Add(Changed, "", "nx.json", "Nx Cloud is not used: smith caches locally (.smith/cache)")
 	}
@@ -386,5 +383,6 @@ func addJestPresetPackage(plan *Plan) {
 	if plan.AddDevDependencies == nil {
 		plan.AddDevDependencies = map[string]string{}
 	}
-	plan.AddDevDependencies[JestPresetPackage] = JestPresetRange
+	// MakePlanWith sets the range of the running smith's release line.
+	plan.AddDevDependencies[JestPresetPackage] = legacyjestsupport.StableRange
 }

@@ -1,12 +1,18 @@
 package adoption
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +32,11 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
-	var asJSON, tags, initialise, dryRun, install, eslint bool
+	var asJSON, tags, initialise, dryRun, install, eslint, commit, yes bool
+	var move string
+	var hoist []string
+	var eslintSetup string
+	var decided adoptdecision.Flags
 	level := LevelConservative
 	cmd := &cobra.Command{
 		Use:   "adopt",
@@ -38,10 +48,28 @@ is asked for, and both steps need a clean git tree:
 
   --tags  creates, locally, the release tags a project needs where its tags
           were made under another name (nothing is pushed)
-  --init  writes smith.toml and the pipelines and commits (with --install it also
-          runs npm install; with --eslint it writes the root eslint.config.mjs and
-          adds @monosmith/eslint-config to the devDependencies); a pipeline of yours
-          at a path smith owns is kept beside it as .pre-smith
+  --init  writes smith.toml and the pipelines (with --install it also runs npm
+          install; with --eslint it writes the root eslint.config.mjs and adds
+          @monosmith/eslint-config to the devDependencies); a pipeline of yours
+          at a path smith owns is kept beside it as .pre-smith. It does not
+          commit: add --commit to commit the change as one operation that
+          smith undo reverts
+
+A repository whose one project is at the root (a package.json, go.mod,
+pyproject.toml or Cargo.toml there) needs the project in a folder of its own,
+because smith manages one folder per project. --init asks where (apps/<name>,
+packages/<name>, libs/<name> or another folder) and never picks for you. Without
+a terminal, or with --yes, it moves nothing unless --move <folder> says where
+(--move none keeps the project where it is). The move is git mv of the project's
+files, and what belongs to the workspace stays or goes there: the repository's own
+files (.git, .github, README, LICENSE, the .code-workspace file, ...) and the tool
+configuration (prettier, ESLint, ...) stay at the root, documents go to doc/, and a
+Node project's tools (typescript, jest, ...) move from its package.json to the
+workspace's, with a root tsconfig.base.json it extends. A development dependency
+smith does not know is asked about (--hoist <name> sends it to the workspace), and so is
+the project's own ESLint setup (--eslint-setup shared|keep answers; it is kept without an answer).
+With --commit the move is a commit of its own, before the adoption's. --dry-run
+lists the git mv commands for the suggested folder, or for --move.
 
 --level conservative (the default) keeps the repository's build and lint setup.
 --level full, which makes smith the only tool, applies to Nx and Turborepo
@@ -53,12 +81,16 @@ smith convert (a report stays a --dry-run, --init applies), and --level, --json 
 --dry-run carry over, so one command brings in either kind of repository. Exits
 non-zero while something blocks.`,
 		Example: `  smith adopt --dry-run
-  smith adopt --tags --init`,
+  smith adopt --tags --init
+  smith adopt --init --move apps/web --commit`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			if move != "" && !initialise && !dryRun {
+				return problem.New("--move says where --init puts the project, and --init is not given", "smith adopt --init --move "+move, "or add --dry-run to see the git mv commands")
+			}
 			if Convertible(".") {
-				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint)
+				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint, commit)
 			}
 			switch level {
 			case LevelConservative:
@@ -70,8 +102,11 @@ non-zero while something blocks.`,
 			default:
 				return problem.New(fmt.Sprintf("--level %q is not one of conservative, full", level), "smith adopt --level conservative")
 			}
-			if dryRun && (tags || initialise) {
-				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags or --init", "drop --dry-run to take the steps, or drop the steps to only look")
+			if commit && !initialise {
+				return problem.New("--commit commits what --init writes, and --init is not given", "smith adopt --init --commit")
+			}
+			if dryRun && tags {
+				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags", "drop --dry-run to take the step, or drop the step to only look")
 			}
 			report, err := Inspect(".", version, cmd.ErrOrStderr())
 			if err != nil {
@@ -80,13 +115,62 @@ non-zero while something blocks.`,
 			if (tags || initialise) && !report.Clean && report.Adoptable() {
 				return ErrDirty
 			}
+			if dryRun && move != "" && move != adoptmove.Leave && report.Adoptable() {
+				if err := planForDryRun(&report, move); err != nil {
+					return err
+				}
+			}
+			var settled SettledInit
+			var moved bool
+			// One reader for the questions and the confirmation: two would each swallow the other's input.
+			in := bufio.NewReader(cmd.InOrStdin())
+			env := operationplan.DetectEnvironment()
+			// Every answer and the terminal check come before the first change, the move included.
+			if initialise && !dryRun && report.Adoptable() {
+				decided.CIGiven = cmd.Flags().Changed("ci")
+				if settled, err = SettleInit(report, InitSettings{
+					Move: MoveOptions{Dir: move, Hoist: hoist, EslintSetup: eslintSetup}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
+				}); err != nil {
+					return err
+				}
+				if settled.Move != nil {
+					if report, err = MoveRootProject(report, *settled.Candidate, *settled.Move, commit, version, cmd.ErrOrStderr(), out); err != nil {
+						return err
+					}
+					moved = true
+				}
+			}
+			// undoMove takes the move back when a later step stops, so the tree is as it was.
+			undoMove := func(cause error) error {
+				if !moved || cause == nil {
+					return cause
+				}
+				if rerr := adoptmove.Rollback(report.Root, commit); rerr != nil {
+					return fmt.Errorf("%w\nThe move into %s is still in place: run git reset --hard %s to put it back (%v)", cause, settled.Move.Dir, rollbackTarget(commit), rerr)
+				}
+				fmt.Fprintf(out, "  put the move into %s back: the tree is as it was\n", settled.Move.Dir)
+				return cause
+			}
 			if tags {
 				if _, err := CreateBaselines(report, out); err != nil {
 					return err
 				}
 			}
-			if initialise {
-				return Init(report, version, install, eslint, out)
+			if initialise && !dryRun {
+				fmt.Fprintln(out)
+				proceed, err := operationplan.Present(out, in, PlanInit(report, settled.Choices, install), operationplan.Options{
+					Yes: yes, Ask: true, Env: env,
+				})
+				if err != nil || !proceed {
+					return undoMove(err)
+				}
+				if err := Init(report, version, install, eslint, commit, settled.Choices, out); err != nil {
+					if moved {
+						err = fmt.Errorf("%w\nThe move into %s stays in place: git reset --hard %s puts the tree back as it was", err, settled.Move.Dir, rollbackTarget(commit))
+					}
+					return err
+				}
+				return nil
 			}
 			if tags {
 				if report, err = Inspect(".", version, cmd.ErrOrStderr()); err != nil {
@@ -101,7 +185,18 @@ non-zero while something blocks.`,
 				}
 			} else {
 				printReport(out, report)
-				if !tags && report.Adoptable() {
+				if initialise && dryRun && report.Adoptable() {
+					// A dry run settles the open choices with their safe defaults, asks nothing, and shows the plan.
+					decided.CIGiven = cmd.Flags().Changed("ci")
+					choices, err := adoptdecision.Resolve(adoptdecision.Request{Flags: decided, Facts: InitFacts(report), Preview: true, Out: out})
+					if err != nil {
+						return err
+					}
+					fmt.Fprintln(out)
+					operationplan.Render(out, PlanInit(report, choices, install))
+					fmt.Fprintln(out, "Dry run: nothing was changed.")
+				}
+				if !tags && !initialise && report.Adoptable() {
 					fmt.Fprintln(out, "\nNothing changed (adopt only reports). To apply:\n  → smith adopt --init")
 				}
 			}
@@ -117,7 +212,16 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")
 	cmd.Flags().BoolVar(&install, "install", false, "with --init, also run npm install for the Node projects")
 	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
-	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines, and commit")
+	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
+	cmd.Flags().StringVar(&move, "move", "", "with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is")
+	cmd.Flags().StringSliceVar(&hoist, "hoist", nil, "with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway)")
+	cmd.Flags().StringVar(&eslintSetup, "eslint-setup", "", "with --init and --move, what happens to the project's own ESLint setup: shared (the shared config replaces it, the old file is kept as .pre-smith) or keep (it stays in the project)")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it")
+	cmd.Flags().StringVar(&decided.Gitattributes, "gitattributes", "", "with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it)")
+	cmd.Flags().StringVar(&decided.Agent, "agent", "", "with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false)")
+	cmd.Flags().StringSliceVar(&decided.CI, "ci", nil, "with --init, the CI providers to write pipelines for (github, azure, gitlab, circleci, bitbucket), or none")
+	cmd.Flags().StringVar(&decided.Existing, "ci-existing", "", "with --init, replace a pipeline of yours (kept as <file>.pre-smith) or keep it and write none for that provider")
+	cmd.Flags().BoolVar(&commit, "commit", false, "with --init, commit the change as one operation, so smith undo can revert it")
 	return cmd
 }
 
@@ -134,14 +238,18 @@ func printReport(w io.Writer, r Report) {
 		fmt.Fprintln(w)
 	}
 	for _, b := range r.Blockers {
-		printItem(w, "✖", b)
+		printItem(w, marks.Failed, b)
 	}
 	for _, x := range r.Warnings {
 		printItem(w, "!", x)
 	}
 	switch {
+	case len(r.Projects) == 0 && r.Adoptable() && r.RootProject != nil:
+		printMoveOffer(w, r)
+	case len(r.Projects) == 0 && r.Adoptable():
+		fmt.Fprintln(w, "! no project to adopt yet: follow a step above, or run smith adopt --init to make an empty workspace and add projects with smith add")
 	case len(r.Blockers) == 0 && r.Adoptable():
-		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports")
+		fmt.Fprintln(w, marks.Passed+" nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports")
 	case r.Adoptable():
 		fmt.Fprintln(w, "Nothing blocks --init; the release blockers above need clearing before the first release.")
 	}

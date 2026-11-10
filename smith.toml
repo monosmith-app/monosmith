@@ -8,10 +8,15 @@ name = "monosmith"
 scope = "@monosmith"
 module_prefix = "github.com/monosmith-app/monosmith"
 # Example plugins in the documentation are standalone modules, not projects.
-exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**"]
+exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**", "apps/smith/adoption/testdata/**"]
+defaults = "2026.11"
 
 [ci]
 providers = ["github"]
+# Releases come from main only. Pull requests only run verify, as the merge gate.
+branches = ["main"]
+# The native job runs only when a release happened (the default).
+native_on = "release"
 # Every step of this repository's pipelines runs the smith built from the commit:
 # the installed one only bootstraps, so it need not change with every release.
 smith_version = "latest"
@@ -38,6 +43,8 @@ linux_packages = ["deb", "rpm"]
 # dotnet tool install -g monosmith, and gem install monosmith.
 npm = ["@monosmith/cli", "monosmith"]
 pypi = "monosmith"
+# PyPI limits a project's total size and every pre-release uploads a wheel per platform: it gets stable versions only (pre-releases go to npm under next).
+stable_only = ["pypi"]
 nuget = "monosmith"
 rubygems = "monosmith"
 # dart pub global activate monosmith: the release tags smith-v<version> and
@@ -82,6 +89,11 @@ command = ["go", "run", "."]
 # source of truth for the plugin SDKs of other languages). A Go test fails when
 # the committed file is stale; plugin-sdk-ts then regenerates its types (smith
 # run generate --project plugin-sdk-ts).
+# The Go SDK module has no /v2 in its path, so a 2.x tag could not be used by go get: it stays out of the
+# 2.0 channel until the path moves.
+[projects.plugin-sdk.release]
+channels = false
+
 [projects.plugin-sdk.tasks.schema]
 command = ["go", "run", "./schemagen"]
 

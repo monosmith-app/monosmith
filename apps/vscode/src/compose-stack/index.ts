@@ -1,0 +1,5 @@
+export { composeStack, type ComposeDeps } from './compose-stack.use-case.ts'
+export { answerQuestion, askProjectName, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-prompts.client.ts'
+export { composeArguments, describePlan, parseReport, pickLabels } from './compose-report.mapper.ts'
+export type { ComposeAnswer, ComposeItem, ComposeOutcome, ComposePlan, ComposeReport } from './compose-stack.contract.ts'
+export { composeStackHere } from './compose-stack.handler.ts'

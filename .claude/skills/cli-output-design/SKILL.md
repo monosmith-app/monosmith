@@ -6,7 +6,7 @@ description: Design what smith prints in a terminal or a CI log (pipeline steps,
 # Designing smith's text output
 
 The TUI set the visual language; a command line and a CI log use the same one in plain text. Read
-`apps/smith/tui/theme/icons_config.go` first: the symbols (`✓ ✗ ▲ ● ○ ⚡ ↷`, and the ASCII set
+`apps/smith/tui/theme/icons_config.go` first: the symbols (`✓ × ▲ ● ○ ≈ »`, and the ASCII set
 `[v] [x] [!] [~] [ ] [c] [-]`) are the single source. Do not invent new ones.
 
 ## What a reader wants
@@ -62,7 +62,7 @@ Rules:
 ```
 Project        Lint  Types  Tests         Time
 core           ✓     ✓      ✓ 42 passed   12s
-atlassian      ✓     ✓      ✗ 3 failed    41s
+atlassian      ✓     ✓      × 3 failed    41s
 logger         ✓     ✓      ○ none         -
 ```
 
@@ -96,7 +96,7 @@ logger   2.0.1  › 2.0.2  patch  dependency core 1.5.0       ✓ registry.npmjs
   The job-summary Markdown and the `::notice::` lines stay plain.
 - Palette: green = passed, released, a new version; yellow = warning, skipped, a change caused by
   a dependency or a directive, a minor bump; red = failed, a major bump; dim = unchanged, none,
-  not reached. A table cell takes the colour of its leading glyph (`✓ ✗ ▲ ↷ ○`) unless the row
+  not reached. A table cell takes the colour of its leading glyph (`✓ × ▲ » ○`) unless the row
   sets one.
 - A step that handles many projects prints ONE summary table (a row per project that did
   something, failures first), a compact line for the projects that did nothing (their names when
@@ -117,3 +117,13 @@ logger   2.0.1  › 2.0.2  patch  dependency core 1.5.0       ✓ registry.npmjs
 2. Run it with `NO_COLOR=1` and piped to a file: still readable? Run it once with `FORCE_COLOR=1` too.
 3. Put a real sample in the PR body, so the owner can judge the wording and the layout.
 4. A golden or test pins the lines that matter (the banner, the table header, the closing line).
+
+## Flags in the text you print
+
+A command line that smith prints or builds (a hint, a remedy, a pipeline template, a TUI or extension command)
+uses the canonical flag of the concept: `-p, --project` for a project, `--lang`, `--output`, `--yes`,
+`--no-install`. The vocabulary is `libs/actions/flagvocabulary/flag_vocabulary.json`
+([ADR 0084](../../../docs/architecture/decisions/0084-one-concept-one-flag.md), generated table in
+`docs/reference/flag-vocabulary.md`). In Go take the spelling from `flagvocabulary.Arg("project")`, in
+VS Code from `flag.project`, in Kotlin from `SmithFlagsConfig.PROJECT`. A new command registers a shared flag through
+`apps/smith/commandflags`; a new concept goes into the vocabulary first.

@@ -5,34 +5,51 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/releasepreview"
+	"github.com/monosmith-app/monosmith/apps/smith/releaserehearsal"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 // Command is `smith release`.
 func Command(version string) *cobra.Command {
 	var (
-		dryRun, yes, noPush, asJSON, comment, notes, status, verbose bool
-		format                                                       string
+		dryRun, yes, noPush, asJSON, comment, notes, status, verbose, rehearse, force bool
+		format                                                                        string
+		hold, bumpFlags                                                               []string
 	)
 	cmd := &cobra.Command{
 		Use:   "release",
 		Short: "Version, publish and tag every package with releasable commits",
 		Long: `Release every publishable package from its conventional commits since its last tag:
 feat → minor, fix/perf → patch, a breaking change → major (minor before 1.0).
+--bump <project>=major is a request, not an inference: on a 0.x package it gives 1.0.0.
 Packages release in dependency order. Each is stamped, built, published and
 tagged; manifests are restored afterwards (the tag is the record). A re-run
 after a failure resumes where it stopped. Before the first publish every
 npm, PyPI, NuGet and RubyGems registry is asked whether it accepts the
 credential and the names, so a bad key stops the release before anything is
 published. What was published where is kept in dist/release/<project>/journal.json
-(smith release --status).`,
+(smith release --status). smith release --rehearse runs registry checks for every
+package on their own, before a first release, and publishes nothing.
+
+--bump <project>=patch --force releases a package that has no releasing commit:
+the same code under a new version, a new tag at HEAD, a registry publish and a
+GitHub Release. The plan says it is a manual release.
+
+A branch other than the release branch can release a line of prerelease
+versions of its own (2.0.0-beta.1, beta.2, ...): declare it as a
+[[release.channels]] table in smith.toml (smith config set does not edit lists
+of tables). docs/reference/releasing.md, Release channels, has an example.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
 			if comment && !dryRun {
@@ -43,7 +60,15 @@ published. What was published where is kept in dist/release/<project>/journal.js
 					releasepreview.Post(markdown, cmd.ErrOrStderr())
 				}
 			}
+			if verbose {
+				// The plugins read it: a preview shows one line per tool unless asked.
+				_ = os.Setenv(toolrun.VerboseEnv, "1")
+			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			if err == nil {
+				// Tags and branch are read once for the whole command.
+				s.Git = s.Git.WithRefCache()
+			}
 			if err != nil {
 				return err
 			}
@@ -61,6 +86,9 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				fmt.Fprint(out, RenderJournalStatus(journals))
 				return nil
 			}
+			if rehearse {
+				return rehearseRegistries(s, out, asJSON, verbose)
+			}
 			var blockers []string
 			for _, f := range CheckLineage(s, true) {
 				if f.Blocking {
@@ -73,8 +101,28 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				preview("### Release preview\n\n**Blocked:** the release tags would give wrong versions, so there is no plan:\n\n- " + strings.Join(blockers, "\n- ") + "\n")
 				return fmt.Errorf("cannot release: the release tags would give wrong versions, so no plan is shown:\n  - %s", strings.Join(blockers, "\n  - "))
 			}
-			plan, err := MakePlan(s.Git, s.Graph)
+			plan, err := PlanFor(s)
 			if err != nil {
+				return err
+			}
+			plan, adjusted, err := AdjustPlan(s, plan, hold, bumpFlags, force)
+			if err != nil {
+				return err
+			}
+			if !asJSON {
+				for _, n := range adjusted {
+					fmt.Fprintln(cmd.ErrOrStderr(), "note: "+n)
+				}
+			}
+			if dryRun {
+				// A real release refuses these in its preflight: the preview says so too.
+				if problems := ChannelRefusals(s, plan); len(problems) > 0 {
+					preview("### Release preview\n\n**Blocked:** this release would be refused:\n\n- " + strings.Join(problems, "\n- ") + "\n")
+					return fmt.Errorf("cannot release:\n  - %s", strings.Join(problems, "\n  - "))
+				}
+			}
+			if err := CheckAPI(cmd.Context(), s, &plan); err != nil {
+				preview("### Release preview\n\n**Blocked:** " + err.Error() + "\n")
 				return err
 			}
 			if len(plan.Items) == 0 {
@@ -94,21 +142,31 @@ published. What was published where is kept in dist/release/<project>/journal.js
 			}
 			if len(plan.Items) == 0 {
 				if dryRun {
-					preview(Report{DryRun: true, Unchanged: plan.Unchanged}.Markdown())
+					preview(Report{DryRun: true, Channel: plan.Channel, Unchanged: plan.Unchanged}.Markdown())
 				}
 				if asJSON {
-					return json.NewEncoder(out).Encode(Report{DryRun: dryRun, Unchanged: plan.Unchanged, Results: []ReportResult{}})
+					return json.NewEncoder(out).Encode(Report{DryRun: dryRun, Channel: plan.Channel, Unchanged: plan.Unchanged, NeverReleased: plan.NeverReleased, Results: []ReportResult{}})
 				}
 				return nil
 			}
 			if !dryRun && !yes {
-				if !term.IsTerminal(int(os.Stdin.Fd())) {
-					return errors.New("refusing to release without a terminal; pass --yes (CI does)")
+				if !operationplan.ShouldAsk(operationplan.DetectEnvironment(), false) {
+					return errors.New("refusing to release without a terminal; pass --yes (CI does). Hold a package back with --hold <project>, change a bump with --bump <project>=patch|minor|major, or see the plan with --dry-run")
 				}
+				in := bufio.NewReader(os.Stdin)
+				var go_ bool
+				plan, go_, err = Review(in, out, plan, func(p Plan) { printPlan(cmd, p, false, verbose) }, Adjustments{})
+				if err != nil {
+					return err
+				}
+				if !go_ || len(plan.Items) == 0 {
+					return errors.New("release cancelled: nothing was tagged or published")
+				}
+				fmt.Fprintln(out, Consequences(plan, !noPush))
 				fmt.Fprint(out, "Release these packages? [y/N] ")
-				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+				answer, _ := in.ReadString('\n')
 				if !strings.EqualFold(strings.TrimSpace(answer), "y") {
-					return errors.New("release cancelled")
+					return errors.New("release cancelled: nothing was tagged or published")
 				}
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
@@ -128,20 +186,78 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				} else {
 					fmt.Fprint(out, report.Text())
 				}
+				if errors.Is(err, ErrPropagationPending) {
+					return err
+				}
+				if err != nil {
+					// The report above says "Stopped: <why>": do not print it again.
+					return ErrReported
+				}
 			}
 			return err
 		},
 	}
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be released; change nothing")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
+	cmd.Flags().StringSliceVar(&hold, "hold", nil, "do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too")
+	cmd.Flags().StringSliceVar(&bumpFlags, "bump", nil, "release a package with this bump instead of the one its commits ask for: <project>=patch|minor|major")
+	cmd.Flags().BoolVar(&force, "force", false, "with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal")
 	cmd.Flags().BoolVar(&noPush, "no-push", false, "create tags locally only")
 	cmd.Flags().BoolVar(&notes, "notes", false, "also print each release's notes (what its GitHub Release says)")
 	cmd.Flags().BoolVar(&status, "status", false, "show the release journal: what was published where (dist/release/<project>/journal.json)")
+	cmd.Flags().BoolVar(&rehearse, "rehearse", false, "check every registry the release publishes to (it resolves, which credential it expects, that yours is accepted, that the CI identity may publish) with read-only requests; publish nothing")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the release report as JSON")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "name every unchanged package")
 	cmd.Flags().StringVar(&format, "format", "text", "how the result is printed: text, or markdown (what the CI job summary and --comment use)")
 	cmd.Flags().BoolVar(&comment, "comment", false, "with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment")
 	return cmd
+}
+
+// rehearseRegistries is `smith release --rehearse`: it asks every registry
+// the workspace's packages publish to and fails when one would refuse.
+func rehearseRegistries(s *session.Session, out io.Writer, asJSON, verbose bool) error {
+	targets := releaserehearsal.ListTargets(s, os.Getenv)
+	report := releaserehearsal.Rehearse(targets, releaserehearsal.NewProbe(), os.Getenv)
+	rehearseGitHubReleases(s, &report)
+	if asJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(report); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprint(out, releaserehearsal.RenderText(report, len(targets), verbose))
+	}
+	if report.Failed > 0 {
+		return fmt.Errorf("the rehearsal found %d registry problem(s): a real release would fail", report.Failed)
+	}
+	return nil
+}
+
+// rehearseGitHubReleases adds the rehearsal of the packages that attach to
+// GitHub Releases (registry = "github-release"): the token can write to the
+// repository. It asks no registry and creates nothing.
+func rehearseGitHubReleases(s *session.Session, report *releaserehearsal.Report) {
+	var projects []string
+	for _, p := range s.Graph.Projects {
+		if PacksToRelease(p) {
+			projects = append(projects, p.Name)
+		}
+	}
+	if len(projects) == 0 {
+		return
+	}
+	sort.Strings(projects)
+	repo, err := Repository(s)
+	if err != nil {
+		report.Add(releaserehearsal.Result{Project: strings.Join(projects, ", "), Registry: "github.com", Check: releaserehearsal.CheckAccess, Status: releaserehearsal.Fail, Message: err.Error(), Fix: "add the release remote, or set GITHUB_REPOSITORY"})
+		return
+	}
+	client, tokenErr := githubrelease.FromEnvironment()
+	if tokenErr != nil {
+		client = &githubrelease.Client{}
+	}
+	releaserehearsal.CheckGitHubRelease(report, projects, repo, client, tokenErr)
 }
 
 // printsTextPlan is whether the text plan comes before the result: not for JSON,
@@ -156,8 +272,11 @@ func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
 	if dryRun {
 		fmt.Fprintln(out, "Dry run: nothing is published or tagged.")
 	}
+	if plan.Channel != "" {
+		fmt.Fprintln(out, ChannelNotice(plan.Channel))
+	}
 	if len(plan.Items) == 0 {
-		fmt.Fprintln(out, NothingToRelease())
+		fmt.Fprintln(out, NothingToRelease(plan))
 	}
 	for _, item := range plan.Items {
 		from := item.Current
@@ -165,6 +284,9 @@ func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
 			from = "unreleased"
 		}
 		fmt.Fprintf(out, "  %-20s %s → %s  (%s)\n", item.Project, from, item.Next, item.Reason)
+		for _, w := range item.APIWarnings {
+			fmt.Fprintf(out, "  warning: %s\n", w)
+		}
 	}
 	if len(plan.Unchanged) > 0 {
 		if verbose {

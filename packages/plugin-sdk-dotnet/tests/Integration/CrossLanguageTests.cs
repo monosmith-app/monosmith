@@ -10,6 +10,7 @@ namespace MonoSmith.Plugin.Sdk.Tests.Integration;
 /// by a name on every side. Answers to requests that run together are compared by id: they may legitimately come out of
 /// order. A side whose tool is not installed is left out locally; CI has them all.
 /// </summary>
+[Collection(ExampleBuildsCollection.Name)]
 public sealed class CrossLanguageTests(ExampleSides examples) : IClassFixture<ExampleSides>
 {
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);

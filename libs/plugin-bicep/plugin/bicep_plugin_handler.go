@@ -54,6 +54,10 @@ func (b *Bicep) Publish(params protocol.PublishParams) (protocol.PublishResult, 
 	return releasing.Publish(params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: templates are deployed by the pipeline that owns the environment, and the version is metadata.
+// No registry holds a stable pointer a prerelease could take.
+func (b *Bicep) PublishesChannels() {}
+
 // CI implements serve.CIContributor.
 func (b *Bicep) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(params), nil

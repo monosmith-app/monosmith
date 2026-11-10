@@ -2,8 +2,11 @@ package configedit
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
@@ -24,8 +27,26 @@ func Set(root, path string, args []string) error {
 	})
 }
 
-// Unset removes one setting, so it takes its default.
+// taskOutputsPath is the path of a task's outputs override in a project's
+// table: projects.<name>.tasks.<task>.outputs, the name quoted when it is not a
+// bare key. It is the one table setting `config unset` reaches, so a fix can
+// hand the build's folder back to the plugin.
+var taskOutputsPath = regexp.MustCompile(`^projects\.([A-Za-z0-9_-]+|"[^"]+")\.tasks\.[A-Za-z0-9_:-]+\.outputs$`)
+
+// Unset removes one setting, so it takes its default. Besides the settings
+// smith config lists, it removes the outputs a project's task overrides
+// (projects.<name>.tasks.<task>.outputs), so the plugin's own outputs apply.
 func Unset(root, path string) error {
+	if taskOutputsPath.MatchString(path) {
+		table := strings.TrimSuffix(path, ".outputs")
+		return edit(root, func(src string) (string, error) {
+			out, removed := UnsetKey(src, table, "outputs")
+			if !removed {
+				return "", fmt.Errorf("%s is not set; it already has its default", path)
+			}
+			return out, nil
+		})
+	}
 	f, err := Find(path)
 	if err != nil {
 		return err
@@ -67,5 +88,5 @@ func edit(root string, change func(string) (string, error)) error {
 	if _, err := workspace.Parse([]byte(out)); err != nil {
 		return fmt.Errorf("refusing to write an invalid %s: %w", workspace.FileName, err)
 	}
-	return os.WriteFile(file, []byte(out), 0o644)
+	return lineendings.WriteFile(file, []byte(out), 0o644)
 }

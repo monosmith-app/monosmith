@@ -1,25 +1,16 @@
-import type { InstallOutcome, InstallPreview, SmithRun } from './install-run.contract.ts'
+import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import type { InstallOutcome, InstallPreview } from './install-run.contract.ts'
+import { say } from '../words/index.ts'
 
-const NO_TERMINAL = 'there is no terminal to ask on'
+const NO_TERMINAL = say('vscode.agent-install.there-is-no-terminal-to-ask')
 
 /** The `● Add .mcp.json` lines of smith's output: what each file would get. */
 function actionLines (stdout: string): string[] {
   return stdout.split(/\r?\n/).filter((line) => line.startsWith('● ')).map((line) => line.slice(2).trim())
 }
 
-/** Takes the `✖` out of smith's problem so it reads as a sentence, and keeps the way-outs. */
-export function sayProblem (stderr: string): string {
-  const lines = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
-  const [first = '', ...rest] = lines
-  const problem = first.replace(/^✖\s*/, '')
-
-  return [problem, ...rest.map((line) => line.replace(/^→\s*/, 'Try: '))].join(' ')
-}
-
 function refusal (run: SmithRun): InstallOutcome {
-  const message = sayProblem(run.stderr.trim() === '' ? run.stdout : run.stderr)
-
-  return { kind: 'refused', message: message === '' ? `smith stopped with exit code ${run.code}` : message }
+  return { kind: 'refused', message: describeFailure(run) }
 }
 
 /**

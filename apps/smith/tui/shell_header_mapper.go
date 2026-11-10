@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // headerRow is the top row: the workspace, its branch and its health.
@@ -14,7 +15,10 @@ func (s Shell) headerRow() string {
 		name = "smith"
 	}
 	parts := []string{" " + s.th.Bold(name)}
-	if !s.inWorkspace {
+	if !s.inWorkspace && s.problem != "" {
+		// The full message, with its line, is wrapped in the guide below.
+		parts = append(parts, s.th.Warning(words.Say("tui.header.smith_toml_cannot_be_read_see")))
+	} else if !s.inWorkspace {
 		parts = append(parts, s.th.Muted(strings.TrimSpace(s.noWorkspaceHint())))
 	}
 	if s.branch != "" {
@@ -26,7 +30,7 @@ func (s Shell) headerRow() string {
 	return pane.Fit(strings.Join(parts, "  "), s.w)
 }
 
-// healthSummary is what the last doctor run found, as counts: "✖2 ▲2" for two
+// healthSummary is what the last doctor run found, as counts: "×2 ▲2" for two
 // failures and two warnings, a check mark when everything passed, and "checking…"
 // until the first doctor run (it starts with the shell) has finished.
 func (s Shell) healthSummary() string {

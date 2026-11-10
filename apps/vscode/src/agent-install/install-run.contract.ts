@@ -1,11 +1,3 @@
-/** What a run of the smith executable left behind. */
-export interface SmithRun {
-  /** The exit code; 1 when smith could not be started. */
-  code:   number
-  stdout: string
-  stderr: string
-}
-
 /** What to install: the agent with the MCP server, or the MCP server alone. */
 export type InstallScope = 'agent' | 'mcp'
 

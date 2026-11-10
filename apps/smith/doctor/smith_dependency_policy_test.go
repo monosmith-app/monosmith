@@ -30,6 +30,13 @@ func TestThePipelineSmithMustMatchTheDependency(t *testing.T) {
 	if edit := got[0].Fix.Files[0]; edit.Path != "package.json" || !strings.Contains(edit.Content, `"monosmith": "1.100.0"`) {
 		t.Errorf("the fix sets the pipeline's version: %+v", edit)
 	}
+	steps := got[0].Fix.Steps
+	if len(steps) != 1 || strings.Join(steps[0].Argv, " ") != "npm install --no-audit --no-fund" || steps[0].Dir != "" {
+		t.Errorf("the fix then runs npm install at the workspace root to refresh the lockfile: %+v", steps)
+	}
+	if strings.Contains(got[0].Remedy, "then run your install") || !strings.Contains(got[0].Remedy, "npm install") {
+		t.Errorf("the remedy says the fix runs the install: %q", got[0].Remedy)
+	}
 	if got := smithDependencyFinding(root, "1.95.0"); got != nil {
 		t.Errorf("matching versions are silent: %+v", got)
 	}

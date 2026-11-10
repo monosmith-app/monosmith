@@ -1,0 +1,21 @@
+{
+  "screenreader.none": "There is nothing to do here.",
+  "screenreader.welcome": "smith. What do you want to do? Type a number and press Enter, or q to quit.",
+  "screenreader.numbered": "{number}. {text}",
+  "screenreader.choice.prompt": "Your choice: ",
+  "screenreader.number.invalid": "{given} is not one of the numbers 1 to {max}.",
+  "screenreader.choice.giveup": "no valid choice after {count} tries",
+  "screenreader.hint.example": " For example {example}.",
+  "screenreader.hint.skip": " Press Enter to skip.",
+  "screenreader.question.free": "{prompt}.{hint}",
+  "screenreader.answer.prompt": "Your answer: ",
+  "screenreader.answer.required": "An answer is required.",
+  "screenreader.answer.giveup": "no answer to {question} after {count} tries",
+  "screenreader.how.one": "Type the number of one.",
+  "screenreader.how.many": "Type the numbers of the ones you want, separated by spaces.",
+  "screenreader.question.pick": "{prompt} {how}",
+  "screenreader.answer.invalid.giveup": "no valid answer to {question} after {count} tries",
+  "screenreader.pick.atleast": "Type at least one number.",
+  "screenreader.pick.one": "Type one number.",
+  "screenreader.pick.invalid": "{given} is not one of the numbers 1 to {max}."
+}

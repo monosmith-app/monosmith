@@ -12,7 +12,7 @@ import (
 func TestDevcontainerInstallsWhatCIInstalls(t *testing.T) {
 	var c Contributions
 	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{
-		{Name: "go", Version: "1.26", Devcontainer: &protocol.DevcontainerFeature{ID: "ghcr.io/devcontainers/features/go:1", Options: map[string]string{"version": "1.26.0", "golangciLintVersion": "2.14.0"}}},
+		{Name: "go", Version: "1.26", Devcontainer: &protocol.DevcontainerFeature{ID: "ghcr.io/devcontainers/features/go:1", Options: map[string]string{"version": "1.26.0", "golangciLintVersion": "2.15.0"}}},
 		{Name: "node", Version: "24", Devcontainer: &protocol.DevcontainerFeature{ID: "ghcr.io/devcontainers/features/node:1", Options: map[string]string{"version": "24"}}},
 		{Name: "kiwi", Version: "1.0", Install: "install-kiwi"},
 	}})
@@ -34,7 +34,7 @@ func TestDevcontainerInstallsWhatCIInstalls(t *testing.T) {
 	if doc.Name != "acme" || doc.Image != DevcontainerImage || len(doc.Features) != 2 {
 		t.Fatalf("%+v", doc)
 	}
-	if doc.Features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"] != "2.14.0" || doc.Features["ghcr.io/devcontainers/features/node:1"]["version"] != "24" {
+	if doc.Features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"] != "2.15.0" || doc.Features["ghcr.io/devcontainers/features/node:1"]["version"] != "24" {
 		t.Fatalf("features %v", doc.Features)
 	}
 	if doc.Post != `npm install --global --registry https://registry.npmjs.org/ monosmith@0.9.0 && PATH="$HOME/.local/bin":"$PATH" smith ci setup` {

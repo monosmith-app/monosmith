@@ -41,7 +41,7 @@ func TestKotlinWorkspace(t *testing.T) {
 		t.Fatal("a project dependency is a graph edge")
 	}
 	out := w.smith(true, "run", "lint", "test", "build")
-	for _, want := range []string{"api:build ✔", "core:test ✔", "api:test ✔", "api:lint ✔", "core:lint ✔"} {
+	for _, want := range []string{"api:build ✓", "core:test ✓", "api:test ✓", "api:lint ✓", "core:lint ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}
@@ -61,7 +61,7 @@ func TestKotlinWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "gradle", "smith-e2e-kotlin-core", "libs")); err != nil {
 		t.Error("the builds are under dist/gradle")
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "✔ Gradle is installed") || !strings.Contains(out, "✔ every build writes to dist/") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ Gradle is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "gradle-9.8.1-bin.zip") || !strings.Contains(ci, "MAVEN_REPOSITORY_URL") {

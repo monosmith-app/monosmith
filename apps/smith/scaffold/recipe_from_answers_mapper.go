@@ -28,7 +28,7 @@ var nodeStackPlugins = map[string]struct {
 func planFromAnswers(opts NewOptions, name string) (recipewizard.Plan, error) {
 	lang := opts.Language
 	if lang == "" {
-		return recipewizard.Plan{}, fmt.Errorf("a recipe needs a main language; answer that question or pass --language")
+		return recipewizard.Plan{}, fmt.Errorf("a recipe needs a main language; answer that question or pass --lang")
 	}
 	levels := map[string]recipewizard.LevelPlan{recipewizard.LevelLanguage: {Fixed: []string{lang}}}
 	if lang == "node" {

@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -28,6 +29,7 @@ func (c *Cpp) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: c.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("cmake", "ninja", "cppcheck", "cpp-compiler", "msvc-build-tools", "xcode-clt"),
 		Languages: []string{"cpp", "c++"},
 		Manifests: []string{"CMakeLists.txt"},
 	}, nil
@@ -52,6 +54,11 @@ func (c *Cpp) WriteVersion(params protocol.VersionParams) (protocol.VersionResul
 func (c *Cpp) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
 	return releasing.Publish(c.root, params)
 }
+
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a project is released by its tag. CMake takes only numbers in
+// project(VERSION), so the version writer leaves the prerelease to the tag.
+// No registry holds a stable pointer a prerelease could take.
+func (c *Cpp) PublishesChannels() {}
 
 // CI implements serve.CIContributor.
 func (c *Cpp) CI(params protocol.CIParams) (protocol.CIResult, error) {

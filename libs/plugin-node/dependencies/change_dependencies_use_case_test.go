@@ -19,10 +19,15 @@ func TestNpmCommands(t *testing.T) {
 	res, _ := Install("/ws", protocol.InstallParams{Project: &web, Packages: []string{"left-pad", "zod@^3"}, Dev: true})
 	_, _ = Install("/ws", protocol.InstallParams{})
 	gone, _ := Uninstall("/ws", protocol.UninstallParams{Project: web, Packages: []string{"left-pad"}})
+	rooted, _ := Uninstall("/ws", protocol.UninstallParams{Project: protocol.Project{Root: "."}, Packages: []string{"@swc/core"}})
+	if len(rooted.Files) != 2 || rooted.Files[0] != "package.json" {
+		t.Fatalf("the root's own manifest is the one changed: %v", rooted.Files)
+	}
 	want := []string{
 		"npm install left-pad zod@^3 --workspace apps/web --save-dev --no-audit --no-fund",
 		"npm install --no-audit --no-fund",
 		"npm uninstall left-pad --workspace apps/web --no-audit --no-fund",
+		"npm uninstall @swc/core --no-audit --no-fund",
 	}
 	if strings.Join(ran, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("ran:\n%s", strings.Join(ran, "\n"))
@@ -35,5 +40,25 @@ func TestNpmCommands(t *testing.T) {
 	}
 	if strings.Join(res.Files, ",") != "apps/web/package.json,package-lock.json" {
 		t.Fatalf("files %v", res.Files)
+	}
+}
+
+func TestInstallAtTheWorkspaceRoot(t *testing.T) {
+	var ran []string
+	realFolded := FoldedNpmRunner
+	defer func() { FoldedNpmRunner = realFolded }()
+	FoldedNpmRunner = func(_ string, argv []string) ([]string, error) {
+		ran = append(ran, strings.Join(argv, " "))
+		return nil, nil
+	}
+	res, err := Install("/ws", protocol.InstallParams{Project: &protocol.Project{Root: "."}, Packages: []string{"vitest"}, Dev: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(ran, ";"); got != "npm install vitest --save-dev --no-audit --no-fund" {
+		t.Fatalf("the root takes no --workspace: %s", got)
+	}
+	if strings.Join(res.Files, ",") != "package.json,package-lock.json" {
+		t.Fatalf("the root's own manifest is the one changed: %v", res.Files)
 	}
 }

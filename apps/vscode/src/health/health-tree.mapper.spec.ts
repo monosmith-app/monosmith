@@ -28,6 +28,12 @@ describe('toHealthRows', () => {
     ])
   })
 
+  it('gives a check that carries a fix a Fix row that runs in the editor', () => {
+    const withFix = { check: 'defaults', ok: false, warning: true, remedy: '`smith upgrade --defaults` moves it', fix: { description: 'Move to the latest defaults' } }
+    const { nodes } = toHealthRows({ findings: [withFix] })
+    expect(nodes[0]?.children?.at(-1)).toMatchObject({ label: 'Fix: Move to the latest defaults', context: 'health.fix', data: 'defaults', icon: 'wrench' })
+  })
+
   it('does not show the remedy of a check that passed as a problem', () => {
     const passed = toHealthRows(report).nodes[2]
     expect(passed?.description).toBe('1')

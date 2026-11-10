@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -101,11 +102,20 @@ func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (p
 	if len(unbuilt) > 0 {
 		finding.Check += " (" + strings.Join(unbuilt, ", ") + " is built by " + label + ":build; run `smith build` first)"
 	}
+	if project.Name != "" {
+		finding.Project = project.Name
+	} else {
+		finding.Area = "config"
+	}
 	if len(problems) == 0 {
 		return finding, true
 	}
 	finding.Warning = !failing
 	finding.Detail = strings.Join(problems, "; ")
+	finding.Problem = problems[0]
+	if len(problems) > 1 {
+		finding.Problem += fmt.Sprintf(" (and %d more)", len(problems)-1)
+	}
 	var remedy []string
 	if anyFile {
 		remedy = append(remedy, "restore the file the script runs, or change or remove that script")
@@ -154,10 +164,37 @@ func scriptProblems(workspaceRoot, pkgDir, command string, installed bool) (file
 }
 
 // splitCommands splits a script at the shell operators that start another
-// command.
+// command: && || ; and |. An operator inside quotes is text of an argument, not
+// an operator (node -e "a(); b()" is one command), so it does not split.
 func splitCommands(script string) []string {
-	r := strings.NewReplacer("&&", "\n", "||", "\n", ";", "\n", "|", "\n")
-	return strings.Split(r.Replace(script), "\n")
+	var out []string
+	var current strings.Builder
+	var quote rune
+	runes := []rune(script)
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		switch {
+		case quote != 0:
+			if r == '\\' && quote == '"' && i+1 < len(runes) {
+				current.WriteRune(r)
+				i++
+				r = runes[i]
+			} else if r == quote {
+				quote = 0
+			}
+		case r == '"' || r == '\'' || r == '`':
+			quote = r
+		case r == ';' || r == '|' || (r == '&' && i+1 < len(runes) && runes[i+1] == '&'):
+			if r != ';' && i+1 < len(runes) && runes[i+1] == r {
+				i++
+			}
+			out = append(out, current.String())
+			current.Reset()
+			continue
+		}
+		current.WriteRune(r)
+	}
+	return append(out, current.String())
 }
 
 // plainWord is a word with nothing the shell would expand or a program would
