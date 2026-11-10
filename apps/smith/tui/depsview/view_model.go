@@ -6,7 +6,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/hyperlink"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Model lists the dependencies that have newer releases, patch before
@@ -34,6 +37,9 @@ type Model struct {
 	// Beside is true when the shell draws the one-version policy in the detail
 	// beside the list, so the list leaves it out; set by the shell for drawing.
 	Beside bool
+	// Links is true when the terminal draws hyperlinks (see package hyperlink),
+	// set by the shell for drawing.
+	Links  bool
 	Policy []PolicyLine
 	Err    error
 	Cursor int
@@ -101,6 +107,30 @@ func (v Model) SetFilter(f Filter) Model {
 	v.Cursor, v.Anchor = 0, 0
 	v.scroll = &pane.Scroll{}
 	return v
+}
+
+// Selected is the row under the cursor; ok is false when there is none.
+func (v Model) Selected() (row Row, ok bool) {
+	if v.Cursor < 0 || v.Cursor >= len(v.Rows) {
+		return Row{}, false
+	}
+	return v.Rows[v.Cursor], true
+}
+
+// registryLines say where the selected package is on its registry, as a
+// hyperlink where the terminal draws one, and which keys open and copy the
+// address. A package whose page cannot be known says so.
+func (v Model) registryLines(th theme.Theme, w int) []string {
+	r, ok := v.Selected()
+	if !ok {
+		return nil
+	}
+	label := words.Say("depsview.registry.label")
+	if r.URL == "" {
+		return []string{th.Muted(label + words.Say("depsview.registry.unknown", "name", r.Name))}
+	}
+	text := pane.MiddleTruncate(r.URL, max(w-pane.Width(label), 10))
+	return []string{label + hyperlink.Link(r.URL, th.Info(text), v.Links), th.Muted(words.Say("depsview.registry.keys"))}
 }
 
 // Wheel scrolls the list by delta rows; the cursor and the marks stay.

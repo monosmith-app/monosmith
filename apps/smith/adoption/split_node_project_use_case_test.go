@@ -54,6 +54,11 @@ func TestAdoptSplitsTheWorkspaceFromASingleNodeApp(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs npm install")
 	}
+	// The shared lint config pulls hundreds of packages: on Windows the install takes minutes.
+	// Linux covers it; SMITH_E2E_NPM=1 runs it anywhere.
+	if runtime.GOOS != "linux" && os.Getenv("SMITH_E2E_NPM") != "1" {
+		t.Skip("runs a full npm install: linux only, or set SMITH_E2E_NPM=1")
+	}
 	for _, tool := range []string{"git", "npm", "go"} {
 		if _, err := exec.LookPath(tool); err != nil {
 			t.Skipf("%s is not installed", tool)
@@ -80,7 +85,7 @@ func TestAdoptSplitsTheWorkspaceFromASingleNodeApp(t *testing.T) {
 	runIn(t, repo, env, "git", "add", "-A")
 	runIn(t, repo, env, "git", "commit", "-q", "-m", "init")
 
-	out := runIn(t, repo, env, bin, "adopt", "--init", "--move", "apps/orders-api", "--yes", "--install", "--agent", "add", "--commit")
+	out := runIn(t, repo, env, bin, "adopt", "--init", "--move", "apps/orders-api", "--yes", "--install", "--agent", "add", "--eslint-setup", "shared", "--commit")
 	for _, want := range []string{"moved 6 entries into apps/orders-api", "moved 1 document(s) into doc", "moved 6 devDependencies"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("adopt output lacks %q:\n%s", want, out)
@@ -122,8 +127,8 @@ func TestAdoptSplitsTheWorkspaceFromASingleNodeApp(t *testing.T) {
 		t.Errorf("smith doctor must pass with no failure:\n%s", doctor)
 	}
 	for _, line := range strings.Split(doctor, "\n") {
-		// The Node.js version of the machine that runs the test is not the split's doing.
-		if strings.HasPrefix(line, "! ") && !strings.HasPrefix(line, "! Node.js is") {
+		// What the machine has installed (Node.js, Docker, gh, ...) is not the split's doing.
+		if strings.HasPrefix(line, "! ") && !strings.HasPrefix(line, "! Node.js is") && !strings.Contains(line, "is not on PATH") {
 			t.Errorf("smith doctor warns: %s\n%s", line, doctor)
 		}
 	}

@@ -38,6 +38,12 @@ func SortNode(root string) (Sorted, error) {
 			out.Unsure = append(out.Unsure, name)
 		}
 	}
+	out.Lint = len(out.Replaced) > 0
+	for _, pattern := range []string{".eslintrc*", "eslint.config.*"} {
+		if found, _ := filepath.Glob(filepath.Join(root, pattern)); len(found) > 0 {
+			out.Lint = true
+		}
+	}
 	sort.Strings(out.Replaced)
 	sort.Strings(out.Tools)
 	sort.Strings(out.Unsure)

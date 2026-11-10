@@ -287,7 +287,7 @@ func TestTheWheelScrollsTheDepsListAndNeverMovesItsCursor(t *testing.T) {
 	if d := l.sh().deps; d.Cursor != 0 {
 		t.Fatalf("the wheel moved the cursor to %d", d.Cursor)
 	}
-	l.hasNot("pkg00")
+	l.hasNot("[ ] pkg00")
 	l.hasNot("pkg01 ")
 }
 

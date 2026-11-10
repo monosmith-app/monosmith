@@ -21,6 +21,8 @@ type MoveOptions struct {
 	// Hoist is --hoist: development dependencies the person sends to the
 	// workspace without being asked.
 	Hoist []string
+	// EslintSetup is --eslint-setup: "shared", "keep", or "" when not given.
+	EslintSetup string
 	// Yes is --yes: do not ask.
 	Yes bool
 	// In and Out are where a question is read and written.
@@ -113,6 +115,26 @@ func placeDependencies(p *adoptmove.Plan, opts MoveOptions) error {
 		fmt.Fprintf(opts.Out, "  stays in the project (nobody was asked; --hoist <name> sends one to the workspace): %s\n", strings.Join(open, ", "))
 	}
 	p.Settle(workspace)
+	if !p.Lint {
+		return nil
+	}
+	switch {
+	case opts.EslintSetup == "shared":
+		p.SettleLint(false)
+	case opts.EslintSetup == "keep":
+		p.SettleLint(true)
+	case !opts.Yes && interactive():
+		keep, err := adoptmove.AskLint(opts.In, opts.Out)
+		if err != nil {
+			return err
+		}
+		p.SettleLint(keep)
+	default:
+		if opts.Out != nil {
+			fmt.Fprintln(opts.Out, "  keeps your own ESLint setup in the project (nobody was asked; --eslint-setup shared uses the shared config)")
+		}
+		p.SettleLint(true)
+	}
 	return nil
 }
 

@@ -32,6 +32,9 @@ func printMoveOffer(w io.Writer, r Report) {
 	if len(r.MovePlan.Unsure) > 0 {
 		fmt.Fprintf(w, "and ask where each of these goes (workspace or project): %s\n", joinNames(r.MovePlan.Unsure))
 	}
+	if r.MovePlan.Lint {
+		fmt.Fprintln(w, "and ask whether the project keeps its own ESLint setup or uses the shared config")
+	}
 	for _, note := range r.MovePlan.Notes {
 		fmt.Fprintf(w, "  note: %s\n", note)
 	}

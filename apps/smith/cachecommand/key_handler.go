@@ -24,24 +24,38 @@ func (r rawWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// pressedKeys reads single key presses from in until it ends.
-func pressedKeys(in io.Reader) <-chan rune {
-	ch := make(chan rune)
-	go func() {
-		defer close(ch)
-		buf := make([]byte, 1)
-		for {
-			if n, err := in.Read(buf); err != nil || n == 0 {
-				return
-			}
-			ch <- rune(buf[0])
-		}
-	}()
-	return ch
+// onTerminal is true when both standard input and output are a terminal.
+func onTerminal() bool {
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+}
+
+// runSecretSession copies a secret and runs its one-key choices.
+//
+// Parameters: session has everything but the clipboard, the output and the
+// key source; out is the output (a rawWriter when the terminal is raw); keys
+// is the shared input of a raw terminal, nil when there is no terminal.
+func runSecretSession(session cachekey.Session, out io.Writer, keys *stdinFeed) error {
+	session.Out = out
+	var terminal io.Writer
+	if keys != nil {
+		terminal = os.Stdout
+		session.Keys = keys.Keys()
+	}
+	session.Clip = cachekey.FindSystem(terminal)
+	return session.Run()
+}
+
+// newSession is a Session with the system's random source, timer and
+// environment.
+func newSession(out io.Writer, clearAfter time.Duration) cachekey.Session {
+	return cachekey.Session{
+		Random: rand.Reader, Out: out, After: time.After, ClearAfter: clearAfter,
+		Env: cachekey.UserEnvironment{GOOS: runtime.GOOS, Run: cachekey.ExecRunner},
+	}
 }
 
 func keyCommand() *cobra.Command {
-	var print bool
+	var printKey bool
 	var clearAfter time.Duration
 	cmd := &cobra.Command{
 		Use:   "key",
@@ -71,34 +85,20 @@ Without a terminal the command copies the key once and ends.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
-			session := cachekey.Session{
-				Random: rand.Reader, Out: out, After: time.After, ClearAfter: clearAfter,
-				Env: cachekey.UserEnvironment{GOOS: runtime.GOOS, Run: cachekey.ExecRunner},
-			}
-			if print {
+			session := newSession(out, clearAfter)
+			if printKey {
 				return session.Print()
 			}
-			stdin, stdout := int(os.Stdin.Fd()), int(os.Stdout.Fd())
-			interactive := cmd.OutOrStdout() == os.Stdout && term.IsTerminal(stdin) && term.IsTerminal(stdout)
-			var terminal io.Writer
-			if interactive {
-				terminal = os.Stdout
+			if out == os.Stdout && onTerminal() {
+				if restore, ok := rawTerminal(); ok {
+					defer restore()
+					return runSecretSession(session, rawWriter{out}, newStdinFeed(os.Stdin))
+				}
 			}
-			session.Clip = cachekey.FindSystem(terminal)
-			if !interactive {
-				return session.Run()
-			}
-			state, err := term.MakeRaw(stdin)
-			if err != nil {
-				return session.Run()
-			}
-			defer func() { _ = term.Restore(stdin, state) }()
-			session.Out = rawWriter{out}
-			session.Keys = pressedKeys(os.Stdin)
-			return session.Run()
+			return runSecretSession(session, out, nil)
 		},
 	}
-	cmd.Flags().BoolVar(&print, "print", false, "print the key instead of copying it")
+	cmd.Flags().BoolVar(&printKey, "print", false, "print the key instead of copying it")
 	cmd.Flags().DurationVar(&clearAfter, "clear-after", cachekey.DefaultClearAfter, "clear the clipboard after this long if it still holds the key; 0 leaves it")
 	return cmd
 }

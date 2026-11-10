@@ -27,7 +27,7 @@ func SplitRootProject(r Report, c adoptmove.Candidate, p adoptmove.Plan, out io.
 	res, err := split(adoptsplit.Request{
 		Root: r.Root, Dir: p.Dir, Workspace: r.Name,
 		Patterns: workspacePatterns([]string{p.Dir}),
-		Hoist:    p.Hoist, Drop: p.Replaced,
+		Hoist:    p.Hoist, Drop: p.Replaced, KeepLint: p.KeepLint,
 	})
 	if err != nil {
 		return err

@@ -23,7 +23,7 @@ func SortDependencies(root string, c Candidate, p *Plan) error {
 	if err != nil {
 		return err
 	}
-	p.Hoist, p.Replaced, p.Unsure = sorted.Tools, sorted.Replaced, sorted.Unsure
+	p.Hoist, p.Replaced, p.Unsure, p.Lint = sorted.Tools, sorted.Replaced, sorted.Unsure, sorted.Lint
 	return nil
 }
 
@@ -42,4 +42,17 @@ func (p *Plan) Settle(workspace []string) {
 	}
 	slices.Sort(p.Hoist)
 	p.Unsure = nil
+}
+
+// SettleLint records the answer about the project's own ESLint setup: kept
+// in the project, or replaced by the shared config. Keeping it means no lint
+// package is removed.
+//
+// Parameters: keep is true when the person keeps their own setup.
+func (p *Plan) SettleLint(keep bool) {
+	p.Lint = false
+	if keep {
+		p.KeepLint = true
+		p.Replaced = nil
+	}
 }
