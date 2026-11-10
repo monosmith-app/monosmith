@@ -97,7 +97,8 @@ object UpdatesJsonMapper {
     /** The plan of an update, in words: each line says what moves and where. */
     fun describe(updates: List<UpdateContract>): String =
         updates.joinToString("\n") {
-            "${line(it)} · ${it.level}\n    in ${it.projects.joinToString(", ")}" + if (it.url.isEmpty()) "" else "\n    registry: ${it.url}"
+            val registry = if (it.url.isEmpty()) "" else "\n    registry: ${it.url}"
+            "${line(it)} · ${it.level}\n    in ${it.projects.joinToString(", ")}$registry"
         }
 
     /** The lines of "which updates?": the ones of the riskiest level are marked in the description; nothing risky is ticked at first. */

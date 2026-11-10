@@ -40,9 +40,21 @@ no ESLint config, and `smith doctor` failed on the result. The person had to rep
   at the root and `npm install` rewrites it.
 - A `tsconfig.json` that already extends another file, that has a trailing comma, or beside a root
   `tsconfig.base.json` is left whole, and the output says why.
-- Go, Python and Rust declare the names of their tool configuration only (golangci, ruff and
-  flake8, rustfmt, clippy and the toolchain pin). Splitting `go.mod` into a `go.work`, the
-  `[tool.*]` tables of `pyproject.toml`, and a `[workspace]` `Cargo.toml` are not done.
+- Go: `go.mod`, `go.sum` and the code stay with the module. `.golangci.*` stays at the root, and the
+  `go.work` that makes the module part of the workspace is written by adopt's workspace step.
+- Python: `SortPython` reads the dev, test, tests and lint lists of `pyproject.toml` (the extras and
+  the PEP 735 groups). Tools (pytest, ruff, mypy, black, isort, flake8, build, type stubs and the
+  like) move to the root `requirements-dev.txt`, the workspace's toolchain, which smith creates
+  with its own pins when the root has none (smith's pin wins for a tool it lists already). An
+  unknown one is asked about, as for Node. The `[tool.ruff]` tables become a root `ruff.toml`.
+  `[project]`, the runtime dependencies, the build system and the other `[tool.*]` tables (mypy,
+  pytest, setuptools: their paths are relative to the project) stay. `--install` also creates
+  the `.venv`. Poetry's dev group is not read.
+- Rust: `SplitRust` writes a root `Cargo.toml` with `[workspace]` and the crate as its member,
+  moves the crate's `Cargo.lock` to the root, and writes a root `.cargo/config.toml` that builds
+  into `dist/cargo`. The crate's `Cargo.toml` stays whole: cargo scopes `[dependencies]` and
+  `[dev-dependencies]` to the crate, so there is no dependency to move. rustfmt, clippy and the
+  toolchain pin stay at the root.
 
 ## Consequences
 
@@ -52,7 +64,10 @@ no ESLint config, and `smith doctor` failed on the result. The person had to rep
   (old file kept as `.pre-smith`, ESLint packages removed from the project) or keep their own
   (moved into the project). `--eslint-setup shared|keep` answers; without a terminal or with
   `--yes` their own is kept and the output says so.
-- The adopt wizard and the VS Code extension do not ask about unknown development dependencies
-  or ESLint yet: they pass `--move`, the dependencies stay in the project and their ESLint stays.
-  The plan JSON (`--dry-run --json`) lists `unsure` and `lint` for a client that wants to ask.
-- Every other language still needs its `Sort` and `Split`; the contract is in `adoptsplit`.
+- The adopt wizard and the VS Code extension ask both questions after "where does it go?": the
+  wizard reads the plan through its flow (`MovePlan`), the extension reads `unsure` and `lint` from
+  `smith adopt --dry-run --json --move <folder>`. Each question puts the answer that changes the
+  least first and passes the answer as `--hoist` and `--eslint-setup`.
+- Every other language (.NET, JVM, Dart, Ruby, PHP, C++, Swift) still needs its rules; adopt
+  does not move them at all yet (ADR 0070 detects Node, Go, Python and Rust only). The contract is
+  in `adoptsplit`.

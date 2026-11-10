@@ -1,0 +1,38 @@
+ Context: kind-tuires [RW]                         <0> all       <b>       Bench Run/Stop   <l>       L… ____  __ ________
+ Cluster: kind-tuires                              <1> demo      <ctrl-d>  Delete           <p>       Lo|    |/  /   __   \______
+ User:    kind-tuires                              <2> default   <d>       Describe         <shift-f> Po|       /\____    /  ___/
+ K9s Rev: v0.51.0                                                <e>       Edit             <f>       Sh|    \   \  /    /\___  \
+ K8s Rev: v1.31.2                                                <?>       Help             <w>       Wa|____|\__ \/____//____  /
+ CPU:     n/a                                                    <shift-j> Jump Owner       <y>       YA         \/           \/
+ MEM:     n/a
+┌────────────────────────────────────────────────────── services(demo)[1] ───────────────────────────────────────────────────────┐
+│ NAME↑             TYPE                  CLUSTER-IP                EXTERNAL-IP            PORTS             AGE                 │
+│ web               ClusterIP             10.96.198.222                                    80►0              2m51s               │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+│                                                                                                                                │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  <service>
+

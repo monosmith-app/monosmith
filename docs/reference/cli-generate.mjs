@@ -67,7 +67,9 @@ const defaults = {
   'pipeline|ci': "the workspace's providers",
   'release|format': '`text`',
   'slices check|lang': '`go`',
-  'cache prune|max-size-mb': '`[cache] max_size_mb`'
+  'cache prune|max-size-mb': '`[cache] max_size_mb`',
+  'cache key|clear-after': '`60s`',
+  'cache setup|clear-after': '`60s`'
 }
 for (const run of ['run', 'build', 'lint', 'test', 'typecheck']) {
   defaults[`${run}|base`] = 'the pull request target, else the release branch'
@@ -76,6 +78,8 @@ for (const run of ['run', 'build', 'lint', 'test', 'typecheck']) {
 
 // Value types that are not simply "string".
 const types = {
+  'cache key|clear-after': 'duration (`60s`, `2m`, `0`)',
+  'cache setup|clear-after': 'duration (`60s`, `2m`, `0`)',
   'build|parallel': 'integer',
   'lint|parallel': 'integer',
   'test|parallel': 'integer',

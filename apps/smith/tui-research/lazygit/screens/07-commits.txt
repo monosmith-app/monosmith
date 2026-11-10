@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Patch──────────────────────────────────────────────────────────────────────────╮
+│gitplay → main                            ││commit 83b0bb3732edf59d80b62efab3e91002f83113ba (HEAD -> main)                      ▐
+╰──────────────────────────────────────────╯│Author: Tester <a@b.c>                                                              ▐
+╭─[2]─Files - Worktrees - Submodules───────╮│Date:   Sat Nov 7 09:36:55 2026 +0000                                               ▐
+│▼ /                                       ││                                                                                    ▐
+│  M  a.txt                                ││    fix: b on main                                                                  ▐
+│  ▼ src                                   ││---                                                                                 ▐
+│    M  main.go                            ││ b.txt | 2 +-                                                                       ▐
+│  A  untracked.txt                        ││ 1 file changed, 1 insertion(+), 1 deletion(-)                                      ▐
+│                                          ││                                                                                    ▐
+│                                          ││diff --git a/b.txt b/b.txt                                                          ▐
+│                                          ││index ce01362..065e9d1 100644                                                       ▐
+│                                          ││--- a/b.txt                                                                         ▐
+╰───────────────────────────────────2 of 5─╯│+++ b/b.txt                                                                         ▐
+╭─[3]─Local branches - Remotes - Tags──────╮│@@ -1 +1 @@                                                                         ▐
+│  * main                                  ││-hello                                                                              ▐
+│47s feature/login                         ││+main change                                                                        ▐
+│48s feature/conflict                      ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+│                                          ││                                                                                    ▐
+╰───────────────────────────────────1 of 3─╯│                                                                                    │
+╭─[4]─Commits - Reflog─────────────────────╮│                                                                                    │
+│83b0bb37 Te ○ fix: b on main              ││                                                                                    │
+│c86c2a5e Te ○ feat: add four              ││                                                                                    │
+│6cc935ed Te ○ feat: initial files         ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 3─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─[5]─Stash────────────────────────────────╮╭─Command log────────────────────────────────────────────────────────────────────────╮
+│44s WIP on main: 83b0bb3 fix: b on main   ││  git add -- .                                                                      │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+Squash: s | Fixup: f | Reword: r | Drop: d | Edit: e | Amend: A | Checkout: <space> | Reset: g | …      Donate Ask Question 0.66.2

@@ -12,7 +12,7 @@ views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
 `detail`, `runview`, `logview`, `guide`, `settingsview` (the Settings tab; its detail is drawn in the side panel of the shell, `WithSideDetail`)), `settingssource` (what the Settings
 tab reads, and the functions it calls, which are the ones `smith plugin` and `smith config` call), `userprefs` (the
 person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix dialog),
-`adoptwizard` (the adopt and convert dialog), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `pathfinder` (the list of folders and files under a path field), `layout`,
+`adoptwizard` (the adopt and convert dialog), `cachewizard` (the remote cache setup, the screens of `smith cache setup`), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `pathfinder` (the list of folders and files under a path field), `layout`,
 `progress`, `splitter` (the dividers: keys, step and spots from plain values), `selection` (drag to select text: regions cut along the dividers, the selected text and its highlight), `runhistory` (the run panel's
 history: ago text, header parts, recent rows, steps, the rerun-failed line) and `commandtext` (the
 text a captured command printed: plan lines, failure text, report file, not-committed line).

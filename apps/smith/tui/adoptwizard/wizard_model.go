@@ -77,6 +77,11 @@ type Model struct {
 	initQuestions []adoptdecision.Question
 	initChoices   adoptdecision.Choices
 	initAsked     bool
+	// splitQuestions are the questions of the split being asked; split holds the
+	// answers once given, and splitAsked says they were (or that none was needed).
+	splitQuestions []splitQuestion
+	split          adoptflow.Split
+	splitAsked     bool
 }
 
 // prepared is what Prepare returned.
@@ -234,7 +239,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 	case out.Skip:
 		return m.decline(true)
 	}
-	if (m.stage == StageLevel || m.stage == StageMove || m.stage == StageInit || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
+	if (m.stage == StageLevel || m.stage == StageMove || m.stage == StageSplit || m.stage == StageInit || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
 		return m.answered()
 	}
 	return m, Outcome{}
@@ -260,7 +265,13 @@ func (m Model) goBack() (Model, Outcome) {
 	switch m.stage {
 	case StageLevel, StageMove:
 		return m.showFound(), Outcome{}
+	case StageSplit:
+		return m.askMove(), Outcome{}
 	case StageInit:
+		if len(m.splitQuestions) > 0 {
+			m.splitAsked = false
+			return m.askSplit(), Outcome{}
+		}
 		if m.hasRootProject() {
 			return m.askMove(), Outcome{}
 		}
@@ -435,6 +446,9 @@ func (m Model) answered() (Model, Outcome) {
 	if m.stage == StageMove {
 		return m.answeredMove(answers)
 	}
+	if m.stage == StageSplit {
+		return m.answeredSplit(answers)
+	}
 	if m.stage == StageInit {
 		return m.answeredInit(answers)
 	}
@@ -526,7 +540,7 @@ func (m Model) reviewConservative() (Model, Outcome) {
 func (m Model) showConservative() Model {
 	text := ""
 	if !m.found.Kind.Convertible() {
-		fix := m.flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices)
+		fix := m.flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices, m.split)
 		shown, err := m.flow.ShowFix(fix)
 		if err != nil {
 			shown = words.Say("adopt.show.failed", "description", fix.Description, "error", err.Error())

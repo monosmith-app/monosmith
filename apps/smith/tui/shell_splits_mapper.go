@@ -33,7 +33,7 @@ func (s Shell) overlaid() bool { return s.belowMinimum() || s.modalOpen() }
 // acts only on the modal and the screen behind it is drawn dimmed.
 func (s Shell) modalOpen() bool {
 	return s.palOpen || s.help != nil || s.pkg != nil || s.relpick != nil || s.confirm != nil ||
-		s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil
+		s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil || s.cache != nil
 }
 
 // spots are the dividers of the open tab that can be moved now, for the splitter.

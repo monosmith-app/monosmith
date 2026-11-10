@@ -1,0 +1,24 @@
+╭─[1]─Status──────────────╮╭─[0]─Staged changes────────────────────────────────╮
+│gitplay → main           ││diff --git a/a.txt b/a.txt                         ▐
+╰─────────────────────────╯│index f384549..ae9be42 100644                      ▐
+╭─[2]─Files - Worktrees -─╮│--- a/a.txt                                        ▐
+│▼ /                      ││+++ b/a.txt                                        ▐
+│  M  a.txt               ││@@ -2,3 +2,4 @@ one                                ▐
+│  ▼ src                  ││ two                                               ▐
+│    M  main.go           ││ three                                             ▐
+│  A  untracked.txt       ││ four                                              ▐
+│                         ││+edit again                                        │
+│                         ││diff --git a/src/main.go b/src/main.go             │
+│                         ││index 823aafd..effb1ea 100644                      │
+│                         ││--- a/src/main.go                                  │
+╰──────────────────1 of 5─╯│+++ b/src/main.go                                  │
+╭─[3]─Local branches - Re─╮│@@ -1 +1,2 @@                                      │
+│  * main                 ││ package x                                         │
+╰──────────────────1 of 3─╯│+x                                                 │
+╭─[4]─Commits - Reflog────╮│diff --git a/untracked.txt b/untracked.txt         │
+│119de6a7 Te ○ fix: b on m││new file mode 100644                               │
+╰──────────────────1 of 3─╯╰───────────────────────────────────────────────────╯
+╭─[5]─Stash───────────────╮╭─Command log───────────────────────────────────────╮
+│6s WIP on main: 119de6a f││and the repository exists.                         │
+╰──────────────────1 of 1─╯╰───────────────────────────────────────────────────╯
+Stage: <space> | Commit: c | Stash: s | Discard: d |  Donate Ask Question 0.66.2

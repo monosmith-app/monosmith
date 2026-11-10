@@ -16,6 +16,9 @@ func (m Model) asksInit() bool { return !m.found.Kind.Convertible() && !m.initAs
 // afterMove goes on from the question where the project goes (or from the
 // found screen): to the decisions of adopt --init, then to the review.
 func (m Model) afterMove() Model {
+	if m.asksSplit() {
+		return m.askSplit()
+	}
 	if m.asksInit() {
 		return m.askInit()
 	}
