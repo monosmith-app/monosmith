@@ -22,10 +22,10 @@ type Model struct {
 	// onItems is true while the keyboard is in the right pane, false while it
 	// is in the list of sections.
 	onItems bool
-	cursor  [6]int
+	cursor  [sectionCount]int
 	// scroll is where the window of each section's list starts, apart from
 	// the cursor, so the wheel scrolls without selecting (see pane.Scroll).
-	scroll [6]*pane.Scroll
+	scroll [sectionCount]*pane.Scroll
 	// listW and detailRows are the width of the list of sections and the rows of
 	// the detail the person gave by moving a divider; 0 is automatic.
 	listW, detailRows int
@@ -58,11 +58,14 @@ type Model struct {
 
 // New builds the tab on a backend; forms are the guided forms its last section opens.
 func New(b Backend, forms []Form) Model {
-	return Model{
+	m := Model{
 		b: b, forms: forms, onItems: true,
-		scroll:     [6]*pane.Scroll{{}, {}, {}, {}, {}, {}},
 		savedTheme: normalise(b.Style.Theme), savedIcons: normalise(b.Style.Icons), tipSeen: b.TipSeen,
 	}
+	for i := range m.scroll {
+		m.scroll[i] = &pane.Scroll{}
+	}
+	return m
 }
 
 // normalise turns "auto" into "": nothing saved.

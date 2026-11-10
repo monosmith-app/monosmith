@@ -20,11 +20,12 @@ import (
 // undoOfferTicks is how long the status line keeps the offer to undo a plugin switch.
 const undoOfferTicks = 120
 
-// settingsForms are the guided forms the tab's last section opens.
+// settingsForms are the guided forms the tab's last section opens; the
+// action each presents places it in its own section too.
 func settingsForms(actions []guide.Action) []settingsview.Form {
 	forms := make([]settingsview.Form, 0, len(actions))
 	for _, a := range actions {
-		forms = append(forms, settingsview.Form{Title: a.Title, Hint: a.Hint})
+		forms = append(forms, settingsview.Form{Title: a.Title, Hint: a.Hint, Presents: a.Presents})
 	}
 	return forms
 }

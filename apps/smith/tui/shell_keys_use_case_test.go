@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
 
@@ -508,4 +510,41 @@ func mustDecode(t *testing.T, seq string) []byte {
 		t.Fatal(err)
 	}
 	return text
+}
+
+// U and S on the Deps tab open the guided forms of smith deps up and smith
+// sync, the same forms the Start tab lists, and Esc returns to the tab.
+func TestUAndSOnTheDepsTabOpenTheFormsOfDepsUpAndSync(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	sh := l.sh()
+	for _, a := range []guide.Action{
+		{Title: "Update the dependencies", Presents: "deps up", Steps: []guide.Step{{Key: "arg:names", Prompt: "names", Optional: true}}},
+		{Title: "Sync the versions", Presents: "sync", Steps: []guide.Step{{Key: "arg:names", Prompt: "names", Optional: true}}},
+	} {
+		sh.guide = sh.guide.WithAction(a)
+	}
+	l.m = sh
+	for _, key := range []string{"U", "S"} {
+		title := map[string]string{"U": "Update the dependencies", "S": "Sync the versions"}[key]
+		l.openTab(commands.TabDeps)
+		l.keys(key)
+		if got := l.sh(); got.tab != commands.TabGuide || got.guide.Title() != title {
+			t.Fatalf("%s opens %q on %q", key, got.guide.Title(), got.tab)
+		}
+		l.keys("esc")
+		if got := l.sh().tab; got != commands.TabDeps {
+			t.Fatalf("Esc returns to the Deps tab, not %q", got)
+		}
+	}
+}
+
+// Without the form (a smith that has no such command) the key says so.
+func TestSOnTheDepsTabSaysWhenThereIsNoSyncForm(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.openTab(commands.TabDeps)
+	l.keys("S")
+	l.has("There is no form for smith sync here")
+	if got := l.sh().tab; got != commands.TabDeps {
+		t.Fatalf("the tab stays: %q", got)
+	}
 }

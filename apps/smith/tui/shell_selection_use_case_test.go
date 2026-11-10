@@ -159,7 +159,8 @@ func TestInSettingsADragFromTheSectionsNeverReachesTheDetail(t *testing.T) {
 	l.keys("6")
 	out := copying(l)
 	x, y := l.find("Recipes")
-	l.send(click(x, y)).send(drag(130, y+1)).send(letGo(130, y+1))
+	// Recipes, Assistants, CI, Forms: the drag ends on the last section.
+	l.send(click(x, y)).send(drag(130, y+3)).send(letGo(130, y+3))
 	got := l.copied(t, out)
 	if !strings.Contains(got, "Recipes") || !strings.Contains(got, "Forms") {
 		t.Fatalf("the sections are copied: %q", got)

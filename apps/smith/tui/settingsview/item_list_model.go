@@ -17,15 +17,29 @@ const (
 	Style
 	Workspace
 	Recipes
+	Assistants
+	CI
 	Forms
 )
 
+// sectionCount is the number of sections, the size of the per-section state.
+const sectionCount = Forms + 1
+
 // Sections lists them in order.
-var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Forms}
+var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Assistants, CI, Forms}
+
+// sectionForms are the actions (by catalogue id, see guide.Action.Presents)
+// whose guided forms a section lists besides its own rows. The Forms section
+// lists every form.
+var sectionForms = map[Section][]string{
+	Plugins:    {"plugin set"},                   // words:literal
+	Assistants: {"mcp install", "agent install"}, // words:literal
+	CI:         {"ci", "pipeline"},
+}
 
 // Title is the name in the list.
 func (s Section) Title() string {
-	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.forms")}[s]
+	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.assistants"), words.Say("settingsview.section.ci"), words.Say("settingsview.section.forms")}[s]
 }
 
 // About is the line under the heading of the open section.
@@ -36,12 +50,30 @@ func (s Section) About() string {
 		words.Say("settingsview.about.style"),
 		words.Say("settingsview.about.workspace"),
 		words.Say("settingsview.about.recipes"),
+		words.Say("settingsview.about.assistants"),
+		words.Say("settingsview.about.ci"),
 		words.Say("settingsview.about.forms"),
 	}[s]
 }
 
-// Form is a guided form the Forms section opens.
-type Form struct{ Title, Hint string }
+// Form is a guided form the Forms section opens. Presents is the id of the
+// action it stands for ("mcp install"), which places it in a section too.
+type Form struct{ Title, Hint, Presents string }
+
+// formsOf are the forms a section lists besides its own rows, in the order of
+// sectionForms; a form the workspace does not offer is left out.
+func (m Model) formsOf(s Section) []int {
+	var out []int
+	for _, id := range sectionForms[s] {
+		for i, f := range m.forms {
+			if f.Presents == id {
+				out = append(out, i)
+				break
+			}
+		}
+	}
+	return out
+}
 
 type kind int
 
@@ -110,7 +142,16 @@ func (m Model) items(s Section) []item {
 			add(kindForm, words.Say("settingsview.group.forms"), f.Title, i)
 		}
 	}
+	for _, i := range m.formsOf(s) {
+		add(kindForm, words.Say("settingsview.group.forms"), m.forms[i].Title, i)
+	}
 	return out
+}
+
+// readsWorkspace is false for a section whose rows need no snapshot: the
+// style, which is the person's, and the sections that only list forms.
+func (s Section) readsWorkspace() bool {
+	return s != Style && s != Forms && s != Assistants && s != CI
 }
 
 // tableOf is the smith.toml table a setting path belongs to.

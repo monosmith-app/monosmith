@@ -236,6 +236,8 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Deps | `i` | Install a package (`smith install -p <project> <package>`). It asks the names (a name or name@version, several with spaces), then the projects (space ticks; the projects that declare the package under the cursor start ticked, and nothing runs before you confirm), then the kind: production or development (`-D`). Each project is listed with its language and folder, so for a project with several parts, such as a Tauri app (a Rust part and a web part), you pick the part that gets the package. The confirmation opens at once and shows the plan: the latest release of each name and the section it goes into. The first choice of the projects step is `Workspace root: shared by every project, in the root package.json` (`-p .`), shown only in a workspace with a Node project; it can be ticked together with projects, starts ticked when the cursor is on a `(root)` row, and the kind step applies to it. The plan and the confirmation list it with the exact `npm install` command. Machine-wide installs (`npm -g`), peer and optional dependencies are not offered: `smith install` has no way to do them. |
 | Deps | `x` | Remove the package under the cursor (`smith uninstall -p <project> <package>`). A package that one project declares goes straight to the confirmation with that project as `-p`; the workspace root, shown as `(root)`, is `-p .`. When several projects declare it, a multiple choice asks from which ones (space toggles); smith never picks for you. A development dependency is removed like any other. |
 | Deps | `v` | Bring drifting versions to one (`smith deps up --align`). |
+| Deps | `U` | Update all dependencies: opens the `smith deps up` form, the one the Start tab lists, which asks the options and ends at the confirmation. |
+| Deps | `S` | Sync the versions: opens the `smith sync` form in the same way. |
 | Release | `Enter`, `Right`, `Left` | Show the commits behind the selected bump (`Enter` toggles, `Right` shows, `Left` hides). Each row starts with `▸` while its commits are folded and `▾` while they show (`>` and `v` with ASCII symbols); a click on the row does the same as `Enter`. The footer says `←→ expand/collapse`. |
 | Release | `p` | Preview the next release (`smith release --dry-run`). |
 | Release | `n` | Print the release notes (`smith release --dry-run --notes`). |
@@ -543,7 +545,8 @@ marketplace…**, asks for words (or nothing, to list every plugin), runs
 `smith plugin search <words> --json` and shows the plugins found as a list you can narrow by
 typing, with the newest version, what it does and its roles. `Enter` on one shows the
 `smith plugin install <name>` confirmation, as above. An empty result says to search with fewer
-words, and a failed search shows the command's error in a notice.
+words, and a failed search shows the command's error in a notice. Under them, **Manage plugins**
+opens the `smith plugin set` form, the one the Start tab lists.
 
 **Architecture.** How the code of the workspace is laid out, as radio rows with what each
 choice means beside it: `vertical-slices` (code grouped by what it does, one flat folder per
@@ -576,6 +579,14 @@ stays in the editor when it is refused. `u` removes the setting, so it has its d
 
 **Recipes.** The `*.recipe.toml` files in the workspace, with their name and version and why
 one is not valid; [`smith recipe check <file>`](recipe-check.md) shows what a recipe would use.
+
+**Assistants.** The forms that connect smith to a coding assistant (`smith mcp install`) and
+install the agent files (`smith agent install`). `Enter` opens the form, the same one the Start
+tab and the palette open.
+
+**CI.** The forms that regenerate the CI pipelines (`smith ci generate`) and add a ready-made
+pipeline (`smith pipeline`). `Enter` opens the form. The doctor still offers its own fix when a
+pipeline drifts from what smith would write.
 
 **Forms.** The guided forms (add a project, remove a project and the rest of the Start menu)
 that end as a smith command line. Every action in the action catalog has one: a command with
