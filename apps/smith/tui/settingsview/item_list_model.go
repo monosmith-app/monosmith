@@ -32,8 +32,8 @@ var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Assis
 // whose guided forms a section lists besides its own rows. The Forms section
 // lists every form.
 var sectionForms = map[Section][]string{
-	Plugins:    {"plugin set"},
-	Assistants: {"mcp install", "agent install"},
+	Plugins:    {"plugin set"},                   // words:literal
+	Assistants: {"mcp install", "agent install"}, // words:literal
 	CI:         {"ci", "pipeline"},
 }
 
