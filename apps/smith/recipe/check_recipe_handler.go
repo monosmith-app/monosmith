@@ -37,11 +37,11 @@ func Command(version string) *cobra.Command {
 		Short: "Resolve and validate a recipe, showing what it would use and where each value came from",
 		Long: `Loads a recipe and the recipes it extends (a path, or an https URL pinned by
 content hash in ` + LockFile + `), answers its choices, and checks the result with
-the rules a stack is checked with: one plugin per exclusive level and slot,
+the rules a stack is checked with: one plugin per exclusive role and slot,
 requirements met, no conflicts, every plugin installed at a version in range.
 
 Choices are answered with --choice name=answer, else by their default. It
-prints the choices asked, the plugin for each level and the merged settings,
+prints the choices asked, the plugin for each role and the merged settings,
 each with the recipe, file and line it came from, or why the recipe is not
 valid. The exit code is non-zero when it is not. --json prints the same for
 tools.`,

@@ -87,6 +87,13 @@ func TestPublishedExtension(t *testing.T) {
 	if res, _ := Published(ws, protocol.PublishedParams{Project: project}); res.Version != "0.3.0" || strings.Join(asked, " ") != "npx --no-install vsce show acme.tools --json" {
 		t.Fatalf("%+v %v", res, asked)
 	}
+	// A pre-release (a channel's) is not the newest release.
+	capture = func(string, []string) (string, string, error) {
+		return `{"versions": [{"version": "2.1.1", "properties": [{"key": "Microsoft.VisualStudio.Code.PreRelease", "value": "true"}]}, {"version": "0.5.0", "properties": []}]}`, "", nil
+	}
+	if res, _ := Published(ws, protocol.PublishedParams{Project: project}); res.Version != "0.5.0" {
+		t.Fatalf("the newest release, not the pre-release: %+v", res)
+	}
 	capture = func(string, []string) (string, string, error) {
 		return "", "ERROR  Extension 'acme.tools' not found.", errors.New("exit 1")
 	}

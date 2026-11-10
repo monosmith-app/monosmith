@@ -1,18 +1,34 @@
 package release
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
+
+// branchProblem says why a real release cannot run from branch ("" when it
+// can, or when the branch is unknown, as in a detached checkout).
+func branchProblem(cfg workspace.ReleaseSection, branch string) string {
+	if branch == "" || branch == cfg.Branch {
+		return ""
+	}
+	if _, channel := cfg.ChannelFor(branch); channel {
+		return ""
+	}
+	return fmt.Sprintf("releases run from %s, not %s", cfg.Branch, branch)
+}
 
 // Preflight refuses a real release that would fail halfway or corrupt history:
 // a shallow clone, the wrong branch, uncommitted changes (manifests are
@@ -22,8 +38,10 @@ func Preflight(s *session.Session, plan Plan) error {
 	if s.Git.IsShallow() {
 		problems = append(problems, "the clone is shallow, so versions cannot be computed from history: fetch with full depth (actions/checkout fetch-depth: 0)")
 	}
-	if branch := s.Git.CurrentBranch(); branch != "" && branch != s.Config.Release.Branch && os.Getenv("SMITH_RELEASE_ANY_BRANCH") == "" {
-		problems = append(problems, fmt.Sprintf("releases run from %s, not %s", s.Config.Release.Branch, branch))
+	if os.Getenv("SMITH_RELEASE_ANY_BRANCH") == "" {
+		if p := branchProblem(s.Config.Release, s.Git.CurrentBranch()); p != "" {
+			problems = append(problems, p)
+		}
 	}
 	if out, err := s.Git.Run("status", "--porcelain", "--untracked-files=no"); err == nil {
 		if changed := Uncommitted(out); len(changed) > 0 {
@@ -49,8 +67,15 @@ func Preflight(s *session.Session, plan Plan) error {
 				plugins[d] = true
 			}
 		}
-		if p := s.Graph.Get(item.Project); p != nil && !Native(p) {
-			for _, c := range DistributionCredentials(p.Release) {
+		if p := s.Graph.Get(item.Project); p != nil && PacksToRelease(p) {
+			if _, packs := releasepack.EcosystemOf(item.Plugin); packs {
+				if c := s.Plugins.Get(item.Plugin); c == nil || !c.Info.Capabilities.Packs {
+					problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot pack its package for a GitHub Release (it lacks the packs capability); update the plugin, or the release would publish to the public registry", item.Project, item.Plugin))
+				}
+			}
+		}
+		if p := s.Graph.Get(item.Project); p != nil && !Native(p) && !PublishesToNoRegistry(p) {
+			for _, c := range DistributionCredentials(p.Release, item.Next) {
 				if os.Getenv(c.Env) == "" && !alternative(c.Env) && !signedInByTheRun(s, c.Env) {
 					problems = append(problems, fmt.Sprintf("%s is not set: %s", c.Env, c.Description))
 				}
@@ -67,6 +92,7 @@ func Preflight(s *session.Session, plan Plan) error {
 	if mirrored {
 		problems = append(problems, splitrepo.Ready(s.Git)...)
 	}
+	problems = append(problems, ChannelRefusals(s, plan)...)
 	for name := range plugins {
 		var projects []protocol.Project
 		for _, p := range s.Graph.Projects {
@@ -98,9 +124,70 @@ func Preflight(s *session.Session, plan Plan) error {
 	return nil
 }
 
+// ErrReported is returned by `smith release` when the report it printed already
+// says why the release stopped, so the command line does not print it again.
+var ErrReported = errors.New("the release stopped; the report above says why")
+
+// ChannelRefusals lists what a release from the current branch would refuse
+// because the branch is a release channel (see channelProblems), none on a
+// branch that is not. Both the real release and its preview ask it.
+func ChannelRefusals(s *session.Session, plan Plan) []string {
+	if ChannelOf(s.Config.Release, PlanBranch(s)) == nil {
+		return nil
+	}
+	return channelProblems(plan, s.Graph, func(plugin string) bool {
+		c := s.Plugins.Get(plugin)
+		return c != nil && c.Info.Capabilities.Channels
+	})
+}
+
+// channelProblems lists what in the plan cannot be published as a release
+// channel without moving a stable pointer: a package whose plugin does not
+// declare the channels capability (hasChannels), a deploy plugin without it (a
+// container image's latest). The registries an app's binaries go to (npm, PyPI, NuGet,
+// RubyGems, pub.dev, the Linux packages) are safe: npm gets the channel's tag
+// and the others order a prerelease version below the release. The package
+// manager manifests are only attached to the GitHub Release, which is a
+// prerelease and so never the latest.
+func channelProblems(plan Plan, graph *projectgraph.Graph, hasChannels func(plugin string) bool) []string {
+	var problems []string
+	for _, item := range plan.Items {
+		p := graph.Get(item.Project)
+		if p == nil {
+			continue
+		}
+		if publishedByItsPlugin(p) && !hasChannels(item.Plugin) {
+			problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot publish a release channel, so a prerelease could take the place of the stable version; keep the project out of the channel with channels = false in [projects.%s.release]", item.Project, item.Plugin, item.Project))
+		}
+		var stable []string
+		for _, d := range p.Deployers {
+			if !hasChannels(d) {
+				stable = append(stable, d)
+			}
+		}
+		if len(stable) > 0 {
+			problems = append(problems, fmt.Sprintf("%s: %s deploy a release channel to the stable tags of an image or service; keep the project out of the channel with channels = false in [projects.%s.release]", item.Project, strings.Join(stable, " and "), item.Project))
+		}
+	}
+	return problems
+}
+
+// publishedByItsPlugin says whether the project's plugin publishes it to a
+// registry: a package, not a native one (published by the native jobs) and not
+// one released by its tag alone. An app is released by its tag, its assets and
+// its distribution.
+func publishedByItsPlugin(p *projectgraph.Project) bool {
+	return p.Kind == protocol.ProjectPackage && !Native(p) && p.PublishTo != "none" && (p.Registries == nil || !p.Registries.NoPublish)
+}
+
 // DistributionCredentials are the secrets publishing an app's binaries to
-// npm, PyPI, NuGet and RubyGems needs.
-func DistributionCredentials(r *workspace.ProjectRelease) []protocol.Credential {
+// npm, PyPI, NuGet and RubyGems needs. A registry that stable_only keeps
+// stable versions in needs its secret only for a stable version: with a
+// pre-release version it is left out, and with no version (the generated
+// pipeline, which serves both) its description says so.
+//
+// version is the version about to be published, or empty for any version.
+func DistributionCredentials(r *workspace.ProjectRelease, version string) []protocol.Credential {
 	var creds []protocol.Credential
 	if r == nil {
 		return nil
@@ -108,14 +195,22 @@ func DistributionCredentials(r *workspace.ProjectRelease) []protocol.Credential 
 	if len(r.NPM) > 0 {
 		creds = append(creds, protocol.Credential{Env: "NODE_AUTH_TOKEN", Description: "npm token that can publish " + strings.Join(r.NPM, " and ") + " and their platform packages", Required: true})
 	}
-	if r.PyPI != "" {
+	if r.PyPI != "" && !r.SkipsPrerelease("pypi", version) {
 		creds = append(creds, protocol.Credential{Env: "PYPI_TOKEN", Description: "PyPI API token that can upload " + r.PyPI, Required: true})
 	}
-	if r.NuGet != "" {
+	if r.NuGet != "" && !r.SkipsPrerelease("nuget", version) {
 		creds = append(creds, protocol.Credential{Env: "NUGET_API_KEY", Description: "NuGet API key that can push " + r.NuGet + " and " + r.NuGet + ".*", Required: true})
 	}
-	if r.RubyGems != "" {
+	if r.RubyGems != "" && !r.SkipsPrerelease("rubygems", version) {
 		creds = append(creds, protocol.Credential{Env: "GEM_HOST_API_KEY", Description: "RubyGems API key that can push " + r.RubyGems, Required: true})
+	}
+	if version == "" {
+		for i, c := range creds {
+			key := map[string]string{"PYPI_TOKEN": "pypi", "NUGET_API_KEY": "nuget", "GEM_HOST_API_KEY": "rubygems"}[c.Env]
+			if key != "" && slices.Contains(r.StableOnly, key) {
+				creds[i].Description += " (stable releases only: pre-releases skip this registry)"
+			}
+		}
 	}
 	return creds
 }

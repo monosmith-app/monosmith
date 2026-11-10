@@ -1,12 +1,16 @@
 package fixwizard
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -32,7 +36,14 @@ type Wizard struct {
 	question *protocol.FixChoice
 	// cursor is the option under the cursor while asking.
 	cursor int
-	review []string
+	// text is the editable field of Style.Input; editing says it has the keys.
+	text    string
+	editing bool
+	review  []string
+	// summary is review with each diff cut to one line; full says the diffs show.
+	summary []string
+	hasDiff bool
+	full    bool
 	// top is the first visible line of the body.
 	top int
 
@@ -42,6 +53,13 @@ type Wizard struct {
 	stepName string
 	headline string
 	output   []string
+	// note is the last lines a step printed (at most NoteRows), oldest first.
+	note []string
+	// log is everything the step printed so far; logOpen says the full log
+	// view shows it, and tailing that the view stays on the newest line.
+	log     []string
+	logOpen bool
+	tailing bool
 
 	sw, sh int
 	hover  int
@@ -101,13 +119,14 @@ func (w Wizard) resolve() Wizard {
 	w.phase = Reviewing
 	planned := w.Fix
 	planned.Fix = fix
-	w.review = nil
+	w.review, w.summary, w.hasDiff, w.full = nil, nil, false, false
 	if w.show != nil {
 		text, err := w.show(planned)
 		if err != nil {
-			text = "● " + fix.Description + "\n  could not show the changes: " + err.Error()
+			text = words.Say("fixwizard.review.failed", "description", fix.Description, "error", err.Error())
 		}
 		w.review = strings.Split(strings.TrimRight(text, "\n"), "\n")
+		w.summary, w.hasDiff = summarizeDiffs(w.review)
 	}
 	return w
 }
@@ -134,10 +153,44 @@ func (w Wizard) Progress(n, total int, name string) Wizard {
 	return w
 }
 
+// NoteRows is how many of the last lines a running step printed the dialog
+// shows under the spinner. The rows are always there, so the dialog keeps its
+// height.
+const NoteRows = 6
+
+// Noted sets the last lines of detail of the running step, shown under the
+// spinner: a file being written, or what a command printed. Only the last
+// NoteRows lines are kept.
+func (w Wizard) Noted(lines []string) Wizard {
+	if len(lines) > NoteRows {
+		lines = lines[len(lines)-NoteRows:]
+	}
+	w.note = lines
+	return w
+}
+
+// Logged sets the whole log of the running step. The shell gives it before a
+// key, a click or a frame while LogOpen is true. A view that follows the
+// output stays on the newest line.
+func (w Wizard) Logged(lines []string) Wizard {
+	w.log = lines
+	if w.tailing {
+		w.top = w.bottom()
+	}
+	return w
+}
+
+// LogOpen is true while the full log of the running step shows.
+func (w Wizard) LogOpen() bool { return w.phase == Applying && w.logOpen }
+
+// bottom is the first line of the log view that shows the newest line.
+func (w Wizard) bottom() int { return pane.ClampTop(1<<30, len(w.log), w.visible()) }
+
 // Begin switches to the applying phase, as Outcome.Apply asks the shell to run the fix.
 func (w Wizard) begin() Wizard {
 	w.phase, w.step, w.total, w.stepName, w.top = Applying, 0, len(w.resolved.Steps), "", 0
-	w.headline, w.output = "", nil
+	w.headline, w.output, w.note = "", nil, nil
+	w.log, w.logOpen, w.tailing = nil, false, false
 	w.started = time.Now()
 	return w
 }
@@ -145,7 +198,7 @@ func (w Wizard) begin() Wizard {
 // Fail shows how the fix stopped and offers Retry and Close.
 func (w Wizard) Fail(err error) Wizard {
 	w.phase, w.top = Failed, 0
-	w.headline, w.output = failureOf(err)
+	w.headline, w.output = failureOf(err, w.style.Name)
 	return w
 }
 
@@ -162,40 +215,105 @@ func (w Wizard) Key(name string) (Wizard, Outcome) {
 	case Reviewing:
 		return w.reviewKey(name)
 	case Applying:
-		if name == "ctrl+c" || name == "esc" {
-			return w, Outcome{Stop: true}
-		}
+		return w.applyingKey(name)
 	case Failed:
 		return w.failedKey(name)
 	}
 	return w, Outcome{}
 }
 
-func (w Wizard) askingKey(name string) (Wizard, Outcome) {
-	n := len(w.question.Options)
+// applyingKey handles a key while a step runs. Ctrl+C stops it. Esc closes the
+// full log when it is open, and stops the step when it is not. The key l opens
+// and closes the log; the arrows and Page keys scroll it. The step keeps running.
+func (w Wizard) applyingKey(name string) (Wizard, Outcome) {
+	switch {
+	case name == "ctrl+c":
+		return w, Outcome{Stop: true}
+	case !w.logOpen && name == "esc":
+		return w, Outcome{Stop: true}
+	case !w.logOpen && name == "l":
+		w.logOpen, w.tailing = true, true
+		w.top = w.bottom()
+	case w.logOpen && (name == "esc" || name == "l" || name == "q"):
+		w.logOpen, w.top = false, 0
+	case w.logOpen:
+		w = w.scrollKey(name)
+	}
+	return w, Outcome{}
+}
+
+// maxText is the longest text the editable field takes.
+const maxText = 60
+
+// Text is the text of the editable field (Style.Input).
+func (w Wizard) Text() string { return w.text }
+
+// WithText sets the text of the editable field.
+func (w Wizard) WithText(text string) Wizard {
+	w.text = text
+	return w
+}
+
+// Editing is true while the editable field has the keys.
+func (w Wizard) Editing() bool { return w.editing }
+
+// editKey handles a key while the editable field has the keyboard: a printable
+// character is added, Backspace removes the last one, Enter or Esc stops.
+func (w Wizard) editKey(name string) (Wizard, Outcome) {
 	switch name {
-	case "esc", "ctrl+c", "q":
+	case "enter", "esc":
+		w.editing = false
+	case "ctrl+c":
 		return w, Outcome{Done: true}
-	case "up", "k":
+	case "backspace":
+		if r := []rune(w.text); len(r) > 0 {
+			w.text = string(r[:len(r)-1])
+		}
+	default:
+		if r := []rune(name); len(r) == 1 && unicode.IsPrint(r[0]) && len([]rune(w.text)) < maxText {
+			w.text += name
+		}
+	}
+	return w, Outcome{}
+}
+
+func (w Wizard) askingKey(name string) (Wizard, Outcome) {
+	if w.style.Input != "" {
+		if w.editing {
+			return w.editKey(name)
+		}
+		if name == "e" {
+			w.editing = true
+			return w, Outcome{}
+		}
+	}
+	n := len(w.question.Options)
+	switch commands.Nav(name) {
+	case commands.NavCancel:
+		return w, Outcome{Done: true}
+	case commands.NavUp:
 		w.cursor = (w.cursor - 1 + n) % n
-	case "down", "j", "tab":
+	case commands.NavDown, commands.NavNext:
 		w.cursor = (w.cursor + 1) % n
-	case "home":
+	case commands.NavHome:
 		w.cursor = 0
-	case "end":
+	case commands.NavEnd:
 		w.cursor = n - 1
-	case "left", "b", "backspace":
-		if w.canGoBack() {
-			return w.back(), Outcome{}
-		}
-		if w.style.Back {
-			return w, Outcome{Back: true}
-		}
-	case "enter", " ":
+	case commands.NavConfirm:
 		return w.choose(w.cursor), Outcome{}
 	default:
-		if i, err := strconv.Atoi(name); err == nil && i >= 1 && i <= n {
-			return w.choose(i - 1), Outcome{}
+		switch name {
+		case "left", "b", "backspace":
+			if w.canGoBack() {
+				return w.back(), Outcome{}
+			}
+			if w.style.Back {
+				return w, Outcome{Back: true}
+			}
+		default:
+			if i, err := strconv.Atoi(name); err == nil && i >= 1 && i <= n {
+				return w.choose(i - 1), Outcome{}
+			}
 		}
 	}
 	return w.follow(), Outcome{}
@@ -203,6 +321,11 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 
 // choose answers the question with option i.
 func (w Wizard) choose(i int) Wizard {
+	if w.question.Options[i].Disabled != "" {
+		// The option is not an answer: the cursor goes to it, so its reason shows.
+		w.cursor = i
+		return w.follow()
+	}
 	w.answers = append(append([]int(nil), w.answers...), i+1)
 	return w.resolve()
 }
@@ -216,6 +339,10 @@ func (w Wizard) reviewKey(name string) (Wizard, Outcome) {
 			return w, Outcome{Decline: true}
 		}
 		return w, Outcome{Done: true}
+	case "d":
+		if w.hasDiff {
+			w.full, w.top = !w.full, 0
+		}
 	case "s":
 		if w.style.Skip != "" {
 			return w, Outcome{Skip: true}
@@ -252,19 +379,26 @@ func (w Wizard) failedKey(name string) (Wizard, Outcome) {
 
 // scrollKey moves the body of the review or of a failure.
 func (w Wizard) scrollKey(name string) Wizard {
-	page := detail.PageStep(w.visible())
+	page := pane.PageStep(w.visible())
+	action := commands.Nav(name)
 	switch name {
-	case "up", "k":
+	case "ctrl+u":
+		action = commands.NavPageUp
+	case "ctrl+d":
+		action = commands.NavPageDown
+	}
+	switch action {
+	case commands.NavUp:
 		return w.scroll(-1)
-	case "down", "j":
+	case commands.NavDown:
 		return w.scroll(1)
-	case "pgup", "ctrl+u":
+	case commands.NavPageUp:
 		return w.scroll(-page)
-	case "pgdown", "ctrl+d":
+	case commands.NavPageDown:
 		return w.scroll(page)
-	case "home":
+	case commands.NavHome:
 		return w.scroll(-w.top)
-	case "end":
+	case commands.NavEnd:
 		return w.scroll(1 << 20)
 	}
 	return w
@@ -272,13 +406,20 @@ func (w Wizard) scrollKey(name string) Wizard {
 
 // scroll moves the body by delta lines, never past its ends.
 func (w Wizard) scroll(delta int) Wizard {
-	w.top = detail.ClampTop(w.top+delta, len(w.bodyRows()), w.visible())
+	total := len(w.bodyRows())
+	if w.LogOpen() {
+		total = len(w.log)
+	}
+	w.top = pane.ClampTop(w.top+delta, total, w.visible())
+	if w.LogOpen() {
+		w.tailing = w.top >= w.bottom()
+	}
 	return w
 }
 
 // Wheel scrolls the body (the review, a failure's output).
 func (w Wizard) Wheel(delta int) Wizard {
-	if w.phase == Reviewing || w.phase == Failed {
+	if w.phase == Reviewing || w.phase == Failed || w.LogOpen() {
 		return w.scroll(delta)
 	}
 	return w
@@ -286,10 +427,7 @@ func (w Wizard) Wheel(delta int) Wizard {
 
 // Hover highlights the button or the option under the pointer.
 func (w Wizard) Hover(x, y int) Wizard {
-	w.hover = -1
-	if i := w.buttonAt(x, y); i >= 0 {
-		w.hover = i
-	}
+	w.hover = button.At(w.buttonSpans(w.Rect().W-4), w.Rect(), x, y)
 	return w
 }
 
@@ -303,8 +441,11 @@ func (w Wizard) Click(x, y int) (Wizard, Outcome) {
 		}
 		return w, Outcome{Done: true}
 	}
-	if i := w.buttonAt(x, y); i >= 0 {
+	if i := button.At(w.buttonSpans(r.W-4), r, x, y); i >= 0 {
 		return w.Key(w.buttons()[i].key)
+	}
+	if w.phase == Applying && !w.logOpen && w.onLogHint(x, y) {
+		return w.Key("l")
 	}
 	if w.phase == Asking {
 		if i, ok := w.optionAt(y); ok {

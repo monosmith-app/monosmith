@@ -1,0 +1,35 @@
+{
+  "dryRun": true,
+  "started": "2026-11-02T09:41:09.089737Z",
+  "finished": "0001-01-01T00:00:00Z",
+  "results": [
+    {
+      "project": "sdk",
+      "plugin": "node",
+      "next": "0.1.0",
+      "level": "minor",
+      "tag": "sdk@0.1.0",
+      "reason": "1 releasing commit(s)",
+      "commits": [
+        "feat: add sdk"
+      ],
+      "changes": [
+        {
+          "type": "feat",
+          "description": "add sdk",
+          "hash": "97fb403b6cc39082fac4286473bde90be1c6d68e",
+          "author": "Eduardo Russo"
+        }
+      ],
+      "status": "planned",
+      "files": [
+        "packages/sdk/package.json"
+      ],
+      "published": false,
+      "publish": "dry run",
+      "registry": "https://registry.npmjs.org/",
+      "pushed": false,
+      "tookMs": 14
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "jetbrains.installtools.monosmith-install-the-tools": "MonoSmith: install the tools",
+  "jetbrains.installtools.nothing-was-installed": "Nothing was installed. {failureTextMapper}",
+  "jetbrains.installtools.smith-tools-install-printed-something": "smith tools install printed something that is not a plan.",
+  "jetbrains.installtools.is-without-it-the-first": "{title} is {state}. {why} Without it: {consequence}. The first answer is the default.",
+  "jetbrains.installtools.monosmith-get": "MonoSmith: get {title}",
+  "jetbrains.installtools.opened-install-then-restart-the": "Opened {download}. Install {title}, then restart the IDE terminal.",
+  "jetbrains.installtools.monosmith-install-yourself": "MonoSmith: install {title} yourself",
+  "jetbrains.installtools.run-one-of-these-then": "Run one of these, then restart the IDE terminal.",
+  "jetbrains.installtools.install-yourself-then-restart-the": "Install {title} yourself, then restart the IDE terminal.",
+  "jetbrains.installtools.skipped": "Skipped {title}: {consequence}.",
+  "jetbrains.installtools.needs-administrator-rights-smith": "{command} needs administrator rights. smith never runs it without this second question.",
+  "jetbrains.installtools.monosmith-needs-administrator-rights": "MonoSmith: {title} needs administrator rights",
+  "jetbrains.installtools.run-this-yourself-then-restart": "Run this yourself, then restart the IDE terminal: {command}",
+  "jetbrains.installtools.is-installed": "{title} is installed.",
+  "jetbrains.installtools.the-install-of-did-not": "The install of {title} did not finish. {failureTextMapper}",
+  "jetbrains.installtools.runs": "Runs: {command}. ",
+  "jetbrains.installtools.it-needs-administrator-rights-and": "It needs administrator rights, and smith asks again before it runs. ",
+  "jetbrains.installtools.skip": "Skip {title}",
+  "jetbrains.installtools.smith-shows-the-command": "smith shows the command: {command}",
+  "jetbrains.installtools.smith-runs-the-command-and": "smith runs the command and the system asks for your password or approval."
+}

@@ -21,7 +21,7 @@ func TestVscodeExtension(t *testing.T) {
 	w.smith(true, "add", "package", "tools", "--stack", "vscode-extension")
 
 	out := w.smith(true, "run", "lint", "typecheck", "test", "build", "package")
-	for _, want := range []string{"tools:lint ✔", "tools:typecheck ✔", "tools:test ✔", "tools:build ✔", "tools:package ✔"} {
+	for _, want := range []string{"tools:lint ✓", "tools:typecheck ✓", "tools:test ✓", "tools:build ✓", "tools:package ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}

@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestDescribeRecipeNewNamesTheFileItWrites(t *testing.T) {
+	title, why := Describe([]string{"recipe", "new", "--name", "team", "--fixed", "language=python"})
+	if title != "Write a recipe" || !strings.Contains(why, "team.recipe.toml") {
+		t.Fatalf("title %q, why %q", title, why)
+	}
+}
+
 func TestABareInstallSaysItInstallsEverythingAndPointsToTheSinglePackageForm(t *testing.T) {
 	title, why := Describe([]string{"install"})
 	if title != "Install everything" {

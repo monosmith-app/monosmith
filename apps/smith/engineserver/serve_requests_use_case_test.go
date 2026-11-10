@@ -327,3 +327,23 @@ func TestShutdownAnswersAndEndsTheServer(t *testing.T) {
 		t.Fatal("the server did not stop")
 	}
 }
+
+const teamRecipeFile = `name = "team"
+version = "1.2.0"
+
+[choices.language]
+ask = "Language"
+options = ["python", "csharp"]
+
+[use]
+structure = "vertical-slices"
+
+[when.language.python.use]
+language = "python"
+
+[when.language.csharp.use]
+language = "dotnet"
+
+[when.language.csharp.settings.dotnet]
+target_framework = "net10.0"
+`

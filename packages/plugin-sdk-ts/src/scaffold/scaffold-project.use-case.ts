@@ -1,6 +1,6 @@
 import type { GenerateParams, GenerateResult } from '../protocol/index.ts'
 import { writeTemplates } from '../templating/index.ts'
-import { scaffoldData } from './scaffold-data.mapper.ts'
+import { scaffoldData } from './template-fields.mapper.ts'
 
 export interface ScaffoldOptions {
   /** The workspace root from `initialize`: the project's directory is relative to it. */

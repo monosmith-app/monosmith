@@ -30,6 +30,9 @@ func TestHelperProcess(t *testing.T) {
 	switch args[0] {
 	case "touch":
 		_ = os.WriteFile(args[1], []byte("ran"), 0o644)
+	case "say":
+		fmt.Println("first line")
+		fmt.Println("added 12 packages")
 	case "fail":
 		fmt.Println("the build exploded")
 		os.Exit(3)
@@ -108,5 +111,31 @@ func TestApplyNamesAMissingProgram(t *testing.T) {
 	err := Apply(context.Background(), t.TempDir(), protocol.Fix{Steps: []protocol.FixStep{{Argv: []string{"no-such-program-doctorfix"}}}}, io.Discard)
 	if err == nil || !strings.Contains(err.Error(), "no-such-program-doctorfix") {
 		t.Fatalf("%v", err)
+	}
+}
+
+// notes collects the detail lines Apply hands to an output that wants them.
+type notes struct {
+	bytes.Buffer
+	lines []string
+}
+
+func (n *notes) Note(line string) { n.lines = append(n.lines, line) }
+
+func TestApplyTellsANoterWhatItWritesAndWhatTheCommandPrints(t *testing.T) {
+	root := t.TempDir()
+	fix := protocol.Fix{Description: "set the dependency",
+		Files: []protocol.FileEdit{{Path: "package.json", Content: "{}"}},
+		Steps: []protocol.FixStep{helper(t, "install", "say")},
+	}
+	var out notes
+	if err := Apply(context.Background(), root, fix, &out); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(out.lines, "|"); got != "Writing package.json|first line|added 12 packages" {
+		t.Fatalf("notes: %q", got)
+	}
+	if strings.Contains(out.String(), "added 12 packages") {
+		t.Fatalf("command output must not flood the plain output: %q", out.String())
 	}
 }

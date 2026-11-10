@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // CheckReleaseTargets is doctor's look at an app's release: every platform it
@@ -23,7 +24,7 @@ func CheckReleaseTargets(workspaceRoot string, p protocol.Project) []protocol.Fi
 		triple, err := Target(platform)
 		if err != nil {
 			findings = append(findings, protocol.Finding{
-				Check: p.Name + " releases for " + platform, Detail: err.Error(),
+				Check: p.Name + " releases for " + platform, Project: p.Name, Problem: err.Error(), Detail: err.Error(),
 				Remedy: "change platforms in [projects." + p.Name + ".release] in smith.toml to ones Rust can build for",
 			})
 			continue
@@ -34,18 +35,21 @@ func CheckReleaseTargets(workspaceRoot string, p protocol.Project) []protocol.Fi
 		switch CrossReach(hostPlatform, platform) {
 		case OnItsOwnSystem:
 			findings = append(findings, protocol.Finding{
-				Check:  p.Name + " can build the " + platform + " archive here",
-				Detail: "this machine (" + hostPlatform + ") has no linker or system libraries for " + platform + ": a Rust program is built on the system it is for",
-				Remedy: "add native = true under [package.metadata.smith] in " + p.Root + "/Cargo.toml: `smith ci native` then builds each archive on a runner of its own system",
+				Check:   p.Name + " can build the " + platform + " archive here",
+				Project: p.Name,
+				Problem: "this machine (" + hostPlatform + ") has no linker or system libraries for " + platform,
+				Detail:  "this machine (" + hostPlatform + ") has no linker or system libraries for " + platform + ": a Rust program is built on the system it is for",
+				Remedy:  "add native = true under [package.metadata.smith] in " + p.Root + "/Cargo.toml: `smith ci native` then builds each archive on a runner of its own system",
 			})
 			continue
 		case WithLinker:
 			program, pkg := Linker(platform)
 			ok := LinkerAvailable(workspaceRoot, platform, triple)
 			findings = append(findings, protocol.Finding{
-				Check: p.Name + " has a linker for " + platform, OK: ok,
-				Detail: program + " is not on PATH and " + LinkerEnv(triple) + " is not set, so cargo cannot link a " + platform + " program on " + hostPlatform,
-				Remedy: "install it (apt install " + pkg + "), or set " + LinkerEnv(triple) + " to a linker, or mark the app native",
+				Check: p.Name + " has a linker for " + platform, Project: p.Name, OK: ok,
+				Problem: toolrun.ProblemUnless(ok, program+" is not on PATH and "+LinkerEnv(triple)+" is not set"),
+				Detail:  program + " is not on PATH and " + LinkerEnv(triple) + " is not set, so cargo cannot link a " + platform + " program on " + hostPlatform,
+				Remedy:  "install it (apt install " + pkg + "), or set " + LinkerEnv(triple) + " to a linker, or mark the app native",
 			})
 		}
 		if !haveRustup {
@@ -53,9 +57,10 @@ func CheckReleaseTargets(workspaceRoot string, p protocol.Project) []protocol.Fi
 		}
 		ok := slices.Contains(installed, triple)
 		f := protocol.Finding{
-			Check: "the Rust target " + triple + " is installed for " + p.Name, OK: ok,
-			Detail: "the " + platform + " archive is built with --target " + triple + ", which rustup has not installed",
-			Remedy: "run: rustup target add " + triple,
+			Check: "the Rust target " + triple + " is installed for " + p.Name, Project: p.Name, OK: ok,
+			Problem: toolrun.ProblemUnless(ok, "rustup has not installed the Rust target "+triple),
+			Detail:  "the " + platform + " archive is built with --target " + triple + ", which rustup has not installed",
+			Remedy:  "run: rustup target add " + triple,
 		}
 		if !ok {
 			f.Fix = &protocol.Fix{

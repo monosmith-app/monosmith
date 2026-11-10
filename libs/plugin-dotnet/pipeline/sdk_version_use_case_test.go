@@ -23,7 +23,7 @@ func TestDoctorComparesTheSDKWithCI(t *testing.T) {
 	for _, c := range []struct {
 		out      string
 		ok, warn bool
-	}{{"10.0.100\n", true, false}, {"8.0.404\n", false, false}, {"11.0.100\n", false, true}} {
+	}{{"10.0.100\n", true, false}, {"8.0.404\n", false, true}, {"11.0.100\n", false, true}} {
 		probe = func(string, []string) (string, error) { return c.out, nil }
 		if got := find(); got == nil || got.OK != c.ok || got.Warning != c.warn {
 			t.Errorf("%q: %+v", c.out, got)

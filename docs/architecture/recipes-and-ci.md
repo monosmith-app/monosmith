@@ -236,7 +236,7 @@ recipe = "./recipes/team.recipe.toml"   # or a URL
 ### Workspace settings in a recipe
 
 **Proposed, not built.** A recipe has two scopes. Everything above is **per project**:
-which plugin fills each level. Some settings belong to the **whole
+which plugin fills each role. Some settings belong to the **whole
 workspace**, and a team wants them set once, for every repository made from
 the recipe:
 

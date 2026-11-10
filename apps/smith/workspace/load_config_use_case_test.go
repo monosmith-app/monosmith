@@ -41,19 +41,29 @@ func TestParseRejectsMistakes(t *testing.T) {
 	for input, want := range map[string]string{
 		"[workspace]\nname = \"a\"\nnmae = \"typo\"\n": "nmae",
 		"[workspace]\n": "name is required",
-		"[workspace]\nname = \"a\"\n[ci]\naudit_policies=[\"cobol\"]":                                                       "unknown audit policy",
-		"[workspace]\nname = \"a\"\n[ci]\naudit_max_unsafe=-1":                                                              "audit_max_unsafe",
-		"[workspace]\nname = \"a\"\n[ci]\nproviders=[\"x\"]":                                                                "unknown CI provider",
-		"[workspace]\nname = \"a\"\n[release]\nrubygems_trusted_publishing = true\n[ci]\nproviders=[\"github\",\"gitlab\"]": "works on GitHub Actions only",
-		"[workspace]\nname = \"a\"\n[release]\nvsce_entra = true\n[ci]\nproviders=[\"github\",\"azure\"]":                   "vsce_entra works on GitHub Actions only",
-		"schema = 9\n[workspace]\nname = \"a\"\n":                                                                           "upgrade smith",
-		"[workspace\nname = \"a\"\n":                                                                                        "smith.toml:",
-		"[workspace]\nname = \"a\"\n[conventions.vertical-slices]\nregistry = \"ghcr.io/a\"\n":                              "settings of the docker convention",
-		"[workspace]\nname = \"a\"\n[projects.api.docker]\nimage = \"api\"\n":                                               "needs [conventions.docker]",
-		"[workspace]\nname = \"a\"\nrecipe = \"http://example.com/team.toml\"\n":                                            "[workspace] recipe",
-		"[workspace]\nname = \"a\"\nrecipe = \"../team.toml\"\n":                                                            "[workspace] recipe",
-		"[workspace]\nname = \"a\"\n[recipes]\nservice = \"team.toml\"\n":                                                   "the kind is app, lib or package",
-		"[workspace]\nname = \"a\"\n[recipes]\napp = \"C:\\\\team.toml\"\n":                                                 "[recipes] app",
+		"[workspace]\nname = \"a\"\n[ci]\naudit_policies=[\"cobol\"]":                                                                                                                     "unknown audit policy",
+		"[workspace]\nname = \"a\"\n[ci]\naudit_max_unsafe=-1":                                                                                                                            "audit_max_unsafe",
+		"[workspace]\nname = \"a\"\n[ci]\nproviders=[\"x\"]":                                                                                                                              "unknown CI provider",
+		"[workspace]\nname = \"a\"\n[release]\nrubygems_trusted_publishing = true\n[ci]\nproviders=[\"github\",\"gitlab\"]":                                                               "works on GitHub Actions only",
+		"[workspace]\nname = \"a\"\n[release]\nvsce_entra = true\n[ci]\nproviders=[\"github\",\"azure\"]":                                                                                 "vsce_entra works on GitHub Actions only",
+		"[workspace]\nname = \"a\"\n[release]\napi_check = \"strict\"\n":                                                                                                                  "api_check must be",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"main\"\nprerelease = \"beta\"\nmajor = 2\n":                                                                          "is the [release] branch",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"rc\"\nmajor = 3\n": "branch of another channel",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"2.beta\"\nmajor = 2\n":                                                                        "prerelease must be an identifier",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\n":                                                                                     "major must be 1 or more",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nmajor = 2\n":                                                                                                 "merge the channel branch",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ngithub_prerelease = true\n":                                                "marked as a prerelease on its own",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nprerelease = \"beta\"\nmajor = 2\n":                                                                                             "branch must name",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ndist_tag = \"latest\"\n":                                                   "dist_tag must be",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ndist_tag = \"2.0\"\n":                                                      "dist_tag must be",
+		"schema = 9\n[workspace]\nname = \"a\"\n":                                                                                                                                         "upgrade smith",
+		"[workspace\nname = \"a\"\n": "smith.toml:",
+		"[workspace]\nname = \"a\"\n[conventions.vertical-slices]\nregistry = \"ghcr.io/a\"\n": "settings of the docker convention",
+		"[workspace]\nname = \"a\"\n[projects.api.docker]\nimage = \"api\"\n":                  "needs [conventions.docker]",
+		"[workspace]\nname = \"a\"\nrecipe = \"http://example.com/team.toml\"\n":               "[workspace] recipe",
+		"[workspace]\nname = \"a\"\nrecipe = \"../team.toml\"\n":                               "[workspace] recipe",
+		"[workspace]\nname = \"a\"\n[recipes]\nservice = \"team.toml\"\n":                      "the kind is app, lib or package",
+		"[workspace]\nname = \"a\"\n[recipes]\napp = \"C:\\\\team.toml\"\n":                    "[recipes] app",
 	} {
 		_, err := Parse([]byte(input))
 		if err == nil || !strings.Contains(err.Error(), want) {
@@ -64,11 +74,11 @@ func TestParseRejectsMistakes(t *testing.T) {
 
 func TestParseTellsANewerSmithFromATypo(t *testing.T) {
 	for input, newer := range map[string]bool{
-		"[workspace]\nname = \"a\"\nnmae = \"typo\"\n":                     false,
-		"[workspace]\nname = \"a\"\n[future]\nk = 1\n":                     true,
+		"[workspace]\nname = \"a\"\nnmae = \"typo\"\n":              false,
+		"[workspace]\nname = \"a\"\n[future]\nk = 1\n":              true,
 		"[workspace]\nname = \"a\"\n[ci]\nfoo = \"x\"\nother = 1\n": true,
-		"schema = 99\n[workspace]\nname = \"a\"\nnmae = \"x\"\n":           true,
-		"schema = 99\n[workspace]\nname = \"a\"\n":                         true,
+		"schema = 99\n[workspace]\nname = \"a\"\nnmae = \"x\"\n":    true,
+		"schema = 99\n[workspace]\nname = \"a\"\n":                  true,
 	} {
 		_, err := Parse([]byte(input))
 		if _, got := AsNewerSmith(err); got != newer {
@@ -136,28 +146,6 @@ func TestFindRoot(t *testing.T) {
 	}
 }
 
-func TestParseProjectReleaseAndTagPrefix(t *testing.T) {
-	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[release]\ngithub_releases = true\n[projects.cli]\ntag_prefix = \"@a/cli@\"\n[projects.cli.release]\nproduct = \"acme\"\n[projects.cli.tasks.slice]\ncommand = [\"node\", \"check.cjs\"]\ncwd = \".\"\n"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	cli := cfg.Projects["cli"]
-	if !cfg.Release.GitHubReleases || cli.TagPrefix != "@a/cli@" || cli.Tasks["slice"].Cwd != "." {
-		t.Fatalf("%+v", cfg)
-	}
-	release, err := ResolveRelease("cli", cli, nil, true)
-	if err != nil || release.Product != "acme" || len(release.Platforms) != 6 || release.AssetName != "{product}_{version}_{os}_{arch}.{ext}" {
-		t.Fatalf("release defaults %+v %v", release, err)
-	}
-	bad, err := Parse([]byte("[workspace]\nname = \"a\"\n[projects.cli.release]\nplatforms = [\"linux\"]\n"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ResolveRelease("cli", bad.Projects["cli"], nil, false); err == nil || !strings.Contains(err.Error(), "os/arch") {
-		t.Fatalf("a bad platform must be rejected: %v", err)
-	}
-}
-
 func TestFindRootFromIgnoresTheWorkspaceRootOfTheRunningTask(t *testing.T) {
 	task, copyDir := t.TempDir(), t.TempDir()
 	for _, dir := range []string{task, copyDir} {
@@ -187,5 +175,34 @@ func TestCacheSizeLimitIsSetByTheFileAndZeroMeansNoLimit(t *testing.T) {
 		if err != nil || cfg.Cache.MaxSizeMB != want {
 			t.Errorf("%q: MaxSizeMB = %d (%v), want %d", input, cfg.Cache.MaxSizeMB, err, want)
 		}
+	}
+}
+
+func TestParseReadsReleaseChannels(t *testing.T) {
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[release]\nbranch = \"trunk\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, ok := cfg.Release.ChannelFor("next"); !ok || c.Prerelease != "beta" || c.Major != 2 {
+		t.Fatalf("channel %+v, %v", c, ok)
+	}
+	if _, ok := cfg.Release.ChannelFor("trunk"); ok {
+		t.Fatal("the release branch is not a channel")
+	}
+}
+
+func TestParseChecksCISecrets(t *testing.T) {
+	for input, want := range map[string]string{
+		"[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"API-TOKEN\"]\n":    "environment variables",
+		"[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"GITHUB_TOKEN\"]\n": "reserves the GITHUB_ prefix",
+		"[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"A\", \"A\"]\n":     "twice",
+	} {
+		if _, err := Parse([]byte(input)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("input %q: want error containing %q, got %v", input, want, err)
+		}
+	}
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"FETCH_TOKEN\", \"_X1\"]\n"))
+	if err != nil || len(cfg.CI.Secrets) != 2 {
+		t.Fatalf("%v %v", cfg.CI.Secrets, err)
 	}
 }

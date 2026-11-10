@@ -3,6 +3,7 @@ package logview
 import (
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -24,13 +25,13 @@ func (l Log) Top(total, h int) int {
 	if !l.paused {
 		return last
 	}
-	return min(max(l.top, 0), last)
+	return pane.Clamp(l.top, 0, last)
 }
 
 // Scroll moves by delta lines (negative is up). Scrolling up pauses the log;
 // scrolling down to the end follows it again.
 func (l Log) Scroll(delta, total, h int) Log {
-	top := min(max(l.Top(total, h)+delta, 0), max(total-h, 0))
+	top := pane.ClampTop(l.Top(total, h)+delta, total, h)
 	l.top = top
 	l.paused = top < max(total-h, 0)
 	return l
@@ -58,7 +59,7 @@ func (l Log) Toggle(total, h int) Log {
 // The status glyphs of smith's own output are drawn with the theme's icons,
 // which the terminal is known to draw one cell wide.
 func Rows(th theme.Theme, lines []string, w int) []string {
-	glyphs := strings.NewReplacer("✔", th.Icons.Passed, "✖", th.Icons.Failed)
+	glyphs := strings.NewReplacer(marks.Passed, th.Icons.Passed, marks.Failed, th.Icons.Failed)
 	out := make([]string, 0, len(lines))
 	for _, line := range lines {
 		styled := glyphs.Replace(Style(th, line))

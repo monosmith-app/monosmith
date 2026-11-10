@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -52,9 +51,9 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	}
 	name := params.Project.Exports[0]
 	result := protocol.PublishedResult{Registry: "packagist.org"}
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(Packagist + "/p2/" + name + ".json")
+	resp, err := (&http.Client{Timeout: protocol.RegistryLookupTimeout}).Get(Packagist + "/p2/" + name + ".json")
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -69,7 +68,7 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 		Packages map[string][]struct{ Version string } `json:"packages"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	for _, v := range body.Packages[name] {

@@ -5,6 +5,10 @@ is the Tauri CLI's `icon` command, the project's own `@tauri-apps/cli`, run in t
 with the logo's absolute path. It overwrites `src-tauri/icons/`, replacing the placeholders the
 scaffold writes so the first build runs.
 
+## Asking first
+
+`smith tauri icon` overwrites `src-tauri/icons`, so it shows that first. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`; `--dry-run` shows the plan and changes nothing.
+
 ## Synopsis
 
 ```sh
@@ -24,7 +28,9 @@ Usage: `smith tauri icon <logo.png> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `-p, --project <project>` | string |  | the app, when more than one project has a src-tauri |
+| `--dry-run` | boolean | off | show what would be overwritten and change nothing |
+| `-p, --project <project>` | string |  | the app, when more than one project has a src-tauri (also -w, --workspace, --projects) |
+| `-y, --yes` | boolean | off | do not ask; without a terminal the icons are made only with --yes |
 
 <!-- smith:end tauri icon -->
 

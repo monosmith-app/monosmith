@@ -305,3 +305,34 @@ func TestCheckRejectsOtherLanguages(t *testing.T) {
 		t.Fatal("node is checked by @monosmith/eslint-config, not here")
 	}
 }
+
+func TestCheckRejectsABannedWordInAFileName(t *testing.T) {
+	for _, c := range []struct {
+		language string
+		files    []string
+		flagged  []string
+	}{
+		{"go", []string{"go.mod", "main.go", "greeting/doc.go", "greeting/parse_helper_mapper.go", "greeting/data_mapper_test.go", "greeting/greet_use_case.go", "greeting/metadata_mapper.go", "testdata/util_mapper.go", "fixtures/helper_mapper.go"},
+			[]string{`greeting/parse_helper_mapper.go - "helper" is in the name`, `greeting/data_mapper_test.go - "data" is in the name`}},
+		{"python", []string{"pyproject.toml", "src/kit/__init__.py", "src/kit/greeting/__init__.py", "src/kit/greeting/shared_state_store.py", "src/kit/greeting/greet_use_case.py"},
+			[]string{`shared_state_store.py - "shared" is in the name`}},
+		{"ruby", []string{"lib/kit.rb", "lib/kit/orders/orders.rb", "lib/kit/orders/misc_policy.rb", "spec/spec_helper.rb", "spec/orders/place_order_use_case_spec.rb"},
+			[]string{`lib/kit/orders/misc_policy.rb - "misc" is in the name`}},
+	} {
+		t.Run(c.language, func(t *testing.T) {
+			r, err := Check(tree(t, c.files...), c.language)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := strings.Join(r.Problems, "\n")
+			for _, want := range c.flagged {
+				if !strings.Contains(got, want) {
+					t.Errorf("missing %q in:\n%s", want, got)
+				}
+			}
+			if n := strings.Count(got, "names no outcome"); n != len(c.flagged) {
+				t.Errorf("want %d file-name problems, got %d:\n%s", len(c.flagged), n, got)
+			}
+		})
+	}
+}

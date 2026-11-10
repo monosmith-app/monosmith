@@ -47,7 +47,8 @@ Usage: `smith run <task>... [flags]`
 | `--json-events` | boolean | off | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else |
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
-| `-p, --projects <projects>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude |
+| `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end run -->
 
@@ -122,13 +123,13 @@ web:test ▶ npm run test --silent
 api:test │ ?   	github.com/acme/acme/apps/api	[no test files]
 tools:test │ .                                                                        [100%]
 tools:test │ 1 passed in 0.01s
-tools:test ✔ 1.644s
+tools:test ✓ 1.644s
 api:test │ ok  	github.com/acme/acme/apps/api/greeting	0.435s
-api:test ✔ 2.262s
+api:test ✓ 2.262s
 ...
-ui:test ✔ 2.671s
-web:test ✔ 2.688s
-✔ 4/4 tasks succeeded (0 from cache) in 2.694s
+ui:test ✓ 2.671s
+web:test ✓ 2.688s
+✓ 4/4 tasks succeeded (0 from cache) in 2.694s
 ```
 
 ```sh
@@ -138,9 +139,9 @@ smith test
 ```text
 api:test │ ?   	github.com/acme/acme/apps/api	[no test files]
 api:test │ ok  	github.com/acme/acme/apps/api/greeting	0.435s
-api:test ✔ from cache
+api:test ✓ from cache
 ...
-✔ 4/4 tasks succeeded (4 from cache, 9.266s saved) in 4ms
+✓ 4/4 tasks succeeded (4 from cache, 9.266s saved) in 4ms
 ```
 
 Only what changed since `main`, after editing `apps/web/src/main.ts`:
@@ -158,9 +159,9 @@ web:test │ Tests:       1 passed, 1 total
 web:test │ Snapshots:   0 total
 web:test │ Time:        0.257 s, estimated 1 s
 web:test │ Ran all test suites.
-web:test ✔ 1.268s
-web:lint ✔ 4.243s
-✔ 2/2 tasks succeeded (0 from cache) in 4.246s
+web:test ✓ 1.268s
+web:lint ✓ 4.243s
+✓ 2/2 tasks succeeded (0 from cache) in 4.246s
 ```
 
 The JSON summary of a failed run, printed after the task log (the exit code is 1; a cached
@@ -211,7 +212,7 @@ smith test --json-events -p ui
 | `the command tsc was not found: install it, or on a package.json script run smith i so node_modules/.bin has it` | The task's program is not installed. Run `smith install`. |
 | `invalid argument "x" for "--parallel" flag` | `--parallel` takes a whole number. |
 | `if any flags in the group [json json-events] are set none of the others can be` | Pick one of `--json` and `--json-events`. |
-| A task shows `✖ exited with code N` | The tool failed; its output is above. `smith why-miss <project>:<task>` says what changed since it last passed. |
+| A task shows `× exited with code N` | The tool failed; its output is above. `smith why-miss <project>:<task>` says what changed since it last passed. |
 
 ## Related
 

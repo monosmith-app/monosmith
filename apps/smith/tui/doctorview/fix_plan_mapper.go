@@ -1,11 +1,11 @@
 package doctorview
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Plan is the fixes the failed checks carry, folded as `smith doctor --fix`
@@ -58,11 +58,12 @@ func (v Model) FixAll() (doctorfix.Planned, bool) {
 	return doctorfix.Planned{}, false
 }
 
-// FixLabel is the action that starts a fix: "Fix: <what it does>", or, for a
-// fix folded from many projects, "Fix all N projects".
+// FixLabel is the title of the button that starts a fix: "Fix", or, for a
+// fix folded from many projects, "Fix all N projects". What the fix does is
+// its Description, shown under the button.
 func FixLabel(p doctorfix.Planned) string {
 	if n := len(p.AppliesTo); n > 1 {
-		return fmt.Sprintf("Fix all %d projects", n)
+		return words.Say("doctor.fix.all", "count", n)
 	}
-	return "Fix: " + p.Description
+	return words.Say("doctor.fix.one")
 }

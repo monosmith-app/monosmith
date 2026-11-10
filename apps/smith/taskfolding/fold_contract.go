@@ -24,8 +24,8 @@ type Folded struct {
 
 // Result is the folded configuration.
 type Result struct {
-	// Groups are the task groups to add, in order.
-	Groups []workspace.TaskGroup
+	// Groups are the groups to add, in order.
+	Groups []workspace.Group
 	// Overrides are every project's own task overrides afterwards; a project
 	// with none is absent.
 	Overrides map[string]map[string]workspace.TaskOverride

@@ -45,3 +45,16 @@ func TestAConventionThatCoversNoProjectSaysSo(t *testing.T) {
 		t.Fatalf("%+v", f)
 	}
 }
+
+// A tooling convention applies where its tool is; only an architecture is
+// meant to cover every project, so only an architecture is checked for gaps.
+func TestOnlyAnArchitectureConventionIsCheckedForCoverage(t *testing.T) {
+	for name, want := range map[string]bool{
+		"vertical-slices": true, "hexagonal": true, "clean": true, "ddd": true,
+		"playwright": false, "docker": false, "none": false, "unknown": false,
+	} {
+		if got := isArchitecture(name); got != want {
+			t.Errorf("isArchitecture(%q) = %v, want %v", name, got, want)
+		}
+	}
+}

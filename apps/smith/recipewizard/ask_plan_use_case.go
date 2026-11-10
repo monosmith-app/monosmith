@@ -86,7 +86,7 @@ func (k *asking) checkParent(v string) error {
 		}
 	}
 	if len(k.parentChoices) > 0 {
-		fmt.Fprintf(k.Out, "  it asks: %s; a level can use these choices\n", strings.Join(keys(k.parentChoices), ", "))
+		fmt.Fprintf(k.Out, "  it asks: %s; a role can use these choices\n", strings.Join(keys(k.parentChoices), ", "))
 	}
 	return nil
 }

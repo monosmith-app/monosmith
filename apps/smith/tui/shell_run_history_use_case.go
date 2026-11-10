@@ -1,18 +1,18 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// The Run tab keeps the runs of the session (the newest last), so an earlier
+// The run panel keeps the runs of the session (the newest last), so an earlier
 // result can be read again after another run started. The run shown is s.run;
 // while one is going it is the one shown, and the history keys wait for it.
 
@@ -25,7 +25,7 @@ func (s *Shell) remember(r *runview.Run) {
 	if len(s.runs) > maxRunsKept {
 		s.runs = append([]*runview.Run(nil), s.runs[len(s.runs)-maxRunsKept:]...)
 	}
-	s.runAt = len(s.runs) - 1
+	s.runAt, s.recentAt = len(s.runs)-1, 0
 }
 
 // showRun shows another run of the history: the first failed task is selected,
@@ -34,7 +34,8 @@ func (s *Shell) showRun(at int) {
 	if at < 0 || at >= len(s.runs) || s.running() {
 		return
 	}
-	s.runAt, s.run, s.runHome = at, s.runs[at], false
+	s.runAt, s.run, s.runOpen = at, s.runs[at], true
+	s.recentAt = len(s.runs) - 1 - at
 	s.runSel, s.runTop, s.log = s.firstFailed(), 0, logview.Log{}
 	s.keepRunVisible()
 }
@@ -66,22 +67,28 @@ func (s *Shell) stepRun(dir int) {
 	next := s.runAt + dir
 	switch {
 	case s.running():
-		s.say("A run is in progress (" + commands.ShortcutOf("run.stop") + " stops it)")
+		s.say(words.Say("tui.run_history.a_run_is_in_progress_stops", "shortcutOf", commands.ShortcutOf("run.stop")))
 	case next < 0:
-		s.say("This is the oldest run kept")
+		s.say(words.Say("tui.run_history.this_is_the_oldest_run_kept"))
 	case next >= len(s.runs):
-		s.say("This is the latest run")
+		s.say(words.Say("tui.run_history.this_is_the_latest_run"))
 	default:
 		s.showRun(next)
 	}
 }
 
 // repeatArgv is the command the repeat key runs: the run shown, else the last.
+// A command that makes something that exists afterwards is not offered again:
+// running `smith add` twice fails the second time, because the project is there.
 func (s Shell) repeatArgv() []string {
+	argv := s.lastArg
 	if s.run != nil {
-		return s.run.Command
+		argv = s.run.Command
 	}
-	return s.lastArg
+	if !repeatable(argv) {
+		return nil
+	}
+	return argv
 }
 
 // failedArgv is the command line that runs again the tasks of the shown run
@@ -92,36 +99,20 @@ func (s Shell) failedArgv() []string {
 	if s.run == nil || !s.run.Finished {
 		return nil
 	}
-	var tasks, projects []string
-	add := func(list []string, v string) []string {
-		for _, have := range list {
-			if have == v {
-				return list
-			}
-		}
-		return append(list, v)
-	}
+	var ids []string
 	for _, t := range s.run.Ordered() {
-		if t.Status != runview.Failed && t.Status != runview.Skipped {
-			continue
+		if t.Status == runview.Failed || t.Status == runview.Skipped || t.Status == runview.Cancelled {
+			ids = append(ids, t.ID)
 		}
-		project, task, ok := strings.Cut(t.ID, ":")
-		if !ok {
-			continue
-		}
-		projects, tasks = add(projects, project), add(tasks, task)
 	}
-	if len(tasks) == 0 {
-		return nil
-	}
-	return append(append([]string{"run"}, tasks...), "-p", strings.Join(projects, ","))
+	return runhistory.RerunFailed(ids)
 }
 
 // copyLog puts the log shown on the clipboard: one task's output, or all of it.
 func (s *Shell) copyLog() {
 	lines := s.logLines()
 	if len(lines) == 0 {
-		s.say("Nothing to copy: the log is empty")
+		s.say(words.Say("tui.run_history.nothing_to_copy_the_log_is"))
 		return
 	}
 	plain := make([]string, len(lines))
@@ -131,32 +122,42 @@ func (s *Shell) copyLog() {
 	s.copyText(strings.Join(plain, "\n"))
 }
 
-// runReasons are why the keys of the Run tab cannot work now ("" keys are fine).
+// runReasons are why the keys of the run panel and of the recent runs cannot
+// work now ("" keys are fine).
 func (s Shell) runReasons() map[string]string {
 	r := map[string]string{}
+	if len(s.runs) == 0 {
+		none := words.Say("tui.run_history.nothing_has_run")
+		r["run.recent-focus"] = none
+	}
+	if s.detailFull() {
+		// The list of projects is not on screen, so there is no list of runs either.
+		r["run.recent-focus"] = words.Say("commands.reason.besidelist")
+	}
 	if s.run == nil {
-		const none = "nothing has run yet"
-		for _, id := range []string{"run.follow", "run.scroll", "run.again-failed", "run.copy-log", "run.older", "run.newer"} {
-			r[id] = none
-		}
-		if s.lastArg == nil {
-			r["run.again"] = none
-		}
 		return r
 	}
+	if s.repeatArgv() == nil {
+		r["run.again"] = notRepeatableReason(s.run.Command)
+	}
 	if s.failedArgv() == nil {
-		r["run.again-failed"] = "no task failed or was skipped"
+		r["run.again-failed"] = words.Say("tui.run_history.no_task_failed_or_was_skipped")
 	}
 	if s.runAt <= 0 {
-		r["run.older"] = "this is the oldest run kept"
+		r["run.older"] = words.Say("tui.run_history.this_is_the_oldest_run_kept_2")
 	}
 	if s.runAt >= len(s.runs)-1 {
-		r["run.newer"] = "this is the latest run"
+		r["run.newer"] = words.Say("tui.run_history.this_is_the_latest_run_2")
 	}
 	if len(s.logLines()) == 0 {
-		r["run.copy-log"] = "the log is empty"
+		r["run.copy-log"] = words.Say("tui.run_history.the_log_is_empty")
 	}
 	return r
+}
+
+// runFailed is true when the run shown has ended with a task that failed.
+func (s Shell) runFailed() bool {
+	return s.run != nil && s.run.Finished && s.run.Counts().Failed > 0
 }
 
 // ExitSummary is the line printed in the scrollback when the interface ends: how
@@ -173,25 +174,9 @@ func (s Shell) ExitSummary() string {
 	line := last.CommandLine()
 	switch {
 	case !last.Finished || last.Cancelled:
-		return fmt.Sprintf("■ stopped after %s · %s", took, line)
+		return words.Say("tui.run_history.stopped_after", "took", took, "line", line)
 	case !last.OK():
-		return fmt.Sprintf("✖ failed (code %d) in %s · %s", last.Exit, took, line)
+		return words.Say("tui.run_history.failed_code_in", "exit", last.Exit, "took", took, "line", line)
 	}
-	return fmt.Sprintf("✔ done in %s · %s", took, line)
-}
-
-// runActions are the actions of the Run tab's detail: only those that can be
-// done now are offered, as the footer does for keys.
-func (s Shell) runActions() []detail.Action {
-	var out []detail.Action
-	if !s.running() && s.repeatArgv() != nil {
-		out = append(out, detail.Action{ID: "x:rerun", Label: "Run again"})
-	}
-	if !s.running() && s.failedArgv() != nil {
-		out = append(out, detail.Action{ID: "x:rerun-failed", Label: "Run the unfinished tasks again"})
-	}
-	if len(s.logLines()) > 0 {
-		out = append(out, detail.Action{ID: "x:copy-log", Label: "Copy the log"})
-	}
-	return append(out, detail.Action{ID: "x:projects", Label: "Show the projects"})
+	return words.Say("tui.run_history.done_in", "took", took, "line", line)
 }

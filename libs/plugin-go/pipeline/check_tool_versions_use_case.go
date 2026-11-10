@@ -10,7 +10,7 @@ import (
 )
 
 // probe runs a tool for its version; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 var goVersion = regexp.MustCompile(`go(\d+)\.(\d+)`)
 
@@ -24,25 +24,25 @@ func CheckToolVersions(workspaceRoot, required string, lints bool) []protocol.Fi
 	m := goVersion.FindStringSubmatch(got)
 	switch {
 	case err != nil || m == nil:
-		out = append(out, protocol.Finding{Check: "Go is installed", Detail: "go is not on PATH", Remedy: "install Go " + required + " or newer (https://go.dev/dl/)"})
+		out = append(out, protocol.Finding{Check: "Go is installed", Area: "toolchain", Problem: "go is not on PATH", Detail: "go is not on PATH", Remedy: "install Go " + required + " or newer (https://go.dev/dl/)"})
 	default:
 		have := m[1] + "." + m[2]
 		out = append(out, protocol.Finding{
-			Check: "Go is at least " + required + " (go.work)", OK: !older(have, required),
-			Detail: "Go " + strings.TrimSpace(got) + " is older than the " + required + " go.work requires", Remedy: "install Go " + required + " or newer",
+			Check: "Go is at least " + required + " (go.work)", Area: "toolchain", OK: !older(have, required),
+			Problem: olderProblem(have, required, strings.TrimSpace(got)),
+			Detail:  "Go " + strings.TrimSpace(got) + " is older than the " + required + " go.work requires", Remedy: "install Go " + required + " or newer",
 		})
 	}
 	if !lints {
 		return out
 	}
-	pin := strings.TrimPrefix(GolangciLintVersion, "v")
-	got, err = probe(workspaceRoot, []string{"golangci-lint", "--version"})
-	out = append(out, protocol.Finding{
-		Check: "golangci-lint is " + pin + ", as in CI", OK: err == nil && strings.Contains(got, " "+pin+" "), Warning: true,
-		Detail: "found: " + firstLine(got, "golangci-lint is not on PATH"),
-		Remedy: "go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion + " (smith ci setup does it)",
-	})
-	return out
+	return append(out, lintFinding(workspaceRoot, strings.TrimPrefix(GolangciLintVersion, "v")))
+}
+
+// LintInstallCommand is the command that installs the golangci-lint version CI
+// pins: the one command the doctor fix runs, not the whole `smith ci setup`.
+func LintInstallCommand() []string {
+	return []string{"go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion}
 }
 
 // older compares major.minor versions.
@@ -63,9 +63,29 @@ func older(have, want string) bool {
 	return false
 }
 
+// olderProblem is the finding's Problem for a Go older than go.work requires;
+// a Go that is new enough has none.
+func olderProblem(have, required, got string) string {
+	if !older(have, required) {
+		return ""
+	}
+	return "Go is " + strings.TrimPrefix(got, "go") + ", go.work requires " + required
+}
+
 func firstLine(text, fallback string) string {
 	if line, _, _ := strings.Cut(strings.TrimSpace(text), "\n"); line != "" {
 		return line
 	}
 	return fallback
+}
+
+// usesGolangciLint says whether any of the projects lints with golangci-lint,
+// which makes its tool version a requirement.
+func usesGolangciLint(projects []protocol.Project) bool {
+	for _, p := range projects {
+		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {
+			return true
+		}
+	}
+	return false
 }

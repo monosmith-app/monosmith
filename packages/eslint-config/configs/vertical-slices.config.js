@@ -28,6 +28,8 @@ function productionPattern (roles) {
   return new RegExp(String.raw`^[a-z0-9]+(?:-[a-z0-9]+)*\.(?:${roles.join('|')})${EXTENSION}$`)
 }
 const TEST = new RegExp(String.raw`\.(?:spec|test)${EXTENSION}$`)
+/** The words that name no outcome, as parts of a file name (split on `-`, `.` and `_`). */
+export const BANNED_WORDS = ['util', 'utils', 'helper', 'helpers', 'common', 'shared', 'manager', 'processor', 'data', 'misc']
 const SOURCE = new RegExp(`${EXTENSION}$`)
 // `content.config` is Astro's: a framework-mandated name that must sit at the root of src, so it is an entry like main.
 const ENTRY = new RegExp(String.raw`^(?:index|main|content\.config)${EXTENSION}$`)
@@ -149,8 +151,9 @@ export const plugin = {
         type:     'problem',
         messages: {
           case:    'Name files and folders in kebab-case: "{{name}}".',
-          role:    'A production file ends in its role - .{{roles}} - so "{{name}}" says what it is.',
+          role:    'A production file ends in its role - .{{roles}} - so "{{name}}" says what it is. If this is a front-end file (a .ts file under a UI project), the front-end roles .route, .component, .section, .hook, .style, .content, .mock and .fixture exist too: allow them with the verticalSlices.roles option.',
           nesting: 'A subfeature is flat: "{{name}}" sits in a folder inside one. Split the subfeature instead of nesting it.',
+          banned:  '"{{name}}" has the word "{{word}}" in its name, and that names no outcome. Name the file for what it does.',
           root:    'Only index and main live at the root of src; "{{name}}" belongs in a subfeature.',
         },
         schema: [
@@ -180,14 +183,24 @@ export const plugin = {
             const folders = relative(place.src, dirname(context.filename)).split(sep).filter(part => part !== '')
             for (const folder of folders) if (folder !== 'fixtures' && !KEBAB.test(folder)) context.report({ node, messageId: 'case', data: { name: folder } })
             if (!ENTRY.test(name) && !KEBAB.test(name.split('.', 1)[0])) context.report({ node, messageId: 'case', data: { name } })
-            if (TEST.test(name)) return
+            // A name that already lacks its role gets that message alone; the banned word comes once the name is otherwise right.
+            const banned = () => {
+              if (ENTRY.test(name) || folders.includes('fixtures')) return
+              const word = name.toLowerCase().split(/[-._]/).find(part => BANNED_WORDS.includes(part))
+              if (word !== undefined) context.report({ node, messageId: 'banned', data: { name, word } })
+            }
+            if (TEST.test(name)) return banned()
             if (place.slice === null) {
               if (!ENTRY.test(name)) context.report({ node, messageId: 'root', data: { name } })
             } else if (place.depth > 1 && !folders.includes('fixtures')) {
               context.report({ node, messageId: 'nesting', data: { name } })
             } else if (!BARREL.test(name) && !production.test(name)) {
               context.report({ node, messageId: 'role', data: { name, roles: roles.join(' .') } })
+
+              return
             }
+
+            banned()
           },
         }
       },

@@ -9,7 +9,7 @@ func TestRenderNotes(t *testing.T) {
 		{Type: "feat", Description: "drop the v1 API", Breaking: true, BreakingNote: "Clients must call /v2.\nSee the migration guide.", Hash: "ccccccc333", Author: "Ada"},
 		{Type: "perf", Description: "cache the menu", Hash: "ddddddd444", Author: "dependabot[bot]"},
 	}}
-	want := "## ⚠ Breaking changes\n\n" +
+	want := "## ▲ Breaking changes\n\n" +
 		"- drop the v1 API (ccccccc)\n  Clients must call /v2.\n  See the migration guide.\n\n" +
 		"## Features\n\n- **auth:** sign in with passkeys (aaaaaaa)\n- drop the v1 API (ccccccc)\n\n" +
 		"## Fixes\n\n- keep the session on reload (bbbbbbb)\n\n" +

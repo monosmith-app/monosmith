@@ -1,0 +1,11 @@
+{
+  "vscode.commit-changes.monosmith-commit-the-changes-of-the": "MonoSmith: commit the changes of the last operation?",
+  "vscode.commit-changes.it-is-one-commit-that-undo": "{text}\n\nIt is one commit that Undo can revert.",
+  "vscode.commit-changes.only-the-files-the-last-operation": "Only the files the last operation changed",
+  "vscode.commit-changes.everything-git-shows-as-changed-more": "Everything git shows as changed ({length} more)",
+  "vscode.commit-changes.monosmith-which-files-go-into-the": "MonoSmith: which files go into the commit?",
+  "vscode.commit-changes.the-first-choice-leaves-your-own": "{text}\n\nThe first choice leaves your own changes in the work tree. The second also takes these files:\n{join}\n\nIt is one commit that Undo can revert.",
+  "vscode.commit-changes.the-changes-are-committed": "the changes are committed.",
+  "vscode.commit-changes.monosmith-nothing-was-committed": "MonoSmith: nothing was committed. {message}",
+  "vscode.commit-changes.monosmith": "MonoSmith: {part}"
+}

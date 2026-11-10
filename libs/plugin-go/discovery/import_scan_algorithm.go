@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"errors"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -20,6 +21,9 @@ func ScanImports(dir string) ([]string, error) {
 	fset := token.NewFileSet()
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) && path != dir {
+				return nil // removed while the walk ran
+			}
 			return err
 		}
 		if d.IsDir() {

@@ -23,6 +23,35 @@ func TestSetVersion(t *testing.T) {
 	}
 }
 
+func TestAPrereleaseIsSpelledTheRubyGemsWay(t *testing.T) {
+	for in, want := range map[string]string{"2.0.0-beta.1": "2.0.0.pre.beta.1", "1.2.0": "1.2.0", "2.0.0-rc.2+build.5": "2.0.0.pre.rc.2"} {
+		if got := GemVersion(in); got != want {
+			t.Errorf("GemVersion(%q) = %q, want %q", in, got, want)
+		}
+	}
+	if out, ok := SetVersion("  spec.version = '1.0.0'\n", "2.0.0-beta.1"); !ok || out != "  spec.version = '2.0.0.pre.beta.1'\n" {
+		t.Fatalf("the gemspec carries the gem spelling: %q", out)
+	}
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, "packages", "core"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ws, "packages", "core", "acme_core.gemspec"), []byte("spec.version = '1.0.0'"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var ran []string
+	real := GemRunner
+	defer func() { GemRunner = real }()
+	GemRunner = func(_ string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil }
+	core := protocol.Project{Name: "core", Root: "packages/core", Kind: protocol.ProjectPackage, Exports: []string{"acme_core"}}
+	if res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "2.0.0-beta.1", Tag: "beta"}); err != nil || !res.Published {
+		t.Fatal(err, res)
+	}
+	if !strings.Contains(filepath.ToSlash(ran[0]), "dist/packages/core/acme_core-2.0.0.pre.beta.1.gem") || !strings.Contains(filepath.ToSlash(ran[1]), "acme_core-2.0.0.pre.beta.1.gem") {
+		t.Fatalf("the packed file and the pushed file have the gem spelling: %q", ran)
+	}
+}
+
 func TestPublish(t *testing.T) {
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "packages", "core"), 0o755)

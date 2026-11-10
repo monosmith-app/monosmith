@@ -23,14 +23,14 @@ type fake struct {
 func (f *fake) backend() Backend {
 	return Backend{
 		Load: func() Snapshot { return f.snap },
-		SetPlugin: func(name string, enable bool) error {
+		SetPlugin: func(name string, enable bool) (string, error) {
 			f.calls = append(f.calls, fmt.Sprintf("plugin %s %v", name, enable))
 			for i := range f.snap.Plugins {
 				if f.snap.Plugins[i].Name == name {
 					f.snap.Plugins[i].Enabled = enable
 				}
 			}
-			return f.setErr
+			return "", f.setErr
 		},
 		SetArchitecture: func(name string) error {
 			f.calls = append(f.calls, "architecture "+name)
@@ -86,7 +86,7 @@ func sample() *fake {
 			Installed:  []InstalledPlugin{{Name: "kiwi", Version: "1.2.0", Dir: "/home/me/.smith/plugins/kiwi"}},
 			SearchPath: []string{"/ws/.smith/plugins", "/home/me/.smith/plugins"},
 			Settings: []Setting{
-				{Path: "ci.devcontainer", Type: "boolean", Explanation: "Write a devcontainer.", Default: "false"},
+				{Path: "ci.devcontainer", Type: "boolean", Explanation: "Write a devcontainer.", Default: "false", Reason: "a devcontainer is only useful when the team opens the repository in one"},
 				{Path: "ci.providers", Type: "array", Explanation: "Which CI systems.", Default: `["github"]`, Choices: []string{"github", "azure", "gitlab"}, Value: `["github"]`, Set: true, Current: []string{"github"}},
 				{Path: "ci.branches", Type: "array", Explanation: "Branches.", Default: "the release branch"},
 				{Path: "cache.max_size_mb", Type: "integer", Explanation: "Cache size.", Default: "2048", Value: "512", Set: true, Current: []string{"512"}},
@@ -199,8 +199,8 @@ func TestSpaceTurnsABuiltInPluginOffAndTheListShowsIt(t *testing.T) {
 	if got := strings.Join(f.calls, ";"); got != "plugin node false" {
 		t.Fatalf("calls: %q", got)
 	}
-	if out := text(m, 100, 28); !strings.Contains(out, "[ ] node") || !strings.Contains(out, "node is off") {
-		t.Fatalf("the row and the note show the change:\n%s", out)
+	if out := text(m, 100, 28); !strings.Contains(out, "[ ] node") || strings.Contains(out, "node is off") {
+		t.Fatalf("the row shows the change, and the note is the shell's toast only:\n%s", out)
 	}
 	press(m, "enter")
 	if got := f.calls[len(f.calls)-1]; got != "plugin node true" {
@@ -597,7 +597,7 @@ func TestAnUnsetSettingShowsItsDefaultValueAndASetOneShowsItsOwn(t *testing.T) {
 		rows = append(rows, strings.Join(strings.Fields(l), " "))
 	}
 	screenText := strings.Join(rows, "\n")
-	for _, want := range []string{"ci.devcontainer false", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
+	for _, want := range []string{"ci.devcontainer [ ] false", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
 		if !strings.Contains(screenText, want) {
 			t.Fatalf("the list lacks %q:\n%s", want, screenText)
 		}
@@ -629,8 +629,8 @@ func TestEnterChoosesAnArchitectureSavesItAndTheRadioFollows(t *testing.T) {
 		t.Fatalf("calls: %q", got)
 	}
 	out := text(m, 100, 28)
-	if !strings.Contains(out, "( ) vertical-slices") || !strings.Contains(out, "(●) none") || !strings.Contains(out, "Architecture: none") {
-		t.Fatalf("the radio and the note follow:\n%s", out)
+	if !strings.Contains(out, "( ) vertical-slices") || !strings.Contains(out, "(●) none") {
+		t.Fatalf("the radio follows:\n%s", out)
 	}
 	for _, r := range results {
 		if r.Failed {
@@ -716,5 +716,119 @@ func TestTheArchitectureSectionFitsASmallTerminal(t *testing.T) {
 	}
 	if out := text(m, 80, 24); !strings.Contains(out, "vertical-slices") || !strings.Contains(out, "none") {
 		t.Fatalf("%s", out)
+	}
+}
+
+func TestSearchAsksForWordsAndHandsThemToTheShell(t *testing.T) {
+	f := sample()
+	m := opened(t, f)
+	m, _ = press(m, "end", "up", "enter")
+	if !m.Modal() || !strings.Contains(text(m, 100, 28), "Find a plugin in the marketplace") {
+		t.Fatalf("the row opens a field: %s", text(m, 100, 28))
+	}
+	m, _ = press(m, "d", "e", "p", "l", "o", "y", " ", "g", "o")
+	m, results := press(m, "enter")
+	var got *Result
+	for i, r := range results {
+		if r.Search {
+			got = &results[i]
+		}
+	}
+	if got == nil || got.Term != "deploy go" || m.Modal() {
+		t.Fatalf("Enter hands the words to the shell and closes the field: %+v", results)
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("the tab must not search by itself: %v", f.calls)
+	}
+}
+
+func TestSearchWithNoWordsListsEveryPlugin(t *testing.T) {
+	m := opened(t, sample())
+	m, _ = press(m, "end", "up", "enter")
+	_, results := press(m, "enter")
+	for _, r := range results {
+		if r.Search && r.Term == "" {
+			return
+		}
+	}
+	t.Fatalf("an empty field is a search for everything: %+v", results)
+}
+
+func TestASettingShowsWhyItsDefaultIsWhatItIs(t *testing.T) {
+	m := opened(t, sample())
+	m, _ = press(m, "left", "down", "down", "down", "right") // Workspace section
+	got := text(m, 120, 30)
+	if !strings.Contains(got, "Why: a devcontainer is only useful") {
+		t.Fatalf("the reason is not next to the setting: %s", got)
+	}
+}
+
+// enumSample is a snapshot with one setting that takes one word of a fixed set, last in the list.
+func enumSample() *fake {
+	f := sample()
+	f.snap.Settings = append(f.snap.Settings, Setting{Path: "ci.provider", Type: "string", Explanation: "The CI system.", Default: `"github"`, Choices: []string{"github", "azure", "gitlab"}})
+	return f
+}
+
+func TestASettingWithOneOfAFixedSetOfValuesIsPickedFromAListNotTyped(t *testing.T) {
+	f := enumSample()
+	m := opened(t, f).Show(Workspace)
+	m, _ = press(m, "end", "enter")
+	out := text(m, 100, 28)
+	for _, want := range []string{"( ) azure", "( ) gitlab", "↑ ↓ move · Enter picks · Esc cancels"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("the pick list lacks %q:\n%s", want, out)
+		}
+	}
+	if !strings.Contains(out, "(●) github") && !strings.Contains(out, "(*) github") {
+		t.Fatalf("the current value is not marked:\n%s", out)
+	}
+	m, _ = press(m, "down", "enter") // azure: written like any other value
+	if got := f.calls[len(f.calls)-1]; got != "set ci.provider azure" {
+		t.Fatalf("saved %q", got)
+	}
+	if m.Modal() {
+		t.Fatal("the pick list stays open after the choice")
+	}
+}
+
+func TestEscLeavesThePickListWithoutWriting(t *testing.T) {
+	f := enumSample()
+	m := opened(t, f).Show(Workspace)
+	m, _ = press(m, "end", "enter", "down", "esc")
+	if m.Modal() || len(f.calls) != 0 {
+		t.Fatalf("modal %v, calls %v", m.Modal(), f.calls)
+	}
+}
+
+func TestASwitchShowsABoxAndEnterFlipsIt(t *testing.T) {
+	f := sample()
+	m := opened(t, f).Show(Workspace)
+	if out := text(m, 100, 28); !strings.Contains(out, "[ ] false") {
+		t.Fatalf("no box on the switch:\n%s", out)
+	}
+	m, _ = press(m, "enter")
+	if got := f.calls[len(f.calls)-1]; got != "set ci.devcontainer true" {
+		t.Fatalf("saved %q", got)
+	}
+	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Enter flips it") {
+		t.Fatalf("the detail does not say what Enter does:\n%s", lines)
+	}
+}
+
+func TestWithTheDetailBesideTheTabTheTabDrawsNoDetailOfItsOwn(t *testing.T) {
+	m := opened(t, sample()).Show(Workspace)
+	if out := text(m, 100, 28); !strings.Contains(out, "Default: false") {
+		t.Fatalf("the tab alone draws its detail:\n%s", out)
+	}
+	m = m.WithSideDetail(true)
+	if out := text(m, 100, 28); strings.Contains(out, "Default: false") || strings.Contains(out, "Why:") {
+		t.Fatalf("the detail is drawn twice:\n%s", out)
+	}
+	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Default: false") || !strings.Contains(lines, "Why:") {
+		t.Fatalf("the lines for the side panel lack the facts:\n%s", lines)
+	}
+	if g := m.Geometry(100, 28); g.SepRow >= 0 {
+		t.Fatalf("a divider is left for a detail that is not there: %+v", g)
 	}
 }

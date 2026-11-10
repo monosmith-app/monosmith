@@ -11,11 +11,11 @@ they disagree with the box, the box is right.
 > | Terminal shell with Home, Projects, Run, Doctor, Deps, Release, Settings | built; one keymap, no menu bar ([ADR 0032](decisions/0032-single-key-tui-keymap.md), [architecture](tui-architecture.md)) |
 > | Navigator tree and permanent inspector | not built; replaced by a list with a detail pane beside it (from 100 columns) |
 > | Right-click context menu | not built; removed with the menu bar in the redesign (ADR 0032) |
-> | Drag a pane border to resize | not built; `[` and `]` make the detail narrower or wider |
+> | Drag a pane border to resize | built in the TUI (the `splitter` package): drag a divider, or select it with `\` (or `Shift`+arrows) and move it with `[` and `]`; the IDE panels do not have it |
 > | Huh, Glamour and ntcharts | not used; the shell uses Bubble Tea, Bubbles and Lip Gloss |
 > | The `.cuppa` design files in `docs/architecture/tui/` | not in the repository |
-> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab reads it for task runs (`--json-events`, `tui/runview`) and parses smith's text output for other commands |
-> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands stay in the Run tab (captured, with live status per task); only a command that asks questions takes the terminal |
+> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the run panel of Projects reads it for task runs (`--json-events`, `tui/runview`) and parses smith's text output for other commands |
+> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands stay in the run panel of Projects (captured, with live status per task); only a command that asks questions takes the terminal |
 > | Recipes in the interface | partly: the Settings tab lists the workspace's recipes and whether each is valid; `a` opens a guided form, and the recipe's choices are asked by `smith add` |
 > | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
 > | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
@@ -89,12 +89,12 @@ right. It was not built that way; "As built" below is what the shell is.
 │     ● kit          package │  [▶ Run build] [▶ Run all] [⟳ Affected] [⬇ Install…]       │ deps  kit, core    │
 │     ○ core         lib     │                                                           │ affected ● yes     │
 │ Plugins                    ├─ Output ───────────────────────────────────────────────── │ last   cached 2m   │
-│   node  dotnet  docker …   │ orders-api:build ✔ 4.1s  (cached)                         │                    │
+│   node  dotnet  docker …   │ orders-api:build ✓ 4.1s  (cached)                         │                    │
 │ Recipes                    │ kit:test        ▶ running  42/60                          │ Actions            │
 │   team 1.3.0               │ ...                                                       │ ▶ Run  ⟳ Why miss  │
 ├────────────────────────────┴───────────────────────────────────────────────────────────┴────────────────────┤
 │ b build  t test  l lint  c typecheck  w changed  d doctor            1-6 views  : palette  ? help  q quit │
-│ $ smith run build test -p orders-api --affected          ✔ 12 passed  ✖ 0  ⏱ 38s     main  smith 1.23  doctor ✔ │
+│ $ smith run build test -p orders-api --affected          ✓ 12 passed  × 0  ⏱ 38s     main  smith 1.23  doctor ✓ │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -109,16 +109,16 @@ right. It was not built that way; "As built" below is what the shell is.
 - **Inspector** (right): properties of the selection and its actions, as in
   cuppa's properties panel; where an option can be changed, it is edited here.
 - **Footer** (second row from the bottom): the keys of the open view, then the
-  keys every view ends with (`1-7` views, `m` mouse, `:` palette, `?` help,
+  keys every view ends with (`1-6` views, `m` mouse, `:` palette, `?` help,
   `q` quit). Only what can be done now is listed, and a hint that is one key
   can be clicked.
 - **Status bar** (bottom): the exact command running or last run, the result,
   the workspace, the branch and the smith version.
 
-Panes can be resized by dragging their borders.
+Panes can be resized by dragging the divisions between them.
 **As built (the adaptive shell).** The navigator tree and the permanent
 inspector are gone. The screen is a header (workspace, branch, doctor's health
-as `✖2 ▲2`), the views as rounded tabs whose active tab opens into the pane
+as `×2 ▲2`), the views as rounded tabs whose active tab opens into the pane
 below, one content pane, the footer and the status bar. From 100 columns the
 pane is the list and, beside it, the detail of the selection (a project's
 tasks, dependencies and actions, a doctor finding's fix, a run's task); below,
@@ -128,15 +128,43 @@ one row on a terminal under 24 rows high (seven tabs fit the 72-column minimum b
 `Proj`, `Rel` and `Sett`, so they do not scroll there). Views implement a small `Page` (title, footer keys,
 update, view for a width and a height).
 
+**The main screen's frame.** The insets of the frame live in one place: `layout.Frame`
+(`MainFrame` for the list or the single pane, `DetailFrame` for the detail beside it:
+top 1 for the rule under the tabs, left and right 1 for the blank margin, bottom 0).
+`Rect.Inner` and `Layout.DetailInner` derive from it, so every pane, the mouse
+hit-tests, the selection regions, the scrollbar (the last content column) and the run
+and settings geometry follow one rule. A division is a `splitter.Spot`: a vertical
+`Column` between a list and its detail, or a horizontal `Row` between stacked panels,
+which runs edge to edge over the margins. `splitter.Junctions` lists the cells where
+divisions meet (`┬` on the rule, `├`, `┤`, `┼`); there is no bottom border, so no `┴`.
+`Shell.body` draws the rule, the margins and the divisions from the same spots the
+splitter grabs, so the glyph on screen and the grab area never differ, and a selected
+division is painted heavy on those cells.
+
+**Modals.** `Shell.modalOpen` is the one list of blocking overlays (the palette, help,
+package prompt, release picker, confirmation, fix wizard and its progress dialog,
+adopt, compose, tools and result dialogs); `overlaid` adds a terminal below the minimum
+size. While a modal is open the mouse goes only to it (`modalMouse`), the divisions
+and selection are blocked, and the render emptied the content area and drew every row of the screen
+through `Theme.Dim` before the dialog is drawn on top.
+
 **Pages.** Each page leads with its headline, then the detail.
 
-- **Home** is the first tab: one headline for the workspace's health ("2 checks
-  fail"), the one suggested next action with its key ("press d", "press w to
-  lint and test them", "all good: press b to build"; Enter or a click does it),
-  and the facts behind them: checks, projects affected, how the last run ended,
-  dependencies with newer releases (known once Deps has looked). Doctor starts in
-  the background with the shell, so the header badge is filled without opening
-  Doctor.
+- **Home** is the first tab: an attention queue. `dashboard.Queue` (a pure policy
+  over `dashboard.Facts`) lists only what applies, most urgent first: a failed run
+  (named by its task, with "See why"), broken setup, warning checks, changes not tested, a release that is ready, updates, tab completion that is not set up (muted, with `Set up` and `Not now`; `Facts.CompletionOffer` comes from `sources.CompletionOffer`, which reads `shellcompletion` and the `tui.json` answer), and when
+  nothing applies "All good". Each item has a severity, a title, an optional detail
+  and buttons. The first item is drawn large and Enter runs its first button;
+  the others are one line with the buttons at the right. Every button comes from
+  `button.Render` and its click span from `button.Width`, so one row can hold
+  several buttons; `dashboard.Page` returns the lines and the click targets, and
+  the shell turns the targets into `hitSpan`s. The pointer cell goes in, so the
+  button under it is drawn in its hover state. Under the queue: the last three
+  runs (a click opens the run in the run panel of Projects), the workspace line and the add
+  buttons. Doctor and the release plan start in the background with the shell
+  (`releaseLoading` stops a second git read when the Release tab opens), so the
+  header badge and the release item fill without opening a tab, and Home never
+  waits for either.
 - **Doctor** shows "2 failed · 2 warnings", then the failing checks as one line
   each (state, title); passed checks stay behind `p`. Beside the list, the detail
   tells the selected check in full (problem, remedy, fix: files as diffs, command
@@ -175,7 +203,7 @@ The palette lists one **Settings** entry; a `smith plugin`, `plugin list`, `reci
 the terminal. Home points a new user at the tab until it has been opened once (kept in
 `tui.json` as `settingsTipSeen`). Not in the tab: `smith plugin set`, which the Plugins section does one plugin at a time.
 
-Other commands that print and end (`graph`, `explain`...) run in the Run tab like a task run: the interface
+Other commands that print and end (`graph`, `explain`...) run in the run panel of Projects like a task run: the interface
 stays and the output is captured there. A command that changes `smith.toml` still asks first.
 
 ## Components
@@ -233,6 +261,23 @@ compact layout) are drawn in it from this palette, saved as `.cuppa` files and
 exported as images, and would be kept in `docs/architecture/tui/` (the folder does not exist). The Go interface is built
 from the same libraries and checked against those pictures.
 
+## Code layout of the shell
+
+The shell is one Bubble Tea model, `Shell`, in the root of `apps/smith/tui`. It is
+split by role: `shell_model.go` (state and queries), `shell_update_use_case.go`
+(`Update`, `handle`, `resize`), the key, mouse and run use cases, the mappers that
+draw, and `splits_repository.go` (the one file write). What needs no `Shell` lives
+in slices of its own that take plain values: `splitter` (dividers, their keys and
+spots), `selection` (drag to select text: regions cut along the dividers, the text, the highlight), `runhistory` (the run panel's history: ago text, header parts, recent rows,
+the rerun-failed line) and `commandtext` (the text a captured command printed).
+`apps/smith/tui/README.md` lists what is still a method on `Shell` and the next
+slice to cut.
+
+The text of the shell is not in this tree. It is the catalogue in `libs/words`, which the
+editors share ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)): the shell
+reads it with `words.Say`, and the generator `libs/words/wordgen` writes the VS Code and JetBrains
+text files from it. The guard tests that scan the shell source are in `apps/smith/tui/wordsguard`.
+
 ## Interaction
 
 No key needs a modifier except `Ctrl+C` (stop, then quit) and the palette's
@@ -258,7 +303,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | `Enter` | open, run or edit the selection | anywhere |
 | `Esc` | back, close, clear; never quits | anywhere |
 | `y` | copy the focused remedy, command, path or package | Projects, Run, Doctor, Deps |
-| `m` | turn the mouse off, so the terminal selects text (`Shift+drag` does too) | anywhere |
+| `m` | turn the mouse off, so the terminal selects text (`Shift+drag` does too; with the mouse on, a plain drag selects and copies inside one panel) | anywhere |
 | `:`, `Ctrl+P`, `/` | command palette | anywhere |
 | `?`, `F1` | help for the open view | anywhere |
 | `q` | quit when nothing runs | anywhere |
@@ -266,7 +311,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | `f` `x` `g` `p` `r` | Doctor: open the fix wizard for this check, for every fix that needs no decision, group by project, show passed, check again | Doctor |
 | `p` `n` `x` | Release: preview, notes, release (asks first) | Release |
 | `Space` `s` `a` `u` `v` | Deps: mark, mark the safe ones, mark all, update the marked, align versions | Deps |
-| `Enter` | Home: do the suggested next action | Home |
+| `Enter` | Home: run the first button of the first item of the queue | Home |
 | `f` `r` `R` `,` `.` `Y` | Run: follow or pause the log, run the shown run again, run the failed and skipped tasks again, show the previous or next run, copy the log shown | Run |
 
 | Mouse | Keyboard |
@@ -276,7 +321,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | Click a hint in the footer | the key it shows |
 | Drag a pane border to resize | not built |
 | Scroll the wheel in lists and logs | `PgUp` `PgDn` |
-| Hover is not tracked, so `Shift+drag` (`Option+drag` on macOS) selects text natively; `m` turns the mouse off | `y` copies the focused remedy, command, path or package |
+| A plain drag selects text inside one panel and copies it (the `selection` package); `Shift+drag` (`Option+drag` on macOS) selects across panels natively; `m` turns the mouse off | `y` copies the focused remedy, command, path or package |
 | Click a task in a run to show its log | `Enter` on the task |
 
 Focus is always visible. A run can be left in the background while another
@@ -288,9 +333,9 @@ Colours are **semantic tokens**, never raw values in components:
 
 | Token | Meaning | Also shown as |
 |---|---|---|
-| `success` | passed, cached, ready | ✔ |
+| `success` | passed, cached, ready | ✓ |
 | `warning` | needs attention, warning | ▲ |
-| `error` | failed, blocked | ✖ |
+| `error` | failed, blocked | × |
 | `info` | running, informational | ● ⟳ |
 | `muted` | skipped, disabled, secondary text | dim |
 | `accent` | selection, focus, the active tab | bold, reverse |
@@ -302,9 +347,10 @@ Colours are **semantic tokens**, never raw values in components:
   selection is bold and reverse video, and every state keeps its symbol and
   word.
 - Spacing is in cells: one-cell padding in panes, two-cell gaps between buttons.
-- Borders: one weight, rounded, for panes, dialogs and overlays. Only the colour
-  changes: the focused pane or the open dialog has the accent border, the others
-  the faint one.
+- Borders: dialogs and overlays have one weight, rounded, with the accent colour.
+  The main screen has no box: a faint rule under the tabs and faint divisions
+  between panels (see "The main screen's frame" below). A selected or dragged
+  division is drawn heavy in the accent.
 - Colour is for state (success, warning, error, info, muted) and for one accent:
   the active tab, the cursor and the focused border. Titles, key labels and
   actions are bold, not coloured. Paths are shortened in the middle, and prose

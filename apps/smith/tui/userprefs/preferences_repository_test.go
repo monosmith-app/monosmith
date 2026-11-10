@@ -3,12 +3,13 @@ package userprefs
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
 func TestPreferencesRoundTripThroughTheSmithHome(t *testing.T) {
 	home := filepath.Join(t.TempDir(), "not-yet")
-	if p, err := Load(home); err != nil || p != (Preferences{}) {
+	if p, err := Load(home); err != nil || !reflect.DeepEqual(p, Preferences{}) {
 		t.Fatalf("no file is no preferences: %+v, %v", p, err)
 	}
 	want := Preferences{Theme: "light", Icons: "ascii", SettingsTipSeen: true}
@@ -16,7 +17,7 @@ func TestPreferencesRoundTripThroughTheSmithHome(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := Load(home)
-	if err != nil || got != want {
+	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("%+v, %v", got, err)
 	}
 	if entries, _ := os.ReadDir(home); len(entries) != 1 {
@@ -30,13 +31,13 @@ func TestAFileThatIsNotJSONGivesDefaultsAndTheReason(t *testing.T) {
 		t.Fatal(err)
 	}
 	p, err := Load(home)
-	if err == nil || p != (Preferences{}) {
+	if err == nil || !reflect.DeepEqual(p, Preferences{}) {
 		t.Fatalf("%+v, %v", p, err)
 	}
 }
 
 func TestWithoutAHomeNothingIsKept(t *testing.T) {
-	if p, err := Load(""); err != nil || p != (Preferences{}) {
+	if p, err := Load(""); err != nil || !reflect.DeepEqual(p, Preferences{}) {
 		t.Fatal(p, err)
 	}
 	if Save("", Preferences{}) == nil {

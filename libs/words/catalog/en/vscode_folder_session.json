@@ -1,0 +1,8 @@
+{
+  "vscode.folder-session.the-monosmith-path-setting-did-not": "the monosmith.path setting ({executable}) did not start: {reason}",
+  "vscode.folder-session.starting-smith": "starting smith…",
+  "vscode.folder-session.smith-not-found": "smith not found",
+  "vscode.folder-session.workspace-not-trusted": "workspace not trusted",
+  "vscode.folder-session.smith-failed": "smith failed",
+  "vscode.folder-session.smith-failed-2": "smith failed: {item}"
+}

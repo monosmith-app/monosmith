@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { installAgent } from './install-agent.use-case.ts'
-import type { InstallPreview, SmithRun } from './install-run.contract.ts'
+import type { SmithRun } from '../smith-run/index.ts'
+import type { InstallPreview } from './install-run.contract.ts'
 
-const PREVIEW_RUN: SmithRun = { code: 1, stdout: '● Add .vscode/mcp.json\n--- a\n+++ b\n', stderr: '✖ nothing was written: there is no terminal to ask on\n' }
+const PREVIEW_RUN: SmithRun = { code: 1, stdout: '● Add .vscode/mcp.json\n--- a\n+++ b\n', stderr: '× nothing was written: there is no terminal to ask on\n' }
 const WRITTEN_RUN: SmithRun = { code: 0, stdout: '✓ Wrote .vscode/mcp.json\n', stderr: '' }
 
 function deps (runs: SmithRun[], answer: boolean) {
@@ -49,7 +50,7 @@ describe('installAgent', () => {
   })
 
   it('does not ask or write when smith refuses the preview', async () => {
-    const fake = deps([{ code: 1, stdout: '', stderr: '✖ .mcp.json was changed after smith wrote it\n' }], true)
+    const fake = deps([{ code: 1, stdout: '', stderr: '× .mcp.json was changed after smith wrote it\n' }], true)
     expect(await installAgent(fake.deps, 'agent')).toEqual({ kind: 'refused', message: '.mcp.json was changed after smith wrote it' })
     expect(fake.calls).toHaveLength(1)
     expect(fake.asked).toEqual([])

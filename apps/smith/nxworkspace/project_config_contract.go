@@ -24,6 +24,41 @@ type Target struct {
 	} `json:"metadata"`
 }
 
+// overlay returns t with the fields other sets on top.
+func (t Target) overlay(other Target) Target {
+	if other.Executor != "" {
+		t.Executor = other.Executor
+	}
+	if other.Command != "" {
+		t.Command = other.Command
+	}
+	if other.Options != nil {
+		t.Options = other.Options
+	}
+	if other.Configurations != nil {
+		t.Configurations = other.Configurations
+	}
+	if other.DependsOn != nil {
+		t.DependsOn = other.DependsOn
+	}
+	if other.Inputs != nil {
+		t.Inputs = other.Inputs
+	}
+	if other.Outputs != nil {
+		t.Outputs = other.Outputs
+	}
+	if other.Cache != nil {
+		t.Cache = other.Cache
+	}
+	if other.Continuous {
+		t.Continuous = true
+	}
+	if other.Parallelism != nil {
+		t.Parallelism = other.Parallelism
+	}
+	return t
+}
+
 // Option decodes one option into out; it reports whether the option exists.
 func (t Target) Option(name string, out any) bool {
 	raw, ok := t.Options[name]

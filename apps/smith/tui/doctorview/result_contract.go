@@ -18,7 +18,10 @@ type Result struct {
 
 // Group is the findings that belong together: a project's, or the
 // workspace's when Project is empty. Indexes point into the report's findings.
+// Counted, when set, points at every finding of the group before the filters
+// hid any: the heading counts those, not only the rows drawn.
 type Group struct {
 	Project string
 	Indexes []int
+	Counted []int
 }

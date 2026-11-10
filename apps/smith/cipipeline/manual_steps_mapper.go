@@ -104,14 +104,14 @@ func cacheSteps(cfg workspace.Config) []string {
 		return nil
 	}
 	steps := []string{
-		"remote cache " + remote + ": SMITH_CACHE_KEY is any long random string the whole team shares; every object is signed with it, and with no value (a pull request from a fork, which gets no secrets) the remote is off and the run uses the local cache",
+		"remote cache " + remote + ": SMITH_CACHE_KEY is a random value you make once with `smith cache key` and the whole team shares; every object is signed with it, and with no value (a pull request from a fork, which gets no secrets) the remote is off and the run uses the local cache",
 		"remote cache: pull requests and merge requests read the cache and never write it; only a push to " + cfg.Release.Branch + " stores results",
 	}
 	switch {
 	case strings.HasPrefix(remote, "azblob://"):
 		steps = append(steps, "remote cache (Azure Blob): create the container, then a SAS token scoped to it with read, write and create permission, and keep it as AZURE_STORAGE_SAS_TOKEN; a developer who only reads needs read permission alone")
 	case strings.HasPrefix(remote, "s3://"):
-		steps = append(steps, "remote cache (S3): AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY belong to an identity allowed to read and write the bucket; set AWS_REGION to its region")
+		steps = append(steps, "remote cache (S3): AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY belong to an identity allowed to read and write the bucket; set AWS_REGION to its region; for an S3-compatible store such as Cloudflare R2 also set AWS_ENDPOINT_URL_S3 to its endpoint and AWS_REGION to auto")
 	case strings.HasPrefix(remote, "https://"), strings.HasPrefix(remote, "http://"):
 		steps = append(steps, "remote cache (HTTP): the server must take PUT, GET and HEAD; if it needs a bearer token, keep it as SMITH_CACHE_TOKEN")
 	}

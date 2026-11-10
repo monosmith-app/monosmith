@@ -8,7 +8,10 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -26,8 +29,10 @@ func changeVerb(root, path string) string {
 func Command(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ci",
-		Short: "Run a CI phase, or regenerate the pipelines",
-		Long: `The generated pipelines call these phases, so CI runs exactly what you can run locally:
+		Short: "Install what a clean checkout needs, run a CI phase, or regenerate the pipelines",
+		Long: `With no phase, smith ci installs every dependency a clean checkout needs: the setup phase below.
+
+The generated pipelines call these phases, so CI runs exactly what you can run locally:
 
   setup    install every toolchain dependency the workspace's plugins need
   audit    check dependencies for known vulnerabilities
@@ -40,9 +45,12 @@ func Command(version string) *cobra.Command {
            [release] and upload its files to their GitHub Release; the pipeline
            runs it on one runner per platform
   release  version, publish and tag every package with releasable commits`,
+		Args: cobra.NoArgs,
 	}
 	for _, phase := range Phases {
-		cmd.AddCommand(&cobra.Command{
+		var assets bool
+		var run AssetsRun
+		phaseCmd := &cobra.Command{
 			Use:   phase,
 			Short: "Run the " + phase + " phase",
 			Args:  cobra.NoArgs,
@@ -52,23 +60,52 @@ func Command(version string) *cobra.Command {
 					return err
 				}
 				defer s.Close()
-				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt)
+				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
 				defer stop()
-				return RunPhase(ctx, s, phase, c.OutOrStdout())
+				run.In, run.Terminal = c.InOrStdin(), operationplan.DetectEnvironment().Terminal
+				return RunPhaseFor(ctx, s, phase, assets, run, c.OutOrStdout())
 			},
-		})
+		}
+		if phase == "setup" {
+			phaseCmd.Flags().BoolVar(&assets, "assets", false, "install for the assets job: leave out the projects whose [release] install is false")
+		}
+		if phase == "release" {
+			phaseCmd.Flags().StringSliceVar(&run.Manual.Bumps, "bump", nil, "release a package with this bump: <project>=patch|minor|major (a manual release from the CI provider's input)")
+			phaseCmd.Flags().BoolVar(&run.Manual.Force, "force", false, "with --bump: release a package although no commit releases it (the same code under a new version)")
+		}
+		if phase == "assets" {
+			phaseCmd.Flags().StringVar(&run.Tag, "tag", "", "run again for an existing release tag (project@version) and replace the files of its GitHub Release")
+			phaseCmd.Flags().StringVar(&run.Source, "source", "", "with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one")
+		}
+		cmd.AddCommand(phaseCmd)
+		if phase == "setup" {
+			// smith ci alone is the install of a clean checkout, like npm ci.
+			cmd.RunE = func(c *cobra.Command, _ []string) error {
+				phaseCmd.SetContext(c.Context())
+				return phaseCmd.RunE(phaseCmd, nil)
+			}
+		}
 	}
-	var check bool
+	var check, dryRun, yes bool
 	generate := &cobra.Command{
 		Use:   "generate",
-		Short: "Rewrite the CI pipelines from the workspace's projects (--check only reports drift)",
-		Args:  cobra.NoArgs,
+		Short: "Rewrite the CI pipelines from the workspace's projects (--check only reports drift, --dry-run shows a diff)",
+		Long: `Rewrite the CI pipelines, the dev container and tools/smith/install.sh from the
+workspace's projects. smith shows the plan first: every file it creates,
+rewrites or deletes, with a diff of what changes, because edits you made
+outside a smith:slot marker are lost and a pipeline file of a provider you
+dropped from [ci] providers is deleted. In a terminal it asks before it writes;
+without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`,
+		Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: c.ErrOrStderr()})
 			if err != nil {
 				return err
 			}
 			defer s.Close()
+			for _, w := range buildoutputs.OverlapWarningsFor(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs) {
+				fmt.Fprintln(c.ErrOrStderr(), w)
+			}
 			if check {
 				contributions, err := Collect(s)
 				if err != nil {
@@ -85,6 +122,17 @@ func Command(version string) *cobra.Command {
 				return err
 			}
 			model := NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)
+			plan, _, err := Preview(s.Root, s.Config, model)
+			if err != nil {
+				return err
+			}
+			if plan.Empty() {
+				fmt.Fprintln(c.OutOrStdout(), "pipelines are up to date")
+				return nil
+			}
+			if goOn, err := operationplan.Present(c.OutOrStdout(), c.InOrStdin(), plan, operationplan.Options{Yes: yes, DryRun: dryRun, Ask: true, Env: operationplan.DetectEnvironment()}); err != nil || !goOn {
+				return err
+			}
 			changed, lost, err := Write(s.Root, s.Config, model)
 			if err != nil {
 				return err
@@ -105,6 +153,8 @@ func Command(version string) *cobra.Command {
 		},
 	}
 	generate.Flags().BoolVar(&check, "check", false, "report drift without writing")
+	generate.Flags().BoolVar(&dryRun, "dry-run", false, "show every file it would create, rewrite or delete, with a diff; write nothing")
+	generate.Flags().BoolVarP(&yes, "yes", "y", false, "write without asking")
 	cmd.AddCommand(generate)
 	cmd.AddCommand(&cobra.Command{
 		Use:   "check",

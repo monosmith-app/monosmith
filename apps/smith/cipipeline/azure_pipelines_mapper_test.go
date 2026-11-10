@@ -28,7 +28,7 @@ func azureStepAfter(out, first string) string {
 func TestAzureMapsTheCacheSecretsIntoEveryStepThatRunsTasks(t *testing.T) {
 	cases := map[string][]string{
 		"azblob://acme/smith-cache/main": {"AZURE_STORAGE_SAS_TOKEN", "SMITH_CACHE_KEY"},
-		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
+		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_ENDPOINT_URL_S3", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
 		"https://cache.acme.dev/smith":   {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
 	}
 	for remote, envs := range cases {
@@ -62,10 +62,10 @@ func TestANativeProjectAddsAJobPerOS(t *testing.T) {
 	if strings.Contains(RenderGitHub(m), "native:") || strings.Contains(RenderAzure(m), "jobs:") {
 		t.Fatal("no native project: no native job, and Azure keeps its single job")
 	}
-	m.Native, m.NativeRunners = true, DefaultNativeRunners
+	m.Native, m.NativeRunners, m.NativeOn = true, DefaultNativeRunners, NativeOnAlways
 	gh, az := RenderGitHub(m), RenderAzure(m)
 	for _, want := range []string{
-		"\n  native:\n    needs: ci\n    strategy:\n      fail-fast: false\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]\n    runs-on: ${{ matrix.os }}\n",
+		"\n  native:\n    needs: ci\n    if: ${{ always() && (needs.ci.result == 'success' || (github.event_name == 'push' && needs.ci.outputs.released == 'true')) }}\n    strategy:\n      fail-fast: false\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]\n    runs-on: ${{ matrix.os }}\n",
 		"      - uses: actions/setup-node@v7\n",
 		"      - name: Install smith\n        shell: bash\n",
 		"      - name: Native\n        run: smith ci native\n        env:\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n",

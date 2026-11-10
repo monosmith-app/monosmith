@@ -1,6 +1,6 @@
 import { optOutArguments } from './install-arguments.mapper.ts'
-import { sayProblem } from './install-outcome.mapper.ts'
-import type { SmithRun } from './install-run.contract.ts'
+import { sayProblem, type SmithRun } from '../smith-run/index.ts'
+import { say } from '../words/index.ts'
 
 /**
  * Records `[agent] enabled = false` in smith.toml through `smith config set`,
@@ -11,5 +11,5 @@ import type { SmithRun } from './install-run.contract.ts'
 export async function optOutOfAgent (run: (args: string[]) => Promise<SmithRun>): Promise<string | undefined> {
   const result = await run(optOutArguments())
 
-  return result.code === 0 ? undefined : (sayProblem(result.stderr) || `smith stopped with exit code ${result.code}`)
+  return result.code === 0 ? undefined : (sayProblem(result.stderr) || say('vscode.agent-install.smith-stopped-with-exit-code', { code: result.code }))
 }

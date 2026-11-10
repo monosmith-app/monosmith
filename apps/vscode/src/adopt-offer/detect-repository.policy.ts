@@ -22,12 +22,15 @@ const MARKERS: Array<{ file: string, kind: RepositoryKind }> = [
  * Tells whether a folder is a repository smith can bring in, from the files
  * at its top level: Nx and Turborepo by their config, other monorepo tools by
  * theirs, and a `package.json` that lists workspaces. Reads at most one small
- * file and never looks inside the folders.
+ * file and never looks inside the folders. A folder with a `smith.toml` is
+ * never offered: it is a workspace already, readable or not.
  * @returns the kind and the file that showed it, or undefined for any other folder
  */
 export function detectRepository (root: string, { exists, read }: RepositoryProbe): { kind: RepositoryKind, marker: string } | undefined {
   const path = root.includes('\\') ? win32 : posix
   const join = (...parts: string[]): string => path.join(...parts)
+  // A smith.toml that exists makes the folder a workspace, even when it cannot be read: never offer to adopt over it.
+  if (exists(join(root, 'smith.toml'))) return undefined
   for (const { file, kind } of MARKERS) {
     if (exists(join(root, file))) return { kind, marker: file }
   }

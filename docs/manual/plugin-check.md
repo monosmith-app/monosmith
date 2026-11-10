@@ -76,19 +76,19 @@ smith plugin check node
 
 ```text
 node 1.62.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ plays a known role: toolchain
-  ✔ plays a known role: scaffold
-  ✔ a language plugin discovers projects
-  ✔ a scaffold generates projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ ci answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ plays a known role: toolchain
+  ✓ plays a known role: scaffold
+  ✓ a language plugin discovers projects
+  ✓ a scaffold generates projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ ci answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 The Node.js example plugin from the repository, by path:
@@ -99,14 +99,14 @@ smith plugin check docs/examples/plugins/node/plugin.cmd
 
 ```text
 widget 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: language
-  ✔ a language plugin discovers projects
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ discover answers with no manifests
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: language
+  ✓ a language plugin discovers projects
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ discover answers with no manifests
+  ✓ shuts down when asked
 ```
 
 ## Common errors

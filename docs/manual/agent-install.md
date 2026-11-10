@@ -72,13 +72,13 @@ Write 2 files? [y/N] y
 ## Common errors
 
 ```text
-✖ .vscode/mcp.json was changed after smith wrote it, so smith left everything as it is
+× .vscode/mcp.json was changed after smith wrote it, so smith left everything as it is
   → keep your version: nothing to do (smith doctor accepts it)
   → take smith's: delete .vscode/mcp.json (or its smith entry in an MCP file) and run the command again
 ```
 
 ```text
-✖ nothing was written: there is no terminal to ask on
+× nothing was written: there is no terminal to ask on
   → run it again with --yes to write the files above
 ```
 

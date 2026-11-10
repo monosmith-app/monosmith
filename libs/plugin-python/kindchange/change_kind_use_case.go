@@ -109,18 +109,9 @@ func requirementFiles(edits *fileedits.Set, root string) []string {
 // retargetDependents points every other project's pyproject.toml and
 // requirements files at the new directory.
 func retargetDependents(edits *fileedits.Set, params protocol.ChangeKindParams) {
-	for _, other := range params.Projects {
-		if other.Language != "python" || other.Root == params.Project.Root {
-			continue
-		}
-		files := append([]string{path.Join(other.Root, manifestName)}, requirementFiles(edits, other.Root)...)
-		for _, file := range files {
-			if text, ok := edits.Read(file); ok {
-				updated, _ := pathrefs.Retarget(text, other.Root, params.Project.Root, params.NewRoot)
-				edits.Write(file, updated)
-			}
-		}
-	}
+	fileedits.RetargetDependents(edits, params, "python", func(root string) []string {
+		return append([]string{path.Join(root, manifestName)}, requirementFiles(edits, root)...)
+	})
 }
 
 // retargetWorkspace updates the root files, and lists the new directory in

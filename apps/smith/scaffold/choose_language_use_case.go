@@ -32,6 +32,14 @@ func chooseLanguage(s *session.Session, opts AddOptions) (string, error) {
 		in, interactive = opts.Recipe.In, opts.Recipe.Interactive
 	}
 	lang, note, err := pickLanguage(opts.Lang, opts.Name, names, s.Plugins.Languages(), in, opts.Out, interactive)
+	if err != nil && len(s.Config.DefaultStacks) > 0 {
+		set := make([]string, 0, len(s.Config.DefaultStacks))
+		for l := range s.Config.DefaultStacks {
+			set = append(set, "--lang "+l)
+		}
+		sort.Strings(set)
+		err = fmt.Errorf("%w. smith.toml sets [default_stacks] for %s: pass one of them", err, strings.Join(set, ", "))
+	}
 	if note != "" && opts.Out != nil {
 		fmt.Fprintln(opts.Out, note)
 	}

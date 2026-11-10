@@ -98,6 +98,26 @@ func TestDocumentKeepsCRLF(t *testing.T) {
 	}
 }
 
+func TestRewriteStringsReachesNestedObjectsAndArraysAndNothingElse(t *testing.T) {
+	doc, err := ParseDocument([]byte(`{"name":"dist/a","main":"dist/a.js","exports":{".":{"import":"dist/a.js"},"x":["dist/x.js","y"]},"scripts":{"build":"dist/a"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := doc.RewriteStrings([]string{"main", "exports", "missing"}, func(s string) string { return strings.Replace(s, "dist/", "out/", 1) })
+	got := string(doc.Bytes())
+	for _, want := range []string{`"name": "dist/a"`, `"main": "out/a.js"`, `"import": "out/a.js"`, `"out/x.js"`, `"y"`, `"build": "dist/a"`} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %s:\n%s", want, got)
+		}
+	}
+	if !changed {
+		t.Error("a change is reported")
+	}
+	if doc.RewriteStrings([]string{"main"}, func(s string) string { return s }) {
+		t.Error("an identity rewrite reports no change")
+	}
+}
+
 func TestString(t *testing.T) {
 	doc, _ := ParseDocument([]byte(`{"a": "x", "n": 1, "o": {}}`))
 	if v, ok := doc.String("a"); !ok || v != "x" {

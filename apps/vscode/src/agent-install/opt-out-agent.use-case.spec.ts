@@ -7,13 +7,13 @@ describe('optOutOfAgent', () => {
     const failure = await optOutOfAgent(async (args) => {
       calls.push(args)
 
-      return { code: 0, stdout: '✔ agent.enabled = false\n', stderr: '' }
+      return { code: 0, stdout: '✓ agent.enabled = false\n', stderr: '' }
     })
     expect(failure).toBeUndefined()
     expect(calls).toEqual([['config', 'set', 'agent.enabled', 'false']])
   })
 
   it('returns what smith said when it could not', async () => {
-    expect(await optOutOfAgent(async () => ({ code: 1, stdout: '', stderr: '✖ smith.toml is read-only\n' }))).toBe('smith.toml is read-only')
+    expect(await optOutOfAgent(async () => ({ code: 1, stdout: '', stderr: '× smith.toml is read-only\n' }))).toBe('smith.toml is read-only')
   })
 })

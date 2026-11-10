@@ -19,6 +19,9 @@ type Model struct {
 	// SmithVersion is installed by the pipeline; "latest" when smith is a dev build.
 	SmithVersion  string
 	ReleaseBranch string
+	// ChannelBranches are the branches of the release channels ([[release.channels]]),
+	// which release prerelease versions of their own.
+	ChannelBranches []string
 	// Branches are the branches the GitHub and Azure pipelines trigger on
 	// (push and pull request), from [ci] branches. Empty means the release
 	// branch only.
@@ -43,7 +46,7 @@ type Model struct {
 	NativeRunners       []string
 	NativeLinuxPackages []string
 	// AssetPlatforms are the platforms an app's [release] build command runs
-	// for, in workspace.CommandPlatforms order: a job runs smith ci assets on
+	// for, in releasetable.CommandPlatforms order: a job runs smith ci assets on
 	// a runner of each.
 	AssetPlatforms []string
 	// Provenance is true when an app is published to npm: on GitHub the job
@@ -53,9 +56,39 @@ type Model struct {
 	// GitHub the job then attests them (SLSA build provenance), which needs
 	// id-token and attestations permissions.
 	Attest bool
+	// Deployments is true when the workspace publishes to a registry and
+	// [release] github_deployments is not off: the GitHub job then asks for
+	// deployments: write to record each registry as a deployment.
+	Deployments bool
+	// AttestOptional makes the attestation step continue on error, from [ci] attest.
+	AttestOptional bool
+	// ArtifactsOptional makes the artifact upload steps continue on error, from
+	// [ci] artifacts = "optional".
+	ArtifactsOptional bool
+	// ArtifactRetentionDays is the retention-days of the artifact upload steps,
+	// from [ci] artifact_retention_days; 0 leaves the repository's setting.
+	ArtifactRetentionDays int
+	// NativeOn is when the native job runs, from [ci] native_on: "release"
+	// (empty), "main" or "always".
+	NativeOn string
+	// Triggers are the events that start a GitHub or Azure run, from [ci]
+	// triggers: "push" and "pull_request". Empty means both.
+	Triggers []string
+	// Audit is when the audit step runs, from [ci] audit: "always" (empty),
+	// "main" or "schedule".
+	Audit string
+	// PublishOn is where pack, the packed-apps upload, the attestation and the
+	// assets job run, from [ci] publish_on: "release" (empty), the release
+	// branch only, or "channels", the release branch and every channel branch.
+	PublishOn string
+	// AuditCron is the schedule of a "schedule" audit, in cron syntax.
+	AuditCron string
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool
+	// ManualRelease is [ci] manual_release: the pipelines get a way to release
+	// by hand a package no commit releases (see manual_release_*_mapper.go).
+	ManualRelease bool
 	// AzurePool and AzureVariableGroups are [ci] azure_pool and
 	// azure_variable_groups, for the Azure Pipelines definition.
 	AzurePool           string
@@ -84,8 +117,12 @@ type Contributions struct {
 	Toolchains   []protocol.Toolchain
 	Authenticate []protocol.Toolchain
 	Setup        []protocol.Step
-	Audit        []protocol.Step
-	Stores       []protocol.PackageStore
+	// SetupSections say which plugin gave which of the Setup steps, in order,
+	// so smith ci setup can show one section per plugin. Their Steps add up to
+	// len(Setup) when every step came from collect.
+	SetupSections []SetupSection
+	Audit         []protocol.Step
+	Stores        []protocol.PackageStore
 	// PostRelease are the steps smith ci release runs after the release.
 	PostRelease []protocol.Step
 	Credentials []protocol.Credential
@@ -102,6 +139,10 @@ type Contributions struct {
 	Provenance bool
 	// Attest is true when a release attaches archives to a GitHub Release.
 	Attest bool
+	// Deployments is true when the workspace publishes to a registry and
+	// [release] github_deployments is not off: the GitHub job then needs
+	// deployments: write to record each registry as a deployment.
+	Deployments bool
 	// Pub is true when an app is published to pub.dev.
 	Pub bool
 	// RubyGemsTrusted is true when [release] rubygems_trusted_publishing is set.
@@ -126,6 +167,16 @@ func (c *Contributions) UseRubyGemsTrustedPublishing() {
 func (c *Contributions) UseVSCEEntra() {
 	c.VSCEEntra = true
 	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "VSCE_PAT" })
+}
+
+// SetupSection is the run of setup steps one plugin contributed.
+type SetupSection struct {
+	// Plugin is the plugin (language) name.
+	Plugin string
+	// Projects is how many projects the plugin was asked about.
+	Projects int
+	// Steps is how many of Contributions.Setup are the plugin's.
+	Steps int
 }
 
 // Add merges one plugin's contribution, keeping the first of duplicates.
@@ -175,13 +226,101 @@ func (c *Contributions) Add(r protocol.CIResult) {
 }
 
 // TriggerBranches are the branches the pipelines trigger on: Branches, with the
-// release branch first when they leave it out, or the release branch alone.
+// release branch and the channel branches first when they leave them out, or
+// those alone.
 func (m Model) TriggerBranches() []string {
 	out := []string{}
-	if !slices.Contains(m.Branches, m.ReleaseBranch) {
-		out = append(out, m.ReleaseBranch)
+	for _, b := range m.ReleaseBranches() {
+		if !slices.Contains(m.Branches, b) {
+			out = append(out, b)
+		}
 	}
 	return append(out, m.Branches...)
+}
+
+// Native modes: when the native job runs (see Model.NativeOn).
+const (
+	NativeOnRelease = "release"
+	NativeOnMain    = "main"
+	NativeOnAlways  = "always"
+)
+
+// Audit modes: when the audit step runs (see Model.Audit).
+const (
+	AuditAlways   = "always"
+	AuditMain     = "main"
+	AuditSchedule = "schedule"
+)
+
+// DefaultAuditCron runs a scheduled audit on Mondays at 06:00 UTC.
+const DefaultAuditCron = "0 6 * * 1"
+
+// NativeMode is NativeOn with its default, "release", filled in.
+func (m Model) NativeMode() string {
+	if m.NativeOn == "" {
+		return NativeOnRelease
+	}
+	return m.NativeOn
+}
+
+// AuditMode is Audit with its default, "always", filled in.
+func (m Model) AuditMode() string {
+	if m.Audit == "" {
+		return AuditAlways
+	}
+	return m.Audit
+}
+
+// AuditSchedule is the cron expression of a scheduled audit.
+func (m Model) AuditSchedule() string {
+	if m.AuditCron == "" {
+		return DefaultAuditCron
+	}
+	return m.AuditCron
+}
+
+// TriggersOn says whether the pipelines start on the event: "push" or "pull_request".
+func (m Model) TriggersOn(event string) bool {
+	return len(m.Triggers) == 0 || slices.Contains(m.Triggers, event)
+}
+
+// ReleaseBranches are the branches `smith ci release` runs on: the release
+// branch, then each release channel's branch. Packing and the other steps that
+// publish more than a package stay on the release branch.
+func (m Model) ReleaseBranches() []string {
+	return append([]string{m.ReleaseBranch}, m.ChannelBranches...)
+}
+
+// PublishBranches are the branches that pack, upload, attest and build the
+// release files: the release branch, or with [ci] publish_on = "channels" the
+// channel branches too.
+func (m Model) PublishBranches() []string {
+	if m.PublishOn == "channels" {
+		return m.ReleaseBranches()
+	}
+	return []string{m.ReleaseBranch}
+}
+
+// branchCondition joins one condition per release branch with join, which
+// writes the provider's "any of" for two or more.
+func (m Model) branchCondition(one func(branch string) string, join func(conditions []string) string) string {
+	return conditionOf(m.ReleaseBranches(), one, join)
+}
+
+// publishCondition is branchCondition over the publish branches.
+func (m Model) publishCondition(one func(branch string) string, join func(conditions []string) string) string {
+	return conditionOf(m.PublishBranches(), one, join)
+}
+
+func conditionOf(branches []string, one func(branch string) string, join func(conditions []string) string) string {
+	var conditions []string
+	for _, b := range branches {
+		conditions = append(conditions, one(b))
+	}
+	if len(conditions) == 1 {
+		return conditions[0]
+	}
+	return join(conditions)
 }
 
 // NewModel builds the model, sorted so the YAML is deterministic.
@@ -190,7 +329,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 		smithVersion = "latest"
 	}
 	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish, AssetPlatforms: c.AssetPlatforms,
-		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
+		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Deployments: c.Deployments, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners
 	}

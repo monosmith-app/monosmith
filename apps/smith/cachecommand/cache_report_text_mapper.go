@@ -40,10 +40,10 @@ func statusText(r StatusReport) string {
 	}
 	row("remote", remoteText(r.Remote))
 	if r.OverLimit() {
-		fmt.Fprintf(&b, "  ✖ the cache is over its limit\n    → smith cache prune brings it under %s\n", formatSize(r.LimitBytes))
+		fmt.Fprintf(&b, "  × the cache is over its limit\n    → smith cache prune brings it under %s\n", formatSize(r.LimitBytes))
 	}
 	if r.BrokenEntries > 0 {
-		fmt.Fprintf(&b, "  ✖ %d %s cannot be used: unreadable, or naming a blob that is gone\n    → smith cache verify --fix removes them\n", r.BrokenEntries, plural(r.BrokenEntries, "entry", "entries"))
+		fmt.Fprintf(&b, "  × %d %s cannot be used: unreadable, or naming a blob that is gone\n    → smith cache verify --fix removes them\n", r.BrokenEntries, plural(r.BrokenEntries, "entry", "entries"))
 	}
 	if len(r.Largest) > 0 {
 		b.WriteString("largest entries\n")

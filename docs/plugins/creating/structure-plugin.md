@@ -133,12 +133,12 @@ $ mkdir libs/core/utils
 $ smith run layout-check
 core:layout-check ▶ <examples>\structure-layout-go\smith-plugin-widget-layout.exe layout-check
 core:layout-check │ folders named for nothing: utils (name them for what they do)
-core:layout-check ✖ exited with code 1
-✖ 0/1 tasks succeeded (0 from cache) in 14ms
+core:layout-check × exited with code 1
+× 0/1 tasks succeeded (0 from cache) in 14ms
 $ rmdir libs/core/utils
 $ smith run layout-check
 core:layout-check │ no junk-drawer folders
-core:layout-check ✔ 14ms
+core:layout-check ✓ 14ms
 ```
 
 In a stack the same task makes the project's linter wait. With the `widget-lint` toolchain in the
@@ -147,10 +147,10 @@ same stack, a violation fails the layout check and skips the lint:
 ```text
 $ smith run lint -p strict
 strict:layout-check │ folders named for nothing: utils (name them for what they do)
-strict:layout-check ✖ exited with code 1
-  ✖ strict:layout-check exited with code 1
-  ↷ strict:lint because strict:layout-check did not succeed
-✖ 0/2 tasks succeeded (0 from cache) in 16ms
+strict:layout-check × exited with code 1
+  × strict:layout-check exited with code 1
+  » strict:lint because strict:layout-check did not succeed
+× 0/2 tasks succeeded (0 from cache) in 16ms
 $ smith explain strict:lint
   dependsOn  layout-check (this project's layout-check, first)   (from plugin widget-layout (stack widget-strict))
 ```
@@ -182,7 +182,7 @@ convention is not checked:
 ```text
 $ smith doctor
 ...
-✔ core has a README.md
+✓ core has a README.md
 ```
 
 (`legacy`, listed in `exclude = ["legacy"]`, has no README and is not reported.)
@@ -270,15 +270,15 @@ an SDK writes.
 ```text
 $ smith plugin check ./smith-plugin-widget-layout
 widget-layout 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 The TypeScript and Python versions give the same lines (`smith plugin check .\plugin.cmd` on
@@ -312,7 +312,7 @@ structure = ["widget-layout"]
 | You see | Cause and remedy |
 |---|---|
 | the plugin is configured and no task appears | `Languages` does not include the project's language (`smith doctor` names the projects it skips) |
-| `✖ a structure plugin does something` | the plugin implements none of `contribute`, `generate`, `ci`, `doctor` |
+| `× a structure plugin does something` | the plugin implements none of `contribute`, `generate`, `ci`, `doctor` |
 | `smith.toml [conventions.x]: x is not a convention plugin` (from the code) | `Kind` is `language`; a structure plugin is kind `convention` |
 | `smith.toml [conventions.x]: it does not apply to "go"; it supports [widget]` (from the code) | `languages = [...]` in the convention names a language the plugin does not list |
 | `lint` does not wait for the check | `DependsOn` named a task that does not exist yet; emit it unconditionally and let smith ignore it |

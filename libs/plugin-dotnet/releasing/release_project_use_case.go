@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -68,6 +67,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if params.Project.Kind != protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "released by its tag"}, nil
 	}
+	if params.PackDir != "" {
+		return packNupkg(workspaceRoot, params)
+	}
 	source := os.Getenv("NUGET_SOURCE")
 	if source == "" {
 		source = NuGetSource
@@ -119,9 +121,9 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 		return protocol.PublishedResult{Registry: r.Publish.NuGet, Unreachable: true, Detail: "smith does not ask a private NuGet feed for its versions yet"}, nil
 	}
 	result := protocol.PublishedResult{Registry: "nuget.org"}
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(NuGetIndex + "/" + strings.ToLower(params.Project.Exports[0]) + "/index.json")
+	resp, err := (&http.Client{Timeout: protocol.RegistryLookupTimeout}).Get(NuGetIndex + "/" + strings.ToLower(params.Project.Exports[0]) + "/index.json")
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -134,7 +136,7 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	}
 	var index struct{ Versions []string }
 	if err := json.NewDecoder(resp.Body).Decode(&index); err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	for _, v := range index.Versions {

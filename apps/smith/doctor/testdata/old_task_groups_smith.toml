@@ -1,0 +1,14 @@
+schema = 1
+
+[workspace]
+name = "acme"
+
+# node libraries build into dist
+[[task_groups]]
+select = ["lang:node", "kind:lib"]
+
+[task_groups.tasks.build]
+outputs = ["dist"]
+
+[projects.web]
+tags = ["ui"]

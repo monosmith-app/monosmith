@@ -37,6 +37,45 @@ type PublishParams struct {
 	// container image's sha-<short> and branch tags). Empty when unknown.
 	Commit string `json:"commit,omitempty"`
 	Branch string `json:"branch,omitempty"`
+	// Tag is the name of the release channel the version belongs to (npm's
+	// dist-tag "beta"). When set, the plugin publishes under it and leaves the
+	// registry's stable pointer where it is, or ignores it when its registry
+	// has no such pointer. Only sent to a plugin with the channels capability.
+	Tag string `json:"tag,omitempty"`
+	// PropagationWait is the longest time a plugin waits, in a Finalize call,
+	// for the packages of the release to be fetchable from the registry: a
+	// duration such as "15m", "0" to not wait. Empty means the default. Only
+	// npm has such a wait. A publish never waits.
+	PropagationWait string `json:"propagationWait,omitempty"`
+	// PackDir, when set, turns the call into a pack: the plugin writes the
+	// package file of the project's ecosystem (npm tarball, wheel and sdist,
+	// .nupkg, .gem, .crate) and returns the files in PublishResult.Assets, and
+	// publishes nothing anywhere. A workspace-relative folder. The host sends it
+	// only to a plugin with the packs capability. In a dry run the plugin lists
+	// the files it would write, writes none, and reads no registry.
+	PackDir string `json:"packDir,omitempty"`
+	// Finalize turns the call into the last phase of a release: nothing is
+	// published; for each move the plugin waits until its packages are
+	// fetchable, then moves the dist-tag. The host sends it after every
+	// project has published, so a wait never blocks another publish.
+	Finalize []TagMove `json:"finalize,omitempty"`
+}
+
+// TagMove is a dist-tag a publish left where it was, because the packages the
+// release needs were not fetchable yet.
+type TagMove struct {
+	// Package and Version name the package that carries the tag.
+	Package string `json:"package"`
+	Version string `json:"version"`
+	// Tag is the dist-tag to move to Version.
+	Tag string `json:"tag"`
+	// Awaits are the packages that must be fetchable first.
+	Awaits []string `json:"awaits"`
+}
+
+// Command is the exact command that moves the tag by hand.
+func (m TagMove) Command() string {
+	return "npm dist-tag add " + m.Package + "@" + m.Version + " " + m.Tag
 }
 
 // AssetSpec describes the release files of an app.
@@ -64,6 +103,18 @@ type PublishResult struct {
 	Published bool   `json:"published"`
 	Skipped   string `json:"skipped,omitempty"`
 	Registry  string `json:"registry,omitempty"`
+	// Notes are things the person must know about a publish that succeeded,
+	// such as a dist-tag that was not moved; the host prints them and the
+	// report keeps them.
+	Notes []string `json:"notes,omitempty"`
+	// PendingMoves are the dist-tags the call did not move, because the
+	// packages the release needs were not fetchable yet. A publish returns
+	// them for the host to move at the end of the release; a Finalize call
+	// returns the ones still waiting when its time ran out. The release then
+	// ends with a warning, never silently.
+	PendingMoves []TagMove `json:"pendingMoves,omitempty"`
+	// Moved names the dist-tags a Finalize call moved ("name@version tag").
+	Moved []string `json:"moved,omitempty"`
 	// Assets are the workspace-relative files built for the release, in
 	// upload order; in a dry run, the files that would be built.
 	Assets []string `json:"assets,omitempty"`

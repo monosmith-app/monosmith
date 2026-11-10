@@ -1,35 +1,11 @@
 package detail
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/charmbracelet/x/ansi"
-
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
-)
-
 // Row is a label and its value.
-type Row struct{ Label, Value string }
-
-// valueLines breaks a value into lines of valueW cells. A value of several
-// words wraps at the spaces; a single long word (a path, a package name) is
-// shortened in the middle instead of being cut into fragments.
-func valueLines(value string, valueW int) []string {
-	if pane.Width(value) <= valueW {
-		return []string{value}
-	}
-	if !strings.ContainsAny(pane.Strip(value), " \t") {
-		return []string{pane.MiddleTruncate(value, valueW)}
-	}
-	lines := pane.Wrap(value, valueW, 0)
-	for i, l := range lines {
-		if pane.Width(l) > valueW {
-			lines[i] = pane.MiddleTruncate(l, valueW)
-		}
-	}
-	return lines
+type Row struct {
+	Label, Value string
+	// ShownByList marks a fact the highlighted row of the list beside the panel
+	// already draws. The panel leaves the row out while ListVisible is set.
+	ShownByList bool
 }
 
 // Section is a heading and its rows.
@@ -46,12 +22,20 @@ type Section struct {
 	// Collapse is how many items show until the panel is Expanded; the rest
 	// is told as a count. Zero shows them all.
 	Collapse int
+	// Fold hides the whole section body until the panel is Expanded; the
+	// heading stays, with a note that says how to show it.
+	Fold bool
+	// Tail are plain lines drawn after the items and never folded, so the
+	// last line of a section (a terminal command) stays visible.
+	Tail []string
 }
 
-// Action is a clickable line.
+// Action is a button: its label and its key, drawn by package button.
 type Action struct {
-	ID       string
-	Label    string
+	ID    string
+	Label string
+	// Shortcut is the key that does the same as a click; it shows in
+	// parentheses after the label.
 	Shortcut string
 	Disabled bool
 	// Hint says, under the label, what the action does or what it needs.
@@ -64,147 +48,24 @@ type Panel struct {
 	Actions  []Action
 	// ActionsTitle is the heading over the actions; "Actions" when empty.
 	ActionsTitle string
+	// More are a second group of actions, drawn under the first with the heading
+	// MoreTitle (the runs that cover every project, under those of one project).
+	More      []Action
+	MoreTitle string
 	// After are the sections drawn under the actions: what is long and
 	// secondary, so it can never push the actions off the screen.
 	After []Section
 	// Expanded shows every item of a Collapse section.
 	Expanded bool
-}
-
-// View draws the panel in w cells and returns it with the row of each action
-// (relative to the first line), so a click can be mapped to it. hover is the
-// ID of the action under the pointer. The lines are all of the panel: the
-// caller shows a window of them (see Window).
-func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits map[int]string) {
-	hits = map[int]string{}
-	if len(p.Sections) == 0 && len(p.Actions) == 0 && len(p.After) == 0 {
-		return []string{th.Muted(" Nothing selected.")}, hits
-	}
-	labelW := 0
-	for _, list := range [][]Section{p.Sections, p.After} {
-		for _, s := range list {
-			for _, r := range s.Rows {
-				labelW = max(labelW, pane.Width(r.Label))
-			}
-		}
-	}
-	labelW = min(labelW, max(w/2-1, 4))
-	for _, s := range p.Sections {
-		lines = p.section(lines, th, s, w, labelW)
-	}
-	if len(p.Actions) > 0 {
-		if len(lines) > 0 {
-			lines = append(lines, "")
-		}
-		title := p.ActionsTitle
-		if title == "" {
-			title = "Actions"
-		}
-		lines = append(lines, " "+th.Title(title))
-		for _, a := range p.Actions {
-			// A long label wraps under itself, the shortcut stays on its first line,
-			// and every line of the action is clickable.
-			room := max(w-2-pane.Width(a.Shortcut), 4)
-			if a.Shortcut != "" {
-				room = max(room-1, 4)
-			}
-			for n, part := range pane.Wrap(a.Label, room, 2) {
-				text := part
-				if n == 0 && a.Shortcut != "" {
-					gap := max(w-3-pane.Width(part)-pane.Width(a.Shortcut), 1)
-					text += strings.Repeat(" ", gap) + a.Shortcut
-				}
-				text = pane.Fit(" "+text, w)
-				switch {
-				case a.Disabled:
-					text = th.Muted(text)
-				case a.ID == hover:
-					text = th.Selected(text)
-				default:
-					text = th.Bold(text)
-				}
-				hits[len(lines)] = a.ID
-				lines = append(lines, text)
-			}
-			// What the action does, muted under it; the lines click like the action.
-			if a.Hint != "" {
-				for _, part := range pane.Wrap(a.Hint, max(w-5, 4), 0) {
-					hits[len(lines)] = a.ID
-					lines = append(lines, pane.Fit("    "+th.Muted(part), w))
-				}
-			}
-		}
-	}
-	for _, s := range p.After {
-		lines = p.section(lines, th, s, w, labelW)
-	}
-	return lines, hits
-}
-
-// section appends one section's lines.
-func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int) []string {
-	if len(lines) > 0 {
-		lines = append(lines, "")
-	}
-	folded := s.Collapse > 0 && !p.Expanded && len(s.Items) > s.Collapse
-	if s.Heading != "" {
-		// A long heading (a doctor check's name is a sentence) wraps instead of being cut.
-		parts := pane.Wrap(s.Heading, max(w-1, 4), 0)
-		for _, part := range parts {
-			lines = append(lines, " "+th.Title(part))
-		}
-		if folded {
-			// Said at the top too: the count under the list can be below the fold.
-			count := fmt.Sprintf("  %d, e shows all", len(s.Items))
-			last := len(lines) - 1
-			if pane.Width(parts[len(parts)-1])+pane.Width(count) < w {
-				lines[last] += th.Muted(count)
-			} else {
-				lines = append(lines, " "+th.Muted(strings.TrimLeft(count, " ")))
-			}
-		}
-	}
-	for _, r := range s.Rows {
-		// A long value wraps under itself instead of running off the pane.
-		label := pane.Fit(th.Muted(r.Label), labelW)
-		valueW := max(w-labelW-2, 4)
-		parts := valueLines(r.Value, valueW)
-		if len(parts) == 0 {
-			parts = []string{""}
-		}
-		for n, part := range parts {
-			if n == 0 {
-				lines = append(lines, pane.Fit(" "+label+" "+part, w))
-				continue
-			}
-			lines = append(lines, pane.Fit(strings.Repeat(" ", labelW+2)+part, w))
-		}
-	}
-	items := s.Items
-	hidden := 0
-	if s.Collapse > 0 && !p.Expanded && len(items) > s.Collapse {
-		hidden = len(items) - s.Collapse
-		items = items[:s.Collapse]
-	}
-	for _, it := range items {
-		switch {
-		case s.OneLine:
-			lines = append(lines, pane.Fit(ansi.Truncate("  "+it, w, "…"), w))
-		case s.Bullets:
-			for _, part := range pane.Wrap("  • "+it, w, 4) {
-				lines = append(lines, pane.Fit(part, w))
-			}
-		default:
-			for _, part := range pane.Wrap("  "+it, w, 2) {
-				lines = append(lines, pane.Fit(part, w))
-			}
-		}
-	}
-	switch {
-	case hidden > 0:
-		lines = append(lines, pane.Fit(th.Muted(fmt.Sprintf("  +%d more (e shows all)", hidden)), w))
-	case s.Collapse > 0 && p.Expanded && len(items) > s.Collapse:
-		lines = append(lines, pane.Fit(th.Muted("  (e shows fewer)"), w))
-	}
-	return lines
+	// Pressed is the ID of the action the pointer holds down; it shows the
+	// Active state while the pointer is still over it.
+	Pressed string
+	// ListVisible is true when the list the panel tells about is on screen next
+	// to it; the rows marked ShownByList are then left out. It is false when the
+	// panel fills the pane, so those rows stay.
+	ListVisible bool
+	// Cursor is the ID of the action the keyboard cursor is on. When it is set,
+	// every action leads with the cursor mark (see package choicerow) and the one
+	// at the cursor looks as if hovered.
+	Cursor string
 }

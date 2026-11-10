@@ -25,9 +25,9 @@ by smith like the other packages. The distribution is `monosmith-plugin-sdk`; th
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 19 methods with its params, its result and the
+one definition per message, a methods table (each of the 20 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The Python types are
-generated from that file by `tools/generate_protocol`, so they cannot drift from the Go ones: a Go test
+generated from that file by `packages/plugin-sdk-py/tools/generate_protocol`, so they cannot drift from the Go ones: a Go test
 fails when the schema is stale, a Python test fails when the generated modules are, and a test fails
 when the schema has a method the SDK cannot serve.
 
@@ -250,15 +250,15 @@ never on a pause: a Linux runner under load is slower than your machine.
 ```text
 PS> smith plugin check .\plugin.cmd
 widget-layout 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 The lines are the ones `structure-layout-node` and `structure-layout-go` print. `plugin.cmd` is the
@@ -315,8 +315,11 @@ rest are `Protocol` classes that document the signatures, and a plugin does not 
 | `remove` | `remove` | `remove` | `Remover` |
 | `change_kind` | `project/kind` | `changeKind` | `KindChanger` |
 | `components` | `sbom/components` | `components` | `ComponentLister` |
+| `derive` | `derive` | `derive` | `Deriver` |
+| `api_surface` | `api/surface` | `apiSurface` | `APISurfaceReader` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
+| `link` and `unlink` | `dependencies/link`, `dependencies/unlink` | `link` | `Linker` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
 | `latest` | `dependencies/latest` | `latest` | `LatestReader` |
 | `cancellable = True` | the `cancel` notification | `cancel` | `Cancellable` |
@@ -342,7 +345,7 @@ is the `initialize` result without the two members the SDK fills in.
 | `serve(plugin)` | runs the plugin on standard input and output and exits the process; the whole body of an entry point |
 | `serve_streams(plugin, ServeStreams(input, output, log=None))` | the same loop on streams you give it (binary file objects); returns at `shutdown` or the end of the input |
 | `capabilities_of(plugin)` | the `Capabilities` the plugin would advertise |
-| `Plugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader` | the shapes of the plugin object |
+| `Plugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `Linker`, `DeclarationEditor`, `LatestReader` | the shapes of the plugin object |
 | `CancelToken` | `cancelled`, `cancel()`, `wait(timeout=None)`, `raise_if_cancelled(message?)`, `on_cancel(callback)` |
 | `RequestCancelledError` | what `raise_if_cancelled` raises |
 
@@ -447,7 +450,7 @@ For a tool that speaks the protocol itself: `encode_params`, `encode_result`, `d
 |---|---|
 | `malformed header "..."` in smith | something wrote to standard output before `serve` took it over, for example a `print` at module level or an import that prints: remove it, or print to standard error |
 | `ModuleNotFoundError: monosmith_plugin_sdk` when smith starts the plugin | smith runs the `command` you declared: name the interpreter of the environment that has the SDK installed, not a bare `python` |
-| `method not supported: x` for a method you wrote | a pair needs both members (`install` and `uninstall`; `declared` and `rewrite`), and the member names are the ones in the table above (`write_version`, not `version`) |
+| `method not supported: x` for a method you wrote | a pair needs both members (`install` and `uninstall`; `link` and `unlink`; `declared` and `rewrite`), and the member names are the ones in the table above (`write_version`, not `version`) |
 | `-32603` with `result.x is required` | a required member of the result is missing: the type says which |
 | `plugin stopped answering: EOF` in a test | the plugin process died: its standard error is on yours, unless you passed `stderr="ignore"` |
 | a test hangs | a plugin that never answers is killed after the call's timeout (two minutes); pass `timeout=` to fail sooner |

@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -70,7 +71,7 @@ for every one to run at once; --dry-run prints that command.`,
 			if dryRun {
 				return nil
 			}
-			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"start"}, Projects: chosen, Parallel: parallel, Bail: true, Out: cmd.OutOrStdout()})
 			if err != nil {

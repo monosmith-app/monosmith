@@ -2,15 +2,19 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // shortTitles are the shorter tab names, used only for as many tabs as it takes
 // for the strip to fit.
-var shortTitles = map[string]string{
-	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabSettings: "Sett",
+func shortTitles() map[string]string {
+	return map[string]string{
+		commands.TabProjects: words.Say("tui.tab.projects_short"), commands.TabRelease: words.Say("tui.tab.release_short"), commands.TabSettings: words.Say("tui.tab.settings_short"),
+	}
 }
 
 // shortOrder is the order tabs give up their full name in: the ones people
@@ -22,7 +26,7 @@ var shortOrder = []string{commands.TabSettings, commands.TabRelease, commands.Ta
 // which names are spelled out.
 const badgeRoom = 3
 
-// tabStrip is the row of views, three rows high on a tall terminal.
+// tabStrip is the row of views.
 func (s Shell) tabStrip() tabs.Strip { return s.renderStrip(s.hoveredTab()) }
 
 // renderStrip draws the strip with the tab hover highlighted.
@@ -30,51 +34,49 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 	l := s.lay()
 	list := make([]tabs.Tab, 0, len(s.tabs))
 	for _, id := range s.tabs {
-		t := tabs.Tab{ID: id, Label: tabTitles[id], Short: shortTitles[id], Badge: s.tabBadge(id)}
-		if id == commands.TabRun || id == commands.TabDoctor {
+		t := tabs.Tab{ID: id, Label: tabTitles()[id], Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id)}
+		if name := s.guideModalName(); id == commands.TabGuide && name != "" {
+			// A form that was answered and waits for its confirmation, or a box
+			// that took its place: the tab names it, not "Start".
+			t.Label = name
+		}
+		if id == commands.TabProjects || id == commands.TabDoctor {
 			t.Reserve = badgeRoom
 		}
 		list = append(list, t)
 	}
-	divider := 0
-	if l.HasDetail() {
-		divider = l.Main.W - 1
-	}
-	title := ""
-	if l.Tall {
-		title = s.page().Title()
-	}
 	return tabs.Render(tabs.Props{
-		Theme: s.th, Tabs: list, Active: s.tab, Hover: hover, Width: l.Tabs.W, Tall: l.Tall,
-		ShortenOrder: shortOrder, Title: title, Divider: divider,
+		Theme: s.th, Tabs: list, Active: s.tab, Hover: hover, Width: l.Tabs.W,
+		ShortenOrder: shortOrder,
 	})
 }
 
-// tabsInBody is how many rows of the strip belong to the content below it: the
-// last one of a tall strip is the content's top edge.
-func (s Shell) tabsInBody() int {
-	if s.lay().Tall {
-		return 1
-	}
-	return 0
-}
-
-// tabBadge is the mark after a tab's name: how the run is going, what doctor found.
+// tabBadge is the mark after a tab's name: how the run is going (Projects, which
+// holds the run panel), what doctor found.
 func (s Shell) tabBadge(id string) string {
+	if id != commands.TabProjects && s.tabBusy(id) {
+		// Work for the tab goes on in the background: a spinner says so.
+		return s.th.Info(s.th.Spin(s.tick))
+	}
 	switch id {
-	case commands.TabRun:
+	case commands.TabProjects:
 		switch {
 		case s.running():
 			return s.th.Info(s.th.Spin(s.tick))
 		case s.run != nil:
 			if n := s.run.Counts().Failed; n > 0 {
 				return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, n))
+			} else if s.run.OK() && slices.Contains(s.run.Command, "--dry-run") {
+				// A dry run changed nothing: a tick would say that something shipped.
+				return s.th.Muted(s.th.Icons.Skipped)
 			} else if s.run.OK() {
 				return s.th.Success(s.th.Icons.Passed)
+			} else if s.run.Cancelled {
+				return s.th.Muted(s.th.Icons.Cancelled)
 			}
 		}
 	case commands.TabDoctor:
-		// The same marks as the header: ✗ counts failures only, ▲ warnings.
+		// The same marks as the header: × counts failures only, ▲ warnings.
 		if r := s.doctor.Report; r != nil {
 			if r.Failed > 0 {
 				return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, r.Failed))
@@ -98,4 +100,24 @@ func (s Shell) hoveredTab() string {
 		return ""
 	}
 	return id
+}
+
+// tabBusy is true while the work that fills a tab goes on in the background:
+// the doctor checks, the registries answering, the release plan being read.
+func (s Shell) tabBusy(id string) bool {
+	switch id {
+	case commands.TabDoctor:
+		return s.doctor.Loading
+	case commands.TabDeps:
+		return s.depsLoading
+	case commands.TabRelease:
+		return s.releaseLoading
+	}
+	return false
+}
+
+// backgroundWork is true while any tab has work in the background, so its
+// badge keeps moving.
+func (s Shell) backgroundWork() bool {
+	return s.tabBusy(commands.TabDoctor) || s.tabBusy(commands.TabDeps) || s.tabBusy(commands.TabRelease)
 }

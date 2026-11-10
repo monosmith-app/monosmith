@@ -17,6 +17,7 @@ cache after a crash or a full disk.
 - To start over, for example before measuring a cold build: [`smith cache clear`](cache-clear.md).
 - After a crash, a full disk or a `smith doctor` warning about unusable entries:
   [`smith cache verify`](cache-verify.md).
+- To use a remote cache: [`smith cache key`](cache-key.md) makes the key it needs.
 
 ## Subcommands
 
@@ -28,6 +29,7 @@ Usage: `smith cache <command>`
 | Subcommand | Meaning |
 |---|---|
 | `smith cache clear` | Delete the local cache (the remote cache is not touched) |
+| `smith cache key` | Make a key (SMITH_CACHE_KEY) for the remote cache and copy it, unseen |
 | `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
 | `smith cache status` | Show the local cache: where it is, how big, how full, and the largest entries |
 | `smith cache verify` | Check the local cache for damage; --fix removes what is broken |
@@ -97,8 +99,8 @@ smith run bundle1 bundle2 bundle3 bundle4 bundle5 bundle6
 ```
 
 ```text
-✔ 6/6 tasks succeeded (0 from cache) in 378ms
-✔ 6/6 tasks succeeded (6 from cache, 2.035s saved) in 11ms
+✓ 6/6 tasks succeeded (0 from cache) in 378ms
+✓ 6/6 tasks succeeded (6 from cache, 2.035s saved) in 11ms
 ```
 
 The first run stored 21 MB. Everything it stored is less than five minutes old, so smith left
@@ -118,7 +120,7 @@ local cache  ~/work/acme/.smith/cache
   size        21.0 MB of 10.0 MB (210.1% full)
   last prune  2026-10-25 16:49
   remote      none
-  ✖ the cache is over its limit
+  × the cache is over its limit
     → smith cache prune brings it under 10.0 MB
 largest entries
   core:bundle6                 6.0 MB  1 entry
@@ -166,7 +168,7 @@ never be a hit:
 |---|---|
 | `smith: warning: could not prune the cache to its limit` | A run stored results but the prune failed (a read-only folder, a full disk, a store being deleted). The run itself succeeded. Run `smith cache prune` to see the error, or `smith cache verify`. |
 | The cache stays over its limit after a run | What it holds is less than five minutes old, or the limit is below what one run stores. `smith cache prune` trims at once. |
-| `✖ there is no smith workspace here` | The commands read `smith.toml` for the cache directory and limit. Run them inside a workspace. |
+| `× there is no smith workspace here` | The commands read `smith.toml` for the cache directory and limit. Run them inside a workspace. |
 
 ## Related
 

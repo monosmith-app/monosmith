@@ -1,0 +1,50 @@
+import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { toFileWhyDocument, toSettingWhyDocument, toTaskWhyDocument } from './why-document.mapper.ts'
+import { say } from '../words/index.ts'
+
+/** Runs smith in the workspace folder with these arguments. */
+export type RunSmithIn = (args: string[]) => Promise<SmithRun>
+
+function pageOf (run: SmithRun, toPage: (json: string) => string): string {
+  if (run.code !== 0) throw new Error(describeFailure(run))
+  try {
+    return toPage(run.stdout)
+  } catch {
+    throw new Error(say('vscode.why.smith-answered-in-a-form-this'))
+  }
+}
+
+/**
+ * Asks smith who owns a file and how to change it (`smith why <file> --json`).
+ * @param run - runs smith in the folder
+ * @param file - the file, relative to the folder
+ * @returns a Markdown page
+ * @throws Error with smith's words and the fix, when smith has no answer
+ */
+export async function readFileWhy (run: RunSmithIn, file: string): Promise<string> {
+  return pageOf(await run(['why', '--json', '--', file]), toFileWhyDocument)
+}
+
+/**
+ * Asks smith why a setting of smith.toml has its value, and why its default is
+ * what it is (`smith why <setting> --json`).
+ * @param run - runs smith in the folder
+ * @param setting - the setting, such as `ci.devcontainer`
+ * @returns a Markdown page
+ * @throws Error with smith's words and the fix, when smith has no answer
+ */
+export async function readSettingWhy (run: RunSmithIn, setting: string): Promise<string> {
+  return pageOf(await run(['why', '--json', '--', setting]), toSettingWhyDocument)
+}
+
+/**
+ * Asks smith why a task runs again instead of coming from the cache (`smith why-miss <project>:<task> --json`).
+ * @param run - runs smith in the folder
+ * @param project - the project name
+ * @param task - the task name
+ * @returns a Markdown page
+ * @throws Error with smith's words and the fix, when smith has no answer
+ */
+export async function readTaskWhy (run: RunSmithIn, project: string, task: string): Promise<string> {
+  return pageOf(await run(['why-miss', `${project}:${task}`, '--json']), toTaskWhyDocument)
+}

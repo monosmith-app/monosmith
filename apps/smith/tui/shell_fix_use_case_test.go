@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -26,18 +27,35 @@ func withInstallFix(l *lab) *lab {
 		{Finding: protocol.Finding{Check: "git hooks are set", Detail: "none", Remedy: "run the hook installer"}},
 	}}
 	sh := l.sh()
-	sh.sources.Doctor = func() doctorview.Result { return doctorview.Result{Report: report} }
+	// Once a fix was applied the check passes, as it does after a fix that works.
+	sh.sources.Doctor = func() doctorview.Result {
+		if len(l.appliedFixes()) > 0 && !l.fixStaysBroken {
+			fixed := report
+			fixed.Findings = append([]doctor.Finding{{Finding: protocol.Finding{Check: "dependencies are installed", OK: true}}}, report.Findings[1:]...)
+			return doctorview.Result{Report: fixed}
+		}
+		return doctorview.Result{Report: report}
+	}
 	l.m = sh
-	return l.keys("4", "r")
+	return l.keys("3", "r")
+}
+
+func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.fixStaysBroken = true
+	l = withInstallFix(l)
+	l.keys("f", "enter", "enter")
+	l.has("Still not fixed: dependencies are installed")
+	l.has("node_modules is missing")
 }
 
 func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.has("Fix: install the dependencies", "asks: Which package manager?")
+	l.has("[Fix (f)]", "install the dependencies", "asks: Which package manager?")
 	l.keys("f")
 	l.has("Fix · question 1 of 1", "Which package manager?", "1) npm  (suggested)", "2) pnpm")
 	l.keys("down", "enter")
-	l.has("Fix · review", "$ pnpm install", "[ Apply  Enter ]")
+	l.has("Fix · review", "$ pnpm install", "Apply (enter)")
 	if len(l.appliedFixes()) != 0 {
 		t.Fatal("applied before the confirmation")
 	}
@@ -75,7 +93,7 @@ func TestFixWizardShowsProgressWhileAStepRunsAndCtrlCStopsIt(t *testing.T) {
 	}
 	run := l.sh().fixing
 	l.send(fixDoneMsg{run: run, err: &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("context canceled")}})
-	l.has("Fix failed", "Step 1 of 1 failed: npm install", "[ Retry  r ]")
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "Retry (r)")
 	close(l.applyHold)
 }
 
@@ -86,7 +104,7 @@ func TestFixWizardShowsTheFailingStepsOutputAndRetryRunsTheFixAgain(t *testing.T
 	l.m = sh
 	l.applyErr = &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("exited with code 1"), Output: "npm ERR! 404 not found"}
 	l.keys("f", "enter", "enter")
-	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "[ Retry  r ]", "[ Close  Esc ]")
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "Retry (r)", "Close (esc)")
 	if len(l.appliedFixes()) != 1 {
 		t.Fatalf("applied %d times", len(l.appliedFixes()))
 	}
@@ -115,8 +133,8 @@ func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *
 
 func TestFixWizardFixAllReviewsTheSafeFixesOnceAndAppliesThemOnConfirm(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "F")
-	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "[ Apply  Enter ]")
+	l.keys("3", "F")
+	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "Apply (enter)")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
 		t.Fatal("x applied before the review was confirmed")
 	}
@@ -141,7 +159,7 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 		return doctorview.Result{Report: doctor.Report{Passed: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{Check: "git", OK: true}}}}}
 	}
 	l.m = sh
-	l.keys("4", "r", "F")
+	l.keys("3", "r", "F")
 	if l.sh().fix != nil {
 		t.Fatal("a wizard opened with nothing to fix")
 	}
@@ -150,11 +168,11 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 
 func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.clickText("Fix: install the dependencies")
+	l.clickText("[Fix (f)]")
 	l.has("Which package manager?")
 	l.clickText("2) pnpm")
 	l.has("Fix · review", "$ pnpm install")
-	l.clickText("[ Apply")
+	l.clickText("Apply (enter)")
 	if got := l.appliedFixes(); len(got) != 1 || got[0].Steps[0].Argv[0] != "pnpm" {
 		t.Fatalf("applied %+v", got)
 	}
@@ -163,6 +181,38 @@ func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l.send(click(0, 0))
 	if l.sh().fix != nil {
 		t.Fatal("a click outside kept the wizard open")
+	}
+}
+
+func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	loads := 0
+	sh := l.sh()
+	sh.sources.Doctor = func() doctorview.Result {
+		loads++
+		return doctorview.Result{Report: doctor.Report{Warnings: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{
+			Check: "the workspace uses the latest defaults", Warning: true, Detail: "this workspace uses the defaults of 2000.01",
+			Remedy: "`smith upgrade --defaults` shows the plan and moves the workspace",
+			Fix: smithfix.Fix("Move the workspace to the latest defaults",
+				smithfix.Step("Move the workspace; the plan lists each change", "upgrade", "--defaults")),
+		}}}}}
+	}
+	l.m = sh
+	l.keys("3", "r")
+	first := loads
+	l.has("[Fix (f)]", "Move the workspace to the latest defaults")
+	l.keys("f")
+	l.has("Fix · review", "$ smith upgrade --defaults --yes", "Apply (enter)")
+	if len(l.appliedFixes()) != 0 {
+		t.Fatal("applied before the person agreed")
+	}
+	l.keys("enter")
+	applied := l.appliedFixes()
+	if len(applied) != 1 || strings.Join(applied[0].Steps[0].Argv, " ") != "smith upgrade --defaults --yes" {
+		t.Fatalf("applied %+v", applied)
+	}
+	if loads <= first {
+		t.Fatal("doctor did not check again after the fix")
 	}
 }
 
@@ -178,7 +228,11 @@ func TestFixWizardReviewScrollsWithTheWheel(t *testing.T) {
 			Description: "write a big file", Safe: true, Files: []protocol.FileEdit{{Path: "big.txt", Content: content.String()}}}}}}}}
 	}
 	l.m = sh
-	l.keys("4", "r", "f")
+	l.keys("3", "r", "f")
+	// The review opens on one line per file; d shows the whole diff, which scrolls.
+	l.has("Fix · review", "big.txt  new file  +60 -0", "Show changes")
+	l.hasNot("↓ more")
+	l.keys("d")
 	l.has("Fix · review", "↓ more")
 	l.hasNot("↑ more")
 	l.send(wheel(50, 10, 1))
@@ -189,7 +243,7 @@ func TestFixWizardReviewScrollsWithTheWheel(t *testing.T) {
 
 func TestFixWizardDoctorKeepsItsPlaceAfterTheRecheck(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "down")
+	l.keys("3", "down")
 	before := l.sh().doctor.Cursor
 	l.keys("f", "enter")
 	if l.sh().doctor.Cursor != before || l.sh().doctor.Report == nil {

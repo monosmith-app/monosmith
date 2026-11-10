@@ -37,7 +37,8 @@ Usage: `smith test [project]... [flags]`
 | `--json-events` | boolean | off | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else |
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
-| `-p, --projects <projects>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude |
+| `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end test -->
 
@@ -65,7 +66,7 @@ smith test
 ```
 
 ```text
-✔ 4/4 tasks succeeded (0 from cache) in 2.694s
+✓ 4/4 tasks succeeded (0 from cache) in 2.694s
 ```
 
 (The per-task log lines are above that summary; see [`smith run`](run.md#examples).)
@@ -95,9 +96,9 @@ ui:test │ Tests:       1 failed, 1 passed, 2 total
 ui:test │ Snapshots:   0 total
 ui:test │ Time:        0.265 s, estimated 1 s
 ui:test │ Ran all test suites.
-ui:test ✖ exited with code 1
-  ✖ ui:test exited with code 1
-✖ 0/1 tasks succeeded (0 from cache) in 999ms
+ui:test × exited with code 1
+  × ui:test exited with code 1
+× 0/1 tasks succeeded (0 from cache) in 999ms
 ```
 
 The exit code is 1.
@@ -106,7 +107,7 @@ The exit code is 1.
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ <project>:test exited with code 1` | The runner reported failures; the output above has them. |
+| `× <project>:test exited with code 1` | The runner reported failures; the output above has them. |
 | `no selected project has a [test] task` (exit 0) | None of the selected projects defines `test`; a stack without a test runner such as `node-ts` has none. `smith explain <project>` lists a project's tasks. (The wording is the one `smith run deploy` printed; it was not captured for `test`.) |
 
 ## Related

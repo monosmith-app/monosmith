@@ -1,18 +1,15 @@
 package dependencies
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
 )
 
 // Newest asks a simple index for a distribution's newest release; tests
@@ -20,18 +17,7 @@ import (
 var Newest = releasing.NewestOn
 
 // FetchJSON reads a JSON document over HTTP; tests replace it.
-var FetchJSON = func(url string, v any) error {
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s: %s", url, resp.Status)
-	}
-	return json.NewDecoder(resp.Body).Decode(v)
-}
+var FetchJSON = registry.GetJSON
 
 // index is where pip installs from: PIP_INDEX_URL, else PyPI.
 func index() string {

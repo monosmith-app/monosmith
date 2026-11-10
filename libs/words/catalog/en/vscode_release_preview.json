@@ -1,0 +1,11 @@
+{
+  "vscode.release-preview.unchanged": "Unchanged",
+  "vscode.release-preview.why-nothing-releases": "Why nothing releases",
+  "vscode.release-preview.nothing-to-release": "nothing to release{suffix}",
+  "vscode.release-preview.release-channel-prerelease-versions-published-under": "Release channel `{channel}`: prerelease versions, published under the `{channel2}` tag; the stable version stays the latest.",
+  "vscode.release-preview.release-channel": "Release channel {channel}",
+  "vscode.release-preview.prerelease-versions": "prerelease versions",
+  "vscode.release-preview.the-tag-the-release-creates": "The tag the release creates.",
+  "vscode.release-preview.forced": "Forced.",
+  "vscode.release-preview.dry-run": "Dry run:"
+}

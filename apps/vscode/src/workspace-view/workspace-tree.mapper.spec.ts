@@ -210,3 +210,24 @@ describe('formatDuration', () => {
     expect(formatDuration(125_000)).toBe('2m 05s')
   })
 })
+
+describe('the environments of a web app', () => {
+  const webApps = [{ project: 'web', default: 'prd', environments: [{ name: 'lcl', task: 'build:lcl' }, { name: 'prd', task: 'build' }] }]
+  const folders: TreeFolder[] = [{ root: '/repo', name: 'repo', snapshot, webApps }]
+
+  it('puts an Environments section under the web app with a row for each environment and the default marked', () => {
+    const web = toTree(folders, none)[0]?.children[1]
+    const section = web?.children.at(-1)
+    expect(section).toMatchObject({ kind: 'environments', label: 'Environments', description: 'lcl, prd', project: 'web' })
+    expect(section?.children).toMatchObject([
+      { kind: 'environment', label: 'lcl', description: 'smith run build:lcl', project: 'web' },
+      { kind: 'environment', label: 'prd', description: 'default: smith run build' },
+    ])
+  })
+
+  it('adds nothing under a project that is not a web app, or when smith listed none', () => {
+    const tree = toTree(folders, none)
+    expect(tree[0]?.children[0]?.children).toEqual([])
+    expect(toTree(single, none)[0]?.children[1]?.children.map((child) => child.kind)).toEqual(['task'])
+  })
+})

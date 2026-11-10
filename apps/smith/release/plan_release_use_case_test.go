@@ -97,6 +97,9 @@ func TestPlan(t *testing.T) {
 	if len(plan.Items) != 0 || len(plan.Unchanged) != 3 {
 		t.Fatalf("after tagging nothing releases: %+v", plan)
 	}
+	if len(plan.NeverReleased) != 0 {
+		t.Fatalf("every package has a tag, so none is never released: %v", plan.NeverReleased)
+	}
 
 	commit(t, g, "packages/sdk/b", "feat(sdk)!: breaking before 1.0")
 	commit(t, g, "README.md", "version(core)[1.0.0]: first stable")

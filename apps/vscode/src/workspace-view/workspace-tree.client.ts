@@ -3,6 +3,7 @@ import {
   countProjects, describeAffected, describeFilter, toTree,
   type TaskFacts, type TreeFolder, type TreeNode, type ViewFilter,
 } from './workspace-tree.mapper.ts'
+import { say } from '../words/index.ts'
 
 const VIEW_ID = 'monosmith.projects'
 const DOT_SCHEME = 'monosmith-project'
@@ -15,6 +16,7 @@ function dotUri (node: TreeNode): vscode.Uri {
 /** Whether a row is open: groups and folders are, a project when the filter found something under it, a task has nothing under it. */
 function collapsibleState (node: TreeNode): vscode.TreeItemCollapsibleState {
   if (node.kind === 'task' || node.children.length === 0) return vscode.TreeItemCollapsibleState.None
+  if (node.kind === 'environments') return vscode.TreeItemCollapsibleState.Collapsed
   if (node.kind === 'project') return node.reveal === true ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed
 
   return vscode.TreeItemCollapsibleState.Expanded
@@ -73,11 +75,11 @@ export function createWorkspaceTree (factsOf: (root: string, task: string) => Ta
     },
   }
   const view = vscode.window.createTreeView<TreeNode>(VIEW_ID, { treeDataProvider: provider, showCollapseAll: true })
-  view.title = 'Projects'
+  view.title = say('commands.view.projects.title')
   const decorator = vscode.window.registerFileDecorationProvider({
     onDidChangeFileDecorations: decorations.event,
     provideFileDecoration:      (uri) => (uri.scheme === DOT_SCHEME && uri.query === 'affected'
-      ? { badge: '●', tooltip: 'Affected by the changes', color: new vscode.ThemeColor('charts.orange'), propagate: false }
+      ? { badge: '●', tooltip: say('vscode.workspace-view.affected-by-the-changes'), color: new vscode.ThemeColor('charts.orange'), propagate: false }
       : undefined),
   })
 

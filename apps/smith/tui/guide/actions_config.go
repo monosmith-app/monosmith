@@ -1,58 +1,30 @@
 package guide
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
+import (
+	"strings"
 
-// Step is one question: a choice from options, or free text when Options is nil.
-type Step struct {
-	Key     string
-	Prompt  string
-	Options []Option
-	// Placeholder is shown in an empty text field.
-	Placeholder string
-	// Multi lets the user toggle several options (space) before confirming.
-	Multi bool
-	// Optional lets a free-text step be left empty; the answer is then empty.
-	Optional bool
-	// Filter lets typing narrow the options of a long list.
-	Filter bool
-	// PlaceholderFor, when set, picks the placeholder from the earlier answers.
-	PlaceholderFor func(answers map[string][]string) string
-	// Check says what is wrong with a typed answer ("" when it is fine); it
-	// runs as the person types and again on enter.
-	Check func(answers map[string][]string, value string) string
-	// Skip, when set, leaves the question out when it says so, given the
-	// earlier answers; the key then has no answer.
-	Skip func(answers map[string][]string) bool
-}
-
-// Option is one answer.
-type Option struct {
-	Label, Value, Hint string
-}
-
-// Action is a menu entry: its questions, then the command they build.
-type Action struct {
-	Title, Hint string
-	Steps       []Step
-	// Argv turns the answers into smith's arguments.
-	Argv func(answers map[string][]string) []string
-	// NeedsWorkspace hides the action outside a workspace.
-	NeedsWorkspace bool
-	// OutsideOnly hides the action inside a workspace.
-	OutsideOnly bool
-	// NeedsContent hides the action in a folder that holds nothing.
-	NeedsContent bool
-	// Presents is the id of the action (see package actions) the form runs.
-	Presents string
-	// Wizard, when set, hands the action to the shell's wizard of that name
-	// instead of asking its Steps: the plain, screen-reader menu still asks
-	// them.
-	Wizard string
-}
+	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
+	"github.com/monosmith-app/monosmith/libs/words/words"
+)
 
 // WizardAdopt is the one wizard that brings a folder in, whether it is a plain
 // repository or an Nx or Turborepo workspace.
 const WizardAdopt = "adopt"
+
+// WizardFixConfig is the review of the rename that repairs a smith.toml that
+// uses a renamed key.
+const WizardFixConfig = "fix-config"
+
+// FixConfigFirst puts "Fix smith.toml" before the other entries, so the menu
+// starts on it. The entry shows the change first and writes nothing until the
+// user confirms.
+func FixConfigFirst(actions []Action) []Action {
+	fix := Action{
+		Title: words.Say("guide.actions.fix_smith_toml"), Wizard: WizardFixConfig, Presents: "doctor",
+		Hint: words.Say("guide.actions.smith_doctor_fix_renames_the_keys"),
+	}
+	return append([]Action{fix}, actions...)
+}
 
 // AdoptionFirst moves the entries the adopt wizard answers to the top, for a
 // folder that holds something and is not a workspace yet: the first entry is
@@ -94,20 +66,20 @@ func Actions(languages, plugins, enabled []string) []Action {
 		}
 		pluginOpts = append(pluginOpts, Option{Label: p, Value: p, Hint: hint})
 	}
-	return []Action{
+	return append([]Action{
 		{
-			Title: "Create a workspace", Presents: "new", Hint: "smith new", OutsideOnly: true,
+			Title: words.Say("guide.actions.create_a_workspace"), Presents: "new", Hint: words.Say("guide.actions.smith_new"), OutsideOnly: true,
 			Steps: NewWorkspaceSteps(),
 			Argv:  NewWorkspaceArgv,
 		},
 		{
-			Title: "Run tasks", Presents: "run", Hint: "build, test, lint, typecheck", NeedsWorkspace: true,
+			Title: words.Say("guide.actions.run_tasks"), Presents: "run", Hint: words.Say("guide.actions.build_test_lint_typecheck"), NeedsWorkspace: true,
 			Steps: []Step{
-				{Key: "tasks", Prompt: "Which tasks? (space toggles, enter confirms)", Multi: true, Options: []Option{
+				{Key: "tasks", Prompt: words.Say("guide.actions.which_tasks_space_toggles_enter_confirms"), Multi: true, Options: []Option{
 					{Label: "lint", Value: "lint"}, {Label: "typecheck", Value: "typecheck"}, {Label: "test", Value: "test"}, {Label: "build", Value: "build"},
 				}},
-				{Key: "scope", Prompt: "On which projects?", Options: []Option{
-					{Label: "every project", Value: "all"}, {Label: "only what changed (affected)", Value: "affected"},
+				{Key: "scope", Prompt: words.Say("guide.actions.on_which_projects"), Options: []Option{
+					{Label: words.Say("guide.actions.every_project"), Value: "all"}, {Label: words.Say("guide.actions.only_what_changed_affected"), Value: "affected"},
 				}},
 			},
 			Argv: func(a map[string][]string) []string {
@@ -119,38 +91,38 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Add a project", Presents: "add", Hint: "app, lib or package", NeedsWorkspace: true,
+			Title: words.Say("guide.actions.add_a_project"), Presents: "add", Hint: words.Say("guide.actions.app_lib_or_package_to_search"), NeedsWorkspace: true,
 			Steps: []Step{
-				{Key: "kind", Prompt: "What are you adding?", Options: []Option{
-					{Label: "An app", Value: "app", Hint: "something you run or deploy, like a website or an API (web, api)"},
-					{Label: "A library", Value: "lib", Hint: "code other projects here share; it stays in this workspace"},
-					{Label: "A package", Value: "package", Hint: "code you publish for others to install (npm, PyPI, crates.io and so on)"},
+				{Key: "kind", Prompt: words.Say("guide.actions.what_are_you_adding"), Options: []Option{
+					{Label: words.Say("guide.actions.an_app"), Value: "app", Hint: words.Say("guide.actions.something_you_run_or_deploy_like")},
+					{Label: words.Say("guide.actions.a_library"), Value: "lib", Hint: words.Say("guide.actions.code_other_projects_here_share_it")},
+					{Label: words.Say("guide.actions.a_package"), Value: "package", Hint: words.Say("guide.actions.code_you_publish_for_others_to")},
 				}},
-				{Key: "lang", Prompt: "Which language is it written in?", Options: langs, Filter: true},
-				{Key: "name", Prompt: "Name it (lowercase words joined by dashes)", Placeholder: "web", PlaceholderFor: namePlaceholder, Check: checkProjectName},
+				{Key: "lang", Prompt: words.Say("guide.actions.which_language_is_it_written_in"), Options: langs, Filter: true},
+				{Key: "name", Prompt: words.Say("guide.actions.name_it_lowercase_words_joined_by"), Placeholder: "web", PlaceholderFor: namePlaceholder, Check: checkProjectName, Suggest: suggestName("")},
 			},
 			Argv: func(a map[string][]string) []string {
 				return []string{"add", first(a, "kind"), first(a, "name"), "--lang", first(a, "lang")}
 			},
 		},
 		{
-			Title: "Manage plugins", Presents: "plugin set", Hint: "choose which built-in plugins are on", NeedsWorkspace: true,
-			Steps: []Step{{Key: "plugins", Prompt: "Enabled plugins (space toggles, enter saves)", Multi: true, Options: pluginOpts}},
+			Title: words.Say("guide.actions.manage_plugins"), Presents: words.Say("guide.actions.plugin_set"), Hint: words.Say("guide.actions.choose_which_built_in_plugins_are"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "plugins", Prompt: words.Say("guide.actions.enabled_plugins_space_toggles_enter_save"), Note: WhatIs("plugin"), Multi: true, Options: pluginOpts}},
 			Argv: func(a map[string][]string) []string {
 				return append([]string{"plugin", "set"}, a["plugins"]...)
 			},
 		},
-		{Title: "Show the project graph", Presents: "graph", Hint: "smith graph", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"graph"} }},
-		{Title: "Check the workspace", Presents: "doctor", Hint: "smith doctor", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"doctor"} }},
-		{Title: "Preview the next release", Presents: "release", Hint: "smith release --dry-run", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"release", "--dry-run"} }},
-		{Title: "Regenerate CI pipelines", Presents: "ci", Hint: "smith ci generate", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"ci", "generate"} }},
+		{Title: words.Say("guide.actions.show_the_project_graph"), Presents: "graph", Hint: words.Say("guide.actions.smith_graph"), NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"graph"} }},
+		{Title: words.Say("guide.actions.check_the_workspace"), Presents: "doctor", Hint: words.Say("guide.actions.smith_doctor"), NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"doctor"} }},
+		{Title: words.Say("guide.actions.preview_the_next_release"), Presents: "release", Hint: words.Say("guide.actions.smith_release_dry_run"), NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"release", "--dry-run"} }},
+		{Title: words.Say("guide.actions.regenerate_ci_pipelines"), Presents: "ci", Hint: words.Say("guide.actions.smith_ci_generate"), NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"ci", "generate"} }},
 		{
-			Title: "Bring this repository into MonoSmith", Wizard: WizardAdopt, Presents: "adopt", Hint: "smith reads what is here (a plain repository, or one that Nx or Turborepo manages today), asks how far to go and shows every file it would change before anything is written", OutsideOnly: true, NeedsContent: true,
-			Steps: []Step{{Key: "step", Prompt: "What should smith do?", Options: []Option{
-				{Label: "Report what bringing it in involves", Value: "report", Hint: "read-only: the projects smith would see, what blocks and the step that clears each"},
-				{Label: "Create the baseline release tags", Value: "tags", Hint: "local only, nothing is pushed; needs a clean git tree"},
-				{Label: "Write smith.toml and the pipelines, and commit", Value: "init", Hint: "needs a clean git tree; an Nx or Turborepo workspace is converted"},
-				{Label: "Tags, then smith.toml and the pipelines", Value: "both", Hint: "both steps; needs a clean git tree"},
+			Title: words.Say("guide.actions.bring_this_repository_into_monosmith"), Wizard: WizardAdopt, Presents: "adopt", Hint: words.Say("guide.actions.smith_reads_what_is_here_a"), OutsideOnly: true, NeedsContent: true,
+			Steps: []Step{{Key: "step", Prompt: words.Say("guide.actions.what_should_smith_do"), Options: []Option{
+				{Label: words.Say("guide.actions.report_what_bringing_it_in_involves"), Value: "report", Hint: words.Say("guide.actions.read_only_the_projects_smith_would")},
+				{Label: words.Say("guide.actions.create_the_baseline_release_tags"), Value: "tags", Hint: words.Say("guide.actions.local_only_nothing_is_pushed_needs")},
+				{Label: words.Say("guide.actions.write_smith_toml_and_the_pipelines"), Value: "init", Hint: words.Say("guide.actions.needs_a_clean_git_tree_an")},
+				{Label: words.Say("guide.actions.tags_then_smith_toml_and_the"), Value: "both", Hint: words.Say("guide.actions.both_steps_needs_a_clean_git")},
 			}}},
 			Argv: func(a map[string][]string) []string {
 				switch first(a, "step") {
@@ -165,26 +137,104 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Remove a project", Presents: "remove", Hint: "smith remove: its directory, its traces in the workspace, its CI", NeedsWorkspace: true,
+			Title: words.Say("guide.actions.convert_an_nx_or_turborepo_workspace"), Presents: "convert", Hint: words.Say("guide.actions.smith_convert_projects_keep_their_folder"), OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{
-				{Key: "name", Prompt: "Which project?", Placeholder: "web"},
-				{Key: "mode", Prompt: "Preview first?", Options: []Option{
-					{Label: "Preview what would change", Value: "preview", Hint: "smith remove --dry-run: changes nothing"},
-					{Label: "Remove it", Value: "remove", Hint: "refused while other projects import it"},
+				{Key: "level", Prompt: words.Say("guide.actions.how_far_should_the_conversion_go"), Options: []Option{
+					{Label: words.Say("guide.actions.conservative_keep_what_works_list_the"), Value: "conservative", Hint: words.Say("guide.actions.the_old_tool_is_removed_eslint")},
+					{Label: words.Say("guide.actions.full_smith_becomes_the_only_tool"), Value: "full", Hint: words.Say("guide.actions.also_deletes_the_old_tooling_nothing")},
+				}},
+				{Key: "lint", Prompt: words.Say("guide.actions.lint_with"), Options: []Option{
+					{Label: words.Say("guide.actions.keep_the_current_setup"), Value: "keep", Hint: words.Say("guide.actions.your_eslint_config_stays_default")},
+					{Label: words.Say("guide.actions.smith_s_eslint_config"), Value: "smith", Hint: words.Say("guide.actions.your_own_eslint_configs_and_plugins")},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "test", Prompt: words.Say("guide.actions.test_runner"), Options: []Option{
+					{Label: words.Say("guide.actions.keep_the_current_setup"), Value: "keep", Hint: "(default)"},
+					{Label: words.Say("guide.actions.jest"), Value: "jest", Hint: words.Say("guide.actions.the_vitest_configs_and_packages_go")},
+					{Label: words.Say("guide.actions.vitest"), Value: "vitest", Hint: words.Say("guide.actions.the_jest_configs_and_packages_go")},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "build", Prompt: words.Say("guide.actions.build_with"), Options: []Option{
+					{Label: words.Say("guide.actions.smith_s_stack_build"), Value: "smith", Hint: words.Say("guide.actions.rollup_or_webpack_configs_nothing_uses")},
+					{Label: words.Say("guide.actions.keep_the_current_build_setup"), Value: "keep", Hint: words.Say("guide.actions.nothing_about_the_build_changes")},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "ci", Prompt: words.Say("guide.actions.pipelines"), Options: []Option{
+					{Label: words.Say("guide.actions.the_pipelines_smith_generates"), Value: "smith", Hint: words.Say("guide.actions.the_current_ci_files_are_replaced")},
+					{Label: words.Say("guide.actions.keep_the_current_pipelines"), Value: "keep", Hint: words.Say("guide.actions.smith_writes_none")},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "commit", Prompt: words.Say("guide.actions.commit_the_conversion_so_it_can"), Options: []Option{
+					{Label: words.Say("guide.actions.no_leave_the_files_uncommitted"), Value: "no", Hint: words.Say("guide.actions.review_the_changes_and_commit_when")},
+					{Label: words.Say("guide.actions.yes_one_commit_that_smith_undo"), Value: "yes", Hint: words.Say("guide.actions.the_conversion_is_one_commit")},
 				}},
 			},
 			Argv: func(a map[string][]string) []string {
-				argv := []string{"remove", first(a, "name")}
-				if first(a, "mode") != "remove" {
-					argv = append(argv, "--dry-run")
+				argv := []string{"convert"}
+				if first(a, "level") == "full" {
+					argv = append(argv, "--level", "full", "--lint", first(a, "lint"), "--test", first(a, "test"), "--build", first(a, "build"), "--ci", first(a, "ci"))
+				}
+				if first(a, "commit") == "yes" {
+					argv = append(argv, "--commit")
 				}
 				return argv
 			},
 		},
+		ForcedReleaseAction(nil, nil),
 		{
-			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (for choices, run smith recipe new in a terminal)",
+			Title: words.Say("guide.actions.remove_a_project"), Presents: "remove", Hint: words.Say("guide.actions.smith_remove_its_directory_its_traces"), NeedsWorkspace: true,
+			Steps: []Step{
+				{Key: "name", Prompt: words.Say("guide.actions.which_project"), Placeholder: "web"},
+				{Key: "mode", Prompt: words.Say("guide.actions.preview_first"), Options: []Option{
+					{Label: words.Say("guide.actions.preview_what_would_change"), Value: "preview", Hint: words.Say("guide.actions.smith_remove_dry_run_changes_nothing")},
+					{Label: words.Say("guide.actions.remove_it"), Value: "remove", Hint: words.Say("guide.actions.refused_while_other_projects_import_it")},
+				}},
+				{Key: "folder", Prompt: words.Say("guide.actions.what_happens_to_the_project_s"), Options: []Option{
+					{Label: words.Say("guide.actions.keep_a_copy"), Value: "keep", Hint: words.Say("guide.actions.the_folder_moves_to_smith_removed")},
+					{Label: words.Say("guide.actions.delete_it_for_good"), Value: "delete", Hint: words.Say("guide.actions.nothing_is_kept_git_still_has")},
+				}, Skip: func(a map[string][]string) bool { return first(a, "mode") != "remove" }},
+			},
+			Argv: func(a map[string][]string) []string {
+				argv := []string{"remove", first(a, "name")}
+				if first(a, "mode") != "remove" {
+					return append(argv, "--dry-run")
+				}
+				if first(a, "folder") == "delete" {
+					return append(argv, "--delete")
+				}
+				return append(argv, "--keep-copy")
+			},
+		},
+		{
+			Title: words.Say("guide.actions.why_is_this_here"), Presents: "why", Hint: words.Say("guide.actions.smith_why_who_owns_a_file"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "path", Prompt: words.Say("guide.actions.which_file_folder_or_setting_a"), Placeholder: "packages/web/tsconfig.json", Path: true, PathSettings: true}},
+			Argv: func(a map[string][]string) []string {
+				return []string{"why", first(a, "path")}
+			},
+		},
+		{
+			Title: words.Say("guide.actions.try_a_command_in_a_copy"), Presents: "try", Hint: words.Say("guide.actions.smith_try_runs_a_command_that"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "command", Prompt: words.Say("guide.actions.which_smith_command_add_remove_up"), Placeholder: words.Say("guide.actions.add_package_billing")}},
+			Argv: func(a map[string][]string) []string {
+				return append([]string{"try"}, strings.Fields(first(a, "command"))...)
+			},
+		},
+		{
+			Title: words.Say("guide.actions.swap_a_choice"), Presents: "swap", Hint: words.Say("guide.actions.smith_swap_change_a_test_runner"), NeedsWorkspace: true,
+			Steps: []Step{
+				{Key: "project", Prompt: words.Say("guide.actions.which_project"), Placeholder: "web"},
+				{Key: "axis", Prompt: words.Say("guide.actions.which_decision_smith_choices_lists_them"), Placeholder: "test"},
+				{Key: "choice", Prompt: words.Say("guide.actions.which_answer"), Placeholder: "vitest"},
+			},
+			Argv: SwapArgv,
+		},
+		{
+			Title: words.Say("guide.actions.write_a_recipe"), Presents: words.Say("guide.actions.recipe_new"), Hint: words.Say("guide.actions.smith_recipe_new_a_recipe_whose"),
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},
-	}
+		{
+			Title: PluginSearchTitle, Hint: words.Say("guide.actions.smith_plugin_search_look_in_the"), NeedsWorkspace: true,
+			Steps: []Step{{Key: "term", Prompt: words.Say("guide.actions.what_do_you_look_for_a"), Optional: true, Placeholder: "terraform"}},
+			Argv: func(a map[string][]string) []string {
+				return append([]string{"plugin", "search"}, strings.Fields(first(a, "term"))...)
+			},
+		},
+	}, parityForms()...)
 }

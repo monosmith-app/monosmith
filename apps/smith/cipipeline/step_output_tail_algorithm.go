@@ -24,7 +24,12 @@ func (t *tailWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (t *tailWriter) String() string { return string(t.buf) }
+func (t *tailWriter) String() string {
+	if len(t.buf) > tailKeep {
+		return string(t.buf[len(t.buf)-tailKeep:])
+	}
+	return string(t.buf)
+}
 
 // lastLines is the last n lines of text.
 func lastLines(text string, n int) string {

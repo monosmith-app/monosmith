@@ -15,27 +15,23 @@ func RenderGitHub(m Model) string {
 	fmt.Fprintf(&b, `name: ci
 
 on:
-  push:
-    branches: [%[1]s]
-  pull_request:
-    branches: [%[1]s]
-
+%[1]s%[4]s
 permissions:
   contents: write
   pull-requests: write
 %[2]s
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: %[6]s
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
-    steps:
+%[5]s    runs-on: ubuntu-latest
+%[3]s    steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, strings.Join(m.TriggerBranches(), ", "), idToken(m))
+`, githubTriggers(m), idToken(m), githubCIOutputs(m), githubAssetsDispatch(m), githubCIOnlyWithoutAssetsTag(m), githubCancelInProgress(m))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
@@ -49,13 +45,9 @@ jobs:
 	b.WriteString(slot("      ", "before-setup"))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
-	b.WriteString(`      - name: Audit
-        run: smith ci audit
-`)
+	b.WriteString(githubAuditStep(m))
 	b.WriteString(githubEnv("        ", m.TaskCredentials()))
-	b.WriteString(`      - name: Verify
-        run: smith ci verify
-`)
+	b.WriteString(githubVerifyStep(m))
 	b.WriteString(githubEnv("        ", m.TaskCredentials()))
 	b.WriteString(slot("      ", "after-verify"))
 	b.WriteString(`      - name: Release preview
@@ -66,42 +58,61 @@ jobs:
 `)
 	if m.Pack {
 		fmt.Fprintf(&b, `      - name: Pack
-        if: github.event_name == 'push' && github.ref_name == '%[1]s'
+        if: github.event_name == 'push' && %[1]s
         run: smith ci pack
 %[2]s      - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
-        if: github.event_name == 'push' && github.ref_name == '%[1]s'
-        with:
+        if: github.event_name == 'push' && %[1]s
+%[3]s        with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
-`, m.ReleaseBranch, githubEnv("        ", m.TaskCredentials()))
+%[4]s`, githubOnPublishBranches(m), githubEnv("        ", m.TaskCredentials()), githubArtifactContinue(m), githubArtifactRetention(m))
 	}
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
 	b.WriteString(githubAzureSignIn(m, "ci"))
+	releaseID := ""
+	if githubHasDependents(m) {
+		releaseID = "        id: release\n"
+	}
 	fmt.Fprintf(&b, `      - name: Release
-        if: github.event_name == 'push' && github.ref_name == '%s'
-        run: smith ci release
-`, m.ReleaseBranch)
-	if len(m.Credentials) > 0 || m.VSCEEntra {
-		b.WriteString("        env:\n")
+%[2]s        if: github.event_name == 'push' && %[1]s
+%[3]s`, githubOnReleaseBranches(m), releaseID, githubReleaseRun(m))
+	if len(m.Credentials) > 0 || m.VSCEEntra || m.ManualRelease {
+		b.WriteString("        env:\n" + githubReleaseBumpEnv(m))
 		for _, c := range m.Credentials {
 			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 		}
 		b.WriteString(githubEntraEnv(m))
 	}
+	// No marker step follows the release: smith ci release writes released=true to
+	// the step's output itself (markReleased), the moment a project is released, so
+	// a later step that fails does not keep the native and assets jobs from running
+	// on a release that exists, and a push that releases nothing starts neither.
 	if m.Attest {
+		continueOnError := ""
+		if m.AttestOptional {
+			continueOnError = "        continue-on-error: true\n"
+		}
 		fmt.Fprintf(&b, `      - name: Attest build provenance
-        if: github.event_name == 'push' && github.ref_name == '%s' && hashFiles('dist/release/**') != ''
-        uses: actions/attest-build-provenance@v3
+        if: github.event_name == 'push' && %s && hashFiles('dist/release/**') != ''
+%s        uses: actions/attest-build-provenance@v3
         with:
           subject-path: dist/release/*/*
-`, m.ReleaseBranch)
+`, githubOnPublishBranches(m), continueOnError)
 	}
 	if m.Native {
 		b.WriteString(githubNativeJob(m))
 	}
 	b.WriteString(githubAssetsJob(m))
+	if m.ManualRelease {
+		// A manual release runs the same steps as a push to a release branch.
+		out := strings.ReplaceAll(b.String(), "if: github.event_name == 'push' &&", "if: "+githubReleaseEvent(m)+" &&")
+		// The run name shows a manual release in the Actions list; a pull request
+		// shows its title and a push the plain name (a commit message has a body
+		// and trailers, which make a long title).
+		return strings.Replace(out, "name: ci\n", "name: ci\n\nrun-name: ${{ inputs.release_bump != '' && format('ci · manual release {0}', inputs.release_bump) || github.event.pull_request.title || 'ci' }}\n", 1)
+	}
 	return b.String()
 }
 
@@ -114,9 +125,9 @@ func githubRubyGemsSignIn(m Model, job string) string {
 		return ""
 	}
 	return fmt.Sprintf(`      - name: Sign in to RubyGems
-        if: github.event_name == 'push' && github.ref_name == '%s'
+        if: github.event_name == 'push' && %s
         uses: rubygems/configure-rubygems-credentials@v2.1.0
-`, m.ReleaseBranch)
+`, githubOnReleaseBranches(m))
 }
 
 // githubAzureSignIn signs in to Azure with the run's OIDC token (workload
@@ -130,13 +141,13 @@ func githubAzureSignIn(m Model, job string) string {
 		return ""
 	}
 	return fmt.Sprintf(`      - name: Sign in to Azure
-        if: github.event_name == 'push' && github.ref_name == '%s'
+        if: github.event_name == 'push' && %s
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
-`, m.ReleaseBranch)
+`, githubOnReleaseBranches(m))
 }
 
 // githubEntraEnv tells the release to publish extensions with the Azure
@@ -155,6 +166,7 @@ func githubNativeJob(m Model) string {
 	fmt.Fprintf(&b, `
   native:
     needs: ci
+    if: %s
     strategy:
       fail-fast: false
       matrix:
@@ -164,7 +176,7 @@ func githubNativeJob(m Model) string {
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, strings.Join(m.NativeRunners, ", "))
+`, githubNativeCondition(m), strings.Join(m.NativeRunners, ", "))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
@@ -193,12 +205,31 @@ func githubNativeJob(m Model) string {
 	}
 	b.WriteString(`      - name: Keep the native builds (dist/drop as artifact native-OS)
         uses: actions/upload-artifact@v7
-        with:
+` + githubArtifactContinue(m) + `        with:
           name: native-${{ matrix.os }}
           path: dist/drop
           if-no-files-found: ignore
-`)
+` + githubArtifactRetention(m))
 	return b.String()
+}
+
+// githubArtifactContinue is the continue-on-error line of an artifact upload
+// step when [ci] artifacts is optional: a full artifact quota then does not
+// fail the job that has already released.
+func githubArtifactContinue(m Model) string {
+	if m.ArtifactsOptional {
+		return "        continue-on-error: true\n"
+	}
+	return ""
+}
+
+// githubArtifactRetention is the retention-days line of an artifact upload
+// step when [ci] artifact_retention_days is set.
+func githubArtifactRetention(m Model) string {
+	if m.ArtifactRetentionDays > 0 {
+		return fmt.Sprintf("          retention-days: %d\n", m.ArtifactRetentionDays)
+	}
+	return ""
 }
 
 // idToken lets the job request an OIDC token, which npm provenance signs
@@ -214,6 +245,9 @@ func idToken(m Model) string {
 	}
 	if m.Attest {
 		b.WriteString("  attestations: write\n")
+	}
+	if m.Deployments {
+		b.WriteString("  deployments: write\n")
 	}
 	// Plugins add what their publishing needs: packages: write to push
 	// images to ghcr.io.
@@ -278,4 +312,25 @@ func header(comment string) string {
 
 func slot(indent, name string) string {
 	return indent + "# smith:slot " + name + "\n" + indent + "# smith:slot-end " + name + "\n"
+}
+
+// githubHasDependents says whether jobs run after the ci job: the native jobs
+// and the assets jobs.
+func githubHasDependents(m Model) bool { return m.Native || len(m.AssetPlatforms) > 0 }
+
+// githubCIOutputs is the ci job's outputs block: whether the release step went
+// through, for the jobs that need the release to exist rather than the whole
+// job to succeed. Empty when no job depends on the ci job.
+func githubCIOutputs(m Model) string {
+	if !githubHasDependents(m) {
+		return ""
+	}
+	return "    outputs:\n      released: ${{ steps.release.outputs.released }}\n"
+}
+
+// githubOnReleaseBranches is the condition that holds on a push to the release
+// branch or to a release channel's branch: where the release runs, and so where
+// the sign-in steps that mint its short-lived credentials run.
+func githubOnReleaseBranches(m Model) string {
+	return m.branchCondition(func(branch string) string { return "github.ref_name == '" + branch + "'" }, func(c []string) string { return "(" + strings.Join(c, " || ") + ")" })
 }

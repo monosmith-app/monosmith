@@ -60,3 +60,40 @@ func TestTheThumbIsNeverShorterThanOneRowAndTopIsClamped(t *testing.T) {
 		t.Fatalf("a top past the end: %q", got)
 	}
 }
+
+func unicodeTheme() theme.Theme {
+	return theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode})
+}
+
+func TestTheUnicodeThumbIsASolidLightLineOverADashedTrackNeverTheHeavyDivider(t *testing.T) {
+	rows := make([]string, 10)
+	for i := range rows {
+		rows[i] = strings.Repeat("x", 6)
+	}
+	var b strings.Builder
+	for _, r := range Scrollbar(unicodeTheme(), rows, 6, 0, 40) {
+		rs := []rune(Strip(r))
+		b.WriteRune(rs[len(rs)-1])
+	}
+	got := b.String()
+	if got != "││┆┆┆┆┆┆┆┆" {
+		t.Fatalf("%q", got)
+	}
+	if strings.ContainsAny(got, "┃▐") {
+		t.Fatalf("the thumb looks like a selected divider: %q", got)
+	}
+	for _, g := range []string{theme.Unicode.Track, theme.Unicode.Thumb} {
+		if Width(g) != 1 {
+			t.Fatalf("%q is %d cells", g, Width(g))
+		}
+	}
+}
+
+func TestTheThumbIsMutedNotTheAccentOfASelectedDivider(t *testing.T) {
+	th := theme.New(theme.Choice{Tokens: theme.Dark, Icons: theme.Unicode})
+	row := Scrollbar(th, []string{"xxxx", "xxxx"}, 4, 0, 20)[0]
+	// Where the terminal has no colour the styles print alike and this holds either way.
+	if !strings.HasSuffix(row, th.Muted("│")) {
+		t.Fatalf("%q", row)
+	}
+}

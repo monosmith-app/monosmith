@@ -63,7 +63,7 @@ The manifest gets `publisher` (the workspace's npm scope without the `@`, else t
 | Kind | What a release does |
 |---|---|
 | package | the node plugin's `vsce publish` of the staged build to the Marketplace (`VSCE_PAT`), skipping a version it has |
-| app | the release stamps its version into the manifest of the build, packs the `.vsix` into `dist/release/<app>/`, publishes it to the Marketplace and, when `OVSX_PAT` is set, to Open VSX. Both skip a version they already have. `[release] vsce_entra` signs in with Microsoft Entra ID instead of `VSCE_PAT` |
+| app | the release stamps its version into the manifest of the build, packs the `.vsix` into `dist/release/<app>/`, publishes it to the Marketplace and, when `OVSX_PAT` is set, to Open VSX. Both skip a version they already have. On a [release channel](../../../reference/releasing.md#release-channels) the extension is published as a pre-release: the Marketplace takes no `-beta.1` in a version, so `2.0.0-beta.3` is published as `2.1.3` (the major, the odd minor after the channel's, the counter as the patch; the Marketplace's own convention is odd minors for pre-releases) with `vsce package --pre-release`, and to Open VSX with `--pre-release`. Users opt in to pre-releases in VS Code. Give the first stable release of the line a version above the pre-releases with `version(vscode)[2.2.0]` in a commit message. `[release] vsce_entra` signs in with Microsoft Entra ID instead of `VSCE_PAT` |
 
 A native extension (a platform-specific build) is only tagged by the release job; each native job
 publishes its own platform's build.

@@ -64,7 +64,7 @@ smith cache clear
 ```
 
 ```text
-✖ refusing to delete the cache without a terminal to ask in
+× refusing to delete the cache without a terminal to ask in
   → run `smith cache clear --yes` to delete 3.0 MB at ~/work/acme/.smith/cache
 ```
 
@@ -101,9 +101,9 @@ smith cache clear --yes --json
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ refusing to delete the cache without a terminal to ask in` | Standard input is not a terminal. Pass `--yes`. |
+| `× refusing to delete the cache without a terminal to ask in` | Standard input is not a terminal. Pass `--yes`. |
 | `clear cancelled` | You answered something other than `y`. Nothing was deleted. |
-| `✖ could not delete the cache at <dir>` | A build or an antivirus scanner holds a file. Close other smith processes and run it again. |
+| `× could not delete the cache at <dir>` | A build or an antivirus scanner holds a file. Close other smith processes and run it again. |
 
 ## Related
 

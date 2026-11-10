@@ -1,0 +1,425 @@
+[
+  {
+    "kind": "applescript-app",
+    "language": "applescript",
+    "label": "AppleScript app",
+    "description": "AppleScript: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "applescript-lib",
+    "language": "applescript",
+    "label": "AppleScript lib",
+    "description": "AppleScript: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "bicep-app",
+    "language": "bicep",
+    "label": "Bicep app",
+    "description": "Bicep: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "bicep-lib",
+    "language": "bicep",
+    "label": "Bicep lib",
+    "description": "Bicep: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "bundle-app",
+    "language": "bundle",
+    "label": "Bundle app",
+    "description": "Bundle: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "cpp-app",
+    "language": "cpp",
+    "label": "C++ app",
+    "description": "C++: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "cpp-lib",
+    "language": "cpp",
+    "label": "C++ lib",
+    "description": "C++: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "cpp-package",
+    "language": "cpp",
+    "label": "C++ package",
+    "description": "C++: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "dart-app",
+    "language": "dart",
+    "label": "Dart app",
+    "description": "Dart: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "dart-lib",
+    "language": "dart",
+    "label": "Dart lib",
+    "description": "Dart: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "dart-package",
+    "language": "dart",
+    "label": "Dart package",
+    "description": "Dart: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "dotnet-app",
+    "language": "dotnet",
+    "label": ".NET app",
+    "description": ".NET: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "dotnet-lib",
+    "language": "dotnet",
+    "label": ".NET lib",
+    "description": ".NET: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "dotnet-package",
+    "language": "dotnet",
+    "label": ".NET package",
+    "description": ".NET: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "go-app",
+    "language": "go",
+    "label": "Go app",
+    "description": "Go: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "go-lib",
+    "language": "go",
+    "label": "Go lib",
+    "description": "Go: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "go-package",
+    "language": "go",
+    "label": "Go package",
+    "description": "Go: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "jvm-app",
+    "language": "jvm",
+    "label": "JVM app",
+    "description": "JVM: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "jvm-lib",
+    "language": "jvm",
+    "label": "JVM lib",
+    "description": "JVM: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "jvm-package",
+    "language": "jvm",
+    "label": "JVM package",
+    "description": "JVM: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "lua-app",
+    "language": "lua",
+    "label": "Lua app",
+    "description": "Lua: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "lua-lib",
+    "language": "lua",
+    "label": "Lua lib",
+    "description": "Lua: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "node-app",
+    "language": "typescript",
+    "label": "Node.js app",
+    "description": "Node.js: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "node-lib",
+    "language": "typescript",
+    "label": "Node.js lib",
+    "description": "Node.js: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "node-package",
+    "language": "typescript",
+    "label": "Node.js package",
+    "description": "Node.js: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "objc-lib",
+    "language": "objc",
+    "label": "Objective-C lib",
+    "description": "Objective-C: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "objc-package",
+    "language": "objc",
+    "label": "Objective-C package",
+    "description": "Objective-C: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "php-app",
+    "language": "php",
+    "label": "PHP app",
+    "description": "PHP: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "php-lib",
+    "language": "php",
+    "label": "PHP lib",
+    "description": "PHP: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "php-package",
+    "language": "php",
+    "label": "PHP package",
+    "description": "PHP: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "python-app",
+    "language": "python",
+    "label": "Python app",
+    "description": "Python: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "python-lib",
+    "language": "python",
+    "label": "Python lib",
+    "description": "Python: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "python-package",
+    "language": "python",
+    "label": "Python package",
+    "description": "Python: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "recipe-app",
+    "language": "recipe",
+    "label": "Recipe app",
+    "description": "Recipe: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "recipe-lib",
+    "language": "recipe",
+    "label": "Recipe lib",
+    "description": "Recipe: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "recipe-package",
+    "language": "recipe",
+    "label": "Recipe package",
+    "description": "Recipe: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "ruby-app",
+    "language": "ruby",
+    "label": "Ruby app",
+    "description": "Ruby: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "ruby-lib",
+    "language": "ruby",
+    "label": "Ruby lib",
+    "description": "Ruby: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "ruby-package",
+    "language": "ruby",
+    "label": "Ruby package",
+    "description": "Ruby: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "rust-app",
+    "language": "rust",
+    "label": "Rust app",
+    "description": "Rust: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "rust-lib",
+    "language": "rust",
+    "label": "Rust lib",
+    "description": "Rust: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "rust-package",
+    "language": "rust",
+    "label": "Rust package",
+    "description": "Rust: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "swift-app",
+    "language": "swift",
+    "label": "Swift app",
+    "description": "Swift: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "swift-lib",
+    "language": "swift",
+    "label": "Swift lib",
+    "description": "Swift: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "swift-package",
+    "language": "swift",
+    "label": "Swift package",
+    "description": "Swift: a package: published to a registry for others to install, on release. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "vba-app",
+    "language": "vba",
+    "label": "VBA app",
+    "description": "VBA: an app: something you run or deploy, such as a website or an API. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  },
+  {
+    "kind": "vba-lib",
+    "language": "vba",
+    "label": "VBA lib",
+    "description": "VBA: a library: code the other projects in this workspace import. Built with the workspace's default stack, or --stack.",
+    "flags": [
+      "stack"
+    ]
+  }
+]

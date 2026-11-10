@@ -1,0 +1,19 @@
+{
+  "jetbrains.addchoices.default": "(default)",
+  "jetbrains.addchoices.none": "None",
+  "jetbrains.addchoices.default-nothing-extra": "(default) nothing extra",
+  "jetbrains.addchoices.leave-out-the-you-can": "Leave out the {layer}: you can add one later.",
+  "jetbrains.addchoices.suggested": "(suggested)",
+  "jetbrains.addchoices.built-from-the-stack": "Built from the stack {stack}.",
+  "jetbrains.addchoices.built-with-the-default-choices": "Built with the default choices of {language}: nothing extra was chosen.",
+  "jetbrains.addchoices.your-choices": "Your choices: {list}{value}.",
+  "jetbrains.addchoices.monosmith-add-project-check": "MonoSmith: Add project: check",
+  "jetbrains.addchoices.pick-again": "Pick again",
+  "jetbrains.addchoices.go-back-to-the-questions": "Go back to the questions.",
+  "jetbrains.addchoices.add-nothing": "Add nothing.",
+  "jetbrains.addchoices.choose": "Choose",
+  "jetbrains.addchoices.monosmith-add-project": "MonoSmith: Add project: {layer}",
+  "jetbrains.addchoices.needs-an-answer-on-the": "{needing} needs an answer on the {layer} axis. smith never picks it. The suggested answer is first.",
+  "jetbrains.addchoices.tick-what-the-project-uses": "Tick what the project uses. The defaults are ticked.",
+  "jetbrains.addchoices.pick-one-the-first-answer": "Pick one {layer}. The first answer is the default."
+}

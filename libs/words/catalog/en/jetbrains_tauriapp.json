@@ -1,0 +1,19 @@
+{
+  "jetbrains.tauriapp.monosmith-tauri": "MonoSmith: Tauri",
+  "jetbrains.tauriapp.the-icons": "{title}: the icons",
+  "jetbrains.tauriapp.the-square-png-the-icons": "The square PNG the icons are made from (1024x1024 is best):",
+  "jetbrains.tauriapp.name-a-png-file": "Name a PNG file.",
+  "jetbrains.tauriapp.the-app-only-when-more": "The app, only when more than one project has a src-tauri (empty leaves it out):",
+  "jetbrains.tauriapp.make-the-icons": "{title}: make the icons?",
+  "jetbrains.tauriapp.smith-overwrites-the-icons-in": "smith overwrites the icons in src-tauri/icons. Nothing was changed yet.",
+  "jetbrains.tauriapp.make-the-icons-2": "Make the icons",
+  "jetbrains.tauriapp.the-icons-are-made": "The icons are made",
+  "jetbrains.tauriapp.add-tauri": "{title}: add Tauri",
+  "jetbrains.tauriapp.the-node-app-to-make": "The Node app to make a Tauri app (the name of a project):",
+  "jetbrains.tauriapp.add-tauri-to": "{title}: add Tauri to {app}",
+  "jetbrains.tauriapp.the-bundle-identifier-like-com": "The bundle identifier, like com.yourcompany.yourapp. Empty takes com.<workspace>.<project>:",
+  "jetbrains.tauriapp.make-a-tauri-app": "{title}: make {app} a Tauri app?",
+  "jetbrains.tauriapp.smith-writes-src-tauri-and": "smith writes src-tauri and the tauri tasks in the app, and never overwrites a file that exists. Nothing was changed yet.",
+  "jetbrains.tauriapp.add-tauri-2": "Add Tauri",
+  "jetbrains.tauriapp.is-a-tauri-app": "{app} is a Tauri app"
+}

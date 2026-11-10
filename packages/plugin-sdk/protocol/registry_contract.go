@@ -51,4 +51,15 @@ type Registries struct {
 	// and tags the project and publishes it to no registry (a registry that
 	// builds from the tag, such as JitPack, does the rest).
 	NoPublish bool `json:"noPublish,omitempty"`
+	// PackToRelease means smith.toml says registry = "github-release": the
+	// release packs the project into its ecosystem's package file and attaches
+	// it to the project's GitHub Release, publishing to no registry. The host
+	// sends PublishParams.PackDir to a plugin with the packs capability and
+	// never calls publish on one without it.
+	PackToRelease bool `json:"packToRelease,omitempty"`
 }
+
+// RegistryGitHubRelease is the registry value that attaches a package's file to
+// its GitHub Release instead of publishing it ([release] registry or
+// [projects.<name>] registry).
+const RegistryGitHubRelease = "github-release"

@@ -54,7 +54,7 @@ func CI(projects []protocol.Project) (result protocol.CIResult, publicPublish bo
 				token(r.Install, true)
 			}
 		}
-		if p.Kind != protocol.ProjectPackage {
+		if !p.Publishes() {
 			continue
 		}
 		r := p.Registries

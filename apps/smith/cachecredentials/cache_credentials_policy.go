@@ -20,7 +20,7 @@ func For(remote string) []protocol.Credential {
 	}
 	creds := []protocol.Credential{{
 		Env: Key, Tasks: true,
-		Description: "signs and verifies the remote cache's objects (any long random string the team shares); without it the remote cache is off",
+		Description: "signs and verifies the remote cache's objects (a random value the team shares: `smith cache key` makes one); without it the remote cache is off",
 	}}
 	switch {
 	case strings.HasPrefix(remote, "azblob://"):
@@ -32,7 +32,8 @@ func For(remote string) []protocol.Credential {
 		creds = append(creds,
 			protocol.Credential{Env: "AWS_ACCESS_KEY_ID", Tasks: true, Description: "access key of an identity that can read and write the cache bucket"},
 			protocol.Credential{Env: "AWS_SECRET_ACCESS_KEY", Tasks: true, Description: "secret key of that identity"},
-			protocol.Credential{Env: "AWS_REGION", Tasks: true, Description: "the bucket's region"},
+			protocol.Credential{Env: "AWS_REGION", Tasks: true, Description: "the bucket's region (for Cloudflare R2: auto)"},
+			protocol.Credential{Env: "AWS_ENDPOINT_URL_S3", Tasks: true, Description: "the store's S3 endpoint, for an S3-compatible store such as Cloudflare R2 (https://<account>.r2.cloudflarestorage.com); leave unset for Amazon S3"},
 		)
 	case strings.HasPrefix(remote, "https://"), strings.HasPrefix(remote, "http://"):
 		creds = append(creds, protocol.Credential{

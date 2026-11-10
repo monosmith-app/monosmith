@@ -24,8 +24,7 @@ the test machine because `dart analyze` itself crashed. See
 Yes. A plugin is any program that speaks JSON-RPC 2.0 on stdin and stdout, so it can be written in
 any language; SDKs are published for Go, TypeScript, Python and C#, and a 102-line hand-framed plugin with no SDK
 passes `smith plugin check`. A plugin can add a language, tasks, a scaffold, CI steps or a release
-target. A team standard that needs no code is a recipe. There is no plugin registry yet, and plugins
-are placed on a search path or named in `smith.toml`. See
+target. A team standard that needs no code is a recipe. There is no registry of third-party plugins yet. Plugins are placed on a search path, named in `smith.toml`, or installed by name from a marketplace index (`smith plugin search`, `smith plugin install <name>`). See
 [Plugins and flexibility](comparison/plugins-and-flexibility.md).
 
 ### Can a plugin in a repository I cloned run code on my machine?
@@ -61,9 +60,11 @@ the cache are how smith reduces the CI minutes.
 ### Does the tool phone home?
 
 Not that was found. The documentation describes no telemetry setting, and a search
-of the Go sources found no telemetry code. This is a search, not an audit. One
-network call is documented: `smith info` asks GitHub for the newest release, and
-`SMITH_NO_UPDATE_CHECK=1` stops it. Commands that talk to a registry (`smith up`,
+of the Go sources found no telemetry code. This is a search, not an audit. Two
+network calls are documented: `smith info` asks GitHub for the newest release, and a terminal run
+asks the npm registry once a day for the newest smith on your channel (one request for the dist-tags,
+nothing about you is sent; announced the first time, cached 24 hours). `SMITH_NO_UPDATE_CHECK=1`
+stops both, and `update_check = "off"` stops the second. Commands that talk to a registry (`smith up`,
 releasing) need the network by their nature.
 
 ## Lock-in

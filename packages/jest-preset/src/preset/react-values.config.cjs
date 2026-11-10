@@ -1,6 +1,7 @@
 'use strict'
 
 const base = require('./preset-values.config.cjs')
+const stubs = require('./stub-values.config.cjs')
 
 /**
  * The base preset for a React project: what `@nx/react` added to a project's
@@ -12,6 +13,9 @@ const base = require('./preset-values.config.cjs')
 module.exports = {
   ...base,
   moduleFileExtensions: [...base.moduleFileExtensions, 'tsx', 'jsx'],
+  // Images and SVGs load through the asset transform below (as their file name,
+  // or as a component), so only the styles are stubbed here.
+  moduleNameMapper:     { ...stubs.styles, '^(\\.{1,2}/.*)\\.js$': '$1' },
   transform:            {
     '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': require.resolve('../asset-transform/index.cjs'),
     '^.+\\.[tj]sx?$':                      ['babel-jest', {

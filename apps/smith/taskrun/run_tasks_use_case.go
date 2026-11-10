@@ -13,10 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // packageTask is the task that builds what a project deploys, and dropDir is
@@ -39,13 +41,22 @@ type Options struct {
 	Bail bool
 	// NoCache runs every task, still saving results.
 	NoCache bool
-	Out     io.Writer
+	// Quiet holds a task output and shows it only if the task fails.
+	Quiet bool
+	Out   io.Writer
 	// ToolVersion goes into every key.
 	ToolVersion string
 	// Events, when set, receives the run's event stream; nil means nobody listens.
 	Events *runevents.RunStream
 	// Command is the command line the run stands for, reported in run.started.
 	Command string
+	// SharedOutputs are the workspace-relative folders ([workspace]
+	// shared_outputs) that several tasks fill on purpose. A task keeps what is
+	// already in them instead of clearing them before it runs or restoring them.
+	SharedOutputs []string
+	// Installable reports whether smith tools install knows a tool by name;
+	// see Spec.Installable.
+	Installable func(name string) bool
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -117,6 +128,18 @@ func (r *runner) record(res Result) {
 	}
 }
 
+// clearable returns the task's outputs a run may clear: the ones outside
+// [workspace] shared_outputs, whose files belong to several tasks.
+func (r *runner) clearable(t *taskgraph.Task) []string {
+	var out []string
+	for _, o := range t.Def.Outputs {
+		if !buildoutputs.InsideAny(path.Join(t.Project.Root, o), r.opts.SharedOutputs) {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
 func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	for _, d := range t.Deps {
 		<-r.done[d]
@@ -146,11 +169,15 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	prefix := t.ID + " │ "
 	if t.Def.Cache && !r.opts.NoCache && r.opts.Storage != nil {
 		if entry, err := taskcache.Lookup(r.opts.Storage, key); err == nil {
-			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, t.Def.Outputs, entry)
+			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, r.clearable(t), entry)
 			if err == nil {
 				_ = taskcache.Remember(r.opts.Storage, t.ID, key)
-				Replay(prefix, log, r.opts.Out, &r.outMu, r.outputOf(t.ID))
-				r.say("%s ✔ from cache\n", t.ID)
+				replayTo := r.opts.Out
+				if r.opts.Quiet {
+					replayTo = io.Discard
+				}
+				Replay(prefix, log, replayTo, &r.outMu, r.outputOf(t.ID))
+				r.say("%s ✓ from cache\n", t.ID)
 				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration}
 			}
 		}
@@ -159,7 +186,9 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	r.say("%s ▶ %s\n", t.ID, strings.Join(t.Def.Command, " "))
 	for _, o := range t.Def.Outputs {
 		dir := filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o)))
-		_ = os.RemoveAll(dir)
+		if !buildoutputs.InsideAny(path.Join(t.Project.Root, o), r.opts.SharedOutputs) {
+			_ = os.RemoveAll(dir)
+		}
 		if t.Name == "generate" {
 			// A generator writes into its output directory, so it exists.
 			_ = os.MkdirAll(dir, 0o755)
@@ -172,16 +201,17 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
 	out.onLine = r.outputOf(t.ID)
+	out.hold = r.opts.Quiet
 	began := time.Now()
 	var app *served
 	if t.Def.Serve != "" {
 		var err error
 		if app, err = r.startServe(ctx, t, key); err != nil {
-			r.say("%s ✖ %v\n", t.ID, err)
+			r.say("%s × %v\n", t.ID, err)
 			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error()}
 		}
 	}
-	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out})
+	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out, Installable: r.opts.Installable})
 	out.Flush()
 	if app != nil {
 		app.stop()
@@ -197,7 +227,8 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 				reason = "cancelled"
 			}
 		}
-		r.say("%s ✖ %s\n", t.ID, reason)
+		out.Release()
+		r.say("%s × %s\n", t.ID, reason)
 		if hint := FailureHint(out.log.String(), r.opts.Root); hint != "" {
 			r.say("%s → %s\n", t.ID, hint)
 		}
@@ -208,7 +239,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			r.say("%s ! not cached: %v\n", t.ID, err)
 		}
 	}
-	r.say("%s ✔ %s\n", t.ID, took.Round(time.Millisecond))
+	r.say("%s ✓ %s\n", t.ID, took.Round(time.Millisecond))
 	return Result{Task: t.ID, Status: Succeeded, Key: key, Duration: took}
 }
 
@@ -259,6 +290,16 @@ func (r *runner) env(t *taskgraph.Task, key string) []string {
 	if bin := VenvBin(r.opts.Root); bin != "" {
 		extra["PATH"] = bin + string(os.PathListSeparator) + os.Getenv("PATH")
 		extra["VIRTUAL_ENV"] = filepath.Dir(bin)
+	}
+	// A tool version smith installed for this workspace (golangci-lint at the
+	// version CI pins) comes first of all, whatever else PATH holds: the lint
+	// task then runs the copy the doctor check probed.
+	if toolrun.ManagedBinExists(r.opts.Root) {
+		path := extra["PATH"]
+		if path == "" {
+			path = os.Getenv("PATH")
+		}
+		extra["PATH"] = toolrun.ManagedBinDir(r.opts.Root) + string(os.PathListSeparator) + path
 	}
 	if t.Def.ServeURL != "" {
 		extra["E2E_BASE_URL"] = t.Def.ServeURL

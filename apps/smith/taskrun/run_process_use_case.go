@@ -3,13 +3,17 @@ package taskrun
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+// KillGrace is how long a stopped task has to exit after SIGTERM before its
+// whole process group is killed.
+var KillGrace = 3 * time.Second
 
 // Spec is one command to run.
 type Spec struct {
@@ -17,6 +21,9 @@ type Spec struct {
 	Dir  string
 	Env  []string
 	Out  io.Writer
+	// Installable reports whether smith tools install knows a tool by name; it
+	// decides if the missing-program message offers that command. Nil means no.
+	Installable func(name string) bool
 }
 
 // RunProcess runs a command to completion and returns its exit code. When ctx
@@ -29,7 +36,7 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	if !strings.ContainsAny(program, `/\`) {
 		resolved, err := lookPath(program, spec.Env)
 		if err != nil {
-			return -1, fmt.Errorf("%s is not installed or not on PATH", program)
+			return -1, errors.New(MissingProgramMessage(program, spec.Installable))
 		}
 		program = resolved
 	} else {
@@ -50,14 +57,23 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	}
 	release, _ := track(cmd)
 	defer release()
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	var waitErr error
+	done := make(chan struct{})
+	go func() {
+		waitErr = cmd.Wait()
+		close(done)
+	}()
 	select {
-	case err := <-done:
-		return exitCode(err)
+	case <-done:
+		return exitCode(waitErr)
 	case <-ctx.Done():
 		killTree(cmd)
-		<-done
+		select {
+		case <-done:
+		case <-time.After(KillGrace):
+			forceKillTree(cmd)
+			<-done
+		}
 		return -1, ctx.Err()
 	}
 }

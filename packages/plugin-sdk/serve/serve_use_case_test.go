@@ -535,3 +535,43 @@ func TestACancellableErrorIsStillAPluginFailureWhenNobodyCancelled(t *testing.T)
 		t.Fatalf("an error that is not a cancel keeps its own code: %+v", resp)
 	}
 }
+
+// publishingLab is a lab that publishes; channelLab one that publishes channels.
+type publishingLab struct{ lab }
+
+func (publishingLab) Publish(protocol.PublishParams) (protocol.PublishResult, error) {
+	return protocol.PublishResult{}, nil
+}
+
+type channelLab struct{ publishingLab }
+
+func (channelLab) PublishesChannels() {}
+
+func TestOnlyAPluginThatPublishesChannelsAdvertisesTheCapability(t *testing.T) {
+	if c := serve.CapabilitiesOf(publishingLab{}); !c.Publish || c.Channels {
+		t.Fatalf("a plain publisher does not publish channels: %+v", c)
+	}
+	if c := serve.CapabilitiesOf(channelLab{}); !c.Publish || !c.Channels {
+		t.Fatalf("capabilities %+v", c)
+	}
+}
+
+// linkLab links a library; the capability needs both Link and Unlink.
+type linkLab struct{ lab }
+
+func (linkLab) Link(protocol.LinkParams) (protocol.LinkResult, error) {
+	return protocol.LinkResult{}, nil
+}
+
+func (linkLab) Unlink(protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return protocol.DependencyResult{}, nil
+}
+
+func TestOnlyAPluginThatLinksAdvertisesTheLinkCapability(t *testing.T) {
+	if serve.CapabilitiesOf(lab{}).Link {
+		t.Fatal("a plain plugin does not link")
+	}
+	if !serve.CapabilitiesOf(linkLab{}).Link {
+		t.Fatal("a plugin that links advertises it")
+	}
+}

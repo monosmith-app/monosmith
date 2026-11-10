@@ -23,7 +23,7 @@ project: nothing there says what the project is, or how to build it.
 | `--lang` value | `objc` |
 | Manifest that makes a directory a project | `*.podspec` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `channels` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `lib` and `package`. `app` is refused (a podspec describes a library) |
@@ -94,6 +94,7 @@ The plugin reads no `smith.toml` setting and no environment variable.
 | Version write | the string is replaced in place, keeping its quotes. A podspec with a computed version is left alone and the release reports no file |
 | Tag | `<project>@<version>`; the podspec's `:tag => s.version.to_s` must name the tag you push, so set `tag_prefix` in `smith.toml` to match |
 | Publish | nothing is uploaded: "released by its tag". `pod trunk push` is not run by smith |
+| Release channel | the plugin declares `channels`: nothing is pushed to CocoaPods trunk, so no registry pointer can move. The podspec gets `2.0.0-beta.1`, which CocoaPods reads as a prerelease below `2.0.0` |
 | Credentials | none |
 
 ## CI
@@ -122,6 +123,10 @@ remedy; both fail on any system but a Mac.
 Edit the podspec.
 
 **Remove.** No remove support; `smith remove` deletes the project's directory.
+
+## Declared projects
+
+A pod is its podspec. No tool of the plugin builds or releases a folder of sources without one. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 

@@ -16,14 +16,14 @@ never publishes to a registry: a release is a git tag.
 | Plugin name | `bundle` (built in; runs as a separate process, `smith plugin serve bundle`) |
 | Kind | language |
 | `--lang` value | `bundle` (`smith add app <name> --lang bundle`) |
-| Manifest that makes a directory a project | `flow.json`, with an `app.json` beside it |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish` |
+| Manifest that makes a directory a project | `flow.json` or `flow.loom`, with an `app.json` beside it |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `channels` |
 | Project kinds | `app` |
 | Tasks | none |
 
 ## What it detects
 
-smith hands the plugin every `flow.json` in the files git lists. A directory is a
+smith hands the plugin every `flow.json` and `flow.loom` in the files git lists. A directory is a
 bundle when it also has an `app.json`, and none of `package.json`, `Cargo.toml`,
 `go.mod`, `pyproject.toml`, `pom.xml` or `pubspec.yaml` (then a language plugin owns
 it). The workspace root is skipped. An `app.json` that is not valid JSON is an error
@@ -63,6 +63,14 @@ platforms = ["linux/amd64"]
 `smith release` then versions the bundle on its own conventional commits (a change in
 a project it depends on counts), writes the version into `app.json` and tags it.
 See [releasing](../../../reference/releasing.md).
+
+## Release channels
+
+A release channel stamps a prerelease version. The plugin declares `channels`: nothing is uploaded, so no registry pointer can move, and the `version` string of `app.json` takes `2.0.0-beta.1` as it is.
+
+## Declared projects
+
+A bundle is an `app.json` and the files beside it; no tool builds or checks a folder of a bundle on its own. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Not covered
 

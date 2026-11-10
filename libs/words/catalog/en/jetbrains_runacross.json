@@ -1,0 +1,13 @@
+{
+  "jetbrains.runacross.monosmith-run-affected": "MonoSmith: run affected",
+  "jetbrains.runacross.monosmith-run-in-all-projects": "MonoSmith: run in all projects",
+  "jetbrains.runacross.nothing-ran": "Nothing ran. {message}",
+  "jetbrains.runacross.no-project-is-affected-by": "No project is affected by the changes.",
+  "jetbrains.runacross.no-project-has-a-task": "No project has a task.",
+  "jetbrains.runacross.pick-the-task-to-run": "Pick the task to run in the affected projects. The first answer is the default.",
+  "jetbrains.runacross.pick-the-task-to-run-2": "Pick the task to run in every project that has it.",
+  "jetbrains.runacross.did-not-finish": "{task} did not finish. {failureTextMapper}",
+  "jetbrains.runacross.is-done": "{task} is done.",
+  "jetbrains.runacross.nothing-ran-2": "Nothing ran. {failureTextMapper}",
+  "jetbrains.runacross.smith-printed-the-affected-projects": "smith printed the affected projects in a form this plugin does not read. Update the plugin."
+}

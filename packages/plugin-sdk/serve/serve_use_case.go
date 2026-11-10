@@ -230,6 +230,14 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 		if d, ok := p.(DependencyManager); ok {
 			return call(req.Params, d.Uninstall)
 		}
+	case protocol.MethodLink:
+		if l, ok := p.(Linker); ok {
+			return call(req.Params, l.Link)
+		}
+	case protocol.MethodUnlink:
+		if l, ok := p.(Linker); ok {
+			return call(req.Params, l.Unlink)
+		}
 	case protocol.MethodDeclared:
 		if d, ok := p.(DeclarationEditor); ok {
 			return call(req.Params, d.Declared)
@@ -245,6 +253,14 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 	case protocol.MethodComponents:
 		if l, ok := p.(ComponentLister); ok {
 			return call(req.Params, l.Components)
+		}
+	case protocol.MethodDerive:
+		if d, ok := p.(Deriver); ok {
+			return call(req.Params, d.Derive)
+		}
+	case protocol.MethodAPISurface:
+		if r, ok := p.(APISurfaceReader); ok {
+			return call(req.Params, r.APISurface)
 		}
 	}
 	return nil, &protocol.ResponseError{Code: protocol.CodeMethodNotFound, Message: "method not supported: " + req.Method}
@@ -287,7 +303,13 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, latest := p.(LatestReader)
 	_, cancel := p.(Cancellable)
 	_, components := p.(ComponentLister)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components}
+	_, derive := p.(Deriver)
+	_, apiSurface := p.(APISurfaceReader)
+	_, channels := p.(ChannelPublisher)
+	_, declared := p.(DeclaredDescriber)
+	_, link := p.(Linker)
+	_, packs := p.(PackPublisher)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

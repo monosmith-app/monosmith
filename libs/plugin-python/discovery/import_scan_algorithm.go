@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,16 +16,21 @@ var (
 )
 
 // ScanImports returns the top-level module names imported by the .py files
-// under dir, sorted and unique. Relative imports are ignored.
+// under dir, sorted and unique. Relative imports are ignored. Sdist staging
+// folders are skipped, and a file or folder that vanishes during the walk (a
+// build removing its staging folder) is ignored.
 func ScanImports(dir string) ([]string, error) {
 	seen := map[string]bool{}
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) && path != dir {
+				return nil
+			}
 			return err
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if path != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info")) {
+			if path != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info") || IsSdistStaging(name)) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -33,6 +39,9 @@ func ScanImports(dir string) ([]string, error) {
 			return nil
 		}
 		src, err := os.ReadFile(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}

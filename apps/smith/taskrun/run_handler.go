@@ -7,7 +7,9 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"syscall"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +43,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 		asJSON bool
 		// jsonEvents prints the event stream as JSON lines instead of text.
 		jsonEvents bool
+		verbose    bool
 	)
 	cmd := &cobra.Command{
 		Use:   use,
@@ -56,6 +59,9 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			} else if len(args) > 0 {
 				req.Projects = append(req.Projects, args...)
 			}
+			// smith build shows failures and one line per project; --verbose
+			// shows every log.
+			req.Quiet = !verbose && len(fixed) == 1 && fixed[0] == "build"
 			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
@@ -63,7 +69,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 				req.Out = io.Discard
 				req.Events = runevents.NewJSONLines(cmd.OutOrStdout())
 			}
-			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			summary, err := RunInDirectory(ctx, ".", version, cmd.ErrOrStderr(), req)
 			if err != nil {
@@ -95,12 +101,13 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 		cmd.Use = use + " [project]..."
 	}
 	f := cmd.Flags()
-	f.StringSliceVarP(&req.Projects, "projects", "p", nil, "projects to run: names, globs, kind:app, lang:go, tag:x, !exclude")
+	commandflags.AddProjectFlag(cmd, &req.Projects, "projects to run: names, globs, kind:app, lang:go, tag:x, !exclude")
 	f.BoolVar(&req.Affected, "affected", false, "only projects affected by changes since --base")
 	f.StringVar(&req.Base, "base", "", "base branch for --affected (default: the PR target, else the release branch)")
 	f.IntVar(&req.Parallel, "parallel", 0, "tasks to run at once (default: CPU count)")
 	f.BoolVar(&req.Bail, "bail", false, "stop starting tasks after the first failure")
 	f.BoolVar(&req.NoCache, "no-cache", false, "run every task even if a cached result exists")
+	f.BoolVar(&verbose, "verbose", false, "show the log of every project, not only the ones that fail")
 	f.BoolVar(&asJSON, "json", false, "print the summary as JSON")
 	f.BoolVar(&jsonEvents, "json-events", false, "print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else")
 	cmd.MarkFlagsMutuallyExclusive("json", "json-events")

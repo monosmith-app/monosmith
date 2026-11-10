@@ -1,0 +1,133 @@
+package tui
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
+)
+
+// ask runs a command line the way a menu entry does: unconfirmed.
+func (l *lab) ask(argv ...string) {
+	sh := l.sh()
+	cmd := sh.execute(argv, false)
+	l.m = sh
+	l.drive(cmd)
+}
+
+// A command that changes the workspace and can print its plan shows the plan
+// in the dialog, then runs with --yes only after the answer.
+func TestAChangingCommandShowsItsPlanBeforeItRuns(t *testing.T) {
+	for _, tc := range []struct {
+		argv      []string
+		plan      string
+		planLine  string
+		runs      string
+		wantTexts []string
+	}{
+		{[]string{"upgrade"}, "upgrade --dry-run", "change  smith.toml (defaults vintage)", "upgrade --yes", []string{"change smith.toml"}},
+		{[]string{"ci", "generate"}, "ci generate --dry-run", "remove  .gitlab-ci.yml\n-stages: [build]", "ci generate --yes", []string{"remove .gitlab-ci.yml", "-stages: [build]"}},
+		{[]string{"bootstrap"}, "bootstrap --dry-run", "change  tools/smith/smith", "bootstrap --yes", []string{"tools/smith/smith"}},
+		{[]string{"sync", "--prefer", "installed"}, "sync --prefer installed --dry-run", "axios (node) will be ^1.6.0", "sync --prefer installed --yes", []string{"axios (node) will be ^1.6.0"}},
+	} {
+		t.Run(strings.Join(tc.argv, " "), func(t *testing.T) {
+			l := newHomeLab(t, 140, 40)
+			l.answers(map[string]sources.Captured{tc.plan: {OK: true, Text: tc.planLine}})
+			l.ask(tc.argv...)
+			l.has(tc.wantTexts...)
+			l.has("smith " + tc.runs)
+			if len(l.started) != 0 {
+				t.Fatalf("nothing may run before the answer: %v", l.started)
+			}
+			l.keys("enter")
+			if got := l.lastStarted(); got != tc.runs {
+				t.Fatalf("started %q, want %q", got, tc.runs)
+			}
+		})
+	}
+}
+
+// A plan that smith refuses is shown as it is, and nothing runs.
+func TestAPlanSmithRefusesIsShownAndNothingRuns(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.answers(map[string]sources.Captured{"kind core lib --dry-run": {Text: "× core is imported by an app\n  → --force goes ahead"}})
+	l.ask("kind", "core", "lib")
+	l.has("core is imported by an app", "--force goes ahead")
+	l.keys("enter")
+	if len(l.started) != 0 {
+		t.Fatalf("a refused plan runs nothing: %v", l.started)
+	}
+}
+
+// A release asked before the Release view was opened reads the plan itself and
+// shows the packages and versions in the confirmation.
+func TestReleaseReadsItsPlanBeforeAsking(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	l.ask("release")
+	l.has("Release: hold back or bump", "web", "1.0.0 → 1.1.0")
+	l.keys("enter")
+	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0")
+	if len(l.started) != 0 {
+		t.Fatalf("nothing may run before the answer: %v", l.started)
+	}
+}
+
+// A sync asks which version wins before it shows the plan, and each answer
+// goes on to the plan and the confirmation with --prefer; nothing runs before.
+func TestSyncAsksWhichVersionWinsThenShowsThePlan(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.answers(map[string]sources.Captured{"sync --prefer highest --dry-run": {OK: true, Text: "axios (node) will be ^1.9.0"}})
+	l.ask("sync")
+	l.has("Which version wins?", "The highest declared", "The lowest declared")
+	if len(l.started) != 0 {
+		t.Fatalf("nothing may run before the answer: %v", l.started)
+	}
+	l.keys("down", "enter")
+	l.has("axios (node) will be ^1.9.0", "smith sync --prefer highest --yes")
+	if len(l.started) != 0 {
+		t.Fatalf("the plan is shown first: %v", l.started)
+	}
+	l.keys("enter")
+	if got := l.lastStarted(); got != "sync --prefer highest --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+// Escape on the question changes nothing.
+func TestSyncWhichVersionCanBeCancelled(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.ask("sync")
+	l.keys("esc")
+	l.hasNot("Which version wins?")
+	if len(l.started) != 0 {
+		t.Fatalf("cancelled: %v", l.started)
+	}
+}
+
+// The release question lets the person hold packages back and change a bump;
+// the confirmation that follows states the line and that it cannot be undone.
+func TestReleaseOffersHoldAndBumpBeforeTheConfirmation(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	l.keys("5", "x")
+	l.has("Release: hold back or bump", "web", "kit")
+	l.keys("b", "b", "b", "down", " ") // web=major, hold kit
+	l.has("$ smith release --hold kit --bump web=major")
+	l.keys("enter")
+	l.has("It cannot be undone", "$ smith release --hold kit --bump web=major --yes", "web 1.0.0 → 2.0.0", "Held back, not released: kit")
+	if len(l.started) != 0 {
+		t.Fatalf("nothing runs before the last answer: %v", l.started)
+	}
+	l.keys("y")
+	if got := l.lastStarted(); got != "release --hold kit --bump web=major --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestEscInTheReleaseQuestionCancelsWithoutRunning(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	l.keys("5", "x", "esc")
+	l.hasNot("Release: hold back or bump", "The command that will run:")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v", l.started)
+	}
+}

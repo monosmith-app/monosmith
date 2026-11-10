@@ -39,25 +39,33 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--agent` | boolean | off | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) |
+| `--agent` | boolean | on | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) |
 | `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
 | `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
 | `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
+| `--devcontainer` | boolean | off | add .devcontainer/devcontainer.json (default) |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
+| `--dry-run` | boolean | off | show the files smith would create and the first commit, and change nothing |
+| `--first-commit <first-commit>` | string |  | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
 | `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
-| `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
+| `--include-secrets` | boolean | off | let --first-commit all commit files whose names look like secrets (.env, keys) |
+| `--json` | boolean | off | with --questions: print them as JSON |
+| `-l, --lang <lang>` | string | later | the main language: node, python, go, jvm, dotnet, rust, or later (default later) (also --language) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
+| `--no-commit` | boolean | off | write the files and commit nothing |
+| `--no-devcontainer` | boolean | off | leave the dev container out; sets [ci] devcontainer = false |
+| `--questions` | boolean | off | print the questions smith new asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
 | `--recipe-file <recipe-file>` | string |  | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |
 | `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
 | `--release-remote <release-remote>` | string | `origin` | the git remote that receives release tags (default origin) |
 | `--save-recipe <save-recipe>` | string |  | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |
 | `--scope <scope>` | string | `@<name>` | npm scope for packages (default @<name>) |
-| `-y, --yes` | boolean | off | take the default for every question that has no flag |
+| `-y, --yes` | boolean | off | take the default for every question that has no flag, and print each |
 
 <!-- smith:end new -->
 
@@ -81,6 +89,44 @@ In a terminal (standard input and output are terminals and `CI` is unset), a mis
 `<name>` is asked for: `Name of the workspace:`, up to three tries. Elsewhere it is the
 error listed below.
 
+## What smith chooses for you
+
+With `--yes` smith prints a "Chosen for you" block: the agent files, the dev
+container and the CI, each with the flag that changes it (`--no-agent`, `--no-devcontainer`,
+`--ci`). In a terminal the agent files and the dev container are questions. Without a terminal and
+without `--yes`, smith refuses and names every open flag in one message (`--ci`, `--language`,
+`--architecture`, `--agent`, `--devcontainer`, `--first-commit`), because it does not choose in silence.
+`--dry-run` shows the files smith would create and the first commit, and changes nothing.
+
+The Go module prefix comes from the origin remote. With no remote, a terminal asks (a suggestion from
+your git user name, `example.com/<name>`, or one you type); otherwise smith uses `example.com/<name>`
+and says so. `--module-prefix <prefix>` sets it.
+
+## The questions as data
+
+`smith new --questions --json` prints the questions `smith new` asks and changes nothing, so an editor
+draws the same questions without a list of its own. Each entry has its `key`, `prompt`, `default`, the
+`flag` that answers it, `many` (the answer may name several options, joined by commas), `advanced` (asked
+only after "more options"), `atEnd` (asked after the summary), `when` (the answers that make it apply, for
+example `{"language": "node"}`) and `options`, each with a `value`, a `label` and a `hint`; the default
+is the first. A question with no options is free text, and an empty answer takes the `default`. It takes
+no name and writes nothing.
+
+## The first commit
+
+In a new folder smith makes the first commit of its own files (`chore: create the <name> workspace
+with smith`), and says so before it writes. In a terminal it asks whether to make it. `--first-commit
+none` or `--no-commit` writes the files and commits nothing. In a folder that holds files and is not a git repository, smith runs `git init`,
+lists the files and asks what the first commit holds:
+
+1. Only smith's files (the default). Your files stay uncommitted.
+2. Nothing.
+3. Everything shown. Files whose names look like secrets (`.env*`, keys, credentials, `.npmrc`) need a
+   second yes, or `--include-secrets`.
+
+Without a terminal smith refuses and names `--first-commit smith|all|none` and `--no-commit`. With
+`--yes` it takes answer 1 and says so.
+
 ## The questions
 
 At a terminal, `smith new` then asks the questions below, one at a time. The first
@@ -90,9 +136,16 @@ in the same order. A question whose flag you gave is not asked, `--yes` takes th
 default of the rest, and with no terminal nothing is asked: the flags and the defaults
 are the whole answer.
 
+The form in the terminal interface asks one question before these: **How do you want to set it up?**
+**Start with the defaults** lists what it chooses (CI: GitHub Actions, language: decide later, code layout:
+vertical-slices, agent files: yes, dev container: yes) and how to change each one later, and asks nothing more
+than the name. **Customise** asks the questions below. The questions that carry risk are asked either way: what
+the first commit holds in a folder that has files and no git repository, and what to do with files whose names
+look like secrets. The command line has no such question: `smith new <name> --yes` is the defaults.
+
 | Question | Flag | Default | What it writes |
 |---|---|---|---|
-| Which CI should smith write pipelines for? | `--ci` | `github` | `[ci] providers` |
+| Which CI should smith write pipelines for? (CI = where your tests run on every push) | `--ci` | `github` | `[ci] providers` |
 | What is the main language? | `--language` | `later` | nothing in `smith.toml`; it decides whether the Node question is asked and the `--lang` of the next step |
 | Which tests and lint for Node projects? (asked for Node only) | `--default-stack node=<stack>` | `node-jest` (or `node-vitest`, `node-ts`) | `[default_stacks] node` |
 | Which code layout should smith check? | `--architecture` | `vertical-slices` | the `[conventions.<layout>]` table (none for `none`); see [`smith architecture`](architecture.md) |
@@ -189,7 +242,8 @@ For another workspace: smith new <name> --recipe-file /work/acme/recipes/team.re
 
 Writes, in the new folder: `.gitignore`, `.gitattributes`, `smith.toml`, `README.md`,
 `.github/workflows/ci.yml` (and `azure-pipelines.yml` or `.gitlab-ci.yml` for the other
-providers), `.devcontainer/devcontainer.json`, and the MonoSmith agent: `.claude/agents/smith.md`,
+providers), `.devcontainer/devcontainer.json`, `tools/smith/install.sh` (the installer the pipelines run when the
+workspace has no npm, pip or `dotnet tool` to install smith with), and the MonoSmith agent: `.claude/agents/smith.md`,
 `.mcp.json` and `.vscode/mcp.json` (see [the agent guide](../guides/agent.md)). It then runs `git init -b main`, stages
 what is in the folder and commits it as `chore: create the <name> workspace with smith`.
 
@@ -215,11 +269,15 @@ smith new demo2 --ci github,azure --scope @demo --module-prefix github.com/demo/
   wrote .github/workflows/ci.yml
   wrote azure-pipelines.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   committed
 
 Created demo2. Next:
   cd demo2
-  smith add app web --lang node
+  smith add app web --lang <language>   # smith kinds lists the languages
 ```
 
 In a folder that already has a file in it, with `--dir .`:
@@ -235,11 +293,14 @@ smith new notes --dir .
   wrote .gitignore
   wrote .github/workflows/ci.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   committed
 
 Created notes. Next:
-  cd .
-  smith add app web --lang node
+  smith add app web --lang <language>   # smith kinds lists the languages
 ```
 
 When the folder was not a git repository, `git init` ran and the first commit held

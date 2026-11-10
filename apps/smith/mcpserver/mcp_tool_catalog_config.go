@@ -2,6 +2,7 @@ package mcpserver
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 )
 
@@ -156,13 +157,14 @@ var Tools = []Tool{
 			return args, err
 		}},
 	{Name: "smith_kinds", Action: "kinds", Description: "The kinds of project smith_add_project can create, as JSON.", InputSchema: noInput, ReadOnly: true, Args: fixed("kinds", "--json")},
+	{Name: "smith_choices", Action: "choices", Description: "The choices a project can be built from, by axis (framework, test, style), and what is wrong with an unusable one.", InputSchema: noInput, ReadOnly: true, Args: fixed("choices")},
 	{Name: "smith_stacks", Action: "stacks", Description: "The stacks a project can be built with (the plugins of each), and which projects use them.", InputSchema: noInput, ReadOnly: true, Args: fixed("stacks")},
 	{Name: "smith_commands", Action: "commands", Description: "Every smith command with its arguments and options, as JSON.", InputSchema: noInput, ReadOnly: true, Args: fixed("commands", "--json")},
 	{Name: "smith_info", Action: "info", Description: "The workspace and the smith serving it, as JSON.", InputSchema: noInput, ReadOnly: true, Args: fixed("info", "--json")},
 	{Name: "smith_doctor", Action: "doctor", Description: "Check the workspace's health, as JSON; every failed check names its remedy.", InputSchema: noInput, ReadOnly: true, Args: fixed("doctor", "--json")},
 	{Name: "smith_release_preview", Action: "release", Description: "What the next release would version, tag and publish, as JSON; changes nothing.", InputSchema: noInput, ReadOnly: true, Args: fixed("release", "--dry-run", "--json")},
 	{Name: "smith_updates", Action: "up", Description: "Declared dependencies with newer releases, grouped patch, minor and major, and the tools smith pins against their newest releases, as JSON; changes nothing.", InputSchema: noInput, ReadOnly: true, Args: fixed("up", "--json")},
-	{Name: "smith_explain", Action: "explain", Description: "How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each level and the settings.", ReadOnly: true,
+	{Name: "smith_explain", Action: "explain", Description: "How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each role and the settings.", ReadOnly: true,
 		InputSchema: object(map[string]any{"target": str("a project, or project:task"), "recipe": boolean("only what the recipe decided")}, "target"),
 		Args: func(in map[string]any) ([]string, error) {
 			target, err := word(in, "target")
@@ -172,7 +174,7 @@ var Tools = []Tool{
 			}
 			return args, err
 		}},
-	{Name: "smith_recipe_check", Action: "recipe", Description: "Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each level and the merged settings with the file and line each came from, or why it is not valid. Use it to show the plan before smith_add_project or smith_recipe_new.", ReadOnly: true,
+	{Name: "smith_recipe_check", Action: "recipe", Description: "Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each role and the merged settings with the file and line each came from, or why it is not valid. Use it to show the plan before smith_add_project or smith_recipe_new.", ReadOnly: true,
 		InputSchema: object(map[string]any{
 			"recipe":  str("a recipe file in the workspace, or an https URL pinned in smith.recipes.lock"),
 			"choices": list("answers to its choices, each name=answer; the rest take their defaults"),
@@ -220,7 +222,7 @@ var Tools = []Tool{
 			projects, err := words(in, "projects", false)
 			args := append([]string{"run"}, tasks...)
 			if len(projects) > 0 {
-				args = append(args, "-p", strings.Join(projects, ","))
+				args = append(args, flagvocabulary.Arg("project"), strings.Join(projects, ","))
 			}
 			if flag(in, "affected") {
 				args = append(args, "--affected")
@@ -291,7 +293,7 @@ var Tools = []Tool{
 			}
 			args := []string{"install"}
 			for _, p := range projects {
-				args = append(args, "-w", p)
+				args = append(args, flagvocabulary.Arg("project"), p)
 			}
 			if flag(in, "dev") {
 				args = append(args, "-D")
@@ -311,7 +313,7 @@ var Tools = []Tool{
 			}
 			args := []string{"uninstall"}
 			for _, p := range projects {
-				args = append(args, "-w", p)
+				args = append(args, flagvocabulary.Arg("project"), p)
 			}
 			return append(args, pkg), nil
 		}},

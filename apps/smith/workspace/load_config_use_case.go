@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/dockerregistries"
 	"io/fs"
 	"os"
 	"path"
@@ -64,6 +65,9 @@ func Load(root string) (Config, error) {
 // rather than a silently ignored setting.
 func Parse(raw []byte) (Config, error) {
 	var cfg Config
+	if removed := FindRemovedKeys(raw); len(removed) > 0 {
+		return cfg, &RemovedKeysError{Keys: removed}
+	}
 	dec := toml.NewDecoder(bytes.NewReader(raw)).DisallowUnknownFields()
 	if err := dec.Decode(&cfg); err != nil {
 		var strict *toml.StrictMissingError
@@ -71,6 +75,9 @@ func Parse(raw []byte) (Config, error) {
 			detail := fmt.Sprintf("%s: %s", FileName, strings.TrimSpace(strict.String()))
 			if needsNewerSmith(raw, strict) {
 				return cfg, &NewerSmithError{Detail: detail}
+			}
+			if strings.Contains(detail, "github_prerelease") {
+				detail += "\nA GitHub Release of a prerelease version is marked as a prerelease on its own, so there is nothing to set: remove github_prerelease."
 			}
 			return cfg, errors.New(detail)
 		}
@@ -120,6 +127,9 @@ func Validate(cfg *Config) error {
 	if cfg.Schema < SchemaVersion {
 		return fmt.Errorf("%s uses schema %d, this smith schema %d: run `smith upgrade`", FileName, cfg.Schema, SchemaVersion)
 	}
+	if err := validateDefaultsVintage(cfg); err != nil {
+		return err
+	}
 	if strings.TrimSpace(cfg.Workspace.Name) == "" {
 		return fmt.Errorf("%s: [workspace] name is required", FileName)
 	}
@@ -140,8 +150,8 @@ func Validate(cfg *Config) error {
 		}
 	}
 	for name, st := range cfg.Stacks {
-		if strings.TrimSpace(st.Language) == "" {
-			return fmt.Errorf("%s: [stacks.%s] needs a language plugin (language = \"node\")", FileName, name)
+		if strings.TrimSpace(st.Language) == "" && len(st.Choices) == 0 {
+			return fmt.Errorf("%s: [stacks.%s] needs a language plugin (language = \"node\") or choices (choices = [\"react\"])", FileName, name)
 		}
 	}
 	if len(cfg.CI.Providers) == 0 {
@@ -170,7 +180,31 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("%s: [ci] branches must not hold an empty branch name", FileName)
 		}
 	}
+	if err := validateCICost(cfg.CI); err != nil {
+		return err
+	}
 	if err := validateSiblingRepos(cfg); err != nil {
+		return err
+	}
+	switch cfg.CI.Attest {
+	case "", "on", "optional", "off":
+	default:
+		return fmt.Errorf("%s: [ci] attest must be \"on\", \"optional\" or \"off\", not %q", FileName, cfg.CI.Attest)
+	}
+	switch cfg.CI.Artifacts {
+	case "", "on", "optional":
+	default:
+		return fmt.Errorf("%s: [ci] artifacts must be \"on\" or \"optional\", not %q", FileName, cfg.CI.Artifacts)
+	}
+	if cfg.CI.ArtifactRetentionDays < 0 || cfg.CI.ArtifactRetentionDays > 90 {
+		return fmt.Errorf("%s: [ci] artifact_retention_days must be between 1 and 90 (0 keeps the repository's setting), not %d", FileName, cfg.CI.ArtifactRetentionDays)
+	}
+	for i, a := range cfg.Doctor.Accept {
+		if strings.TrimSpace(a.Check) == "" || strings.TrimSpace(a.Reason) == "" {
+			return fmt.Errorf("%s: [[doctor.accept]] entry %d needs a check and a reason", FileName, i+1)
+		}
+	}
+	if err := validateCISecrets(cfg.CI.Secrets); err != nil {
 		return err
 	}
 	if cfg.CI.AuditMaxUnsafe < 0 {
@@ -181,6 +215,19 @@ func Validate(cfg *Config) error {
 	}
 	if cfg.Release.Remote == "" {
 		cfg.Release.Remote = "origin"
+	}
+	if err := validateReleaseChannels(cfg.Release); err != nil {
+		return err
+	}
+	if err := validatePropagationWait(cfg); err != nil {
+		return err
+	}
+	switch cfg.Release.APICheck {
+	case "":
+		cfg.Release.APICheck = "warn"
+	case "warn", "error", "off":
+	default:
+		return fmt.Errorf("%s: [release] api_check must be \"warn\", \"error\" or \"off\", not %q", FileName, cfg.Release.APICheck)
 	}
 	if cfg.Cache.Dir == "" {
 		cfg.Cache.Dir = ".smith/cache"
@@ -196,22 +243,28 @@ func Validate(cfg *Config) error {
 			continue
 		}
 		label := "[conventions.docker]"
-		registries, err := checkDockerRegistries(label, conv.Registry, conv.Registries, conv.DescriptionFrom)
+		registries, err := dockerregistries.CheckDockerRegistries(label, conv.Registry, conv.Registries, conv.DescriptionFrom)
 		if err != nil {
 			return fmt.Errorf("%s: %w", FileName, err)
 		}
 		conv.Registries = registries
 		cfg.Conventions[name] = conv
 	}
+	if err := validateDeclaredProjects(cfg.Projects); err != nil {
+		return err
+	}
+	if err := validateGoBuildTags(cfg.Projects); err != nil {
+		return err
+	}
 	for name, po := range cfg.Projects {
 		if po.Docker != nil {
 			if _, ok := cfg.Conventions["docker"]; !ok {
 				return fmt.Errorf("%s: [projects.%s.docker] needs [conventions.docker]", FileName, name)
 			}
-			if c := po.Docker.Context; c != "" && !ValidContext(c) {
+			if c := po.Docker.Context; c != "" && !dockerregistries.ValidContext(c) {
 				return fmt.Errorf("%s: [projects.%s.docker] context %q must be a workspace-relative directory with forward slashes (\".\" or apps/%s, say)", FileName, name, c, name)
 			}
-			registries, err := checkDockerRegistries("[projects."+name+".docker]", po.Docker.Registry, po.Docker.Registries, po.Docker.DescriptionFrom)
+			registries, err := dockerregistries.CheckDockerRegistries("[projects."+name+".docker]", po.Docker.Registry, po.Docker.Registries, po.Docker.DescriptionFrom)
 			if err != nil {
 				return fmt.Errorf("%s: %w", FileName, err)
 			}
@@ -220,6 +273,12 @@ func Validate(cfg *Config) error {
 		// The release table is checked and completed by ResolveRelease once the
 		// project's plugins have had their say (a Tauri app's plugin supplies
 		// build, assets and platforms).
+	}
+	if err := validateConfirm(cfg); err != nil {
+		return err
+	}
+	if err := validateUpdateCheck(cfg); err != nil {
+		return err
 	}
 	if err := validateBareTags(cfg); err != nil {
 		return err
@@ -230,7 +289,7 @@ func Validate(cfg *Config) error {
 	if err := validateBoundaries(cfg); err != nil {
 		return err
 	}
-	if err := validateTaskGroups(cfg); err != nil {
+	if err := validateGroups(cfg); err != nil {
 		return err
 	}
 	if err := validateRegistries(cfg); err != nil {

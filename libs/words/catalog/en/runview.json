@@ -1,0 +1,7 @@
+{
+  "runview.started": " ▶ started",
+  "runview.summary": "{mark} {done}/{total} tasks succeeded ({cached} from cache) in {took}",
+  "runview.reason.unstarted": "the run ended before it started",
+  "runview.reason.interrupted": "interrupted",
+  "runview.reason.cancelled": "cancelled"
+}

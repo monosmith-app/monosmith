@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
+	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 )
 
@@ -57,6 +58,49 @@ func UnfinishedReleases(s *session.Session, hasRelease func(tag string) (bool, e
 	return items, nil
 }
 
+// PackResumeReason is the reason of an item whose GitHub Release exists but
+// lacks package files (registry = "github-release").
+const PackResumeReason = "tagged, but its GitHub Release lacks its package files"
+
+// UnfinishedPacks finds the packages with registry = "github-release" whose
+// latest tag is at HEAD and whose GitHub Release exists but does not hold every
+// package file with its checksum file: an attach that stopped half way. Each is
+// an item that packs the package again and attaches what the release lacks. A
+// release that does not exist at all is UnfinishedReleases' to find.
+func UnfinishedPacks(s *session.Session, complete func(tag string, e releasepack.Ecosystem) (bool, error), say io.Writer) ([]Item, error) {
+	if !s.Config.Release.GitHubReleases {
+		return nil, nil
+	}
+	order, err := s.Graph.Order()
+	if err != nil {
+		return nil, err
+	}
+	head, _ := s.Git.RevParse("HEAD")
+	var items []Item
+	for _, name := range order {
+		p := s.Graph.Get(name)
+		if !p.Releases() || !PacksToRelease(p) {
+			continue
+		}
+		eco, ok := releasepack.EcosystemOf(p.Plugin)
+		if !ok {
+			continue
+		}
+		latest, tag, released := LatestTag(s.Git, p)
+		if !released || s.Git.TagCommit(tag) != head {
+			continue
+		}
+		done, err := complete(tag, eco)
+		if err != nil {
+			return nil, fmt.Errorf("GitHub Release %s: %w", tag, err)
+		}
+		if !done {
+			items = append(items, Item{Project: name, Plugin: p.Plugin, Current: latest.String(), Next: latest.String(), Level: "resume", Tag: tag, Reason: PackResumeReason})
+		}
+	}
+	return items, nil
+}
+
 // UnfinishedFromGitHub is UnfinishedReleases asking GitHub. Without a token or
 // a repository it finds nothing (a local run has no Release to look for); a
 // lookup that fails is said, not fatal: the plan stays empty.
@@ -73,6 +117,14 @@ func UnfinishedFromGitHub(s *session.Session, warn io.Writer) []Item {
 		_, found, err := client.ReleaseByTag(repo, tag)
 		return found, err
 	}, warn)
+	if err == nil {
+		var packs []Item
+		packs, err = UnfinishedPacks(s, func(tag string, e releasepack.Ecosystem) (bool, error) {
+			r, found, err := client.ReleaseByTag(repo, tag)
+			return !found || releasepack.Complete(r, e), err
+		}, warn)
+		items = append(items, packs...)
+	}
 	if err != nil {
 		fmt.Fprintf(warn, "warning: could not look for unfinished releases: %v\n", err)
 		return nil

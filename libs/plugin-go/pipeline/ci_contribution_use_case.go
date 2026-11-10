@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -14,7 +15,7 @@ const GovulncheckVersion = "v1.9.0"
 
 // GolangciLintVersion is installed when a project lints with golangci-lint;
 // bump it deliberately.
-const GolangciLintVersion = "v2.14.0"
+const GolangciLintVersion = "v2.15.0"
 
 // DefaultGoVersion is used when go.work does not say.
 const DefaultGoVersion = "1.24"
@@ -24,17 +25,17 @@ const DefaultGoVersion = "1.24"
 // asks for, so a missing go.work does not downgrade the pipelines to the default.
 func toolchainVersion(workspaceRoot string, projects []protocol.Project) string {
 	if src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work")); err == nil {
-		if v := ParseGoWork(string(src)).GoVersion; v != "" {
+		if v := gowork.ParseGoWork(string(src)).GoVersion; v != "" {
 			return v
 		}
 	}
 	newest := ""
 	for _, p := range projects {
-		src, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), "go.mod"))
+		src, err := os.ReadFile(gowork.ModuleFile(workspaceRoot, p.Root))
 		if err != nil {
 			continue
 		}
-		if m := goDirective.FindStringSubmatch(string(src)); m != nil && versionLess(newest, m[1]) {
+		if m := gowork.GoDirective.FindStringSubmatch(string(src)); m != nil && versionLess(newest, m[1]) {
 			newest = m[1]
 		}
 	}
@@ -68,7 +69,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	}
 	for _, p := range params.Projects {
 		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {
-			result.Setup = append(result.Setup, protocol.Step{Name: "Install golangci-lint", Command: []string{"go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion}, Blocking: true})
+			result.Setup = append(result.Setup, protocol.Step{Name: "Install golangci-lint", Command: LintInstallCommand(), Blocking: true})
 			break
 		}
 	}

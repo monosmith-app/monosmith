@@ -25,14 +25,14 @@ func TestWebWorkspace(t *testing.T) {
 	for stack := range stacks {
 		w.smith(true, "add", "app", stack, "--stack", stack)
 	}
-	if out := w.smith(false, "add", "lib", "ui", "--stack", "react"); !strings.Contains(out, "is an app") {
+	if out := w.smith(false, "add", "lib", "ui", "--stack", "react"); !strings.Contains(out, "cannot scaffold a lib; it scaffolds app") {
 		t.Fatalf("a web stack scaffolds apps only:\n%s", out)
 	}
 
 	out := w.smith(true, "run", "lint", "typecheck", "test", "build")
 	for stack, tasks := range stacks {
 		for _, task := range tasks {
-			if want := stack + ":" + task + " ✔"; !strings.Contains(out, want) {
+			if want := stack + ":" + task + " ✓"; !strings.Contains(out, want) {
 				t.Fatalf("%s did not pass:\n%s", want, out)
 			}
 		}

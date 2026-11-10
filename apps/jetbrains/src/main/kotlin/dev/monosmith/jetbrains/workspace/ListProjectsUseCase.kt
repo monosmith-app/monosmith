@@ -4,6 +4,9 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
 import dev.monosmith.jetbrains.smithcommand.ResolveSmithExecutablePolicy
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
+import dev.monosmith.jetbrains.smithrun.ProblemTextMapper
+import dev.monosmith.jetbrains.words.SmithWordsConfig.JETBRAINS_WORKSPACE_SMITH_PROJECTS_EXITED_WITH
+import dev.monosmith.jetbrains.words.SmithWordsConfig.say
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -20,7 +23,13 @@ object ListProjectsUseCase {
                         .withWorkingDirectory(root)
                         .withCharset(StandardCharsets.UTF_8),
                 )
-            check(output.exitCode == 0) { output.stderr.ifBlank { "smith projects exited with ${output.exitCode}" } }
+            check(output.exitCode == 0) {
+                // An unreadable smith.toml reaches the tool window as "smith.toml:3:9 ...", with the fix.
+                ProblemTextMapper
+                    .toLine(
+                        output.stderr,
+                    ).ifBlank { say(JETBRAINS_WORKSPACE_SMITH_PROJECTS_EXITED_WITH, output.exitCode.toString()) }
+            }
             ProjectsJsonMapper.toProjects(output.stdout)
         }
 }

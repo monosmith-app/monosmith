@@ -35,7 +35,7 @@ func TestBoundaries(t *testing.T) {
 
 	// Nothing set: a warning that names the edge, and nothing fails.
 	out := w.smith(true, "boundaries")
-	for _, want := range []string{"web -> admin", "an app is deployed", "0 error(s), 1 warning(s)"} {
+	for _, want := range []string{"web -> admin", "an app is deployed", "0 error(s), 1 warning"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("boundaries lacks %q:\n%s", want, out)
 		}

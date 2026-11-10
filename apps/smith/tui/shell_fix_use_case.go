@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // fixRun is a fix being applied off the UI goroutine. Its steps report on
@@ -16,6 +20,47 @@ import (
 type fixRun struct {
 	ch     chan tea.Msg
 	cancel context.CancelFunc
+
+	mu    sync.Mutex
+	lines []string
+}
+
+// maxLogLines is how many lines of a step's output the full log keeps; older
+// lines drop out.
+const maxLogLines = 2000
+
+// Note keeps a line of detail (a file being written, a line a command
+// printed). It is not a message: a command that prints fast must not crowd out
+// the step messages, and the next frame reads the latest lines.
+func (r *fixRun) Note(line string) {
+	r.mu.Lock()
+	r.lines = append(r.lines, line)
+	if len(r.lines) > maxLogLines+maxLogLines/4 {
+		r.lines = append([]string(nil), r.lines[len(r.lines)-maxLogLines:]...)
+	}
+	r.mu.Unlock()
+}
+
+// snapshot is the lines kept so far. Note only appends or replaces the slice,
+// so the returned lines never change under the reader.
+func (r *fixRun) snapshot() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.lines[:len(r.lines):len(r.lines)]
+}
+
+// synced is the wizard with the running step's latest lines, and its whole log
+// while the full log view is open.
+func (s Shell) synced(w fixwizard.Wizard) fixwizard.Wizard {
+	if s.fixing == nil {
+		return w
+	}
+	lines := s.fixing.snapshot()
+	w = w.Noted(lines)
+	if w.LogOpen() {
+		w = w.Logged(lines)
+	}
+	return w
 }
 
 // Messages of a fix that is being applied.
@@ -42,6 +87,9 @@ type stepWriter struct {
 	n   int
 }
 
+// Note passes a line of detail to the run.
+func (w *stepWriter) Note(line string) { w.run.Note(line) }
+
 func (w *stepWriter) Write(p []byte) (int, error) {
 	for _, line := range strings.Split(string(p), "\n") {
 		if name, ok := strings.CutPrefix(line, "… "); ok {
@@ -61,7 +109,7 @@ func (s Shell) fixApplying() bool { return s.fixing != nil }
 // openFix starts the wizard on a planned fix.
 func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 	if s.running() {
-		s.say("A run is in progress (Ctrl+C stops it)")
+		s.say(words.Say("tui.fix.a_run_is_in_progress_ctrl"))
 		return nil
 	}
 	w := fixwizard.New(p, s.sources.ShowFix).Place(s.w, s.h)
@@ -71,7 +119,7 @@ func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 
 // fixKey sends a key to the wizard and does what it asks.
 func (s *Shell) fixKey(name string) tea.Cmd {
-	w, out := s.fix.Key(name)
+	w, out := s.synced(*s.fix).Key(name)
 	s.fix = &w
 	return s.afterFix(out)
 }
@@ -83,14 +131,14 @@ func (s *Shell) afterFix(out fixwizard.Outcome) tea.Cmd {
 		failed := s.fix.Phase() == fixwizard.Failed
 		s.fix = nil
 		if !failed {
-			s.say("Cancelled: nothing was changed")
+			s.say(words.Say("tui.fix.cancelled_nothing_was_changed"))
 		}
 	case out.Apply:
 		return s.applyFix()
 	case out.Stop:
 		if s.fixing != nil {
 			s.fixing.cancel()
-			s.say("Stopping the step…")
+			s.say(words.Say("tui.fix.stopping_the_step"))
 		}
 	case out.Copy != "":
 		s.copyText(out.Copy)
@@ -110,7 +158,7 @@ func (s *Shell) applyFix() tea.Cmd {
 		defer cancel()
 		var err error
 		if apply == nil {
-			err = errors.New("this smith cannot apply fixes here")
+			err = errors.New(words.Say("tui.fix.this_smith_cannot_apply_fixes_here"))
 		} else {
 			err = apply(ctx, fix, &stepWriter{run: run})
 		}
@@ -142,6 +190,13 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 		return nil
 	}
 	s.fixing = nil
+	if s.repair != nil && msg.err == nil {
+		// smith.toml reads now: start again so the shell opens the workspace.
+		s.fix = nil
+		s.reopen, s.quit = true, true
+		s.reopenNote = words.Say("tui.fix.fixed_smith_toml", "notCommittedHint", notCommittedHint())
+		return nil
+	}
 	refresh := s.refreshAfter([]string{"doctor", "--fix"})
 	if msg.err != nil {
 		w := s.fix.Fail(msg.err)
@@ -149,7 +204,44 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 		return refresh
 	}
 	what := s.fix.Resolved().Description
+	s.verifying = s.fix.Fix.Checks
+	s.verifyingWhat = what
 	s.fix = nil
-	s.notify("Fixed: "+what, toast.Success)
+	s.notify(words.Say("tui.fix.ran_checking_that_it_worked", "what", what), toast.Success)
 	return refresh
+}
+
+// checkedAgain runs when doctor has checked again because the person asked
+// (Check again): the toast says what doctor found. A fix that is verified has
+// said it already.
+func (s *Shell) checkedAgain(res doctorview.Result, verified bool) {
+	if !s.rechecking {
+		return
+	}
+	s.rechecking = false
+	if res.Err != nil || verified {
+		return
+	}
+	s.notify(words.Say("tui.doctor.checked_again", "failed", res.Report.Failed, "warnings", words.Count("doctor.summary.warnings", res.Report.Warnings)), toast.Info)
+}
+
+// verifyFix runs when doctor has checked again after a fix: every fix verifies
+// itself. The toast says "Fixed" only when the checks the fix clears now pass.
+// Otherwise it says what doctor found, which file and version for a tool, so
+// the person never has to guess why the warning is still there.
+func (s *Shell) verifyFix(res doctorview.Result) {
+	checks := s.verifying
+	s.verifying = nil
+	if len(checks) == 0 {
+		return
+	}
+	if res.Err != nil {
+		s.notify(words.Say("tui.fix.the_fix_ran_but_doctor_could", "err", res.Err.Error()), toast.Warning)
+		return
+	}
+	if still := doctor.StillFailing(res.Report, checks); len(still) > 0 {
+		s.notify(doctor.StillFailingText(still[0]), toast.Warning)
+		return
+	}
+	s.notify(words.Say("tui.fix.fixed", "verifyingWhat", s.verifyingWhat), toast.Success)
 }

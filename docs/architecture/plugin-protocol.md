@@ -26,7 +26,7 @@ flowchart LR
   end
   hostclient <-->|"stdin/stdout<br/>Content-Length framing"| builtin["built-in plugin<br/>smith plugin serve NAME<br/>(a child smith process)"]
   hostclient <-->|"stdin/stdout"| external["external plugin<br/>plugin.json command"]
-  builtin -.->|"packages/plugin-sdk/serve"| sdk["serve.Run loop"]
+  builtin -.->|"packages/plugin-sdk/serve"| sdk["serve.Main loop"]
   external -.->|"any language"| sdk2["its own loop"]
 ```
 
@@ -67,7 +67,7 @@ Schema (draft 2020-12) generated from them,
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../packages/plugin-sdk/schema/protocol.schema.json),
 is the contract for every other language. It has one definition per message (a member is required
 when its Go field has no `omitempty`; the doc comments are the descriptions), and next to the
-definitions `x-methods` (each of the 19 methods with its params, its result and the capability it needs,
+definitions `x-methods` (each of the 21 methods with its params, its result and the capability it needs,
 `null` for `initialize` and `shutdown`, and `notification: true` with no result for `cancel`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
 kinds that default to it), `x-protocolVersion` and `x-transport` (the framing and the largest message).
 
@@ -75,7 +75,7 @@ kinds that default to it), `x-protocolVersion` and `x-transport` (the framing an
 |---|---|---|
 | reflect over the types and read the package's source for comments and enumerations | `packages/plugin-sdk/protocolschema`, run by `go run ./schemagen` (`smith run schema -p plugin-sdk`) | the protocol has a method, an error code or a capability that `protocolschema`'s tables do not describe |
 | compare the committed file with what the generator writes | the Go test `TestCommittedSchemaIsCurrent` | someone changed `protocol` and not the schema |
-| generate each SDK's types from the schema | the TypeScript SDK: `tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`); the Python SDK: `tools/generate_protocol` (`smith run generate -p plugin-sdk-py`); the C# SDK: `Generator` (`smith run generate -p plugin-sdk-dotnet`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
+| generate each SDK's types from the schema | the TypeScript SDK: `packages/plugin-sdk-ts/tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`); the Python SDK: `packages/plugin-sdk-py/tools/generate_protocol` (`smith run generate -p plugin-sdk-py`); the C# SDK: `packages/plugin-sdk-dotnet/Generator` (`smith run generate -p plugin-sdk-dotnet`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
 | check that the SDKs agree on the wire | `packages/plugin-sdk-ts/integration` (a TypeScript and a Go plugin) `packages/plugin-sdk-py/tests/integration` (a Go, a TypeScript and a Python plugin) and `packages/plugin-sdk-dotnet/tests/Integration` (those and a C# plugin): the same logic answers the same requests with the same bytes, compared by response id where requests run together | an SDK writes members in another order, leaves out different zero values, or escapes differently |
 
 Three things about the wire that the schema cannot say, and that a new SDK must do (the Go SDK does
@@ -96,8 +96,8 @@ in `initialize`:
 
 | Plugin | Command | Notes |
 |---|---|---|
-| a built-in language plugin in `Builtins` (`node`, `go`, `python`, `rust`, `dotnet`, `ruby`, `php`, `cpp`, `dart`, `jvm`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `recipe`) | `smith plugin serve <name>`, i.e. the running binary again | all of them unless `[plugins] enabled` lists some; skipped when `[plugins.external.<name>]` replaces it |
-| a built-in addon in `BuiltinAddons` (`vertical-slices`, `eslint`, `jest`, `vitest`, `playwright`, `typescript`, `vite`, `angular`, `astro`, `vscode`, `go-smith-plugin`, `docker`) | the same | always started unless replaced |
+| a built-in language plugin in `Builtins` (`node`, `go`, `python`, `rust`, `dotnet`, `ruby`, `php`, `cpp`, `dart`, `jvm`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `bundle`, `recipe`) | `smith plugin serve <name>`, i.e. the running binary again | all of them unless `[plugins] enabled` lists some; skipped when `[plugins.external.<name>]` replaces it |
+| a built-in addon in `BuiltinAddons` (`vertical-slices`, `eslint`, `jest`, `vitest`, `playwright`, `typescript`, `vite`, `angular`, `astro`, `vscode`, `tauri`, `go-smith-plugin`, `docker`, and one for each architecture beyond vertical slices) | the same | always started unless replaced |
 | an external plugin, `[plugins.external.<name>]` | the `command` of the `plugin.json` found on the search path, or the command in `smith.toml` | the name it answers to and its version are checked (`checkExternal`) |
 
 The search path (`pluginhost.SearchPath`) is the workspace's `.smith/plugins`, each directory of
@@ -107,8 +107,10 @@ directory holding `<name>/plugin.json` wins. `plugin.json` has `name`, `version`
 filled in (`plugin_manifest_contract.go`). A plugin that fails to start stops the command, naming it.
 
 Built-in plugins use the same protocol on purpose: they are its first users, and an external plugin
-can replace one by name without the core noticing. How plugins are published, found and installed
-by name is not decided; see the open list in the [decision records](decisions/README.md#open-not-decided-yet).
+can replace one by name without the core noticing. A plugin is packed as a checksummed archive and installed by path, URL or name
+([ADR 0038](decisions/0038-a-plugin-is-packed-as-a-checksummed-archive-and-installed-without-running-it.md),
+[ADR 0040](decisions/0040-plugins-are-found-by-name-in-a-marketplace-index.md)); an external plugin starts only
+once the user trusts it, and gets a minimal environment ([ADR 0036](decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md)).
 
 ## The handshake
 
@@ -128,6 +130,9 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `requires`, `conflicts` | plugins that must or must not share a project |
 | `stacks` | ready-made stacks the plugin publishes |
 | `kinds` | the project kinds `generate` can scaffold (`app`, `lib`, `package`); absent or empty means all three ([ADR 0039](decisions/0039-a-plugin-declares-the-project-kinds-it-scaffolds.md)) |
+| `choices` | the options on an axis (framework, test, style) the plugin owns; `Stack.choices` makes a stack a saved selection, and `generate` is given the full list as `choices` ([ADR 0045](decisions/0045-frameworks-tests-and-styles-are-choices-shipped-as-data.md)) |
+| `tools` | the programs the plugin needs on the machine, each with how to detect it and how each package manager gets it (`smith tools`, [ADR 0077](decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)) |
+| `follows` | the project shape keys `generate` applies when it is given `shape`; `discover` reports `shape`, the dialect of each project ([ADR 0041](decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md)) |
 | `concurrency` | how many requests the plugin can work on at once: absent or `0` is 1, `N` is N, `-1` leaves the number to the host (which keeps 32 in flight) |
 
 ### Capabilities
@@ -146,12 +151,18 @@ which capability each method needs.
 | `remove` | `remove` | `Remover` | `smith remove` |
 | `changeKind` | `project/kind` | `KindChanger` | `smith kind` |
 | `components` | `sbom/components` | `ComponentLister` | `release`, for the SBOM it attaches |
+| `derive` | `derive` | `Deriver` | `smith derive`, `smith doctor`, `smith ci verify` (when `[derive] enabled`) |
+| `apiSurface` | `api/surface` | `APISurfaceReader` | `release`, for the version check against the public API (optional) |
+| `packs` | (none: it changes `publish`) | `PackPublisher` | `release`, for a package with `registry = "github-release"`: with `PublishParams.packDir` set, `publish` writes the package file (npm tarball, wheel and sdist, `.nupkg`, `.gem`, `.crate`), returns it in `assets` and publishes nowhere. The host never calls `publish` with the setting on a plugin without it. The built-in Node, Python, .NET, Ruby and Rust plugins declare it |
+| `channels` | (none: it changes `publish`) | `ChannelPublisher` | `release`, to publish a package of a release channel: under `PublishParams.tag` without moving the stable pointer (npm's `latest`), or with no tag when the registry orders a prerelease below the release (PyPI, NuGet). The built-in Node, Python and .NET plugins declare it through the Go SDK; the TypeScript, Python and C# SDKs have no way to yet |
+| `declared` | (none: it changes `discover`) | `DeclaredDescriber` | `projectgraph.Discover`, to describe the projects `smith.toml` declares for the plugin's language (`DiscoverParams.declared`): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |
 | `ci` | `ci` | `CIContributor` | `cipipeline.Collect`, release preflight |
 | `doctor` | `doctor` | `DoctorContributor` | `smith doctor` |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | `DependencyManager` | `smith install`, `uninstall` |
+| `link` | `dependencies/link`, `dependencies/unlink` | `Linker` | `smith install -p <project> <library>`, `smith uninstall` (`internallink`); a plugin without it is refused with one sentence that names the manifest to edit by hand |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | `DeclarationEditor` | `smith sync`, `smith up --align` |
 | `latest` | `dependencies/latest` | `LatestReader` | `smith up` |
 | `cancel` | `cancel` (a notification) | `Cancellable` | the host, when a call's context ends or its time runs out |
@@ -182,18 +193,21 @@ All payload types live in `packages/plugin-sdk/protocol`.
 
 | Method | Request | Response | Contribution to the whole |
 |---|---|---|---|
-| `discover` | `DiscoverParams{manifests}` (paths whose base name matches) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
-| `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn, release}`: add tasks, replace tasks, append dependencies, default the project's release-from-a-command settings (`build`, `assets`, `platforms`, `assetName`, `checksums`) that its `[projects.<name>.release]` table leaves out |
-| `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings}` | `GenerateResult{files, notes}` | writes a new project's files |
+| `discover` | `DiscoverParams{manifests, declared, settings}` (paths whose base name matches; the projects `smith.toml` declares for the plugin's language: a name, a root and a kind, sent to a plugin with the `declared` capability; the plugin's own `[projects.<name>.settings.<plugin>]` tables by project name, such as the Go build tags) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
+| `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn, release, facts}`: add tasks, replace tasks, append dependencies, default the project's release-from-a-command settings (`build`, `assets`, `platforms`, `assetName`, `checksums`) that its `[projects.<name>.release]` table leaves out, publish default [shared facts](#shared-facts) |
+| `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings, facts}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
 | `project/kind` | `ChangeKindParams` | `ChangeKindResult` | the edits that make a project another kind: its manifest and the references to its directory |
+| `derive` | `DeriveParams{projects, graph, owned}` | `DeriveResult{files, diverging}` (`DerivedFile{project, path, mode, renderer, version, content, comment, format, table, keys}`; `DivergentFile{project, path, renderer, detail}` for a file left alone because it differs from its siblings) | the content of the files the plugin derives from facts and the project graph, as a whole file, a region between markers or owned keys; the plugin writes nothing, the host keeps `smith.lock` and decides ([ADR 0046](decisions/0046-derived-files-have-an-owner-and-a-record.md)) |
 | `sbom/components` | `ComponentsParams{project}` | `ComponentsResult{components, source, purl}` (`components` are `Component{name, version, purl}`) | the dependencies the project ships, read from its lockfile where the ecosystem has one and from its manifest otherwise, as package URLs; `purl` is the project's own, without a version. An empty list is an answer |
+| `api/surface` | `APISurfaceParams{project, ref}` | `APISurfaceResult{names, unreadable}` | the names the project exports at a git revision (empty `ref` = working tree), sorted; a name of a subpath entry is prefixed `./sub:`. `unreadable` says why no list exists, and the host then skips the project. The host compares two lists and reads no meaning from the names |
 | `version/write` | `VersionParams{project, version, dependencies, dryRun}` | `VersionResult{files}` | stamps the manifests; the release restores them. Asked of the project's language plugin and of every other plugin that serves the project and advertises `version` (a convention such as `tauri`, for the files it keeps a version in) |
-| `publish` | `PublishParams{project, version, dryRun, assets}` | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |
+| `publish` | `PublishParams{project, version, dryRun, assets, platform, tagged, commit, branch, tag, packDir}` (`tag` is the release channel's name, sent only to a plugin with `channels`; `packDir` asks for the package file only, sent only to a plugin with `packs`) | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |
 | `published` | `PublishedParams{project}` | `PublishedResult{version, registry, unreachable, detail}` | what the registry already has |
 | `ci` | `CIParams{projects, audit}` | `CIResult{toolchains, authenticate, setup, audit, postRelease, credentials, permissions, stores}` | see [CI generation](ci-generation.md) |
 | `doctor` | `DoctorParams{projects}` | `DoctorResult{findings}` | `Finding{check, ok, detail, remedy, warning, fix}`; a `Fix` has `files`, `steps`, `choices`, `safe` |
 | `dependencies/install`, `uninstall` | `InstallParams`, `UninstallParams` | `DependencyResult` | adds or removes packages in one project |
+| `dependencies/link`, `unlink` | `LinkParams{project, library, quiet, plan, spec}`, `UnlinkParams{project, library}` | `LinkResult{files, notes, manifest, line, options}`, `DependencyResult` | makes a project depend on a library of the same workspace in the ecosystem's own form, and takes it out; `plan` writes nothing and answers what would be written, with the range `options` ([ADR 0071](decisions/0071-smith-install-links-a-library-of-the-workspace.md)) |
 | `dependencies/declared`, `rewrite` | `DeclaredParams`, `RewriteParams` | `DeclaredResult`, `DependencyResult` | reads and edits declared specs |
 | `dependencies/latest` | `LatestParams` | `LatestResult{latest, unreachable, tools}` (`tools` are `ToolPin`s) | newest releases and pinned tools |
 | `cancel` | `CancelParams{id}`, a notification | none | stops the in-flight request with that id |
@@ -249,6 +263,30 @@ records its source for `smith explain`. The code is `projectgraph.Discover` and
 what they share goes through the project (`exports`, `imports`, `tags`, `settings`) and through task
 names. The result therefore depends on the set of plugins and the stack's order, not on timing.
 How the edges are found is the subject of [the project graph page](project-graph.md).
+
+## Shared facts
+
+A fact is a typed value under a namespaced key (`module.aliases`, `source.roots`). It is how
+several tools agree on one value without calling each other
+([ADR 0042](decisions/0042-plugins-publish-shared-facts-the-core-merges.md)). The change is
+additive; the protocol version stays 1.
+
+| Where | Field | Meaning |
+|---|---|---|
+| plugin to host | `Contribution.facts` | the plugin's default facts for a project (the lowest scope) |
+| host to plugin | `Project.facts` | the merged facts of the project, in every request that carries a project |
+| host to plugin | `GenerateParams.facts` | the facts `smith.toml` sets for the project being generated |
+
+Well-known keys, whose value type the protocol checks: `module.aliases` (object of strings),
+`source.roots`, `test.patterns`, `build.outputs` (arrays of strings), `runtime.node` (string). A
+plugin may publish any other namespaced key with any JSON value.
+
+The core merges the layers per project and key (`apps/smith/factmerge`). The narrowest scope that
+sets a key wins: `[projects.<name>.facts]`, then `[facts]`, then a recipe, then the plugin defaults.
+Two plugin defaults that differ for one key are an error that names both plugins; a `smith.toml`
+fact decides it. A plugin never sees who set a fact; an absent key means no one set it and the
+plugin uses its own default. `smith explain <project> --facts` shows each value and its source.
+How to publish and read facts is in [the plugin author guide](../plugins/creating/shared-facts.md).
 
 ## Cancel and concurrency
 

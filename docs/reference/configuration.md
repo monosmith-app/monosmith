@@ -25,7 +25,7 @@ describes, and `smith upgrade` migrates older files.
 ## Changing a setting from the command line
 
 `smith config` reads and changes the settings of the `[workspace]`, `[ci]`,
-`[release]`, `[cache]` and `[plugins]` tables:
+`[release]`, `[cache]`, `[plugins]` and `[agent]` tables:
 
 ```sh
 smith config list                          # every setting, its value, what it does
@@ -48,20 +48,36 @@ name = "acme"                         # required
 scope = "@acme"                       # npm scope for Node projects
 module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
+allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
+shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
+alternative_outputs = [["api:build", "api:build-dev"]]  # tasks that write one folder but never run together (below)
+environments = ["lcl", "dev", "uat", "prd"]  # the builds a new web app gets, one per environment (docs/manual/environments.md)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
+confirm = "risky"                     # which plans ask: "always" (default) or "risky": only a plan that deletes or edits files asks (ADR 0073)
+update_check = "on"                   # ask npm once a day if a newer smith exists on your channel (stable or next); "off" never asks; unset: announced once (docs/getting-started/installing.md)
+commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
+defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
 [recipes]                             # a different recipe for one project kind: app, lib or package
 package = "https://example.com/recipes/package.recipe.toml"
 
 [ci]
 providers = ["github"]                # "github", "azure", "gitlab", "circleci", or several
+secrets = []                         # repository secrets the pipelines hand to every step that runs smith, native and assets jobs included (ci.md, Secrets)
+attest = "on"                         # build provenance of a release's archives (GitHub): "optional" goes on when GitHub refuses (private repo of a free organisation), "off" leaves the step out
+manual_release = false                # true adds a way to start a release by hand of a package no commit releases (GitHub input, Azure parameter, GitLab/Bitbucket variable; CircleCI cannot); off by default because whoever can run the pipeline can publish (docs/reference/ci.md)
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
 branches = ["main", "dev"]             # branches the GitHub and Azure pipelines run on, pushes and pull requests; the release branch is always one; default: the release branch (docs/reference/ci.md)
 # [[ci.sibling_repos]]: repo, ref, env, dir, pre_build, token_secret: other repositories the GitHub workflow checks out beside the workspace (docs/reference/ci.md)
 azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines definition runs on; default: Microsoft's hosted ubuntu-latest
 azure_variable_groups = ["Build"]     # variable groups the definition links, for the secrets its steps read; default: none
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
+native_on = "release"                  # when the native job runs: release (default), main or always (docs/reference/ci.md#cost-controls)
+triggers = ["push", "pull_request"]    # events that start the GitHub and Azure pipelines; default: both
+audit = "always"                       # when smith ci audit runs: always (default), main or schedule
+audit_cron = "0 6 * * 1"               # the schedule of audit = "schedule"; default: Mondays 06:00 UTC
+publish_on = "release"                 # where pack, attest and the assets job run: release (default) or channels
 native_linux_packages = []            # apt packages the native job installs on Linux
 smith_version = "latest"              # the smith the pipelines install: "latest" or an exact version; default: the version that generates them (docs/reference/ci.md)
 audit_policies = []                    # "node", "go", "python", "rust": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)
@@ -72,6 +88,7 @@ audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts i
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
 allow = ["left-pad"]                  # dependencies that may differ between projects
+presets = ["@acme/eslint-config"]     # shared-config packages: smith up shows their bumps first, as one group (docs/guides/shared-presets.md)
 
 [boundaries]
 kinds = true                          # no project depends on an app: an error (unset: a warning; false: off)
@@ -81,10 +98,20 @@ kinds = true                          # no project depends on an app: an error (
 branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
 github_releases = false               # a GitHub Release per tag (needs GITHUB_TOKEN)
+github_deployments = true              # GitHub Actions: list each registry a release published to in the Deployments sidebar (needs deployments: write, which the generated workflow grants)
 tag_format = "{name}@"                # the tag prefix of a project with no tag_prefix; "{scope}/{name}@" gives @acme/kit@ (releasing.md, Tags)
 rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC token, not GEM_HOST_API_KEY (GitHub only; docs/reference/releasing.md)
 vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
+api_check = "warn"                    # warn when the commits' bump is smaller than the public API change needs; "error" stops the release, "off" skips (releasing.md, The bump against the public API)
+propagation_wait = "15m"              # the longest to wait for the platform packages of an npm release to be fetchable before a dist-tag moves; "0" does not wait (releasing.md, npm, PyPI, NuGet and RubyGems)
+
+# A branch that releases a line of prerelease versions of its own (releasing.md, Release channels):
+# [[release.channels]]
+# branch = "next"       # not the [release] branch
+# prerelease = "beta"   # 2.0.0-beta.1, 2.0.0-beta.2, ...
+# major = 2             # the first release is <major>.0.0-<prerelease>.1
+# dist_tag = "next"     # npm's dist-tag it publishes under; default: the prerelease id; never "latest"
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute
@@ -97,11 +124,12 @@ enabled = false                       # no MonoSmith agent files on purpose (smi
 
 [plugins]
 enabled = ["node", "go", "python"]    # default: every built-in plugin
+marketplace = "https://example.com/plugins/index.json"   # where `smith plugin search|install <name>` look; default: monosmith-app/plugins
 
 [default_stacks]                      # a project's stack when it records none (docs/reference/stacks.md)
 node = "node-jest"
 
-[stacks.ts-func]                      # declare a stack: the plugins a project is built with
+[stacks.ts-func]                      # declare a stack: the plugins a project is built with (or choices = ["react", "vitest"], a saved selection: docs/reference/stacks.md)
 description = "Azure Function in TypeScript"
 language = "node"
 toolchain = ["eslint", "vitest"]
@@ -115,12 +143,25 @@ stack = "node-vitest"                 # replaces the stack web's manifest record
 [projects.sdk]
 registry = "public-npm"               # this package publishes here instead of [release] registry
 
+[projects.mvd]                        # a project with no manifest of its own: a program or a library that is a package of the Go module above it (plugins/using/catalogue/go.md)
+root = "apps/mvd"                     # its folder; with language, this declares it
+language = "go"                       # the plugin that describes it
+kind = "app"                          # default: an app when the folder holds a program, else a lib; never "package" for Go
+
 [projects.java]
 registry = "none"                     # tag it and create its GitHub Release, publish it to no registry (a registry that builds from the tag, such as JitPack); no credentials are asked for
 bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0, because JitPack uses the tag name as the version; one project only, not with tag_prefix
 
+[projects.sdk]
+registry = "github-release"           # pack it and attach the package file (npm tarball, wheel and sdist, nupkg, gem, crate) to its GitHub Release instead of publishing; needs [release] github_releases = true; no registry credential is asked for (also valid under [release]: every package of a private repository)
+
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
+
+[projects.web.settings.vite]          # a web app's environments: environments, default_environment, output, env_files (manual/environments.md)
+[projects.mvd.settings.go]            # Go build tags: tags, tags_linux, tags_windows, tags_darwin (plugins/using/catalogue/go.md)
+tags = ["production"]
+tags_linux = ["gtk3"]
 
 [projects.studio.settings.tauri]      # a Tauri app's sidecar programs and resources, copied for tauri-build (plugins/using/catalogue/tauri.md)
 sidecars = [{ name = "videocraw", project = "cli", bin = "videocraw" }, { name = "tool", from = "tools/tool" }]
@@ -175,6 +216,12 @@ An external plugin also has to be trusted on the machine that runs it before smi
 `smith plugin trust <name>`. See [Plugin security](../plugins/using/plugin-security.md).
 
 ## Private registries
+
+A repository that must not publish to any registry sets `registry = "github-release"` (under `[release]`, or
+under one project): the release packs each package and attaches the file to its GitHub Release, with a
+`.sha256` file and a bundle that installs the set together. See
+[Releasing](releasing.md#attach-the-package-files-to-the-github-release). `smith doctor` checks the setting
+and warns about a package that would publish to a public registry whose credential is unset.
 
 `[registries.<name>]` names a private package registry: an Azure Artifacts
 feed, GitHub Packages, or any registry that takes a token. Give it the URL of
@@ -312,7 +359,71 @@ node = "22"      # any 22.x
 go = "1.23"      # any 1.23.x
 ```
 
-A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([ADR 0020](../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding.
+A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([ADR 0020](../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding. The label `golangci-lint` is read by the Go plugin: `golangci-lint = "2.15.0"` records that the workspace keeps that version on purpose, though CI pins another, and doctor stops warning about it (lint results may differ from CI). `smith doctor --fix` writes it when you answer "Keep" to the golangci-lint question.
+
+## Shared facts
+
+A fact is a value that several tools must agree on, under a namespaced key. Plugins publish a
+default for each; `[facts]` sets one for every project, and `[projects.<name>.facts]` for one
+project. The narrowest table wins, then the plugin defaults
+([ADR 0042](../architecture/decisions/0042-plugins-publish-shared-facts-the-core-merges.md)).
+
+```toml
+[facts]
+"module.aliases" = { "@app" = "src" }
+
+[projects.web.facts]
+"source.roots" = ["src", "generated"]
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `module.aliases` | table of strings | import alias to a directory relative to the project. The Node toolchains write it into `tsconfig.json` (`paths`), Jest (`moduleNameMapper`), Vite (`resolve.alias`) and Vitest when they scaffold a project. |
+| `source.roots` | array of strings | directories that hold source code |
+| `test.patterns` | array of strings | globs that select test files |
+| `build.outputs` | array of strings | directories a build writes |
+| `runtime.node` | string | the Node.js version range |
+
+A key of another namespace (`acme.region`) holds any value. A bad key, or a value of the wrong type
+for a key above, stops smith with a message that names the table. `smith explain <project> --facts`
+shows each value and where it came from. Plugin authors: [Sharing facts between
+plugins](../plugins/creating/shared-facts.md).
+
+## Operations
+
+`[workspace] commit_operations = true` makes `smith add`, `remove`, `upgrade`, `derive` and `sync`
+commit their work as one conventional commit (`chore: add package billing`), when the work tree has
+no uncommitted change before the command. Smith lists each commit in `.smith/operations.json`, and
+[`smith undo`](../manual/undo.md) reverts the last one with `git revert`. Default: `false`, so a
+workspace that does not opt in sees no change. Before they write, `add`, `remove`, `upgrade` and
+`derive` print a plan and, in a terminal outside CI, ask; `--yes` skips the question. See
+[ADR 0047](../architecture/decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md).
+
+`[workspace] confirm` says which plans ask. `"always"` (the default) asks for every plan, and
+without a terminal a plan needs `--yes`. `"risky"` asks only for a plan that can lose something:
+one that deletes a file, or edits a file that exists and shows a diff of it. A plan that only
+creates files, or edits files smith owns, is printed and applied, with a line that says so, in a
+terminal or not. A flag always wins: `--yes` never asks. Release, `remove` of a folder with files
+git cannot bring back, and the choices that name a different result (which version wins, the first
+commit of `smith new`) are questions, not confirmations, so this setting does not skip them. See
+[ADR 0073](../architecture/decisions/0073-release-sync-and-every-plan-show-what-they-change.md).
+
+## Derived files
+
+Files that smith writes from facts and the project graph, with an owner for each in `smith.lock`
+([ADR 0046](../architecture/decisions/0046-derived-files-have-an-owner-and-a-record.md)). Off by
+default: a workspace that does not opt in sees no change.
+
+```toml
+[derive]
+enabled = true
+```
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | boolean | `false` | `smith derive` works, `smith doctor` reports files that need action, and `smith ci verify` runs `smith derive --check` |
+
+See [Derived files](derived-files.md) and the [guide](../guides/derived-files.md).
 
 ## Leaving directories out
 
@@ -339,6 +450,55 @@ examples users copy and install on their own. A Node package outside the root
 the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
+
+## Warnings you keep on purpose
+
+`smith doctor` fails a pull request on a warning as well as on an error, so a
+warning that stays has to be named. Each `[[doctor.accept]]` entry names the
+warning by its check, as `smith doctor` lists it, and says why it stays:
+
+```toml
+[[doctor.accept]]
+check = "dist is tracked by git"
+project = "site"                # optional: only this project
+reason = "GitHub Pages serves the folder from the repository"
+```
+
+Doctor then shows the check as passed, with the reason. The reason is required.
+Only a warning can be accepted; a failure still fails. When an entry matches no
+warning any more, doctor warns about the entry, so the list does not outlive the
+problems it answered.
+
+## Output folders outside the build directory
+
+`smith doctor` checks that every build writes into `dist/` and that no two tasks
+write the same folder. Two settings in `[workspace]` say that a case is on
+purpose. Both are lists of workspace-relative paths with forward slashes, and
+each path covers the folders under it:
+
+```toml
+[workspace]
+allowed_outputs = ["apps/mvd/appwindow/web"]  # a folder a tool embeds (go:embed)
+shared_outputs = ["dist/drop"]                # package tasks that fill one folder
+```
+
+- `allowed_outputs`: a task may write there although it is not under `dist/`.
+  Use it for a folder a tool reads from its own place, such as a `go:embed`
+  folder.
+- `shared_outputs`: several tasks may write there. A cache restore replaces a
+  task's output folders, so each task must write its own files. Giving each task
+  a subfolder (`dist/drop/<project>/`) is the safer choice and needs no setting.
+  smith then never clears the folder, so old files stay.
+- `alternative_outputs`: groups of tasks that write one folder but never run
+  together (`api:build` and `api:build-dev`). smith doctor does not report the
+  overlap inside a group. smith still clears the folder before each task and a
+  cache restore still replaces it, so a run of two tasks of one group keeps only
+  the last one's files. Prefer giving each task its own folder; `smith doctor
+  --fix --only "no two tasks write the same output directory" --choose 2` writes
+  the group. A task that runs until it is stopped (`watch`, `serve`, `start`,
+  `dev`) is never compared with a build.
+- `environments`: the environments a new web app is built for, lowercase words.
+  See [environment builds](../manual/environments.md).
 
 ## Shared schemas
 
@@ -454,8 +614,8 @@ it off), and `serve`, `serve_url` and `serve_timeout`, which start an app around
 the task ([Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task)).
 
 There is exactly one precedence rule: **plugin → `[tasks.<task>]` → matching
-`[[task_groups]]` (in file order) → `[projects.<name>.tasks.<task>]`**, later
-wins, field by field. See [Task groups](#task-groups) for the third layer. To see the
+`[[groups]]` (in file order) → `[projects.<name>.tasks.<task>]`**, later
+wins, field by field. See [Groups](#groups) for the third layer. To see the
 result and where each value came from:
 
 ```sh
@@ -481,25 +641,27 @@ dependency a plugin gave the task and the override leaves out (`build`,
 `^build`) is gone. `smith doctor` names each one as a warning, so the drop is
 deliberate rather than silent.
 
-## Task groups
+## Groups
 
 When several projects need the same overrides (every Node library builds into
 `dist`, tests need the same variable), state them once, for the group, instead
-of once per project:
+of once per project. A group can also give its projects `tags` and a
+`release` table (below). The table was called `[[task_groups]]` before smith 2.0;
+`smith doctor --fix` renames it in an old `smith.toml` and keeps the comments.
 
 ```toml
 # every Node library
-[[task_groups]]
+[[groups]]
 select = ["lang:node", "kind:lib"]
 
-[task_groups.tasks.build]
+[groups.tasks.build]
 outputs = ["dist"]
 
-[task_groups.tasks.test]
+[groups.tasks.test]
 depends_on = ["^build", "logger:build"]
 env = { TS_NODE_COMPILER_OPTIONS = '{"module":"commonjs"}' }
 
-[task_groups.tasks.typecheck]
+[groups.tasks.typecheck]
 depends_on = ["^build", "build", "^typecheck"]
 
 # one library uses all of that except for its test task
@@ -507,12 +669,26 @@ depends_on = ["^build", "build", "^typecheck"]
 depends_on = ["^build"]
 ```
 
-`select` lists selectors, written the way `--projects` and `[boundaries]` write
+A rule for a folder is a group whose selector is the folder: `select = ["packages/*"]` is "everything
+under `packages/`" ([ADR 0058](../architecture/decisions/0058-folder-rules-are-task-groups-with-a-path-selector.md),
+[ADR 0067](../architecture/decisions/0067-groups-replace-task-groups-and-also-set-tags-and-release.md)).
+
+```toml
+# every package of the workspace: tags and a release, in one place
+[[groups]]
+select = ["packages/*"]
+tags = ["published"]
+
+[groups.release]
+platforms = ["linux/amd64", "darwin/arm64"]
+```
+
+`select` lists selectors, written the way `--project` and `[boundaries]` write
 them: a project name, a glob over names or folders (`libs/*`), `kind:app`,
 `kind:lib`, `kind:package`, `lang:<language>` or `tag:<tag>`. A project is in
 the group when it matches **every** selector (add a second group for "or").
 A group sets the same fields as `[tasks.<task>]`, and changes only tasks the
-project already has.
+project already has. It sets at least one of `tasks`, `tags` and `release`.
 
 - Groups apply in the order of the file. When two groups match a project and
   set the same field of the same task, the later one wins; fields only one of
@@ -520,13 +696,19 @@ project already has.
 - A project's own `[projects.<name>.tasks.<task>]` wins over every group,
   field by field: `parser` above keeps the group's `build` and `typecheck`, and
   its `test` takes its own `depends_on` and the group's `env`.
-- `tag:` selectors see the tags set in `[projects.<name>] tags`.
+- `tags` are added to the tags of every project the group selects, like
+  `[projects.<name>] tags`. `tag:` selectors see the tags a project sets, and
+  the tags an earlier group gave.
+- `release` is the `[projects.<name>.release]` table of every selected project
+  that has none of its own. A project's own table replaces the group's whole;
+  the two are not merged. A group cannot name the published package (`npm`,
+  `pypi`, `nuget`, `rubygems`, `pub`): that name is the project's.
 - `smith explain parser:test` says where each value came from, for example
-  `from smith.toml [[task_groups]] select = ["lang:node", "kind:lib"]`.
+  `from smith.toml [[groups]] select = ["lang:node", "kind:lib"]`.
 - Cache keys follow the resolved task, so a change in a group re-runs exactly
   the tasks it changes.
 - `smith.toml` is rejected when a group has no `select`, an empty selector or
-  an unknown `kind:`, or sets no task. `smith doctor` warns about a group that
+  an unknown `kind:`, or sets none of `tasks`, `tags` and `release`. `smith doctor` warns about a group that
   matches no project.
 - The `depends_on` rules above apply unchanged: a group's list replaces the
   plugin's, and the dependencies it leaves out are named by `smith doctor`.
@@ -534,7 +716,7 @@ project already has.
 `smith convert` writes the settings that projects of one language and kind
 share as a group. For a workspace that already repeats them, `smith doctor`
 warns ("task settings shared by projects are written once") and `smith doctor
---fix` rewrites `smith.toml`: the repeated tables move into `[[task_groups]]`
+--fix` rewrites `smith.toml`: the repeated tables move into `[[groups]]`
 entries added at the end of the file, a project that differs keeps its own
 table (with the group's other fields added, so it runs as before), and every
 other line, comments included, stays. The fix is only offered when the
@@ -562,7 +744,7 @@ split_repo = "acme/client-php"
 [projects.cli.release]
 asset_name = "{product}_{version}_{os}_{arch}.{ext}"   # the default
 product = "acme"                                      # default: the project name
-platforms = ["linux/amd64", "darwin/arm64", "windows/amd64"]  # default: six
+platforms = ["linux/amd64", "darwin/arm64", "windows/amd64"]  # default: six; a native app: one per native runner
 os_alias = { darwin = "macos" }                       # names in file names only
 arch_alias = { amd64 = "x64" }                        # the same for architectures
 version_variable = "main.version"                     # Go: stamped with -X
@@ -572,8 +754,10 @@ npm = ["@acme/cli", "acme"]                           # npm packages; the first 
 pypi = "acme"                                         # PyPI wheels
 nuget = "acme"                                        # .NET tool packages (dotnet tool install -g acme)
 rubygems = "acme"                                     # platform gems
+stable_only = ["pypi"]                                # pypi, nuget, rubygems: a pre-release skips these registries (releasing.md, npm, PyPI, NuGet and RubyGems); default: none
 pub = "acme"                                          # pub.dev package, published by the pub workflow
 pub_tag = "{name}-v{version}"                         # the default: the tag pub.dev's automated publishing matches
+channels = true                                       # false keeps the project out of the release channels (releasing.md, Release channels)
 description = "What the app does"                     # shown by the registries and package managers
 license = "MIT"
 homepage = "https://cli.acme.dev"                     # default: the GitHub repository
@@ -585,6 +769,7 @@ assets = ["out/*.zip", "out/*.zip.sha256"]            # globs of the files it le
 platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm64"]  # a runner each
 asset_name = "{product}-{version}-{platform}.{ext}"   # optional: rename the files on upload ({product}, {version}, {platform}, {ext})
 checksums = true                                      # optional: attach <product>-<version>-<platform>.sha256 for what a runner uploads
+install = false                                       # optional: the build command needs none of this project's dependencies, so the assets job does not install it (default: true)
 
 # a Tauri app needs none of that: its plugin supplies build, assets, platforms, asset_name and checksums
 [projects.studio.release]
@@ -606,10 +791,12 @@ See [Releasing](releasing.md#apps).
 | `SMITH_RELEASE_ANY_BRANCH` | allow a real release from another branch |
 | `SMITH_PYPI_SIMPLE_URL` | the simple index to check before uploading to a custom Python index |
 | `SMITH_PLUGIN_PATH` | directories to look for installed plugins in, after the workspace's `.smith/plugins` (docs/reference/plugins.md) |
+| `SMITH_MARKETPLACE` | the plugin index `smith plugin search` and `smith plugin install <name>` read: an https URL or a file path; wins over `[plugins] marketplace` |
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/`, and the external plugins you trust are recorded in its `trust.json` |
 | `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
 | `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
-| `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release |
+| `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release, and the update notice asking npm |
+| `SMITH_UPDATE_CHECK` | `on` or `off`: whether smith asks the npm registry once a day for a newer smith on your channel; wins over `[workspace] update_check` |
 | `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |
 | `TWINE_REPOSITORY_URL` | upload Python packages and an app's wheels to another index |
 | `NUGET_PUSH_URL` | the NuGet v2 push endpoint for an app's .NET tool packages (default nuget.org) |

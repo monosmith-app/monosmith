@@ -1,0 +1,7 @@
+{
+  "cmd.add.title": "Add a package",
+  "cmd.remove.title": "Remove {name} from {project}",
+  "cmd.items.one": "{count} item",
+  "cmd.items.other": "{count} items",
+  "tui.hint.quit": "q to quit"
+}

@@ -174,18 +174,18 @@ smith plugin check ./smith-plugin-widget-lint
 
 ```text
 widget-lint 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: toolchain
-  ✔ a toolchain plugin does something
-  ✔ only a toolchain provides tasks
-  ✔ a toolchain names the slots it fills
-  ✔ requires language plugin widget: a known reference
-  ✔ stack widget-linted is complete
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: toolchain
+  ✓ a toolchain plugin does something
+  ✓ only a toolchain provides tasks
+  ✓ a toolchain names the slots it fills
+  ✓ requires language plugin widget: a known reference
+  ✓ stack widget-linted is complete
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ shuts down when asked
 ```
 
 ## Use it in a workspace
@@ -209,8 +209,8 @@ Wrote 3 file(s):
 $ smith run lint
 extra:lint ▶ .../smith-plugin-widget-lint.exe lint description,license
 extra:lint │ widget.json sets description,license
-extra:lint ✔ 15ms
-✔ 1/1 tasks succeeded (0 from cache) in 20ms
+extra:lint ✓ 15ms
+✓ 1/1 tasks succeeded (0 from cache) in 20ms
 $ smith explain extra:lint
 extra:lint — check that widget.json sets description, license
   command    .../smith-plugin-widget-lint.exe lint description,license
@@ -225,8 +225,8 @@ why:
 ```text
 extra:lint ▶ .../smith-plugin-widget-lint.exe lint description,license,homepage
 extra:lint │ widget.json must set homepage
-extra:lint ✖ exited with code 1
-✖ 0/1 tasks succeeded (0 from cache) in 26ms
+extra:lint × exited with code 1
+× 0/1 tasks succeeded (0 from cache) in 26ms
 ```
 
 Before the plugin, `smith doctor` said `core has no lint task, so CI never checks it`; a slot filled
@@ -248,8 +248,8 @@ ok  	example.com/smith-plugin-widget-lint	0.369s
 
 | You see | Cause and remedy |
 |---|---|
-| `✖ a toolchain names the slots it fills` — `a toolchain plugin must list the tasks it provides` (from the code) | `Provides` is empty. List every task the plugin owns |
-| `✖ only a toolchain provides tasks` | `Provides` is set without the toolchain role |
+| `× a toolchain names the slots it fills` — `a toolchain plugin must list the tasks it provides` (from the code) | `Provides` is empty. List every task the plugin owns |
+| `× only a toolchain provides tasks` | `Provides` is set without the toolchain role |
 | `jest and vitest both provide the test task; keep one` | two plugins in one stack fill the same slot. Keep one, or give them different slots |
 | `widget-lint applies to [widget], not to node projects` | `Languages` does not include the stack's language |
 | `plugin "widget-lint" is not loaded` | the stack names a plugin that is not declared under `[plugins.external]` |

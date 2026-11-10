@@ -30,11 +30,24 @@ version of the compiler or runtime. Same key, same result: smith replays the
 stored output and log instead of running the task. `smith why-miss` says which
 part of the key changed. See [Cache](tasks-and-cache.md#cache).
 
+## axis
+
+The question a [choice](#choice) answers: `framework`, `test`, `lint` or `style`. A project has at
+most one choice on an axis unless its choices allow more. `smith choices` lists the axes. See
+[Stacks](stacks.md#choices-a-stack-as-a-saved-selection).
+
 ## capability
 
 One of the optional methods a [plugin](#plugin) announces when it starts
 (`discover`, `generate`, `publish`, …). smith never calls a method the plugin
 did not announce. See [Writing a plugin](../guides/writing-a-plugin.md).
+
+## choice
+
+One option on an [axis](#axis) of a project's make-up: React or Vue on the framework axis, Jest or
+Vitest on the test axis. A plugin ships its choices as data. The solver checks a selection (`requires`,
+`conflicts`, what an axis needs) and turns it into a [stack](#stack). `smith choices` lists them, and
+`smith compose` searches them. `smith swap` changes one choice of an existing project.
 
 ## convention
 
@@ -49,6 +62,13 @@ One step of the generated pipeline. Every phase is a command you can run
 yourself: `smith ci setup`, `audit`, `verify`, `pack`, `native` and `release`.
 See [CI pipelines](ci.md).
 
+## declared project
+
+A project that `smith.toml` names with `[projects.<name>]`, a `root` and a `language`, because its
+folder has no manifest of its own (a Go program that is a package of the module above it). Only a
+language plugin with the `declared` capability can describe one. See
+[Configuration](configuration.md).
+
 ## depth level
 
 How far `smith adopt` and `smith convert` go (`--level`). `conservative`, the
@@ -56,12 +76,38 @@ default, keeps the repository's own build and lint setup and lists what is left.
 `full` makes smith the only tool and deletes the old tooling nothing uses any
 more, after asking. See [Converting](../getting-started/converting.md#going-further---level-full).
 
+## divergence
+
+A place where a workspace differs from smith's defaults: a task override, an ejected file, a derived
+file that drifted, a file that differs from its siblings. `smith divergences` lists them, each with
+the reason and the way back. See [`smith divergences`](../manual/divergences.md).
+
 ## dist
 
 The one directory at the workspace root where every build writes, in a path
 that mirrors the project's (`apps/web` builds into `dist/apps/web`). Delete
 `dist/` to clean everything. `smith doctor` fails a task whose output goes
-anywhere else.
+anywhere else, and for a Node project it offers to
+[move the build](../manual/doctor.md#a-build-that-writes-outside-dist) there.
+
+## framework
+
+How an app or a library is written: a web framework such as React or Vue, or a whole starter. It is a
+choice on the framework layer of a project (see [`smith compose`](../manual/compose.md)). A terminal form
+shows it as `framework = how the app or library is written`.
+
+## group
+
+A `[[groups]]` table in `smith.toml`: a selector (names, folder globs, `kind:`, `lang:`, `tag:`) and
+what it gives every project it selects: task overrides, tags and release settings. Groups apply in
+file order. They replace the `[[task_groups]]` table of smith 1.x. See
+[Configuration](configuration.md#groups).
+
+## host
+
+Where code runs in the cloud: an Azure Functions, AWS Lambda or Google Cloud Functions app, with the trigger
+and the runtime it asks for. It is a choice on the host layer of a project (see
+[`smith compose`](../manual/compose.md)).
 
 ## fix
 
@@ -87,12 +133,24 @@ language and a kind together.
 
 The [plugin](#plugin) that understands one language: it finds the projects
 from their manifests (`package.json`, `go.mod`, …), turns imports into graph
-edges and writes versions. A project has exactly one. See [Roles](#role-or-level).
+edges and writes versions. A project has exactly one. See [Roles](#role).
+
+## launcher
+
+The two static files `tools/smith/smith` and `tools/smith/smith.cmd`, written by `smith bootstrap`.
+They run the smith version the workspace pins in `[ci] smith_version`, so a clone needs no install.
+See [`smith bootstrap`](../manual/bootstrap.md).
 
 ## lib
 
 One of the three [kinds](#kind). A lib is imported by other projects and never
 published by itself. It lives in `libs/<name>`.
+
+## library of the workspace
+
+A project of kind `lib` or `package` that another project of the same workspace and language depends
+on. `smith install -p <project> <library>` writes that dependency in the manifest, through the
+plugin's `link` capability, instead of asking the registry. See [`smith install`](../manual/install.md).
 
 ## native project
 
@@ -126,7 +184,7 @@ prints them.
 
 ## recipe
 
-A TOML file describing which plugin fills each [level](#role-or-level) of a
+A TOML file describing which plugin fills each [role](#role) of a
 project and with what settings, plus a few questions to ask when someone adds
 a project. It is data, never code. A team writes one so every new project is
 made the same way. See [Recipes](recipes.md).
@@ -136,11 +194,20 @@ made the same way. See [Recipes](recipes.md).
 The branch real releases run from (`[release] branch`, default `main`).
 `smith release` refuses to publish from any other.
 
-## role or level
+## release channel
 
-The part a [plugin](#plugin) plays in a project. The two words mean the same
-thing: `smith plugin list` calls the column LEVELS, the protocol calls the
-field `roles`.
+A branch that releases its own line of prerelease versions (`2.0.0-beta.1`), named in
+`[[release.channels]]`. A package of a channel never takes the place of the stable version, and only a
+language plugin with the `channels` capability can publish it. See
+[Releasing](releasing.md#release-channels).
+
+## role
+
+The part a [plugin](#plugin) plays in a project. The word was once "level" as
+well; "role" is the one word now (`smith plugin list` shows ROLES, `smith recipe new`
+takes `--fixed role=plugin`, the protocol field is `roles`). The recipe file
+still writes the table `[levels.<role>]` and the protocol still writes `level` in
+`requires`: those are names in a format, kept for the files that exist.
 
 | Role | Does | A project has |
 |---|---|---|
@@ -155,6 +222,11 @@ field `roles`.
 The CycloneDX software bill of materials `smith release` attaches to the GitHub
 Release of an app, listing its dependencies. See
 [Releasing](releasing.md#sbom-and-build-provenance).
+
+## shell
+
+What wraps an app as a program you install on a computer: Tauri or Electron. It is a choice on the shell layer
+of a project (see [`smith compose`](../manual/compose.md)).
 
 ## slice
 
@@ -190,12 +262,25 @@ reads (inputs), the directories it writes (outputs) and the tasks it waits for
 (`dependsOn`). smith runs tasks in dependency order and caches the result. See
 [Tasks](tasks-and-cache.md#tasks).
 
+## tool
+
+A program on the machine that a plugin needs to build, test or run its projects: Python, the .NET SDK,
+Docker. The plugin declares it as data. `smith tools` lists the tools and `smith tools install` offers
+the ways to get what is missing. Not to be confused with a [toolchain](#toolchain). See
+[`smith tools`](../manual/tools.md).
+
 ## toolchain
 
 Two meanings. The **toolchain role** is described under
-[role or level](#role-or-level). A **toolchain** in CI is a runtime the
+[role](#role). A **toolchain** in CI is a runtime the
 pipeline must install (Node.js 24, Go, Python 3.12); a plugin says which and
 how. See [CI pipelines](ci.md#how-it-is-built).
+
+## vintage
+
+The `[workspace] defaults = "2026.11"` value: the version of smith's defaults a workspace follows. A
+newer smith keeps them, `smith doctor` warns when the workspace is behind, and
+`smith upgrade --defaults` moves it with a plan. See [Configuration](configuration.md).
 
 ## workspace
 

@@ -1,7 +1,7 @@
 # Creating a recipe and a stack
 
 A **stack** is a named set of plugins a project is built with. A **recipe** is a team's choice of
-which plugin fills each level of a project, and with what settings, written as a TOML file with no
+which plugin fills each role of a project, and with what settings, written as a TOML file with no
 code. Neither is a plugin, and neither runs anything: they choose and configure the plugins you
 (or smith) wrote. This guide shows both, using the widget plugins from the other guides.
 
@@ -109,11 +109,11 @@ port = 9000
 | `name`, `version` | the recipe's identity; `version` is what a release of the recipe bumps |
 | `extends` | one parent recipe: a path relative to this file, or an `https://` URL |
 | `[choices.<name>]` | a question: `ask`, `options` (the allowed answers) and `default` |
-| `[use]` | fills a **level** (`language`, `scaffold`, `structure`, `deploy`, `toolchain`) or a **slot** (`lint`, `test`, `typecheck`, `e2e`, ...) with a plugin; `name@^1.2` adds a version constraint |
+| `[use]` | fills a **role** (`language`, `scaffold`, `structure`, `deploy`, `toolchain`) or a **slot** (`lint`, `test`, `typecheck`, `e2e`, ...) with a plugin; `name@^1.2` adds a version constraint |
 | `[settings.<plugin>]` | configures a plugin: any TOML, tables merge |
 | `[when.<choice>.<answer>]` | a block (`use`, `settings`, more `choices` and `when`) that applies only for that answer |
 
-A key of `use` that is not a level is a **slot**, and the plugin must provide it. The recipe above
+A key of `use` that is not a role is a **slot**, and the plugin must provide it. The recipe above
 fills `lint` with `widget-lint` because that plugin lists `lint` in `provides`.
 
 ### Check it
@@ -202,7 +202,7 @@ came from; `smith doctor` and `smith upgrade` keep projects current when the rec
 
 ### Write it with `smith recipe new`
 
-`smith recipe new` exists. It asks for the name, version and parent, then walks through the levels
+`smith recipe new` exists. It asks for the name, version and parent, then walks through the roles
 (language, scaffold, each slot, structure, deploy), offering only the plugins that fit what is chosen
 so far, and checks the result for every answer before writing it. Without a terminal, give it the same
 answers as a file:
@@ -259,7 +259,7 @@ only file in its folder.
 | You see | Cause and remedy |
 |---|---|
 | `error: eslint applies to [node], not to widget projects` followed by `chosen at:` and the two lines | a plugin that does not apply to the chosen language. The lines name the recipe, file and line of each side |
-| `use.lnt names widget-lint, which does not provide a "lnt" slot (it provides: lint). A key of use is a level (...) or the task ...` | a typo in a slot name |
+| `use.lnt names widget-lint, which does not provide a "lnt" slot (it provides: lint). A key of use is a role (...) or the task ...` | a typo in a slot name |
 | `use.lint names the plugin "nope": no such plugin: "nope" is not built in, declared in smith.toml or installed (built in: ...)` | the plugin is not declared: add `[plugins.external.<name>]` or install it |
 | `choice "k" has the default "c", which is not one of its options (a, b)` | the `default` must be one of `options` |
 | `use.lint wants widget-lint ^2, but the plugin is 0.1.0` | the `@constraint` of the plugin is not met |

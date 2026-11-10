@@ -20,8 +20,8 @@ install.
 | `--lang` values | `jvm`, `java` |
 | Manifests that make a directory a candidate project | `pom.xml`, `build.gradle.kts`, `build.gradle` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published`, `declarations`, `latest` |
-| Not advertised | `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published`, `declarations`, `latest`, `changeKind`, `components`, `channels` |
+| Not advertised | `link`: `smith install -p <project> <library>` says "the jvm plugin does not link an internal library yet: add the dependency in `pom.xml` or `build.gradle` by hand". `declared`: a declared project is refused (see Declared projects). `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
 | Stacks it publishes | `kotlin` ("a Kotlin module built with Gradle, linted with ktlint"), `android` ("an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint") |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `jvm-app`, `jvm-lib`, `jvm-package`); the `android` stack makes apps only |
 | Tasks | `build`, `test`, `lint`, `start` |
@@ -153,10 +153,10 @@ Real runs (Maven only; Gradle was not installed, see Verified):
 
 ```text
 $ smith run build               # three modules
-✔ 3/3 tasks succeeded (0 from cache) in 5.883s
+✓ 3/3 tasks succeeded (0 from cache) in 5.883s
 
 $ smith run test lint           # build, slice-check, test, lint for each
-✔ 12/12 tasks succeeded (0 from cache) in 11.151s
+✓ 12/12 tasks succeeded (0 from cache) in 11.151s
 
 $ smith run start -p tool
 tool:start ▶ mvn -B -q -pl dev.jvmdemo:jvm-demo-tool exec:java
@@ -319,7 +319,8 @@ neither is configurable.
 | Publish: Maven package | `mvn -B -q -pl <g:a> deploy -DskipTests -s dist/maven/settings.xml -DaltDeploymentRepository=smith::<url>`; the settings define a server `smith` reading `MAVEN_USERNAME` and `MAVEN_PASSWORD` from the environment |
 | Publish: Gradle package | `gradle --console=plain -q :path:publishAllPublicationsToSmithRepository` with the same variables set |
 | Repository | `[registries.<name>] maven` named by `[release] registry` or `[projects.<p>] registry`, else `MAVEN_REPOSITORY_URL`. With neither the release stops: `set MAVEN_REPOSITORY_URL to the repository <name> deploys to` |
-| Registry query | `GET <repository>/<group path>/<artifactId>/maven-metadata.xml`, field `versioning/release`; the repository is the named registry (signed in when credentials exist), else `MAVEN_REPOSITORY_URL`, else `https://repo1.maven.org/maven2` |
+| Release channel | the plugin declares `channels`: Maven and Gradle order `2.0.0-beta.1` below `2.0.0` and take that spelling as it is, so a fixed version never picks it, and a repository has no channel tag. Maven sets `release` in `maven-metadata.xml` to the last version deployed, a prerelease too, so the registry query then reads the newest version without a `-` from the `versions` list. A build that asks for the `RELEASE` or `LATEST` keyword, or for an open version range, can still see a prerelease. JitPack builds each tag on its own, so a channel tag is a separate version there. |
+| Registry query | `GET <repository>/<group path>/<artifactId>/maven-metadata.xml`, field `versioning/release` (the newest version of `versioning/versions` without a `-` when `release` is a prerelease); the repository is the named registry (signed in when credentials exist), else `MAVEN_REPOSITORY_URL`, else `https://repo1.maven.org/maven2` |
 | Dry run | `smith release --dry-run` plans without deploying; the result says "dry run" and names the repository |
 
 Private registries (`[registries.<name>]`, see
@@ -392,6 +393,8 @@ Kotlin plus Android workspace:
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): `<module> builds into dist/maven/<artifactId>` reads `<build><directory>` of the pom and its parents (else `target/`); `<module> builds into dist/gradle/<artifactId>` reads `layout.buildDirectory` or `buildDir` of the module script (Kotlin or Groovy DSL, else `build/`). The fix asks and edits only that pom or module script; `settings.gradle(.kts)` and `libs.versions.toml` are never touched. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 **Doctor.** Run only when the workspace has JVM projects.
 
 | Check | Fails when |
@@ -406,10 +409,10 @@ In the Maven workspace all passed. In the Kotlin plus Android workspace on this
 machine (no Gradle, no Android SDK) the real output was:
 
 ```text
-✖ Gradle is installed
+× Gradle is installed
       gradle is not on PATH
       → install Gradle 9.8.1 (https://gradle.org/install)
-✖ the Android SDK is installed
+× the Android SDK is installed
       neither ANDROID_HOME nor local.properties' sdk.dir names an SDK
       → install the Android SDK command-line tools (https://developer.android.com/tools) and set ANDROID_HOME
 ```
@@ -433,7 +436,7 @@ same with or without `mvn` or `gradle` on the machine.
   shipped after a newer line does not win). An artifact Maven Central does not
   have (an internal repository's) is skipped. Nothing is installed afterwards:
   Maven and Gradle resolve the new version on the next build.
-- Not offered: `smith install -w <module> <dependency>` and `smith uninstall`
+- Not offered: `smith install -p <module> <dependency>` and `smith uninstall`
   (edit the pom or build script), and a vulnerability audit (the usual tools,
   OWASP dependency-check for Maven and a Gradle plugin, have to be installed
   into the build first, so `smith ci audit` has nothing to run for JVM).
@@ -442,6 +445,10 @@ same with or without `mvn` or `gradle` on the machine.
 the module's `<module>` line out of the root `pom.xml` and its `include(...)` line
 out of `settings.gradle.kts` (`--dry-run` lists the files it would change), and
 smith regenerates the pipelines.
+
+## Declared projects
+
+The plugin does not declare `declared`. A Maven or Gradle module is one build unit, and the packages inside it cannot be built, tested or linted on their own, so a folder is not a project. smith refuses a `[projects.<name>]` declaration for `jvm` with "finds a project by its manifest only: give the folder a manifest of its own" (a `pom.xml` or `build.gradle(.kts)`, or a module of the build above it).
 
 ## Requirements and limits
 

@@ -1,0 +1,17 @@
+{
+  "dashboard.row.health": "Health",
+  "dashboard.row.projects": "Projects",
+  "dashboard.check.fails.one": "{count} check fails",
+  "dashboard.check.fails.other": "{count} checks fail",
+  "dashboard.outdated.one": "{count} dependency has a newer release",
+  "dashboard.outdated.other": "{count} dependencies have newer releases",
+  "dashboard.project.one": "{count} project",
+  "dashboard.project.other": "{count} projects",
+  "dashboard.settings.new": "New here?",
+  "dashboard.settings.tip": "{new} Plugins, the colour theme and the settings of smith.toml are in the Settings tab: press {shortcut}",
+  "dashboard.headline.waiting": "Running the health checks on {projects}…",
+  "dashboard.projects.more": "{count} more",
+  "dashboard.projects.language": "{count} {language}",
+  "dashboard.add.label": "Add a project",
+  "dashboard.compose.label": "Compose a stack"
+}

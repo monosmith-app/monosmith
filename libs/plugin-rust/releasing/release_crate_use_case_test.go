@@ -32,6 +32,35 @@ func TestWriteVersion(t *testing.T) {
 	}
 }
 
+func TestAPrereleaseIsWrittenAsSemverAndPublishedAsIs(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, "libs", "core"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := filepath.Join(ws, "libs", "core", "Cargo.toml")
+	if err := os.WriteFile(manifest, []byte("[package]\nname = \"acme-core\"\nversion = \"1.4.0\"\n\n[dependencies]\nutil = { path = \"../util\", version = \"1.4.0\", package = \"acme-util\" }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	core := protocol.Project{Name: "core", Root: "libs/core", Kind: protocol.ProjectPackage, Exports: []string{"acme-core"}}
+	if _, err := WriteVersion(ws, protocol.VersionParams{Project: core, Version: "2.0.0-beta.3", Dependencies: map[string]string{"acme-util": "2.0.0-beta.3"}}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(manifest)
+	for _, want := range []string{"version = \"2.0.0-beta.3\"\n", `version = "2.0.0-beta.3", package = "acme-util"`} {
+		if !strings.Contains(string(got), want) {
+			t.Errorf("cargo takes the semver prerelease as it is; lacks %q:\n%s", want, got)
+		}
+	}
+	var ran []string
+	real := CargoRunner
+	defer func() { CargoRunner = real }()
+	CargoRunner = func(_ string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil }
+	res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "2.0.0-beta.3", Tag: "beta"})
+	if err != nil || !res.Published || ran[0] != "cargo publish -p acme-core --allow-dirty" {
+		t.Fatalf("crates.io has no channel tag: the crate is published like a release: %+v %v %v", res, err, ran)
+	}
+}
+
 func TestPublish(t *testing.T) {
 	var ran []string
 	real := CargoRunner

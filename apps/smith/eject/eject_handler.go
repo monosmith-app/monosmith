@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -14,7 +15,7 @@ import (
 
 // Command is `smith eject`.
 func Command(version string) *cobra.Command {
-	var all, force bool
+	var all, force, dryRun, yes bool
 	cmd := &cobra.Command{
 		Use:   "eject [tool...]",
 		Short: "Copy smith's default configuration of a tool into the repository, to own and edit it",
@@ -54,6 +55,28 @@ tools to eject, or pass --all. A file that exists already is left alone unless
 				return err
 			}
 			for _, t := range tools {
+				replaced := Replacements(s.Root, t, projectsUsing(s.Graph, t))
+				if force || dryRun {
+					for _, r := range replaced {
+						fmt.Fprintf(out, "%s is replaced by smith's default; the lines marked - are lost:\n%s\n", r.Path, r.Diff)
+					}
+				}
+				if dryRun {
+					fmt.Fprintf(out, "Dry run: the default of %s would be copied to its place. Nothing was changed.\n", t.Name)
+					continue
+				}
+				action := operationplan.Create
+				if len(replaced) > 0 {
+					action = operationplan.Change
+				}
+				target := t.Target
+				if t.PerProject {
+					target += " in each project"
+				}
+				goOn, err := operationplan.Gate(out, cmd.InOrStdin(), "eject "+t.Name, "Configuration you will own", []operationplan.Line{{Action: action, Path: target, Note: "smith's default of " + t.Name}}, yes, false)
+				if err != nil || !goOn {
+					return err
+				}
 				targets, err := Eject(s.Root, t, force, projectsUsing(s.Graph, t))
 				if err != nil {
 					return err
@@ -64,7 +87,9 @@ tools to eject, or pass --all. A file that exists already is left alone unless
 		},
 	}
 	cmd.Flags().BoolVar(&all, "all", false, "eject every default that applies")
-	cmd.Flags().BoolVar(&force, "force", false, "replace a file that exists already")
+	cmd.Flags().BoolVar(&force, "force", false, "replace a file that exists already (the diff of what is lost is printed first)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be copied and what would be replaced; change nothing")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are copied only with --yes")
 	return cmd
 }
 

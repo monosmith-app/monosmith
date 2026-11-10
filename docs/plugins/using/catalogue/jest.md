@@ -66,7 +66,7 @@ $ smith run typecheck lint test -p a-jest
 a-jest:test │ Test Suites: 1 passed, 1 total
 a-jest:test │ Tests:       1 passed, 1 total
 ...
-✔ 3/3 tasks succeeded (0 from cache) in 4.804s
+✓ 3/3 tasks succeeded (0 from cache) in 4.804s
 ```
 
 ## Settings

@@ -65,6 +65,9 @@ func renderWorkspaceConfig(opts NewOptions, quotedProviders string) (string, err
 	if len(cache) > 0 {
 		text = strings.Replace(text, cacheText, "[cache]\n"+strings.Join(cache, "\n")+"\n", 1)
 	}
+	if opts.NoDevcontainer {
+		text = strings.Replace(text, "devcontainer = true", "devcontainer = false", 1)
+	}
 	if opts.NoAgent {
 		text += "\n# No MonoSmith agent files in this workspace; smith agent install adds them.\n[agent]\nenabled = false\n"
 	}

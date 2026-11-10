@@ -26,6 +26,12 @@ type Contribution struct {
 	// releases through GitHub releases and leaves them out of its smith.toml
 	// [projects.<name>.release] table; what the table sets wins.
 	Release *ReleaseDefaults `json:"release,omitempty"`
+	// Facts are the plugin's default facts for the project: typed values
+	// under namespaced keys ({"source.roots": ["src"]}) that other settings
+	// and plugins read through the merged Project.Facts. They are the lowest
+	// scope: a [facts] table in smith.toml wins over them, and two plugins
+	// that publish different values for one key are an error that names both.
+	Facts map[string]any `json:"facts,omitempty"`
 }
 
 // ReleaseDefaults are release settings a plugin supplies for a project: the

@@ -3,6 +3,7 @@ package graphview
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 	"sort"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/guardedwrite"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -19,6 +22,7 @@ import (
 // Commands returns `smith graph`, `smith projects` and `smith affected`.
 func Commands(version string) []*cobra.Command {
 	var format, file, graphBase, diffFrom, blastRadius string
+	var force bool
 	var focus []string
 	var onlyAffected bool
 	graph := &cobra.Command{
@@ -45,7 +49,7 @@ marks the ones that changed.`,
 			}
 			defer s.Close()
 			for _, c := range s.Graph.Cycles() {
-				fmt.Fprintln(cmd.ErrOrStderr(), "⚠ import cycle: "+strings.Join(c, " → ")+"; "+projectgraph.CycleRemedy(c))
+				fmt.Fprintln(cmd.ErrOrStderr(), marks.Warning+" import cycle: "+strings.Join(c, " → ")+"; "+projectgraph.CycleRemedy(c))
 			}
 			if diffFrom != "" {
 				prefix, _ := s.Git.Run("rev-parse", "--show-prefix")
@@ -126,18 +130,22 @@ marks the ones that changed.`,
 				return fmt.Errorf("unknown format %q (text, json, dot, html, tui)", format)
 			}
 			if file != "" {
-				if err := os.WriteFile(file, []byte(out), 0o644); err != nil {
+				if err := guardedwrite.WriteFile(file, []byte(out), force, "--force", cmd.OutOrStdout()); err != nil {
 					return err
 				}
 				fmt.Fprintln(cmd.OutOrStdout(), "wrote "+file)
 				return nil
 			}
 			fmt.Fprint(cmd.OutOrStdout(), out)
+			if format == "text" && len(g.Projects) > 1 && !hasEdges(g) {
+				fmt.Fprintln(cmd.ErrOrStderr(), "No project depends on another. Edges appear when a project imports the package or module another one exports.")
+			}
 			return nil
 		},
 	}
 	graph.Flags().StringVar(&format, "format", "text", "text, json, dot, html or tui")
-	graph.Flags().StringVarP(&file, "output", "o", "", "write to a file")
+	commandflags.AddOutputFlag(graph, &file, "", "write to a file")
+	graph.Flags().BoolVar(&force, "force", false, "replace the -o file when it exists with other content (the diff is printed)")
 	graph.Flags().StringSliceVar(&focus, "focus", nil, "keep these projects and everything connected to them (names, globs, tag:x)")
 	graph.Flags().BoolVar(&onlyAffected, "affected", false, "keep the projects affected by changes since --base; mark the changed ones")
 	graph.Flags().StringVar(&graphBase, "base", "", "base branch for --affected (default: the PR target, else the release branch)")

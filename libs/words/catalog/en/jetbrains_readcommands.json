@@ -1,0 +1,9 @@
+{
+  "jetbrains.readcommands.monosmith": "MonoSmith: {what}",
+  "jetbrains.readcommands.monosmith-why-would-a-task": "MonoSmith: why would a task run again",
+  "jetbrains.readcommands.smith-could-not-show": "smith could not show {what}. {failureTextMapper}",
+  "jetbrains.readcommands.monosmith-why-would-a-task-2": "MonoSmith: why would a task run again?",
+  "jetbrains.readcommands.the-project-and-the-task": "The project and the task, as project:task (for example web:build):",
+  "jetbrains.readcommands.write-project-task-for-example": "Write project:task, for example web:build.",
+  "jetbrains.readcommands.why-would-run-again": "why {target} would run again"
+}

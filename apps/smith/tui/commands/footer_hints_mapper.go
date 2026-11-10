@@ -1,8 +1,11 @@
 package commands
 
 import (
-	"fmt"
 	"slices"
+	"strconv"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Hint is one entry of the footer: the key as drawn, what it does, and the
@@ -15,8 +18,22 @@ type Hint struct {
 // then the Tail, which every view ends with. Only what can be done now is
 // listed, so no hint promises a key that would be refused.
 func Hints(s State) (view, tail []Hint) {
+	if s.Editing {
+		// A text box has the keyboard: the keys of the view and the tail would
+		// type into it, so only what ends the box is listed.
+		return []Hint{
+			{Glyph: words.Say("commands.footer.editing.confirm.glyph"), Label: words.Say("commands.footer.editing.confirm"), Key: "enter"},
+			{Glyph: words.Say("commands.footer.editing.back.glyph"), Label: words.Say("commands.footer.editing.back"), Key: "esc"},
+		}, nil
+	}
+	var lead []Hint
 	for _, c := range all {
 		if c.Footer == "" || c.Unavailable(s) != "" || (c.Kind != PaneKey && !c.Visible(s)) {
+			continue
+		}
+		if (s.Editing || s.Form) && !c.Tail && len(c.Keys) > 0 && plain(c.Keys[0]) {
+			// A plain key types into the form's field: "n new workspace" would be a
+			// false promise while a name is typed.
 			continue
 		}
 		if c.All && c.Kind == RunTask && s.RunProject() == "" && s.Projects > 0 && hasScopedSibling(c) {
@@ -30,15 +47,23 @@ func Hints(s State) (view, tail []Hint) {
 		switch {
 		case c.Tail:
 			tail = append(tail, hintOf(c, s))
+		case s.RunFailed && s.RunOpen && (c.ID == "run.again" || c.ID == "run.copy-log"):
+			lead = append(lead, hintOf(c, s))
 		case slices.Contains(show, s.View):
 			view = append(view, hintOf(c, s))
 		}
 	}
-	return view, tail
+	return append(lead, view...), tail
 }
 
 func hintOf(c Command, s State) Hint {
 	h := Hint{Glyph: c.Glyph, Label: scopedLabel(c, s)}
+	if s.TaskSelected && c.TaskFooter != "" {
+		h.Label = c.TaskFooter
+	}
+	if s.On[c.ID] && c.OnFooter != "" {
+		h.Label = c.OnFooter
+	}
 	// A glyph that is no key name ("1-9", "↑↓") stands for several keys.
 	if h.Glyph == "" || h.Glyph == KeyLabel(c.Keys[0]) {
 		h.Glyph, h.Key = KeyLabel(c.Keys[0]), c.Keys[0]
@@ -58,12 +83,12 @@ func scopedLabel(c Command, s State) string {
 	}
 	switch {
 	case c.All && s.Projects > 0:
-		return fmt.Sprintf("%s %d", c.Footer, s.Projects)
+		return c.Footer + " " + strconv.Itoa(s.countFor(c.Task))
 	case !c.All && c.ScopeInFooter && s.RunProject() != "":
-		return c.Footer + " " + clip(s.RunProject(), maxScopeName)
+		return c.Footer + " " + ansi.Truncate(s.RunProject(), maxScopeName, "…")
 	case !c.All && c.ScopeInFooter && s.Projects > 0:
 		// Off the Projects view the key runs on the whole workspace.
-		return fmt.Sprintf("%s all %d", c.Footer, s.Projects)
+		return words.Say("commands.footer.all", "label", c.Footer, "count", s.countFor(c.Task))
 	}
 	return c.Footer
 }
@@ -77,13 +102,4 @@ func hasScopedSibling(c Command) bool {
 		}
 	}
 	return false
-}
-
-// clip shortens a name to n cells with an ellipsis.
-func clip(name string, n int) string {
-	r := []rune(name)
-	if len(r) <= n {
-		return name
-	}
-	return string(r[:n-1]) + "…"
 }

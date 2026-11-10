@@ -10,19 +10,19 @@ func TestAt140ColumnsTheListAndTheDetailShareTheWidth(t *testing.T) {
 	if l.Main.W+l.Detail.W != 140 || l.Detail.W != 56 {
 		t.Fatalf("panes must fill the width: %+v", l)
 	}
-	// Tall tabs: three rows, the last one is the content's top edge.
-	if !l.Tall || l.Header.Y != 0 || l.Tabs.Y != 1 || l.Tabs.H != 3 || l.Main.Y != 3 || l.Footer.Y != 38 || l.StatusBar.Y != 39 || l.Main.H != 35 {
+	// The tabs are one row, and the content starts under them.
+	if l.Header.Y != 0 || l.Tabs.Y != 1 || l.Tabs.H != 1 || l.Main.Y != 2 || l.Footer.Y != 38 || l.StatusBar.Y != 39 || l.Main.H != 36 {
 		t.Fatalf("rows: %+v", l)
 	}
 }
 
-func TestOnAShortTerminalTheTabsAreOneRow(t *testing.T) {
+func TestTheTabsAreOneRowOnAnyHeight(t *testing.T) {
 	l := Divide(120, 23, true)
-	if l.Tall || l.Tabs.H != 1 || l.Main.Y != 2 || l.Main.H != 19 {
+	if l.Tabs.H != 1 || l.Main.Y != 2 || l.Main.H != 19 {
 		t.Fatalf("%+v", l)
 	}
-	if Divide(120, 24, true).Tall != true {
-		t.Fatal("24 rows is tall enough")
+	if tall := Divide(120, 60, true); tall.Tabs.H != 1 || tall.Main.Y != 2 {
+		t.Fatalf("a tall terminal keeps one row of tabs: %+v", tall)
 	}
 }
 
@@ -56,7 +56,7 @@ func TestAreaAtFindsTheOwnerOfACell(t *testing.T) {
 		x, y int
 		want Area
 	}{
-		{5, 0, Header}, {5, 1, Tabs}, {5, 3, Tabs}, {5, 38, Footer}, {5, 39, StatusBar}, {20, 5, Main}, {139, 5, Detail}, {200, 5, Nowhere},
+		{5, 0, Header}, {5, 1, Tabs}, {5, 2, Main}, {5, 38, Footer}, {5, 39, StatusBar}, {20, 5, Main}, {139, 5, Detail}, {200, 5, Nowhere},
 	}
 	for _, c := range cases {
 		if got := l.AreaAt(c.x, c.y); got != c.want {
@@ -69,5 +69,21 @@ func TestAnAbsurdlySmallScreenDoesNotPanic(t *testing.T) {
 	for _, s := range [][2]int{{0, 0}, {1, 1}, {10, 2}, {80, 3}, {80, 4}} {
 		l := Divide(s[0], s[1], true)
 		_ = l.AreaAt(0, 0)
+	}
+}
+
+func TestTheMainFrameIsARuleAndTwoMarginsAndNoBottom(t *testing.T) {
+	l := Divide(140, 40, true)
+	in, din := l.Main.Inner(), l.DetailInner()
+	if in.X != 1 || in.Y != l.Main.Y+1 || in.W != l.Main.W-2 || in.H != l.Main.H-1 {
+		t.Fatalf("the list's inside is %+v of %+v", in, l.Main)
+	}
+	// The detail starts at the divider's neighbour, keeps a right margin and
+	// ends on the same last row as the list.
+	if din.X != l.Detail.X || din.W != l.Detail.W-1 || din.Y != in.Y || din.H != in.H {
+		t.Fatalf("the detail's inside is %+v of %+v", din, l.Detail)
+	}
+	if bottom := in.Y + in.H; bottom != l.Footer.Y {
+		t.Fatalf("the content ends above the footer: %d, footer at %d", bottom, l.Footer.Y)
 	}
 }

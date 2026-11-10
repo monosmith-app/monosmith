@@ -125,6 +125,42 @@ public interface IComponentLister
     Task<ComponentsResult> ComponentsAsync(ComponentsParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A plugin that says which files it derives from facts and the project graph.</summary>
+public interface IDeriver
+{
+    /// <summary>Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<DeriveResult> DeriveAsync(DeriveParams parameters, CancellationToken cancellation);
+}
+
+/// <summary>A plugin that lists the public API names of a project at a git revision, for the release version check.</summary>
+public interface IApiSurfaceReader
+{
+    /// <summary>Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<APISurfaceResult> ApiSurfaceAsync(APISurfaceParams parameters, CancellationToken cancellation);
+}
+
+/// <summary>A plugin that makes a project depend on a library of the same workspace, and takes the dependency out. Both methods, or the capability is not advertised.</summary>
+public interface ILinker
+{
+    /// <summary>Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<LinkResult> LinkAsync(LinkParams parameters, CancellationToken cancellation);
+
+    /// <summary>Removes the dependency of a project on a library of the same workspace.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<DependencyResult> UnlinkAsync(UnlinkParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.</summary>
 public interface IDependencyManager
 {

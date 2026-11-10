@@ -1,0 +1,11 @@
+# The version of every package a choice of the functions plugin names. A choice never
+# writes a version: to bump one, change one line here. Nothing installs "latest".
+[versions]
+typescript = "~6.0.3"
+"@types/node" = "^24.19.2"
+"@monosmith/tsconfig" = "^0.1.0"
+bestzip = "^4.0.3"
+
+"@azure/functions" = "^4.17.0"
+"@types/aws-lambda" = "^8.10.164"
+"@google-cloud/functions-framework" = "^5.0.5"

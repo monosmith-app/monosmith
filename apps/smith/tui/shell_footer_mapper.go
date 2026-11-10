@@ -8,7 +8,7 @@ import (
 // footerHints are the key hints of the open view, placed in the screen's width.
 func (s Shell) footerHints() []footer.Placed {
 	view, tail := s.page().Footer()
-	return footer.Place(view, tail, s.w)
+	return footer.Place(s.th, view, tail, s.w)
 }
 
 // footerRow draws the hints; the one under the pointer is highlighted.

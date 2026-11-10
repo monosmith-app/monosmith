@@ -10,12 +10,27 @@ func TestTheTabStripAndTheFootersHelpAndQuitAreNeverCutAboveTheMinimumWidth(t *t
 		l := newLab(t, true, w, 24)
 		lines := l.lines()
 		// The strip is shortened to fit and, when it still does not, scrolls with a marker.
-		if strip := lines[2]; !strings.Contains(strip, "Release") && !strings.Contains(strip, "›") {
+		if strip := lines[1]; !strings.Contains(strip, "Rel") && !strings.Contains(strip, "›") {
 			t.Fatalf("%d columns: the tab strip is cut without a marker: %q", w, strip)
 		}
-		if foot := lines[len(lines)-2]; !strings.Contains(foot, "? help") || !strings.Contains(foot, "q quit") {
+		if foot := lines[len(lines)-2]; !strings.Contains(foot, "help (?)") || !strings.Contains(foot, "quit (q)") {
 			t.Fatalf("%d columns: the footer lost help or quit: %q", w, foot)
 		}
+	}
+}
+
+// TestBelowTheMinimumKeysDoNothingButLeave keeps an unseen screen from running
+// a command: Enter on the plan of an add would start it.
+func TestBelowTheMinimumKeysDoNothingButLeave(t *testing.T) {
+	l := newLab(t, true, minWidth-1, 24)
+	before := l.sh().tab
+	l.keys("a", "enter", "enter", "5", "?")
+	if sh := l.sh(); sh.tab != before || sh.quit || sh.confirm != nil {
+		t.Fatalf("keys acted below the minimum: tab %q (was %q), confirm %v", sh.tab, before, sh.confirm)
+	}
+	l.keys("ctrl+c")
+	if !l.sh().quit {
+		t.Fatal("Ctrl+C does not leave a terminal that is too small")
 	}
 }
 

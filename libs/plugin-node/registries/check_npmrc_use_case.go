@@ -17,7 +17,7 @@ func CheckNpmrc(workspaceRoot string, projects []protocol.Project) (protocol.Fin
 	path := filepath.Join(workspaceRoot, ".npmrc")
 	raw, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return protocol.Finding{Check: ".npmrc points at the registries smith.toml names", Detail: err.Error(), Remedy: "make .npmrc readable"}, true
+		return protocol.Finding{Check: ".npmrc points at the registries smith.toml names", Area: "release", Problem: ".npmrc cannot be read", Detail: err.Error(), Remedy: "make .npmrc readable"}, true
 	}
 	existing := string(raw)
 	block := Block(Of(projects), Scope(projects))
@@ -25,8 +25,9 @@ func CheckNpmrc(workspaceRoot string, projects []protocol.Project) (protocol.Fin
 	if block == "" && want == existing {
 		return protocol.Finding{}, false
 	}
-	f := protocol.Finding{Check: ".npmrc points at the registries smith.toml names", OK: want == existing}
+	f := protocol.Finding{Check: ".npmrc points at the registries smith.toml names", Area: "release", OK: want == existing}
 	if !f.OK {
+		f.Problem = ".npmrc does not match the [registries] of smith.toml"
 		f.Detail = "the smith:registry block of .npmrc does not match [registries] in smith.toml"
 		f.Remedy = "run `smith doctor --fix`"
 		f.Fix = &protocol.Fix{Description: "write the registries into .npmrc", Safe: true, Files: []protocol.FileEdit{{Path: ".npmrc", Content: want}}}

@@ -20,6 +20,10 @@ templates.
 If the pipeline should be regenerated with the workspace, it is not this command's job;
 see [`smith ci generate`](ci-generate.md).
 
+## Asking first
+
+`smith pipeline <template>` shows the files it writes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`; `--dry-run` shows the plan and writes nothing. Every check runs before the first file is written.
+
 ## Synopsis
 
 ```sh
@@ -40,8 +44,10 @@ Usage: `smith pipeline [template] [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--ci <ci>` | `github`, `azure` or `both` | the workspace's providers | github, azure or both (default: the workspace's providers) |
+| `--dry-run` | boolean | off | show the files that would be written and change nothing |
 | `--force` | boolean | off | replace a pipeline file that exists |
-| `--project <project>` | string |  | the app a deploy template builds |
+| `-p, --project <project>` | string |  | the app a deploy template builds (also -w, --workspace, --projects) |
+| `-y, --yes` | boolean | off | do not ask; without a terminal the files are written only with --yes |
 
 <!-- smith:end pipeline -->
 
@@ -79,7 +85,7 @@ smith pipeline e2e
 ```
 
 ```text
-✔ wrote .github/workflows/e2e.yml
+✓ wrote .github/workflows/e2e.yml
 ```
 
 ## Common errors

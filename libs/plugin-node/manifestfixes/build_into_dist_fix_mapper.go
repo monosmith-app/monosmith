@@ -18,9 +18,20 @@ const BuildIntoDistDescription = "build into the workspace's dist folder, with s
 
 var (
 	outDirWithComma = regexp.MustCompile(`(?s)[ \t]*"outDir"\s*:\s*"[^"]*"\s*,[ \t]*\r?\n?`)
+	outDirAlone     = regexp.MustCompile(`[ \t]*"outDir"\s*:\s*"[^"]*"[ \t]*\r?\n?`)
 	outDirLast      = regexp.MustCompile(`(?s),\s*"outDir"\s*:\s*"[^"]*"`)
 	outDirValue     = regexp.MustCompile(`("outDir"\s*:\s*)"[^"]*"`)
-	outDirScript    = regexp.MustCompile(`--outDir([= ]+)"?([^"\s&;|]+)"?`)
+	outDirScript    = regexp.MustCompile(`--out(?:Dir|dir|-dir)([= ]+)"?([^"\s&;|]+)"?`)
+	// outFileScript is a bundler's single output file (esbuild --outfile).
+	outFileScript = regexp.MustCompile(`--out(?:file|File)([= ]+)"?([^"\s&;|]+)"?`)
+	// pathFlag is every flag of a build script that names a folder or file the build writes.
+	pathFlag = regexp.MustCompile(`(--(?:out(?:Dir|dir|-dir|file|File)|declarationDir))([= ]+)"?([^"\s&;|]+)"?`)
+	// configPath is a tsconfig option that names a file or folder besides outDir.
+	configPath = regexp.MustCompile(`("(?:declarationDir|tsBuildInfoFile|outFile)"\s*:\s*)"([^"]*)"`)
+	// projectFlag names the tsconfig a tsc build reads.
+	projectFlag = regexp.MustCompile(`(?:^|\s)(?:-p|--project)[= ]+"?([^"\s&;|]+\.json)"?`)
+	// buildPathKeys are the package.json keys that lead to built files.
+	buildPathKeys = []string{"main", "types", "typings", "module", "browser", "bin", "exports"}
 )
 
 // BuildIntoDistFix moves a project's build output to the workspace's
@@ -52,10 +63,10 @@ func BuildIntoDistFix(workspaceRoot string, p protocol.Project, configName, oldO
 
 	switch {
 	case configName == "":
-		if scripts == nil || !outDirScript.MatchString(build) {
+		if scripts == nil || (!outDirScript.MatchString(build) && !outFileScript.MatchString(build)) {
 			return nil
 		}
-		scripts.SetString("build", outDirScript.ReplaceAllString(build, "--outDir${1}"+newDir))
+		scripts.SetString("build", rewriteFlags(build, cleanDir(oldOutDir), newDir))
 	case scripts != nil && strings.Contains(build, "tsc"):
 		config, err := os.ReadFile(filepath.Join(dir, configName))
 		if err != nil {
@@ -65,6 +76,7 @@ func BuildIntoDistFix(workspaceRoot string, p protocol.Project, configName, oldO
 		if edited == string(config) {
 			return nil
 		}
+		edited = rewriteConfigPaths(edited, cleanDir(oldOutDir), newDir)
 		fix.Files = append(fix.Files, protocol.FileEdit{Path: path.Join(p.Root, configName), Content: edited})
 		scripts.SetString("build", addOutDirFlag(build, newDir))
 	default:
@@ -76,18 +88,31 @@ func BuildIntoDistFix(workspaceRoot string, p protocol.Project, configName, oldO
 		if edited == string(config) {
 			return nil
 		}
+		edited = rewriteConfigPaths(edited, cleanDir(oldOutDir), newDir)
 		fix.Files = append(fix.Files, protocol.FileEdit{Path: path.Join(p.Root, configName), Content: edited})
 	}
 
-	old := strings.TrimPrefix(path.Clean(strings.ReplaceAll(oldOutDir, "\\", "/")), "./")
-	for _, key := range []string{"main", "types", "typings", "module"} {
-		if v, ok := doc.String(key); ok {
-			doc.SetString(key, followOutDir(v, old, newDir))
-		}
+	old := cleanDir(oldOutDir)
+	doc.RewriteStrings(buildPathKeys, func(v string) string { return followOutDir(v, old, newDir) })
+	if listsOnly(doc, old) {
+		// The build is the package: the staged package.json has no files list,
+		// and a list into a folder nothing writes any more would be wrong.
+		doc.Delete("files")
 	}
 	if scripts != nil {
-		if start, ok := scripts.String("start"); ok {
-			scripts.SetString("start", followOutDir(start, old, newDir))
+		if configName != "" {
+			if again, _ := scripts.String("build"); again != "" {
+				scripts.SetString("build", rewriteFlags(again, old, newDir))
+			}
+		}
+		// Every script that names the old build folder as a path (start, clean,
+		// a test that loads the build) follows it.
+		for _, name := range scripts.Keys() {
+			if v, ok := scripts.String(name); ok {
+				if moved := rewriteScriptPaths(v, old, newDir); moved != v {
+					scripts.SetString(name, moved)
+				}
+			}
 		}
 	}
 	fix.Files = append(fix.Files, protocol.FileEdit{Path: manifest, Content: render(doc, raw)})
@@ -99,7 +124,11 @@ func dropOutDir(config string) string {
 	if outDirWithComma.MatchString(config) {
 		return outDirWithComma.ReplaceAllString(config, "")
 	}
-	return outDirLast.ReplaceAllString(config, "")
+	if outDirLast.MatchString(config) {
+		return outDirLast.ReplaceAllString(config, "")
+	}
+	// The only property of its object.
+	return outDirAlone.ReplaceAllString(config, "")
 }
 
 // addOutDirFlag adds --outDir to the first tsc command of a script.
@@ -120,6 +149,9 @@ func followOutDir(value, old, newDir string) string {
 	if old == "" || old == "." {
 		return value
 	}
+	if value == old || value == "./"+old {
+		return newDir
+	}
 	for _, prefix := range []string{"./" + old + "/", old + "/"} {
 		if strings.HasPrefix(value, prefix) {
 			return newDir + "/" + strings.TrimPrefix(value, prefix)
@@ -139,17 +171,26 @@ var comments = regexp.MustCompile(`(?s)/\*.*?\*/|(?m)^[ \t]*//[^\n]*`)
 // tsconfig.build.json, then tsconfig.json (config names the file). ok is
 // false when the project sets no output folder.
 func LocateOutDir(dir string) (config, outDir string, ok bool) {
+	candidates := []string{"tsconfig.build.json", "tsconfig.json"}
 	if raw, err := os.ReadFile(filepath.Join(dir, "package.json")); err == nil {
 		var manifest struct {
 			Scripts map[string]string `json:"scripts"`
 		}
 		if json.Unmarshal(raw, &manifest) == nil {
-			if m := outDirScript.FindStringSubmatch(manifest.Scripts["build"]); m != nil {
+			build := manifest.Scripts["build"]
+			if m := outDirScript.FindStringSubmatch(build); m != nil {
 				return "", m[2], true
+			}
+			if m := outFileScript.FindStringSubmatch(build); m != nil {
+				return "", path.Dir(strings.ReplaceAll(m[2], "\\", "/")), true
+			}
+			if m := projectFlag.FindStringSubmatch(build); m != nil {
+				// tsc -p tsconfig.lib.json: the file the script names comes first.
+				candidates = append([]string{m[1]}, candidates...)
 			}
 		}
 	}
-	for _, name := range []string{"tsconfig.build.json", "tsconfig.json"} {
+	for _, name := range candidates {
 		raw, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
 			continue

@@ -58,10 +58,14 @@ func CheckEntryFiles(workspaceRoot string, p protocol.Project) (protocol.Finding
 	}
 	sort.Strings(missing)
 	finding := protocol.Finding{
-		Check:  p.Name + " builds every file its package.json names",
-		OK:     len(missing) == 0,
-		Detail: p.Root + "/package.json names " + strings.Join(missing, ", ") + ", which the build did not produce",
-		Remedy: "build each entry the exports name (several entries in one esbuild run: esbuild name=src/file.ts ... --splitting --outdir=dist), or remove the entries from package.json; rebuild from clean to check (an old build's files can hide a missing one)",
+		Check:   p.Name + " builds every file its package.json names",
+		Project: p.Name,
+		OK:      len(missing) == 0,
+		Detail:  p.Root + "/package.json names " + strings.Join(missing, ", ") + ", which the build did not produce",
+		Remedy:  "build each entry the exports name (several entries in one esbuild run: esbuild name=src/file.ts ... --splitting --outdir=dist), or remove the entries from package.json; rebuild from clean to check (an old build's files can hide a missing one)",
+	}
+	if !finding.OK {
+		finding.Problem = p.Root + "/package.json names " + strings.Join(missing, ", ") + ", which the build does not produce"
 	}
 	var declarations []string
 	for _, f := range missing {

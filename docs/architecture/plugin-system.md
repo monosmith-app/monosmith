@@ -142,14 +142,18 @@ self-description, and it is the only thing the host trusts:
 | `manifests` | file names or patterns (`package.json`, `*.csproj`) whose presence may make a directory a project of this plugin |
 | `provides` | slots: the task names a toolchain owns (`test`, `lint`). A slot is exclusive. |
 | `requires`, `conflicts` | other plugins that must / must not be in the same project |
-| `stacks` | ready-made stacks the plugin publishes |
+| `stacks` | ready-made stacks the plugin publishes; a stack with `choices` is a saved selection |
+| `kinds` | the project kinds `generate` can scaffold; absent means `app`, `lib` and `package` ([ADR 0039](decisions/0039-a-plugin-declares-the-project-kinds-it-scaffolds.md)) |
+| `choices` | the options on an axis (framework, test, style) the plugin owns, shipped as data ([ADR 0045](decisions/0045-frameworks-tests-and-styles-are-choices-shipped-as-data.md)) |
+| `follows` | the project shape keys the plugin applies when it generates, so a new project can follow its siblings ([ADR 0041](decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md)) |
+| `concurrency` | how many requests it can work on at once; absent is one |
 | `capabilities` | which methods it implements |
 
 The **capabilities** matter most. The host calls a method only if the plugin
 advertised it, and the Go SDK derives the list from the Go interfaces a plugin
 implements (`Discoverer`, `Generator`, `Versioner`, `Publisher`,
 `CIContributor`, `DoctorContributor`, `Contributor`, `Remover`,
-`PublishedLooker`, and the `dependencies/*` family). A plugin in another
+`RegistryReader`, `KindChanger`, `ComponentLister`, `Deriver`, `APISurfaceReader`, `Cancellable`, and the `dependencies/*` family). A plugin in another
 language sets the booleans by hand. A method the plugin did not advertise is
 not an error; the host treats it as "this plugin has nothing to say here".
 
@@ -292,7 +296,7 @@ re-run.
 For an *app*, the language plugin's `publish` is asked for **assets** instead of
 a registry upload: it cross-compiles the per-platform archives into
 `dist/release/<app>`, and the core distributes those to npm, PyPI, NuGet,
-RubyGems, pub.dev, Homebrew/Scoop/winget manifests and the GitHub Release. That
+RubyGems, pub.dev, Homebrew/Scoop/winget/AUR manifests, a Nix flake and the GitHub Release. That
 is why `publish` takes an `AssetSpec` and returns `assets`, `assetPlatforms`
 and `binary`.
 
@@ -307,7 +311,7 @@ GitHub action, an Azure task and a plain install command, so every provider can
 install them), setup steps, audit steps, post-release steps, credentials,
 permissions, package stores to cache. The core merges the contributions
 (duplicates by name keep the first), sorts them so the YAML is deterministic,
-and renders GitHub Actions, Azure Pipelines or GitLab CI from one
+and renders GitHub Actions, Azure Pipelines, GitLab CI, CircleCI or Bitbucket Pipelines from one
 provider-neutral model.
 
 ### `doctor`

@@ -59,11 +59,13 @@ func CheckConfigImports(workspaceRoot string) (protocol.Finding, bool) {
 	sort.Strings(problems)
 	finding := protocol.Finding{
 		Check:  "the packages the ESLint config imports are installed",
+		Area:   "lint",
 		OK:     len(problems) == 0,
 		Detail: strings.Join(problems, "; "),
 		Remedy: "install the package (npm i -D <package> at the workspace root), or change the import to one that is installed",
 	}
 	if !finding.OK {
+		finding.Problem = strings.Join(missing, ", ") + " is imported by the ESLint config but not installed"
 		finding.Fix = manifestfixes.InstallMissingPackagesFix(workspaceRoot, missing)
 	}
 	return finding, true

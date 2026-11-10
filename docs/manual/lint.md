@@ -45,7 +45,8 @@ Usage: `smith lint [project]... [flags]`
 | `--json-events` | boolean | off | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else |
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
-| `-p, --projects <projects>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude |
+| `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end lint -->
 
@@ -73,8 +74,8 @@ smith lint -p ui
 
 ```text
 ui:lint ▶ npm run lint --silent
-ui:lint ✔ 9.376s
-✔ 1/1 tasks succeeded (0 from cache) in 9.382s
+ui:lint ✓ 9.376s
+✓ 1/1 tasks succeeded (0 from cache) in 9.382s
 ```
 
 A failure, in a file that breaks the project's style rules:
@@ -84,17 +85,17 @@ ui:lint │ ~/work\acme\libs\ui\src\failing.spec.ts
 ui:lint │   1:6   error  Strings must use singlequote  @stylistic/quotes
 ui:lint │   1:39  error  Strings must use singlequote  @stylistic/quotes
 ui:lint │
-ui:lint │ ✖ 2 problems (2 errors, 0 warnings)
+ui:lint │ × 2 problems (2 errors, 0 warnings)
 ui:lint │   2 errors and 0 warnings potentially fixable with the `--fix` option.
-ui:lint ✖ exited with code 1
-  ✖ ui:lint exited with code 1
+ui:lint × exited with code 1
+  × ui:lint exited with code 1
 ```
 
 ## Common errors
 
 | Message | Cause and remedy |
 |---|---|
-| `✖ <project>:lint exited with code 1` | The linter reported problems; fix them or run the linter's fixer. |
+| `× <project>:lint exited with code 1` | The linter reported problems; fix them or run the linter's fixer. |
 | `lib has no lint task, so CI never checks it` (a `smith doctor` warning) | The project's stack has no lint; add a lint task or a stack that has one. |
 
 ## Related

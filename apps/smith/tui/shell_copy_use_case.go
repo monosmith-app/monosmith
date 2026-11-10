@@ -7,21 +7,21 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/clipboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // focusedText is what `y` copies: the remedy (else the message) of the
-// selected Doctor check, the last command line of the Run view, the root of
+// selected Doctor check, the command line of the run open in Projects, the root of
 // the selected project, the package of the selected dependency. ok is false
 // when the view has nothing to copy.
 func (s Shell) focusedText() (text string, ok bool) {
 	switch s.tab {
 	case commands.TabProjects:
+		if s.runShown() {
+			return s.run.CommandLine(), true
+		}
 		if p, found := s.list.Selected(); found && p.Root != "" {
 			return p.Root, true
-		}
-	case commands.TabRun:
-		if s.run != nil {
-			return s.run.CommandLine(), true
 		}
 	case commands.TabDoctor:
 		if f, found := s.doctor.Selected(); found {
@@ -45,7 +45,7 @@ func (s Shell) focusedText() (text string, ok bool) {
 func (s *Shell) copyFocused() {
 	text, ok := s.focusedText()
 	if !ok || text == "" {
-		s.say("Nothing to copy here")
+		s.say(words.Say("tui.copy.nothing_to_copy_here"))
 		return
 	}
 	s.copyText(text)
@@ -54,14 +54,14 @@ func (s *Shell) copyFocused() {
 // copyText puts text on the clipboard and says so in a toast.
 func (s *Shell) copyText(text string) {
 	if err := clipboard.Copy(s.clip, text); err != nil {
-		s.notify("Could not copy: "+err.Error(), toast.Warning)
+		s.notify(words.Say("tui.copy.could_not_copy", "err", err.Error()), toast.Warning)
 		return
 	}
 	first, _, more := strings.Cut(text, "\n")
 	if more {
 		first += " …"
 	}
-	s.notify("copied: "+first, toast.Success)
+	s.notify(words.Say("tui.copy.copied", "first", first), toast.Success)
 }
 
 // toggleMouse turns mouse reporting off, so the terminal selects text the
@@ -69,9 +69,9 @@ func (s *Shell) copyText(text string) {
 func (s *Shell) toggleMouse() tea.Cmd {
 	s.mouseOff = !s.mouseOff
 	if s.mouseOff {
-		s.notify("Mouse off: drag selects text. Press m to turn it on", toast.Info)
+		s.notify(words.Say("tui.copy.mouse_off_drag_selects_text_press"), toast.Info)
 		return tea.DisableMouse
 	}
-	s.notify("Mouse on: shift+drag selects text", toast.Info)
+	s.notify(words.Say("tui.copy.mouse_on_shift_drag_selects_text"), toast.Info)
 	return tea.EnableMouseCellMotion
 }

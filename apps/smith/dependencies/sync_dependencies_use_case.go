@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -24,24 +25,48 @@ type SyncReport struct {
 	Unchecked []string `json:"unchecked,omitempty"`
 }
 
+// SyncOptions say how Sync and Align run.
+type SyncOptions struct {
+	// Names limits the run to these dependencies; none means all of them.
+	Names []string
+	// Check only reports, and fails when declarations disagree.
+	Check bool
+	// DryRun settles and prints nothing: it returns the plan and writes nothing.
+	DryRun bool
+	// Install runs the install after the rewrite.
+	Install bool
+	// CrossMajor lets a declaration move to another major version.
+	CrossMajor bool
+	// Settle fixes the final target of each dependency (flags, questions) and
+	// may refuse; nil takes smith's pick as it is.
+	Settle func([]Drift) ([]Drift, error)
+}
+
 // Sync makes every project of each plugin declare a shared dependency at the
-// same spec. With check it only reports. After rewriting it installs, so
-// lockfiles and the venv follow, unless install is false.
-func Sync(s *session.Session, check, install bool) (SyncReport, error) {
-	return converge(s, nil, check, install)
+// same spec. With Check it only reports. After rewriting it installs, so
+// lockfiles and the venv follow, unless Install is false.
+func Sync(s *session.Session, o SyncOptions) (SyncReport, error) {
+	return converge(s, o)
 }
 
 // Align is Sync for the named dependencies only, or for every fragmented one
 // when none is named: `smith deps up --align`.
-func Align(s *session.Session, names []string, check, install bool) (SyncReport, error) {
-	return converge(s, names, check, install)
+func Align(s *session.Session, o SyncOptions) (SyncReport, error) {
+	return converge(s, o)
 }
 
-// converge brings the declarations of each plugin's projects to one spec.
-// Dependencies that [dependencies] allow lists are left alone; with names,
-// only those are looked at.
-func converge(s *session.Session, names []string, check, install bool) (SyncReport, error) {
+// converge brings the declarations of each plugin's projects to one spec in
+// three steps: find what disagrees, let the person settle which version wins,
+// write. Dependencies that [dependencies] allow lists are left alone; with
+// names, only those are looked at.
+func converge(s *session.Session, o SyncOptions) (SyncReport, error) {
 	var report SyncReport
+	type found struct {
+		client   *host.Client
+		projects []protocol.Project
+		drift    []Drift
+	}
+	var all []found
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
 		projects, local := servedBy(s, name)
@@ -59,30 +84,57 @@ func converge(s *session.Session, names []string, check, install bool) (SyncRepo
 			return report, fmt.Errorf("plugin %s: %w", name, err)
 		}
 		declared.Declarations = slices.DeleteFunc(declared.Declarations, func(d protocol.Declaration) bool {
-			return slices.Contains(s.Config.Dependencies.Allow, d.Name) || (len(names) > 0 && !slices.Contains(names, d.Name))
+			return slices.Contains(s.Config.Dependencies.Allow, d.Name) || (len(o.Names) > 0 && !slices.Contains(o.Names, d.Name))
 		})
 		drift := FindDrift(name, declared, local)
-		report.Drift = append(report.Drift, drift...)
-		if check {
-			continue
+		if o.CrossMajor {
+			for i := range drift {
+				drift[i].Fixable = append(drift[i].Fixable, drift[i].Crossing...)
+				drift[i].Crossing = nil
+			}
 		}
+		all = append(all, found{c, projects, drift})
+	}
+	var flat []Drift
+	for _, f := range all {
+		flat = append(flat, f.drift...)
+	}
+	if !o.Check && len(flat) > 0 && o.Settle != nil {
+		settled, err := o.Settle(flat)
+		report.Drift = settled
+		if err != nil {
+			return report, err
+		}
+		flat = settled
+	} else {
+		report.Drift = flat
+	}
+	if o.Check && len(flat) > 0 {
+		return report, ErrDrift
+	}
+	if o.Check || o.DryRun {
+		return report, nil
+	}
+	next := 0
+	for _, f := range all {
 		var changes []protocol.Rewrite
-		for _, d := range drift {
+		for _, d := range flat[next : next+len(f.drift)] {
+			if o.CrossMajor {
+				d.Fixable = append(d.Fixable, d.Crossing...)
+			}
 			for _, site := range d.Fixable {
 				changes = append(changes, protocol.Rewrite{Declaration: site, Spec: d.Target})
 			}
 		}
+		next += len(f.drift)
 		if len(changes) == 0 {
 			continue
 		}
-		files, err := rewriteAndInstall(c, changes, projects, install)
+		files, err := rewriteAndInstall(f.client, changes, f.projects, o.Install)
 		report.Files = append(report.Files, files...)
 		if err != nil {
-			return report, fmt.Errorf("plugin %s: %w", name, err)
+			return report, fmt.Errorf("plugin %s: %w", f.client.Info.Plugin.Name, err)
 		}
-	}
-	if check && len(report.Drift) > 0 {
-		return report, ErrDrift
 	}
 	return report, nil
 }
@@ -130,14 +182,17 @@ func PrintSync(w io.Writer, r SyncReport, check bool) {
 			}
 			fmt.Fprintf(w, "  %-12s %s %s (%s)\n", where(site), site.Spec, verb, site.File)
 		}
+		for _, site := range d.Crossing {
+			fmt.Fprintf(w, "  %-12s %s left alone: it would move from major %d to %d, which can break the project. Pass --yes to allow it (%s)\n", where(site), site.Spec, majorOf(site.Spec), majorOf(d.Target), site.File)
+		}
 		for _, site := range d.Blocked {
 			fmt.Fprintf(w, "  %-12s %s left alone: smith does not rewrite this kind of spec (%s)\n", where(site), site.Spec, site.File)
 		}
 	}
 	if len(r.Drift) == 0 {
-		fmt.Fprintln(w, "✔ Every project agrees on every shared dependency version.")
+		fmt.Fprintln(w, marks.Passed+" Every project agrees on every shared dependency version.")
 	} else if !check {
-		fmt.Fprintf(w, "✔ %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
+		fmt.Fprintf(w, marks.Passed+" %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
 	}
 	for _, p := range r.Unchecked {
 		fmt.Fprintf(w, "⊘ %s: not compared; its plugin does not list declarations\n", p)
@@ -151,6 +206,9 @@ func PrintSync(w io.Writer, r SyncReport, check bool) {
 }
 
 func hint(reason string) string {
+	if reason == "chosen" {
+		return "(your choice)"
+	}
 	if reason == "installed" {
 		return "(the version installed)"
 	}

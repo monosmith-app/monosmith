@@ -17,6 +17,8 @@ const (
 	stepUnchanged
 	// stepProblem: a non-blocking step reported problems.
 	stepProblem
+	// stepSkipped: a non-blocking step did not run because its tool is missing.
+	stepSkipped
 )
 
 // stepOutcome is one plugin step's end, for the table after the folded output.
@@ -44,6 +46,10 @@ func stepTable(kind string, outcomes []stepOutcome, icons theme.Icons) resultTab
 			row.Cells[1], row.Bad = icons.Warning+" problems", true
 			row.Cells = append(row.Cells, "reported problems, not blocking")
 			notes = true
+		case stepSkipped:
+			row.Cells[1], row.Cells[2], row.Bad = icons.Warning+" skipped", "-", true
+			row.Cells = append(row.Cells, "a tool it needs is not installed: nothing was checked")
+			notes = true
 		}
 		t.Rows = append(t.Rows, row)
 	}
@@ -59,18 +65,20 @@ func stepTable(kind string, outcomes []stepOutcome, icons theme.Icons) resultTab
 }
 
 // countOutcomes counts the steps by verdict.
-func countOutcomes(outcomes []stepOutcome) (ran, unchanged, problems int) {
+func countOutcomes(outcomes []stepOutcome) (ran, unchanged, problems, skipped int) {
 	for _, o := range outcomes {
 		switch o.Verdict {
 		case stepUnchanged:
 			unchanged++
 		case stepProblem:
 			problems++
+		case stepSkipped:
+			skipped++
 		case stepRan:
 			ran++
 		}
 	}
-	return ran, unchanged, problems
+	return ran, unchanged, problems, skipped
 }
 
 // problemNames lists the steps that reported problems.
@@ -99,13 +107,16 @@ func setupConclusion(outcomes []stepOutcome, projects int) string {
 
 // auditConclusion is the end of the audit's closing line.
 func auditConclusion(outcomes []stepOutcome, projects int) string {
-	ran, unchanged, problems := countOutcomes(outcomes)
+	ran, unchanged, problems, skipped := countOutcomes(outcomes)
 	parts := []string{fmt.Sprintf("%d ran", ran)}
 	if unchanged > 0 {
 		parts = append(parts, fmt.Sprintf("%d unchanged since an earlier pass", unchanged))
 	}
 	if problems > 0 {
 		parts = append(parts, fmt.Sprintf("%d reported problems (not blocking)", problems))
+	}
+	if skipped > 0 {
+		parts = append(parts, fmt.Sprintf("%d skipped because a tool is missing (not audited)", skipped))
 	}
 	return fmt.Sprintf("%s over %s: %s", plural(len(outcomes), "check"), plural(projects, "project"), strings.Join(parts, ", "))
 }

@@ -1,10 +1,11 @@
 import type { ListNode, ListResult } from '../list-view/index.ts'
 import type { DependencyUpdate, UpdatesReport } from './updates-report.contract.ts'
+import { say } from '../words/index.ts'
 
 const LEVELS: Array<{ level: string, label: string, color: string }> = [
-  { level: 'patch', label: 'Patch', color: 'charts.green' },
-  { level: 'minor', label: 'Minor', color: 'charts.yellow' },
-  { level: 'major', label: 'Major', color: 'charts.red' },
+  { level: 'patch', label: say('vscode.dependencies.patch'), color: 'charts.green' },
+  { level: 'minor', label: say('vscode.dependencies.minor'), color: 'charts.yellow' },
+  { level: 'major', label: say('vscode.dependencies.major'), color: 'charts.red' },
 ]
 
 /**
@@ -39,7 +40,7 @@ export function toDependencyRows (report: UpdatesReport): ListResult {
       ? []
       : [{
           id:          'deps:tools',
-          label:       'Tools',
+          label:       say('vscode.dependencies.tools'),
           description: String(tools.length),
           icon:        'tools',
           expanded:    true,
@@ -48,13 +49,13 @@ export function toDependencyRows (report: UpdatesReport): ListResult {
             label:       tool.name,
             description: `→ ${tool.latest}`,
             icon:        'arrow-up',
-            tooltip:     `${tool.name} is pinned at ${tool.pinned}; ${tool.latest} is out.`,
+            tooltip:     say('vscode.dependencies.is-pinned-at-is-out', { name: tool.name, pinned: tool.pinned, latest: tool.latest }),
           })),
         }]),
   ]
-  if (nodes.length === 0) return { nodes: [], message: 'Every dependency is up to date.', summary: 'up to date' }
+  if (nodes.length === 0) return { nodes: [], message: say('vscode.dependencies.every-dependency-is-up-to-date'), summary: 'up to date' }
 
-  return { nodes, summary: `${updates.length} ${updates.length === 1 ? 'update' : 'updates'}` }
+  return { nodes, summary: `${updates.length} ${say(updates.length === 1 ? 'vscode.dependencies.update-2' : 'vscode.dependencies.updates')}` }
 }
 
 function toUpdateRow (update: DependencyUpdate, color: string): ListNode {

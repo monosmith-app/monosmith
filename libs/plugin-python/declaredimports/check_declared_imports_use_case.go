@@ -1,12 +1,15 @@
 package declaredimports
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
 )
 
 var skippedDirs = map[string]bool{"dist": true, "build": true, "node_modules": true, "__pycache__": true, "site-packages": true}
@@ -68,12 +71,15 @@ func scan(dir string) ([]scannedFile, map[string]bool, error) {
 	var files []scannedFile
 	own := map[string]bool{}
 	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil // a build folder removed while the walk ran
+		}
 		if err != nil {
 			return err
 		}
 		name := d.Name()
 		if d.IsDir() {
-			if p != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info")) {
+			if p != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info") || discovery.IsSdistStaging(name)) {
 				return filepath.SkipDir
 			}
 			own[name] = true
@@ -84,6 +90,9 @@ func scan(dir string) ([]scannedFile, map[string]bool, error) {
 		}
 		own[strings.TrimSuffix(name, ".py")] = true
 		src, err := os.ReadFile(p)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil // a file removed while the walk ran
+		}
 		if err != nil {
 			return err
 		}

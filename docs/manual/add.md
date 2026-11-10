@@ -27,7 +27,7 @@ manifests it finds (see [`smith projects`](projects.md)). To delete one, use
 ## Synopsis
 
 ```sh
-smith add <kind> <name> [--lang <language>] [--stack <stack>] [--choice name=answer ...] [--verbose]
+smith add <kind> <name> [--lang <language>] [--stack <stack>] [--with <choice,...>] [--choice name=answer ...] [--fresh] [--like <project>] [--verbose] [--dry-run] [--yes]
 ```
 
 ## Arguments and flags
@@ -45,14 +45,27 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--choice <choice>` | name=answer, repeatable |  | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal |
-| `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--commit-anyway` | boolean | off | with --commit, commit even when the check of the new project fails (the files exist, a tool is missing) |
+| `--default-environment <default-environment>` | string |  prd, else the last | a web app: the environment the task build builds, which CI and releases use (default: prd, else the last) |
+| `--dry-run` | boolean | off | show the plan and change nothing |
+| `--env-files <env-files>` | string |  | a web app: commit the .env.<env> files (commit, default) or only an .env.example (example) |
+| `--environment-output <environment-output>` | string |  | a web app: where the builds go, workspace (dist/apps/<app>/<env>, default) or project (dist/<env> in the app) |
+| `--environments <environments>` | string, repeatable |  | a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one |
+| `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
+| `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) (also --language) |
+| `--like <like>` | string |  | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
+| `--with <with>` | string, repeatable |  | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default |
+| `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end add -->
 
 How the language and stack are chosen:
 
+0. `--with react,vitest,bootstrap` builds the project from choices. See
+   [Building from choices](#building-from-choices).
 1. `--stack` wins and bypasses the workspace recipe. `--stack none` uses the language
    plugin alone. [`smith stacks`](stacks.md) lists the names.
 2. Otherwise, when `[workspace] recipe` is set in `smith.toml`, the recipe creates the
@@ -67,6 +80,217 @@ with numbered options, then `Name of the project:`, three tries each); so is the
 language when `--lang` is missing and more than one could apply. Elsewhere the missing
 argument is the error listed below.
 
+## Building from choices
+
+`--with` names the choices a project is built from instead of a ready-made stack: a framework, a
+test runner, a style. [`smith choices`](choices.md) lists them.
+
+```sh
+smith add app web --with react,vitest,bootstrap
+```
+
+```text
+Choices: react, vitest, bootstrap, eslint (eslint by default) as the stack react-vitest-bootstrap
+```
+
+Another framework, test runner and style are three more words, and no new code:
+
+```sh
+smith add app admin --with vue,jest,tailwind
+```
+
+smith checks the selection first (one choice per axis, what each requires, what conflicts) and
+gives one message that names the choices and the fix, for example `chakra requires react, which is
+not in the selection: add react to --with, or drop chakra`. An axis that a choice needs and the
+selection leaves out takes its default. A selection of only lint and test choices needs no choice
+that writes the project: the stack's own scaffold, the one `smith add` uses without `--with`,
+writes it and the choices apply on top.
+
+```sh
+smith add package tester --with eslint,jest
+```
+
+A framework, a cloud host, a style or a library still needs the choice that writes the project,
+and `smith add` says which to add. A choice that makes only some kinds (a framework makes apps,
+not packages) is refused for the others, with the kind it makes. The result is saved in `smith.toml` as a stack with
+`choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
+[Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
+
+## A web app is built once per environment
+
+A web app (React, Vue, Svelte or a plain page, built with Vite) reads its `VITE_` settings when it is
+built, so `smith add` asks which environments it is built for. Without a terminal (and with
+`--yes`) the flag is required, and the add stops and names it:
+
+```sh
+smith add app web --lang node --with react --environments lcl,dev,uat,prd --yes
+smith add app site --lang node --with html --environments none     # one build, as before
+```
+
+The names are lowercase words. smith writes `.env.<name>` for each, `vite.build.ts` with `build(mode)`, one
+build script per environment and the settings in `smith.toml`; the plan lists every file first. The
+other answers have flags too: `--default-environment` (the task `build`, default `prd`),
+`--environment-output workspace|project` (default `workspace`: `dist/apps/<app>/<name>`) and
+`--env-files commit|example` (default `commit`). See [Environments](environments.md).
+
+## In the terminal interface and in VS Code
+
+The command takes the kind and the language as arguments, and that does not change. The
+guided form of the terminal interface and of VS Code starts one step earlier, with "What are
+you building?" (a website, an API, a function app, a desktop app, a library, a package), and
+asks the language only where the answer leaves more than one. It builds the same
+`smith add <kind> <name> --lang <language> --with <choices>` line, and shows it in the plan
+before anything is written. "I know the language" keeps the order kind, then language. See
+[the terminal interface](tui.md#guided-forms).
+
+## After the add
+
+When the project is a library, `smith add` ends with `Use it from an app: smith install -p <app> <library>`: a
+library is not a dependency of any app until you say so (see [`smith install`](install.md)). In the terminal
+interface, press `+` on the app and pick the library.
+
+When the first build or test of the new project cannot run because a tool is missing (the .NET SDK for a C#
+project, for example), the project is made and kept. The command prints which tool is missing and where to get
+it, exits with 1, and says `smith tools install` chooses how to install it. In the terminal interface and in
+VS Code the result is a choice: open the install page, install it with smith, check again, or continue without
+checking; nothing is lost.
+
+## The tools the project needs
+
+When the project is made, smith checks the tools its stack needs on this machine: the language, and the tools
+a task runs, such as golangci-lint at the version CI pins for a Go project, or Gradle and Maven for a JVM project.
+It prints what is missing or different in plain words (`! golangci-lint is 2.13.0, not the 2.15.0 that CI pins`),
+so the first `smith doctor` does not have to tell you.
+
+In a terminal, smith then asks how to get each one, with the choices of
+[`smith tools install`](tools-install.md): a package manager, the official page, "I will install it myself", and
+skip. For a tool that is installed in another version, skip reads "Keep mine": the pinned version is what CI
+uses, and yours may give other lint results. Nothing is installed before you choose, and a command that needs
+administrator rights is never run in silence. `smith new` and `smith convert` do the same for the tools of the
+language they set up.
+
+With `--yes` or without a terminal smith installs nothing. It prints the tools and the one command that fixes
+them, for example `smith tools install golangci-lint python`. VS Code and JetBrains run `smith add` without a
+terminal, so they show that notice with an Install tools button.
+
+smith leaves the files uncommitted. To commit them afterwards as one operation that `smith undo` can revert,
+run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit now".
+
+## Desktop apps and the composer
+
+Two choices make a desktop app from a new Node project. `electron` writes a minimal Electron app on
+its own, so it is on the `framework` axis and cannot be combined with `react` (the error says
+`both on the framework axis: keep one`). `tauri` wraps a web app that another choice writes:
+`--with react,tauri`. Neither goes with a cloud function host, and the two do not go together.
+For an app that exists, [`smith tauri add`](tauri-add.md) stays.
+
+[`smith compose`](compose.md) searches all of this in one place (try "desktop" or "serverless"),
+explains each conflict as you tick, and ends in the `smith add` line.
+
+## Function apps
+
+A serverless function app is a choice on the `framework` axis, so `--with` builds one in Node, Python
+and C#. There are nine templates:
+
+| Host (`--with`) | Local tool | What `smith add` writes besides the code | Deploy |
+|---|---|---|---|
+| `azure-functions` | Azure Functions Core Tools (`func`) | `host.json`, `local.settings.sample.json` (`local.settings.json` is git-ignored), the v4 model in Node (`src/functions`), the v2 model in Python (`function_app.py`, `requirements.txt`), the isolated worker in C# (`Program.cs`) | [`smith pipeline deploy-azure-function`](pipeline.md) |
+| `aws-lambda` | AWS SAM CLI (`sam`), and Docker for `sam local` | `template.yaml`, a sample event, the handler (`handler` in Node, `lambda_handler` in Python, `Amazon.Lambda.Core` with the serializer in C#) | none: template only |
+| `gcp-functions` | the Functions Framework, a dependency of the app | the entry point (`src/index.ts`, `main.py`, a `Google.Cloud.Functions.Hosting` class) | none: template only |
+
+AWS and Google get templates only: they run, test and package locally, and smith writes no CI or
+deploy pipeline for them. Azure keeps the pipeline it has.
+
+smith never picks the trigger or the runtime for you. At a terminal it says which files the host
+writes, lists the options with the suggested one marked, and asks:
+
+```sh
+smith add app api --lang node --with azure-functions
+```
+
+```text
+azure-functions: a serverless Azure Functions app (Node v4 model): host.json, ...
+azure-functions needs an answer on the trigger axis. smith does not choose it for you:
+  1) blob-trigger: answers a new file in storage (...)
+  2) http-trigger (suggested): answers an HTTP request (...)
+  ...
+trigger [http-trigger]:
+```
+
+Without a terminal, smith refuses before it writes anything, and names the answers. The answer is
+part of `--with`:
+
+```text
+smith: azure-functions needs a choice on the trigger axis, and none is the default: add one of blob-trigger, http-trigger (suggested), queue-trigger, timer-trigger to --with
+```
+
+```sh
+smith add app api --lang python --with azure-functions,http-trigger,python313
+```
+
+| Axis | Choices | Suggested |
+|---|---|---|
+| trigger | `http-trigger`, `timer-trigger`, `queue-trigger`, `blob-trigger` (an Azure Storage queue or blob, AWS SQS or S3, Google Pub/Sub or Cloud Storage) | `http-trigger` |
+| runtime, Node | `node24`, `node22` | `node24`, the Active LTS |
+| runtime, Python | `python313`, `python312`, `python314` | `python313` |
+| runtime, C# | `dotnet10`, `dotnet8` | `dotnet10`, the current LTS |
+
+A combination a host cannot do is a clear error before any write: `timer-trigger` with
+`gcp-functions` (on Google a schedule is a Cloud Scheduler job that calls an HTTP or Pub/Sub
+function), `dotnet8` with `gcp-functions` (Google retires it on 2026-11-10), two hosts, or a host with
+`react`: `azure-functions and react are both on the framework axis: keep one`. The tables are the
+runtimes the three platforms support on 2026-11-02; [ADR 0074](../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md)
+lists the sources.
+
+Every app has the tasks `build`, `test`, `lint`, `start` and `package`. The build goes to the
+workspace's `dist/` like every build; `start` builds and runs the function locally; `package` writes a
+zip (Node, Python) or the publish folder (C#) under `dist/`. The tests call the handler directly and
+need no cloud tool. `smith doctor` warns, never fails, when `func` or `sam` is missing and says how
+to get it. The Node apps are linted and tested with the defaults (`eslint`, `vitest`); `jest` is
+refused with a function host.
+
+## Following the siblings
+
+A workspace has habits: its libs build with esbuild, its packages test with
+`@swc/jest`, their `main` points into `dist/`. `smith add` reads the **siblings**, the
+projects of the same kind and language, and gives the new project the same shape. It
+prints what they agree on and why:
+
+```text
+The 3 sibling packages agree on:
+  build.tool = esbuild (3 of 3 packages)
+  exports.target = dist (3 of 3 packages)
+  test.runner = @swc/jest (3 of 3 packages)
+```
+
+The rules, from [ADR 0041](../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md):
+
+- A value is followed when **at least 3** siblings have it and **at least two thirds** of
+  the siblings that report the key. With fewer than 3 siblings nothing is inferred and
+  nothing is printed.
+- When the siblings **split** (no value has two thirds), `smith add` asks in a terminal and
+  lists the values with their counts and the default of the stack. Without a terminal, or
+  with `CI` set, it never waits: it uses the default and prints a warning that names the
+  split.
+- After the project is made, each key the siblings agree on that the new project does not
+  have is a warning (`Warning: 3 of 3 sibling packages have tsconfig.files = ...; the new
+  package has ...`). The warning means the stack cannot follow that key.
+- `--fresh` skips all of it: the project gets the default of its stack.
+- `--like <project>` takes the shape of that one project instead (build tool, test runner,
+  layout, lint), for the keys the stack follows. It prints what it took, key by key, and the
+  plan of `--dry-run` shows it too. It needs no three siblings, and it excludes `--fresh`
+  ([ADR 0066](../architecture/decisions/0066-smith-add-like-copies-the-shape-of-one-named-project.md)).
+- When several keys differ, the warning after the project is made is one line that names them all.
+
+The facts for a Node project are `build.tool` (`tsc`, `esbuild`, ...), `test.runner`
+(`jest`, `ts-jest`, `@swc/jest`, `vitest`, ...), `exports.target` (`dist`, `src`),
+`tsconfig.files`, `lint.config`, `scripts` and `layout`. The stacks follow
+`build.tool` (`tsc`, `esbuild`), `exports.target` and `test.runner` (`node-jest` follows
+`ts-jest` and `@swc/jest`; `node-vitest` follows `vitest`); the others are reported and
+warned about. A stack does not switch plugins for a sibling shape: if the siblings use
+Vitest and the stack uses Jest, the warning is your cue to pass `--stack node-vitest`.
+Languages whose plugin does not report a shape are not affected.
+
 For a Node project, the folder follows the root `package.json` `workspaces`. When they
 cover `libs/*` (or the kind's own folder), the project goes there. When they do not (a
 workspace converted from Nx lists only `packages/*` and `apps/*`), a lib goes into the
@@ -77,8 +301,32 @@ checks for the new project (npm workspaces, scripts, entry files). If one fails,
 prints the check with its remedy, exits with 1 and does not print "Done"; follow the
 remedy, then run `smith doctor`.
 
-The name must be kebab-case. smith add leaves the files it wrote uncommitted (`smith new`
-commits what it wrote): review them with `git status`, then commit.
+The name must be kebab-case.
+
+Before it writes, smith add prints a plan: the project directory, what each plugin of the stack
+adds, and the workspace files that change (with the owner, `smith` or `you`, where `smith.lock`
+records one). In a terminal, outside CI, it asks `Go ahead? [y/N]`; `--yes` skips the question,
+and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI, it refuses and names `--yes` (apply) and `--dry-run` (see the plan). The plan lists the pipeline and dev container files that smith generated and may rewrite, by name.
+
+By default smith add leaves the files it wrote uncommitted (`smith new` commits what it wrote):
+review them with `git status`, then commit. With `commit_operations = true` under `[workspace]`
+and a clean git work tree, or when you pass `--commit`, it commits them as one commit (`chore: add package billing`), and
+[`smith undo`](undo.md) reverts that commit.
+
+When you pass `--commit` and the work tree already holds changes of your own, smith commits nothing and says so; it
+does not suggest `--commit` again. In a terminal it asks: commit only the files this operation changed (the default),
+stop here and leave everything uncommitted, or cancel. Without a terminal, commit or stash your changes and run
+`smith commit add app web --only-operation` (see [`smith commit`](commit.md)), or review with `git status`.
+
+smith always remembers which files the operation changed, committed or not. If the new project exists but fails its
+check (a tool it needs is missing, such as the .NET SDK or the Tauri system libraries) and you passed `--commit`,
+smith says that the commit was held back. In a terminal it asks: leave it uncommitted (the default), commit anyway,
+or cancel. Without a terminal it refuses and names `--commit-anyway`, which commits the files although the check
+failed. Either way `smith commit --only-operation` commits the files later under the name "add app web".
+
+smith never deletes a file silently. When the new project makes the pipelines install smith with npm, pip or dotnet,
+the generated `tools/smith/install.sh` is not used any more: the plan lists it as `remove`, with the reason, and the
+folder it leaves empty is removed with it.
 
 ## Exit codes
 
@@ -134,9 +382,18 @@ smith add go-lib core
 ```
 
 ```text
+Plan: add lib core
+  Project core
+    create  libs/core/  (made by the go plugin)
+  Workspace
+    change  CI pipelines  (regenerated to install the new toolchain)
 Creating lib core in libs/core: go
-Wrote 7 file(s):
+go: creating new go.mod: module github.com/acme/acme/libs/core
+Updating the CI pipelines
+Wrote 9 file(s):
+  .devcontainer/devcontainer.json
   .github/workflows/ci.yml
+  go.work
   libs/core/doc.go
   libs/core/go.mod
   libs/core/greeting/doc.go
@@ -144,6 +401,9 @@ Wrote 7 file(s):
   libs/core/greeting/greet_use_case_test.go
   libs/core/greeting/greeting_contract.go
 Import it from another Go project as github.com/acme/acme/libs/core/<slice>.
+Verifying: smith run build test -p core
+Verified: build and test passed in 700ms
+Done: lib core is ready (9 files written, 1s).
 Try: smith test -p core
 ```
 

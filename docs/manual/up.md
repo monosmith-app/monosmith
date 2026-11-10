@@ -16,10 +16,17 @@ golangci-lint) with their newest releases.
 - `smith up --align` to bring one dependency that projects declare at different versions to
   one (this updates nothing; it is [`smith sync`](sync.md) for the named packages).
 
+## Major updates are a choice of their own
+
+`--yes` takes patch and minor updates only. A major update can break the project, so smith
+leaves it out, lists it ("name 1.2.0 -> 3.0.0") and says that `--major` takes it. A package you
+name that has only a major update asks in a terminal and needs `--major` without one. With
+`--align`, the plan and the questions are those of `smith sync`.
+
 ## Synopsis
 
 ```sh
-smith up [package]... [--yes] [--check] [--json] [--no-install] [--align]
+smith up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--align [--dry-run] [--prefer highest|lowest|installed] [--to <name>=<version>]]
 ```
 
 ## Arguments and flags
@@ -37,15 +44,21 @@ Usage: `smith up [packages...] [flags]`
 |---|---|---|---|
 | `--align` | boolean | off | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ |
 | `--check` | boolean | off | report only; never prompt, never write |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | with --align: show the plan and change nothing |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
-| `--no-install` | boolean | off | rewrite the manifests without installing |
-| `-y, --yes` | boolean | off | take every update without prompting |
+| `--major` | boolean | off | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version |
+| `--no-install` | boolean | off | rewrite the manifests without installing (also --skip-install) |
+| `--prefer <prefer>` | string |  the installed one, else the highest | with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |
+| `--to <to>` | string, repeatable |  | with --align: the version of one dependency, as <name>=<version> |
+| `-y, --yes` | boolean | off | take every patch and minor update without prompting; major updates stay out unless --major is given |
 
 <!-- smith:end up -->
 
 Behaviour:
 
-- With names, those packages are updated without a prompt. `--yes` takes every update.
+- A run that changes no file (a report such as `smith up` with no package named and `--check`, or with nothing to update) never prints the "Not committed" line or advice about `--commit`: there is nothing to commit. Changes that were already in the work tree before the run are not counted as its own.
+- With names, those packages are updated without a prompt. `--yes` takes every update. The report then lists only the named packages, grouped by level, with a count (`3 updates: 1 patch, 2 minor`), and leaves out the pinned tools.
 - Without a terminal, or with `--check`, `up` only reports; `--json` also never writes.
 - With `--align` nothing is updated: the named packages (or, with none, every one) that
   projects declare at different versions are brought to one, leaving those on the
@@ -82,9 +95,9 @@ major
   typescript                   6.0.3 → 7.0.2  (root)
 
 Tools smith pins (informational):
-  Go               1.27 ✔ (latest 1.27.3)
-  golangci-lint    2.14.0 → 2.15.0 available
-  Node.js (LTS)    24 ✔ (latest 24.22.1)
+  Go               1.27 ✓ (latest 1.27.3)
+  golangci-lint    2.15.0 ✓ (latest 2.15.0)
+  Node.js (LTS)    24 ✓ (latest 24.22.1)
   Python           3.12 → 3.15 available
 
 Report only: pick with smith up in a terminal, name packages, or pass --yes.

@@ -27,8 +27,8 @@ func TestATaskRunNeverHandsTheTerminalOver(t *testing.T) {
 		if len(l.started) != 1 || l.sh().quit || len(l.sh().Argv) != 0 {
 			t.Fatalf("%v: started %v, quit=%v argv=%v", keys, l.started, l.sh().quit, l.sh().Argv)
 		}
-		if l.sh().tab != "run" {
-			t.Fatalf("%v showed %q, not the Run tab", keys, l.sh().tab)
+		if l.sh().tab != "projects" || !l.sh().runShown() {
+			t.Fatalf("%v showed %q, not the run panel of Projects", keys, l.sh().tab)
 		}
 	}
 	// The palette's entries and the Home action take the same way.
@@ -43,15 +43,15 @@ func TestEveryRunOfTheSessionIsKeptAndCanBeShownAgain(t *testing.T) {
 	l := newLab(t, true, 140, 36)
 	l.next = failingRun()
 	l.keys("b")
-	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✔ 12ms"}}
+	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✓ 12ms"}}
 	l.keys("t")
-	l.has("$ smith run test", "run 2/2", "kit:test")
+	l.has("$ smith run test", "run 2 of 2", "kit:test")
 	l.keys(",")
-	l.has("$ smith run build", "run 1/2", "orders:build")
+	l.has("$ smith run build", "run 1 of 2", "orders:build")
 	// The earlier run opens on its first failure.
 	l.has("Log: orders:build", "undefined: Foo")
 	l.keys(".")
-	l.has("run 2/2", "kit:test")
+	l.has("run 2 of 2", "kit:test")
 	l.keys(".")
 	l.has("unavailable: this is the latest run")
 	if len(l.sh().runs) != 2 {
@@ -138,7 +138,7 @@ func TestYCopiesTheCommandLineAndShiftYCopiesTheLogShown(t *testing.T) {
 	out.Reset()
 	l.keys("esc", "Y")
 	got := decodedClip(t, &out)
-	if !strings.Contains(got, "kit:build │ ok example.com/kit") || !strings.Contains(got, "✖ 1/4 tasks succeeded") {
+	if !strings.Contains(got, "kit:build │ ok example.com/kit") || !strings.Contains(got, "× 1/4 tasks succeeded") {
 		t.Fatalf("with all output selected Y copied %q", got)
 	}
 }
@@ -158,12 +158,12 @@ func TestTheExitSummaryNamesTheLastRunAndItsCommand(t *testing.T) {
 		t.Fatalf("nothing ran, summary %q", got)
 	}
 	l.keys("b")
-	if got := l.sh().ExitSummary(); got != "✔ done in 0s · smith run build -p orders" {
+	if got := l.sh().ExitSummary(); got != "✓ done in 0s · smith run build -p orders" {
 		t.Fatalf("summary %q", got)
 	}
 	l.next = failingRun()
 	l.keys("t")
-	if got := l.sh().ExitSummary(); got != "✖ failed (code 1) in 0s · smith run test" {
+	if got := l.sh().ExitSummary(); got != "× failed (code 1) in 0s · smith run test -p orders" {
 		t.Fatalf("summary %q", got)
 	}
 }
@@ -202,7 +202,7 @@ func TestTheTaskThatFailedOnItsOwnIsShownBeforeOneThatWasOnlyInterrupted(t *test
 	l := newLab(t, true, 140, 36)
 	l.next = &scripted{lines: []string{
 		"kit:build ▶ x", "orders:build ▶ y",
-		"orders:build │ real reason", "orders:build ✖ exited with code 3",
+		"orders:build │ real reason", "orders:build × exited with code 3",
 	}, exit: runner.Exit{Code: 1}}
 	l.keys("b")
 	// kit:build was running, was seen first, and was interrupted by the end.

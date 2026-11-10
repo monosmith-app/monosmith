@@ -75,7 +75,7 @@ func TestStatusCommandPrintsTheCacheAndItsJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := filepath.Join(root, ".smith", "cache")
-	for _, want := range []string{"local cache  " + dir, "  entries     3", "of 1.0 MB", "  last prune  never", "  remote      none", "✖ the cache is over its limit", "largest entries", "c:build"} {
+	for _, want := range []string{"local cache  " + dir, "  entries     3", "of 1.0 MB", "  last prune  never", "  remote      none", "× the cache is over its limit", "largest entries", "c:build"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}

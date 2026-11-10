@@ -47,7 +47,7 @@ describe('createDiagnosticLineParser', () => {
       '/repo/apps/web/src/b.ts',
       '  1:1  error  Parsing error: unexpected token',
       '',
-      '✖ 3 problems (2 errors, 1 warning)',
+      '× 3 problems (2 errors, 1 warning)',
     ])
     expect(found).toMatchObject([
       { file: '/repo/apps/web/src/a.ts', line: 3, column: 10, severity: 'error', message: 'Unexpected any', code: '@typescript-eslint/no-explicit-any' },

@@ -209,7 +209,13 @@ func TestDroppingCircleCIRemovesOnlyAGeneratedFile(t *testing.T) {
 	if _, err := os.Stat(path); err == nil {
 		t.Fatal("the generated CircleCI config stays after the provider is dropped")
 	}
-	_ = os.WriteFile(path, []byte("version: 2.1\n# ours\n"), 0o644)
+	// The empty .circleci folder went with the generated file; the team makes it again.
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("version: 2.1\n# ours\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if _, _, err := Write(root, other, multiLanguageModel()); err != nil {
 		t.Fatal(err)
 	}

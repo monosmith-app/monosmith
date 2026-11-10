@@ -37,7 +37,7 @@ func TestRustWorkspace(t *testing.T) {
 	// The first cargo run writes Cargo.lock, an input of every task.
 	w.smith(true, "run", "typecheck")
 	out := w.smith(true, "run", "format", "lint", "typecheck", "test", "build")
-	for _, want := range []string{"cli:lint ✔", "core:test ✔", "cli:build ✔", "core:format ✔"} {
+	for _, want := range []string{"cli:lint ✓", "core:test ✓", "cli:build ✓", "core:format ✓"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%s did not pass:\n%s", want, out)
 		}

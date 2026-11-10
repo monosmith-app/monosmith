@@ -1,0 +1,17 @@
+{
+  "jetbrains.pluginswitch.switching-off-hides-projects": "switching off hides projects",
+  "jetbrains.pluginswitch.no-plugin-was-changed": "No plugin was changed. {failureTextMapper}",
+  "jetbrains.pluginswitch.smith-lists-no-built-in": "smith lists no built-in plugin.",
+  "jetbrains.pluginswitch.turn-a-plugin": "{title}: turn a plugin {word}",
+  "jetbrains.pluginswitch.pick-a-built-in-plugin": "Pick a built-in plugin.",
+  "jetbrains.pluginswitch.the-projects-finds-appear-in": "The projects {name} finds appear in smith. Nothing is written until you answer.",
+  "jetbrains.pluginswitch.smith-counts-the-projects-finds": "smith counts the projects {name} finds first. If there are any, it stops and names them. Nothing is written until you answer.",
+  "jetbrains.pluginswitch.turn-it": "Turn it {word}",
+  "jetbrains.pluginswitch.was-not-turned": "{name} was not turned {word}. {failureTextMapper}",
+  "jetbrains.pluginswitch.turn-off-anyway": "{title}: turn {name} off anyway?",
+  "jetbrains.pluginswitch.nothing-was-changed-these-projects": "Nothing was changed. These projects disappear from smith until you turn {name} on again.",
+  "jetbrains.pluginswitch.turn-it-off-anyway": "Turn it off anyway",
+  "jetbrains.pluginswitch.was-not-turned-off": "{name} was not turned off. {failureTextMapper}",
+  "jetbrains.pluginswitch.is-committed-as-one-change": "{name} is {word}. Committed as one change: Undo reverts it.",
+  "jetbrains.pluginswitch.is-not-committed-review-it": "{name} is {word}. Not committed: review it with the Commit window, or commit it now."
+}

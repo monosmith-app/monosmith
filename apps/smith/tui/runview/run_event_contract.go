@@ -13,11 +13,13 @@ const (
 	Passed
 	Failed
 	Skipped
+	// Cancelled is a task the person stopped while it ran: it did not fail.
+	Cancelled
 )
 
 // String is the word shown beside the symbol, so colour is never the only signal.
 func (s Status) String() string {
-	return [...]string{"queued", "running", "cached", "passed", "failed", "skipped"}[s]
+	return [...]string{"queued", "running", "cached", "passed", "failed", "skipped", "cancelled"}[s]
 }
 
 // Finished reports whether the task has an outcome.
@@ -34,17 +36,17 @@ const (
 	Output
 	// Started is "<task> ▶ <command>".
 	Started
-	// Finish is "<task> ✔ <duration>", "<task> ✔ from cache" or "<task> ✖ <reason>".
+	// Finish is "<task> ✓ <duration>", "<task> ✓ from cache" or "<task> × <reason>".
 	Finish
 	// Stopped is "<task> ■ stopped" (a served task shut down).
 	Stopped
 	// Warned is "<task> ! <message>".
 	Warned
-	// Skip is "  ↷ <task> <reason>" in the closing summary.
+	// Skip is "  » <task> <reason>" in the closing summary.
 	Skip
-	// Failure is "  ✖ <task> <reason>" in the closing summary.
+	// Failure is "  × <task> <reason>" in the closing summary.
 	Failure
-	// Summary is "✔ 3/4 tasks succeeded (...) in 1.2s".
+	// Summary is "✓ 3/4 tasks succeeded (...) in 1.2s".
 	Summary
 	// Plan is the list of tasks a run will start (the event stream's
 	// run.started); Queue is one of them (task.queued).

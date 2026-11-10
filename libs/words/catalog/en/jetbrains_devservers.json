@@ -1,0 +1,8 @@
+{
+  "jetbrains.devservers.runs-its-start-task": "Runs its start task.",
+  "jetbrains.devservers.monosmith-dev-servers": "MonoSmith: dev servers",
+  "jetbrains.devservers.no-server-was-started": "No server was started. {message}",
+  "jetbrains.devservers.no-project-has-a-start": "No project has a start task.",
+  "jetbrains.devservers.tick-the-projects-to-start": "Tick the projects to start. Each runs in the Run window; its Stop button stops it.",
+  "jetbrains.devservers.smith-dev": "smith dev {names}"
+}

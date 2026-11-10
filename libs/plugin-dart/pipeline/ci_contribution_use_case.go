@@ -92,29 +92,37 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that Dart (and Flutter, when a package uses it) is installed,
 // and that the SDK lives outside the workspace.
-func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	if len(params.Projects) == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
 	_, dartErr := probe(workspaceRoot, []string{"dart", "--version"})
-	findings := []protocol.Finding{{Check: "the Dart SDK is installed", OK: dartErr == nil, Detail: "dart is not on PATH", Remedy: "install Dart (https://dart.dev/get-dart) or Flutter, which carries it"}}
+	findings := []protocol.Finding{{Check: "the Dart SDK is installed", Area: "toolchain", OK: dartErr == nil, Problem: toolrun.ProblemUnless(dartErr == nil, "dart is not on PATH"), Detail: "dart is not on PATH", Remedy: "install Dart (https://dart.dev/get-dart) or Flutter, which carries it"}}
 	for _, p := range params.Projects {
 		if flutterProject(p) {
 			_, err := probe(workspaceRoot, []string{"flutter", "--version"})
-			findings = append(findings, protocol.Finding{Check: "Flutter is installed", OK: err == nil, Detail: "flutter is not on PATH", Remedy: "install Flutter (https://docs.flutter.dev/get-started/install)"})
+			findings = append(findings, protocol.Finding{Check: "Flutter is installed", Area: "toolchain", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "flutter is not on PATH"), Detail: "flutter is not on PATH", Remedy: "install Flutter (https://docs.flutter.dev/get-started/install)"})
 			break
 		}
 	}
 	for _, sdk := range []string{"flutter", "dart-sdk", ".fvm"} {
 		if _, err := os.Stat(filepath.Join(workspaceRoot, sdk)); err == nil {
-			findings = append(findings, protocol.Finding{Check: "the Dart and Flutter SDKs live outside the workspace", Detail: sdk + "/ is inside it", Remedy: "install the SDK outside the workspace and put it on PATH"})
+			findings = append(findings, protocol.Finding{Check: "the Dart and Flutter SDKs live outside the workspace", Area: "toolchain", Problem: "an SDK folder, " + sdk + "/, is inside the workspace", Detail: sdk + "/ is inside it", Remedy: "install the SDK outside the workspace and put it on PATH"})
 			return protocol.DoctorResult{Findings: findings}
 		}
 	}
-	findings = append(findings, protocol.Finding{Check: "the Dart and Flutter SDKs live outside the workspace", OK: true})
+	findings = append(findings, protocol.Finding{Check: "the Dart and Flutter SDKs live outside the workspace", Area: "toolchain", OK: true})
 	return protocol.DoctorResult{Findings: findings}
+}
+
+// Doctor runs the checks of the plugin and adds the build-location check: a
+// build task that writes outside the workspace's dist/.
+func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+	res := doctorChecks(workspaceRoot, params)
+	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	return res
 }

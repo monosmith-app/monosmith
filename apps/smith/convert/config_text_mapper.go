@@ -16,6 +16,9 @@ func ConfigText(cfg workspace.Config) string {
 	b.WriteString("# smith workspace configuration. Written by `smith convert`; edit it freely or with the TUI.\n")
 	b.WriteString("# Every setting is optional except [workspace] name; see https://github.com/monosmith-app/monosmith/blob/main/docs/reference/configuration.md.\n")
 	fmt.Fprintf(&b, "schema = %d\n\n[workspace]\nname = %s\n", workspace.SchemaVersion, q(cfg.Workspace.Name))
+	if cfg.Workspace.Defaults != "" {
+		fmt.Fprintf(&b, "defaults = %s\n", q(cfg.Workspace.Defaults))
+	}
 	if cfg.Workspace.Scope != "" {
 		fmt.Fprintf(&b, "scope = %s\n", q(cfg.Workspace.Scope))
 	}
@@ -80,13 +83,22 @@ func ConfigText(cfg workspace.Config) string {
 		}
 	}
 	writeTasks(&b, "tasks", cfg.Tasks)
-	for _, g := range cfg.TaskGroups {
-		b.WriteString(workspace.TaskGroupText(g))
+	for _, g := range cfg.Groups {
+		b.WriteString(workspace.GroupText(g))
 	}
 	for _, name := range sortedKeys(cfg.Projects) {
 		p := cfg.Projects[name]
-		if p.TagPrefix != "" {
-			fmt.Fprintf(&b, "\n[projects.%s]\ntag_prefix = %s\n", key(name), q(p.TagPrefix))
+		if p.TagPrefix != "" || p.Declared() {
+			fmt.Fprintf(&b, "\n[projects.%s]\n", key(name))
+			if p.Declared() {
+				fmt.Fprintf(&b, "root = %s\nlanguage = %s\n", q(p.Root), q(p.Language))
+				if p.Kind != "" {
+					fmt.Fprintf(&b, "kind = %s\n", q(p.Kind))
+				}
+			}
+			if p.TagPrefix != "" {
+				fmt.Fprintf(&b, "tag_prefix = %s\n", q(p.TagPrefix))
+			}
 		}
 		if r := p.Release; r != nil {
 			fmt.Fprintf(&b, "\n[projects.%s.release]\n", key(name))

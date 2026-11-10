@@ -1,14 +1,20 @@
 package plugin
 
 import (
+	"strings"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-go/apisurface"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-go/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Go is the Go language plugin.
@@ -26,14 +32,28 @@ func (g *Go) Describe(params protocol.InitializeParams) (protocol.InitializeResu
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "go", Version: g.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     tools(),
 		Languages: []string{"go", "golang"},
 		Manifests: []string{"go.mod"},
 	}, nil
 }
 
+// tools are the tools the Go projects need: Go, and golangci-lint at the
+// version the CI template installs (the one `smith doctor` and `smith ci setup`
+// use), so smith tools install fetches that version.
+func tools() []protocol.ToolNeed {
+	out := toolcatalog.For("go", "golangci-lint")
+	out[1].Suggested = strings.TrimPrefix(pipeline.GolangciLintVersion, "v")
+	return out
+}
+
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the projects smith.toml declares, as packages of the module above them.
+func (g *Go) DescribesDeclared() {}
+
 // Discover implements serve.Discoverer.
 func (g *Go) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(g.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(g.root, params.Manifests, params.Declared, params.Settings)
 }
 
 // Generate implements serve.Generator.
@@ -58,7 +78,7 @@ func (g *Go) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error)
 
 // Remove implements serve.Remover.
 func (g *Go) Remove(params protocol.RemoveParams) (protocol.RemoveResult, error) {
-	return pipeline.Remove(g.root, params)
+	return gowork.Remove(g.root, params)
 }
 
 // Install implements serve.DependencyManager.
@@ -69,6 +89,16 @@ func (g *Go) Install(params protocol.InstallParams) (protocol.DependencyResult, 
 // Uninstall implements serve.DependencyManager.
 func (g *Go) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(g.root, params)
+}
+
+// Link implements serve.Linker.
+func (g *Go) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(g.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (g *Go) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(g.root, params)
 }
 
 // Declared implements serve.DeclarationEditor.
@@ -90,6 +120,11 @@ func (g *Go) Latest(params protocol.LatestParams) (protocol.LatestResult, error)
 // ChangeKind implements serve.KindChanger.
 func (g *Go) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(g.root, params)
+}
+
+// APISurface implements serve.APISurfaceReader.
+func (g *Go) APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error) {
+	return apisurface.List(g.root, params)
 }
 
 // Components implements serve.ComponentLister.

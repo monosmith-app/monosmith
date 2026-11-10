@@ -63,6 +63,9 @@ func walk(r *Report, root string, rules languages.Rules, rel string, parent *lan
 		if why := rules.File(name, here); why != "" {
 			r.problem(shown(name), why)
 		}
+		if word := languages.BannedWordIn(name); word != "" {
+			r.problem(shown(name), fmt.Sprintf("%q is in the name of this file and names no outcome; name the file for what it does", word))
+		}
 		if rules.Production == nil || rules.Production(name, here) {
 			files++
 		}

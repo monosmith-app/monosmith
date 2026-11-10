@@ -87,7 +87,7 @@ as a comment, so it is readable without opening node_modules.
 | `monosmith/nx-dependency-checks`              | `@nx/eslint-plugin` on publishable packages' manifests — only when `workspaceRoot` is passed   |
 | `monosmith/vertical-slices`                   | Vertical feature slices: role-suffixed kebab-case files, a subfeature reached only through its index, no two subfeatures importing each other — unless `verticalSlices: false`. See below |
 | `monosmith/standard`                          | JavaScript Standard Style as ~60 `@stylistic` rules — **this is the formatter.** See below     |
-| `monosmith/house-style`                       | The deliberate departures from Standard: trailing commas, aligned object values, `consistent-as-needed` quote-props, a blank line before `return`, two statements per line. Composed after `monosmith/standard`, so it wins |
+| `monosmith/house-style`                       | The deliberate departures from Standard: trailing commas, aligned object values, no separator after type and interface members, `consistent-as-needed` quote-props, a blank line before `return`, two statements per line. Composed after `monosmith/standard`, so it wins |
 
 `configs/named.mapper.js` fills a name in for the blocks upstream presets ship
 anonymously, keeping any name upstream does provide. A test resolves the real
@@ -260,7 +260,7 @@ the other two rules are about imports, which a file's suffix has no bearing on.
 
 | Rule | Reports |
 |---|---|
-| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.error`, `.config`, `.enum`, `.handler`); a folder nested inside a subfeature; anything but `index`/`main` at the root of `src` |
+| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.error`, `.config`, `.enum`, `.handler`; the message adds that a front-end file, a `.ts` file under a UI project, also has `.route`, `.component`, `.section`, `.hook`, `.style`, `.content`, `.mock` and `.fixture`, opt-in through the `verticalSlices.roles` option); a file name with a banned word (`util`, `utils`, `helper`, `helpers`, `common`, `shared`, `manager`, `processor`, `data`, `misc`) in any of its parts, tests included, except in a `fixtures` folder; a folder nested inside a subfeature; anything but `index`/`main` at the root of `src` |
 | `vertical-slices/no-deep-import` | A sibling reached past its index (`'../billing/fee.policy'` instead of `'../billing'`, or `'../billing/index.ts'` under `nodenext`), and a subfeature importing its own index |
 | `vertical-slices/no-slice-cycle` | Two subfeatures importing each other — **type-only imports included** |
 
@@ -379,7 +379,7 @@ something `lint` already gates.
 
 ### Where this differs from Standard
 
-`monosmith/standard` is a faithful port of `neostandard`. Five deliberate departures
+`monosmith/standard` is a faithful port of `neostandard`. Six deliberate departures
 live in `monosmith/house-style`, composed after it so they win:
 
 | Rule | Standard | Here |
@@ -388,6 +388,7 @@ live in `monosmith/house-style`, composed after it so they win:
 | `key-spacing` | no alignment | aligned on `value` |
 | `quote-props` | `as-needed` | `consistent-as-needed` |
 | `max-statements-per-line` | 1 (@stylistic default) | 2 |
+| `member-delimiter-style` | not enforced | no `;` between multiline type and interface members, a comma on one line |
 | blank line before `return` | not enforced | required |
 
 Two of those interact, and it is the thing to know before touching either.

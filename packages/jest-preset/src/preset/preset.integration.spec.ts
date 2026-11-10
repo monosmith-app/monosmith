@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 /**
@@ -101,7 +101,59 @@ it('resolves through the preset', () => {
   })
 })
 
+describe('styles and files that a bundler would load', () => {
+  it('stubs a style import and a CSS module, and an image, in the base preset', () => {
+    write({
+      'src/assets.d.ts':     "declare module '*.css'\ndeclare module '*.scss' { const classes: Record<string, string>; export default classes }\ndeclare module '*.png' { const path: string; export default path }\n",
+      'src/app.style.css':   'this is not valid javascript {{{',
+      'src/app.module.scss': '.title { color: red }',
+      'src/photo.png':       'not really a png',
+      'src/stubs.spec.ts':   `
+import './app.style.css'
+import styles from './app.module.scss'
+import photo from './photo.png'
+
+it('does not parse the styles and gives the image a path', () => {
+  expect(styles.title).toBe('title')
+  expect(typeof photo).toBe('string')
+})
+`,
+    })
+
+    const { status, output } = runJest({ preset: '@monosmith/jest-preset', testEnvironment: 'node' })
+
+    expect(output).toContain('1 passed')
+    expect(status).toBe(0)
+  })
+})
+
+describe('the specifiers a conversion writes into a project', () => {
+  /** Every subpath of this package that convert writes or documents. */
+  const specifiers = ['.', './resolver', './asset-transform', './react', './react/jest-preset', './jest-preset']
+
+  it.each(specifiers)('%s is in the exports map and names a file that exists', (subpath) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { exports: map } = require('../../package.json') as { exports: Record<string, string> }
+
+    expect(map[subpath]).toBeDefined()
+    expect(existsSync(join(packageRoot, map[subpath]))).toBe(true)
+  })
+})
+
 describe('preset: @monosmith/jest-preset/react', () => {
+  it('stubs a style import next to JSX and an SVG import', () => {
+    write({
+      'src/app.style.css': 'this is not valid javascript {{{',
+      'src/app.tsx':       "import './app.style.css'\nexport const App = () => <main />\n",
+      'src/app.spec.tsx':  "import { renderToStaticMarkup } from 'react-dom/server'\nimport { App } from './app'\nit('renders', () => { expect(renderToStaticMarkup(<App />)).toBe('<main></main>') })\n",
+    })
+
+    const { status, output } = runJest({ preset: '@monosmith/jest-preset/react' })
+
+    expect(output).toContain('1 passed')
+    expect(status).toBe(0)
+  })
+
   it('runs a component test with an SVG import, an image import and JSX', () => {
     write({
       'src/logo.svg':  '<svg xmlns="http://www.w3.org/2000/svg"></svg>\n',
@@ -139,7 +191,7 @@ describe('the values', () => {
     const preset = require('../../jest-preset.cjs') as Record<string, unknown>
 
     expect(preset.testMatch).toEqual(['**/?(*.)+(spec|test).?([mc])[jt]s?(x)'])
-    expect(preset.moduleNameMapper).toEqual({ '^(\\.{1,2}/.*)\\.js$': '$1' })
+    expect(preset.moduleNameMapper).toMatchObject({ '^(\\.{1,2}/.*)\\.js$': '$1' })
     expect(preset.coverageReporters).toEqual(['html'])
     expect(preset.moduleFileExtensions).toEqual(['ts', 'js', 'mts', 'mjs', 'cts', 'cjs', 'html'])
     expect(preset.resolver).toBe(join(packageRoot, 'src', 'resolver', 'index.cjs'))

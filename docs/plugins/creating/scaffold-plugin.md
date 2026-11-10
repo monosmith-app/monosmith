@@ -152,14 +152,14 @@ smith puts `smith.toml` back as it was.
 ```text
 $ smith plugin check ./smith-plugin-widget-service
 widget-service 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: scaffold
-  ✔ a scaffold generates projects
-  ✔ requires language plugin widget: a known reference
-  ✔ stack widget-service is complete
-  ✔ declares a concurrency the protocol defines
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: scaffold
+  ✓ a scaffold generates projects
+  ✓ requires language plugin widget: a known reference
+  ✓ stack widget-service is complete
+  ✓ declares a concurrency the protocol defines
+  ✓ shuts down when asked
 ```
 
 **`--generate` and an app-only scaffold.** `smith plugin check --generate` asks every generating
@@ -169,10 +169,10 @@ fails the other two, by design of the service:
 ```text
 $ smith plugin check ./smith-plugin-widget-service --generate
 ...
-  ✔ generates an app
-  ✖ generates a lib
+  ✓ generates an app
+  × generates a lib
       a widget service is an app: smith add app clib --stack widget-service
-  ✖ generates a package
+  × generates a package
       a widget service is an app: smith add app cpackage --stack widget-service
 smith: the plugin does not conform
 ```
@@ -233,7 +233,7 @@ ok  	example.com/smith-plugin-widget-service	0.489s
 
 | You see | Cause and remedy |
 |---|---|
-| `✖ a scaffold generates projects` | the plugin lists `scaffold` in `Roles` but implements no `Generate` |
+| `× a scaffold generates projects` | the plugin lists `scaffold` in `Roles` but implements no `Generate` |
 | the project is created but `smith projects` does not show its stack | the manifest does not record `p.Stack` |
 | `file already exists` | `templating.Write` found a target; the scaffold never overwrites. Check whether the language plugin or another plugin wrote it first |
 | `<a> and <b> are both chosen as the scaffold; keep one` (from the code) | a stack or recipe names two scaffolds |

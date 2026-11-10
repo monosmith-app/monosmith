@@ -24,7 +24,8 @@ func TestCompleteKeysOfTheCurrentTable(t *testing.T) {
 	text := "[workspace]\nname = \"a\"\ns"
 	got := labels(Complete(text, Position{2, 1}))
 	scope, ok := got["scope"]
-	if !ok || len(got) != 1 {
+	// "s" also matches shared_outputs, a [workspace] key since the outputs rules.
+	if _, shared := got["shared_outputs"]; !ok || !shared || len(got) != 2 {
 		t.Fatalf("got %v", got)
 	}
 	if scope.InsertText != "scope = " || scope.Documentation == "" || scope.Kind != CompletionKindProperty {

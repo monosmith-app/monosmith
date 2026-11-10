@@ -1,25 +1,39 @@
 package depsview
 
 import (
-	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // Model lists the dependencies that have newer releases, patch before
-// minor before major, and the one-version policy's verdict. Space marks a row;
-// updating ends as `smith deps up <packages>`, aligning as `smith deps up --align`.
+// minor before major, and the one-version policy's verdict. A row of chips at
+// the top (All, Patch, Minor, Major) limits the list to one level. Space marks
+// a row; updating ends as `smith deps up <packages>`, aligning as `smith deps up --align`.
 type Model struct {
 	Loaded bool
 	// Waited is how long the load has taken so far, set by the shell for drawing.
 	Waited time.Duration
-	Rows   []Row
+	// Tick moves the spinner of the wait, set by the shell for drawing.
+	Tick int
+	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
+	Projects int
+	// All are every release found, patch before minor before major. Rows are the
+	// ones the chip that is on lets through: the rows the list draws and the
+	// cursor moves over.
+	All  []Row
+	Rows []Row
+	// Filter is the chip that is on; FilterNone shows every release, as All does.
+	Filter Filter
+	// Under and Pressed are the chip under the pointer and the one held down,
+	// set by the shell for drawing.
+	Under, Pressed Filter
+	// Beside is true when the shell draws the one-version policy in the detail
+	// beside the list, so the list leaves it out; set by the shell for drawing.
+	Beside bool
 	Policy []PolicyLine
 	Err    error
 	Cursor int
@@ -48,7 +62,7 @@ func FromResult(r Result) Model {
 	slices.SortStableFunc(rows, func(a, b Row) int {
 		return levelRank(a.Level) - levelRank(b.Level)
 	})
-	return Model{Loaded: true, Rows: rows, Policy: r.Policy, Err: r.Err, scroll: &pane.Scroll{}}
+	return Model{Loaded: true, All: rows, Rows: rows, Policy: r.Policy, Err: r.Err, scroll: &pane.Scroll{}}
 }
 
 func levelRank(level string) int {
@@ -63,20 +77,29 @@ func levelRank(level string) int {
 
 // Update handles a key; page is how many rows a page key moves.
 func (v Model) Update(key tea.KeyMsg, page int) Model {
+	if f := filterOfKey(key.String()); f != FilterNone {
+		return v.SetFilter(f)
+	}
 	switch key.String() {
 	case " ", "space":
 		return v.toggle()
-	case "a":
-		return v.markAll()
-	case "s":
-		return v.markSafe()
 	case "shift+up":
 		return v.extend(-1)
 	case "shift+down":
 		return v.extend(1)
 	}
-	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), key.String(), page)
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), commands.Nav(key.String()), page)
 	v.Anchor = v.Cursor
+	return v
+}
+
+// SetFilter turns a chip on: the list shows the releases of that level, the
+// cursor goes to the first of them and the marks stay, hidden ones too.
+func (v Model) SetFilter(f Filter) Model {
+	v.Filter = f
+	v.Rows = rowsAt(v.All, f)
+	v.Cursor, v.Anchor = 0, 0
+	v.scroll = &pane.Scroll{}
 	return v
 }
 
@@ -96,7 +119,7 @@ func (v Model) extend(delta int) Model {
 		return v
 	}
 	v.Anchor = min(max(v.Anchor, 0), len(v.Rows)-1)
-	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), map[int]string{-1: "up", 1: "down"}[delta], 1)
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), map[int]commands.NavAction{-1: commands.NavUp, 1: commands.NavDown}[delta], 1)
 	return v.markRange(v.Anchor, v.Cursor, true, false)
 }
 
@@ -211,23 +234,30 @@ func (v Model) toggle() Model {
 	return v
 }
 
-// markSafe marks every patch and minor row (what can be taken together), or
-// unmarks them when they are all marked already. Marked majors stay as they are.
-func (v Model) markSafe() Model {
+// chosenMajors counts the major releases among the packages an update would move.
+func (v Model) chosenMajors() int {
+	chosen := map[string]bool{}
+	for _, n := range v.chosen() {
+		chosen[n] = true
+	}
+	n := 0
+	for _, r := range v.All {
+		if r.Level == "major" && chosen[r.Name] {
+			n++
+		}
+	}
+	return n
+}
+
+// markAll marks every row shown, or unmarks them when every row shown is
+// marked already. Marks on rows the chip hides stay as they are.
+func (v Model) markAll() Model {
+	all := v.MarkState() == 2
 	marked := map[string]bool{}
 	for k := range v.Marked {
 		marked[k] = true
 	}
-	all := true
 	for _, r := range v.Rows {
-		if r.Level != "major" && !marked[r.Name] {
-			all = false
-		}
-	}
-	for _, r := range v.Rows {
-		if r.Level == "major" {
-			continue
-		}
 		if all {
 			delete(marked, r.Name)
 		} else {
@@ -238,38 +268,11 @@ func (v Model) markSafe() Model {
 	return v
 }
 
-// chosenMajors counts the major releases among the packages an update would move.
-func (v Model) chosenMajors() int {
-	chosen := map[string]bool{}
-	for _, n := range v.chosen() {
-		chosen[n] = true
-	}
-	n := 0
-	for _, r := range v.Rows {
-		if r.Level == "major" && chosen[r.Name] {
-			n++
-		}
-	}
-	return n
-}
-
-// markAll marks every row, or none when every row is already marked.
-func (v Model) markAll() Model {
-	marked := map[string]bool{}
-	if len(v.Marked) < len(v.Rows) {
-		for _, r := range v.Rows {
-			marked[r.Name] = true
-		}
-	}
-	v.Marked = marked
-	return v
-}
-
-// chosen are the packages an update would move: the marked rows, or the row
-// under the cursor when none is marked.
+// chosen are the packages an update would move: the marked rows (also the ones
+// the chip hides), or the row under the cursor when none is marked.
 func (v Model) chosen() []string {
 	var names []string
-	for _, r := range v.Rows {
+	for _, r := range v.All {
 		if v.Marked[r.Name] {
 			names = append(names, r.Name)
 		}
@@ -286,7 +289,14 @@ func (v Model) UpArgv() []string {
 	if len(names) == 0 {
 		return nil
 	}
-	return append([]string{"deps", "up"}, names...)
+	argv := append([]string{"deps", "up"}, names...)
+	for _, r := range v.All {
+		if r.Level == "major" && slices.Contains(names, r.Name) {
+			// A major update was marked on purpose: the command takes it only with --major.
+			return append(argv, "--major")
+		}
+	}
+	return argv
 }
 
 // AlignArgv is the command line that brings the policy's drifting dependencies
@@ -301,127 +311,4 @@ func (v Model) AlignArgv() []string {
 // drifting is true when the one-version policy found dependencies at different versions.
 func (v Model) drifting() bool {
 	return slices.ContainsFunc(v.Policy, func(p PolicyLine) bool { return !p.OK && !p.Warning })
-}
-
-// levelCounts counts the rows of each level.
-func (v Model) levelCounts() (patch, minor, major int) {
-	for _, r := range v.Rows {
-		switch r.Level {
-		case "patch":
-			patch++
-		case "minor":
-			minor++
-		default:
-			major++
-		}
-	}
-	return
-}
-
-// View draws the view in a w by h area; rowOf maps a line to the row drawn on it.
-func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int) {
-	rowOf = map[int]int{}
-	switch {
-	case v.Err != nil:
-		return []string{th.Failure(v.Err.Error())}, rowOf
-	case !v.Loaded:
-		return pane.Wrap(th.Muted(progress.Waiting("Asking the package registries for newer releases of every dependency.", v.Waited)+" On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
-	}
-	var tail []string
-	tail = append(tail, "", th.Title("One version"))
-	if len(v.Policy) == 0 {
-		tail = append(tail, "  "+th.Muted("not required yet: press o to make every project use the same version of a shared dependency"))
-	}
-	for _, p := range v.Policy {
-		mark := th.Success(th.Icons.Passed)
-		switch {
-		case !p.OK && p.Warning:
-			mark = th.Warning(th.Icons.Warning)
-		case !p.OK:
-			mark = th.Failure(th.Icons.Failed)
-		}
-		tail = append(tail, "  "+mark+" "+p.Check)
-		if !p.OK && p.Detail != "" {
-			for _, d := range strings.Split(p.Detail, "; ") {
-				tail = append(tail, "      "+th.Muted(d))
-			}
-		}
-	}
-	if n := v.chosenMajors(); n > 0 {
-		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+fmt.Sprintf("%d of the chosen packages are major releases: they can break your code. Read their release notes first.", n)))
-	}
-	var wrapped []string
-	for _, l := range tail {
-		wrapped = append(wrapped, pane.Wrap(l, w, 4)...)
-	}
-	tail = wrapped
-
-	if len(v.Rows) == 0 {
-		lines = append(lines, th.Success(th.Icons.Passed+" Every dependency is on its latest release."))
-	} else {
-		patch, minor, major := v.levelCounts()
-		lines = append(lines, th.Bold(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major", len(v.Rows), patch, minor, major))+th.Muted(fmt.Sprintf("   %d marked", len(v.Marked))))
-		if safe := patch + minor; safe > 0 {
-			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press s).", safe))+th.Muted(" The "+fmt.Sprint(major)+" major ones can break your code: take them one at a time."), w, 0)...)
-		}
-		lines = append(lines, "")
-		nameW := 8
-		for _, r := range v.Rows {
-			nameW = max(nameW, pane.Width(r.Name))
-		}
-		nameW = min(nameW+1, max(w/3, 8))
-		const verW, levelW = 11, 8
-		usedW := max(w-6-nameW-2*verW-levelW, 8)
-		cols := func(name, now, latest, level, projects string) string {
-			return pane.MiddleCell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(projects, usedW)
-		}
-		headBox := [3]string{"[ ]", "[-]", "[x]"}[v.MarkState()]
-		rowOf[len(lines)] = HeadingRow
-		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols("Package", "Now", "Latest", "Level", "Projects"), w)))
-		// Two group headings may sit among the rows: they take room too.
-		avail := max(h-len(lines)-len(tail)-2, 3)
-		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
-		first := len(lines)
-		prevMajor := top > 0 && v.Rows[top-1].Level == "major"
-		for i := top; i < len(v.Rows) && i < top+avail; i++ {
-			r := v.Rows[i]
-			if isMajor := r.Level == "major"; i == top || isMajor != prevMajor {
-				if isMajor {
-					lines = append(lines, "  "+th.Warning("Major releases: may break your code, take one at a time"))
-				} else {
-					lines = append(lines, "  "+th.Success("Patch and minor releases: safe to take together"))
-				}
-			}
-			prevMajor = r.Level == "major"
-			box := "[ ] "
-			if v.Marked[r.Name] {
-				box = "[x] "
-			}
-			level := th.Muted(r.Level)
-			switch r.Level {
-			case "major":
-				level = th.Warning(r.Level)
-			case "patch":
-				level = th.Success(r.Level)
-			}
-			projects := strings.Join(r.Projects, ", ")
-			plain := "  " + box + cols(r.Name, r.Current, r.Latest, r.Level, projects)
-			line := "  " + box + cols(r.Name, r.Current, r.Latest, level, projects)
-			if i == v.Cursor {
-				line = th.Selected(pane.Fit(plain, w))
-			}
-			rowOf[len(lines)] = i
-			lines = append(lines, line)
-		}
-		if len(v.Rows) > avail {
-			// The rows and the group headings between them scroll as one block.
-			block := pane.Scrollbar(th, lines[first:], w, top, len(v.Rows)+len(lines[first:])-min(avail, len(v.Rows)-top))
-			copy(lines[first:], block)
-		}
-	}
-	lines = append(lines, tail...)
-	for i := range lines {
-		lines[i] = pane.Fit(lines[i], w)
-	}
-	return lines, rowOf
 }

@@ -3,14 +3,19 @@ package plugin
 import (
 	"sync"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/apisurface"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/ci"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/dependencies"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/deriving"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Node is the Node.js/TypeScript language plugin.
@@ -35,6 +40,7 @@ func (n *Node) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "node", Version: n.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("node", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"node", "javascript", "js"},
 		Manifests: []string{"package.json"},
 		// Concurrency lets the host ask the registry about many projects at
@@ -71,6 +77,14 @@ func (n *Node) Publish(params protocol.PublishParams) (protocol.PublishResult, e
 	return releasing.Publish(n.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish passes a release
+// channel's name to npm as the dist-tag.
+func (n *Node) PublishesChannels() {}
+
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the npm tarball and publishes nowhere.
+func (n *Node) PacksPackages() {}
+
 // Published implements serve.RegistryReader.
 func (n *Node) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(n.root, params)
@@ -80,7 +94,7 @@ func (n *Node) Published(params protocol.PublishedParams) (protocol.PublishedRes
 func (n *Node) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	return pipeline.CI(n.root, params, scaffolding.NodeVersion), nil
+	return ci.CI(n.root, params, scaffolding.NodeVersion), nil
 }
 
 // Doctor implements serve.DoctorContributor.
@@ -111,6 +125,20 @@ func (n *Node) Uninstall(params protocol.UninstallParams) (protocol.DependencyRe
 	return dependencies.Uninstall(n.root, params)
 }
 
+// Link implements serve.Linker.
+func (n *Node) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return linking.Link(n.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (n *Node) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return linking.Unlink(n.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (n *Node) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	n.mu.Lock()
@@ -132,11 +160,21 @@ func (n *Node) Latest(params protocol.LatestParams) (protocol.LatestResult, erro
 	return dependencies.Latest(n.root, params)
 }
 
+// Derive implements serve.Deriver.
+func (n *Node) Derive(params protocol.DeriveParams) (protocol.DeriveResult, error) {
+	return deriving.Derive(n.root, params)
+}
+
 // ChangeKind implements serve.KindChanger.
 func (n *Node) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	return kindchange.Change(n.root, params)
+}
+
+// APISurface implements serve.APISurfaceReader.
+func (n *Node) APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error) {
+	return apisurface.List(n.root, params)
 }
 
 // Components implements serve.ComponentLister.

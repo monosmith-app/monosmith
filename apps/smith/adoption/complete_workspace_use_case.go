@@ -56,7 +56,7 @@ func CompleteWorkspace(r Report, install, eslint bool, out io.Writer) error {
 			return err
 		}
 	}
-	settleLockfile(lockfilesync.Options{Root: r.Root, Out: out, Create: install, LockOnly: !install}, install || changed, out)
+	settleLockfile(lockfilesync.Options{Root: r.Root, Out: out, Create: install, LockOnly: !install}, install || changed || r.Split, out)
 	return nil
 }
 
@@ -91,6 +91,17 @@ func settleLockfile(o lockfilesync.Options, run bool, out io.Writer) {
 // the repository has a go.work already.
 func writeGoWork(root string, goRoots []string, out io.Writer) error {
 	if _, err := os.Stat(filepath.Join(root, "go.work")); err == nil {
+		return nil
+	}
+	// A project declared in smith.toml is a package of the root module: it has
+	// no go.mod to use, and a go.work with nothing in it breaks every go command.
+	var modules []string
+	for _, d := range goRoots {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(d), "go.mod")); err == nil {
+			modules = append(modules, d)
+		}
+	}
+	if goRoots = modules; len(goRoots) == 0 {
 		return nil
 	}
 	goBin, err := exec.LookPath("go")

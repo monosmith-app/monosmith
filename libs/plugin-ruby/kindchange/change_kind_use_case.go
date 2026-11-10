@@ -117,16 +117,7 @@ func moveOwnFiles(edits *fileedits.Set, params protocol.ChangeKindParams) {
 // retargetDependents points every other gem's Gemfile and gemspec at the new
 // directory.
 func retargetDependents(edits *fileedits.Set, params protocol.ChangeKindParams) {
-	for _, other := range params.Projects {
-		if other.Language != "ruby" || other.Root == params.Project.Root {
-			continue
-		}
-		for _, file := range edits.List(other.Root, isGemFile) {
-			text, _ := edits.Read(file)
-			updated, _ := pathrefs.Retarget(text, other.Root, params.Project.Root, params.NewRoot)
-			edits.Write(file, updated)
-		}
-	}
+	fileedits.RetargetDependents(edits, params, "ruby", func(root string) []string { return edits.List(root, isGemFile) })
 }
 
 // retargetWorkspace updates the root Gemfile (gemspec path: entries) and the

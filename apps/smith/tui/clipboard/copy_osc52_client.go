@@ -4,13 +4,15 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // maxBytes is the most text sent in one sequence; terminals drop longer ones.
 const maxBytes = 74000
 
 // ErrNothing is returned when there is no text to copy or nowhere to write it.
-var ErrNothing = errors.New("nothing to copy")
+var ErrNothing = errors.New(words.Say("clipboard.nothing"))
 
 // Copy asks the terminal behind w to put text on the clipboard. The whole
 // sequence goes out in one Write so it cannot be split by other output.

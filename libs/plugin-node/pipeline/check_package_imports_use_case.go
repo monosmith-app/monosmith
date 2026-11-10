@@ -16,12 +16,13 @@ const shownImports = 5
 // package it imports is declared where installing it from npm installs it.
 func CheckPackageImports(workspaceRoot string, p protocol.Project) protocol.Finding {
 	f := protocol.Finding{
-		Check:  p.Root + " declares the packages it imports",
-		Remedy: "add each to dependencies in " + p.Root + "/package.json (peerDependencies when the installing app provides it), then run `npm install`",
+		Check:   p.Root + " declares the packages it imports",
+		Project: p.Name,
+		Remedy:  "add each to dependencies in " + p.Root + "/package.json (peerDependencies when the installing app provides it), then run `npm install`",
 	}
 	undeclared, err := declaredimports.Check(workspaceRoot, p.Root)
 	if err != nil {
-		f.Detail = err.Error()
+		f.Problem, f.Detail = "smith could not read its files to check its imports", err.Error()
 		f.Remedy = "smith could not read " + p.Root + " to check its imports: fix what the problem says, then check again"
 		return f
 	}
@@ -36,6 +37,7 @@ func CheckPackageImports(workspaceRoot string, p protocol.Project) protocol.Find
 	}
 	f.Detail = strings.Join(lines, "; ")
 	if !f.OK {
+		f.Problem = fmt.Sprintf("imports %d package(s) its package.json does not declare", len(undeclared))
 		f.Fix = manifestfixes.DeclareImportsFix(workspaceRoot, p, undeclared)
 	}
 	return f

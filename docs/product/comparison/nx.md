@@ -48,7 +48,7 @@ converts from most completely. This page is neutral by intent; the tables in
   features. smith has none of these.
 - You use JetBrains IDEs and want the editor integration.
 - You want task-level affected selection.
-- You need a tool with a long track record. smith's repository history is ten days old.
+- You need a tool with a long track record. smith's repository history starts on 2026-10-15, 17 days before 2026-11-01.
 
 ## When MonoSmith is the better fit
 

@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -29,14 +30,28 @@ func (r *Ruby) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: r.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("ruby"),
 		Languages: []string{"ruby"},
 		Manifests: []string{"*.gemspec"},
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the folders smith.toml declares, as folders of the gem above them.
+func (r *Ruby) DescribesDeclared() {}
+
+// PublishesChannels implements serve.ChannelPublisher: RubyGems orders a
+// prerelease (2.0.0.pre.beta.1) below its release, a plain install skips it, and
+// WriteVersion and Publish spell it that way.
+func (r *Ruby) PublishesChannels() {}
+
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the .gem and publishes nowhere.
+func (r *Ruby) PacksPackages() {}
+
 // Discover implements serve.Discoverer.
 func (r *Ruby) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(r.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(r.root, params.Manifests, params.Declared)
 }
 
 // Generate implements serve.Generator.

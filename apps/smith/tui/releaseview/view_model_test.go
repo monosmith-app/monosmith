@@ -102,3 +102,67 @@ func TestOnlyAPlanWithoutBlockersCanBeReleasedOrDrilledInto(t *testing.T) {
 		t.Fatal("an empty plan has nothing to release")
 	}
 }
+
+func TestAPlanOnAReleaseChannelSaysItReleasesPrereleases(t *testing.T) {
+	m := planned()
+	if strings.Contains(render(m), "Release channel") {
+		t.Fatal("a stable plan has no channel notice")
+	}
+	m.Plan.Channel = "next"
+	out := render(m)
+	for _, want := range []string{"Release channel `next`: prerelease versions", "the stable version stays the latest", "web", "2.0.0"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Index(out, "Release channel") > strings.Index(out, "web") {
+		t.Fatalf("the notice comes before the versions:\n%s", out)
+	}
+}
+
+func TestEachRowShowsWhetherItsCommitsAreFoldedOrShown(t *testing.T) {
+	// The ASCII icons spell the marks as > (closed) and v (open).
+	m := planned()
+	out := render(m)
+	if strings.Count(out, "> web") != 1 || strings.Count(out, "> kit") != 1 || strings.Contains(out, "v web") {
+		t.Fatalf("a closed row shows the closed mark:\n%s", out)
+	}
+	out = render(press(m, "enter"))
+	if !strings.Contains(out, "v web") || !strings.Contains(out, "> kit") {
+		t.Fatalf("only the row that is open shows the open mark:\n%s", out)
+	}
+	lines, _ := planned().View(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), 120)
+	if joined := strings.Join(lines, "\n"); !strings.Contains(joined, "▸ web") {
+		t.Fatalf("the Unicode theme draws the triangle:\n%s", joined)
+	}
+}
+
+func TestRightShowsTheCommitsAndLeftHidesThem(t *testing.T) {
+	right, left := tea.KeyMsg{Type: tea.KeyRight}, tea.KeyMsg{Type: tea.KeyLeft}
+	m := planned().Update(right)
+	if !m.Open || !strings.Contains(render(m), "a1b2c3d") {
+		t.Fatalf("Right shows the commits:\n%s", render(m))
+	}
+	if again := m.Update(right); !again.Open {
+		t.Fatal("Right on an open row keeps it open")
+	}
+	m = m.Update(left)
+	if m.Open || strings.Contains(render(m), "a1b2c3d") {
+		t.Fatalf("Left hides the commits:\n%s", render(m))
+	}
+	if m = m.Update(left); m.Open || m.Cursor != 0 {
+		t.Fatalf("Left on a closed row does nothing: %+v", m)
+	}
+}
+
+func TestUpAndDownStillMoveWhileTheArrowsOpenAndCloseRows(t *testing.T) {
+	m := planned().Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = press(m, "down")
+	if m.Cursor != 1 || m.Open {
+		t.Fatalf("Down moves on and folds the row: %+v", m)
+	}
+	m = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	if !m.Open || m.Cursor != 1 {
+		t.Fatalf("Right opens the row the cursor is on: %+v", m)
+	}
+}

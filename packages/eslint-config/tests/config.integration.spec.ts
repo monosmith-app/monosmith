@@ -65,6 +65,10 @@ const FIXTURES: Record<string, string> = {
     'export const o = {\n  name:        1,\n  description: 2,\n}\n',
   'unaligned.ts':
     'export const o = {\n  name: 1,\n  description: 2\n}\n',
+  'typeMembers.ts':
+    'export type T = {\n  id:   string\n  name: string\n}\n\nexport interface I {\n  id:   string\n  name: string\n}\n',
+  'typeSemicolons.ts':
+    'export type T = {\n  id:   string;\n  name: string;\n}\n',
   'quoteProps.ts':
     "export const o = {\n  'needs-quotes': 1,\n  bare:           2,\n}\n",
   'dense.ts':
@@ -374,6 +378,11 @@ describe('@monosmith/eslint-config', () => {
       // reporting what the other requires, with no --fix able to satisfy both.
       expect(rulesFor('aligned.ts')).toEqual([])
       expect(rulesFor('unaligned.ts')).toContain('@stylistic/key-spacing')
+    })
+
+    it('writes type and interface members aligned and without a separator', () => {
+      expect(rulesFor('typeMembers.ts')).toEqual([])
+      expect(rulesFor('typeSemicolons.ts')).toContain('@stylistic/member-delimiter-style')
     })
 
     it('allows a trailing comma on a multiline literal, which Standard forbids', () => {

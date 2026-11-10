@@ -76,22 +76,22 @@ Real output for a structure plugin:
 ```text
 $ smith plugin check ./smith-plugin-widget-layout
 widget-layout 0.1.0
-  ✔ names itself
-  ✔ has a known kind
-  ✔ plays a known role: structure
-  ✔ a structure plugin does something
-  ✔ declares a concurrency the protocol defines
-  ✔ answers 3 requests sent together, one at a time
-  ✔ contribute answers with no projects
-  ✔ doctor answers with no projects
-  ✔ shuts down when asked
+  ✓ names itself
+  ✓ has a known kind
+  ✓ plays a known role: structure
+  ✓ a structure plugin does something
+  ✓ declares a concurrency the protocol defines
+  ✓ answers 3 requests sent together, one at a time
+  ✓ contribute answers with no projects
+  ✓ doctor answers with no projects
+  ✓ shuts down when asked
 ```
 
 and a failure, from the scaffold example run with `--generate`:
 
 ```text
-  ✔ generates an app
-  ✖ generates a lib
+  ✓ generates an app
+  × generates a lib
       a widget service is an app: smith add app clib --stack widget-service
 smith: the plugin does not conform
 ```
@@ -205,12 +205,12 @@ the framed requests, close stdin, parse the framed answers.
 
 ```text
 $ node --test
-✔ the plugin conforms (5.9366ms)
-✔ the handshake advertises exactly what is implemented (1.8395ms)
-✔ lint waits for the layout check (1.5453ms)
-✔ an unknown method is -32601 (1.5749ms)
-✔ doctor warns about a missing README (2.0646ms)
-✔ findJunkDrawers skips build output (2.474ms)
+✓ the plugin conforms (5.9366ms)
+✓ the handshake advertises exactly what is implemented (1.8395ms)
+✓ lint waits for the layout check (1.5453ms)
+✓ an unknown method is -32601 (1.5749ms)
+✓ doctor warns about a missing README (2.0646ms)
+✓ findJunkDrawers skips build output (2.474ms)
 ℹ tests 6
 ℹ pass 6
 ℹ fail 0

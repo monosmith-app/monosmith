@@ -9,8 +9,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 )
@@ -63,18 +64,18 @@ func (i Install) Run() error {
 	}
 	if len(edited) > 0 {
 		for _, f := range edited {
-			fmt.Fprintf(i.Out, "● %s differs from what smith writes\n%s\n", f.Path, doctorfix.UnifiedDiff(f.Path, f.Old, f.New))
+			fmt.Fprintf(i.Out, "● %s differs from what smith writes\n%s\n", f.Path, textdiff.UnifiedDiff(f.Path, f.Old, f.New))
 		}
 		return problem.New(edited[0].Path+" was changed after smith wrote it, so smith left everything as it is",
 			"keep your version: nothing to do (smith doctor accepts it)",
 			"take smith's: delete "+edited[0].Path+" (or its smith entry in an MCP file) and run the command again")
 	}
 	if len(todo) == 0 {
-		fmt.Fprintf(i.Out, "✓ The MonoSmith agent is already installed (%d files)\n", len(files))
+		fmt.Fprintf(i.Out, marks.Passed+" The MonoSmith agent is already installed (%d files)\n", len(files))
 		return nil
 	}
 	for _, f := range todo {
-		fmt.Fprintf(i.Out, "● %s\n%s\n", f.action(), doctorfix.UnifiedDiff(f.Path, f.Old, f.New))
+		fmt.Fprintf(i.Out, "● %s\n%s\n", f.action(), textdiff.UnifiedDiff(f.Path, f.Old, f.New))
 	}
 	if !i.Yes {
 		interactive := i.Interactive
@@ -94,7 +95,7 @@ func (i Install) Run() error {
 	}
 	written, err := Write(root, todo)
 	for _, w := range written {
-		fmt.Fprintf(i.Out, "✓ Wrote %s\n", w)
+		fmt.Fprintf(i.Out, marks.Passed+" Wrote %s\n", w)
 	}
 	if err != nil {
 		return err

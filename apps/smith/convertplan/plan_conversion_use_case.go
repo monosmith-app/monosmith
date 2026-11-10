@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/legacyjestsupport"
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
@@ -24,7 +25,9 @@ type Input struct {
 	Files []string
 	// Tags are the repository's git tags.
 	Tags []string
-	// Read returns a workspace-relative file's content, "" when missing.
+	// SmithVersion is the running smith; the jest preset is added at the range of its release line.
+	SmithVersion string
+	// Readreturns a workspace-relative file's content, "" when missing.
 	Read func(rel string) string
 }
 
@@ -101,6 +104,9 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 			continue
 		}
 		name := path.Base(p.Root)
+		if manifests := manifestsAt(p); len(manifests) > 1 {
+			plan.Add(Blocker, name, p.Root, fmt.Sprintf("%s has %s: smith makes one project of each manifest, so they would all be called %q. Move one of them into a folder of its own first", p.Root, strings.Join(manifests, " and "), name))
+		}
 		if other, dup := byName[name]; dup {
 			plan.Add(Blocker, name, p.Root, fmt.Sprintf("%s and %s would both be called %q: smith names projects after their directory, so rename one directory first", other, p.Root, name))
 		}
@@ -126,12 +132,15 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 		}
 	}
 	removal(plan, w, in.Files, in.Read)
+	if _, ok := plan.AddDevDependencies[JestPresetPackage]; ok {
+		plan.AddDevDependencies[JestPresetPackage] = legacyjestsupport.PackageRangeFor(in.SmithVersion)
+	}
 	planBuildOutputs(plan, w)
 	planPythonTools(plan, in)
 	planNodeStack(plan)
-	planTaskGroups(plan, w)
+	planGroups(plan, w)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
-		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") {
+		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") && !plan.Decided(ci) {
 			plan.Decide("", ci, "replaced by the pipeline smith generates; the old one stays in git history, so move any custom steps into its smith:slot sections")
 		}
 	}
@@ -144,15 +153,34 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 
 func planProject(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, name string, released bool, pattern string, in Input) {
 	lang, label := Language(p)
-	pp := &ProjectPlan{Nx: p.Name, Name: name, Root: p.Root, Language: lang, Supported: lang != ""}
+	// A Go package of a module declared above it has no manifest of its own:
+	// smith.toml declares it as a project (ADR 0052).
+	moduleDir, declared := "", false
+	if lang == "" {
+		if dir, ok := GoModuleAbove(p, in.Files); ok {
+			moduleDir, declared, lang = dir, true, "go"
+		}
+	}
+	pp := &ProjectPlan{Nx: p.Name, Name: name, Root: p.Root, Language: lang, Supported: lang != "", Declared: declared}
 	plan.Projects = append(plan.Projects, pp)
 	if !pp.Supported {
-		plan.Add(Unsupported, name, p.Root, label+" project: smith v1 has no plugin for it, so nothing builds, tests or releases it after converting; its project.json is kept for reference")
+		plan.Add(Unsupported, name, p.Root, label+" project: smith has no plugin for it, so nothing builds, tests or releases it after converting; its project.json is kept for reference")
 		return
 	}
 	kind := Kind(p, released)
+	if declared && kind == protocol.ProjectPackage {
+		// A module has one version, so a package of one cannot be released alone.
+		kind = protocol.ProjectLib
+		plan.Add(Changed, name, "kind", "a lib: a package of a module cannot be released on its own, since the module has one version")
+	}
 	pp.Kind = kind
-	pp.KindMarker = NeedsKindMarker(p, lang, kind)
+	if declared {
+		o := plan.Override(name)
+		o.Root, o.Language, o.Kind = p.Root, "go", string(kind)
+		plan.SetOverride(name, o)
+		plan.Add(Mapped, name, p.Root, "declared in smith.toml as a Go project of the module at "+moduleDir+": it has no go.mod of its own, so smith builds and tests it from the module's")
+	}
+	pp.KindMarker = !declared && NeedsKindMarker(p, lang, kind)
 	if pp.KindMarker {
 		plan.Add(Mapped, name, "kind", fmt.Sprintf("%s is declared in its manifest, since %s/ does not imply it", kind, strings.SplitN(p.Root, "/", 2)[0]))
 	}

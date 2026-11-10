@@ -9,12 +9,16 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // The Settings tab (package settingsview) changes plugins, the style and the
 // settings of smith.toml in this process, with the functions the matching
 // smith commands call, so nothing leaves the interface. These are the few
 // places the shell hands it keys, clicks and messages, and takes its results.
+
+// undoOfferTicks is how long the status line keeps the offer to undo a plugin switch.
+const undoOfferTicks = 120
 
 // settingsForms are the guided forms the tab's last section opens.
 func settingsForms(actions []guide.Action) []settingsview.Form {
@@ -27,6 +31,15 @@ func settingsForms(actions []guide.Action) []settingsview.Form {
 
 // settingsKey gives the open Settings tab a key.
 func (s *Shell) settingsKey(msg tea.KeyMsg) tea.Cmd {
+	if undo := s.pluginUndo; undo != nil {
+		// The offer lasts for one key: u takes it, any other key lets it go.
+		s.pluginUndo = nil
+		if msg.String() == "u" && !s.settings.Modal() {
+			var res settingsview.Result
+			s.settings, res = s.settings.Revert(*undo)
+			return s.settingsResult(res)
+		}
+	}
 	if why := s.settingsRefusal(msg.String()); why != "" {
 		s.say(why)
 		return nil
@@ -45,7 +58,7 @@ func (s Shell) settingsRefusal(key string) string {
 	reasons := s.settings.Reasons()
 	for _, id := range []string{"settings.change", "settings.trust", "settings.forget", "settings.unset"} {
 		if c, ok := commands.ByID(id); ok && slices.Contains(c.Keys, key) && reasons[id] != "" {
-			return c.Title + " is unavailable: " + reasons[id]
+			return words.Say("tui.settings.is_unavailable", "title", c.Title, "reasons", reasons[id])
 		}
 	}
 	return ""
@@ -54,7 +67,7 @@ func (s Shell) settingsRefusal(key string) string {
 // settingsClick gives the tab a click at (x, y) of its body.
 func (s *Shell) settingsClick(w, h, x, y int, double bool) tea.Cmd {
 	var res settingsview.Result
-	s.settings, res = s.settings.Click(w, h, x, y, double)
+	s.settings, res = s.settings.WithSideDetail(s.lay().HasDetail()).Click(w, h, x, y, double)
 	return s.settingsResult(res)
 }
 
@@ -68,6 +81,20 @@ func (s *Shell) settingsMsg(msg settingsview.Msg) tea.Cmd {
 // settingsResult does what the tab asked of the shell: a toast, another
 // theme, a guided form, background work.
 func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
+	if res.Toggled != nil && res.Note != "" && !res.Failed {
+		// The status line says what changed and offers to undo it; a warning that
+		// is longer than the line (the projects that stop building) is a toast.
+		s.pluginUndo = res.Toggled
+		short := words.Say("settingsview.plugin.off", "name", res.Toggled.Name)
+		if res.Toggled.Enabled {
+			short = words.Say("settingsview.plugin.on", "name", res.Toggled.Name)
+		}
+		s.say(words.Say("tui.settings.undo_offer", "note", short, "shortcut", "u"))
+		s.hintTicks = undoOfferTicks
+		if res.Note == short {
+			res.Note = ""
+		}
+	}
 	if res.Note != "" {
 		level := toast.Success
 		if res.Failed {
@@ -80,6 +107,9 @@ func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
 	}
 	if res.Run != nil {
 		return s.execute(res.Run, false)
+	}
+	if res.Search {
+		return s.openPluginSearch(res.Term)
 	}
 	if res.Form != "" {
 		return s.perform(commands.Command{Kind: commands.Guided, Guide: res.Form})
