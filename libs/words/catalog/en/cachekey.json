@@ -1,0 +1,19 @@
+{
+  "cachekey.env.windows.intro": "This sets SMITH_CACHE_KEY for your user on this machine:",
+  "cachekey.env.windows.failed": "Could not set it: {reason}",
+  "cachekey.env.windows.done": "SMITH_CACHE_KEY is set for your user. New terminals pick it up. Terminals that are already open do not. To remove it, run: smith cache key --remove",
+  "cachekey.profile.intro": "smith will add the key to {path}. These are the exact lines, with the key hidden:",
+  "cachekey.profile.warning": "Warning: backups of your dotfiles and dotfile git repositories keep the key.",
+  "cachekey.profile.choices": "Enter writes it   Esc cancels   h shows how to do it by hand",
+  "cachekey.profile.cancelled": "Not written. Nothing changed.",
+  "cachekey.profile.written": "smith wrote the key to {path}. Open a new terminal to use it. Terminals that are already open do not have it. To remove it, run: smith cache key --remove",
+  "cachekey.profile.failed": "Could not write {path}: {reason}",
+  "cachekey.profile.unsafe": "The key has characters that a shell line cannot hold safely. Nothing was written.",
+  "cachekey.byhand.file": "To do it by hand, add this line to {path}, with your key in place of <the key>:",
+  "cachekey.byhand.other": "smith does not know a profile file for your shell. To do it by hand, add this line to the profile of your shell, with your key in place of <the key>:",
+  "cachekey.byhand.next": "Then open a new terminal. smith changed nothing.",
+  "cachekey.remove.profile": "Removed the smith cache key block from {path}",
+  "cachekey.remove.windows": "SMITH_CACHE_KEY is no longer set for your user. Terminals that are already open keep it until they close.",
+  "cachekey.remove.none": "smith found no cache key that it set. Nothing changed.",
+  "cachekey.remove.failed": "Could not remove it: {reason}"
+}

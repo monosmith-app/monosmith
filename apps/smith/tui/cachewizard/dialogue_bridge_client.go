@@ -10,6 +10,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
 	"github.com/monosmith-app/monosmith/apps/smith/cachesetup"
+	"github.com/monosmith-app/monosmith/apps/smith/shellenv"
 )
 
 // closed is what a bridge panics with when the person closed the wizard, to
@@ -52,7 +53,7 @@ type Secrets struct {
 func SystemSecrets(terminal io.Writer) Secrets {
 	return Secrets{
 		Clip: cachekey.FindSystem(terminal), ClearAfter: cachekey.DefaultClearAfter,
-		Env: cachekey.UserEnvironment{GOOS: runtime.GOOS, Run: cachekey.ExecRunner},
+		Env: cachekey.UserEnvironment{GOOS: runtime.GOOS, Run: cachekey.ExecRunner, Machine: shellenv.OSEnvironment{}},
 	}
 }
 

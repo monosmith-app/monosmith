@@ -326,8 +326,10 @@ can write to the storage but does not know the key cannot plant a result.
 from the operating system (64 hex characters) and puts them on the clipboard
 without showing them. `smith cache key --print` prints the key instead. On a
 terminal, `c` copies the key again, `g` makes another one (the old key is then
-wrong: use the newest everywhere), `u` sets it as a user environment variable
-(Windows; the command is shown and asked first), and `q` ends. The clipboard
+wrong: use the newest everywhere), `u` keeps it for your user (Windows: a user
+variable, after the command is shown and asked; macOS and Linux: a marked block in the profile of
+your shell, written only after you press Enter on the file and the lines with the key hidden;
+`smith cache key --remove` undoes it), and `q` ends. The clipboard
 clears after 60 seconds, or on `q`, but only if it still holds the key
 (`--clear-after 0` turns this off). A clipboard-history tool may keep a copy.
 

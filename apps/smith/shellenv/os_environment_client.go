@@ -35,6 +35,18 @@ func (OSEnvironment) WriteFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
+// WriteFilePrivate writes a file that holds a secret. An existing file keeps
+// its mode; a new file is 0600.
+func (OSEnvironment) WriteFilePrivate(path string, data []byte) error {
+	if info, err := os.Stat(path); err == nil {
+		return os.WriteFile(path, data, info.Mode().Perm())
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o600)
+}
+
 // Remove deletes a file; a file that is not there is not an error.
 func (OSEnvironment) Remove(path string) error {
 	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {

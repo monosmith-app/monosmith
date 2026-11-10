@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // DefaultClearAfter is how long the key stays on the clipboard.
@@ -214,22 +215,73 @@ func (s Session) clear(key, message string) {
 	}
 }
 
-// setUserVariable shows the exact command, asks, and only then runs it.
+// setUserVariable keeps the key for the user, only after the person confirmed.
+// On Windows it shows the exact command and asks. Elsewhere it shows the
+// profile file and the lines with the key hidden, and the person chooses to
+// write them, to cancel, or to do it by hand.
 func (s Session) setUserVariable(key string) {
-	s.say("This sets SMITH_CACHE_KEY for your user on this machine:")
-	if !s.Env.CanSet() {
-		s.say("  " + s.Env.Preview())
-		s.say("smith does not edit shell profiles. Add that line to yours, with the key pasted in, then open a new terminal.")
+	if s.Env.CanSet() {
+		s.say(words.Say("cachekey.env.windows.intro"))
+		if !s.confirm(s.Env.Preview()) {
+			return
+		}
+		if err := s.Env.Set(key); err != nil {
+			s.say(words.Say("cachekey.env.windows.failed", "reason", err.Error()))
+			return
+		}
+		s.say(words.Say("cachekey.env.windows.done"))
 		return
 	}
-	if !s.confirm(s.Env.Preview()) {
+	t, known := s.Env.Profile()
+	if !known {
+		s.sayByHand(t, known)
 		return
 	}
-	if err := s.Env.Set(key); err != nil {
-		s.say("Could not set it: " + err.Error())
-		return
+	s.say(words.Say("cachekey.profile.intro", "path", t.Path))
+	s.say("  " + t.Line(MaskedKey))
+	s.say(words.Say("cachekey.profile.warning"))
+	s.say(words.Say("cachekey.profile.choices"))
+	switch s.profileChoice() {
+	case "write":
+		if err := WriteProfileKey(s.Env.Machine, t, key); err != nil {
+			s.say(err.Error())
+			return
+		}
+		s.say(words.Say("cachekey.profile.written", "path", t.Path))
+	case "hand":
+		s.sayByHand(t, known)
+	default:
+		s.say(words.Say("cachekey.profile.cancelled"))
 	}
-	s.say("SMITH_CACHE_KEY is set for your user. Open a new terminal to see it.")
+}
+
+// profileChoice waits for the answer to the profile question: "write" on
+// Enter, "hand" on h, and "cancel" on Esc, Ctrl+C, q or n, or when the keys
+// end. Any other key is ignored, so no stray key writes the file.
+func (s Session) profileChoice() string {
+	for r := range s.Keys {
+		switch unicode.ToLower(r) {
+		case '\r', '\n':
+			return "write"
+		case 'h':
+			return "hand"
+		case 27, 3, 'q', 'n':
+			return "cancel"
+		}
+	}
+	return "cancel"
+}
+
+// sayByHand shows the line to add, with a placeholder where the key goes, for
+// the person who writes the profile without smith.
+func (s Session) sayByHand(t ProfileTarget, known bool) {
+	if known {
+		s.say(words.Say("cachekey.byhand.file", "path", t.Path))
+	} else {
+		s.say(words.Say("cachekey.byhand.other"))
+	}
+	s.say("  " + s.Env.Preview())
+	s.say(words.Say("cachekey.byhand.next"))
 }
 
 func (s Session) say(line string) { fmt.Fprintln(s.Out, line) }
