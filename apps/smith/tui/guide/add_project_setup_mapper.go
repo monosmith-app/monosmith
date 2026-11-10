@@ -7,11 +7,14 @@ import (
 // addSetupKey is the key of the first question after the name of a new project.
 const addSetupKey = "add-setup"
 
+// setupRecipe is the answer that leaves the form for Write a recipe.
+const setupRecipe = "recipe"
+
 // addSetupStep is the first question after the name of a project: take the
 // defaults and get to the plan, or answer each question. It uses the same two
 // answers as the setup of a new workspace (setupDefaults, setupCustom). The
 // defaults are what the stack suggests, so the plan can show every one of
-// them as a flag.
+// them as a flag. The third answer leaves for the Write a recipe form.
 func addSetupStep() Step {
 	return Step{
 		Key: addSetupKey, Prompt: words.Say("guide.add_project_setup.how_do_you_want_to_set"),
@@ -19,6 +22,7 @@ func addSetupStep() Step {
 		Options: []Option{
 			{Label: words.Say("guide.add_project_setup.start_with_the_defaults"), Value: setupDefaults, Hint: words.Say("guide.add_project_setup.go_to_the_plan_now_each")},
 			{Label: words.Say("guide.add_project_setup.customise"), Value: setupCustom, Hint: words.Say("guide.add_project_setup.answer_the_questions_one_at_a")},
+			{Label: words.Say("guide.add_project_setup.own_recipe"), Value: setupRecipe, Hint: words.Say("guide.add_project_setup.own_recipe_hint"), Wizard: WizardRecipe},
 		},
 	}
 }

@@ -9,9 +9,14 @@ const (
 	PassedRow = -1
 	// ToggleAllRow is the headline, which folds or unfolds every group.
 	ToggleAllRow = -2
+	// extraBase is the code of the first extra check (see Extra); later ones count down.
+	extraBase = -50
 	// headerBase is the code of the first group's heading; later ones count down.
 	headerBase = -100
 )
+
+// ExtraCode is the code of the row of extra check i (its place in Extras).
+func ExtraCode(i int) int { return extraBase - i }
 
 // HeaderCode is the code of the heading of group g (its place in the groups as
 // drawn).
@@ -24,19 +29,22 @@ const (
 	headerRow rowKind = iota
 	findingRow
 	passedRow
+	extraRow
 )
 
-// row is one place the cursor can rest: a group's heading, a finding, or the
-// line of collapsed passes.
+// row is one place the cursor can rest: a group's heading, a finding, the
+// line of collapsed passes, or a check doctor does not run (extra, its place
+// in Extras).
 type row struct {
 	kind    rowKind
 	group   int
 	finding int
+	extra   int
 }
 
 // layout is every row in the order it is drawn: with groups, each heading
 // followed by its findings while the group is open; flat, only the findings;
-// the collapsed passes last.
+// the collapsed passes, then the checks doctor does not run.
 func (v Model) layout() []row {
 	var rows []row
 	for gi, g := range v.groups() {
@@ -52,6 +60,11 @@ func (v Model) layout() []row {
 	}
 	if v.collapsed() {
 		rows = append(rows, row{kind: passedRow})
+	}
+	if v.Report != nil {
+		for i := range v.Extras {
+			rows = append(rows, row{kind: extraRow, extra: i})
+		}
 	}
 	return rows
 }
@@ -139,6 +152,8 @@ func (v Model) IsCursorRow(code int) bool {
 		return code == HeaderCode(r.group)
 	case findingRow:
 		return code == r.finding
+	case extraRow:
+		return code == ExtraCode(r.extra)
 	}
 	return code == PassedRow
 }

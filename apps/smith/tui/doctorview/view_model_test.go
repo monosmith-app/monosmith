@@ -266,3 +266,49 @@ func TestTextTellsTheProblemTheRemedyAndTheFixOnce(t *testing.T) {
 		}
 	}
 }
+
+func TestAnExtraCheckIsTheLastRowAndTheCursorAndAClickReachIt(t *testing.T) {
+	m := sample()
+	m.Extras = []Extra{{Title: "Vertical-slice layout", Hint: "enter runs smith slices check", Presents: "slices check"}}
+	lines, rowOf := m.View(plainTheme, 100, false)
+	at := -1
+	for row, code := range rowOf {
+		if code == ExtraCode(0) {
+			at = row
+		}
+	}
+	if at < 0 || !strings.Contains(lines[at], "Vertical-slice layout") {
+		t.Fatalf("no row for the extra check:\n%s", strings.Join(lines, "\n"))
+	}
+	if !strings.Contains(strings.Join(lines, "\n"), "Checks doctor does not run itself") {
+		t.Fatal("the extra checks have no heading")
+	}
+	if _, ok := m.SelectedExtra(); ok {
+		t.Fatal("the cursor starts on a finding, not on the extra check")
+	}
+	up := m
+	for range m.rows() {
+		if _, ok := up.SelectedExtra(); ok {
+			break
+		}
+		up = up.Update(key("down"))
+	}
+	if e, ok := up.SelectedExtra(); !ok || e.Presents != "slices check" || !up.IsCursorRow(ExtraCode(0)) {
+		t.Fatal("the keys never reach the extra check")
+	}
+	if _, ok := up.Selected(); ok {
+		t.Fatal("an extra check is not a finding")
+	}
+	if e, ok := m.SelectRow(ExtraCode(0)).SelectedExtra(); !ok || e.Title != "Vertical-slice layout" {
+		t.Fatal("a click on the row does not select the extra check")
+	}
+}
+
+func TestReplaceKeepsTheExtraChecks(t *testing.T) {
+	m := sample()
+	m.Extras = []Extra{{Title: "Vertical-slice layout", Presents: "slices check"}}
+	next := m.Replace(Result{Report: *m.Report})
+	if len(next.Extras) != 1 {
+		t.Fatal("checking again dropped the extra checks")
+	}
+}

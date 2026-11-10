@@ -17,6 +17,13 @@ func boundaryChecks(s *session.Session) []protocol.Finding {
 	return BoundaryFindings(boundaries.Check(s.Graph, s.Config.Boundaries))
 }
 
+// The checks of the boundary findings: the rules of smith.toml, and the
+// built-in rule that no project depends on an app.
+const (
+	BoundaryRulesCheck = "projects depend only on what the boundaries allow"
+	BoundaryAppCheck   = "no project depends on an app"
+)
+
 // BoundaryFindings maps violations to findings.
 func BoundaryFindings(vs []boundaries.Violation) []protocol.Finding {
 	var errs, warns []boundaries.Violation
@@ -27,9 +34,9 @@ func BoundaryFindings(vs []boundaries.Violation) []protocol.Finding {
 			errs = append(errs, v)
 		}
 	}
-	out := []protocol.Finding{boundaryFinding("projects depend only on what the boundaries allow", errs, false)}
+	out := []protocol.Finding{boundaryFinding(BoundaryRulesCheck, errs, false)}
 	if len(warns) > 0 {
-		out = append(out, boundaryFinding("no project depends on an app", warns, true))
+		out = append(out, boundaryFinding(BoundaryAppCheck, warns, true))
 	}
 	return out
 }

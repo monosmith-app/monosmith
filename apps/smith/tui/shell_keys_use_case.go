@@ -255,6 +255,10 @@ func (s *Shell) activate(id string) tea.Cmd {
 // selected.
 func (s *Shell) activateSelection(action string) tea.Cmd {
 	project := s.selectedProject()
+	if id, ok := strings.CutPrefix(action, "form:"); ok {
+		// A check of the Doctor tab run now: the form the palette opens.
+		return s.openFormFor(id, s.extraAnswers(id))
+	}
 	if task, ok := strings.CutPrefix(action, "run:"); ok {
 		if project == "" {
 			return nil
@@ -272,6 +276,10 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if p, ok := s.list.Selected(); ok {
 			return s.execute([]string{"why", p.Root}, false)
 		}
+	case "why-file":
+		return s.whyFile()
+	case "why-miss":
+		return s.whyMiss()
 	case "derive-explain", "derive-apply", "derive-adopt", "derive-eject", "derive-replace":
 		p, ok := s.list.Selected()
 		if !ok {
@@ -401,7 +409,16 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()
 		}
+		if c.Guide == recipeTitle() {
+			// The recipe form lists the plugins of each level: read them first.
+			return s.openRecipeForm()
+		}
 		if g, ok := s.guide.WithDefault("lang", s.mainLanguage()).Pick(c.Guide); ok {
+			if g.Done() && len(g.Argv) > 0 {
+				// A form with no question (smith boundaries) runs at once.
+				s.guide = g.Reset()
+				return s.execute(g.Argv, false)
+			}
 			s.guide = g
 		}
 		return s.gotoTab(commands.TabGuide)
@@ -558,6 +575,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			return s.detailKey(name)
 		case (name == "tab" || (name == "right" && !s.doctor.OnHeader())) && s.beside():
 			s.focusSide()
+		case commands.NavNamed(name) == commands.NavConfirm && s.onDoctorExtra():
+			// Enter on a check doctor does not run opens the form that runs it.
+			cmd, _ := s.runSelectedExtra()
+			return cmd
 		case commands.NavNamed(name) == commands.NavConfirm && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
 			// Beside the detail Enter unfolds what the detail folded. On the line
 			// that hides the passed checks it shows them, as that line says.
@@ -585,6 +606,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			}
 			if wizard == guide.WizardFixConfig && s.repair != nil {
 				return s.openFix(s.repair.Fix)
+			}
+			if wizard == guide.WizardRecipe {
+				// "Make my own recipe" in Add a project: the Write a recipe form.
+				return s.openRecipeForm()
 			}
 			if len(argv) >= 2 && argv[0] == "plugin" && argv[1] == "search" {
 				// The hits come back as a form that installs the one picked.

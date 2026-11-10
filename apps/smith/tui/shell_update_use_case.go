@@ -95,6 +95,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)
+		s.doctor.Extras = s.doctorExtras()
 		verified := len(s.verifying) > 0
 		s.verifyFix(msg)
 		s.checkedAgain(msg, verified)

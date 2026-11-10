@@ -164,7 +164,9 @@ A run opens in the right panel of Projects, from any view: the keys work in ever
 switch to Projects. The footer shows only
 the ones that make sense for the open view (the column above). The top panel of Projects
 has Verify, Build, Test, Lint and Typecheck of every project as buttons, and the palette names the scope in
-each title (`Build orders`, `Build all 23`).
+each title (`Build orders`, `Build all 23`). `Verify (V)` runs [`smith verify`](verify.md), the run CI
+makes: the dependency boundaries, then lint, typecheck, test and build, and a check that no file git
+tracks changed. The run panel lists its tasks as it does for `smith run`.
 
 ### The run panel
 
@@ -212,6 +214,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Projects, Doctor, Deps, Settings | `Ctrl+U` `Ctrl+D` | Scroll the detail (in Projects its bottom part: the top part stays). |
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
+| Run | `w` | On a task that ran (not one replayed from the cache), open the **Why would a task run again?** form with the task filled in: `Enter` runs `smith why-miss <project:task>`. On a cached task, or one that did not run, the key says why it does nothing. Outside the run panel `w` still runs the affected projects. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
 | Run panel | `Esc` | Show all output; press it again to go back to the project (the run goes on in the background). The `Back (Esc)` button does the same. |
 | Run | `,` `.` | Show the older or the newer run of this session (smith keeps the last 20). The line under the buttons, `run 2 of 5 · ‹ older  newer ›`, has the same two actions as clickable parts: `‹ older` and `newer ›` step through the runs. A part that cannot be used now (no older run, a run in progress) is faint, and a click on it says why. |
@@ -411,7 +414,7 @@ These are in the palette (`:`), under Health. None has a key of its own.
 | **Check the derived files** | `smith derive --check` in the run panel of Projects: writes nothing, fails when a derived file is out of date or was edited. |
 | **Update the derived files…** | `smith derive` after a confirmation: writes the files that follow from the project graph. A file you edited is never overwritten. |
 | **Preview the derived files** | `smith derive --dry-run` in the run panel of Projects: the plan of the update, nothing is written. |
-| **Why is this here?…** | A form that asks for a file, a folder or a setting (with the [path finder](#the-path-finder) to browse them) and runs `smith why <it>`: who owns a file and how to change it, or why a setting has its value. |
+| **Why is this here?…** | A form that asks for a file, a folder or a setting (with the [path finder](#the-path-finder) to browse them) and runs `smith why <it>`: who owns a file and how to change it, or why a setting has its value. The Doctor detail of a check about a file opens it with that file filled in. |
 | **Divergences from the defaults** | `smith divergences` in the run panel of Projects: every override, ejected file and drift, each with the reason and how to go back. |
 | **Try a command in a copy…** | A form that asks for a smith command (`add package billing`) and runs `smith try` on it: the command runs in a temporary copy, doctor checks the result, and the run panel says what changed. Your files stay as they are. |
 | **Write the launcher…** | `smith bootstrap` after a confirmation: writes `tools/smith/smith` and `tools/smith/smith.cmd`, so a laptop and CI run the same smith. |
@@ -450,7 +453,7 @@ the palette (`:`). A command that changes files shows its plan first, as every o
 | **Cache: status**, **check for damage** | Health | `smith cache status` and `smith cache verify` in the run panel of Projects. |
 | **Cache: remove what is broken…**, **trim to its limit…**, **delete it all…** | Health | `smith cache verify --fix`, `prune` (with its plan) and `clear`, each after a confirmation that says the next run is slower. |
 | **Copies between projects**, **Tools the workspace needs** | Health | `smith copies` and `smith tools` in the run panel of Projects. |
-| **Why would a task run again?…** | Health | Asks `project:task` and runs `smith why-miss`. |
+| **Why would a task run again?…** | Health | Asks `project:task` and runs `smith why-miss`. `w` on a task of the run panel opens it with that task filled in. |
 | **Connect smith to a coding assistant…** | Health | Tick Claude Code and VS Code; writes `.mcp.json` and `.vscode/mcp.json` after a confirmation. |
 
 In **Add project**, a web app gets ONE question about its environments, not four. The labels
@@ -471,7 +474,8 @@ After the name, **Add project** asks one question, like a new workspace does: `S
 defaults` (first, default) goes straight to the plan, with the pick of the first question ticked,
 the shape of the other projects followed, and for a web app the environments above; every default
 is a flag in the command. `Customise` asks the questions one at a time. A question that smith
-cannot answer for the person (the trigger of a function app) is asked either way.
+cannot answer for the person (the trigger of a function app) is asked either way. `Make my own
+recipe…` leaves the form for **Write a recipe** (`smith recipe new`), the same form the Start tab lists.
 
 A framework, shell or host picked in the question before the name is ticked in the choices
 question and is in the command (`--with react`). The cursor starts on "Decide in the next
@@ -609,11 +613,16 @@ open, also across a new check. The footer names what each key does now: `hide fa
 The detail of the selected check has four parts, always in this order, and each fact appears once:
 
 1. **State**, under the check's name: the icon and the word only (`× failed`, `▲ warning`, `✓ passed`).
-2. **Actions**, as buttons: `[ Fix  f ]` (only when the check has a fix) and `[ Check again  r ]`. Each button shows its key and, under it, a plain line on what it does (for a fix, what it will change). Click a button or press its key.
+2. **Actions**, as buttons: `[ Fix  f ]` (only when the check has a fix), **Run this check now** (only for a check that a command runs on its own: the boundary checks run `smith boundaries`), `[ Check again  r ]` and **Why is <file> here?** (only for a check about a file: the file its fix writes, or a path its problem names). Why opens the **Why is this here?** form with the file filled in, so `Enter` runs `smith why <file>`. Each button shows its key and, under it, a plain line on what it does (for a fix, what it will change). Click a button or press its key.
 3. **What is wrong**: the problem the check found. A long problem shows its first three items; `e` shows all.
 4. **How to fix**: the remedy, then what the fix will do (the projects it covers, the files it writes, the commands it runs, the questions it asks), and last the same fix in a terminal (`or in a terminal: smith doctor --fix --only '<check>'`). A check without a fix has no Fix button; its remedy says what to do.
 
 `PgUp` and `PgDn` scroll the detail (`↑ more` and `↓ more` tell when there is more). Under 100 columns, `z` shows the detail alone.
+
+Under the checks, **Checks doctor does not run itself** lists the checks that only run on request:
+**Vertical-slice layout** (`smith slices check`). `Enter` on the row, or the **Run this check now** button
+of its detail, opens the same form the palette opens, with the folders of the projects in the
+workspace's main language and that language filled in.
 
 ## Wizards
 

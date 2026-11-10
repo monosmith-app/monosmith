@@ -437,3 +437,22 @@ func TestAViewKeyThatYieldsGivesItsLetterBackToTheGlobalCommandWhileItHasAReason
 		t.Fatalf("with no reason c is %q: the first release commit should have it", c.ID)
 	}
 }
+
+func TestWInTheRunPanelAsksWhyTheTaskRanAndElsewhereRunsTheAffected(t *testing.T) {
+	if c, _, ok := ByKey("w", withRun); !ok || c.ID != "run.why-miss" || c.Action != "why-miss" {
+		t.Fatalf("w in the run panel is %q", c.ID)
+	}
+	if c, _, ok := ByKey("w", State{InWorkspace: true, View: TabProjects}); !ok || c.ID != "run.affected" {
+		t.Fatalf("w on the project list is %q", c.ID)
+	}
+	if c, _, ok := ByKey("w", State{InWorkspace: true, View: TabDoctor}); ok && c.ID == "run.why-miss" {
+		t.Fatal("w outside the run panel asks why a task ran")
+	}
+}
+
+func TestVerifyRunsSmithVerify(t *testing.T) {
+	c, ok := ByID("run.verify")
+	if !ok || !slices.Equal(c.Argv, []string{"verify"}) || !slices.Contains(c.Keys, "V") {
+		t.Fatalf("V runs %v", c.Argv)
+	}
+}

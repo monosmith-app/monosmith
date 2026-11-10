@@ -15,6 +15,10 @@ const WizardAdopt = "adopt"
 // uses a renamed key.
 const WizardFixConfig = "fix-config"
 
+// WizardRecipe is the Write a recipe form, offered inside Add a project as
+// "make my own recipe".
+const WizardRecipe = "recipe"
+
 // FixConfigFirst puts "Fix smith.toml" before the other entries, so the menu
 // starts on it. The entry shows the change first and writes nothing until the
 // user confirms.

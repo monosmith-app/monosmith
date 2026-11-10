@@ -199,7 +199,12 @@ func (m Model) confirm() Model {
 		if step.Filter {
 			m.searched = m.filter
 		}
-		picked := opts[min(m.cursor, len(opts)-1)].Value
+		chosen := opts[min(m.cursor, len(opts)-1)]
+		if chosen.Wizard != "" {
+			m.Wizard, m.done = chosen.Wizard, true
+			return m
+		}
+		picked := chosen.Value
 		if problem := m.problem(step, picked); problem != "" {
 			m.err = problem
 			return m

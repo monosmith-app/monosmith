@@ -152,6 +152,9 @@ func (s Shell) runReasons() map[string]string {
 	if len(s.logLines()) == 0 {
 		r["run.copy-log"] = words.Say("tui.run_history.the_log_is_empty")
 	}
+	if reason := s.whyMissReason(); reason != "" {
+		r["run.why-miss"] = reason
+	}
 	return r
 }
 

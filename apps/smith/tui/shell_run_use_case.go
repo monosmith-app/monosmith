@@ -234,7 +234,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 // until the new arrive), and, when their views are opened, the plan and the
 // dependencies.
 func (s *Shell) refreshAfter(argv []string) tea.Cmd {
-	if _, isRun := commands.ParseRun(argv); isRun {
+	if _, isRun := commands.ParseRun(argv); isRun || isVerify(argv) {
 		return nil
 	}
 	if isPreview(argv) {
@@ -323,3 +323,7 @@ func (s *Shell) stop() {
 func (s Shell) selectedProject() string { return s.list.SelectedName() }
 
 func fmtCount(done, total int) string { return fmt.Sprintf("%d/%d", done, total) }
+
+// isVerify is true for `smith verify`: it runs tasks and checks, and changes
+// nothing, so nothing is read again after it.
+func isVerify(argv []string) bool { return len(argv) > 0 && argv[0] == "verify" }

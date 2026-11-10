@@ -137,3 +137,58 @@ func TestAFailedTaskWithNoOutputShowsItsReasonInTheLog(t *testing.T) {
 		t.Fatalf("a task with output keeps only its output: %v", got)
 	}
 }
+
+// verifyTranscript is what `smith verify` prints (NO_COLOR, outside CI): its
+// banner, the task lines of the task runner, the summary of the run, the table
+// of results and the closing line.
+var verifyTranscript = []string{
+	"== Verify ==",
+	"Checking 3 projects (lint, typecheck, test, build).",
+	"The dependency boundaries between projects are checked first.",
+	"kit:lint ▶ golangci-lint run",
+	"kit:lint ✓ 1.2s",
+	"web:lint ✓ from cache",
+	"web:test ▶ vitest run",
+	"web:test │ FAIL src/app.test.ts",
+	"web:test × exited with code 1",
+	"  × web:test exited with code 1",
+	"  » web:build because web:test failed",
+	"× 2/4 tasks succeeded (1 from cache) in 3.1s",
+	"Project  lint  test  build",
+	"kit      ✓     –     –",
+	"web      ↺     ×     »",
+	"↺ = replayed from the cache",
+	"last output of web:test:",
+	"  FAIL src/app.test.ts",
+	"→ repeat it with `smith run test -p web`",
+	"× Verify failed after 3.4s",
+}
+
+func TestTheRunPanelReadsTheTasksOfSmithVerify(t *testing.T) {
+	r := NewRun([]string{"verify"}, nil, t0)
+	feed(r, time.Second, verifyTranscript...)
+	r.End(1, false, t0.Add(4*time.Second))
+	want := map[string]Status{"kit:lint": Passed, "web:lint": Cached, "web:test": Failed, "web:build": Skipped}
+	if len(r.Tasks) != len(want) {
+		var ids []string
+		for _, tk := range r.Tasks {
+			ids = append(ids, tk.ID)
+		}
+		t.Fatalf("tasks %v, want %v", ids, want)
+	}
+	for id, status := range want {
+		if tk := r.Task(id); tk == nil || tk.Status != status {
+			t.Errorf("%s: %+v, want status %v", id, tk, status)
+		}
+	}
+	if log := r.Task("web:test").Log; len(log) == 0 || log[0] != "FAIL src/app.test.ts" {
+		t.Fatalf("the failed task's log is %v", log)
+	}
+	c := r.Counts()
+	if c.Passed != 1 || c.Cached != 1 || c.Failed != 1 || c.Skipped != 1 || c.Total != 4 || r.OK() {
+		t.Fatalf("%+v", c)
+	}
+	if len(r.Lines) != len(verifyTranscript) {
+		t.Fatalf("all output has %d lines, verify printed %d", len(r.Lines), len(verifyTranscript))
+	}
+}
