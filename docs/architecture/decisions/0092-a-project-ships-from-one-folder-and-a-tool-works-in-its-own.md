@@ -1,6 +1,6 @@
 # ADR 0092: A project ships from one folder, and a tool keeps its work files in its own folder
 
-- Status: accepted (not implemented)
+- Status: accepted (not implemented); owner decisions recorded below
 - Date: 2026-11-10
 - Amends: [0081](0081-a-web-app-builds-once-per-environment-and-overlap-fixes-are-presented-choices.md),
   [0088](0088-doctor-checks-and-moves-the-build-folder-of-every-language-it-can-read.md)
@@ -121,8 +121,8 @@ about the tool itself that this record did not test on a machine.
 | tsc / esbuild (Node app, library, package) | `dist/<dir>`: `typescript/typescript_templates_config.go:175,186` | none outside the output | JS and `.d.ts` | none | none |
 | Node functions | `dist/<dir>/dist`: `functions/choices/base.toml:54` | none | the compiled function | none | none |
 | VS Code extension | build to `dist/<dir>`; `.vsix` to `dist/release/<app>`: `vscode/publish_extension_use_case.go:121` | none | the `.vsix` | none | none (`dist/release` is the release drop, not a build) |
-| Tauri | frontend to `dist/<dir>` (`tauri/frontend_dist_check_use_case.go:42`); cargo to `dist/tauri/<dir>`: `tauri/contribute_tauri_use_case.go:77,97-103`, `tauri/extras/extras_contract.go:44-52`; sidecars to `dist/tauri-prepare/<dir>` | `dist/tauri/<dir>` (the whole cargo target is the task output today) | installers in `dist/tauri/<dir>/release/bundle/` (`contribute_tauri_use_case.go:52`) | `tauri build` builds release (unverified) | link the bundles into the shipped folder; the task output becomes the shipped folder, not the target; see open question 1 |
-| Electron Forge (smith-made) | `dist/<dir>` holds compiled code, `package.json`, `forge.config.cjs`: `electron/choices/base.toml:53,68-76`; `package` writes `dist/<dir>/out/`: `base.toml:93-102` | Forge's `out/` inside the shipped folder | the packed app folder | none | move Forge's `out/` to `dist/electron/<name>/out` and link the app into the shipped folder; see open question 2 |
+| Tauri | frontend to `dist/<dir>` (`tauri/frontend_dist_check_use_case.go:42`); cargo to `dist/tauri/<dir>`: `tauri/contribute_tauri_use_case.go:77,97-103`, `tauri/extras/extras_contract.go:44-52`; sidecars to `dist/tauri-prepare/<dir>` | `dist/tauri/<dir>` (the whole cargo target is the task output today) | installers in `dist/tauri/<dir>/release/bundle/` (`contribute_tauri_use_case.go:52`) | `tauri build` builds release (unverified) | link the bundles into the shipped folder; the task output becomes the shipped folder, not the target; see owner decision 1 |
+| Electron Forge (smith-made) | `dist/<dir>` holds compiled code, `package.json`, `forge.config.cjs`: `electron/choices/base.toml:53,68-76`; `package` writes `dist/<dir>/out/`: `base.toml:93-102` | Forge's `out/` inside the shipped folder | the packed app folder | none | move Forge's `out/` to `dist/electron/<dir>/out` and link the app into the shipped folder; see owner decision 2 |
 | Electron Forge with Vite plugin, electron-builder (adopted) | no code in smith reads them (no match for `forge.config`, `electron-builder`, `.vite/`) | `.vite/`, `out/`, `*-unpacked/`, `builder-debug.yml` in the project | the packed app or installer | electron-builder `--dir` and the full build (unverified) | new: point them at `dist/electron/<name>` and link; PR 4 |
 | Cargo | no output; `cargo build -p <crate>`, not cached: `plugin-rust/discovery/crate_tasks_config.go:44`; target `dist/cargo` from `.cargo/config.toml`: `plugin-rust/scaffolding/generate_crate_use_case.go:107,119` | `dist/cargo` (shared) | the binary of an app crate (`dist/cargo/debug/<crate>`); a library ships nothing | `debug/` and `release/`; release assets use `--release --target`: `plugin-rust/releasing/build_assets_use_case.go:180` | link step for app crates; output = shipped folder; `--release` command |
 | .NET build | no output; `dotnet build`, not cached: `plugin-dotnet/discovery/project_tasks_config.go:22`; `ArtifactsPath` `dist/dotnet`: `plugin-dotnet/scaffolding/project_templates_config.go:20` | `dist/dotnet` (shared: `bin/`, `obj/`) | the app's `bin/<project>/debug/` folder | `Debug` by default; `-c Release` | link step for apps; output = shipped folder; `-c Release` command |
@@ -131,7 +131,7 @@ about the tool itself that this record did not test on a machine.
 | Gradle (JVM, Kotlin, Android) | output `dist/gradle/<id>` when the script names it: `plugin-jvm/discovery/gradle_tasks_config.go:32-35`; set by `scaffolding/gradle_templates_config.go:69`, `android_templates_config.go:35` | `dist/gradle/<id>` | the jar in `libs/`, or the APK in `outputs/apk/<variant>/` | Android `assemble` builds every variant (unverified); plain JVM none | link the jar or APK; output = shipped folder; Android: pick the variant by profile |
 | Maven | output `dist/maven/<artifactId>`: `plugin-jvm/discovery/module_tasks_config.go:15,29`; set by `scaffolding/module_templates_config.go:52` | `dist/maven/<artifactId>`, and the local repository (`mvn install`) | the jar | none | link the jar; output = shipped folder |
 | Go | `dist/<dir>/<binary>`: `plugin-go/discovery/module_tasks_config.go:41-42`; `package` to `dist/drop/<name>` (:44-46); a library builds no file (:49) | Go's own cache outside the workspace | the binary | none | none |
-| Python build | `dist/<dir>`: `plugin-python/discovery/project_tasks_config.go:49`; `package` to `dist/drop` (:52-53) | `build/` and `*.egg-info` in the project with setuptools (unverified) | wheel and sdist | none | none for the shipped folder; the work files in the project stay (open question 4) |
+| Python build | `dist/<dir>`: `plugin-python/discovery/project_tasks_config.go:49`; `package` to `dist/drop` (:52-53) | `build/` and `*.egg-info` in the project with setuptools (unverified) | wheel and sdist | none | none for the shipped folder; the work files in the project stay (owner decision 4) |
 | Python functions | `dist/<dir>/app` and a zip in `dist/<dir>`: `plugin-python/functions/function_tasks_config.go:15-20` | none | the staged folder and the zip | none | none |
 | Dart CLI | `dist/<dir>`: `plugin-dart/discovery/package_tasks_config.go:53`, `declared_projects_use_case.go:119-120` | `.dart_tool/` in the project | the executable bundle | none (AOT) | none |
 | Flutter web | `dist/<dir>`: `package_tasks_config.go:47-49` | `.dart_tool/`, `build/` in the project (unverified) | the web bundle | release by default (unverified) | none |
@@ -197,24 +197,25 @@ rules.
      `apps/smith/adoptmove` and the Node doctor check. This is new code: smith reads neither setup
      today.
 
-## Open questions for the owner
+## Owner decisions
 
-1. **Tauri has two products.** Its build writes the web frontend to `dist/<dir>` and then
-   installers. Is the frontend a work file (`dist/tauri/<dir>/frontend`) and the installers the
-   shipped files, or do the installers go to `dist/<dir>/bundle/` beside the frontend?
-2. **Electron has two products too.** The build makes a folder that `start` runs, and `package`
-   makes the packed app. Which one is in `dist/<dir>`?
-3. **Debug web builds.** Should `--release` change a web app without environments, Angular
-   (`-c development` without `--release`) or Astro? This record says no.
-4. **Work files in the project.** setuptools (`build/`, `*.egg-info`), Angular (`.angular/`) and
-   Flutter keep work files beside the sources. Do they move to `dist/<tool>/...` too?
-5. **The key of a work folder.** The rules name it by `<id>` (Gradle), `<artifactId>` (Maven),
-   `<project dir>` (Tauri) and `<name>` (Electron). Should all use `<project dir>`, like the
-   shipped folder?
-6. **A file in use.** Windows does not let smith replace a link to a program that runs. Should the
-   link step fail the build, or warn and keep the old file?
-7. **Caching the shared tools.** This record keeps the builds of Cargo and .NET uncached. Is that
-   right, or should a cache hit restore the shipped folder and skip the tool?
+The owner settled the open questions on 2026-11-10:
+
+1. **Tauri:** the installers are the shipped files, in the shipped folder. The web frontend is a
+   work file, in `dist/tauri/<dir>/frontend`.
+2. **Electron:** the packed app is the shipped file. The folder that `start` runs is a work file,
+   in `dist/electron/<dir>`, which also takes Forge's `out/` out of the shipped folder.
+3. **Web builds:** `--release` changes nothing for Vite, Angular or Astro. Their build is already
+   the production build, and a web app with environments takes the mode from the environment.
+4. **Work files beside the sources:** they move to `dist/<tool>/<dir>` where the tool lets smith
+   choose the folder (setuptools, `.angular/`, Flutter). This is a later PR.
+5. **The key of a work folder:** every work folder uses the project folder, `dist/<tool>/<dir>`,
+   the same key as the shipped folder.
+6. **A file in use:** when Windows does not let smith replace a link to a running program, the
+   build warns, names the program to close, and keeps the old file. The tool's own output is
+   built correctly.
+7. **Caching:** the Cargo and .NET builds stay uncached for now. `dotnet test --no-build` and
+   `ctest` need the work folder, which a cache hit would skip.
 
 ## Consequences
 
