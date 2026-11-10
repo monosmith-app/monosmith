@@ -37,12 +37,13 @@ func CheckEntryFiles(workspaceRoot string, p protocol.Project) (protocol.Finding
 		return protocol.Finding{}, false
 	}
 	files := map[string]bool{}
+	ownDist := buildsIntoWorkspaceDist(workspaceRoot, p)
 	for _, f := range []string{pkg.Main, pkg.Module, pkg.Types, pkg.Typings} {
-		addEntryFile(files, p.Root, f)
+		addEntryFile(files, p.Root, f, ownDist)
 	}
 	var exports any
 	if len(pkg.Exports) > 0 && json.Unmarshal(pkg.Exports, &exports) == nil {
-		collectExportFiles(files, p.Root, exports)
+		collectExportFiles(files, p.Root, exports, ownDist)
 	}
 	var missing []string
 	found := false
@@ -120,28 +121,40 @@ func declarationRemedy(workspaceRoot string, p protocol.Project, build string, m
 
 // collectExportFiles walks package.json exports: a path, a list of
 // fallbacks, or conditions and subpaths mapping to either.
-func collectExportFiles(files map[string]bool, root string, v any) {
+func collectExportFiles(files map[string]bool, root string, v any, ownDist bool) {
 	switch e := v.(type) {
 	case string:
-		addEntryFile(files, root, e)
+		addEntryFile(files, root, e, ownDist)
 	case []any:
 		for _, item := range e {
-			collectExportFiles(files, root, item)
+			collectExportFiles(files, root, item, ownDist)
 		}
 	case map[string]any:
 		for _, item := range e {
-			collectExportFiles(files, root, item)
+			collectExportFiles(files, root, item, ownDist)
 		}
 	}
 }
 
+// buildsIntoWorkspaceDist reports whether the project's build writes into
+// dist/<project dir>, so that the ./dist/... of its package.json (the form it
+// is published in) names files of that folder.
+func buildsIntoWorkspaceDist(workspaceRoot string, p protocol.Project) bool {
+	_, outDir, ok := manifestfixes.LocateOutDir(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root)))
+	return ok && protocol.InBuildDir(path.Clean(path.Join(p.Root, filepath.ToSlash(outDir))))
+}
+
 // addEntryFile keeps, workspace-relative, a file the build makes: one in
-// the build output, and not a pattern.
-func addEntryFile(files map[string]bool, root, f string) {
+// the build output, and not a pattern. With ownDist, ./dist/x of the package
+// is dist/<project dir>/x of the workspace.
+func addEntryFile(files map[string]bool, root, f string, ownDist bool) {
 	if f == "" || strings.Contains(f, "*") {
 		return
 	}
 	resolved := path.Clean(path.Join(root, f))
+	if own := path.Clean(root) + "/dist/"; ownDist && strings.HasPrefix(resolved, own) {
+		resolved = protocol.ProjectBuildDir(root) + "/" + strings.TrimPrefix(resolved, own)
+	}
 	if strings.HasPrefix(resolved, path.Clean(root)+"/dist/") || protocol.InBuildDir(resolved) {
 		files[resolved] = true
 	}

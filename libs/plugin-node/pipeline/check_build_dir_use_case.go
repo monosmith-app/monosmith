@@ -35,6 +35,9 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 		source = p.Root + "/package.json"
 		remedy = "pass --outDir \"" + protocol.BuildDirFromProject(p.Root) + "\" in the build script, and point package.json's main, types and start script there"
 	}
+	if p.Kind == protocol.ProjectPackage {
+		remedy = libraryRemedy(p)
+	}
 	finding := protocol.Finding{
 		Check: p.Name + " compiles into " + protocol.ProjectBuildDir(p.Root), Project: p.Name, OK: protocol.InBuildDir(resolved),
 		Detail: source + " compiles into " + resolved + ", inside the source tree",
@@ -57,6 +60,36 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 		}
 	}
 	return finding, true
+}
+
+// libraryRemedy says how a library package builds into the workspace's dist
+// by hand. Its package.json keeps main, types and exports in the published
+// form (./dist/...): a path outside the package, such as ../../dist/..., is
+// not allowed in exports and cannot be packed.
+func libraryRemedy(p protocol.Project) string {
+	target := protocol.BuildDirFromProject(p.Root)
+	return "build into \"" + target + "\": the --outfile, --outDir, --declarationDir and --tsBuildInfoFile of the build script and the outDir, declarationDir and tsBuildInfoFile of its tsconfig files. " +
+		"Keep main, types and exports in package.json as they are (./dist/...): smith packs from " + protocol.ProjectBuildDir(p.Root) + " and makes them relative to it. " +
+		"Map the package name to its source in tsconfig.base.json \"paths\" (\"name\": [\"" + p.Root + "/src/index.ts\"]) and in Jest, so importers in the repository read the source, not a build"
+}
+
+// CheckLibraryBuildDir is CheckBuildDir with the workspace's plan for library
+// packages: a package the plan moves carries its one grouped fix, and one it
+// refuses says why. A project the plan does not cover is judged as
+// CheckBuildDir does.
+func CheckLibraryBuildDir(workspaceRoot string, p protocol.Project, plan manifestfixes.LibraryPlan, dependents ...string) (protocol.Finding, bool) {
+	f, ok := CheckBuildDir(workspaceRoot, p, dependents...)
+	if !ok || f.OK {
+		return f, ok
+	}
+	if plan.Moves(p.Name) {
+		f.Fix = plan.Fix
+		f.Remedy = "smith doctor --fix --only \"" + manifestfixes.LibraryBuildDescription + "\" moves the build of " + p.Name + " and the other libraries into dist/<project dir> and shows every changed file first"
+	} else if reason, refused := plan.Refusals[p.Name]; refused {
+		f.Fix = nil
+		f.Remedy = "smith does not move this build for you, because " + reason + ". To move it by hand: " + libraryRemedy(p)
+	}
+	return f, ok
 }
 
 // dependentsOf names the projects that import p by one of its package names.
