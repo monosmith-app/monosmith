@@ -47,6 +47,8 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		findings = append(findings, f)
 	}
 
+	findings = append(findings, CheckInternalRangeFindings(workspaceRoot, params.Projects)...)
+
 	var root struct {
 		Workspaces []string `json:"workspaces"`
 	}

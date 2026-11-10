@@ -194,6 +194,7 @@ beyond the safe ones, which doctor asks about:
 | tracked files are not generated files | `git rm --cached` on them; asks whether to add the output directory to `.gitignore` |
 | `<project> can be verified` (no lint task) | adds a `lint` task running ESLint to `smith.toml`, for every Node project without one |
 | `<project>` declares the packages it imports | adds each package to `package.json` at the range the workspace already uses (asks which when projects disagree), then `npm install` |
+| internal dependencies use "*" | rewrites each pinned range on a package of the same workspace to `*`, then regenerates `package-lock.json` (asks first) |
 | the packages the ESLint config imports are installed | `npm install`, or `npm install -D` for a package nothing declares |
 | the scripts of the root or a project call files and tools that exist | asks: install the missing tool, or remove the script that starts it |
 | Node dependencies are installed | `npm install` |
