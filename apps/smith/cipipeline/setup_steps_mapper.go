@@ -29,7 +29,7 @@ func GitHubSetup(m Model) string {
 func AzureSetup(m Model) string {
 	var b strings.Builder
 	b.WriteString(`  - checkout: self
-    fetchDepth: 0
+    fetchDepth: '0'
 `)
 	for _, t := range m.Toolchains {
 		b.WriteString(azureSetup(t))
