@@ -64,7 +64,7 @@ func chooseSpec(workspaceRoot string, params protocol.LinkParams) (string, []pro
 		return used[0], nil
 	}
 	options := []protocol.LinkOption{{
-		Spec:    "*",
+		Spec:    AnySpec,
 		Label:   "Any version (*)",
 		Meaning: "npm uses the library of this workspace whatever its version. You never edit the line when the library changes version. Best inside one workspace.",
 	}}
