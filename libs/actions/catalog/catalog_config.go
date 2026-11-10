@@ -42,6 +42,7 @@ var catalog = []Action{
 	// Work
 	{Command: []string{"run"}, Safety: Reads},
 	{Command: []string{"build"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
+	{Command: []string{"verify"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"test"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"lint"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"typecheck"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},

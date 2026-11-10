@@ -6,6 +6,7 @@
   "releaseview.blocked.hint": "smith release --dry-run shows the same",
   "releaseview.new": "new",
   "releaseview.unchanged": "unchanged: {projects}",
+  "releaseview.preview": "Preview: what merging {branch} into {release} would release",
   "releaseview.nothing": "Nothing to release",
   "releaseview.headline.one": "{count} package to release",
   "releaseview.headline.other": "{count} packages to release",

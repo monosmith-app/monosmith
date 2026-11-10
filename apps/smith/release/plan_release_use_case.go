@@ -44,6 +44,10 @@ type Plan struct {
 	// refuses to force a bump for them, because there is no version to bump. A
 	// version(<name>)[x.y.z] commit sets the first one.
 	NeverReleased []string `json:"neverReleased,omitempty"`
+	// PreviewOf names the release branch when the plan is a preview: the plan is made
+	// on another branch and shows what merging it into that branch would release
+	// (see PreviewBase). Empty when the plan is the one of the branch checked out.
+	PreviewOf string `json:"previewOf,omitempty"`
 	// Held lists the packages the person held back with --hold (and the ones that
 	// release only because a held one does): they would have released.
 	Held []string `json:"held,omitempty"`
@@ -62,8 +66,18 @@ func TagPrefix(p *projectgraph.Project) string {
 
 // LatestTag returns the highest released version of a project and its tag.
 func LatestTag(git *gitclient.Git, p *projectgraph.Project) (Version, string, bool) {
+	return latestTagAt(git, p, "")
+}
+
+// latestTagAt is LatestTag among the tags that ref contains ("" means every tag).
+func latestTagAt(git *gitclient.Git, p *projectgraph.Project, ref string) (Version, string, bool) {
 	prefix := TagPrefix(p)
-	tags, _ := git.Tags(prefix)
+	var tags []string
+	if ref == "" {
+		tags, _ = git.Tags(prefix)
+	} else {
+		tags, _ = git.TagsMergedAt(prefix, ref)
+	}
 	var best Version
 	var bestTag string
 	found := false
@@ -90,7 +104,16 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 // channel branch plans prerelease versions of its channel, any other branch
 // stable ones.
 func PlanFor(s *session.Session) (Plan, error) {
-	return MakeChannelPlan(s.Git, s.Graph, ChannelOf(s.Config.Release, PlanBranch(s)))
+	ch := ChannelOf(s.Config.Release, PlanBranch(s))
+	if ch != nil {
+		return MakeChannelPlan(s.Git, s.Graph, ch)
+	}
+	base, branch := PreviewBase(s.Git, s.Config.Release)
+	plan, err := makePlan(s.Git, s.Graph, nil, base)
+	if err == nil {
+		plan.PreviewOf = branch
+	}
+	return plan, err
 }
 
 // MakeChannelPlan is MakePlan for a release channel (nil: stable releases).
@@ -98,6 +121,14 @@ func PlanFor(s *session.Session) (Plan, error) {
 // the commits ask for, and the commits counted are those since the channel's
 // last release, or since the last stable release when it has none.
 func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel) (Plan, error) {
+	return makePlan(git, graph, ch, "")
+}
+
+// makePlan is MakeChannelPlan, optionally from another branch: with base set (a
+// ref of the release branch, see PreviewBase) each package's last release is the
+// highest tag the base contains, or any tag when it has none, and the commits
+// counted are those of HEAD and of the base since that tag.
+func makePlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel, base string) (Plan, error) {
 	order, err := graph.Order()
 	if err != nil {
 		return Plan{}, err
@@ -121,7 +152,10 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 		if !p.Releases() || (ch != nil && p.Release != nil && p.Release.Channels != nil && !*p.Release.Channels) {
 			continue
 		}
-		latest, tag, released := LatestTag(git, p)
+		latest, tag, released := latestTagAt(git, p, base)
+		if base != "" && !released {
+			latest, tag, released = LatestTag(git, p)
+		}
 		onChannel := false
 		if ch != nil {
 			if v, t, ok := latestChannelTag(git, p, *ch); ok {
@@ -131,7 +165,11 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 		last[name] = lastRelease{latest, tag, released, onChannel}
 		tags = append(tags, tag)
 	}
-	index := newCommitIndex(git, tags)
+	// The index reads the history of HEAD only: a preview asks git for the union.
+	var index *commitIndex
+	if base == "" {
+		index = newCommitIndex(git, tags)
+	}
 	releasing := map[string]string{}
 	for _, name := range order {
 		l, ok := last[name]
@@ -150,7 +188,7 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 		var raw []gitclient.Commit
 		if index.answers(tag) {
 			raw = index.log(tag, SourceRoots(graph, p))
-		} else if raw, err = git.Log(tag, SourceRoots(graph, p)...); err != nil {
+		} else if raw, err = logSince(git, base, tag, SourceRoots(graph, p)...); err != nil {
 			return Plan{}, err
 		}
 		var commits []Commit
@@ -178,7 +216,7 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 		if released {
 			item.Current = latest.String()
 		}
-		forced, err := directiveFrom(index, git, tag, name)
+		forced, err := directiveFrom(index, git, base, tag, name)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -223,10 +261,19 @@ func SourceRoots(graph *projectgraph.Graph, p *projectgraph.Project) []string {
 	return roots
 }
 
+// logSince is git.Log(since, paths...), or with base set the union of HEAD and
+// base (see gitclient.Git.LogUnion).
+func logSince(git *gitclient.Git, base, since string, paths ...string) ([]gitclient.Commit, error) {
+	if base == "" {
+		return git.Log(since, paths...)
+	}
+	return git.LogUnion(since, base, paths...)
+}
+
 // directiveFrom is directiveFor answered from the index when it can.
-func directiveFrom(index *commitIndex, git *gitclient.Git, since, project string) (string, error) {
+func directiveFrom(index *commitIndex, git *gitclient.Git, base, since, project string) (string, error) {
 	if !index.answers(since) {
-		return directiveFor(git, since, project)
+		return directiveFor(git, base, since, project)
 	}
 	for _, c := range index.log(since, []string{""}) {
 		if d, ok := ParseDirective(c.Subject); ok && d.Project == project {
@@ -238,8 +285,8 @@ func directiveFrom(index *commitIndex, git *gitclient.Git, since, project string
 
 // directiveFor finds the newest version(<project>)[x] directive since a tag,
 // anywhere in the repository.
-func directiveFor(git *gitclient.Git, since, project string) (string, error) {
-	commits, err := git.Log(since)
+func directiveFor(git *gitclient.Git, base, since, project string) (string, error) {
+	commits, err := logSince(git, base, since)
 	if err != nil {
 		return "", err
 	}

@@ -66,6 +66,9 @@ func (s *Shell) modalMouse(e tea.MouseEvent) tea.Cmd {
 	s.mouseShift = e.Shift
 	// A press or a drag that began before the modal opened ends here.
 	s.pressed = ""
+	if s.cache != nil && s.cacheSelect(e) {
+		return nil
+	}
 	s.selection = s.selection.Clear()
 	s.letGoSplit()
 	switch {

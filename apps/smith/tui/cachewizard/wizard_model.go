@@ -3,6 +3,7 @@ package cachewizard
 import (
 	"strings"
 	"time"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
@@ -32,6 +33,10 @@ type Model struct {
 	// scroll is the first line of a Page.
 	scroll int
 	since  time.Time
+	// typed is what the person has typed to jump in a list, and typedAt when
+	// the last letter came: a pause starts a new word.
+	typed   string
+	typedAt time.Time
 }
 
 // New is the wizard before the engine has said anything: a spinner.
@@ -131,6 +136,13 @@ func secretPress(msg tea.KeyMsg) Outcome {
 
 func (m Model) chooseKey(name string) (Model, Outcome) {
 	n := len(m.scr.Options)
+	if r, ok := typedLetter(name); ok {
+		// A letter jumps to the first entry that starts with it, as in a file
+		// browser. When no entry does, it keeps its old meaning (j, k, q...).
+		if next, found := m.jumpTo(r, time.Now()); found {
+			return next, Outcome{}
+		}
+	}
 	switch commands.Nav(name) {
 	case commands.NavCancel:
 		return m, Outcome{Cancel: true}
@@ -221,15 +233,77 @@ func (m Model) pageKey(name string) (Model, Outcome) {
 	return m, Outcome{}
 }
 
-// Wheel scrolls a page, or moves the cursor of a list.
+// Wheel scrolls a page, or the window of a list: the wheel never moves the
+// selection of a list, only the keys and a click do.
 func (m Model) Wheel(delta int) Model {
 	switch m.scr.Kind {
 	case Page:
 		m.scroll = max(m.scroll+delta, 0)
 	case Choose:
-		m.cursor = min(max(m.cursor+delta, 0), len(m.scr.Options)-1)
+		m.list.By(delta)
 	}
 	return m
+}
+
+// OnControl is true when a press at the screen cell (x, y) hits something that
+// acts (an option, a button, a tick box): such a press is a click, not the start
+// of a text selection.
+//
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
+func (m Model) OnControl(th theme.Theme, x, y int) bool {
+	row, col := y-m.rect.Y-1, x-m.rect.X-2
+	_, hits := m.body(th, 0, time.Time{})
+	for _, h := range hits {
+		if h.row == row && col >= h.x0 && col < h.x1 {
+			return true
+		}
+	}
+	return false
+}
+
+// typeAheadWindow is how long a pause ends the word being typed.
+const typeAheadWindow = time.Second
+
+// typedLetter is the letter a key name stands for, when it is one.
+func typedLetter(name string) (rune, bool) {
+	r := []rune(name)
+	if len(r) != 1 || !unicode.IsLetter(r[0]) {
+		return 0, false
+	}
+	return unicode.ToLower(r[0]), true
+}
+
+// jumpTo moves the cursor to the first entry whose label starts with what has
+// been typed (the letter added to the word typed a moment ago); when none does,
+// to the next entry that starts with the letter alone, after the cursor, so
+// pressing one letter again goes round the entries that start with it.
+func (m Model) jumpTo(r rune, now time.Time) (Model, bool) {
+	word := string(r)
+	if now.Sub(m.typedAt) <= typeAheadWindow {
+		word = m.typed + word
+	}
+	starts := func(i int, prefix string) bool {
+		return strings.HasPrefix(strings.ToLower(m.scr.Options[i].Label), prefix)
+	}
+	n := len(m.scr.Options)
+	// The same letter again, on an entry that starts with it, goes on to the next such entry.
+	repeat := len(word) == 1 && m.typed == word && m.cursor < n && starts(m.cursor, word)
+	if !repeat {
+		for i := range n {
+			if starts(i, word) {
+				m.cursor, m.typed, m.typedAt = i, word, now
+				return m, true
+			}
+		}
+	}
+	letter := string(r)
+	for k := 1; k <= n; k++ {
+		if i := (m.cursor + k) % n; starts(i, letter) {
+			m.cursor, m.typed, m.typedAt = i, letter, now
+			return m, true
+		}
+	}
+	return m, false
 }
 
 // Click handles a left press: a press on an option moves the cursor to it and
