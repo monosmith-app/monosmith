@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
+	"github.com/monosmith-app/monosmith/apps/smith/shellenv"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -50,12 +51,17 @@ func runSecretSession(session cachekey.Session, out io.Writer, keys *stdinFeed) 
 func newSession(out io.Writer, clearAfter time.Duration) cachekey.Session {
 	return cachekey.Session{
 		Random: rand.Reader, Out: out, After: time.After, ClearAfter: clearAfter,
-		Env: cachekey.UserEnvironment{GOOS: runtime.GOOS, Run: cachekey.ExecRunner},
+		Env: systemUserEnvironment(), Variable: cachekey.KeyVariable,
 	}
 }
 
+// systemUserEnvironment is the user environment of this machine.
+func systemUserEnvironment() cachekey.UserEnvironment {
+	return cachekey.UserEnvironment{GOOS: runtime.GOOS, Run: cachekey.ExecRunner, Machine: shellenv.OSEnvironment{}}
+}
+
 func keyCommand() *cobra.Command {
-	var printKey bool
+	var printKey, remove bool
 	var clearAfter time.Duration
 	cmd := &cobra.Command{
 		Use:   "key",
@@ -73,8 +79,11 @@ The key is 32 bytes from the operating system's secure random source, as 64 hex
 characters. It goes to the clipboard through clip, pbcopy, wl-copy, xclip or
 xsel, or through the terminal itself (OSC 52). On a terminal you then choose:
 c copies it again, g makes another key (the old one is then wrong: use the newest
-everywhere), u sets it as a user environment variable on this machine (the
-command is shown and asked first), q is done. The clipboard is cleared after
+everywhere), u keeps it for your user on this machine, q is done. On Windows u
+shows the command and asks first, then sets a user environment variable. On
+macOS and Linux u shows the profile file of your shell (zsh, bash or fish) and
+the lines with the key hidden, and writes a marked block there only when you
+press Enter. "smith cache key --remove" undoes it. The clipboard is cleared after
 --clear-after, or when you press q, only if it still holds the key. Clipboard
 history tools may keep a copy.
 
@@ -85,6 +94,9 @@ Without a terminal the command copies the key once and ends.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			if remove {
+				return cachekey.RemoveKey(systemUserEnvironment(), out)
+			}
 			session := newSession(out, clearAfter)
 			if printKey {
 				return session.Print()
@@ -98,6 +110,7 @@ Without a terminal the command copies the key once and ends.`,
 			return runSecretSession(session, out, nil)
 		},
 	}
+	cmd.Flags().BoolVar(&remove, "remove", false, "remove the key and the SAS token that the u choice kept for your user (the profile blocks, or the Windows user variables)")
 	cmd.Flags().BoolVar(&printKey, "print", false, "print the key instead of copying it")
 	cmd.Flags().DurationVar(&clearAfter, "clear-after", cachekey.DefaultClearAfter, "clear the clipboard after this long if it still holds the key; 0 leaves it")
 	return cmd

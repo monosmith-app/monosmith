@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
 	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // Facts are what the setup knows of the workspace.
@@ -226,7 +227,7 @@ func Run(facts Facts, ports Ports) (remote string, err error) {
 	}
 
 	if f.yesNo("\nMake the shared key (SMITH_CACHE_KEY) now?", "Yes, make and copy a key", "it goes to the clipboard and is never shown; the key is not stored anywhere", "No, I have one", "`smith cache key` makes one later") {
-		if err := f.Secret("Key", nil, f.keyActions(facts.Providers, remote)); err != nil {
+		if err := f.Secret("Key", cachekey.KeyVariable, nil, f.keyActions(facts.Providers, remote)); err != nil {
 			return remote, err
 		}
 	}
@@ -277,12 +278,19 @@ func (f flow) sasToken(t sasTarget) {
 	for _, c := range SASChoices() {
 		options = append(options, Option{Label: c.Label, Value: c.Value, Hint: c.Hint})
 	}
-	way := f.Choose("How should the token be signed?", options, "login")
-	days := []Option{{Label: "7 days", Value: "7"}, {Label: "30 days", Value: "30"}, {Label: "90 days", Value: "90"}, {Label: "365 days", Value: "365"}}
-	if way == "login" {
-		days = days[:1]
+	var way, n string
+	for {
+		way = f.Choose("How should the token be signed?", options, "login")
+		days := []Option{{Label: "7 days", Value: "7"}, {Label: "30 days", Value: "30"}, {Label: "90 days", Value: "90"}, {Label: "365 days", Value: "365"}}
+		prompt := words.Say("cachekey.sas.expiry.other")
+		if way == "login" {
+			days, prompt = days[:1], words.Say("cachekey.sas.expiry.login")
+		}
+		days = append(days, Option{Label: words.Say("cachekey.sas.back"), Value: "back", Hint: words.Say("cachekey.sas.back.hint")})
+		if n = f.Choose(prompt, days, days[0].Value); n != "back" {
+			break
+		}
 	}
-	n := f.Choose("How long should it last? You must renew it before it ends.", days, days[0].Value)
 	d, _ := strconv.Atoi(n)
 	argv := GenerateSAS(t.subscription, t.account, t.container, way, f.Now().AddDate(0, 0, d))
 	if ok, _ := f.Confirm(Confirmation{Text: "smith will run this command. It makes a token and changes nothing in Azure:", Shown: CommandLine(argv), Prompt: "Run it?", Yes: "Run it", YesHint: "the token is copied, never shown", No: "Skip", NoHint: "run nothing"}); !ok {
@@ -295,7 +303,7 @@ func (f flow) sasToken(t sasTarget) {
 		}
 		return strings.Trim(strings.TrimSpace(out), `"`), nil
 	}
-	if err := f.Secret("SAS token", produce, f.azureActions(sasTokenName)); err != nil {
+	if err := f.Secret("SAS token", cachekey.SASVariable, produce, f.azureActions(sasTokenName)); err != nil {
 		f.say("%v", err)
 	}
 }

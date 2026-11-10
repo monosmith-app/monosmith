@@ -19,7 +19,7 @@ in the environment only. The whole guide, with rotation and the SAS token, is in
 ## Synopsis
 
 ```sh
-smith cache key [--print] [--clear-after <duration>]
+smith cache key [--print] [--remove] [--clear-after <duration>]
 ```
 
 ## Arguments and flags
@@ -33,6 +33,7 @@ Usage: `smith cache key [flags]`
 |---|---|---|---|
 | `--clear-after <clear-after>` | duration (`60s`, `2m`, `0`) | `60s` | clear the clipboard after this long if it still holds the key; 0 leaves it |
 | `--print` | boolean | off | print the key instead of copying it |
+| `--remove` | boolean | off | remove the key and the SAS token that the u choice kept for your user (the profile blocks, or the Windows user variables) |
 
 <!-- smith:end cache key -->
 
@@ -44,7 +45,7 @@ The command copies the key, then waits for one key press, with no Enter:
 |---|---|
 | `c` | Copies the same key again and restarts the clearing timer. |
 | `g` | Makes a new key and copies it. It replaces the key shown before: use the newest one everywhere. |
-| `u` | Sets the key as a user environment variable. smith shows the exact command and asks `y` first. On Windows it runs PowerShell with the key on standard input. On other systems it shows the line for your shell profile and edits nothing. |
+| `u` | Keeps the key for your user. On Windows smith shows the exact command and asks `y` first, then runs PowerShell with the key on standard input. On macOS and Linux smith shows the profile file of your shell and the lines with the key hidden (`export SMITH_CACHE_KEY="••••"`), warns that dotfile backups and dotfile git repositories keep the key, and writes a marked block only when you press Enter. Esc cancels. `h` shows how to do it by hand. Zsh uses `~/.zshrc`, bash uses `~/.bash_profile` on macOS and `~/.bashrc` on Linux, fish uses `~/.config/fish/conf.d/smith-cache.fish`. A block that is there is replaced, never repeated. The file keeps its mode, and a new file is `0600`. |
 | `q` | Ends. The clipboard is cleared now if it still holds the key. |
 
 The clipboard is written with `clip`, `pbcopy`, `wl-copy`, `xclip` or `xsel`, whichever is
@@ -73,4 +74,12 @@ smith cache key
 
 ```sh
 smith cache key --print | gh secret set SMITH_CACHE_KEY
+```
+
+Remove the key that the `u` choice kept for your user: it unsets the Windows user variable, or
+takes the marked block out of the zsh, bash and fish profiles, and names each file it changed.
+Open a new terminal afterwards.
+
+```sh
+smith cache key --remove
 ```

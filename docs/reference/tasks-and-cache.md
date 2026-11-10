@@ -332,8 +332,10 @@ can write to the storage but does not know the key cannot plant a result.
 from the operating system (64 hex characters) and puts them on the clipboard
 without showing them. `smith cache key --print` prints the key instead. On a
 terminal, `c` copies the key again, `g` makes another one (the old key is then
-wrong: use the newest everywhere), `u` sets it as a user environment variable
-(Windows; the command is shown and asked first), and `q` ends. The clipboard
+wrong: use the newest everywhere), `u` keeps it for your user (Windows: a user
+variable, after the command is shown and asked; macOS and Linux: a marked block in the profile of
+your shell, written only after you press Enter on the file and the lines with the key hidden;
+`smith cache key --remove` undoes it), and `q` ends. The clipboard
 clears after 60 seconds, or on `q`, but only if it still holds the key
 (`--clear-after 0` turns this off). A clipboard-history tool may keep a copy.
 
@@ -361,6 +363,14 @@ proves an object is yours. For Azure Blob the SAS token
 and create permission (a developer who only reads needs read). A SAS token
 expires, so renew it before its date and update the secret. Signing in to Azure
 through `az` directly is not supported by the backend today.
+
+The SAS token screen of `smith cache setup` works like the key screen. It names the variable, and
+`u` keeps the token for your user as `AZURE_STORAGE_SAS_TOKEN` with the same confirmation (a user
+variable on Windows, a marked block in your shell profile elsewhere). A token signed in as you
+(user delegation) lasts at most 7 days, because Azure limits it, so the question offers only 7
+days and a Back choice. A weekly expiry means renewing the CI secret every week. A token signed
+with the account key can last 30, 90 or 365 days. `smith cache key --remove` removes both
+variables.
 
 **One prefix for each workspace.** The cache key of a task does not include the
 workspace. Give each workspace its own prefix, for example

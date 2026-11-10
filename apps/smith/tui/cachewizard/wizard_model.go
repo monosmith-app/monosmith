@@ -126,6 +126,8 @@ func secretPress(msg tea.KeyMsg) Outcome {
 		return Outcome{Press: 27}
 	case msg.Type == tea.KeyCtrlC:
 		return Outcome{Press: 3}
+	case msg.Type == tea.KeyEnter:
+		return Outcome{Press: '\r'}
 	case msg.Type == tea.KeyRunes && len(msg.Runes) == 1:
 		return Outcome{Press: msg.Runes[0]}
 	}

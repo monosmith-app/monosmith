@@ -41,7 +41,7 @@ func ports(input string, az *fakeAz, out *bytes.Buffer, written *[]string) Ports
 			*written = append(*written, r)
 			return "", nil
 		},
-		Dialogue: Terminal{In: bufio.NewReader(strings.NewReader(input)), Out: out, SecretFn: func(string, func() (string, error), []cachekey.KeyAction) error {
+		Dialogue: Terminal{In: bufio.NewReader(strings.NewReader(input)), Out: out, SecretFn: func(string, string, func() (string, error), []cachekey.KeyAction) error {
 			return errors.New("no key was asked for")
 		}},
 	}
@@ -140,5 +140,21 @@ func TestWorkspaceSegmentAndValidation(t *testing.T) {
 	}
 	if ValidateHTTPS("https://u:p@h/x") == "" || ValidateHTTPS("ftp://h") == "" || ValidateHTTPS("https://h/x") != "" {
 		t.Fatal("address validation")
+	}
+}
+
+func TestTheLoginWayExplainsItsSevenDaysAndBackAsksTheWayAgain(t *testing.T) {
+	az, out, written := &fakeAz{}, &bytes.Buffer{}, []string(nil)
+	// yes; default way (login); Back; default way (login); 7 days; skip the command.
+	input := strings.Join([]string{"1", "", "2", "", "1", "2"}, "\n") + "\n"
+	flow{Ports: ports(input, az, out, &written), azure: &azureState{}}.sasToken(sasTarget{subscription: "s", account: "acme", container: "cache"})
+	text := out.String()
+	if strings.Count(text, "How should the token be signed?") != 2 || strings.Count(text, "7 days is the only choice") != 2 {
+		t.Fatalf("Back did not ask the way again:\n%s", text)
+	}
+	for _, want := range []string{"go back and sign with the account key", "renewing the CI secret every week"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q in\n%s", want, text)
+		}
 	}
 }

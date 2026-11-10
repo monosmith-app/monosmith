@@ -47,5 +47,5 @@ type Dialogue interface {
 	Show(title string, lines []string)
 	// Secret copies a secret unseen and offers the choices after it (see
 	// cachekey.Session). produce is nil for a key made by smith.
-	Secret(noun string, produce func() (string, error), actions []cachekey.KeyAction) error
+	Secret(noun, variable string, produce func() (string, error), actions []cachekey.KeyAction) error
 }
