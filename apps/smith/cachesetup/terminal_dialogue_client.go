@@ -16,7 +16,7 @@ type Terminal struct {
 	In  *bufio.Reader
 	Out io.Writer
 	// SecretFn runs the clipboard session of a secret.
-	SecretFn func(noun string, produce func() (string, error), actions []cachekey.KeyAction) error
+	SecretFn func(noun, variable string, produce func() (string, error), actions []cachekey.KeyAction) error
 }
 
 // Say prints a line.
@@ -59,8 +59,8 @@ func (t Terminal) Show(title string, lines []string) {
 }
 
 // Secret runs the clipboard session.
-func (t Terminal) Secret(noun string, produce func() (string, error), actions []cachekey.KeyAction) error {
-	return t.SecretFn(noun, produce, actions)
+func (t Terminal) Secret(noun, variable string, produce func() (string, error), actions []cachekey.KeyAction) error {
+	return t.SecretFn(noun, variable, produce, actions)
 }
 
 var _ Dialogue = Terminal{}

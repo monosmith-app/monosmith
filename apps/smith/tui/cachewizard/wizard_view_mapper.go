@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
@@ -178,7 +179,7 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 	case Secret:
 		noun := m.scr.Noun
 		if len(m.notes) == 0 {
-			add(spin("Making the " + strings.ToLower(noun)))
+			add(spin("Making the " + cachekey.InSentence(noun)))
 			break
 		}
 		add(th.Bold(noun+" ready"), "")
@@ -197,7 +198,7 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 			x += w + 2
 		}
 		add(row, "")
-		add(pane.Wrap(th.Muted("The "+strings.ToLower(noun)+" is on the clipboard and is not shown here. smith keeps it in memory only while this screen is open, and clears the clipboard if it still holds it."), inner, 0)...)
+		add(pane.Wrap(th.Muted("The "+cachekey.InSentence(noun)+" is on the clipboard and is not shown here. smith keeps it in memory only while this screen is open, and clears the clipboard if it still holds it."), inner, 0)...)
 	case Working:
 		add(m.noteLines(th, inner, max(height-6, 2))...)
 		add("", spin(m.scr.Prompt), "", th.Muted("smith waits for the program to answer. esc closes"))

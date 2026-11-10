@@ -15,6 +15,10 @@ type Environment interface {
 	ReadFile(path string) ([]byte, error)
 	// WriteFile writes a file and creates the folders above it.
 	WriteFile(path string, data []byte) error
+	// WriteFilePrivate writes a file that holds a secret and creates the folders
+	// above it. A file that is already there keeps the mode it has. A new file
+	// is readable by the user only (0600).
+	WriteFilePrivate(path string, data []byte) error
 	// Remove deletes a file; a file that is not there is not an error.
 	Remove(path string) error
 	// Exists is true when a file or a folder is at the path.
