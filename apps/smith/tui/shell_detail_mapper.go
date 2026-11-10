@@ -349,6 +349,9 @@ func (s Shell) taskAction(task, key, kind string) detail.Action {
 func (s Shell) doctorPanel() detail.Panel {
 	f, ok := s.doctor.Selected()
 	if !ok {
+		if e, ok := s.doctor.SelectedExtra(); ok {
+			return s.extraPanel(e)
+		}
 		return s.workspacePanel()
 	}
 	planned, hasFix := s.doctor.FixFor(f)
@@ -360,7 +363,13 @@ func (s Shell) doctorPanel() detail.Panel {
 	if hasFix {
 		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Hint: planned.Description, Disabled: s.running()})
 	}
+	if id := doctorview.RunNowAction(f); id != "" {
+		actions = append(actions, detail.Action{ID: "x:form:" + id, Label: words.Say("tui.detail.run_check_now"), Hint: words.Say("tui.detail.run_check_now_hint", "action", id), Disabled: s.running()})
+	}
 	actions = append(actions, detail.Action{ID: "x:reload", Label: words.Say("tui.detail.check_again"), Shortcut: commands.ShortcutOf("view.reload"), Hint: words.Say("tui.detail.run_every_check_again_nothing_changes")})
+	if file := doctorview.FileOf(f); file != "" {
+		actions = append(actions, detail.Action{ID: "x:why-file", Label: words.Say("tui.detail.why_file", "file", file), Hint: words.Say("tui.detail.why_file_hint"), Disabled: s.running()})
+	}
 	var after []detail.Section
 	how := detail.Section{Heading: words.Say("tui.detail.how_to_fix")}
 	if f.Remedy != "" {
@@ -389,6 +398,15 @@ func (s Shell) doctorPanel() detail.Panel {
 		after = append(after, how)
 	}
 	return detail.Panel{Sections: secs, After: after, Actions: actions}
+}
+
+// extraPanel tells a check doctor does not run itself, with the button that
+// runs it now.
+func (s Shell) extraPanel(e doctorview.Extra) detail.Panel {
+	return detail.Panel{
+		Sections: []detail.Section{{Heading: e.Title, Items: []string{words.Say("tui.detail.extra_not_run")}}},
+		Actions:  []detail.Action{{ID: "x:form:" + e.Presents, Label: words.Say("tui.detail.run_check_now"), Hint: words.Say("tui.detail.run_check_now_hint", "action", e.Presents), Disabled: s.running()}},
+	}
 }
 
 // fixItems tell a fix in the detail beyond its title, which is on its button:

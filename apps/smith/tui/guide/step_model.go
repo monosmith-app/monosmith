@@ -72,6 +72,9 @@ type Option struct {
 	// Also are other names that find the option when a list is filtered: the
 	// frameworks, test runners and styles a language offers ("react" finds Node).
 	Also []string
+	// Wizard, when set, ends the form on this option and hands the person to
+	// the wizard or form it names (WizardRecipe), as Action.Wizard does.
+	Wizard string
 }
 
 // Action is a menu entry: its questions, then the command they build.

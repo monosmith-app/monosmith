@@ -65,6 +65,14 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 		rowOf[len(lines)] = PassedRow
 		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", words.Say("doctor.passed.line", "count", v.Report.Passed), words.Say("doctor.passed.hint")))
 	}
+	if len(v.Extras) > 0 {
+		lines = append(lines, "", " "+th.Muted(words.Say("doctor.extra.heading")))
+		first := len(v.layout()) - len(v.Extras)
+		for i, e := range v.Extras {
+			rowOf[len(lines)] = ExtraCode(i)
+			lines = append(lines, guide.Row(th, v.Cursor == first+i, th.Icons.Closed+" ", e.Title, e.Hint))
+		}
+	}
 	lines, rowOf = pane.WrapRows(lines, rowOf, w, 5)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)

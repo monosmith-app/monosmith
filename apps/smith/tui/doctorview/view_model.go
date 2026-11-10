@@ -48,6 +48,9 @@ type Model struct {
 	Under, Pressed Filter
 	// UnderReload and PressedReload are the same for the button that checks again.
 	UnderReload, PressedReload bool
+	// Extras are the checks doctor does not run itself, listed after the
+	// findings as rows that run them now; set by the shell.
+	Extras []Extra
 }
 
 // FromResult is the model for a finished check.
@@ -119,9 +122,18 @@ func (v Model) Selected() (doctor.Finding, bool) {
 	return v.Report.Findings[rows[v.Cursor].finding], true
 }
 
+// SelectedExtra is the check doctor does not run that is under the cursor.
+func (v Model) SelectedExtra() (Extra, bool) {
+	rows := v.layout()
+	if v.Cursor < 0 || v.Cursor >= len(rows) || rows[v.Cursor].kind != extraRow {
+		return Extra{}, false
+	}
+	return v.Extras[rows[v.Cursor].extra], true
+}
+
 // Update handles a key.
 func (v Model) Update(key tea.KeyMsg) Model {
-	if v.Report == nil || len(v.Report.Findings) == 0 {
+	if v.Report == nil || len(v.Report.Findings)+len(v.Extras) == 0 {
 		return v
 	}
 	if f := filterOfKey(key.String()); f != FilterNone {
@@ -193,6 +205,10 @@ func (v Model) SelectRow(code int) Model {
 		return v
 	}
 	for at, r := range v.layout() {
+		if r.kind == extraRow && code == ExtraCode(r.extra) {
+			v.Cursor, v.Open = at, false
+			return v
+		}
 		isHeader := r.kind == headerRow && code == HeaderCode(r.group)
 		isFinding := r.kind == findingRow && code >= 0 && code == r.finding
 		switch {

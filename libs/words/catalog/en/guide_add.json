@@ -28,6 +28,8 @@
   "guide.add_project_setup.go_to_the_plan_now_each": "go to the plan now; each default is in the command (default)",
   "guide.add_project_setup.customise": "Customise",
   "guide.add_project_setup.answer_the_questions_one_at_a": "answer the questions one at a time: choices, the shape of the other projects, the environments",
+  "guide.add_project_setup.own_recipe": "Make my own recipe…",
+  "guide.add_project_setup.own_recipe_hint": "leave this form for Write a recipe: smith recipe new writes a recipe the next projects can start from",
   "guide.add_project_axes.which": "Which {axis}? smith does not choose it for you (the first is suggested)",
   "guide.add_project_axes.conflicts": " (not with {names})",
   "guide.add_project_choices.unreadable": "smith choices did not print a list of choices",
