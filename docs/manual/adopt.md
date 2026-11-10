@@ -43,6 +43,7 @@ Usage: `smith adopt [flags]`
 | `--dry-run` | boolean | off | only report (this is the default; the flag makes it explicit) |
 | `--eslint` | boolean | off | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies |
 | `--gitattributes <gitattributes>` | string |  | with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it) |
+| `--hoist <hoist>` | string, repeatable |  | with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway) |
 | `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
 | `--install` | boolean | off | with --init, also run npm install for the Node projects |
 | `--json` | boolean | off | print the report as JSON |
@@ -122,12 +123,27 @@ Move it into a folder of its own so smith can manage it?
   where, for example `smith adopt --init --move apps/web`. Without it the command stops and
   prints the exact commands. `--move none` keeps the project at the root (an empty workspace,
   add projects with `smith add`).
-- The move is `git mv` of the project's files. These stay at the root: `.git`, `.gitignore`,
-  `.github` and the other CI files, editor and agent settings, `smith.toml`, README, LICENSE,
-  CHANGELOG, `docs`, compose files, and for Node the lockfile (`package-lock.json` is
-  rewritten by `npm install` for the workspace layout). Everything else moves, including
-  source, tests, configs and, for Go, `go.mod` and `go.sum` (the module path does not change).
+- The move is `git mv` of the project's files, and it splits the workspace from the project
+  ([ADR 0090](../architecture/decisions/0090-adopt-splits-the-workspace-from-the-project.md)).
+  These stay at the root: `.git`, `.gitignore`, `.github` and the other CI files, editor and
+  agent settings, the `*.code-workspace` file, `smith.toml`, README, LICENSE, CHANGELOG,
+  `docs`, compose files, the tool configuration of the language (Node: prettier, ESLint and
+  commit-tool files; Go: golangci; Python: ruff and flake8; Rust: rustfmt, clippy, the
+  toolchain pin), and for Node the lockfile (`package-lock.json` is rewritten by `npm install`
+  for the workspace layout). Other documents (`*.md`, `*.rst`, `*.adoc`, `documentation`,
+  `wiki`) go to `doc/`. Everything else moves, including source, tests, configs such as
+  `jest.config.js` and, for Go, `go.mod` and `go.sum` (the module path does not change).
   Lines of `.gitignore` that start with `/` and name a moved entry follow it.
+- For a Node project the move also cuts the files that hold both. The tools in
+  `devDependencies` (typescript, jest, ts-jest, prettier, `@types/*` and the like) move to a
+  root `package.json`, which gets `workspaces`; `dependencies` stay. A development dependency
+  smith does not know as a tool is asked about (workspace, or project; the project is the
+  default and the answer without a terminal), and `--hoist <name>` answers for it. The compiler
+  options every project shares move to a root `tsconfig.base.json`, which the project's
+  `tsconfig.json` extends, keeping `outDir`, `rootDir`, `paths` and `include`. The build is
+  pointed at `dist/<project>`. A legacy `.eslintrc*` is kept as `.pre-smith`, the root gets the
+  shared flat config, and the ESLint packages leave the project because the shared config brings
+  its own. Go, Python and Rust move their manifest whole for now.
 - It refuses, and changes nothing, when the root holds two manifests (a Go module and a
   `package.json`), when the folder already holds files, or when the folder's first part is a
   file or a folder that would move.

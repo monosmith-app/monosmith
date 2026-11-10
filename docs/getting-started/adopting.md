@@ -115,7 +115,18 @@ If the only project of the repository has its `package.json`, `go.mod`, `pyproje
 or `Cargo.toml` at the root, `--init` asks where to move it. It never picks for you.
 Without a terminal it moves nothing unless `--move <folder>` says where (`--move none`
 keeps the project in place). The move is `git mv`; with `--commit` it is a commit of its
-own, before the adoption's. `smith adopt --dry-run` lists the `git mv` commands. The
+own, before the adoption's. `smith adopt --dry-run` lists the `git mv` commands.
+
+The move splits what belongs to the workspace from what belongs to the project
+([ADR 0090](../architecture/decisions/0090-adopt-splits-the-workspace-from-the-project.md)).
+The `.code-workspace` file, README, LICENSE and tool configuration such as `.prettierrc`
+stay at the root, and other documents go to `doc/`. For a Node project, the tools in
+`devDependencies` (typescript, jest, prettier, `@types/*`) move to the root
+`package.json`, the compiler options every project shares move to a root
+`tsconfig.base.json` that the project's `tsconfig.json` extends, and the ESLint packages
+give way to the shared lint config. `dependencies` and `jest.config.js` stay with the
+project. A development dependency smith does not know as a tool is asked about; `--hoist
+<name>` answers for it. Other languages move their manifest whole for now. The
 [manual](../manual/adopt.md#a-project-at-the-repository-root) has the details.
 
 ## 3. Choose how far to go
