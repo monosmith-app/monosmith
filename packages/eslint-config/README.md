@@ -258,11 +258,25 @@ adding `.component.tsx` still wants `.use-case.ts`, and a replacing option
 would mean restating fourteen entries to add one. Only `file-role` takes it;
 the other two rules are about imports, which a file's suffix has no bearing on.
 
+**Groups and nesting.** A folder directly under `src` named in `groups` (default
+`features`, `integrations`, `shared`) is a **group**, not a slice: its children are
+the slices, and it holds no production file except an optional `index` barrel. Unlike
+`roles`, the `groups` option **replaces** the default list, because it names your own
+folders: `verticalSlices: { groups: ['domains'] }` makes `domains` the only group, and
+`features` an ordinary slice. A slice directly under `src` works with no group. A slice
+may hold subfeature folders to any depth: every folder that holds production files is a
+slice, with flat role-suffixed files and its own `index` as the only door. A folder
+that holds only a barrel and child slices is valid. `fixtures` and `testing` folders are
+support, never slices; `testing` is also exempt from the role rule. A file imports its
+own folder's files relatively, a child slice through its barrel (`./child`), and any
+other slice through its barrel (`../other`, `../../features/other`), never into its files
+or into a slice nested in another slice. Static assets (`.svg`, `.css`...) are not checked.
+
 | Rule | Reports |
 |---|---|
-| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.error`, `.config`, `.enum`, `.handler`; the message adds that a front-end file, a `.ts` file under a UI project, also has `.route`, `.component`, `.section`, `.hook`, `.style`, `.content`, `.mock` and `.fixture`, opt-in through the `verticalSlices.roles` option); a file name with a banned word (`util`, `utils`, `helper`, `helpers`, `common`, `shared`, `manager`, `processor`, `data`, `misc`) in any of its parts, tests included, except in a `fixtures` folder; a folder nested inside a subfeature; anything but `index`/`main` at the root of `src` |
-| `vertical-slices/no-deep-import` | A sibling reached past its index (`'../billing/fee.policy'` instead of `'../billing'`, or `'../billing/index.ts'` under `nodenext`), and a subfeature importing its own index |
-| `vertical-slices/no-slice-cycle` | Two subfeatures importing each other — **type-only imports included** |
+| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.error`, `.config`, `.enum`, `.handler`; the message adds that a front-end file, a `.ts` file under a UI project, also has `.route`, `.component`, `.section`, `.hook`, `.style`, `.content`, `.mock` and `.fixture`, opt-in through the `verticalSlices.roles` option); a file name with a banned word (`util`, `utils`, `helper`, `helpers`, `common`, `shared`, `manager`, `processor`, `data`, `misc`) in any of its parts, tests included, except in a `fixtures` or `testing` folder (a `testing` folder is also exempt from the role suffix); a production file other than `index` directly in a group folder; anything but `index`/`main` at the root of `src`. Folders nested inside a slice are slices, not reported |
+| `vertical-slices/no-deep-import` | Another slice reached past its index (`'../billing/fee.policy'` instead of `'../billing'`, or `'../billing/index.ts'` under `nodenext`), a slice nested in another slice (`'./child/grandchild'`, `'../other/child'`), and a slice importing its own index |
+| `vertical-slices/no-slice-cycle` | Two slices importing each other — a node per slice folder at any depth, an edge per import of its barrel, so a parent and its child importing each other count — **type-only imports included** |
 
 The cycle rule covers the gap `import-x/no-cycle` leaves. That rule sees cycles
 between *files*, and a cycle between two folders usually runs through different

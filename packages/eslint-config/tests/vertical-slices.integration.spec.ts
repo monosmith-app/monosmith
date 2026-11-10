@@ -69,6 +69,36 @@ const FIXTURES: Record<string, string> = {
   'packages/app/src/reports/shared-state.store.spec.ts':  'export const sharedState = 1\n',
   'packages/app/src/reports/fixtures/helper.contract.ts': 'export const fixture = 1\n',
   'packages/app/src/stray.ts':                            'export const stray = 1\n',
+  // A folder nested in a slice is a slice of its own now, and `testing` is support.
+  'packages/app/src/reports/testing/quote-data.ts':       'export const quote = 1\n',
+  'packages/app/src/reports/testing/camelCase.ts':        'export const camel = 1\n',
+  // GROUPS: `features` and `integrations` hold slices, nested to any depth.
+  'packages/app/src/features/index.ts':                   "export { run } from './work-items'\nexport { ledger } from './ledger'\n",
+  'packages/app/src/features/stray.use-case.ts':          'export const stray = 1\n',
+  'packages/app/src/features/work-items/index.ts':        "export { clean } from './application/cleaner'\nexport { prune } from './cleaner'\n",
+  'packages/app/src/features/work-items/run.use-case.ts':
+    "import { clean } from './application/cleaner'\n\nexport function run (): number {\n  return clean()\n}\n",
+  'packages/app/src/features/work-items/reach.use-case.ts':
+    "import { clean } from './application/cleaner/cleaner.use-case'\n\nexport function reach (): number {\n  return clean()\n}\n",
+  'packages/app/src/features/work-items/cleaner/index.ts': "export { prune } from './cleaner.use-case'\n",
+  'packages/app/src/features/work-items/cleaner/cleaner.use-case.ts':
+    "import { pull } from '../../../integrations/git'\n\nexport function prune (): number {\n  return pull()\n}\n",
+  'packages/app/src/features/work-items/application/cleaner/index.ts': "export { clean } from './cleaner.use-case'\n",
+  'packages/app/src/features/work-items/application/cleaner/cleaner.use-case.ts':
+    "import { prune } from '../../cleaner'\nimport { pull } from '../../../../integrations/git'\n\nexport function clean (): number {\n  return prune() + pull()\n}\n",
+  'packages/app/src/features/work-items/application/cleaner/deep.use-case.ts':
+    "import { push } from '../../../../integrations/git/git.client'\n\nexport function deep (): number {\n  return push()\n}\n",
+  'packages/app/src/features/work-items/application/cleaner/nested.use-case.ts':
+    "import { prune } from '../../../work-items/cleaner/cleaner.use-case'\n\nexport function nested (): number {\n  return prune()\n}\n",
+  'packages/app/src/integrations/git/index.ts':      "export { pull } from './git.client'\n",
+  'packages/app/src/integrations/git/git.client.ts': 'export const pull = (): number => 1\nexport const push = (): number => 2\n',
+  // A parent and its child importing each other.
+  'packages/app/src/features/ledger/index.ts':       "export { ledger } from './ledger.policy'\n",
+  'packages/app/src/features/ledger/ledger.policy.ts':
+    "import { entry } from './entries'\n\nexport function ledger (): number {\n  return entry()\n}\n",
+  'packages/app/src/features/ledger/entries/index.ts': "export { entry } from './entry.policy'\n",
+  'packages/app/src/features/ledger/entries/entry.policy.ts':
+    "import type { ledger } from '..'\n\nexport type Ledger = typeof ledger\nexport function entry (): number {\n  return 1\n}\n",
   // Tests name the file they test, and are exempt from the role and cycle rules.
   'packages/app/src/arithmetic/add.algorithm.spec.ts':
     "import { add } from './add.algorithm'\n\ndescribe('add', () => {\n  it('adds', () => {\n    expect(add(1, 2)).toBe(3)\n  })\n})\n",
@@ -249,14 +279,91 @@ describe('monosmith({ verticalSlices })', () => {
 
   it('reports a file without its role, or not in kebab-case, nested, or at the root of src', () => {
     expect(slicesFor('packages/app/src/reports/reportHelper.ts')).toEqual(['vertical-slices/file-role', 'vertical-slices/file-role'])
-    expect(slicesFor('packages/app/src/reports/deeper/inner.use-case.ts')).toEqual(['vertical-slices/file-role'])
+    // A folder inside a slice used to be reported as "nesting"; it is a slice of its own now.
+    expect(slicesFor('packages/app/src/reports/deeper/inner.use-case.ts')).toEqual([])
     expect(slicesFor('packages/app/src/stray.ts')).toEqual(['vertical-slices/file-role'])
     expect(slicesFor('packages/app/src/content.config.ts')).toEqual([])
+  })
+
+  it('accepts a group with a feature and an integration, nested to any depth, and a group barrel', () => {
+    for (const file of [
+      'features/index.ts',
+      'features/work-items/index.ts',
+      'features/work-items/run.use-case.ts',
+      'features/work-items/cleaner/cleaner.use-case.ts',
+      'features/work-items/application/cleaner/index.ts',
+      'features/work-items/application/cleaner/cleaner.use-case.ts',
+      'integrations/git/index.ts',
+      'integrations/git/git.client.ts',
+    ]) expect(slicesFor(`packages/app/src/${file}`)).toEqual([])
+  })
+
+  it('reports a production file directly in a group folder', () => {
+    expect(slicesFor('packages/app/src/features/stray.use-case.ts')).toEqual(['vertical-slices/file-role'])
+  })
+
+  it('reports a deep import into a nested slice, a child slice file and a grandchild slice', () => {
+    expect(slicesFor('packages/app/src/features/work-items/application/cleaner/deep.use-case.ts')).toEqual(['vertical-slices/no-deep-import'])
+    expect(slicesFor('packages/app/src/features/work-items/reach.use-case.ts')).toEqual(['vertical-slices/no-deep-import'])
+    expect(slicesFor('packages/app/src/features/work-items/application/cleaner/nested.use-case.ts')).toEqual(['vertical-slices/no-deep-import'])
+  })
+
+  it('reports a parent and a child slice importing each other', () => {
+    expect(slicesFor('packages/app/src/features/ledger/ledger.policy.ts')).toEqual(['vertical-slices/no-slice-cycle'])
+    expect(slicesFor('packages/app/src/features/ledger/entries/entry.policy.ts')).toEqual(['vertical-slices/no-slice-cycle'])
+    expect(texts['packages/app/src/features/ledger/ledger.policy.ts']?.[0]).toContain('features/ledger -> features/ledger/entries -> features/ledger')
+  })
+
+  it('exempts a testing folder from the role rule but not from kebab-case', () => {
+    expect(slicesFor('packages/app/src/reports/testing/quote-data.ts')).toEqual([])
+    expect(slicesFor('packages/app/src/reports/testing/camelCase.ts')).toEqual(['vertical-slices/file-role'])
   })
 
   it('reports a banned word in a file name, in production files and tests, but not in a fixtures folder', () => {
     expect(slicesFor('packages/app/src/reports/date-utils.algorithm.ts')).toEqual(['vertical-slices/file-role'])
     expect(slicesFor('packages/app/src/reports/shared-state.store.spec.ts')).toEqual(['vertical-slices/file-role'])
     expect(slicesFor('packages/app/src/reports/fixtures/helper.contract.ts')).toEqual([])
+  })
+})
+
+describe('monosmith({ verticalSlices: { groups } })', () => {
+  // The option REPLACES the default list: `features` is an ordinary slice here, `domains` is the group.
+  let custom: Record<string, string[]>
+  let directory: string
+
+  beforeAll(() => {
+    directory = mkdtempSync(join(tmpdir(), 'monosmith-eslint-slices-groups-'))
+    const entry = pathToFileURL(join(packageRoot, 'index.js')).href
+    writeFileSync(
+      join(directory, 'eslint.config.mjs'),
+      `import monosmith from ${JSON.stringify(entry)}\nexport default monosmith({ verticalSlices: { groups: ['domains'] } })\n`,
+    )
+    const files: Record<string, string> = {
+      'tsconfig.json':                                  FIXTURES['tsconfig.json'],
+      'packages/app/tsconfig.json':                     FIXTURES['packages/app/tsconfig.json'],
+      'packages/app/src/domains/stray.use-case.ts':     'export const stray = 1\n',
+      'packages/app/src/domains/billing/index.ts':      "export { fee } from './fee.policy'\n",
+      'packages/app/src/domains/billing/fee.policy.ts': 'export const fee = 1\n',
+      'packages/app/src/features/stray.use-case.ts':    'export const stray = 1\n',
+    }
+    for (const [filename, contents] of Object.entries(files)) {
+      const target = join(directory, filename)
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, contents)
+    }
+    custom = lintAll(directory)
+  })
+
+  afterAll(() => {
+    rmSync(directory, { recursive: true, force: true })
+  })
+
+  const slicesIn = (filename: string): string[] =>
+    (custom[filename] ?? []).filter(rule => rule.startsWith('vertical-slices/') || rule === 'FATAL')
+
+  it('treats the named folder as a group and the default names as plain slices', () => {
+    expect(slicesIn('packages/app/src/domains/billing/fee.policy.ts')).toEqual([])
+    expect(slicesIn('packages/app/src/domains/stray.use-case.ts')).toEqual(['vertical-slices/file-role'])
+    expect(slicesIn('packages/app/src/features/stray.use-case.ts')).toEqual([])
   })
 })
