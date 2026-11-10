@@ -655,7 +655,7 @@ No flags.
 [Manual page](../manual/ci.md)
 
 <!-- smith:begin ci -->
-Run a CI phase, or regenerate the pipelines
+Install what a clean checkout needs, run a CI phase, or regenerate the pipelines
 
 Usage: `smith ci <command>`
 
@@ -920,6 +920,7 @@ Usage: `smith doctor [flags]`
 | `--fix` | show the fixes doctor can make as diffs, and apply the safe ones | off |
 | `--json` | print the report as JSON | off |
 | `--only <only>` | with --fix, fix only the named check, as doctor prints it (repeatable) (repeatable) |  |
+| `--strict` | exit non-zero on a warning too, for a pipeline that allows none | off |
 | `--verbose` | list every passed check, not one line for each check that repeats per project | off |
 | `-y, --yes` | with --fix, apply without asking | off |
 
@@ -1076,7 +1077,7 @@ Usage: `smith slices <command>`
 
 | Subcommand | Meaning |
 |---|---|
-| `smith slices check` | Check that files are role-named and no folder is a junk drawer |
+| `smith slices check` | Check that files are role-named and no folder or file name is a junk drawer |
 
 No flags.
 

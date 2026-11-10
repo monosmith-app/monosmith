@@ -26,7 +26,7 @@ var ErrUnhealthy = errors.New("the workspace has problems")
 
 // Command is `smith doctor`.
 func Command(version string) *cobra.Command {
-	var asJSON, fix, yes, verbose bool
+	var asJSON, fix, yes, verbose, strict bool
 	var only []string
 	var choose []int
 	cmd := &cobra.Command{
@@ -127,7 +127,7 @@ option number. Steps run in the workspace root and stop at the first that fails.
 					return err
 				}
 			}
-			if report.Failed > 0 {
+			if report.Failed > 0 || (strict && report.Warnings > 0) {
 				return ErrUnhealthy
 			}
 			return nil
@@ -136,6 +136,7 @@ option number. Steps run in the workspace root and stop at the first that fails.
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&fix, "fix", false, "show the fixes doctor can make as diffs, and apply the safe ones")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "list every passed check, not one line for each check that repeats per project")
+	cmd.Flags().BoolVar(&strict, "strict", false, "exit non-zero on a warning too, for a pipeline that allows none")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "with --fix, apply without asking")
 	cmd.Flags().IntSliceVar(&choose, "choose", nil, "with --fix and --only, answer the fix's questions by option number, in order (1,2)")
 	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")

@@ -104,6 +104,10 @@ jobs:
       # smith:slot after-verify
       - name: VS Code extension integration tests
         run: xvfb-run -a npm run test:integration -w monosmith-vscode
+      - name: Smith checks its own repository
+        run: |
+          smith doctor --strict
+          smith ci generate --check
       # smith:slot-end after-verify
       - name: Release preview
         if: github.event_name == 'pull_request'
