@@ -302,6 +302,11 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 	n := len(w.question.Options)
 	switch commands.Nav(name) {
 	case commands.NavCancel:
+		if name == "esc" {
+			if b, out, ok := w.goBack(); ok {
+				return b, out
+			}
+		}
 		return w, Outcome{Done: true}
 	case commands.NavUp:
 		w.cursor = (w.cursor - 1 + n) % n
@@ -321,11 +326,8 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 		case "ctrl+u", "ctrl+d":
 			return w.scrollKey(name), Outcome{}
 		case "left", "b", "backspace":
-			if w.canGoBack() {
-				return w.back(), Outcome{}
-			}
-			if w.style.Back {
-				return w, Outcome{Back: true}
+			if b, out, ok := w.goBack(); ok {
+				return b, out
 			}
 		default:
 			if i, err := strconv.Atoi(name); err == nil && i >= 1 && i <= n {
@@ -334,6 +336,18 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 		}
 	}
 	return w.follow(), Outcome{}
+}
+
+// goBack returns to the screen before: the earlier question, or the stage
+// before the dialog (Style.Back). ok is false when no screen before exists.
+func (w Wizard) goBack() (Wizard, Outcome, bool) {
+	switch {
+	case w.canGoBack():
+		return w.back(), Outcome{}, true
+	case w.style.Back:
+		return w, Outcome{Back: true}, true
+	}
+	return w, Outcome{}, false
 }
 
 // choose answers the question with option i.
@@ -364,15 +378,15 @@ func (w Wizard) reviewKey(name string) (Wizard, Outcome) {
 		if w.style.Skip != "" {
 			return w, Outcome{Skip: true}
 		}
-	case "esc", "ctrl+c", "q":
+	case "esc", "left", "b", "backspace":
+		if b, out, ok := w.goBack(); ok {
+			return b, out
+		}
+		if name == "esc" {
+			return w, Outcome{Done: true}
+		}
+	case "ctrl+c", "q":
 		return w, Outcome{Done: true}
-	case "left", "b", "backspace":
-		if w.canGoBack() {
-			return w.back(), Outcome{}
-		}
-		if w.style.Back {
-			return w, Outcome{Back: true}
-		}
 	default:
 		w = w.scrollKey(name)
 	}

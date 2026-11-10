@@ -17,9 +17,10 @@ again. In a list, `b` goes back only when no entry starts with `b`; Left and the
 do. On the first question Esc closes the setup and nothing more is changed. Ctrl+C or the
 **Cancel** button closes it from any screen. In a terminal, type `b` at a choice.
 
-A step that ran something is a point of no return: a listing with `az` or `aws`, a sign-in, the
-write to `smith.toml`, the key or token screen, and the pipeline variables. smith does not go
-back over such a step and does not run it again. It says "That step already ran; nothing was
+A listing with `az`, `aws` or `git` only reads, so smith goes back over it and runs it again
+when you reach it again, and the list is current. A step that changed something is a point of no
+return: a sign-in, the write to `smith.toml`, the key or token screen, and the pipeline
+variables. smith does not go back over such a step and does not run it again. It says "That step already ran; nothing was
 undone." and asks the same question again. A key or token is never shown again after you leave its
 screen.
 
@@ -115,7 +116,7 @@ commands and the order are the ones above, because both read the same engine:
   clipboard is cleared if it still holds the key. A command that sends the key shows the command
   first and runs only after `y`, with the key on standard input.
 - The steps of each provider in `[ci] providers` are one page each: Enter goes on.
-- Esc closes the setup. Nothing is written before the "Write it?" answer, so closing before it
+- Esc goes back to the question before, and closes the setup on the first question. Nothing is written before the "Write it?" answer, so closing before it
   changes nothing.
 
 The "Write it?" screen has the unticked box "Commit this change so it can be undone" (`c` ticks

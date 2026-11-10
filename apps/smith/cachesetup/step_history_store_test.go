@@ -90,7 +90,7 @@ func walk(facts Facts, d *scripted, az *fakeAz, written *[]string) (remote strin
 func TestTheStepsAreListedAsQuestionsOrActions(t *testing.T) {
 	want := map[string]bool{
 		StepChoose: true, StepText: true, StepConfirm: true, StepShow: true,
-		StepRun: false, StepWrite: false, StepSecret: false,
+		StepRun: false, StepWrite: false, StepSecret: false, StepList: false,
 	}
 	if got := Steps(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("steps %v, want %v", got, want)
@@ -173,19 +173,20 @@ func TestBackOnAConfirmationMarksTheEarlierAnswer(t *testing.T) {
 	}
 }
 
-func TestBackOverAProgramThatRanIsRefusedAndNothingRunsTwice(t *testing.T) {
+func TestBackOverAListingReturnsToItsQuestionAndRunsItAgain(t *testing.T) {
 	az := &fakeAz{}
 	d := &scripted{script: []any{
 		KindAzure,
-		true, "sub-1", // list subscriptions (ran), pick one
-		true,     // run the account list (ran)
-		goBack{}, // at the account choice: the listing already ran
+		true, "sub-1", // list subscriptions, pick one
+		true,     // run the account list
+		goBack{}, // at the account choice: a listing changes nothing, so back passes over it
+		true,     // run the account list again
 		// the account choice comes again; the script then ends
 	}}
 	var written []string
 	_, _ = walk(Facts{WorkspaceName: "shop"}, d, az, &written)
-	if !strings.Contains(strings.Join(d.said, "\n"), "That step already ran; nothing was undone.") {
-		t.Fatalf("the refusal was not said: %v", d.said)
+	if strings.Contains(strings.Join(d.said, "\n"), "That step already ran") {
+		t.Fatalf("back over a listing was refused: %v", d.said)
 	}
 	accounts := 0
 	for _, a := range d.asked {
@@ -194,10 +195,11 @@ func TestBackOverAProgramThatRanIsRefusedAndNothingRunsTwice(t *testing.T) {
 		}
 	}
 	if accounts != 2 {
-		t.Fatalf("the screen after the step must come again, asked %d times: %+v", accounts, d.asked)
+		t.Fatalf("the account choice must come again, asked %d times: %+v", accounts, d.asked)
 	}
-	if !reflect.DeepEqual(az.ran, []string{CommandLine(AzureSubscriptions().Argv), CommandLine(AzureAccounts("sub-1").Argv)}) {
-		t.Fatalf("a listing ran twice or not at all: %v", az.ran)
+	subs, accts := CommandLine(AzureSubscriptions().Argv), CommandLine(AzureAccounts("sub-1").Argv)
+	if !reflect.DeepEqual(az.ran, []string{subs, accts, accts}) {
+		t.Fatalf("the account listing must run again and nothing else: %v", az.ran)
 	}
 }
 

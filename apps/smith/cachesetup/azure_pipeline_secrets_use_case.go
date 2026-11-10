@@ -109,7 +109,7 @@ func (f flow) findPipeline() {
 		f.Say(words.Say("cachepipeline.az.missing"))
 		return
 	}
-	remote, _, err := f.run(words.Say("cachepipeline.git.working"), "", "git", "remote", "get-url", "origin")
+	remote, _, err := f.read(words.Say("cachepipeline.git.working"), "", "git", "remote", "get-url", "origin")
 	if err != nil || strings.TrimSpace(remote) == "" {
 		f.Say(words.Say("cachepipeline.git.none"))
 		return
@@ -165,7 +165,7 @@ func (f flow) findPipeline() {
 // and returns false for a missing extension or any other failure.
 func (f flow) azRead(argv []string) (string, bool) {
 	for attempt := 0; ; attempt++ {
-		stdout, stderr, err := f.run(words.Say("cachepipeline.list.working", "command", CommandLine(argv)), "", argv...)
+		stdout, stderr, err := f.read(words.Say("cachepipeline.list.working", "command", CommandLine(argv)), "", argv...)
 		if err == nil {
 			return stdout, true
 		}

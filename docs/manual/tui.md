@@ -624,12 +624,14 @@ Opened by `f` or `F` in Doctor, or by **Fix smith.toml** on the Start menu when 
 
 1. **Questions.** A fix may ask something (install the missing tool, or remove the script?).
    `Up` `Down` (or `j` `k`, `Tab`) move, a digit picks that option, `Enter` or `Space`
-   chooses, `b`, `Left` or `Backspace` goes back one question, `Esc`, `q` or `Ctrl+C` leaves.
+   chooses, `Esc`, `b`, `Left` or `Backspace` goes back one question, `q` or `Ctrl+C` leaves.
+   On the first question, with no screen before it, `Esc` leaves.
    An option the plugin cannot offer is greyed, with `Disabled: <reason>` under it; a digit or `Enter` on it
    moves the cursor there and picks nothing.
 2. **Review.** What will change: one line for each file (what happens and how many lines), the
    commands it will run, the projects it covers. `d` shows the diffs and hides them again.
-   `Enter` or `y` applies; `n`, `Esc` or `q` leaves; `Up` `Down` `PgUp` `PgDn` `Home` `End`
+   `Enter` or `y` applies; `Esc` or `b` goes back to the last question (or leaves when there is
+   none); `n`, `q` or `Ctrl+C` leaves; `Up` `Down` `PgUp` `PgDn` `Home` `End`
    scroll. In the adopt wizard the review of a conversion has the same unticked box, "Commit this
    change so it can be undone": `c` or a click ticks it.
 3. **Progress.** A spinner and the fix title, then "step n of m" with the step's name (for
