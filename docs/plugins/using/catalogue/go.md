@@ -305,6 +305,7 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 | `go.work entry <dir> exists` | a `use` entry has no `go.mod` | `go work edit -dropuse=./<dir>`; `smith doctor --fix` rewrites `go.work` |
 | `go.work lists <dir>` | a Go project is not in `go.work` | `go work use ./<dir>`; `--fix` rewrites `go.work` |
 | `<dir> requires the modules it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix, `go mod tidy` in the module | `go mod tidy` |
+| `<dir> go.mod and go.sum are tidy` | `go mod tidy -diff` (Go 1.23+, run with `GOPROXY=off`, 60 s limit) prints a diff, for example a direct import marked `// indirect`; a warning that shows the first 25 lines. When it cannot run (older Go, modules not in the cache, timeout) the check passes and its detail says it could not check | `go mod tidy` in the module; `--fix` offers it |
 | `Go is at least <v> (go.work)` | the installed Go is older than the `go.work` version (`go env GOVERSION`); also fails when `go` is not on PATH | install that Go |
 | `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.15.0) | `go install ...@v2.15.0` |
 

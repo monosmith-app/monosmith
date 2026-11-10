@@ -19,7 +19,7 @@ func TestDoctorFindsStaleAndMissingEntries(t *testing.T) {
 	for _, f := range res.Findings {
 		got[f.Check] = f.OK
 	}
-	want := map[string]bool{"go.work entry apps/api exists": true, "go.work entry libs/gone exists": false, "go.work lists apps/api": true, "go.work lists libs/new": false, "Go is at least 1.24 (go.work)": true}
+	want := map[string]bool{"go.work entry apps/api exists": true, "go.work entry libs/gone exists": false, "go.work lists apps/api": true, "go.work lists libs/new": false, "Go is at least 1.24 (go.work)": true, "apps/api go.mod and go.sum are tidy": true}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v", got)
 	}
