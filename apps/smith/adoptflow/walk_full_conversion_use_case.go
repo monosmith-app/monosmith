@@ -178,12 +178,13 @@ func (s *Session) InitPlan(c adoptdecision.Choices) string {
 }
 
 // AdoptFixChosen is AdoptFix with the choices of the person: the step carries
-// each as a flag, so --yes takes these and no default of its own.
-func (s *Session) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned {
+// each as a flag, so --yes takes these and no default of its own. split adds
+// the answers about the development dependencies and the ESLint setup.
+func (s *Session) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices, split Split) doctorfix.Planned {
 	fix := s.AdoptFix(commit, move)
 	step := &fix.Steps[0]
 	at := slices.Index(step.Argv, "--yes") + 1
-	step.Argv = slices.Insert(step.Argv, at, c.Argv()...)
+	step.Argv = slices.Insert(step.Argv, at, append(c.Argv(), split.Argv()...)...)
 	return fix
 }
 

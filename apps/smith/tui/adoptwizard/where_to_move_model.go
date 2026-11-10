@@ -3,6 +3,7 @@ package adoptwizard
 import (
 	"errors"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
@@ -69,6 +70,8 @@ func (m Model) askMove() Model {
 		text = c.Name
 	}
 	m.moveTo = ""
+	// A new answer to where it goes asks the split again.
+	m.splitAsked, m.splitQuestions, m.split = false, nil, adoptflow.Split{}
 	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).WithText(text).Place(m.sw, m.sh)
 	return m
 }

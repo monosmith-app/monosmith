@@ -12,6 +12,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -133,7 +134,9 @@ func (f *adoptFake) Report() (string, error) { return "The report", nil }
 
 func (f *adoptFake) Install(context.Context, io.Writer) error { return nil }
 
-func (f *adoptFake) AdoptFixChosen(bool, string, adoptdecision.Choices) doctorfix.Planned {
+func (f *adoptFake) MovePlan(string) (adoptmove.Plan, error) { return adoptmove.Plan{}, nil }
+
+func (f *adoptFake) AdoptFixChosen(bool, string, adoptdecision.Choices, adoptflow.Split) doctorfix.Planned {
 	return doctorfix.Planned{}
 }
 

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -38,6 +39,8 @@ type fakeFlow struct {
 	agent bool
 	// facts are what the repository holds, for the decisions of adopt --init.
 	facts adoptdecision.Facts
+	// plan is the move the wizard shows questions of.
+	plan adoptmove.Plan
 }
 
 func (f *fakeFlow) note(s string) { f.calls = append(f.calls, s) }
@@ -139,7 +142,9 @@ func (f *fakeFlow) InitPlan(c adoptdecision.Choices) string {
 	return "Plan: adopt smith\n  create smith.toml\n"
 }
 
-func (f *fakeFlow) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned {
+func (f *fakeFlow) MovePlan(string) (adoptmove.Plan, error) { return f.plan, nil }
+
+func (f *fakeFlow) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices, split adoptflow.Split) doctorfix.Planned {
 	f.note("adopt " + strings.Join(c.Argv(), " "))
 	argv := []string{"smith", "adopt", "--init"}
 	if move != "" {
@@ -149,6 +154,7 @@ func (f *fakeFlow) AdoptFixChosen(commit bool, move string, c adoptdecision.Choi
 		argv = append(argv, "--commit")
 	}
 	argv = append(argv, c.Argv()...)
+	argv = append(argv, split.Argv()...)
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Make this repository a smith workspace", Steps: []protocol.FixStep{{Description: "adopt", Argv: argv}}}}
 }
 

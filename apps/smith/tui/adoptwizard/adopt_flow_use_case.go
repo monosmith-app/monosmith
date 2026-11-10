@@ -111,7 +111,7 @@ func (m Model) install() (Model, Outcome) {
 func (m Model) startConversion() (Model, Outcome) {
 	flow, c := m.flow, m.choices
 	if !m.found.Kind.Convertible() {
-		fix := flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices)
+		fix := flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices, m.split)
 		job := Job{Name: words.Say("adopt.job.adopt"), Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 			return "", flow.ApplyFix(ctx, fix.Fix, out)
 		}}
