@@ -20,12 +20,8 @@ const slicesCheck = "slices check" // words:literal
 // says so when the workspace has no such form.
 func (s *Shell) openFormFor(id string, answers map[string][]string) tea.Cmd {
 	a, ok := s.guide.ActionPresenting(id)
-	if !ok {
-		s.say(words.Say("tui.keys.no_form_for", "action", id))
-		return nil
-	}
-	if len(answers) == 0 {
-		return s.perform(commands.Command{Kind: commands.Guided, Guide: a.Title})
+	if !ok || len(answers) == 0 {
+		return s.openFormPresenting(id)
 	}
 	if g, ok := s.guide.Resume(a.Title, answers, ""); ok {
 		s.guide = g

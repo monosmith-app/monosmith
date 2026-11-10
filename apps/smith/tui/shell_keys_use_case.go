@@ -311,6 +311,12 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		}
 		s.runSel = s.firstFailed()
 		return s.revealRun()
+	case "kind":
+		return s.openPresentedForm(formKind, s.projectNames())
+	case "eject":
+		return s.openPresentedForm(formEject, nil)
+	case "tauri-add":
+		return s.openPresentedForm(formTauriAdd, s.projectsWhere(canAddTauri))
 	case "graph":
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)
@@ -353,6 +359,10 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute(argv, false)
 		}
 		s.say(words.Say("tui.keys.the_one_version_policy_found_nothing"))
+	case "deps-up-all":
+		return s.openFormPresenting("deps up")
+	case "deps-sync":
+		return s.openFormPresenting("sync")
 	case "reload":
 		return s.reload()
 	case "detail-zoom":
@@ -380,6 +390,17 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 	return nil
 }
 
+// openFormPresenting opens the guided form of an action of the catalogue
+// ("deps up"), the same one the Start tab lists, or says there is none.
+func (s *Shell) openFormPresenting(id string) tea.Cmd {
+	a, ok := s.guide.ActionPresenting(id)
+	if !ok {
+		s.say(words.Say("tui.keys.no_form_for", "action", id))
+		return nil
+	}
+	return s.perform(commands.Command{Kind: commands.Guided, Guide: a.Title})
+}
+
 // perform carries out a command.
 func (s *Shell) perform(c commands.Command) tea.Cmd {
 	switch c.Kind {
@@ -405,6 +426,10 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		}
 		if c.Guide == guide.EnvironmentsAddTitle || c.Guide == guide.EnvironmentsRemoveTitle {
 			return s.openEnvironments(c.Guide)
+		}
+		if c.ID == "ws.tauri-icon" {
+			// The app is a pick list of the Tauri apps, on the selected one.
+			return s.openProjectForm(c.Guide, "project", s.projectsWhere(isTauriApp))
 		}
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()
