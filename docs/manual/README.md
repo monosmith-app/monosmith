@@ -107,6 +107,7 @@ Python package). Paths in output are shortened.
 | [`smith graph`](graph.md) | Show how projects depend on each other. |
 | [`smith affected`](affected.md) | List the projects affected by changes since a base branch. |
 | [`smith explain`](explain.md) | Show how a project's tasks resolved, and where each setting came from. |
+| [`smith prompt`](prompt.md) | Print a one-line status for a shell prompt, from the last doctor run. |
 | [`smith why`](why.md) | Say who owns a file, what produced it and how to change it. |
 | [`smith report`](report.md) | Write one HTML page: the workspace map, health, derived-file drift, choices and release plan. |
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
