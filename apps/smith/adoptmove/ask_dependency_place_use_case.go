@@ -38,3 +38,33 @@ func AskWorkspace(name string, in io.Reader, out io.Writer) (bool, error) {
 	}
 	return false, problem.New("no valid answer after three tries; nothing was changed", "--hoist "+name+" sends it to the workspace without a question")
 }
+
+// AskLint asks what happens to the project's own ESLint setup and reads the
+// answer from in: 1 uses the shared config (the old file is kept as
+// .pre-smith and the ESLint packages leave the project), 2 keeps the setup in
+// the project (an empty line takes this: it changes the least). It gives up
+// after three bad answers. Nothing is changed.
+//
+// Returns: true when the person keeps their own setup.
+func AskLint(in io.Reader, out io.Writer) (bool, error) {
+	r := bufio.NewReader(in)
+	fmt.Fprint(out, "\nThe project has its own ESLint setup. What should happen to it?\n"+
+		"  1) use the shared config: the old file is kept as .pre-smith, and the ESLint packages leave the project\n"+
+		"  2) keep my own ESLint setup in the project (default)\n")
+	for try := 0; try < maxTries; try++ {
+		fmt.Fprint(out, "Choose 1-2 [2]: ")
+		line, err := r.ReadString('\n')
+		answer := strings.TrimSpace(strings.TrimPrefix(line, string(rune(0xFEFF))))
+		if err != nil && answer == "" {
+			return false, problem.New("no answer was given", "--eslint-setup shared|keep says it without a question")
+		}
+		switch answer {
+		case "1":
+			return false, nil
+		case "", "2":
+			return true, nil
+		}
+		fmt.Fprintf(out, "  %q is not a choice; type 1 or 2.\n", answer)
+	}
+	return false, problem.New("no valid answer after three tries; nothing was changed", "--eslint-setup shared|keep says it without a question")
+}

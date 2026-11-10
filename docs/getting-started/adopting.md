@@ -123,8 +123,8 @@ The `.code-workspace` file, README, LICENSE and tool configuration such as `.pre
 stay at the root, and other documents go to `doc/`. For a Node project, the tools in
 `devDependencies` (typescript, jest, prettier, `@types/*`) move to the root
 `package.json`, the compiler options every project shares move to a root
-`tsconfig.base.json` that the project's `tsconfig.json` extends, and the ESLint packages
-give way to the shared lint config. `dependencies` and `jest.config.js` stay with the
+`tsconfig.base.json` that the project's `tsconfig.json` extends. A project's own ESLint setup is a question: use the shared lint
+config (`--eslint-setup shared`) or keep your own in the project (`--eslint-setup keep`). `dependencies` and `jest.config.js` stay with the
 project. A development dependency smith does not know as a tool is asked about; `--hoist
 <name>` answers for it. Other languages move their manifest whole for now. The
 [manual](../manual/adopt.md#a-project-at-the-repository-root) has the details.

@@ -115,3 +115,28 @@ func TestAskWorkspace(t *testing.T) {
 		}
 	}
 }
+
+func TestSettleLintAndAskLint(t *testing.T) {
+	p := Plan{Lint: true, Replaced: []string{"eslint"}}
+	p.SettleLint(true)
+	if p.Lint || !p.KeepLint || p.Replaced != nil {
+		t.Errorf("keep: %+v", p)
+	}
+	q := Plan{Lint: true, Replaced: []string{"eslint"}}
+	q.SettleLint(false)
+	if q.Lint || q.KeepLint || len(q.Replaced) != 1 {
+		t.Errorf("shared: %+v", q)
+	}
+	cases := []struct {
+		input   string
+		keep    bool
+		wantErr bool
+	}{{"1\n", false, false}, {"2\n", true, false}, {"\n", true, false}, {"x\n1\n", false, false}, {"x\nx\nx\n", false, true}, {"", false, true}}
+	for _, tc := range cases {
+		var out bytes.Buffer
+		got, err := AskLint(strings.NewReader(tc.input), &out)
+		if got != tc.keep || (err != nil) != tc.wantErr {
+			t.Errorf("input %q: got %v, %v", tc.input, got, err)
+		}
+	}
+}

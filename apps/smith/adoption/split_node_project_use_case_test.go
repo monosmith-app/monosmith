@@ -85,7 +85,7 @@ func TestAdoptSplitsTheWorkspaceFromASingleNodeApp(t *testing.T) {
 	runIn(t, repo, env, "git", "add", "-A")
 	runIn(t, repo, env, "git", "commit", "-q", "-m", "init")
 
-	out := runIn(t, repo, env, bin, "adopt", "--init", "--move", "apps/orders-api", "--yes", "--install", "--agent", "add", "--commit")
+	out := runIn(t, repo, env, bin, "adopt", "--init", "--move", "apps/orders-api", "--yes", "--install", "--agent", "add", "--eslint-setup", "shared", "--commit")
 	for _, want := range []string{"moved 6 entries into apps/orders-api", "moved 1 document(s) into doc", "moved 6 devDependencies"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("adopt output lacks %q:\n%s", want, out)

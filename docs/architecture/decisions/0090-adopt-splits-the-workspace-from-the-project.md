@@ -48,8 +48,11 @@ no ESLint config, and `smith doctor` failed on the result. The person had to rep
 
 - A Node project at the root is adopted in one run, `smith doctor` finds no failure or warning
   (with `--install` and the agent files), and the project builds and tests as before.
-- Replacing the person's ESLint config is a decision made for them (kept as `.pre-smith`, listed in
-  the output). A question with two answers (keep mine, use the shared one) is the next step.
+- The project's own ESLint setup is a question, never a silent replacement: use the shared config
+  (old file kept as `.pre-smith`, ESLint packages removed from the project) or keep their own
+  (moved into the project). `--eslint-setup shared|keep` answers; without a terminal or with
+  `--yes` their own is kept and the output says so.
 - The adopt wizard and the VS Code extension do not ask about unknown development dependencies
-  yet: they pass `--move` and the dependencies stay in the project.
+  or ESLint yet: they pass `--move`, the dependencies stay in the project and their ESLint stays.
+  The plan JSON (`--dry-run --json`) lists `unsure` and `lint` for a client that wants to ask.
 - Every other language still needs its `Sort` and `Split`; the contract is in `adoptsplit`.
