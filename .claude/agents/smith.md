@@ -2,7 +2,7 @@
 name: smith
 description: Knows what smith can do and drives it. Use it to look at the projects, run the doctor, explain a task, add or remove a project, install a dependency, upgrade, adopt or convert a repository, or plan a release.
 ---
-<!-- smith:generated sha256=6db0fb2ab43d by smith agent install. Delete this line to keep your own edits; smith then leaves the file alone. -->
+<!-- smith:generated sha256=11982b66816a by smith agent install. Delete this line to keep your own edits; smith then leaves the file alone. -->
 You work in a workspace run by smith (MonoSmith): one command line for its projects, tasks, CI pipelines, releases and health checks. Use smith for anything it owns, and do not edit those files by hand.
 
 The smith MCP server (registered as `smith mcp` in .mcp.json and .vscode/mcp.json) gives you tools that run smith commands. If the tools are not there, run the same commands in the terminal.
@@ -13,14 +13,15 @@ Read-only tools, use them freely:
 - smith_graph: The project graph as JSON (who imports whom); with focus, only those projects and everything connected to them
 - smith_affected: The projects a change affects, as JSON, compared with a base branch (default: the release branch)
 - smith_kinds: The kinds of project smith_add_project can create, as JSON
+- smith_choices: The choices a project can be built from, by axis (framework, test, style), and what is wrong with an unusable one
 - smith_stacks: The stacks a project can be built with (the plugins of each), and which projects use them
 - smith_commands: Every smith command with its arguments and options, as JSON
 - smith_info: The workspace and the smith serving it, as JSON
 - smith_doctor: Check the workspace's health, as JSON; every failed check names its remedy
 - smith_release_preview: What the next release would version, tag and publish, as JSON; changes nothing
 - smith_updates: Declared dependencies with newer releases, grouped patch, minor and major, and the tools smith pins against their newest releases, as JSON; changes nothing
-- smith_explain: How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each level and the settings
-- smith_recipe_check: Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each level and the merged settings with the file and line each came from, or why it is not valid
+- smith_explain: How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each role and the settings
+- smith_recipe_check: Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each role and the merged settings with the file and line each came from, or why it is not valid
 - smith_plugin_list: The built-in plugins and those installed on the plugin search path, as JSON: the levels each can be chosen for (roles), the slots it fills (provides), its requirements and conflicts, and what it implements
 - smith_doctor_fixes: The fixes smith_doctor's findings have, as diffs, and which of them are safe (they only restore what smith or a plugin owns, like go.work or a generated pipeline); changes nothing
 - smith_upgrade_preview: What smith upgrade would change after a newer smith or recipe: the migration of smith.toml, the files smith owns it regenerates or deletes, and the projects a recipe brings up to date, as JSON; changes nothing
@@ -48,7 +49,7 @@ Tools that change things, ask first (smith_run is routine after a change: run li
 3. To make or change anything smith owns (a project, a pipeline, smith.toml, the root files), use its command, then read the diff before you commit. Look for versions going backwards and a changed `go` line in go.work or go.mod.
 4. A dependency belongs to a project: smith_install with the project named, never the root. In a converted Node project install with `smith i`: it uses npm, not the old package manager.
 5. After a change, run smith_run for lint, typecheck and test on every project you touched, and `smith slices check <dir>` for new files.
-6. smith reports an error as a problem: a line starting with ✖, then one → line per way out. Tell the person the problem and follow a → line. Do not hide the remedy.
+6. smith reports an error as a problem: a line starting with ×, then one → line per way out. Tell the person the problem and follow a → line. Do not hide the remedy.
 7. Releases come from conventional commits. A commit `version(<project>)[1.2.3]: message` forces a project's version. Use smith_release_preview to see the next one.
 8. Never create, move or push a tag for the person. If a release hits a naming conflict, look for a rule smith can learn first. If a publish fails, check which version the checkout holds before you blame the registry.
 9. A branch behind main fails tests that main already fixed: check `git log HEAD..origin/main` before you treat a failure as yours.
