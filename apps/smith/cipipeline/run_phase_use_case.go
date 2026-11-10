@@ -36,6 +36,9 @@ type AssetsRun struct {
 	In       io.Reader
 	// Manual is set when a person started the release by hand (the release phase).
 	Manual ManualRelease
+	// NoCache runs every task of the verify phase, even when a cached result
+	// exists: a clean CI agent has no cache.
+	NoCache bool
 }
 
 // PackTask is the task that builds what a project deploys into dist/drop.
@@ -213,7 +216,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		// Native projects are verified by the native job, on every OS.
 		outputs := newTaskOutputs()
 		tee := io.MultiWriter(out, outputs)
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: nativeExcluded, Affected: base != "", Base: base, Out: tee})
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: nativeExcluded, Affected: base != "", Base: base, NoCache: run.NoCache, Out: tee})
 		if err != nil {
 			return err
 		}

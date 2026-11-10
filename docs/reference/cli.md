@@ -112,9 +112,11 @@ Usage: `smith adopt [flags]`
 | `--commit` | with --init, commit the change as one operation, so smith undo can revert it | off |
 | `--dry-run` | only report (this is the default; the flag makes it explicit) | off |
 | `--eslint` | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies | off |
+| `--eslint-setup <eslint-setup>` | with --init and --move, what happens to the project's own ESLint setup: shared (the shared config replaces it, the old file is kept as .pre-smith) or keep (it stays in the project) |  |
 | `--gitattributes <gitattributes>` | with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it) |  |
+| `--hoist <hoist>` | with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway) (repeatable) |  |
 | `--init` | write smith.toml and the pipelines (nothing is committed unless --commit) | off |
-| `--install` | with --init, also run npm install for the Node projects | off |
+| `--install` | with --init, also run npm install for the Node projects and create the Python .venv | off |
 | `--json` | print the report as JSON | off |
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
 | `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
@@ -355,6 +357,21 @@ Usage: `smith run <task>... [flags]`
 | `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end run -->
+
+### smith verify
+
+[Manual page](../manual/verify.md)
+
+<!-- smith:begin verify -->
+Check the workspace as CI does: boundaries, lint, typecheck, test and build
+
+Usage: `smith verify [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--no-cache` | run every task even if a cached result exists, as a clean CI agent does | off |
+
+<!-- smith:end verify -->
 
 ### smith build
 
