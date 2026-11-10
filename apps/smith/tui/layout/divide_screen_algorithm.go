@@ -18,6 +18,11 @@ type Layout struct {
 	StatusBar    Rect
 }
 
+// InlineHeaderFrom is the width from which the header (workspace, branch and
+// health) shares the row of the tabs, at its right end, instead of having a row
+// of its own.
+const InlineHeaderFrom = 120
+
 // Divide lays the screen out from the top: a header row, the row of tabs, the
 // content, then a one-row footer of key hints and a one-row status bar. Below WideFrom columns
 // the content is one pane; from WideFrom it is the list and, when withDetail
@@ -46,6 +51,13 @@ func ClampDetailWidth(width, detailW int) int {
 // DivideWith is Divide with a detail width the user chose (0 keeps the
 // automatic one).
 func DivideWith(width, height int, withDetail bool, detailW int) Layout {
+	return DivideShared(width, height, withDetail, detailW, width >= InlineHeaderFrom)
+}
+
+// DivideShared is DivideWith with the header's place decided by the caller:
+// inline puts it on the row of the tabs, which is then the first row. The
+// caller says so only when the tabs and the header fit that row.
+func DivideShared(width, height int, withDetail bool, detailW int, inline bool) Layout {
 	l := Layout{Width: width, Height: height, Mode: Narrow}
 	if width >= WideFrom {
 		l.Mode = Wide
@@ -66,9 +78,13 @@ func DivideWith(width, height int, withDetail bool, detailW int) Layout {
 			detail = ClampDetailWidth(width, detailW)
 		}
 	}
-	// The content starts under the one row of tabs.
-	const top = 2
+	// The content starts under the one row of tabs. On a wide screen the header
+	// shares that row, so the tabs are the first row.
+	top := 2
 	l.Tabs = Rect{0, 1, width, 1}
+	if inline && height > 4 {
+		l.Header, l.Tabs, top = Rect{}, Rect{0, 0, width, 1}, 1
+	}
 	l.Main = Rect{0, top, width - detail, max(height-2-top, 0)}
 	l.Detail = Rect{width - detail, top, detail, max(height-2-top, 0)}
 	return l

@@ -146,7 +146,7 @@ func TestATabShowsASpinnerWhileItsWorkGoesOnInTheBackground(t *testing.T) {
 	sh := l.sh()
 	sh.depsLoading = true
 	l.m = sh
-	if tabs := l.lines()[1]; !strings.Contains(tabs, "[Deps (4)] ⠋") {
+	if tabs := l.lines()[0]; !strings.Contains(tabs, "[Deps (4)] ⠋") {
 		t.Fatalf("Deps has no badge while the registries are asked: %q", tabs)
 	}
 	if !l.sh().animating() {

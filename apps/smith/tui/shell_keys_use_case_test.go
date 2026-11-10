@@ -17,8 +17,9 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 	if first := l.lines()[0]; !strings.Contains(first, "acme") || !strings.Contains(first, "main") {
 		t.Fatalf("the first row names the workspace and its branch, with no menu bar above: %q", first)
 	}
-	if tabs := l.lines()[1]; !strings.Contains(tabs, "Home") || !strings.Contains(tabs, "Projects") || !strings.Contains(tabs, "Doctor") {
-		t.Fatalf("the views are tabs under the header: %q", tabs)
+	// On a wide screen the header shares the row of the tabs, at its right end.
+	if first := l.lines()[0]; !strings.Contains(first, "Home") || !strings.Contains(first, "Projects") || !strings.Contains(first, "Doctor") {
+		t.Fatalf("the views are tabs on the first row of a wide screen: %q", first)
 	}
 	footer := l.lines()[len(l.lines())-2]
 	for _, want := range []string{"build orders (b)", "test orders (t)", "lint orders (l)", "typecheck orders (c)", "changed (w)", "doctor (d)", "add project (a)", "palette (:)", "help (?)", "quit (q)", "mouse (m)"} {

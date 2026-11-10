@@ -72,8 +72,12 @@ func (s Shell) screen() []string {
 func (s Shell) baseRows() []string {
 	rows := make([]string, 0, s.h)
 	strip := s.tabStrip()
-	rows = append(rows, s.headerRow())
-	rows = append(rows, strip.Lines...)
+	if s.inlineHeader() {
+		rows = append(rows, s.tabRow(strip))
+	} else {
+		rows = append(rows, s.headerRow())
+		rows = append(rows, strip.Lines...)
+	}
 	rows = append(rows, s.body()...)
 	rows = append(rows, s.footerRow())
 	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), s.w))

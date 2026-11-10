@@ -79,7 +79,7 @@ func TestADragThatStartsOnAButtonOrADividerSelectsNothing(t *testing.T) {
 func TestAPressOnTheTabsOrTheFrameStartsNothing(t *testing.T) {
 	l := doctorLab(t, 140, 30)
 	out := copying(l)
-	for _, at := range [][2]int{{3, 0}, {3, 2}, {0, 6}, {3, 29}} {
+	for _, at := range [][2]int{{3, 0}, {3, 1}, {0, 6}, {3, 29}} {
 		l.send(click(at[0], at[1])).send(drag(at[0]+5, at[1]+1)).send(letGo(at[0]+5, at[1]+1))
 		if out.Len() != 0 || l.sh().selection.Active || l.sh().selection.Selected() {
 			t.Fatalf("a press at %v starts a selection", at)
