@@ -35,7 +35,7 @@ jobs:
           status=${PIPESTATUS[0]}
           {
             echo 'failures<<EOF'
-            grep -E '^\s*install_ids_online_test.go:[0-9]+:' catalogue.log || true
+            grep -E '^\s*install_ids_online_client_test.go:[0-9]+:' catalogue.log || true
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
           exit $status
