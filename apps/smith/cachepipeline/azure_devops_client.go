@@ -169,7 +169,7 @@ func (c Client) put(t Target, body []byte, value string) (stderr string, err err
 	if err != nil {
 		return "", fmt.Errorf("could not make a private temporary folder: %w", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	file := filepath.Join(dir, "definition.json")
 	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
