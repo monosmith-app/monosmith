@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
 	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
 )
 
@@ -39,6 +40,8 @@ const byHand = "__by_hand__"
 type flow struct {
 	Ports
 	facts Facts
+	// azure is what the setup learned of the Azure Pipelines pipeline.
+	azure *azureState
 }
 
 func (f flow) say(format string, args ...any) { f.Say(fmt.Sprintf(format, args...)) }
@@ -176,7 +179,7 @@ func orTop(s string) string {
 // Parameters: facts are what smith knows of the workspace; ports connect it to the world.
 // Returns: the remote the person chose, "" when none; an error when the setup could not go on.
 func Run(facts Facts, ports Ports) (remote string, err error) {
-	f := flow{ports, facts}
+	f := flow{Ports: ports, facts: facts, azure: &azureState{}}
 	f.say("Remote cache setup. Every decision is yours: smith shows a command before it runs and writes nothing until you say yes.")
 	if facts.Remote != "" {
 		f.say("[cache] remote is %s today.", facts.Remote)
@@ -259,7 +262,7 @@ func (f flow) keyActions(providers []string, remote string) []cachekey.KeyAction
 				f.say("The key is stored for %s.", g.Title)
 			}})
 	}
-	return actions
+	return append(actions, f.azureActions(cachecredentials.Key)...)
 }
 
 type sasTarget struct{ subscription, account, container string }
@@ -292,7 +295,7 @@ func (f flow) sasToken(t sasTarget) {
 		}
 		return strings.Trim(strings.TrimSpace(out), `"`), nil
 	}
-	if err := f.Secret("SAS token", produce, nil); err != nil {
+	if err := f.Secret("SAS token", produce, f.azureActions(sasTokenName)); err != nil {
 		f.say("%v", err)
 	}
 }
@@ -301,6 +304,9 @@ func (f flow) sasToken(t sasTarget) {
 func (f flow) guides(remote string) {
 	for _, g := range ProviderGuides(f.facts.Providers, remote) {
 		var lines []string
+		if g.Provider == "azure" {
+			lines = append(lines, f.azureDoneLines()...)
+		}
 		for i, s := range g.Steps {
 			lines = append(lines, fmt.Sprintf("%d. %s", i+1, s))
 		}
