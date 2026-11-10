@@ -61,8 +61,8 @@ func (s Shell) tooSmall() string {
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
 	var rows []string
-	if s.cache != nil {
-		// A selection inside the dialog is drawn over the dialog.
+	if s.modalOpen() {
+		// A selection inside a dialog is drawn over the dialog.
 		rows = s.paintSelection(s.overlays(s.baseRows()))
 	} else {
 		rows = s.overlays(s.paintSelection(s.baseRows()))

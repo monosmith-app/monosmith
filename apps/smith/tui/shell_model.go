@@ -331,7 +331,11 @@ type Shell struct {
 	// package); selected is the text it held at the release, so a screen that
 	// changes under the highlight drops it.
 	selection selection.State
-	selected  string
+	// modalPress is where the left button went down inside a dialog, and
+	// modalPressed says a drag from there may select text.
+	modalPress   [2]int
+	modalPressed bool
+	selected     string
 	// detailTop is the first visible line of the detail; detailAll shows every
 	// line of a folded list; detailFor is what the detail told last, so the
 	// place starts over for another selection.
