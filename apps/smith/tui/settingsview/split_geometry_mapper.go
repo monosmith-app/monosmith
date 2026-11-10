@@ -24,7 +24,7 @@ func (m Model) WithSideDetail(beside bool) Model {
 // Parameters: th styles the lines; w is the width of the panel.
 // Returns: the lines.
 func (m Model) DetailLines(th theme.Theme, w int) []string {
-	if !m.loaded && m.section != Style && m.section != Forms {
+	if !m.loaded && m.section.readsWorkspace() {
 		return nil
 	}
 	list := m.items(m.section)

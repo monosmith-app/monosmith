@@ -4,7 +4,8 @@
 // chooses how the workspace's code is laid out, Style picks the
 // theme and the symbols with a live preview, Workspace edits the settings
 // `smith config` knows with an editor for each type, Recipes lists the
-// workspace's recipes, and Forms opens the guided forms.
+// workspace's recipes, Assistants and CI open the forms that connect a coding
+// assistant and write the pipelines, and Forms opens every guided form.
 //
 // The view reads and writes through a Backend: functions that call what the
 // CLI commands call (the same code, in-process, never a child process), so a

@@ -107,6 +107,7 @@
   "tui.keys.this_check_has_no_fix_its": "This check has no fix; its remedy says what to do",
   "tui.keys.no_dependency_to_update": "No dependency to update",
   "tui.keys.the_one_version_policy_found_nothing": "The one-version policy found nothing to align",
+  "tui.keys.no_form_for": "There is no form for smith {action} here",
   "tui.keys.following_the_log": "Following the log",
   "tui.keys.doctor_found_nothing_it_can_fix": "Doctor found nothing it can fix",
   "tui.main.reading_the_workspace": "Reading the workspace…",
