@@ -33,7 +33,7 @@ func newSession(clip Clipboard, keys <-chan rune, out *bytes.Buffer) Session {
 		Random: rand.Reader, Clip: clip, Out: out, Keys: keys,
 		After:      func(time.Duration) <-chan time.Time { return nil },
 		ClearAfter: DefaultClearAfter,
-		Env:        UserEnvironment{GOOS: "linux"},
+		Env:        UserEnvironment{GOOS: "linux"}, Variable: KeyVariable,
 	}
 }
 
@@ -45,7 +45,7 @@ func TestRunCopiesTheKeyAndNeverPrintsIt(t *testing.T) {
 	if len(clip.text) != 64 || strings.Contains(out.String(), clip.text) {
 		t.Fatalf("clipboard %q, output %q", clip.text, out)
 	}
-	if !strings.Contains(out.String(), "Key copied to the clipboard (not shown). Paste it where you need it.") {
+	if !strings.Contains(out.String(), "Key copied to the clipboard (not shown). smith reads it from SMITH_CACHE_KEY: set that variable on this machine, and as a secret variable in your CI") {
 		t.Fatalf("output %q", out)
 	}
 }

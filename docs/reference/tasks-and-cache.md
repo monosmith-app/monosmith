@@ -358,6 +358,14 @@ and create permission (a developer who only reads needs read). A SAS token
 expires, so renew it before its date and update the secret. Signing in to Azure
 through `az` directly is not supported by the backend today.
 
+The SAS token screen of `smith cache setup` works like the key screen. It names the variable, and
+`u` keeps the token for your user as `AZURE_STORAGE_SAS_TOKEN` with the same confirmation (a user
+variable on Windows, a marked block in your shell profile elsewhere). A token signed in as you
+(user delegation) lasts at most 7 days, because Azure limits it, so the question offers only 7
+days and a Back choice. A weekly expiry means renewing the CI secret every week. A token signed
+with the account key can last 30, 90 or 365 days. `smith cache key --remove` removes both
+variables.
+
 **One prefix for each workspace.** The cache key of a task does not include the
 workspace. Give each workspace its own prefix, for example
 `azblob://acme/cache/smith/shop` and `azblob://acme/cache/smith/blog`. The

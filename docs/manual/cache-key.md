@@ -33,7 +33,7 @@ Usage: `smith cache key [flags]`
 |---|---|---|---|
 | `--clear-after <clear-after>` | duration (`60s`, `2m`, `0`) | `60s` | clear the clipboard after this long if it still holds the key; 0 leaves it |
 | `--print` | boolean | off | print the key instead of copying it |
-| `--remove` | boolean | off | remove the key that the u choice kept for your user (the profile block, or the Windows user variable) |
+| `--remove` | boolean | off | remove the key and the SAS token that the u choice kept for your user (the profile blocks, or the Windows user variables) |
 
 <!-- smith:end cache key -->
 

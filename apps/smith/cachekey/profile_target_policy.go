@@ -2,22 +2,40 @@ package cachekey
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/shellcompletion"
 	"github.com/monosmith-app/monosmith/apps/smith/shellenv"
 )
 
-// KeyVariable is the environment variable that holds the key.
-const KeyVariable = "SMITH_CACHE_KEY"
+// The environment variables that the key screens keep for the user.
+const (
+	// KeyVariable holds the key that signs the remote cache.
+	KeyVariable = "SMITH_CACHE_KEY"
+	// SASVariable holds the SAS token of an Azure Blob remote cache.
+	SASVariable = "AZURE_STORAGE_SAS_TOKEN"
+)
+
+// Variables lists every variable that the key screens keep, so that removal
+// undoes each of them.
+var Variables = []string{KeyVariable, SASVariable}
 
 // MaskedKey stands for the key wherever a line is shown to the person.
 const MaskedKey = "••••"
 
-// profileMarkers frame the block that holds the key in a shell profile.
-var profileMarkers = shellcompletion.Markers{
-	Begin: "# >>> smith cache key >>>",
-	End:   "# <<< smith cache key <<<",
-	Note:  `# Managed by "smith cache key". Remove it with "smith cache key --remove".`,
+// markersFor are the lines that frame the block that holds a variable in a
+// shell profile. The key keeps "smith cache key"; the other variables name
+// themselves.
+func markersFor(variable string) shellcompletion.Markers {
+	name := "smith cache key"
+	if variable != KeyVariable {
+		name = "smith " + strings.ToLower(variable)
+	}
+	return shellcompletion.Markers{
+		Begin: "# >>> " + name + " >>>",
+		End:   "# <<< " + name + " <<<",
+		Note:  `# Managed by "smith cache setup". Remove it with "smith cache key --remove".`,
+	}
 }
 
 // ProfileTarget is the file of a shell where the key can go.
@@ -77,10 +95,22 @@ func TargetFor(env shellenv.Environment) (ProfileTarget, bool) {
 
 // Line is the line that sets the variable, in the syntax of the shell.
 //
-// Parameters: value is the key, or MaskedKey or a placeholder to show the line.
-func (t ProfileTarget) Line(value string) string {
-	if t.Shell == shellenv.Fish {
-		return "set -gx " + KeyVariable + ` "` + value + `"`
+// A value with a character that a double quote does not hold safely is put in
+// single quotes with the right escapes.
+//
+// Parameters: variable is the variable; value is the secret, or MaskedKey or a
+// placeholder to show the line.
+func (t ProfileTarget) Line(variable, value string) string {
+	quoted := `"` + value + `"`
+	if strings.ContainsAny(value, "\"$`\\!'") {
+		if t.Shell == shellenv.Fish {
+			quoted = "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(value) + "'"
+		} else {
+			quoted = "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+		}
 	}
-	return "export " + KeyVariable + `="` + value + `"`
+	if t.Shell == shellenv.Fish {
+		return "set -gx " + variable + " " + quoted
+	}
+	return "export " + variable + "=" + quoted
 }

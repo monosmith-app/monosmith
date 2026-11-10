@@ -35,6 +35,10 @@ type Session struct {
 	Env UserEnvironment
 	// Noun names the secret in messages; "Key" when empty.
 	Noun string
+	// Variable is the environment variable that holds the secret, such as
+	// SMITH_CACHE_KEY. When it is set, the u choice keeps the secret for the
+	// user under that name, and the messages name it. Empty offers no u choice.
+	Variable string
 	// Produce makes a secret; Generate(Random) when nil. A caller that makes
 	// another kind of secret, such as a SAS token, passes its own.
 	Produce func() (string, error)
@@ -65,11 +69,30 @@ func (s Session) noun() string {
 	return s.Noun
 }
 
+// InSentence is the noun as it reads inside a sentence: lower case, except an
+// acronym such as "SAS token", which keeps its capitals.
+func InSentence(noun string) string {
+	if len(noun) > 1 && noun[1] >= 'A' && noun[1] <= 'Z' {
+		return noun
+	}
+	return strings.ToLower(noun)
+}
+
+func (s Session) inSentence() string { return InSentence(s.noun()) }
+
 func (s Session) make() (string, error) {
 	if s.Produce != nil {
 		return s.Produce()
 	}
 	return Generate(s.Random)
+}
+
+// copiedLine tells the person where the secret goes next.
+func (s Session) copiedLine() string {
+	if s.Variable == "" {
+		return words.Say("cachekey.copied.plain", "noun", s.noun())
+	}
+	return words.Say("cachekey.copied", "noun", s.noun(), "variable", s.Variable)
 }
 
 // confirm shows a command and asks; only y runs it.
@@ -108,9 +131,9 @@ func (s Session) Run() error {
 		return s.runWithoutClipboard(key)
 	}
 	if err := s.Clip.Write(key); err != nil {
-		return problem.New("could not copy the "+strings.ToLower(s.noun())+": "+err.Error(), "run `smith cache key --print` to print a key instead")
+		return problem.New("could not copy the "+s.inSentence()+": "+err.Error(), "run `smith cache key --print` to print a key instead")
 	}
-	s.say(s.noun() + " copied to the clipboard (not shown). Paste it where you need it.")
+	s.say(s.copiedLine())
 	timer := s.arm()
 	if s.Keys == nil {
 		if s.ClearAfter > 0 {
@@ -124,7 +147,7 @@ func (s Session) Run() error {
 		}
 		select {
 		case <-timer:
-			s.clear(key, "The clipboard held the "+strings.ToLower(s.noun())+" for "+s.ClearAfter.String()+" and is now cleared.")
+			s.clear(key, "The clipboard held the "+s.inSentence()+" for "+s.ClearAfter.String()+" and is now cleared.")
 			return nil
 		case r, open := <-s.Keys:
 			if !open {
@@ -144,12 +167,12 @@ func (s Session) Run() error {
 					return err
 				}
 				if err := s.Clip.Write(key); err != nil {
-					return problem.New("could not copy the new "+strings.ToLower(s.noun())+": "+err.Error(), "run `smith cache key --print` to print a key instead")
+					return problem.New("could not copy the new "+s.inSentence()+": "+err.Error(), "run `smith cache key --print` to print a key instead")
 				}
-				s.say("New " + strings.ToLower(s.noun()) + " copied (not shown). This replaces the " + strings.ToLower(s.noun()) + " shown before: use the newest one everywhere.")
+				s.say("New " + s.inSentence() + " copied (not shown). This replaces the " + s.inSentence() + " shown before: use the newest one everywhere.")
 				timer = s.arm()
 			case 'u', 'U':
-				if s.noun() == "Key" {
+				if s.Variable != "" {
 					s.setUserVariable(key)
 				}
 			case 'q', 'Q', 3, 27:
@@ -191,7 +214,7 @@ func (s Session) arm() <-chan time.Time {
 	if s.ClearAfter <= 0 || !s.Clip.CanRead() || s.After == nil {
 		return nil
 	}
-	s.say(fmt.Sprintf("The clipboard clears in %s if it still holds the %s. Clipboard-history tools may keep a copy.", s.ClearAfter, strings.ToLower(s.noun())))
+	s.say(fmt.Sprintf("The clipboard clears in %s if it still holds the %s. Clipboard-history tools may keep a copy.", s.ClearAfter, s.inSentence()))
 	return s.After(s.ClearAfter)
 }
 
@@ -221,15 +244,15 @@ func (s Session) clear(key, message string) {
 // write them, to cancel, or to do it by hand.
 func (s Session) setUserVariable(key string) {
 	if s.Env.CanSet() {
-		s.say(words.Say("cachekey.env.windows.intro"))
-		if !s.confirm(s.Env.Preview()) {
+		s.say(words.Say("cachekey.env.windows.intro", "variable", s.Variable))
+		if !s.confirm(s.Env.Preview(s.Variable)) {
 			return
 		}
-		if err := s.Env.Set(key); err != nil {
+		if err := s.Env.Set(s.Variable, key); err != nil {
 			s.say(words.Say("cachekey.env.windows.failed", "reason", err.Error()))
 			return
 		}
-		s.say(words.Say("cachekey.env.windows.done"))
+		s.say(words.Say("cachekey.env.windows.done", "variable", s.Variable))
 		return
 	}
 	t, known := s.Env.Profile()
@@ -237,17 +260,17 @@ func (s Session) setUserVariable(key string) {
 		s.sayByHand(t, known)
 		return
 	}
-	s.say(words.Say("cachekey.profile.intro", "path", t.Path))
-	s.say("  " + t.Line(MaskedKey))
+	s.say(words.Say("cachekey.profile.intro", "path", t.Path, "variable", s.Variable))
+	s.say("  " + t.Line(s.Variable, MaskedKey))
 	s.say(words.Say("cachekey.profile.warning"))
 	s.say(words.Say("cachekey.profile.choices"))
 	switch s.profileChoice() {
 	case "write":
-		if err := WriteProfileKey(s.Env.Machine, t, key); err != nil {
+		if err := WriteProfileKey(s.Env.Machine, t, s.Variable, key); err != nil {
 			s.say(err.Error())
 			return
 		}
-		s.say(words.Say("cachekey.profile.written", "path", t.Path))
+		s.say(words.Say("cachekey.profile.written", "path", t.Path, "variable", s.Variable))
 	case "hand":
 		s.sayByHand(t, known)
 	default:
@@ -280,7 +303,7 @@ func (s Session) sayByHand(t ProfileTarget, known bool) {
 	} else {
 		s.say(words.Say("cachekey.byhand.other"))
 	}
-	s.say("  " + s.Env.Preview())
+	s.say("  " + s.Env.Preview(s.Variable))
 	s.say(words.Say("cachekey.byhand.next"))
 }
 
@@ -289,7 +312,7 @@ func (s Session) say(line string) { fmt.Fprintln(s.Out, line) }
 // promptLine lists the choices.
 func (s Session) promptLine() string {
 	line := "  c copy again   g generate another"
-	if s.noun() == "Key" {
+	if s.Variable != "" {
 		line += "   u set as a user environment variable"
 	}
 	for _, a := range s.Actions {

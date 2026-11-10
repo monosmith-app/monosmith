@@ -37,8 +37,8 @@ func TestTheProfileFileIsThatOfTheShell(t *testing.T) {
 func TestTheLineUsesTheSyntaxOfTheShell(t *testing.T) {
 	zsh, _ := TargetFor(newTempEnv(t, "linux", "zsh"))
 	fish, _ := TargetFor(newTempEnv(t, "linux", "fish"))
-	if zsh.Line("x") != `export SMITH_CACHE_KEY="x"` || fish.Line("x") != `set -gx SMITH_CACHE_KEY "x"` {
-		t.Fatalf("%q %q", zsh.Line("x"), fish.Line("x"))
+	if zsh.Line(KeyVariable, "x") != `export SMITH_CACHE_KEY="x"` || fish.Line(KeyVariable, "x") != `set -gx SMITH_CACHE_KEY "x"` {
+		t.Fatalf("%q %q", zsh.Line(KeyVariable, "x"), fish.Line(KeyVariable, "x"))
 	}
 }
 
@@ -53,20 +53,20 @@ func TestWriteReplaceAndRemoveTheBlock(t *testing.T) {
 			} else {
 				env.put(t, original, 0o640, strings.TrimPrefix(target.Path, env.home+string(filepath.Separator)))
 			}
-			if err := WriteProfileKey(env, target, testKey); err != nil {
+			if err := WriteProfileKey(env, target, KeyVariable, testKey); err != nil {
 				t.Fatal(err)
 			}
-			if err := WriteProfileKey(env, target, "second"+testKey); err != nil {
+			if err := WriteProfileKey(env, target, KeyVariable, "second"+testKey); err != nil {
 				t.Fatal(err)
 			}
 			got := env.read(target.Path)
-			if strings.Count(got, profileMarkers.Begin) != 1 || strings.Contains(got, target.Line(testKey)) || !strings.Contains(got, target.Line("second"+testKey)) {
+			if strings.Count(got, markersFor(KeyVariable).Begin) != 1 || strings.Contains(got, target.Line(KeyVariable, testKey)) || !strings.Contains(got, target.Line(KeyVariable, "second"+testKey)) {
 				t.Fatalf("block not replaced once:\n%s", got)
 			}
 			if !strings.HasPrefix(got, original) {
 				t.Fatalf("the file of the person changed:\n%s", got)
 			}
-			changed, err := RemoveProfileKeys(env)
+			changed, err := RemoveProfileKeys(env, KeyVariable)
 			if err != nil || len(changed) != 1 || changed[0] != target.Path {
 				t.Fatalf("%v %v", changed, err)
 			}
@@ -87,7 +87,7 @@ func TestModeIsKeptAndANewFileIsPrivate(t *testing.T) {
 	}
 	env := newTempEnv(t, "linux", "zsh")
 	target, _ := TargetFor(env)
-	if err := WriteProfileKey(env, target, testKey); err != nil {
+	if err := WriteProfileKey(env, target, KeyVariable, testKey); err != nil {
 		t.Fatal(err)
 	}
 	if info, _ := os.Stat(target.Path); info.Mode().Perm() != 0o600 {
@@ -96,7 +96,7 @@ func TestModeIsKeptAndANewFileIsPrivate(t *testing.T) {
 	env = newTempEnv(t, "linux", "bash")
 	target, _ = TargetFor(env)
 	path := env.put(t, "x\n", 0o644, ".bashrc")
-	if err := WriteProfileKey(env, target, testKey); err != nil {
+	if err := WriteProfileKey(env, target, KeyVariable, testKey); err != nil {
 		t.Fatal(err)
 	}
 	if info, _ := os.Stat(path); info.Mode().Perm() != 0o644 {
@@ -104,11 +104,29 @@ func TestModeIsKeptAndANewFileIsPrivate(t *testing.T) {
 	}
 }
 
-func TestAKeyThatNeedsEscapingIsRefusedWithoutEchoingIt(t *testing.T) {
+func TestASecretWithShellCharactersIsQuotedSafely(t *testing.T) {
+	zsh, _ := TargetFor(newTempEnv(t, "linux", "zsh"))
+	fish, _ := TargetFor(newTempEnv(t, "linux", "fish"))
+	for _, tc := range []struct {
+		target    ProfileTarget
+		value, in string
+	}{
+		{zsh, "a&b%3D:c", `export V="a&b%3D:c"`},
+		{zsh, `a'b$c"d`, `export V='a'\''b$c"d'`},
+		{fish, "a&b", `set -gx V "a&b"`},
+		{fish, `a'b\c`, `set -gx V 'a\'b\\c'`},
+	} {
+		if got := tc.target.Line("V", tc.value); got != tc.in {
+			t.Errorf("%s: got %s, want %s", tc.target.Shell, got, tc.in)
+		}
+	}
+}
+
+func TestASecretWithALineEndIsRefusedWithoutEchoingIt(t *testing.T) {
 	env := newTempEnv(t, "linux", "zsh")
 	target, _ := TargetFor(env)
-	bad := `a"; rm -rf ~; "`
-	err := WriteProfileKey(env, target, bad)
+	bad := "abc\nrm -rf ~"
+	err := WriteProfileKey(env, target, KeyVariable, bad)
 	if err == nil || strings.Contains(err.Error(), bad) || env.Exists(target.Path) {
 		t.Fatalf("%v", err)
 	}
@@ -152,7 +170,7 @@ func choose(t *testing.T, keys ...rune) (out, profile string) {
 
 func TestTheConfirmationShowsTheMaskedLinesAndAWarning(t *testing.T) {
 	out, profile := choose(t, 27)
-	for _, want := range []string{".zshrc", `export SMITH_CACHE_KEY="••••"`, "dotfile git repositories keep the key", "Enter writes it", "Not written"} {
+	for _, want := range []string{".zshrc", `export SMITH_CACHE_KEY="••••"`, "dotfile git repositories keep the secret", "Enter writes it", "Not written"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
@@ -172,10 +190,10 @@ func TestOnlyEnterWritesTheFileAndTheKeyIsNotShown(t *testing.T) {
 		t.Fatal(err)
 	}
 	target, _ := TargetFor(env)
-	if !strings.Contains(env.read(target.Path), target.Line(testKey)) {
+	if !strings.Contains(env.read(target.Path), target.Line(KeyVariable, testKey)) {
 		t.Fatalf("the key is not in the profile:\n%s", env.read(target.Path))
 	}
-	for _, want := range []string{"smith wrote the key to", "new terminal", "smith cache key --remove"} {
+	for _, want := range []string{"smith wrote SMITH_CACHE_KEY to", "new terminal", "smith cache key --remove"} {
 		if !strings.Contains(buf.String(), want) {
 			t.Errorf("missing %q in\n%s", want, buf)
 		}
@@ -199,7 +217,7 @@ func TestAWriteErrorNeverHoldsTheKey(t *testing.T) {
 	if err := os.MkdirAll(target.Path, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	err := WriteProfileKey(env, target, testKey)
+	err := WriteProfileKey(env, target, KeyVariable, testKey)
 	if err == nil || strings.Contains(err.Error(), testKey) {
 		t.Fatalf("%v", err)
 	}
@@ -209,7 +227,63 @@ func TestAWindowsSetErrorNeverHoldsTheKey(t *testing.T) {
 	u := UserEnvironment{GOOS: "windows", Run: func(stdin string, _ ...string) (string, error) {
 		return "", errors.New("failed on " + strings.TrimSpace(stdin))
 	}}
-	if err := u.Set(testKey); err == nil || strings.Contains(err.Error(), testKey) {
+	if err := u.Set(KeyVariable, testKey); err == nil || strings.Contains(err.Error(), testKey) {
 		t.Fatalf("%v", err)
+	}
+}
+
+func TestTheSASTokenGetsItsOwnVariableAndBlockAndRemovalUndoesBoth(t *testing.T) {
+	env := newTempEnv(t, "linux", "zsh")
+	target, _ := TargetFor(env)
+	const token = "sv=2022-11-02&sig=abc"
+	if err := WriteProfileKey(env, target, KeyVariable, testKey); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteProfileKey(env, target, SASVariable, token); err != nil {
+		t.Fatal(err)
+	}
+	got := env.read(target.Path)
+	if !strings.Contains(got, `export AZURE_STORAGE_SAS_TOKEN="sv=2022-11-02&sig=abc"`) || !strings.Contains(got, "# >>> smith azure_storage_sas_token >>>") || !strings.Contains(got, target.Line(KeyVariable, testKey)) {
+		t.Fatalf("both blocks must be there:\n%s", got)
+	}
+	out := &bytes.Buffer{}
+	if err := RemoveKey(UserEnvironment{GOOS: "linux", Machine: env}, out); err != nil {
+		t.Fatal(err)
+	}
+	if env.Exists(target.Path) || !strings.Contains(out.String(), "Removed SMITH_CACHE_KEY") || !strings.Contains(out.String(), "Removed AZURE_STORAGE_SAS_TOKEN") || strings.Contains(out.String(), testKey) {
+		t.Fatalf("%q", out)
+	}
+}
+
+func TestTheSASScreenNamesItsVariableAndKeepsTheAcronym(t *testing.T) {
+	env := newTempEnv(t, "linux", "zsh")
+	buf := &bytes.Buffer{}
+	s := newSession(&fakeClipboard{readable: true}, keysOf('u', '\r', 'q'), buf)
+	s.Env = UserEnvironment{GOOS: "linux", Machine: env}
+	s.Noun, s.Variable = "SAS token", SASVariable
+	s.Produce = func() (string, error) { return "sv-2022", nil }
+	if err := s.Run(); err != nil {
+		t.Fatal(err)
+	}
+	target, _ := TargetFor(env)
+	out := buf.String()
+	for _, want := range []string{"SAS token copied to the clipboard (not shown). smith reads it from AZURE_STORAGE_SAS_TOKEN", "if it still holds the SAS token", `export AZURE_STORAGE_SAS_TOKEN="••••"`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "sv-2022") || !strings.Contains(env.read(target.Path), `export AZURE_STORAGE_SAS_TOKEN="sv-2022"`) {
+		t.Fatalf("output %s\nprofile %s", out, env.read(target.Path))
+	}
+}
+
+func TestTheWindowsUnsetNamesBothVariables(t *testing.T) {
+	var ran []string
+	u := UserEnvironment{GOOS: "windows", Run: func(_ string, argv ...string) (string, error) {
+		ran = append(ran, argv[len(argv)-1])
+		return "", nil
+	}}
+	if err := RemoveKey(u, &bytes.Buffer{}); err != nil || len(ran) != 2 || !strings.Contains(ran[1], "AZURE_STORAGE_SAS_TOKEN") {
+		t.Fatalf("%v %v", err, ran)
 	}
 }

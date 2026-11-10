@@ -51,7 +51,7 @@ func runSecretSession(session cachekey.Session, out io.Writer, keys *stdinFeed) 
 func newSession(out io.Writer, clearAfter time.Duration) cachekey.Session {
 	return cachekey.Session{
 		Random: rand.Reader, Out: out, After: time.After, ClearAfter: clearAfter,
-		Env: systemUserEnvironment(),
+		Env: systemUserEnvironment(), Variable: cachekey.KeyVariable,
 	}
 }
 
@@ -110,7 +110,7 @@ Without a terminal the command copies the key once and ends.`,
 			return runSecretSession(session, out, nil)
 		},
 	}
-	cmd.Flags().BoolVar(&remove, "remove", false, "remove the key that the u choice kept for your user (the profile block, or the Windows user variable)")
+	cmd.Flags().BoolVar(&remove, "remove", false, "remove the key and the SAS token that the u choice kept for your user (the profile blocks, or the Windows user variables)")
 	cmd.Flags().BoolVar(&printKey, "print", false, "print the key instead of copying it")
 	cmd.Flags().DurationVar(&clearAfter, "clear-after", cachekey.DefaultClearAfter, "clear the clipboard after this long if it still holds the key; 0 leaves it")
 	return cmd

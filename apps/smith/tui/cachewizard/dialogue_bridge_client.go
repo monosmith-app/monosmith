@@ -182,25 +182,25 @@ func (b *Bridge) Show(title string, lines []string) {
 // The session is the one `smith cache key` uses, so the clipboard, the
 // clearing after a delay (only when the clipboard still holds the secret) and
 // the confirmed commands are the same.
-func (b *Bridge) Secret(noun string, produce func() (string, error), actions []cachekey.KeyAction) error {
+func (b *Bridge) Secret(noun, variable string, produce func() (string, error), actions []cachekey.KeyAction) error {
 	presses := make(chan rune, 16)
 	b.mu.Lock()
 	b.presses = presses
 	b.mu.Unlock()
-	b.emit(AskEvent{Screen: Screen{Kind: Secret, Noun: noun, Buttons: buttonsFor(noun, actions)}})
+	b.emit(AskEvent{Screen: Screen{Kind: Secret, Noun: noun, Buttons: buttonsFor(variable != "", actions)}})
 	err := cachekey.Session{
 		Random: rand.Reader, Clip: b.secrets.Clip, Out: lineWriter{b}, Keys: presses,
 		After: b.secrets.After, ClearAfter: b.secrets.ClearAfter, Env: b.secrets.Env,
-		Noun: noun, Produce: produce, Actions: actions, NoPrompt: true,
+		Noun: noun, Variable: variable, Produce: produce, Actions: actions, NoPrompt: true,
 	}.Run()
 	b.emit(IdleEvent{})
 	return err
 }
 
 // buttonsFor are the choices of the secret screen, the ones the session reads.
-func buttonsFor(noun string, actions []cachekey.KeyAction) []Button {
+func buttonsFor(hasVariable bool, actions []cachekey.KeyAction) []Button {
 	buttons := []Button{{'c', "Copy again"}, {'g', "Generate another"}}
-	if noun == "Key" {
+	if hasVariable {
 		buttons = append(buttons, Button{'u', "Set as a user environment variable"})
 	}
 	for _, a := range actions {
