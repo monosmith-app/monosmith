@@ -70,6 +70,6 @@ function toUpdateRow (update: DependencyUpdate, color: string): ListNode {
     icon:        'arrow-up',
     color,
     ...(rewritable && { context: 'dependency', data: update.name }),
-    tooltip:     [`${update.name} ${update.current} → ${update.latest} (${update.level})`, ...where].join('\n'),
+    tooltip:     [`${update.name} ${update.current} → ${update.latest} (${update.level})`, ...where, ...(update.url === undefined || update.url === '' ? [] : [`Registry: ${update.url}`])].join('\n'),
   }
 }

@@ -57,6 +57,10 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		wrapped = append(wrapped, pane.Wrap(l, w, 4)...)
 	}
 	tail = wrapped
+	if len(v.Rows) > 0 {
+		// Each line is cut to fit already; wrapping could split a hyperlink.
+		tail = append(append([]string{""}, v.registryLines(th, w)...), tail...)
+	}
 
 	if len(v.All) == 0 {
 		lines = append(lines, th.Success(th.Icons.Passed+" "+words.Say("depsview.latest")))

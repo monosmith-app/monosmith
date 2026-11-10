@@ -134,7 +134,7 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
 		deps := s.deps
-		deps.Waited, deps.Projects, deps.Tick = s.waited(), len(s.list.Projects()), s.tick
+		deps.Waited, deps.Projects, deps.Tick, deps.Links = s.waited(), len(s.list.Projects()), s.tick, s.hyperlinks
 		deps.Beside = s.lay().HasDetail()
 		deps.Under, deps.Pressed = depsview.FilterOf(s.actionAt(s.mouseX, s.mouseY)), depsview.FilterOf(s.pressed)
 		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))

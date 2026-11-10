@@ -12,6 +12,7 @@ import dev.monosmith.jetbrains.words.SmithWordsConfig.say
  *
  * @property level `patch`, `minor` or `major`: how risky the update is
  * @property projects the projects that declare it
+ * @property url the package's page on its registry; empty when it cannot be known
  */
 data class UpdateContract(
     val plugin: String,
@@ -20,6 +21,7 @@ data class UpdateContract(
     val latest: String,
     val level: String,
     val projects: List<String>,
+    val url: String = "",
 )
 
 /** A tool (a language runtime) with a newer version than the workspace pins. */
@@ -59,6 +61,7 @@ object UpdatesJsonMapper {
                             JsonFieldsMapper.text(it, "latest"),
                             JsonFieldsMapper.text(it, "level"),
                             JsonFieldsMapper.records(it, "sites").map { site -> JsonFieldsMapper.text(site, "project") }.distinct(),
+                            JsonFieldsMapper.text(it, "url"),
                         )
                     }.filter { it.name.isNotEmpty() },
             tools =
@@ -93,7 +96,9 @@ object UpdatesJsonMapper {
 
     /** The plan of an update, in words: each line says what moves and where. */
     fun describe(updates: List<UpdateContract>): String =
-        updates.joinToString("\n") { "${line(it)} · ${it.level}\n    in ${it.projects.joinToString(", ")}" }
+        updates.joinToString("\n") {
+            "${line(it)} · ${it.level}\n    in ${it.projects.joinToString(", ")}" + if (it.url.isEmpty()) "" else "\n    registry: ${it.url}"
+        }
 
     /** The lines of "which updates?": the ones of the riskiest level are marked in the description; nothing risky is ticked at first. */
     fun rows(updates: List<UpdateContract>): List<ChoiceRowContract> =

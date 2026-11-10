@@ -103,9 +103,15 @@ Tools smith pins (informational):
 Report only: pick with smith up in a terminal, name packages, or pass --yes.
 ```
 
-The JSON form has `updates` (each with `plugin`, `name`, `current`, `latest`, `level`
+The JSON form has `updates` (each with `plugin`, `name`, `current`, `latest`, `level`, `url`
 and the `sites` it would rewrite: `file`, `spec`, `section`, `rewritable`) and `tools`
-(`pinned`, `latest`, `newer`).
+(`pinned`, `latest`, `newer`). `url` is the package's page on its registry (npmjs.com, pypi.org,
+nuget.org, crates.io, Maven Central, pub.dev, rubygems.org, packagist.org, pkg.go.dev, or the page of
+an Azure Artifacts feed that `smith.toml` names under `[registries.<name>]`). It is left out when the
+registry is private and its web address cannot be worked out, so a link is never wrong. The
+interactive shell shows it under the table of the Deps view, with a key to open it (see
+[Registry link](tui.md#the-registry-link-in-the-deps-view)); the VS Code and JetBrains clients show it in the
+tooltip and in the plan of the update.
 
 Take everything, or exactly some packages, in every project that uses them:
 

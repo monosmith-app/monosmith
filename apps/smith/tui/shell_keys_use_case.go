@@ -328,6 +328,16 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.installDependency()
 	case "deps-remove":
 		return s.removeDependency()
+	case "deps-open-page":
+		return s.openRegistryPage()
+	case "deps-copy-page":
+		if r, ok := s.deps.Selected(); ok && r.URL != "" {
+			s.copyText(r.URL)
+		} else if ok {
+			s.say(words.Say("tui.registry.unknown", "name", r.Name))
+		} else {
+			s.say(words.Say("tui.registry.none_selected"))
+		}
 	case "deps-align":
 		if argv := s.deps.AlignArgv(); argv != nil {
 			return s.execute(argv, false)

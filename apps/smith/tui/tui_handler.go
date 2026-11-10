@@ -14,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/hyperlink"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/screenreader"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingssource"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
@@ -158,8 +159,8 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	// What the person saved in the Settings tab; the environment still wins over it.
 	prefs, _ := userprefs.Load(pluginhost.Home())
 	cfg := Config{
-		Clipboard: out,
-		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
+		Clipboard: out, Hyperlinks: hyperlink.Supported(os.Getenv),
+		Version: version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
 		Problem: problem, Repair: repair, CommitOperations: commitOps, Environments: environments, Resume: resume,
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 		// The sizes of the panels are kept in the same file as the other choices.
