@@ -88,10 +88,12 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 	return protocol.DoctorResult{Findings: findings}
 }
 
-// Doctor runs the checks of the plugin and adds the build-location check: a
-// build task that writes outside the workspace's dist/.
+// Doctor runs the checks of the plugin and adds the build-location check (a
+// build task that writes outside the workspace's dist/) and the check that
+// each go.mod is tidy.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	res := doctorChecks(workspaceRoot, params)
 	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	res.Findings = append(res.Findings, CheckModulesTidy(workspaceRoot, params.Projects)...)
 	return res
 }
