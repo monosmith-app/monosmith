@@ -1,3 +1,5 @@
+import type { SplitAnswer } from './split-choices.policy.ts'
+
 /** What a click on the welcome view asks for. */
 export type AdoptAction = 'start' | 'preview'
 
@@ -20,7 +22,17 @@ export function toAdoptArguments (action: AdoptAction): string[] {
  * without it smith commits nothing.
  * @param dir - the folder, or `none`
  * @param commit - whether the person ticked "Commit this change so it can be undone"
+ * @param split - what the person decided about the development dependencies smith could
+ * not place (`--hoist`) and their own ESLint setup (`--eslint-setup`); without it smith
+ * asks in the terminal
  */
-export function toMoveArguments (dir: string, commit: boolean): string[] {
-  return ['adopt', '--init', '--move', dir, ...(commit ? ['--commit'] : [])]
+export function toMoveArguments (dir: string, commit: boolean, split?: SplitAnswer): string[] {
+  const hoist = split?.hoist ?? []
+
+  return [
+    'adopt', '--init', '--move', dir,
+    ...(hoist.length > 0 ? ['--hoist', hoist.join(',')] : []),
+    ...(split?.eslint === undefined ? [] : ['--eslint-setup', split.eslint]),
+    ...(commit ? ['--commit'] : []),
+  ]
 }

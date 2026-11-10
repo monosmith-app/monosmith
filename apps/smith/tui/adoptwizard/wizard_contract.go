@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -52,7 +53,10 @@ type Flow interface {
 	// it one commit that smith undo can revert, otherwise nothing is committed.
 	// move is the folder the project at the root goes into, adoptmove.Leave to
 	// keep it there, or "" when the repository has no project at its root.
-	AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned
+	AdoptFixChosen(commit bool, move string, c adoptdecision.Choices, split adoptflow.Split) doctorfix.Planned
+	// MovePlan is the move into dir with the questions of the split: the
+	// development dependencies and the ESLint setup smith cannot place itself.
+	MovePlan(dir string) (adoptmove.Plan, error)
 	// InitFacts are the facts of the repository that shape the decisions of
 	// adopt --init; InitPlan is what it does for the choices, as the review
 	// shows it, with a diff of each file of the person it edits.
@@ -120,6 +124,10 @@ const (
 	StageListing
 	// StageMove asks where the project at the repository root goes.
 	StageMove
+	// StageSplit asks what smith cannot place when the project moves: the
+	// development dependencies it does not know as tools, and the project's
+	// own ESLint setup.
+	StageSplit
 	// StageInit asks the decisions of adopt --init: line endings, the CI
 	// provider and a pipeline of the person's own.
 	StageInit

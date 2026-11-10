@@ -170,7 +170,12 @@ Move it into a folder of its own so smith can manage it?
 
 The adopt wizard of the terminal interface and the VS Code adopt command ask the same
 question, with a name field and a "Commit this change so it can be undone" box that starts
-unticked, and then run the step with `--move`.
+unticked, then ask what smith cannot place when the project moves, and run the step with `--move`.
+That second part is one question for each development dependency smith does not know as a tool
+(the project, or the workspace) and one for the project's own ESLint setup (keep it, or use the
+shared config), each with the answer that changes the least first. The answers go to the step as
+`--hoist` and `--eslint-setup`. A client reads the questions from the `unsure` and `lint` fields of
+`movePlan` in `smith adopt --dry-run --json --move <folder>`.
 
 ## Exit codes
 

@@ -64,9 +64,10 @@ no ESLint config, and `smith doctor` failed on the result. The person had to rep
   (old file kept as `.pre-smith`, ESLint packages removed from the project) or keep their own
   (moved into the project). `--eslint-setup shared|keep` answers; without a terminal or with
   `--yes` their own is kept and the output says so.
-- The adopt wizard and the VS Code extension do not ask about unknown development dependencies
-  or ESLint yet: they pass `--move`, the dependencies stay in the project and their ESLint stays.
-  The plan JSON (`--dry-run --json`) lists `unsure` and `lint` for a client that wants to ask.
+- The adopt wizard and the VS Code extension ask both questions after "where does it go?": the
+  wizard reads the plan through its flow (`MovePlan`), the extension reads `unsure` and `lint` from
+  `smith adopt --dry-run --json --move <folder>`. Each question puts the answer that changes the
+  least first and passes the answer as `--hoist` and `--eslint-setup`.
 - Every other language (.NET, JVM, Dart, Ruby, PHP, C++, Swift) still needs its rules; adopt
   does not move them at all yet (ADR 0070 detects Node, Go, Python and Rust only). The contract is
   in `adoptsplit`.

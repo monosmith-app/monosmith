@@ -665,6 +665,12 @@ wizard's keys and drawing. The stages:
    are not the ones the repository lists, the button is **Install the packages and
    continue**: smith runs `npm ci` (or `npm install` without a lockfile), reads the
    repository again and goes on. git cannot take an install back, and the screen says so.
+   For a plain repository whose project is at the root, the wizard asks **where it goes**
+   (apps, packages, libs, another folder, or leave it), then **what goes where**: one
+   question for each development dependency smith does not know as a tool (the project,
+   or the workspace) and one for the project's own ESLint setup (keep it, or use the shared
+   config). The first answer of each changes the least, `b` goes back, and the answers reach
+   the step as `--hoist` and `--eslint-setup`. Nothing is asked when smith can place everything.
 3. **How far to go**: conservative (keep the build and lint setup) or full (make smith the
    only tool; Nx and Turborepo only, like `--level full`).
 4. For the full level: a **trial conversion on a scratch copy** to see what would be left, then
