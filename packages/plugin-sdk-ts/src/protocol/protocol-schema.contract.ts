@@ -2609,6 +2609,13 @@ export const protocolSchema: SchemaDocument = {
           },
           "description": "Outputs are directories relative to the project root, restored on a cache hit."
         },
+        "ship": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ship names what the task makes in a tool's work folder that the project ships: globs relative to the project root (\"../../dist/cargo/debug/api\"). After the task succeeds, smith hard-links each match into the project's shipped folder (ProjectBuildDir), a folder file by file, under its base name, and copies a file it cannot link. A glob that matches nothing is skipped. Such a task lists the shipped folder in Outputs, never the tool's work folder: a cache restore empties each output folder first."
+        },
         "dependsOn": {
           "type": "array",
           "items": {

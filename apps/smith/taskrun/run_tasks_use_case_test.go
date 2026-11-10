@@ -376,3 +376,19 @@ func TestASharedOutputFolderKeepsTheFilesAnotherTaskWrote(t *testing.T) {
 		})
 	}
 }
+
+func TestABuildThatShipsLinksItsFileIntoTheShippedFolder(t *testing.T) {
+	f := newFixture(t, "core")
+	web := f.pg.Get("web")
+	build := web.Tasks["build"]
+	build.Ship = []string{"out/result.txt"}
+	web.Tasks["build"] = build
+	_, out := f.run(t)
+	shipped := filepath.Join(f.root, "dist", "apps", "web", "result.txt")
+	if b, err := os.ReadFile(shipped); err != nil || string(b) != "web" {
+		t.Fatalf("shipped file %q, %v:\n%s", b, err, out)
+	}
+	if !strings.Contains(out, "web:build │ shipped 1 file to dist/apps/web") {
+		t.Errorf("the run does not say what it shipped:\n%s", out)
+	}
+}

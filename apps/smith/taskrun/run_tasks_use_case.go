@@ -16,6 +16,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
+	"github.com/monosmith-app/monosmith/apps/smith/shiplink"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -233,6 +234,12 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			r.say("%s → %s\n", t.ID, hint)
 		}
 		return Result{Task: t.ID, Status: Failed, Key: key, Duration: took, Reason: reason}
+	}
+	if len(t.Def.Ship) > 0 {
+		// After the tool, before the cache: the entry holds the shipped files.
+		for _, line := range shipLines(t.ID, shiplink.Ship(r.opts.Root, t.Project.Root, t.Def.Ship)) {
+			r.say("%s\n", line)
+		}
 	}
 	if t.Def.Cache && r.opts.Storage != nil {
 		if err := taskcache.Save(r.opts.Storage, r.opts.Root, key, t.ID, t.Project.Root, t.Def.Outputs, out.log.Bytes(), took, &inputs); err != nil {
