@@ -79,6 +79,7 @@ Python package). Paths in output are shortened.
 | Command | Does |
 |---|---|
 | [`smith run`](run.md) | Run tasks on projects, in dependency order, from cache when nothing changed. |
+| [`smith verify`](verify.md) | Check the workspace as CI does: boundaries, lint, typecheck, test and build. |
 | [`smith build`](build.md), [`smith test`](test.md), [`smith lint`](lint.md), [`smith typecheck`](typecheck.md) | `smith run` with the task fixed. |
 | [`smith dev`](dev.md) | Start several projects together. |
 | [`smith derive`](derive.md) | Write the files that follow from facts and the project graph (tsconfig references, Jest display name), keep their owner in `smith.lock`, and report hand edits. |
