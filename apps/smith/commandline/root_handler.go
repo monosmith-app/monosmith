@@ -57,6 +57,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginusage"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/prompt"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
@@ -144,14 +145,15 @@ already have), then build and doctor.`,
 	agentCmd := agentfiles.Command()
 	agentCmd.AddCommand(agentdoc.FileCommand(version))
 	add("inspect", mcpCmd, agentCmd, engineserver.Command(version), languageserver.Command(version))
-	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), composeview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), prompt.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), composeview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 
 // canAsk is whether a person is at the terminal to be asked to trust an
 // external plugin: stdin and stderr are terminals, this is not CI, and the
 // command is not one that serves other programs (smith serve, smith mcp, smith lsp) or
-// owns the screen (smith tui), which never ask.
+// owns the screen (smith tui), which never ask, or a shell prompt calls on every
+// line (smith prompt), which must answer at once and never wait for a person.
 func canAsk(root *cobra.Command, args []string) bool {
 	if plugintrust.InCI(os.Getenv) || !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stderr.Fd())) {
 		return false
@@ -164,7 +166,7 @@ func canAsk(root *cobra.Command, args []string) bool {
 		cmd = cmd.Parent()
 	}
 	switch cmd.Name() {
-	case "serve", "mcp", "lsp", "tui", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+	case "serve", "mcp", "lsp", "tui", "prompt", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 		// The last two are what the completion script of a shell calls on every Tab.
 		return false
 	}

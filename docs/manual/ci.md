@@ -35,7 +35,7 @@ smith ci check
 ## Subcommands
 
 <!-- smith:begin ci -->
-Run a CI phase, or regenerate the pipelines
+Install what a clean checkout needs, run a CI phase, or regenerate the pipelines
 
 Usage: `smith ci <command>`
 

@@ -655,7 +655,7 @@ No flags.
 [Manual page](../manual/ci.md)
 
 <!-- smith:begin ci -->
-Run a CI phase, or regenerate the pipelines
+Install what a clean checkout needs, run a CI phase, or regenerate the pipelines
 
 Usage: `smith ci <command>`
 
@@ -817,6 +817,21 @@ Usage: `smith explain <project>[:<task>] [flags]`
 | `--task <task>` | explain only this task (same as <project>:<task>) |  |
 
 <!-- smith:end explain -->
+
+### smith prompt
+
+[Manual page](../manual/prompt.md)
+
+<!-- smith:begin prompt -->
+Print a one-line status for a shell prompt, from the last doctor run
+
+Usage: `smith prompt [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print the facts as JSON for a custom prompt segment | off |
+
+<!-- smith:end prompt -->
 
 ### smith why
 
@@ -1076,7 +1091,7 @@ Usage: `smith slices <command>`
 
 | Subcommand | Meaning |
 |---|---|
-| `smith slices check` | Check that files are role-named and no folder is a junk drawer |
+| `smith slices check` | Check that files are role-named and no folder or file name is a junk drawer |
 
 No flags.
 

@@ -81,6 +81,7 @@ var catalog = []Action{
 	{Command: []string{"graph"}, Safety: Reads, Variants: []Variant{{When: []string{"tui", "--format=tui"}, Safety: NeedsTerminal, Terminal: "a full-screen graph browser of its own"}}},
 	{Command: []string{"info"}, Safety: Reads},
 	{Command: []string{"explain"}, Safety: Reads},
+	{Command: []string{"prompt"}, Safety: Reads, NotInTUI: "a status line for a shell prompt, read by a script: the shell has its own header", NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"why"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"why-miss"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"report"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},

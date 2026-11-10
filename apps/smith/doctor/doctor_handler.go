@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"encoding/json"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/prompt"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
@@ -69,6 +71,10 @@ option number. Steps run in the workspace root and stop at the first that fails.
 			}
 			defer s.Close()
 			report := Run(s)
+			if !fix {
+				// A normal run leaves the summary `smith prompt` reads; a failed write is not doctor's problem.
+				_ = prompt.Save(s.Root, prompt.NewSummary(s.Root, s.Graph, report.Failed, report.Warnings, time.Now()))
+			}
 			out := cmd.OutOrStdout()
 			if asJSON {
 				enc := json.NewEncoder(out)
