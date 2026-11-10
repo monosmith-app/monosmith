@@ -1039,6 +1039,24 @@ literal with an unbalanced brace. Other languages: a plugin can add the same met
 until then they are not checked. The reason is in
 [ADR 0044](../architecture/decisions/0044-the-release-checks-the-bump-against-the-public-api.md).
 
+## Planning from another branch
+
+On a working branch such as `dev`, the plan is a preview of what merging that branch into the
+release branch (`[release] branch`, default `main`) would release. The Release tab and `smith release
+--dry-run` say so in one line: `Preview: what merging dev into main would
+release`. The JSON plan carries the release branch in `previewOf`.
+
+Each package's last release is the highest tag that the release branch contains, from the local
+branch, or from `origin/<branch>` when there is no local one. A package with no tag there uses its
+newest tag anywhere, and one with no tag at all counts as never released. The commits counted are
+those in `<tag>..HEAD` and `<tag>..<release branch>` together: what the merge would add, plus what
+the release branch already holds unreleased.
+
+The plan is the ordinary one of the branch checked out when the branch is the release branch, a
+release channel's branch or a detached checkout (a pull request build plans for its target
+branch), and when neither release branch ref exists. A real release still runs only from the
+release branch, where the plan does not change.
+
 ## Release channels
 
 A long-lived branch can release a line of prerelease versions of its own, while the release branch

@@ -26,6 +26,10 @@ Do not use it to cut a release from a feature branch: `releases run from main, n
 <branch>` (see the environment variables). Versions come from commit messages; there is no
 flag to set one.
 
+`smith release --dry-run` on a branch that is not the release branch is a preview: it plans what
+merging that branch into the release branch would release, and says so on its first line (see
+[planning from another branch](../reference/releasing.md#planning-from-another-branch)).
+
 ## What smith asks before it publishes
 
 Publishing and tagging cannot be undone, so smith shows each package with the reason it

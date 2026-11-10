@@ -170,8 +170,15 @@ func (g *Git) Tags(prefix string) ([]string, error) {
 
 // TagsMerged lists the tags starting with prefix that HEAD contains: the
 // releases of the branch checked out, not those of other branches.
-func (g *Git) TagsMerged(prefix string) ([]string, error) {
-	out, err := g.Run("tag", "--merged", "HEAD", "--list", prefix+"*")
+func (g *Git) TagsMerged(prefix string) ([]string, error) { return g.TagsMergedAt(prefix, "HEAD") }
+
+// TagsMergedAt lists the tags starting with prefix that ref contains: the
+// releases of that branch, as the branch itself sees them.
+//
+// Parameters: prefix is the tag prefix; ref is a branch, tag or commit.
+// Returns: the tag names, or the git error (for example an unknown ref).
+func (g *Git) TagsMergedAt(prefix, ref string) ([]string, error) {
+	out, err := g.Run("tag", "--merged", ref, "--list", prefix+"*")
 	if err != nil || out == "" {
 		return nil, err
 	}
@@ -200,11 +207,25 @@ type Commit struct {
 // Log returns commits reachable from HEAD and not from since (all history when
 // since is empty) that touch path ("" means the whole repository), newest first.
 func (g *Git) Log(since string, paths ...string) ([]Commit, error) {
-	args := []string{"log", "-z", "--format=%H%x1f%an%x1f%s%x1f%b"}
+	return g.logOf([]string{"HEAD"}, since, paths)
+}
+
+// LogUnion is Log for two tips at once: the commits reachable from HEAD or from
+// other, and not from since, each once, newest first. It answers what a merge of
+// HEAD into other would add, plus what other already holds beyond since.
+//
+// Parameters: since is a revision or "" for all history; other is the second tip;
+// paths limit the commits to those that touch them ("" means the whole repository).
+// Returns: the commits, or the git error (for example an unknown other).
+func (g *Git) LogUnion(since, other string, paths ...string) ([]Commit, error) {
+	return g.logOf([]string{"HEAD", other}, since, paths)
+}
+
+// logOf lists the commits reachable from any of tips and not from since.
+func (g *Git) logOf(tips []string, since string, paths []string) ([]Commit, error) {
+	args := append([]string{"log", "-z", "--format=%H%x1f%an%x1f%s%x1f%b"}, tips...)
 	if since != "" {
-		args = append(args, since+"..HEAD")
-	} else {
-		args = append(args, "HEAD")
+		args = append(args, "^"+since)
 	}
 	var only []string
 	for _, p := range paths {

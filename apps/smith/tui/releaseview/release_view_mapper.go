@@ -31,6 +31,9 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		}
 		lines = append(lines, "", th.Muted(words.Say("releaseview.blocked.hint")))
 	default:
+		if notice := release.PreviewNotice(v.Git.Branch, v.Plan); notice != "" {
+			lines = append(lines, th.Muted(notice))
+		}
 		lines = append(lines, v.headline(th))
 		if v.CanRelease() && v.Button != "" {
 			rowOf[len(lines)] = RowRelease
