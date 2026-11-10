@@ -313,8 +313,13 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 		w.cursor = n - 1
 	case commands.NavConfirm:
 		return w.choose(w.cursor), Outcome{}
+	case commands.NavPageUp, commands.NavPageDown:
+		// A long question scrolls by the page, as its "more" hint says.
+		return w.scrollKey(name), Outcome{}
 	default:
 		switch name {
+		case "ctrl+u", "ctrl+d":
+			return w.scrollKey(name), Outcome{}
 		case "left", "b", "backspace":
 			if w.canGoBack() {
 				return w.back(), Outcome{}
@@ -429,9 +434,10 @@ func (w Wizard) scroll(delta int) Wizard {
 	return w
 }
 
-// Wheel scrolls the body (the review, a failure's output).
+// Wheel scrolls the body (a question, the review, a failure's output); it
+// never moves the cursor of a question.
 func (w Wizard) Wheel(delta int) Wizard {
-	if w.phase == Reviewing || w.phase == Failed || w.LogOpen() {
+	if w.phase == Asking || w.phase == Reviewing || w.phase == Failed || w.LogOpen() {
 		return w.scroll(delta)
 	}
 	return w
