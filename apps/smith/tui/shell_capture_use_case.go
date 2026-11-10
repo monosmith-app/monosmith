@@ -397,7 +397,7 @@ func (s Shell) projectNames() []string {
 func (s Shell) webApps() []string {
 	var names []string
 	for _, p := range s.list.Projects() {
-		if p.Kind == "app" && p.Language == "node" {
+		if isWebApp(p) {
 			names = append(names, p.Name)
 		}
 	}
@@ -411,14 +411,7 @@ func (s Shell) webApps() []string {
 // removes them, with the web apps as a pick list that starts on the selected
 // project.
 func (s *Shell) openEnvironments(title string) tea.Cmd {
-	g := s.guide
-	if base, ok := g.ActionTitled(title); ok {
-		g = g.WithAction(guide.WithProjectPick(base, "project", s.webApps()))
-	}
-	if g, ok := g.WithDefault("project", s.selectedProject()).Pick(title); ok {
-		s.guide = g
-	}
-	return s.gotoTab(commands.TabGuide)
+	return s.openProjectForm(title, "project", s.webApps())
 }
 
 // refreshProjectForms puts the project names into the Remove form of the menu,

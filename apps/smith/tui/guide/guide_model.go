@@ -195,6 +195,18 @@ func (m Model) ActionTitled(title string) (Action, bool) {
 	return Action{}, false
 }
 
+// ActionPresenting returns the action that stands for the catalogue action
+// id ("kind", "tauri add"), such as a form built from a command's
+// description; ok is false when the menu has none.
+func (m Model) ActionPresenting(id string) (Action, bool) {
+	for _, a := range m.actions {
+		if a.Presents == id {
+			return a, true
+		}
+	}
+	return Action{}, false
+}
+
 // Reset returns the guide to its first screen, to be used again.
 func (m Model) Reset() Model {
 	r := NewModel(m.actions)
