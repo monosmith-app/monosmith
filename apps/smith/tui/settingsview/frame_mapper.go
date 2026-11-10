@@ -207,7 +207,7 @@ const (
 )
 
 // detailWant is how many rows the detail of each section would like.
-var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Forms: 3}
+var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Assistants: 3, CI: 3, Forms: 3}
 
 // listLines draws every row of the list with its group headings; lineOf is the
 // line of each item. The row at the cursor is highlighted while the keyboard
@@ -239,7 +239,7 @@ func (m Model) listLines(th theme.Theme, list []item, w, cursor int) (lines []st
 // unavailable explains why a section has no rows yet: not read, not readable,
 // or no backend. blocked is true when it does.
 func (m Model) unavailable(th theme.Theme, w int) (lines []string, blocked bool) {
-	if m.section == Style || m.section == Forms {
+	if !m.section.readsWorkspace() {
 		return nil, false
 	}
 	switch {
