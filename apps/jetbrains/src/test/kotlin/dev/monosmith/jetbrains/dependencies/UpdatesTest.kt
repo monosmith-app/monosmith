@@ -27,7 +27,12 @@ class UpdatesTest {
 
     @Test
     fun theRegistryPageOfAnUpdateIsReadAndNamedInThePlanWhenKnown() {
-        val withPage = UpdatesJsonMapper.toReport("""{"updates":[{"plugin":"node","name":"zod","current":"3.22.0","latest":"3.23.1","level":"minor","url":"https://www.npmjs.com/package/zod","sites":[{"project":"web"}]}],"tools":[]}""")
+        val withPage =
+            UpdatesJsonMapper.toReport(
+                """
+                {"updates":[{"plugin":"node","name":"zod","current":"3.22.0","latest":"3.23.1","level":"minor","url":"https://www.npmjs.com/package/zod","sites":[{"project":"web"}]}],"tools":[]}
+                """.trimIndent(),
+            )
         assertEquals("https://www.npmjs.com/package/zod", withPage.updates.single().url)
         assertTrue(UpdatesJsonMapper.describe(withPage.updates).contains("registry: https://www.npmjs.com/package/zod"))
         val without = UpdatesJsonMapper.toReport(json)
