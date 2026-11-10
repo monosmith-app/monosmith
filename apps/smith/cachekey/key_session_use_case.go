@@ -40,6 +40,9 @@ type Session struct {
 	// Actions are more one-key choices after the built-in ones, such as
 	// sending the key to a CI provider's secret store.
 	Actions []KeyAction
+	// NoPrompt leaves out the line that lists the one-key choices, for a
+	// screen that draws them as buttons.
+	NoPrompt bool
 }
 
 // KeyAction is one more choice of the key prompt.
@@ -115,7 +118,9 @@ func (s Session) Run() error {
 		return nil
 	}
 	for {
-		s.say(s.promptLine())
+		if !s.NoPrompt {
+			s.say(s.promptLine())
+		}
 		select {
 		case <-timer:
 			s.clear(key, "The clipboard held the "+strings.ToLower(s.noun())+" for "+s.ClearAfter.String()+" and is now cleared.")

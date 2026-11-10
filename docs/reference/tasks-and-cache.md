@@ -313,7 +313,9 @@ credential, and the setting. You make the key yourself; smith never stores it.
 choices: it lists the places with `az` or `aws` (each command shown before it
 runs), writes `[cache] remote` after you confirm, makes the key and the Azure
 SAS token, and prints the steps for each CI provider in `[ci] providers`. The
-sections below say the same by hand.
+interactive shell shows the same setup as screens (Enter on `cache.remote` in
+the Settings tab, or the command palette), and VS Code opens it in a terminal.
+The sections below say the same by hand.
 
 **What the key is.** `SMITH_CACHE_KEY` is a random secret that every machine and
 pipeline of the team shares. smith signs each cached object with it

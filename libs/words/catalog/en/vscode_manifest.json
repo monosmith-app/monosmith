@@ -68,6 +68,7 @@
   "vscode.command.environments-list.title": "Environments of the Web Apps",
   "vscode.command.environments-add.title": "Add Environments to a Web App…",
   "vscode.command.environments-remove.title": "Remove Environments from a Web App…",
+  "vscode.command.cache-setup.title": "Cache: Set Up the Remote Cache in a Terminal",
   "vscode.command.cache-status.title": "Cache: Status",
   "vscode.command.cache-verify.title": "Cache: Check for Damage",
   "vscode.command.cache-repair.title": "Cache: Remove What Is Broken…",

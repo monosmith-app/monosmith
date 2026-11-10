@@ -10,6 +10,7 @@ import { projectAction } from './project-actions/index.ts'
 import { addDeriveRows, createDeriveDiagnostics, deriveFile, readDeriveStatus, type DeriveReport, type DeriveView } from './derive-files/index.ts'
 import { showWhy } from './why/index.ts'
 import { bootstrapHere } from './bootstrap-launcher/index.ts'
+import { setUpRemoteCache } from './cache-setup/index.ts'
 import { createTabCompletionFlows } from './tab-completion/index.ts'
 import { installToolsHere } from './install-tools/index.ts'
 import { tryHere } from './try-command/index.ts'
@@ -695,6 +696,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     ...GUIDED_COMMANDS.map((spec) => command<unknown>(`monosmith.${spec.id}`, async (argument) => { await guidedHere(host, showPage, spec, argument) })),
     command<unknown>('monosmith.try', async (argument) => { await tryHere(host, showPage, argument) }),
     command<unknown>('monosmith.bootstrap', async (argument) => { await bootstrapHere(host, argument) }),
+    command<unknown>('monosmith.cacheSetup', async (argument) => { await setUpRemoteCache(host, argument) }),
     command<unknown>('monosmith.setUpTabCompletion', async (argument) => { await tabCompletion.setUp(argument) }),
     command<unknown>('monosmith.installTools', async (argument) => { await installToolsHere(host, argument) }),
     command<unknown>('monosmith.openReport', async (argument) => { await openReport(host, argument) }),

@@ -80,6 +80,8 @@
   "commands.rel.forced.title": "Release a package without a releasing commit…",
   "commands.rel.forced.hint": "smith release --bump p=level --force: the same code under a new version",
   "commands.rel.forced.guide": "Release without a releasing commit",
+  "commands.ws.cache-setup.title": "Set up the remote cache…",
+  "commands.ws.cache-setup.hint": "smith cache setup: choose the storage, make the key, and see each CI provider's secrets; every command is shown and confirmed first",
   "commands.deps.mark.title": "Mark or unmark a dependency",
   "commands.deps.mark.shortcut": "Space",
   "commands.deps.mark.footer": "mark",

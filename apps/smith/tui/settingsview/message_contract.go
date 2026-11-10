@@ -69,4 +69,6 @@ type Result struct {
 	// every plugin) and offer the plugins it finds.
 	Search bool
 	Term   string
+	// CacheSetup asks the shell to open the remote cache setup.
+	CacheSetup bool
 }
