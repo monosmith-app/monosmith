@@ -132,6 +132,9 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			}
 			if !asJSON {
 				if printsTextPlan(asJSON, format) {
+					if n := PreviewNotice(s.Git.CurrentBranch(), plan); n != "" {
+						fmt.Fprintln(out, n)
+					}
 					printPlan(cmd, plan, dryRun, verbose)
 				}
 				if notes {
