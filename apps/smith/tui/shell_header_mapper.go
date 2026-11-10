@@ -4,12 +4,61 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
+// inlineHeaderMax is the most columns the header may take at the right end of
+// the tab row: the tabs keep the rest.
+const inlineHeaderMax = 40
+
+// inlineHeader is true when the header shares the row of the tabs: the screen
+// is wide enough (layout.InlineHeaderFrom) and the tabs keep their full names
+// beside it. Otherwise the header has a row of its own, as on a narrow screen.
+func (s Shell) inlineHeader() bool {
+	if s.w < layout.InlineHeaderFrom || s.h <= 4 {
+		return false
+	}
+	used := 0
+	for _, sp := range s.stripAt(s.w, "").Spans {
+		used = max(used, sp.X1)
+	}
+	return used+pane.Width(s.headerText())+2 <= s.w
+}
+
+// headerText is the header cut to inlineHeaderMax columns, for the tab row.
+func (s Shell) headerText() string {
+	return pane.Fit(strings.TrimLeft(strings.Join(s.headerParts(), "  "), " "), inlineHeaderMax)
+}
+
+// headerRight is the header as it sits at the right end of the tab row; ""
+// when the header has its own row.
+func (s Shell) headerRight() string {
+	if !s.inlineHeader() {
+		return ""
+	}
+	return s.headerText()
+}
+
+// tabRow is the first row on a wide screen: the tabs at the left and the header
+// at the right.
+func (s Shell) tabRow(strip tabs.Strip) string {
+	right := s.headerRight()
+	room := s.w - pane.Width(right) - 2
+	left := pane.Fit(strip.Lines[0], room)
+	return left + strings.Repeat(" ", max(s.w-pane.Width(left)-pane.Width(right)-1, 1)) + right + " "
+}
+
 // headerRow is the top row: the workspace, its branch and its health.
 func (s Shell) headerRow() string {
+	return pane.Fit(strings.Join(s.headerParts(), "  "), s.w)
+}
+
+// headerParts are the pieces of the header: the workspace, what is wrong with
+// it, its branch and its health.
+func (s Shell) headerParts() []string {
 	name := s.header
 	if name == "" {
 		name = "smith"
@@ -27,7 +76,7 @@ func (s Shell) headerRow() string {
 	if h := s.healthSummary(); h != "" {
 		parts = append(parts, h)
 	}
-	return pane.Fit(strings.Join(parts, "  "), s.w)
+	return parts
 }
 
 // healthSummary is what the last doctor run found, as counts: "×2 ▲2" for two

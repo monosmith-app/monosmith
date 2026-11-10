@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -29,9 +30,23 @@ const badgeRoom = 3
 // tabStrip is the row of views.
 func (s Shell) tabStrip() tabs.Strip { return s.renderStrip(s.hoveredTab()) }
 
-// renderStrip draws the strip with the tab hover highlighted.
+// headerReserve is the width the header takes from the tabs when it shares
+// their row.
+func (s Shell) headerReserve() int {
+	if right := s.headerRight(); right != "" {
+		return pane.Width(right) + 2
+	}
+	return 0
+}
+
+// renderStrip draws the strip with the tab hover highlighted, in the width the
+// header leaves it.
 func (s Shell) renderStrip(hover string) tabs.Strip {
-	l := s.lay()
+	return s.stripAt(s.w-s.headerReserve(), hover)
+}
+
+// stripAt draws the strip in a width.
+func (s Shell) stripAt(width int, hover string) tabs.Strip {
 	list := make([]tabs.Tab, 0, len(s.tabs))
 	for _, id := range s.tabs {
 		t := tabs.Tab{ID: id, Label: tabTitles()[id], Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id)}
@@ -46,7 +61,7 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 		list = append(list, t)
 	}
 	return tabs.Render(tabs.Props{
-		Theme: s.th, Tabs: list, Active: s.tab, Hover: hover, Width: l.Tabs.W,
+		Theme: s.th, Tabs: list, Active: s.tab, Hover: hover, Width: width,
 		ShortenOrder: shortOrder,
 	})
 }

@@ -34,8 +34,8 @@ func (l *lab) doubleClick(x, y int) {
 
 func TestClickingATabSwitchesTheView(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Doctor", 0) // the one row of tabs, under the header
-	if y != 1 {
+	x, y := l.findAfter("Doctor", 0) // the one row of tabs, the first on a wide screen
+	if y != 0 {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
@@ -366,7 +366,7 @@ func TestWhileAModalIsOpenTheMouseActsOnlyOnIt(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			l := colourLab(t, 160, 50, c.tab)
 			tx, ty := l.find("Settings (6)")
-			if ty != 1 {
+			if ty != 0 {
 				t.Fatalf("the tab is on row %d", ty)
 			}
 			points := [][2]int{{tx + 2, ty}, {3, l.sh().lay().Footer.Y}, {0, 0}, {159, 0}}

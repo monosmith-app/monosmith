@@ -628,7 +628,7 @@ type (
 
 // lay is where each area of the screen is drawn, for the size and the open view.
 func (s Shell) lay() layout.Layout {
-	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth())
+	return layout.DivideShared(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth(), s.inlineHeader())
 }
 
 // canShow is true for a view the shell can open: a tab of the strip, or the
