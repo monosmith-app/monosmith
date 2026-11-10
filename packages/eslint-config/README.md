@@ -162,7 +162,8 @@ already guarantees in CI before the lint step.
 
 ### Import-graph rules (`configs/import-graph.config.js`)
 
-`no-cycle` and `no-self-import`, scoped to project source. Specifically the
+`no-cycle`, `no-self-import` and `no-duplicates` (two imports from one module,
+joined by `--fix`), scoped to project source. Specifically the
 **intra-project** gap: `@nx/enforce-module-boundaries` polices edges _between_
 projects, cycles included, but nothing looked inside a project. A cycle among one
 project's own modules runs until it doesn't — whichever module evaluates second sees

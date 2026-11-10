@@ -182,6 +182,9 @@ const FIXTURES: Record<string, string> = {
     "import { fromB } from './cycleB.js'\n\nexport function fromA (): number {\n  return fromB() + 1\n}\n",
   'packages/demo/src/cycleB.ts':
     "import { fromA } from './cycleA.js'\n\nexport function fromB (): number {\n  return fromA() - 1\n}\n",
+  // Two imports from one module: `import-x/no-duplicates` joins them.
+  'packages/demo/src/doubled.ts':
+    "import { fromA } from './cycleA.js'\nimport { fromA as again } from './cycleA.js'\n\nexport const doubled = fromA() + again()\n",
 }
 
 let workspace: string
@@ -594,6 +597,10 @@ describe('@monosmith/eslint-config', () => {
     ]
 
     expect(severity).toBe(0)
+  })
+
+  it('reports two imports from one module, which --fix joins into one', () => {
+    expect(rulesFor('packages/demo/src/doubled.ts')).toContain('import-x/no-duplicates')
   })
 
   it('catches a file importing itself', () => {
