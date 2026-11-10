@@ -287,6 +287,7 @@ Usage: `smith doctor [flags]`
 | `--fix` | boolean | off | show the fixes doctor can make as diffs, and apply the safe ones |
 | `--json` | boolean | off | print the report as JSON |
 | `--only <only>` | string, repeatable |  | with --fix, fix only the named check, as doctor prints it (repeatable) |
+| `--strict` | boolean | off | exit non-zero on a warning too, for a pipeline that allows none |
 | `--verbose` | boolean | off | list every passed check, not one line for each check that repeats per project |
 | `-y, --yes` | boolean | off | with --fix, apply without asking |
 

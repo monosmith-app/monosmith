@@ -935,6 +935,7 @@ Usage: `smith doctor [flags]`
 | `--fix` | show the fixes doctor can make as diffs, and apply the safe ones | off |
 | `--json` | print the report as JSON | off |
 | `--only <only>` | with --fix, fix only the named check, as doctor prints it (repeatable) (repeatable) |  |
+| `--strict` | exit non-zero on a warning too, for a pipeline that allows none | off |
 | `--verbose` | list every passed check, not one line for each check that repeats per project | off |
 | `-y, --yes` | with --fix, apply without asking | off |
 
