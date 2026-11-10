@@ -62,6 +62,7 @@ const FIXTURES: Record<string, string> = {
     "import { report } from './index.ts'\n\nexport function again (): number {\n  return report()\n}\n",
   'packages/app/src/reports/selfish.use-case.ts':
     "import { report } from '.'\n\nexport function twice (): number {\n  return report() * 2\n}\n",
+  'packages/app/src/reports/with-auth.middleware.ts':     'export const withAuth = 1\n',
   'packages/app/src/reports/reportHelper.ts':             'export const helper = 1\n',
   'packages/app/src/reports/deeper/inner.use-case.ts':    'export const inner = 1\n',
   // A banned word in a file name, in a production file and in a test, and one inside a fixtures folder.
@@ -228,6 +229,7 @@ describe('monosmith({ verticalSlices: { roles } })', () => {
 describe('monosmith({ verticalSlices })', () => {
   it('passes a slice that follows the rules, and its test', () => {
     expect(slicesFor('packages/app/src/index.ts')).toEqual([])
+    expect(slicesFor('packages/app/src/reports/with-auth.middleware.ts')).toEqual([])
     expect(slicesFor('packages/app/src/arithmetic/index.ts')).toEqual([])
     expect(slicesFor('packages/app/src/arithmetic/add.algorithm.ts')).toEqual([])
     expect(slicesFor('packages/app/src/arithmetic/add.algorithm.spec.ts')).toEqual([])
