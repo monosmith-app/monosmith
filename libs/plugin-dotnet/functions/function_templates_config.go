@@ -62,7 +62,7 @@ A [[.HostLabel]] app in C# on [[.Framework]], made by smith. It answers [[.Trigg
 
 - ` + "`smith test`" + ` runs the unit tests of the function: they need no cloud tool.
 - ` + "`smith run start`" + ` runs it locally with [[.LocalTool]].
-- ` + "`smith run package`" + ` publishes the app into dist/dotnet/publish/[[.ID]]/release.
+- ` + "`smith run package`" + ` publishes the app and ships it to dist/[[.Dir]].
 [[- if eq .Host "azure-functions"]]
 - ` + "`smith pipeline deploy-azure-function`" + ` adds a pipeline that deploys the app to an Azure Function App.
 - Copy local.settings.sample.json to local.settings.json (git ignores it) for the settings of your machine.

@@ -38,7 +38,8 @@ func formatTask(cargo func(...string) []string, name string, fmtArgs []string) p
 // (clippy, warnings are errors), typecheck (check), format (fmt --check) and
 // package (cargo package, what crates.io would get). Cargo builds the
 // crates a crate depends on itself, so no task depends on another project's.
-func Tasks(name string, kind protocol.ProjectKind, fmtArgs []string) map[string]protocol.Task {
+// An app's build ships its program into dist/<root> (withShippedBinary).
+func Tasks(root, name string, kind protocol.ProjectKind, fmtArgs []string) map[string]protocol.Task {
 	cargo := func(args ...string) []string { return append([]string{"cargo"}, args...) }
 	tasks := map[string]protocol.Task{
 		"build":     {Command: cargo("build", "-p", name), Inputs: inputs, Description: "cargo build"},
@@ -48,6 +49,7 @@ func Tasks(name string, kind protocol.ProjectKind, fmtArgs []string) map[string]
 		"format":    formatTask(cargo, name, fmtArgs),
 	}
 	if kind == protocol.ProjectApp {
+		tasks["build"] = withShippedBinary(tasks["build"], root, DebugProfile, name)
 		tasks["start"] = protocol.Task{Command: cargo("run", "-p", name), Description: "Run the app"}
 	}
 	if kind == protocol.ProjectPackage {

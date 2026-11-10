@@ -49,7 +49,7 @@ All tasks run in the crate directory, scoped with `-p <crate name>`. Cargo build
 
 | Task | Command | Appears for | Cached |
 |---|---|---|---|
-| `build` | `cargo build -p <crate>` | every crate | no (and no outputs declared) |
+| `build` | `cargo build -p <crate>` | every crate | no; an app outputs `dist/<project dir>` and ships its binary there |
 | `test` | `cargo test -p <crate>` | every crate | yes |
 | `lint` | `cargo clippy -p <crate> --all-targets -- -D warnings` | every crate | yes |
 | `typecheck` | `cargo check -p <crate> --all-targets` | every crate | yes |
@@ -57,7 +57,7 @@ All tasks run in the crate directory, scoped with `-p <crate name>`. Cargo build
 | `start` | `cargo run -p <crate>` | `app` | no |
 | `package` | `cargo package -p <crate> --allow-dirty` | `package` | no |
 
-`build` is a debug build: it writes `dist/cargo/debug/`, and the app binary is named after the crate (real: `dist/cargo/debug/rs-demo-cli.exe`). There is no `--release` task. `package` writes the `.crate` under `dist/cargo/package/`, not under `dist/drop`, so `smith ci pack` yields no file for a Rust workspace (the task runs, but its output is not in the drop folder; not verified in a CI run). An `app` has no `package` task.
+`build` is a debug build: it writes `dist/cargo/debug/`, and the app binary is named after the crate (real: `dist/cargo/debug/rs-demo-cli.exe`). smith then hard-links the binary of an app into its shipped folder, `dist/<project dir>` (`dist/apps/cli/rs-demo-cli.exe`), after every build; see [the shipped folder](../../../reference/tasks-and-cache.md#the-shipped-folder-and-the-work-folder). There is no `--release` task. `package` writes the `.crate` under `dist/cargo/package/`, not under `dist/drop`, so `smith ci pack` yields no file for a Rust workspace (the task runs, but its output is not in the drop folder; not verified in a CI run). An `app` has no `package` task.
 
 With `[conventions.vertical-slices]` each crate also gets `slice-check` (inputs `src/**/*.rs`, `tests/**/*.rs`) and `lint` runs after it; see [vertical-slices](vertical-slices.md).
 
@@ -182,7 +182,7 @@ The pin label is `rustc`, probed with `rustc --version`. Real output with `[tool
 
 smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): another version is a warning, older or newer. A machine on 1.76.0 is warned (with the fix that installs the pinned toolchain) instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
 
-Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes): `dist/cargo/debug/` for builds, `dist/cargo/package/` for `cargo package`.
+Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes): `dist/cargo/debug/` for builds, `dist/cargo/package/` for `cargo package`. `dist/cargo` is the work folder of the whole workspace and never a task output; an app ships its binary to `dist/<project dir>`.
 
 ## Releasing
 
@@ -297,7 +297,7 @@ smith refuses, naming the folder: a folder that does not exist, one with a `Carg
 - `cargo` (with `rustc`, `clippy`, `rustfmt`) on PATH. Network for the first `cargo fetch` and for `release --dry-run`.
 - A root workspace `Cargo.toml` is required. A repository whose single root `Cargo.toml` is a crate is not a smith project (and `smith add` refuses to turn it into a workspace for you).
 - The root `Cargo.toml` is yours after the first write; smith edits only the `members` array and, at release time, the version lines.
-- `build` is a debug, uncached build with no declared outputs; there is no release build task. Release archives are built by `smith release` (zip only, not `.tar.gz`: the npm, PyPI, NuGet and package manager steps read zips) and by the native jobs.
+- `build` is a debug, uncached build; an app declares its shipped folder `dist/<project dir>` as the output, a library none. There is no release build task. Release archives are built by `smith release` (zip only, not `.tar.gz`: the npm, PyPI, NuGet and package manager steps read zips) and by the native jobs.
 - The audit needs cargo-audit (installed on CI, a hint elsewhere); it does not tell fixable findings from the rest, so it never blocks. Private cargo registries are not asked for newer versions.
 
 ## Verified

@@ -52,7 +52,7 @@ func TestGenerateGradle(t *testing.T) {
 	if api.Kind != protocol.ProjectApp || api.Stack != KotlinStack || api.Tasks["lint"].Command[3] != ":apps:web-api:ktlintCheck" || api.Tasks["start"].Command == nil {
 		t.Errorf("api %+v", api)
 	}
-	if core.Kind != protocol.ProjectPackage || core.Version != "0.0.0" || core.Exports[1] != "dev.acmecorp:acme-corp-core" || core.Tasks["build"].Outputs[0] != "../../dist/gradle/acme-corp-core" {
+	if core.Kind != protocol.ProjectPackage || core.Version != "0.0.0" || core.Exports[1] != "dev.acmecorp:acme-corp-core" || core.Tasks["build"].Outputs[0] != "../../dist/packages/core" || core.Tasks["build"].Ship[0] != "../../dist/gradle/acme-corp-core/libs/*.jar" {
 		t.Errorf("core %+v", core)
 	}
 	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "packages/core", Workspace: info, Stack: KotlinStack}); err == nil {

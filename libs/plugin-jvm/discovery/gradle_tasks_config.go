@@ -20,7 +20,8 @@ var gradleInputs = []string{
 // selected by its project path. build assembles it after the modules it
 // depends on (^build); test and start wait for it; lint is what the
 // module's plugins add (ktlint for Kotlin, Checkstyle for Java, Android
-// Lint for an Android module).
+// Lint for an Android module). A module whose build folder smith knows ships
+// its jar, or its debug APK, into dist/<root>.
 func GradleTasks(root string, b GradleBuild, kind protocol.ProjectKind) map[string]protocol.Task {
 	gradle := func(tasks ...string) []string {
 		argv := []string{"gradle", "--console=plain", "-q"}
@@ -31,15 +32,15 @@ func GradleTasks(root string, b GradleBuild, kind protocol.ProjectKind) map[stri
 	}
 	build := protocol.Task{Command: gradle("assemble"), Cwd: ".", Inputs: gradleInputs, DependsOn: []string{"^build"}, Description: "gradle assemble"}
 	if b.BuildDir != "" {
-		build.Outputs = []string{strings.Repeat("../", strings.Count(root, "/")+1) + b.BuildDir}
+		build = withShippedArchive(build, root, gradleArchive(b.BuildDir, b.Android, DebugVariant))
 	}
 	tasks := map[string]protocol.Task{
 		"build": build,
 		"test":  {Command: gradle("test"), Cwd: ".", Inputs: gradleInputs, DependsOn: []string{"build"}, Cache: true, Description: "gradle test"},
 	}
 	if len(b.Lint) > 0 {
-		// Lint writes its reports into the build directory, which smith
-		// empties before a build: it runs after the build. Android's tasks
+		// Lint writes its reports into the build directory, which the build
+		// fills: it runs after the build. Android's tasks
 		// also compile the same intermediates (assemble runs lint-vital, lint
 		// compiles the unit tests), so two Gradle builds of one Android
 		// module at once overwrite each other's outputs: its tasks run one

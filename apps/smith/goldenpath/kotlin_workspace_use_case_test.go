@@ -61,6 +61,10 @@ func TestKotlinWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "gradle", "smith-e2e-kotlin-core", "libs")); err != nil {
 		t.Error("the builds are under dist/gradle")
 	}
+	// The app ships from dist/<project dir>: its jar is linked there.
+	if shipped, _ := filepath.Glob(filepath.Join(w.dir, "dist", "apps", "api", "*.jar")); len(shipped) == 0 {
+		t.Error("the api jar is not shipped to dist/apps/api")
+	}
 	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ Gradle is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}

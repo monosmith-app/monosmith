@@ -53,6 +53,10 @@ func TestDotnetWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "dotnet")); err != nil {
 		t.Error("the builds are under dist/dotnet")
 	}
+	// The app ships from dist/<project dir>: its build output is linked there.
+	if shipped, _ := filepath.Glob(filepath.Join(w.dir, "dist", "apps", "api", "*.dll")); len(shipped) == 0 {
+		t.Error("the api build is not shipped to dist/apps/api")
+	}
 	if out := w.smith(true, "doctor"); !strings.Contains(out, "✓ the .NET SDK is installed") || !strings.Contains(out, "✓ every build writes to dist/") {
 		t.Fatalf("doctor:\n%s", out)
 	}

@@ -55,6 +55,10 @@ func TestRustWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "cargo")); err != nil {
 		t.Error("the builds are under dist/cargo")
 	}
+	// The app ships from dist/<project dir>: its binary is linked there.
+	if shipped, _ := filepath.Glob(filepath.Join(w.dir, "dist", "apps", "cli", "*")); len(shipped) == 0 {
+		t.Error("the cli binary is not shipped to dist/apps/cli")
+	}
 	if out := w.smith(true, "doctor"); !strings.Contains(out, "the Cargo workspace lists each project") {
 		t.Fatalf("doctor:\n%s", out)
 	}

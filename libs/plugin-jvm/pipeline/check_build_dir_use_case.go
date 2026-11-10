@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/buildrefs"
@@ -167,7 +168,7 @@ func mavenFinding(workspaceRoot string, p protocol.Project, projects []protocol.
 		Remedy:  "set <build><directory>${project.basedir}/" + upTo(p.Root) + target + "</directory></build> in " + pom + ", or run smith doctor --fix",
 	}
 	f.Problem = f.Detail
-	if outputs := p.Tasks["build"].Outputs; len(outputs) > 0 {
+	if slices.Contains(p.Tasks["build"].Outputs, upTo(p.Root)+target) {
 		f.Detail += ". The build task caches " + target + " instead, which that build never writes, so a cache hit restores nothing"
 	}
 	manual := f.Remedy

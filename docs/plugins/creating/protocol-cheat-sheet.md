@@ -363,6 +363,7 @@ Task is a command the host can run, hash and cache.
 | `env` | `map[string]string` | no |  |
 | `inputs` | `[]string` | no | Inputs are globs relative to the project root. |
 | `outputs` | `[]string` | no | Outputs are directories relative to the project root, restored on a cache hit. |
+| `ship` | `[]string` | no | Ship names what the task makes in a tool's work folder that the project ships: globs relative to the project root ("../../dist/cargo/debug/api"). After the task succeeds, smith hard-links each match into the project's shipped folder (ProjectBuildDir), a folder file by file, under its base name, and copies a file it cannot link. |
 | `dependsOn` | `[]string` | no | DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of every project this one imports first. |
 | `cache` | `bool` | no |  |
 | `description` | `string` | no | Description is shown by `smith explain` and the TUI. |

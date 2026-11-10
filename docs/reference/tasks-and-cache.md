@@ -13,6 +13,7 @@ A task is a command a plugin infers for a project: `build`, `test`, `lint`,
 | `dependsOn` | `build` — this project's build first; `^build` — the build of every project this one imports first (reaching through projects without a build); `web:build` — a specific task |
 | `inputs` | globs relative to the project, `{workspaceRoot}/...` for root files, `!` to exclude; default: every file of the project |
 | `outputs` | directories restored on a cache hit (`dist`) |
+| `ship` | files a tool writes into its own work folder that smith links into the shipped folder `dist/<project dir>` after the task ([below](#the-shipped-folder-and-the-work-folder)); set by a plugin |
 | `cache` | whether results are cached |
 
 ```sh
@@ -141,9 +142,41 @@ folder there: Cargo builds into `dist/cargo` (`target-dir` in
 | Lua | `dist/<project dir>/`: the rock installed by `luarocks make --tree` |
 | Swift | `dist/<project dir>/`: the SwiftPM build (`swift build --scratch-path`) |
 | AppleScript | `dist/<project dir>/<name>.scpt` (`osacompile`, macOS only) |
-| Rust | `dist/cargo` for the whole workspace |
-| .NET | `dist/dotnet` (`bin/` and `obj/`) for the whole workspace |
-| JVM | `dist/maven` or `dist/gradle` for the whole workspace |
+| Rust | `dist/<project dir>/`: an app's binary, linked from `dist/cargo/debug/` (the work folder of the whole workspace) |
+| .NET | `dist/<project dir>/`: an app's build, linked from `dist/dotnet/bin/<project>/debug/`; a function app's published folder, linked from `dist/dotnet/publish/<project>/release/`; `dist/dotnet` (`bin/` and `obj/`) is the work folder of the whole workspace |
+| JVM | `dist/<project dir>/`: the jar, linked from `dist/maven/<artifactId>/`, or the jar or debug APK, linked from `dist/gradle/<artifactId>/` |
+
+### The shipped folder and the work folder
+
+`dist/<project dir>` is the **shipped folder**: what a project ships or runs
+(ADR 0092). Some tools keep their output in a **work folder** of their own,
+with their incremental state: `dist/cargo`, `dist/dotnet`,
+`dist/gradle/<artifactId>`, `dist/maven/<artifactId>`. For these, the build
+task names the shipped files in its `ship` field (globs relative to the
+project; a plugin sets it, `smith.toml` does not). After the tool succeeds,
+smith hard-links each file into the shipped folder:
+
+```
+cli:build ▶ cargo build -p cli
+cli:build │ shipped 1 file to dist/apps/cli
+cli:build ✓ 4.1s
+```
+
+- smith makes the links again after every build. A tool writes a new file, and a
+  link to the old one would keep the old content.
+- When a link fails (another volume, a file system without hard links), smith
+  copies the file and says so. It never makes a symbolic link.
+- When Windows does not let smith replace a running program, the build still
+  passes: the shipped folder keeps the old file, and smith names the program to
+  close (`→ close cli.exe and build again`). The new build is in the work folder.
+- When no file matches, smith warns: the tool wrote somewhere else
+  (`→ run smith doctor to check where the tool builds`).
+
+The task's `outputs` name the shipped folder only, never a work folder. A cache
+restore empties each output folder first, so a shared work folder as an output
+would lose the build state of every other project. The Cargo and .NET builds
+are not cached: `dotnet test --no-build` and `dotnet run --no-build` read the
+work folder. A cache hit restores copies of the shipped files, not links.
 
 TypeScript libraries don't build at all. A library's `package.json` exports
 its sources (`"exports": "./src/index.ts"`). TypeScript reads them, and so

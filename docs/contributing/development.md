@@ -68,7 +68,7 @@ Core slices in `apps/smith`:
 | `sbom`, `linuxpackages` | the CycloneDX SBOM and the `.deb` and `.rpm` packages attached to a release |
 | `pubrelease`, `dockerdescription` | `smith release pub` and `smith docker description` |
 | `recipecatalog`, `recipewizard`, `recipereleases` | list and describe a workspace's recipes, `smith recipe new`, and whether a recipe URL has a newer release |
-| `toolchainpin`, `cachecredentials`, `buildoutputs`, `declarationspecifiers` | `[toolchains]` pins, the secrets a remote cache needs, the build-output check, the declaration fix-up convert writes |
+| `toolchainpin`, `cachecredentials`, `buildoutputs`, `shiplink`, `declarationspecifiers` | `[toolchains]` pins, the secrets a remote cache needs, the build-output check, the link of shipped files into `dist/<project dir>`, the declaration fix-up convert writes |
 | `npmaudit`, `npmpolicy`, `npmdepscheck`, `pydepscheck`, `godepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-*`, `go-deps-check` and `rust-policy` steps the language plugins' tasks call |
 | `commandargs`, `problem` | the check of positional arguments, and the "problem and next step" message form |
 | `githubrelease` | GitHub Releases and their assets |

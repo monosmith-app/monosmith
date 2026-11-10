@@ -70,7 +70,7 @@ func describeDeclared(workspaceRoot string, d protocol.DeclaredProject) (protoco
 	case protocol.ProjectPackage:
 		return protocol.Project{}, fmt.Errorf("a program of a crate cannot be released on its own (a crate has one version): declare it as a lib or an app")
 	}
-	tasks := binTasks(crate.Name, path.Base(d.Root), kind)
+	tasks := binTasks(d.Root, crate.Name, path.Base(d.Root), kind)
 	crateInputs := []string{"{workspaceRoot}/" + path.Join(crateDir, "Cargo.toml"), "{workspaceRoot}/" + path.Join(crateDir, "src", "**", "*")}
 	for name, t := range tasks {
 		if len(t.Inputs) > 0 {
@@ -91,8 +91,9 @@ func describeDeclared(workspaceRoot string, d protocol.DeclaredProject) (protoco
 
 // binTasks are cargo's, scoped to one binary of a crate with -p and --bin: build,
 // test, lint (clippy), typecheck and, for an app, start. There is no format task:
-// cargo fmt covers a whole crate, not one binary.
-func binTasks(crate, bin string, kind protocol.ProjectKind) map[string]protocol.Task {
+// cargo fmt covers a whole crate, not one binary. An app's build ships the
+// binary into dist/<root>.
+func binTasks(root, crate, bin string, kind protocol.ProjectKind) map[string]protocol.Task {
 	scoped := func(args ...string) []string {
 		return slices.Concat([]string{"cargo"}, args, []string{"-p", crate, "--bin", bin})
 	}
@@ -103,6 +104,7 @@ func binTasks(crate, bin string, kind protocol.ProjectKind) map[string]protocol.
 		"typecheck": {Command: scoped("check"), Inputs: inputs, Cache: true, Description: "cargo check --bin " + bin},
 	}
 	if kind == protocol.ProjectApp {
+		tasks["build"] = withShippedBinary(tasks["build"], root, DebugProfile, bin)
 		tasks["start"] = protocol.Task{Command: scoped("run"), Description: "Run the app"}
 	}
 	return tasks

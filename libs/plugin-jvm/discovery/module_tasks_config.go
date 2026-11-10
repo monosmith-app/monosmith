@@ -1,10 +1,6 @@
 package discovery
 
-import (
-	"strings"
-
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
-)
+import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 
 // inputs are what a module's results depend on: its sources and pom, and the
 // workspace's root pom (plugin versions, Checkstyle rules).
@@ -21,12 +17,13 @@ func BuildDir(artifactID string) string { return protocol.BuildDir + "/maven/" +
 // after the modules it depends on (^build), so the modules that use it
 // resolve it there; test, start and lint wait for the module's build (lint
 // is Checkstyle with the root pom's rules, which writes its configuration
-// into the build directory smith empties before a build).
+// into the build directory). The build ships the module's jar into
+// dist/<root>.
 func Tasks(root, coordinates, artifactID string, kind protocol.ProjectKind) map[string]protocol.Task {
 	mvn := func(args ...string) []string { return append([]string{"mvn", "-B", "-q", "-pl", coordinates}, args...) }
-	up := strings.Repeat("../", strings.Count(root, "/")+1)
+	build := protocol.Task{Command: mvn("install", "-DskipTests"), Cwd: ".", Inputs: inputs, DependsOn: []string{"^build"}, Description: "mvn install (into the local repository, for the modules that use it)"}
 	tasks := map[string]protocol.Task{
-		"build": {Command: mvn("install", "-DskipTests"), Cwd: ".", Inputs: inputs, Outputs: []string{up + BuildDir(artifactID)}, DependsOn: []string{"^build"}, Description: "mvn install (into the local repository, for the modules that use it)"},
+		"build": withShippedArchive(build, root, BuildDir(artifactID)+"/*.jar"),
 		"test":  {Command: mvn("test"), Cwd: ".", Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "mvn test"},
 		"lint":  {Command: mvn("checkstyle:check"), Cwd: ".", Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "Checkstyle (the root pom's rules)"},
 	}

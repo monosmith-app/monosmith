@@ -64,6 +64,9 @@ func TestAndroidWorkspace(t *testing.T) {
 	if _, err := os.Stat(apk); err != nil {
 		t.Fatalf("the APK is built under dist/gradle: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(w.dir, "dist", "apps", "mobile", "mobile-debug.apk")); err != nil {
+		t.Errorf("the APK is shipped to dist/apps/mobile: %v", err)
+	}
 	if _, err := os.Stat(filepath.Join(w.dir, "apps", "mobile", "build")); err == nil {
 		t.Error("apps/mobile/build exists: Gradle builds must go to dist/")
 	}

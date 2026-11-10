@@ -12,7 +12,8 @@ var inputs = []string{"**/*", "!bin/**", "!obj/**", "{workspaceRoot}/Directory.B
 // referenced projects' builds (^build), builds the tests project (which
 // builds the project), and the tasks that read the build (test, lint, start)
 // wait for it and do not build again. lint is dotnet format, which also runs
-// the analyzers; a package packs into the workspace's dist/<project dir>.
+// the analyzers; a package packs into the workspace's dist/<project dir>, and
+// an app's build ships its output there (withShippedBuild).
 func Tasks(root, file, tests string, kind protocol.ProjectKind) map[string]protocol.Task {
 	target := file
 	if tests != "" {
@@ -27,6 +28,7 @@ func Tasks(root, file, tests string, kind protocol.ProjectKind) map[string]proto
 	}
 	switch kind {
 	case protocol.ProjectApp:
+		tasks["build"] = withShippedBuild(tasks["build"], root, file, DebugConfiguration)
 		tasks["start"] = protocol.Task{Command: []string{"dotnet", "run", "--project", file, "--no-build"}, DependsOn: []string{"build"}, Description: "Run the app"}
 	case protocol.ProjectPackage:
 		out := protocol.ProjectBuildDir(root)

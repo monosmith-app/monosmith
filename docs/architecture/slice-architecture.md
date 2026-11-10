@@ -122,7 +122,7 @@ slice at one more than the deepest slice it imports gives these layers:
 
 | Layer | Slices (abridged) |
 |---|---|
-| 0, no slice imports | `gitclient`, `taskcache`, `problem`, `runevents`, `githubrelease`, `sbom`, `mcpserver`, `slicecheck`, `releaselineage`, `releasepreview`, `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems`, `packagemanifests`, `linuxpackages`, `cachecredentials`, `toolchainpin` |
+| 0, no slice imports | `gitclient`, `taskcache`, `problem`, `runevents`, `githubrelease`, `sbom`, `mcpserver`, `slicecheck`, `releaselineage`, `releasepreview`, `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems`, `packagemanifests`, `linuxpackages`, `cachecredentials`, `toolchainpin`, `shiplink` |
 | 1 | `workspace` (imports only `problem`), `remotecache`, `splitrepo`, `commandargs`, `nxworkspace` |
 | 2 | `pluginhost`, `configedit`, `npmaudit`, `npmpack`, `turboworkspace` and the other per-ecosystem policies |
 | 3 | `projectgraph`, `recipe`, `corefixes` |
