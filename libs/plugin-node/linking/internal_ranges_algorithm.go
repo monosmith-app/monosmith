@@ -98,6 +98,9 @@ func PinnedInternalRanges(manifest []byte, internal map[string]bool) ([]PinnedRa
 			return nil, err
 		}
 	}
+	if _, err := dec.Token(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
