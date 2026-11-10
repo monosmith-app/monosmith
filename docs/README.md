@@ -30,6 +30,7 @@ New here? Read [Getting started](getting-started/README.md). Stuck on a word? Se
 | [Reference](reference/README.md) | [configuration](reference/configuration.md), [glossary](reference/glossary.md), [conventions](reference/conventions.md), [derived files](reference/derived-files.md), [stacks](reference/stacks.md), [recipes](reference/recipes.md), [tasks, cache and affected](reference/tasks-and-cache.md), [CI](reference/ci.md), [releasing](reference/releasing.md), [plugins](reference/plugins.md), [serve](reference/serve.md), [CLI](reference/cli.md) |
 | [Architecture](architecture/README.md) | how smith is built, identifies and organises a workspace, and why: overview, context, discovery, graphs, cache, CI, release, plugins, front ends, [decision records](architecture/decisions/README.md) |
 | [Contributing](contributing/README.md) | [working on smith](contributing/development.md) and the [documentation audit](contributing/documentation-audit.md) |
+| [TUI research](tui-research/README-A.md) | hands-on notes on eight well-known terminal interfaces, and the [UX review of the smith TUI](tui-research/ux-review.md) that came from them |
 
 ## I want to...
 
