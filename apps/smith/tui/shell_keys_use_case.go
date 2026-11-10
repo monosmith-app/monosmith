@@ -303,6 +303,12 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		}
 		s.runSel = s.firstFailed()
 		return s.revealRun()
+	case "kind":
+		return s.openPresentedForm(formKind, s.projectNames())
+	case "eject":
+		return s.openPresentedForm(formEject, nil)
+	case "tauri-add":
+		return s.openPresentedForm(formTauriAdd, s.projectsWhere(canAddTauri))
 	case "graph":
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)
@@ -412,6 +418,10 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		}
 		if c.Guide == guide.EnvironmentsAddTitle || c.Guide == guide.EnvironmentsRemoveTitle {
 			return s.openEnvironments(c.Guide)
+		}
+		if c.ID == "ws.tauri-icon" {
+			// The app is a pick list of the Tauri apps, on the selected one.
+			return s.openProjectForm(c.Guide, "project", s.projectsWhere(isTauriApp))
 		}
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()

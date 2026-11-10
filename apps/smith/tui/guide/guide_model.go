@@ -195,8 +195,9 @@ func (m Model) ActionTitled(title string) (Action, bool) {
 	return Action{}, false
 }
 
-// ActionPresenting returns the action that stands for an action of the
-// catalogue, by its id ("deps up"); ok is false when the menu has none.
+// ActionPresenting returns the action that stands for the catalogue action
+// id ("kind", "tauri add"), such as a form built from a command's
+// description; ok is false when the menu has none.
 func (m Model) ActionPresenting(id string) (Action, bool) {
 	for _, a := range m.actions {
 		if a.Presents == id {

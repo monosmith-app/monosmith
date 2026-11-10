@@ -317,7 +317,7 @@ func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 func TestAtTheSupportedFloorTheDetailStillOpensFullWidth(t *testing.T) {
 	l := newLab(t, true, 72, 24)
 	l.keys("enter")
-	l.has("orders", "Build app", "Explain")
+	l.has("orders", "Build app", "How was this resolved?")
 	l.keys("esc")
 	l.has("4 projects", "Project", "Language")
 	l.hasNot("Tasks")

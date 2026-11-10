@@ -220,7 +220,7 @@ func (s Shell) projectPanel() detail.Panel {
 	actions = append(actions,
 		detail.Action{ID: "x:install", Label: words.Say("tui.detail.install_a_package"), Hint: words.Say("tui.detail.adds_packages_to_with_its_own", "name", p.Name)},
 		detail.Action{ID: "x:uninstall", Label: words.Say("tui.detail.remove_a_package")},
-		detail.Action{ID: "x:explain", Label: words.Say("tui.detail.explain")},
+		detail.Action{ID: "x:explain", Label: words.Say("tui.detail.explain"), Hint: words.Say("tui.detail.explain_hint")},
 		detail.Action{ID: "x:why", Label: words.Say("tui.detail.why_who_owns_these_files"), Hint: words.Say("tui.detail.what_produced_the_project_s_files")},
 		detail.Action{ID: "x:graph", Label: words.Say("tui.detail.graph_needs_and_used_by")},
 	)
@@ -229,7 +229,9 @@ func (s Shell) projectPanel() detail.Panel {
 	if len(p.Tasks) > 0 {
 		title = words.Say("tui.detail.run_on", "name", p.Name)
 	}
-	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, After: after}
+	// The forms about the project have no key: they are under More, after the keyed actions.
+	more := append(s.projectFormActions(p), s.projectMoreActions()...)
+	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, More: more, MoreTitle: words.Say("tui.detail.more"), After: after}
 }
 
 // taskHint says in plain words what running a task does, what has to run
