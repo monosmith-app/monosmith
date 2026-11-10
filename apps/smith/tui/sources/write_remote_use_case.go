@@ -3,6 +3,7 @@ package sources
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // writeRemote writes `[cache] remote` the way the CLI does: through the shared
@@ -26,12 +27,12 @@ func writeRemote(root, remote string, commit bool) (string, error) {
 	if pending == nil {
 		return note, nil
 	}
-	hash, err := pending.Finish("set up the remote cache")
+	hash, err := pending.Finish(words.Say("tui.cache_setup.operation"))
 	switch {
 	case err != nil:
-		return "Not committed: git refused the commit (" + err.Error() + "). The change stays in the work tree.", nil
+		return words.Say("tui.cache_setup.not_committed", "err", err.Error()), nil
 	case hash != "":
-		return "Committed as one operation. smith undo reverts it.", nil
+		return words.Say("tui.cache_setup.committed"), nil
 	}
 	return note, nil
 }

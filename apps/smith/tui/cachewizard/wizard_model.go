@@ -5,6 +5,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -128,23 +129,25 @@ func secretPress(msg tea.KeyMsg) Outcome {
 
 func (m Model) chooseKey(name string) (Model, Outcome) {
 	n := len(m.scr.Options)
-	switch name {
-	case "esc", "ctrl+c":
+	switch commands.Nav(name) {
+	case commands.NavCancel:
 		return m, Outcome{Cancel: true}
-	case "up", "k":
+	case commands.NavUp:
 		m.cursor = max(m.cursor-1, 0)
-	case "down", "j":
+	case commands.NavDown:
 		m.cursor = min(m.cursor+1, n-1)
-	case "home":
+	case commands.NavHome:
 		m.cursor = 0
-	case "end":
+	case commands.NavEnd:
 		m.cursor = n - 1
-	case "pgup":
+	case commands.NavPageUp:
 		m.cursor = max(m.cursor-8, 0)
-	case "pgdown":
+	case commands.NavPageDown:
 		m.cursor = min(m.cursor+8, n-1)
-	case "enter":
-		return m.pick(m.cursor)
+	case commands.NavConfirm:
+		if name == "enter" {
+			return m.pick(m.cursor)
+		}
 	default:
 		if len(name) == 1 && name[0] >= '1' && name[0] <= '9' && int(name[0]-'1') < n {
 			return m.pick(int(name[0] - '1'))
@@ -199,18 +202,18 @@ func (m Model) confirmKey(name string) (Model, Outcome) {
 }
 
 func (m Model) pageKey(name string) (Model, Outcome) {
-	switch name {
-	case "esc", "ctrl+c":
+	switch commands.Nav(name) {
+	case commands.NavCancel:
 		return m, Outcome{Cancel: true}
-	case "enter", " ":
+	case commands.NavConfirm:
 		return m.answered(Reply{})
-	case "up", "k":
+	case commands.NavUp:
 		m.scroll = max(m.scroll-1, 0)
-	case "down", "j":
+	case commands.NavDown:
 		m.scroll++
-	case "pgup":
+	case commands.NavPageUp:
 		m.scroll = max(m.scroll-8, 0)
-	case "pgdown":
+	case commands.NavPageDown:
 		m.scroll += 8
 	}
 	return m, Outcome{}

@@ -105,7 +105,7 @@ func TestCacheSetupWalksTheHTTPSPathAndTheKeyIsNeverShown(t *testing.T) {
 	c.has("Address of the cache server")
 	c.text("https://cache.acme.dev/smith")
 	c.press("enter")
-	c.has("This changes smith.toml:", `remote = "https://cache.acme.dev/smith"`, "[ Yes, write it  y ]")
+	c.has("This changes smith.toml:", `remote = "https://cache.acme.dev/smith"`, "[Yes, write it (y)]")
 	if len(c.written) != 0 {
 		t.Fatal("nothing is written before the yes")
 	}
@@ -120,7 +120,7 @@ func TestCacheSetupWalksTheHTTPSPathAndTheKeyIsNeverShown(t *testing.T) {
 	if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(key) {
 		t.Fatalf("the key reaches the clipboard: %q", key)
 	}
-	c.has("Key ready", "[ Copy again  c ]", "[ Generate another  g ]", "[ Send to GitHub Actions (gh)  h ]", "not shown here")
+	c.has("Key ready", "[Copy again (c)]", "[Generate another (g)]", "[Send to GitHub Actions (gh) (h)]", "not shown here")
 	c.hasNot(key)
 
 	// Copy again copies the same key; Generate another replaces it.
@@ -153,7 +153,7 @@ func TestCacheSetupWalksTheHTTPSPathAndTheKeyIsNeverShown(t *testing.T) {
 	if c.clip.text != "" {
 		t.Fatalf("the clipboard still holds %q", c.clip.text)
 	}
-	c.has("GitHub Actions", "Settings, Secrets and variables", "[ Next  Enter ]")
+	c.has("GitHub Actions", "Settings, Secrets and variables", "[Next (Enter)]")
 	c.press("enter")
 	c.has("Developer machines")
 	c.press("enter")
@@ -166,7 +166,7 @@ func TestCacheSetupShowsASpinnerWhileACloudListingRunsAndTheCommandFirst(t *test
 	c := newCacheLab(t)
 	c.open()
 	c.press("enter") // Azure Blob
-	c.has("smith will run this command. It only reads:", "az account list", "[ Run it  y ]")
+	c.has("smith will run this command. It only reads:", "az account list", "[Run it (y)]")
 	if len(c.ran) != 0 {
 		t.Fatal("az does not run before the y")
 	}
@@ -188,7 +188,7 @@ func TestCacheSetupClickOnAButtonDoesWhatTheKeyDoes(t *testing.T) {
 	c.press("enter", "n") // do not write
 	c.press("y")          // make the key
 	c.clip.text = ""
-	c.clickText("[ Copy again  c ]")
+	c.clickText("[Copy again (c)]")
 	c.pump()
 	if len(c.clip.text) != 64 {
 		t.Fatalf("a click on Copy again copies: %q", c.clip.text)

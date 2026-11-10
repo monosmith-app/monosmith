@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
@@ -86,9 +88,9 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		room := max(height-len(lines)-len(foot), 3)
 		top := m.list.Show(m.cursor, room, len(m.scr.Options))
 		for i := top; i < min(top+room, len(m.scr.Options)); i++ {
-			mark, label := "  ", fmt.Sprintf("%d. %s", i+1, m.scr.Options[i].Label)
+			mark, label := choicerow.Cursor(th, false), fmt.Sprintf("%d. %s", i+1, m.scr.Options[i].Label)
 			if i == m.cursor {
-				mark, label = th.Accent("> "), th.Bold(label)
+				mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
 			}
 			hits = append(hits, hit{row: len(lines), x0: 0, x1: inner, option: i})
 			add(mark + label)
@@ -101,7 +103,7 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		add(m.noteLines(th, inner, max(height/3, 2))...)
 		add("")
 		add(pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
-		add("", th.Accent("> ")+string(m.input)+th.Accent("▌"), "", th.Muted("enter confirms · esc closes (nothing more is changed)"))
+		add("", th.Accent(choicerow.Cursor(th, true))+string(m.input)+th.Accent("▌"), "", th.Muted("enter confirms · esc closes (nothing more is changed)"))
 	case Confirm:
 		c := m.scr.Confirmation
 		add(m.noteLines(th, inner, max(height/5, 1))...)
@@ -119,23 +121,21 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		}
 		add("", th.Bold(strings.TrimSpace(c.Prompt)), "")
 		if c.OfferCommit {
-			box := "[ ] "
-			if m.ticked {
-				box = "[x] "
-			}
+			box := choicerow.Box(m.ticked, false) + " "
 			hits = append(hits, hit{row: len(lines), x0: 0, x1: ansi.StringWidth(box + dialog.CommitLabel + "  (C)"), option: -1, toggle: true})
 			add(box+dialog.CommitLabel+"  (C)", "")
 		}
 		yes, no := true, false
-		labels := []string{"[ " + c.Yes + "  y ]", "[ " + c.No + "  n ]"}
+		labels, keys := []string{c.Yes, c.No}, []string{"y", "n"}
 		x := 0
 		var row string
-		for i, l := range labels {
-			styled := th.Muted(l)
+		for i, label := range labels {
+			state := button.Rest
 			if i == m.focus {
-				styled = th.Selected(l)
+				state = button.Active
 			}
-			w := ansi.StringWidth(l)
+			styled := button.Render(th, label, keys[i], state)
+			w := button.Width(th, label, keys[i])
 			h := hit{row: len(lines), x0: x, x1: x + w, option: -1, yes: &yes}
 			if i == 1 {
 				h.yes = &no
@@ -173,8 +173,8 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		if len(all) > room {
 			more = fmt.Sprintf("up/down scroll (%d of %d) · ", min(top+room, len(all)), len(all))
 		}
-		hits = append(hits, hit{row: len(lines), x0: 0, x1: 14, option: -1, page: true})
-		add(th.Selected("[ Next  Enter ]") + "  " + th.Muted(more+"esc closes"))
+		hits = append(hits, hit{row: len(lines), x0: 0, x1: button.Width(th, "Next", "Enter"), option: -1, page: true})
+		add(button.Render(th, "Next", "Enter", stateOf(true)) + "  " + th.Muted(more+"esc closes"))
 	case Secret:
 		noun := m.scr.Noun
 		if len(m.notes) == 0 {
@@ -187,14 +187,13 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		x := 0
 		var row string
 		for _, b := range m.scr.Buttons {
-			l := "[ " + b.Label + "  " + keyName(b.Key) + " ]"
-			w := ansi.StringWidth(l)
+			w := button.Width(th, b.Label, keyName(b.Key))
 			if x > 0 && x+w > inner {
 				add(row)
 				row, x = "", 0
 			}
 			hits = append(hits, hit{row: len(lines), x0: x, x1: x + w, option: -1, press: b.Key})
-			row += th.Accent(l) + "  "
+			row += button.Render(th, b.Label, keyName(b.Key), stateOf(false)) + "  "
 			x += w + 2
 		}
 		add(row, "")
@@ -215,4 +214,13 @@ func keyName(r rune) string {
 		return "Esc"
 	}
 	return string(r)
+}
+
+// stateOf is the state of a button: Active while it is the one Enter takes,
+// Rest otherwise.
+func stateOf(takesEnter bool) button.State {
+	if takesEnter {
+		return button.Active
+	}
+	return button.Rest
 }
