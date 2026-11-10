@@ -25,6 +25,8 @@ type Bridge struct {
 	Events  chan Event
 	secrets Secrets
 
+	// canBack is set by AllowBack, from the engine's goroutine only.
+	canBack bool
 	replies chan Reply
 	cancel  chan struct{}
 	once    sync.Once
@@ -136,15 +138,24 @@ func (b *Bridge) emit(ev Event) {
 	}
 }
 
+// ask shows a screen and waits for the answer. A Back reply makes it panic
+// with cachesetup.BackRequest, which cachesetup.Run catches.
 func (b *Bridge) ask(s Screen) Reply {
+	s.CanBack = b.canBack
 	b.emit(AskEvent{Screen: s})
 	select {
 	case r := <-b.replies:
+		if r.Back {
+			panic(cachesetup.BackRequest{})
+		}
 		return r
 	case <-b.cancel:
 		panic(closed{})
 	}
 }
+
+// AllowBack implements cachesetup.BackAware.
+func (b *Bridge) AllowBack(can bool) { b.canBack = can }
 
 // Say implements cachesetup.Dialogue.
 func (b *Bridge) Say(text string) { b.emit(SayEvent{Text: text}) }
@@ -155,8 +166,8 @@ func (b *Bridge) Choose(prompt string, options []cachesetup.Option, def string) 
 }
 
 // Text implements cachesetup.Dialogue.
-func (b *Bridge) Text(prompt string) string {
-	return b.ask(Screen{Kind: Text, Prompt: prompt}).Value
+func (b *Bridge) Text(prompt, def string) string {
+	return b.ask(Screen{Kind: Text, Prompt: prompt, Typed: def}).Value
 }
 
 // Confirm implements cachesetup.Dialogue.
@@ -222,4 +233,7 @@ func (w lineWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-var _ cachesetup.Dialogue = (*Bridge)(nil)
+var (
+	_ cachesetup.Dialogue  = (*Bridge)(nil)
+	_ cachesetup.BackAware = (*Bridge)(nil)
+)

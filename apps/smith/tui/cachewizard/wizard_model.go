@@ -81,6 +81,14 @@ func (m Model) Handle(ev Event, now time.Time) Model {
 				m.cursor = i
 			}
 		}
+		m.input = []rune(ev.Screen.Typed)
+		if e := ev.Screen.Confirmation.Earlier; e != nil {
+			// The person came back here: the old answer is marked again.
+			m.focus, m.ticked = 1, e.Commit && ev.Screen.Confirmation.OfferCommit
+			if e.Yes {
+				m.focus = 0
+			}
+		}
 		if ev.Screen.Kind == Secret {
 			m.notes = nil
 		}
@@ -134,14 +142,39 @@ func secretPress(msg tea.KeyMsg) Outcome {
 	return Outcome{Press: 1}
 }
 
+// escape is Esc: the question before when one exists, else the wizard closes.
+func (m Model) escape() (Model, Outcome) {
+	if m.scr.CanBack {
+		return m.back()
+	}
+	return m, Outcome{Cancel: true}
+}
+
+// back asks the engine for the question before this one.
+func (m Model) back() (Model, Outcome) {
+	if !m.scr.CanBack {
+		return m, Outcome{}
+	}
+	return m.answered(Reply{Back: true})
+}
+
 func (m Model) chooseKey(name string) (Model, Outcome) {
 	n := len(m.scr.Options)
+	switch name {
+	case "esc":
+		return m.escape()
+	case "left":
+		return m.back()
+	}
 	if r, ok := typedLetter(name); ok {
 		// A letter jumps to the first entry that starts with it, as in a file
 		// browser. When no entry does, it keeps its old meaning (j, k, q...).
 		if next, found := m.jumpTo(r, time.Now()); found {
 			return next, Outcome{}
 		}
+	}
+	if name == "b" {
+		return m.back()
 	}
 	switch commands.Nav(name) {
 	case commands.NavCancel:
@@ -179,8 +212,15 @@ func (m Model) pick(i int) (Model, Outcome) {
 
 func (m Model) textKey(msg tea.KeyMsg) (Model, Outcome) {
 	switch msg.Type {
-	case tea.KeyEsc, tea.KeyCtrlC:
+	case tea.KeyEsc:
+		return m.escape()
+	case tea.KeyCtrlC:
 		return m, Outcome{Cancel: true}
+	case tea.KeyLeft:
+		// A typed line has no cursor to move, so Left goes back once nothing is typed.
+		if len(m.input) == 0 {
+			return m.back()
+		}
 	case tea.KeyEnter:
 		return m.answered(Reply{Value: strings.TrimSpace(string(m.input))})
 	case tea.KeyBackspace:
@@ -199,15 +239,19 @@ func (m Model) textKey(msg tea.KeyMsg) (Model, Outcome) {
 
 func (m Model) confirmKey(name string) (Model, Outcome) {
 	switch name {
-	case "esc", "ctrl+c":
+	case "esc":
+		return m.escape()
+	case "ctrl+c":
 		return m, Outcome{Cancel: true}
+	case "b", "B", "left":
+		return m.back()
 	case "c", "C":
 		m.ticked = m.ticked != m.scr.Confirmation.OfferCommit
 	case "y", "Y":
 		return m.answered(Reply{Yes: true, Commit: m.ticked})
 	case "n", "N":
 		return m.answered(Reply{})
-	case "tab", "left", "right", "h", "l":
+	case "tab", "right", "h", "l":
 		m.focus = 1 - m.focus
 	case "enter":
 		return m.answered(Reply{Yes: m.focus == 0, Commit: m.ticked && m.focus == 0})
@@ -216,6 +260,12 @@ func (m Model) confirmKey(name string) (Model, Outcome) {
 }
 
 func (m Model) pageKey(name string) (Model, Outcome) {
+	switch name {
+	case "esc":
+		return m.escape()
+	case "b", "left":
+		return m.back()
+	}
 	switch commands.Nav(name) {
 	case commands.NavCancel:
 		return m, Outcome{Cancel: true}
@@ -317,6 +367,10 @@ func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 		case h.toggle:
 			m.ticked = !m.ticked
 			return m, Outcome{}
+		case h.back:
+			return m.back()
+		case h.cancel:
+			return m, Outcome{Cancel: true}
 		case h.page:
 			return m.answered(Reply{})
 		default:
