@@ -309,6 +309,11 @@ one machine. The remote holds results only: which run was last (for
 
 Four things make a remote cache work: a storage place, a key, the backend's
 credential, and the setting. You make the key yourself; smith never stores it.
+[`smith cache setup`](../manual/cache-setup.md) walks through all four with
+choices: it lists the places with `az` or `aws` (each command shown before it
+runs), writes `[cache] remote` after you confirm, makes the key and the Azure
+SAS token, and prints the steps for each CI provider in `[ci] providers`. The
+sections below say the same by hand.
 
 **What the key is.** `SMITH_CACHE_KEY` is a random secret that every machine and
 pipeline of the team shares. smith signs each cached object with it

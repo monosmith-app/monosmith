@@ -37,6 +37,9 @@ type Sorted struct {
 	// test runners and their plugins and types): they go to the workspace
 	// without a question.
 	Tools []string
+	// Lint is true when the project has a lint setup of its own, which the
+	// shared tooling would replace: the person chooses between the two.
+	Lint bool
 	// Replaced are the dependencies the workspace's shared tooling replaces: they
 	// leave the project and do not go to the workspace.
 	Replaced []string
@@ -60,6 +63,9 @@ type Request struct {
 	Hoist []string
 	// Drop are the dependencies the shared tooling replaces.
 	Drop []string
+	// KeepLint is true when the person keeps the project's own lint setup: it
+	// moves into the project folder and nothing of it is replaced.
+	KeepLint bool
 }
 
 // Result is what a Split did.

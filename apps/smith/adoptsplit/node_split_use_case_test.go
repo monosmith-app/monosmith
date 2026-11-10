@@ -64,7 +64,7 @@ func TestSortNodeSeparatesToolsLintAndUnknown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Sorted{Tools: []string{"jest", "typescript"}, Replaced: []string{"eslint"}, Unsure: []string{"supertest"}}
+	want := Sorted{Tools: []string{"jest", "typescript"}, Lint: true, Replaced: []string{"eslint"}, Unsure: []string{"supertest"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("SortNode = %+v, want %+v", got, want)
 	}
@@ -186,5 +186,45 @@ func TestSplitNodeKeepsAnExistingRootManifest(t *testing.T) {
 	dev := rootPkg["devDependencies"].(map[string]any)
 	if rootPkg["name"] != "mine" || !reflect.DeepEqual(rootPkg["workspaces"], []any{"apps/orders"}) || dev["jest"] != "^30.0.0" || dev["typescript"] != "^5.0.0" {
 		t.Errorf("root manifest = %v", rootPkg)
+	}
+}
+
+func TestSplitNodeKeepsTheProjectsOwnESLintWhenAsked(t *testing.T) {
+	root := t.TempDir()
+	put(t, root, "apps/orders/package.json", orders)
+	put(t, root, ".eslintrc.json", "{}\n")
+	put(t, root, "eslint.config.mjs", "export default []\n")
+	put(t, root, ".eslintignore", "dist\n")
+	res, err := SplitNode(Request{Root: root, Dir: "apps/orders", Workspace: "shop", Patterns: []string{"apps/*"}, Hoist: []string{"jest"}, KeepLint: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.ESLint {
+		t.Error("the shared lint config is not wanted when the person keeps their own")
+	}
+	for _, name := range []string{".eslintrc.json", "eslint.config.mjs", ".eslintignore"} {
+		if _, err := os.Stat(filepath.Join(root, "apps/orders", name)); err != nil {
+			t.Errorf("%s must move into the project: %v", name, err)
+		}
+		if _, err := os.Stat(filepath.Join(root, name)); err == nil {
+			t.Errorf("%s must leave the root", name)
+		}
+	}
+	pkg := readJSON(t, root, "apps/orders/package.json")
+	if dev := pkg["devDependencies"].(map[string]any); dev["eslint"] != "^8.0.0" {
+		t.Errorf("the project keeps its eslint package: %v", dev)
+	}
+}
+
+func TestSplitNodeRetiresAFlatConfigWhenTheSharedOneIsChosen(t *testing.T) {
+	root := t.TempDir()
+	put(t, root, "apps/orders/package.json", orders)
+	put(t, root, "eslint.config.mjs", "export default []\n")
+	res, err := SplitNode(Request{Root: root, Dir: "apps/orders", Workspace: "shop", Patterns: []string{"apps/*"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "eslint.config.mjs.pre-smith")); err != nil || !res.ESLint {
+		t.Errorf("the flat config is kept as .pre-smith and the shared one is wanted: %v %v", err, res.ESLint)
 	}
 }

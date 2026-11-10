@@ -90,16 +90,23 @@ func SplitNode(req Request) (Result, error) {
 	if build != "" {
 		res.Notes = append(res.Notes, build)
 	}
-	legacy, err := retireLegacyESLint(req.Root)
-	if err != nil {
-		return res, err
-	}
-	for _, name := range legacy {
-		res.Notes = append(res.Notes, name+" is kept as "+name+".pre-smith: the workspace lints with the shared flat config, which ESLint reads instead.")
-		res.ESLint = true
-	}
-	if flat, _ := filepath.Glob(filepath.Join(req.Root, "eslint.config.*")); len(flat) > 0 {
-		res.ESLint = true
+	if req.KeepLint {
+		kept, err := moveLintIntoProject(req.Root, dir)
+		if err != nil {
+			return res, err
+		}
+		if len(kept) > 0 {
+			res.Notes = append(res.Notes, "your own ESLint setup stays in the project ("+strings.Join(kept, ", ")+"): smith doctor reports that the shared slice rules do not run until the workspace root loads @monosmith/eslint-config.")
+		}
+	} else {
+		legacy, err := retireLegacyESLint(req.Root)
+		if err != nil {
+			return res, err
+		}
+		for _, name := range legacy {
+			res.Notes = append(res.Notes, name+" is kept as "+name+".pre-smith: the workspace lints with the shared flat config.")
+			res.ESLint = true
+		}
 	}
 	if jest, _ := filepath.Glob(filepath.Join(dir, "jest.config.*")); len(jest) > 0 {
 		res.Notes = append(res.Notes, filepath.Base(jest[0])+" stays with the project: its paths are relative to the project folder. The jest packages are in the workspace.")
@@ -137,13 +144,40 @@ func mapKeys[V any](m map[string]V) func(yield func(string) bool) {
 	}
 }
 
-// retireLegacyESLint renames the legacy ESLint configuration files at the
-// root (.eslintrc, .eslintrc.json, ...) to <name>.pre-smith and returns their
-// names.
+// lintFilePatterns are the ESLint configuration files at the root.
+var lintFilePatterns = []string{".eslintrc*", "eslint.config.*", ".eslintignore"}
+
+// moveLintIntoProject moves the ESLint configuration files from the root into
+// the project folder, where the person keeps them, and returns their names.
+func moveLintIntoProject(root, dir string) ([]string, error) {
+	var names []string
+	for _, pattern := range lintFilePatterns {
+		matches, err := filepath.Glob(filepath.Join(root, pattern))
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range matches {
+			if err := os.Rename(m, filepath.Join(dir, filepath.Base(m))); err != nil {
+				return names, err
+			}
+			names = append(names, filepath.Base(m))
+		}
+	}
+	slices.Sort(names)
+	return names, nil
+}
+
+// retireLegacyESLint renames the ESLint configuration files at the root
+// (.eslintrc, .eslintrc.json, eslint.config.mjs, ...) to <name>.pre-smith and
+// returns their names. .eslintignore is left: the shared config reads it.
 func retireLegacyESLint(root string) ([]string, error) {
-	matches, err := filepath.Glob(filepath.Join(root, ".eslintrc*"))
-	if err != nil {
-		return nil, err
+	var matches []string
+	for _, pattern := range lintFilePatterns[:2] {
+		found, err := filepath.Glob(filepath.Join(root, pattern))
+		if err != nil {
+			return nil, err
+		}
+		matches = append(matches, found...)
 	}
 	var names []string
 	for _, m := range matches {
