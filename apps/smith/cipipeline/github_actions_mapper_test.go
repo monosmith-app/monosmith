@@ -76,7 +76,7 @@ func TestRenderersCarryTheSameSteps(t *testing.T) {
 		"versionSpec: '3.12.x'", "  - task: GoTool@0",
 		"  - bash: |\n      curl -fsSL https://example.com/zig.sh | sh\n      zig version\n    displayName: Install zig\n",
 		"  # smith: no plugin says how to install rust 1.90",
-		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "PYPI_TOKEN: $(PYPI_TOKEN)", "fetchDepth: 0", "persistCredentials: true", "refs/heads/main"} {
+		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "PYPI_TOKEN: $(PYPI_TOKEN)", "fetchDepth: '0'", "persistCredentials: 'true'", "refs/heads/main"} {
 		if !strings.Contains(az, want) {
 			t.Errorf("Azure pipeline lacks %q", want)
 		}

@@ -35,8 +35,8 @@ func RenderAzure(m Model) string {
 func azureSteps(m Model) string {
 	var b strings.Builder
 	b.WriteString(`  - checkout: self
-    fetchDepth: 0
-    persistCredentials: true
+    fetchDepth: '0'
+    persistCredentials: 'true'
 `)
 	for _, t := range m.Toolchains {
 		b.WriteString(azureSetup(t))
@@ -85,7 +85,7 @@ func azureNativeJob(m Model) string {
 	for _, r := range m.NativeRunners {
 		fmt.Fprintf(&b, "        %s:\n          image: %s\n", strings.ReplaceAll(r, "-", "_"), r)
 	}
-	b.WriteString("    pool:\n      vmImage: $(image)\n    steps:\n      - checkout: self\n        fetchDepth: 0\n")
+	b.WriteString("    pool:\n      vmImage: $(image)\n    steps:\n      - checkout: self\n        fetchDepth: '0'\n")
 	var tools strings.Builder
 	for _, t := range m.Toolchains {
 		tools.WriteString(azureSetup(t))
