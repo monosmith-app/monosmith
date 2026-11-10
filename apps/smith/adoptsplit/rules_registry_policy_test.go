@@ -35,15 +35,17 @@ func TestRulesSayWhatStaysAtTheRoot(t *testing.T) {
 	}
 }
 
-func TestOnlyNodeSortsAndSplitsYet(t *testing.T) {
-	for _, eco := range []string{Go, Python, Rust} {
-		r := For(eco)
-		if r.Sort != nil || r.Split != nil {
-			t.Errorf("%s declares a split that is not implemented: its manifest must move whole", eco)
+func TestWhatEachLanguageDeclares(t *testing.T) {
+	if r := For(Go); r.Sort != nil || r.Split != nil {
+		t.Error("go moves go.mod whole: adopt's workspace step writes go.work")
+	}
+	for _, eco := range []string{Node, Python} {
+		if r := For(eco); r.Sort == nil || r.Split == nil {
+			t.Errorf("%s must declare Sort and Split", eco)
 		}
 	}
-	if r := For(Node); r.Sort == nil || r.Split == nil {
-		t.Error("node must declare Sort and Split")
+	if r := For(Rust); r.Sort != nil || r.Split == nil {
+		t.Error("rust declares a Split and no dependency Sort: dev-dependencies are per crate")
 	}
 }
 

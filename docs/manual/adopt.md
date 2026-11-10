@@ -46,7 +46,7 @@ Usage: `smith adopt [flags]`
 | `--gitattributes <gitattributes>` | string |  | with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it) |
 | `--hoist <hoist>` | string, repeatable |  | with --init and --move, development dependencies to move to the workspace package.json without asking (the known tools move anyway) |
 | `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
-| `--install` | boolean | off | with --init, also run npm install for the Node projects |
+| `--install` | boolean | off | with --init, also run npm install for the Node projects and create the Python .venv |
 | `--json` | boolean | off | print the report as JSON |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
 | `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
@@ -146,7 +146,14 @@ Move it into a folder of its own so smith can manage it?
   shared config (the old file is kept as `.pre-smith`, the root gets the shared flat config, and the
   ESLint packages leave the project because the shared config brings their own), or keep the
   setup in the project. `--eslint-setup shared|keep` answers; without a terminal or with `--yes`
-  your own setup is kept, and `smith doctor` then reports that the slice rules do not run. Go, Python and Rust move their manifest whole for now.
+  your own setup is kept, and `smith doctor` then reports that the slice rules do not run.
+- A Go module keeps `go.mod` and its code; `.golangci.*` stays at the root and `go.work` is written
+  at the root. A Python project's development tools (pytest, ruff, mypy, ...) move from the dev
+  lists of `pyproject.toml` to the root `requirements-dev.txt`, its `[tool.ruff]` tables become a
+  root `ruff.toml`, and `--install` creates the `.venv`; the runtime dependencies and the other
+  tables stay. A Rust crate gets a root `Cargo.toml` with `[workspace]`, its `Cargo.lock` moves to
+  the root, and `.cargo/config.toml` builds into `dist/cargo`; rustfmt, clippy and the toolchain
+  pin stay at the root.
 - It refuses, and changes nothing, when the root holds two manifests (a Go module and a
   `package.json`), when the folder already holds files, or when the folder's first part is a
   file or a folder that would move.
