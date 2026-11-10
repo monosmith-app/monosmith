@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples\yz
+   gitplay    │ docs                                                  │ 󰈙 note1.txt
+  yz        │  img                                                    │ 󰈙 note2.txt
+   yazi.cmd   │  src                                                    │ 󰈙 note3.txt
+               │  big.bin                                                │ 󰈙 note4.txt
+               │  data.json                                              │ 󰈙 note5.txt
+               │ 󰂺 README.md                                              │ 󰈙 note6.txt
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ NOR  0B  docs                                                                                         Top   1/6  

@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Unstaged changes───────────────────────────────────────────────────────────────╮
+│gitplay → main                            ││diff --git a/a.txt b/a.txt                                                          ▐
+╰──────────────────────────────────────────╯│index f384549..0deaf6d 100644                                                       ▐
+╭─[2]─Files - Worktrees - Submodules───────╮│--- a/a.txt                                                                         ▐
+│▼ /                                       ││+++ b/a.txt                                                                         ▐
+│   M a.txt         ╭─Keybindings───────────────────────────────────────────────────────(Type to filter)─────╮                   ▐
+│  ▼ src            │              ─── Local                                                                 ▐                   ▐
+│     M main.go     │     <ctrl+o> Copy path to clipboard                                                    ▐                   ▐
+│  ?? untracked.txt │      <space> Stage                                                                     ▐                   ▐
+│                   │     <ctrl+b> Filter files by status                                                    ▐                   ▐
+│                   │            y Copy to clipboard...                                                      ▐                   ▐
+│                   │            c Commit                                                                    ▐                   ▐
+│                   │            w Commit changes without pre-commit hook                                    │                   ▐
+╰───────────────────│            A Amend last commit                                                         │                   ▐
+╭─[3]─Local branches│            C Commit changes using git editor                                           │                   ▐
+│  * main           │     <ctrl+f> Find base commit for fixup                                                │                   ▐
+│47s feature/login  │            e Edit                                                                      │                   ▐
+│48s feature/conflic│            o Open file                                                                 │                   ▐
+│                   │            i Ignore or exclude file...                                                 │                   ▐
+│                   │            r Refresh files                                                             │                   ▐
+│                   │            s Stash                                                                     │                   ▐
+│                   │            S View stash options...                                                     │                   │
+│                   │            a Stage all                                                                 │                   │
+╰───────────────────│      <enter> Focus file diff / Collapse directory                                      │                   │
+╭─[4]─Commits - Refl│            d Discard...                                                                │                   │
+│83b0bb37 Te ○ fix: │            g View upstream reset options...                                            │                   │
+│c86c2a5e Te ○ feat:│            D Reset...                                                                  │                   │
+│6cc935ed Te ○ feat:╰────────────────────────────────────────────────────────────────────────────────1 of 66─╯                   │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 3─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─[5]─Stash────────────────────────────────╮╭─Command log────────────────────────────────────────────────────────────────────────╮
+│44s WIP on main: 83b0bb3 fix: b on main   ││  cmd /s /c "title gitplay - Lazygit"                                               │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+Execute: <enter> | Close/Cancel: <esc>                                                                  Donate Ask Question 0.66.2

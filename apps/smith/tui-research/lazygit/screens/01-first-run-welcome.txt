@@ -1,0 +1,38 @@
+╭─[1]─Status───────────────────────────────╮╭─[0]─Unstaged changes───────────────────────────────────────────────────────────────╮
+│gitplay → main                            ││diff --git a/a.txt b/a.txt                                                          ▐
+╰──────────────────────────────────────────╯│index f384549..0deaf6d 100644                                                       ▐
+╭─[2]─Files - Worktrees - Submodules───────╮│--- a/a.txt                                                                         ▐
+│▼ /                                       ││+++ b/a.txt                                                                         ▐
+│   M a.txt                                ││@@ -1,4 +1,5 @@                                                                     ▐
+│  ▼ src                                   ││-one                                                                                ▐
+│     M main.go                            ││-two                                                                                ▐
+│  ?? untracked.txt                        ││-three                                                                              ▐
+│                                          ││-four                                                                               ▐
+│                                          ││+one                                                                                ▐
+│                        ╭──────────────────────────────────────────────────────────────────────────────╮                        ▐
+│                        │Thanks for using lazygit! Seriously you rock. Three things to share with you: │                        ▐
+╰────────────────────────│                                                                              │                        ▐
+╭─[3]─Local branches - Re│ 1) If you want to learn about lazygit's features, watch this vid:            │                        ▐
+│  * main                │      https://youtu.be/CPLdltN7wgE                                            │                        ▐
+│44s feature/login       │                                                                              │                        ▐
+│45s feature/conflict    │ 2) Be sure to read the latest release notes at:                              │                        ▐
+│                        │      https://github.com/jesseduffield/lazygit/releases                       │                        ▐
+│                        │                                                                              │                        ▐
+│                        │ 3) If lazygit has made your life easier, you can say thanks by clicking the  │                        ▐
+│                        │    donate button at the bottom right. Donation does not grant priority       │                        │
+│                        │support,                                                                      │                        │
+╰────────────────────────│    but it is much appreciated.                                               │                        │
+╭─[4]─Commits - Reflog───│                                                                              │                        │
+│83b0bb37 Te ○ fix: b on │Press <enter> to get started.                                                 │                        │
+│c86c2a5e Te ○ feat: add ╰──────────────────────────────────────────────────────────────────────────────╯                        │
+│6cc935ed Te ○ feat: initial files         ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰───────────────────────────────────1 of 3─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─[5]─Stash────────────────────────────────╮╭─Command log────────────────────────────────────────────────────────────────────────╮
+│44s WIP on main: 83b0bb3 fix: b on main   ││  cmd /s /c "title gitplay - Lazygit"                                               │
+╰───────────────────────────────────1 of 1─╯╰────────────────────────────────────────────────────────────────────────────────────╯
+Confirm: <enter> | Close/Cancel: <esc> | Copy to clipboard: <ctrl+o>                                    Donate Ask Question 0.66.2

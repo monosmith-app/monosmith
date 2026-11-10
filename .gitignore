@@ -79,5 +79,12 @@ assets/*~lock~
 # IntelliJ Platform Gradle plugin: the downloaded IDE and its sandbox
 .intellijPlatform/
 
+# TUI research: installed tools and runs that show private process data
+/apps/smith/tui-research/.tools/
+/apps/smith/tui-research/btop/screens/
+/apps/smith/tui-research/btop/first-run-mixed/
+/apps/smith/tui-research/posting/screens/
+/apps/smith/tui-research/yazi/aborted-first-run/
+
 # Gradle writes its problems report here on every run
 /build/

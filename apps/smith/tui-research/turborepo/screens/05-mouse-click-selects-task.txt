@@ -1,0 +1,38 @@
+Tasks (/ - Search)    │  @play/lib-b#dev > cache bypass, force executing 3002e37c9353bc51
+ »  @play/app-a#dev   │ lib-b request 19
+ »  @play/lib-b#dev   │ lib-b/request@20ay/lib-b, @play/srv-c
+ »  @play/srv-c#dev   │tlib-b request 21
+ ⨯  @play/app-a#lint  │alib-b request 22
+ ✓  @play/srv-c#lint  │ lib-b request 23
+ ✓  @play/lib-b#lint  │ lib-b request 24
+ ✓  @play/lib-b#build │ lib-b request 25
+ ✓  @play/srv-c#build │ lib-b request 26
+ ✓  @play/app-a#build │ lib-b request 27
+                      │ lib-b request 28
+                      │ lib-b request 29
+                      │ lib-b request 30
+                      │ lib-b request 31
+                      │ lib-b request 32
+                      │ lib-b request 33
+                      │ lib-b request 34
+                      │ lib-b request 35
+                      │ lib-b request 36
+                      │ lib-b request 37
+                      │ lib-b request 38
+                      │ lib-b request 39
+                      │ lib-b request 40
+                      │ lib-b request 41
+                      │ lib-b request 42
+                      │ lib-b request 43
+                      │ lib-b request 44
+                      │ lib-b request 45
+                      │ lib-b request 46
+                      │ lib-b request 47
+                      │ lib-b request 48
+                      │ lib-b request 49
+                      │ lib-b request 50
+                      │ lib-b request 51
+                      │ lib-b request 52
+                      │ lib-b request 53
+↑ ↓ - Select          │
+m - More binds        │    i - Interact   u/d - Scroll logs   U/D - Page logs   t/b - Jump to top/bottom

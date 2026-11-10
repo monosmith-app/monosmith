@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples\yz
+   gitplay    │  docs                                                   │  main.go
+  yz        │  img                                                    │
+   yazi.cmd   │ src                                                   │
+               │  big.bin                                                │
+               │  data.json                                              │
+               │ 󰂺 README.md                                              │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ NOR  0B  src                                                                                          50%   3/6  
