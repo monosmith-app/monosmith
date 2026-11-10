@@ -66,10 +66,13 @@ func (s *Shell) modalMouse(e tea.MouseEvent) tea.Cmd {
 	s.mouseShift = e.Shift
 	// A press or a drag that began before the modal opened ends here.
 	s.pressed = ""
-	if s.cache != nil && s.cacheSelect(e) {
+	if s.modalSelect(e) {
 		return nil
 	}
-	s.selection = s.selection.Clear()
+	if e.Action == tea.MouseActionPress {
+		// The highlight of a copied selection stays until a press or the wheel.
+		s.selection = s.selection.Clear()
+	}
 	s.letGoSplit()
 	switch {
 	case e.Action == tea.MouseActionMotion:

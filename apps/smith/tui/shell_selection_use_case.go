@@ -120,45 +120,84 @@ func (s *Shell) keepSelection() {
 	if !s.selection.Held {
 		return
 	}
-	if s.belowMinimum() || (s.modalOpen() && s.cache == nil) || s.selection.Text(s.selectableRows()) != s.selected {
+	if s.belowMinimum() || s.selection.Text(s.selectableRows()) != s.selected {
 		s.selection = s.selection.Clear()
 	}
 }
 
 // selectableRows are the rows a selection reads its text from: the screen as
-// drawn, the dialog over it included while a dialog that can be selected in is
-// open.
+// drawn, the dialog over it included while a dialog is open.
 func (s Shell) selectableRows() []string {
-	if s.cache != nil {
+	if s.modalOpen() {
 		return s.overlays(s.baseRows())
 	}
 	return s.baseRows()
 }
 
-// cacheSelect lets a drag select text inside the remote cache dialog, where the
-// mouse otherwise only clicks: a press on text starts it, the drag follows it
-// and the release copies it. A press on an option or a button is a click. It
-// reports whether the event was taken.
-func (s *Shell) cacheSelect(e tea.MouseEvent) bool {
-	r := s.cache.Rect()
-	inner := layout.Rect{X: r.X + 2, Y: r.Y + 1, W: r.W - 4, H: r.H - 2}
+// modalRect is where the open dialog is drawn.
+func (s Shell) modalRect() (layout.Rect, bool) {
+	switch {
+	case s.palOpen:
+		return s.paletteBox(), true
+	case s.help != nil:
+		return s.help.Rect(), true
+	case s.pkg != nil:
+		return s.pkg.Rect(), true
+	case s.relpick != nil:
+		return s.relpick.Rect(), true
+	case s.confirm != nil:
+		return s.confirm.Rect(), true
+	case s.fix != nil:
+		return s.fix.Rect(), true
+	case s.adopt != nil:
+		return s.adopt.Rect(), true
+	case s.compose != nil:
+		return s.compose.Rect(), true
+	case s.tools != nil:
+		return s.tools.Rect(), true
+	case s.cache != nil:
+		return s.cache.Rect(), true
+	case s.result != nil:
+		return s.result.Rect(), true
+	}
+	return layout.Rect{}, false
+}
+
+// modalSelect lets a drag select text inside a dialog, where the mouse
+// otherwise only clicks. A press is a click as the dialog defines it, and is
+// remembered; a drag from it selects the text of the dialog between the press
+// and the pointer, and the release copies it. It reports whether the event was
+// taken (a drag, and the release that ends it); a press is not.
+func (s *Shell) modalSelect(e tea.MouseEvent) bool {
+	r, ok := s.modalRect()
+	if !ok {
+		return false
+	}
+	inner := layout.Rect{X: r.X + 1, Y: r.Y + 1, W: r.W - 2, H: r.H - 2}
 	switch {
 	case e.Action == tea.MouseActionPress && e.Button == tea.MouseButtonLeft:
 		s.selection = s.selection.Clear()
-		if inner.Contains(e.X, e.Y) && !s.cache.OnControl(s.th, e.X, e.Y) {
-			s.selection = s.selection.Press(inner, e.X, e.Y)
-			return true
+		s.modalPress, s.modalPressed = [2]int{e.X, e.Y}, inner.Contains(e.X, e.Y)
+		return false
+	case e.Action == tea.MouseActionMotion && e.Button == tea.MouseButtonLeft && s.modalPressed:
+		if !s.selection.Active {
+			if [2]int{e.X, e.Y} == s.modalPress {
+				return false
+			}
+			s.selection = s.selection.Press(inner, s.modalPress[0], s.modalPress[1])
 		}
-		return false
-	case !s.selection.Active:
-		return false
-	case e.Action == tea.MouseActionMotion && e.Button == tea.MouseButtonLeft:
 		s.selection = s.selection.Drag(e.X, e.Y)
-	default:
+		return true
+	case s.selection.Active:
 		// A release, or a motion with no button held: the terminal lost it.
+		s.modalPressed = false
 		s.endSelection()
+		return true
 	}
-	return true
+	if e.Action == tea.MouseActionRelease {
+		s.modalPressed = false
+	}
+	return false
 }
 
 // paintSelection draws the highlight over the screen rows.

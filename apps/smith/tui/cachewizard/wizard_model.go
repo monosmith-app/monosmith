@@ -243,22 +243,6 @@ func (m Model) Wheel(delta int) Model {
 	return m
 }
 
-// OnControl is true when a press at the screen cell (x, y) hits something that
-// acts (an option, a button, a tick box): such a press is a click, not the start
-// of a text selection.
-//
-// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
-func (m Model) OnControl(th theme.Theme, x, y int) bool {
-	row, col := y-m.rect.Y-1, x-m.rect.X-2
-	_, hits := m.body(th, 0, time.Time{})
-	for _, h := range hits {
-		if h.row == row && col >= h.x0 && col < h.x1 {
-			return true
-		}
-	}
-	return false
-}
-
 // typeAheadWindow is how long a pause ends the word being typed.
 const typeAheadWindow = time.Second
 
