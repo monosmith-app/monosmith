@@ -5,6 +5,7 @@
   "fixwizard.diff.summary": "  {path}  {what}  +{added} -{removed}",
   "fixwizard.failed.named": "{name} failed: {error}",
   "fixwizard.failed.fix": "Could not apply the fix: {error}",
+  "fixwizard.failed.verify": "The fix ran, but this check still fails: {finding}",
   "fixwizard.failed.step": "Step {number} of {total} failed: {label} ({error})",
   "fixwizard.steps.done": "{mark} step {number}: {description}",
   "fixwizard.review.failed": "● {description}\n  could not show the changes: {error}",

@@ -182,6 +182,21 @@ func TestAStepErrorShowsTheStepAndItsOutputAndOffersRetryAndClose(t *testing.T) 
 	}
 }
 
+func TestAFixWhoseCheckStillFailsShowsWhatItsStepsPrinted(t *testing.T) {
+	w := New(safe(), show).Place(160, 30)
+	w, _ = press(t, w, "enter")
+	w = w.FailVerify("@acme/lint is imported but not installed", []string{"npm WARN deprecated glob@10", "added 3 packages"})
+	got := text(w)
+	for _, want := range []string{"The fix ran, but this check still fails", "@acme/lint is imported but not installed", "npm WARN deprecated glob@10", "added 3 packages", "Retry (r)", "Copy output (y)"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("view lacks %q:\n%s", want, got)
+		}
+	}
+	if _, out := press(t, w, "y"); !strings.Contains(out.Copy, "added 3 packages") {
+		t.Fatalf("y copied %q", out.Copy)
+	}
+}
+
 func TestAFailureThatIsNotAStepIsToldInOneLine(t *testing.T) {
 	w := New(safe(), show).Place(100, 30)
 	w, _ = press(t, w, "enter")

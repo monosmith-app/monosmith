@@ -25,6 +25,18 @@ type fixRun struct {
 	lines []string
 }
 
+// verifiedOutputLines is how many of the last lines a fix printed are kept to
+// show when its check still fails.
+const verifiedOutputLines = 25
+
+// lastLines is the last n of lines.
+func lastLines(lines []string, n int) []string {
+	if len(lines) > n {
+		return lines[len(lines)-n:]
+	}
+	return lines
+}
+
 // maxLogLines is how many lines of a step's output the full log keeps; older
 // lines drop out.
 const maxLogLines = 2000
@@ -206,6 +218,7 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 	what := s.fix.Resolved().Description
 	s.verifying = s.fix.Fix.Checks
 	s.verifyingWhat = what
+	s.verifiedFix, s.verifiedOutput = *s.fix, lastLines(msg.run.snapshot(), verifiedOutputLines)
 	s.fix = nil
 	s.notify(words.Say("tui.fix.ran_checking_that_it_worked", "what", what), toast.Success)
 	return refresh
@@ -240,7 +253,10 @@ func (s *Shell) verifyFix(res doctorview.Result) {
 		return
 	}
 	if still := doctor.StillFailing(res.Report, checks); len(still) > 0 {
-		s.notify(doctor.StillFailingText(still[0]), toast.Warning)
+		// The steps passed and the check still fails: show what they printed,
+		// not only a toast, so the person sees why.
+		w := s.verifiedFix.FailVerify(strings.TrimPrefix(doctor.StillFailingText(still[0]), "Still not fixed: "), s.verifiedOutput).Place(s.w, s.h)
+		s.fix = &w
 		return
 	}
 	s.notify(words.Say("tui.fix.fixed", "verifyingWhat", s.verifyingWhat), toast.Success)
