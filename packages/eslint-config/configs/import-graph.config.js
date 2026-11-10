@@ -94,6 +94,10 @@ export default [
       'import-x/no-unresolved':  'off',
       'import-x/no-cycle':       'error',
       'import-x/no-self-import': 'error',
+
+      // Two imports from one module read as two dependencies and drift apart;
+      // `--fix` joins them into one.
+      'import-x/no-duplicates': 'error',
     },
   },
 ]
