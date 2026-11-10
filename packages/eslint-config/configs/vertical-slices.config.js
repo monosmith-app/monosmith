@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 
 /** The roles a production file may play, as its last suffix before the extension says. */
-export const ROLES = ['handler', 'use-case', 'algorithm', 'policy', 'model', 'contract', 'mapper', 'validator', 'repository', 'client', 'store', 'error', 'config', 'enum']
+export const ROLES = ['handler', 'use-case', 'algorithm', 'policy', 'model', 'contract', 'mapper', 'validator', 'repository', 'client', 'store', 'middleware', 'error', 'config', 'enum']
 
 /**
  * The front-end roles a `.tsx` file may play without any option: a file that holds JSX
@@ -434,8 +434,8 @@ export const plugin = {
  * THE ROLE LIST IS EXTENSIBLE
  *
  * {@link ROLES} is the back-end vocabulary, and it is not the only one. The ADR
- * behind these rules also allows `.service` (with a recorded exception) and
- * `.middleware`, and its front-end amendment adds `.route`, `.component`,
+ * behind these rules also allows `.service` (with a recorded exception), and
+ * its front-end amendment adds `.route`, `.component`,
  * `.hook`, `.section`, `.style`, `.content`, `.mock` and `.fixture`. A React
  * app could not opt in at all while the list was fixed - every component it
  * has would report.
