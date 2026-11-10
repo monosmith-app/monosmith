@@ -23,10 +23,7 @@ func (w Wizard) buttons() []action {
 	var out []action
 	switch w.phase {
 	case Asking:
-		if w.canGoBack() || w.style.Back {
-			out = append(out, action{words.Say("fixwizard.button.back"), "b"})
-		}
-		out = append(out, action{words.Say("fixwizard.button.cancel"), "esc"})
+		out = append(out, w.navButtons()...)
 	case Reviewing:
 		out = append(out, action{w.style.apply(), "enter"})
 		if w.hasDiff {
@@ -42,10 +39,7 @@ func (w Wizard) buttons() []action {
 		if w.style.Skip != "" {
 			out = append(out, action{w.style.Skip, "s"})
 		}
-		if w.canGoBack() || w.style.Back {
-			out = append(out, action{words.Say("fixwizard.button.back"), "b"})
-		}
-		out = append(out, action{words.Say("fixwizard.button.cancel"), "esc"})
+		out = append(out, w.navButtons()...)
 	case Applying:
 		if w.logOpen {
 			out = append(out, action{words.Say("fixwizard.button.closelog"), "l"})
@@ -58,6 +52,15 @@ func (w Wizard) buttons() []action {
 		out = append(out, action{words.Say("fixwizard.button.copy"), "y"}, action{words.Say("fixwizard.button.close"), "esc"})
 	}
 	return out
+}
+
+// navButtons are Back, when a screen before exists, and Cancel. Esc goes back
+// when it can, so Cancel takes Ctrl+C then, and Esc on the first screen.
+func (w Wizard) navButtons() []action {
+	if w.canGoBack() || w.style.Back {
+		return []action{{words.Say("fixwizard.button.back"), "b"}, {words.Say("fixwizard.button.cancel"), "ctrl+c"}}
+	}
+	return []action{{words.Say("fixwizard.button.cancel"), "esc"}}
 }
 
 // buttonSpans are the columns (from the dialog's left edge) each button covers.

@@ -124,7 +124,9 @@ func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *
 	l.keys("f", "esc")
 	l.hasNot("Fix · question")
 	l.has("nothing was changed")
-	l.keys("f", "1", "esc")
+	l.keys("f", "1", "esc") // Esc in the review goes back to the question
+	l.has("Fix · question 1 of 1")
+	l.keys("ctrl+c")
 	if l.sh().fix != nil || len(l.appliedFixes()) != 0 {
 		t.Fatal("cancelling applied something")
 	}

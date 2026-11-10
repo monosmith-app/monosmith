@@ -14,14 +14,20 @@ const (
 	StepRun    = "run"
 	StepWrite  = "write"
 	StepSecret = "secret"
+	// StepList is a program that only reads (a listing). It is not a question,
+	// but it changes nothing, so going back passes over it and runs it again.
+	StepList = "list"
 )
 
 // isQuestion lists, in one place, which steps are questions and which are
 // actions. A step that is missing here counts as an action, the safe side.
 var isQuestion = map[string]bool{
 	StepChoose: true, StepText: true, StepConfirm: true, StepShow: true,
-	StepRun: false, StepWrite: false, StepSecret: false,
+	StepRun: false, StepWrite: false, StepSecret: false, StepList: false,
 }
+
+// readsOnly lists the steps that are not questions but change nothing.
+var readsOnly = map[string]bool{StepList: true}
 
 // Steps are the operations the history records, with true for a question and
 // false for an action (a point of no return). The result is a copy.

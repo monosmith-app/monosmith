@@ -26,7 +26,9 @@ type Ports struct {
 	// Dialogue talks to the person: a terminal, or the screens of the shell.
 	Dialogue
 	// Run starts a program; LookPath finds one on PATH.
-	Run      Runner
+	Run Runner
+	// Read starts a program that only reads (a listing); nil means Run.
+	Read     Runner
 	LookPath func(string) (string, error)
 	// Now is the clock.
 	Now func() time.Time
@@ -61,6 +63,16 @@ func (f flow) run(what string, stdin string, argv ...string) (string, string, er
 	return f.Run(stdin, argv...)
 }
 
+// read starts a program that only reads while the person sees that smith is working.
+func (f flow) read(what string, stdin string, argv ...string) (string, string, error) {
+	done := f.Working(what)
+	defer done()
+	if f.Read == nil {
+		return f.Run(stdin, argv...)
+	}
+	return f.Read(stdin, argv...)
+}
+
 // list shows a read-only command, runs it when the person agrees, and returns
 // what it lists. ok is false when nothing could be listed and the person must
 // type the answer.
@@ -74,7 +86,7 @@ func (f flow) list(l Listing) (items []Item, ok bool) {
 		if ok, _ := f.Confirm(Confirmation{Text: "smith will run this command. It only reads:", Shown: l.Line(), Prompt: "Run it?", Yes: "Run it", YesHint: "list the choices from " + program, No: "Type it by hand", NoHint: "run nothing"}); !ok {
 			return nil, false
 		}
-		stdout, stderr, err := f.run("Listing with "+program, "", l.Argv...)
+		stdout, stderr, err := f.read("Listing with "+program, "", l.Argv...)
 		if err == nil {
 			items, perr := l.Parse(stdout)
 			if perr != nil {
@@ -201,7 +213,7 @@ func walkOnce(facts Facts, ports Ports, h *history) (remote string, again bool, 
 	az := &azureState{}
 	s := &stepper{inner: ports.Dialogue, run: ports.Run, write: ports.WriteRemote, h: h, azure: az}
 	p := ports
-	p.Dialogue, p.Run, p.WriteRemote = s, s.runProgram, s.writeRemote
+	p.Dialogue, p.Run, p.Read, p.WriteRemote = s, s.runProgram, s.readProgram, s.writeRemote
 	defer func() {
 		r := recover()
 		if r == nil {

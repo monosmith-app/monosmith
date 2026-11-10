@@ -46,6 +46,7 @@ const (
 
 // goBack drops the steps from the earlier question on, unless an action ran
 // after it: an action is a point of no return, so the history stays as it is.
+// A listing is no action: it is dropped too, and runs again when reached.
 func (h *history) goBack() backResult {
 	prev := -1
 	ranAction := false
@@ -54,7 +55,9 @@ func (h *history) goBack() backResult {
 			prev = i
 			break
 		}
-		ranAction = true
+		if !readsOnly[h.entries[i].op] {
+			ranAction = true
+		}
 	}
 	if prev < 0 && !ranAction {
 		return firstQuestion
@@ -214,12 +217,26 @@ func (s *stepper) runProgram(stdin string, argv ...string) (string, string, erro
 	if s.inSecret {
 		return s.run(stdin, argv...)
 	}
+	return s.recorded(StepRun, stdin, argv)
+}
+
+// readProgram runs a program that only reads, kept for a replay like runProgram.
+// Going back passes over it, so it runs again when the flow reaches it again.
+func (s *stepper) readProgram(stdin string, argv ...string) (string, string, error) {
+	if s.inSecret {
+		return s.run(stdin, argv...)
+	}
+	return s.recorded(StepList, stdin, argv)
+}
+
+// recorded runs a program once as the step op, or returns the recorded result while the history replays.
+func (s *stepper) recorded(op, stdin string, argv []string) (string, string, error) {
 	key := CommandLine(argv)
-	if e, ok := s.replay(StepRun, key); ok {
+	if e, ok := s.replay(op, key); ok {
 		return e.stdout, e.stderr, e.err
 	}
 	stdout, stderr, err := s.run(stdin, argv...)
-	s.record(entry{op: StepRun, key: key, stdout: stdout, stderr: stderr, err: err})
+	s.record(entry{op: op, key: key, stdout: stdout, stderr: stderr, err: err})
 	return stdout, stderr, err
 }
 

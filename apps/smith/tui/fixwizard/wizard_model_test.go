@@ -117,6 +117,21 @@ func TestBackUndoesTheLastAnswerAndKeepsTheCursorOnIt(t *testing.T) {
 	}
 }
 
+func TestEscGoesBackToTheEarlierAnswerAndCtrlCStillCloses(t *testing.T) {
+	w := New(question(), show).Place(100, 30)
+	w, _ = press(t, w, "2")
+	if !strings.Contains(text(w), "Cancel (ctrl+c)") {
+		t.Fatalf("the cancel key is not ctrl+c once esc goes back:\n%s", text(w))
+	}
+	if _, out := press(t, w, "ctrl+c"); !out.Done {
+		t.Fatalf("ctrl+c: %+v", out)
+	}
+	w, out := press(t, w, "esc")
+	if out.Done || w.Phase() != Asking || len(w.answers) != 0 || w.cursor != 1 {
+		t.Fatalf("esc: phase %v answers %v cursor %d outcome %+v", w.Phase(), w.answers, w.cursor, out)
+	}
+}
+
 func TestEscCancelsAtEveryPhaseThatAsksAndNumbersOutOfRangeDoNothing(t *testing.T) {
 	w := New(question(), show).Place(100, 30)
 	if _, out := press(t, w, "9"); out.Done || len(w.answers) != 0 {
@@ -300,14 +315,15 @@ func TestAStyledReviewCanDeclineSkipAndGoBackToTheStageBefore(t *testing.T) {
 	st := Style{Name: "Adopt", Apply: "Yes, delete", Decline: "No, keep", Skip: "Skip rest", Back: true}
 	w := New(safe(), show).Styled(st).Place(100, 30)
 	got := text(w)
-	for _, want := range []string{"Adopt · review", "Yes, delete (enter)", "No, keep (n)", "Skip rest (s)", "Back (b)", "Cancel (esc)"} {
+	for _, want := range []string{"Adopt · review", "Yes, delete (enter)", "No, keep (n)", "Skip rest (s)", "Back (b)", "Cancel (ctrl+c)"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %q:\n%s", want, got)
 		}
 	}
 	for key, check := range map[string]func(Outcome) bool{
 		"n": func(o Outcome) bool { return o.Decline }, "s": func(o Outcome) bool { return o.Skip },
-		"b": func(o Outcome) bool { return o.Back }, "esc": func(o Outcome) bool { return o.Done }, "enter": func(o Outcome) bool { return o.Apply },
+		"b": func(o Outcome) bool { return o.Back }, "esc": func(o Outcome) bool { return o.Back },
+		"ctrl+c": func(o Outcome) bool { return o.Done }, "enter": func(o Outcome) bool { return o.Apply },
 	} {
 		if _, out := w.Key(key); !check(out) {
 			t.Errorf("%s: %+v", key, out)
