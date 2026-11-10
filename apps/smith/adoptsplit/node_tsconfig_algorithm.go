@@ -33,8 +33,9 @@ func shareTSConfig(req Request, dir string) (string, error) {
 	if _, err := os.Stat(basePath); err == nil {
 		return "tsconfig.json stays whole: the root already has a tsconfig.base.json.", nil
 	}
-	doc, err := jsondoc.ParseDocument(jsondoc.StripComments(raw))
-	if err != nil {
+	clean := jsondoc.StripComments(raw)
+	doc, err := jsondoc.ParseDocument(clean)
+	if err != nil || !json.Valid(clean) {
 		return "tsconfig.json stays whole: smith cannot read it as JSON (a trailing comma?).", nil
 	}
 	if doc.Has("extends") {

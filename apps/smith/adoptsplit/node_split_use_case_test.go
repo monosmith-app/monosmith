@@ -21,7 +21,7 @@ const orders = `{
 const ordersTSConfig = `{
   // compiler options
   "compilerOptions": { "target": "ES2022", "strict": true, "outDir": "dist", "rootDir": "src", "paths": { "@/*": ["src/*"] } },
-  "include": ["src"],
+  "include": ["src"]
 }
 `
 

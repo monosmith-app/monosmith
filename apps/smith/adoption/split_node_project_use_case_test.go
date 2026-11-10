@@ -118,8 +118,14 @@ func TestAdoptSplitsTheWorkspaceFromASingleNodeApp(t *testing.T) {
 	}
 
 	doctor := runIn(t, repo, env, bin, "doctor")
-	if !regexp.MustCompile(`\d+ passed, 0 failed, 0 warnings`).MatchString(doctor) {
-		t.Errorf("smith doctor must pass with no failure and no warning:\n%s", doctor)
+	if !regexp.MustCompile(`\d+ passed, 0 failed, \d+ warnings?`).MatchString(doctor) {
+		t.Errorf("smith doctor must pass with no failure:\n%s", doctor)
+	}
+	for _, line := range strings.Split(doctor, "\n") {
+		// The Node.js version of the machine that runs the test is not the split's doing.
+		if strings.HasPrefix(line, "! ") && !strings.HasPrefix(line, "! Node.js is") {
+			t.Errorf("smith doctor warns: %s\n%s", line, doctor)
+		}
 	}
 	if status := runIn(t, repo, env, "git", "status", "--short"); strings.TrimSpace(status) != "" {
 		t.Logf("uncommitted after adopt --commit:\n%s", status)
