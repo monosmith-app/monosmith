@@ -22,5 +22,17 @@
   "vscode.adopt-offer.for-example-tools": "for example tools/{name}",
   "vscode.adopt-offer.bringing": "bringing",
   "vscode.adopt-offer.folder": "folder",
-  "vscode.adopt-offer.name": "name"
+  "vscode.adopt-offer.name": "name",
+  "vscode.adopt-offer.dependency-question": "{name} is a development dependency, and smith does not know it as a tool. Where should it go?",
+  "vscode.adopt-offer.dependency-project": "The project",
+  "vscode.adopt-offer.dependency-project-detail": "it stays in the project's own manifest",
+  "vscode.adopt-offer.dependency-workspace": "The workspace",
+  "vscode.adopt-offer.dependency-workspace-detail": "it moves to the workspace's manifest, for every project",
+  "vscode.adopt-offer.lint-question": "The project has its own ESLint setup. What should happen to it?",
+  "vscode.adopt-offer.lint-keep": "Keep my own ESLint setup in the project",
+  "vscode.adopt-offer.lint-keep-detail": "nothing of it changes",
+  "vscode.adopt-offer.lint-shared": "Use the shared config",
+  "vscode.adopt-offer.lint-shared-detail": "the old file is kept as .pre-smith and the ESLint packages leave the project",
+  "vscode.adopt-offer.split-title": "{title}: what goes where",
+  "vscode.adopt-offer.split-first-answer": "The first answer changes the least; nothing is changed until you confirm in the terminal."
 }

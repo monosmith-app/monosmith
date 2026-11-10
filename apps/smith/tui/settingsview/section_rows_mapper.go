@@ -321,6 +321,8 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 // set is picked, anything else is changed.
 func enterKey(st Setting) string {
 	switch {
+	case st.Path == "cache.remote":
+		return words.Say("settingsview.setting.keys.cache-setup")
 	case st.Type == "boolean":
 		return words.Say("settingsview.setting.keys.flip")
 	case st.Type == "string" && len(st.Choices) > 0:

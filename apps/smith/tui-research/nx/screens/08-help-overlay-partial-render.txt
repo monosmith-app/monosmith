@@ -1,0 +1,38 @@
+
+ NX    3 build, lint, serve tasks, and 6 others they depend on                                                    Cache   Duration
+ │
+>│⠦    @play/app-a:s┌   NX   Help  ───────────────────────────────────────────────────────────────── (esc) ✕  ↑       - Continuous
+ │⠦    @play/lib-b:s│                                                                                         █       - Continuous
+ │⠦    @play/srv-c:s│  Thanks for using Nx! To get the most out of this terminal UI, please check out the     █       - Continuous
+ │⠦    @play/app-a:b│  docs: https://nx.dev/terminal-ui                                                       █     ...       4.6s
+ │·    Waiting for t│                                                                                         █
+ │·    Waiting for t│  If you would prefer to not use the TUI, you can disable it by:                         █
+ │·    Waiting for t│  - Adding the `--no-tui` flag to your command.                                          █
+ │·    Waiting for t│  - Setting `NX_TUI=false` in your environment.                                          █
+ │·    Waiting for t│                                                                                         █
+ └                  │  If you are finding Nx useful, please consider giving it a star on GitHub, it means a   █
+  ✖    @play/app-a:l│  lot: https://github.com/nrwl/nx                                                        █       -       1.9s
+  ✔    @play/srv-c:l│                                                                                         █       -       1.7s
+  ✔    @play/lib-b:l│  Available keyboard shortcuts:                                                          █       -       1.8s
+  ✔    @play/lib-b:build                                                                                              -       4.7s
+  ✔    @play/srv-c:build                                                                                              -       3.5s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 5/6 (9.4s)                                   pin output: 1 or 2  show output: <enter>  filter: /  navigate: ↑ ↓  quit: q  help: ?

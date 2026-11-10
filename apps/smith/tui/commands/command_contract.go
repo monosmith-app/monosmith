@@ -53,6 +53,9 @@ const (
 	OpenCompletion
 	// DeclineCompletion remembers "Not now": Home stops listing tab completion.
 	DeclineCompletion
+	// OpenCacheSetup opens the remote cache setup: where the cache lives, the key,
+	// and each CI provider's secrets, with a confirmation before any command.
+	OpenCacheSetup
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey

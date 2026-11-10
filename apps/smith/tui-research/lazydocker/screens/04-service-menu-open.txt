@@ -1,0 +1,38 @@
+╭─[1]─Project──────────────────────────────╮╭─Logs - Stats - Container Env - Container Config - Top──────────────────────────────╮
+│tuiresearch                               ││starting                                                                            │
+╰──────────────────────────────────────────╯│fatal: cannot connect to db                                                         │
+╭─[2]─Services─────────────────────────────╮│                                                                                    │
+│exited  (3) failing 0.00%       ╭─Menu──────────────────────────────────────────────────────────╮                               │
+│running     ticker  0.01% 80/tcp│u     up service                                               │                               │
+│running     web     0.00% 18080-│d     remove containers                                        │                               │
+│                                │s     stop                                                     │                               │
+│                                │p     pause                                                    │                               │
+╰────────────────────────────────│r     restart                                                  │                               │
+╭─[3]─Standalone Containers──────│S     start                                                    │                               │
+│running  tuires-control-plane 4.│a     attach                                                   │                               │
+│                                │m     view logs                                                │                               │
+│                                │U     up project                                               │                               │
+│                                │D     down project                                             │                               │
+│                                │R     view restart options                                     │                               │
+╰────────────────────────────────│c     run predefined custom command                            │                               │
+╭─[4]─Images─────────────────────│b     view bulk commands                                       │                               │
+│kindest/node                  v1│E     exec shell                                               │                               │
+│kindest/node@sha256           a1│w     open in browser (first port is http)                     │                               │
+│langgenius/dify-api           1.│enter focus main panel                                         │                               │
+│langgenius/dify-plugin-daemon 0.│[     previous tab                                             │                               │
+│langgenius/dify-sandbox       0.│]     next tab                                                 │                               │
+╰────────────────────────────────│/     filter list                                              │                               │
+╭─[5]─Volumes────────────────────│                                                               │                               │
+│local 6f304e046cb77e5e08fdc8d73a│+     next screen mode (normal/half/fullscreen)                │                               │
+│local 8874ff150ce1e3e9b7911b55f0│_     prev screen mode                                         │                               │
+│local 925edcae26db62eed5c3006f8f│1     focus projects panel                                     │                               │
+│local adf5ccbd473c5ed8562ced45fb│2     focus services panel                                     │                               │
+│local e40dc23ea92151527bedc0f84c│3     focus containers panel                                   │                               │
+╰────────────────────────────────│4     focus images panel                                       │                               │
+╭─[6]─Networks───────────────────│5     focus volumes panel                                      │                               │
+│bridge bridge                   │6     focus networks panel                                     │                               │
+│bridge docker_default           ╰───────────────────────────────────────────────────────────────╯                               │
+│bridge docker_ssrf_proxy_network          ││                                                                                    │
+│host   host                               ││                                                                                    │
+╰──────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
+enter: execute, esc: close, ↑ ↓: navigate                                                                           Donate 0.25.2

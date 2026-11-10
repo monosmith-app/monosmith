@@ -1,0 +1,38 @@
+                                             ┏  ●  @play/lib-b:serve  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ NX    3 build, lint, serve task   Duration  ┃                                                                                   ┃
+ │                                           ┃                                                                                   ┃
+ │⠼    @play/app-a:serve         Continuous  ┃  > @play/lib-b@1.0.0 serve                                                        ┃
+>│⠼    @play/lib-b:serve [1]     Continuous  ┃  > node -e "let i=0;console.log('lib-b serving on :3001');setInterval(()=>conso   ┃
+ │⠼    @play/srv-c:serve         Continuous  ┃  le.log('lib-b request '+(++i)),1000)"                                            ┃
+ │·    Waiting for task...                   ┃                                                                                   ┃
+ │·    Waiting for task...                   ┃  lib-b serving on :3001                                                           ┃
+ │·    Waiting for task...                   ┃  lib-b request 1                                                                  ┃
+ │·    Waiting for task...                   ┃  lib-b request 2                                                                  ┃
+ │·    Waiting for task...                   ┃  lib-b request 3                                                                  ┃
+ │·    Waiting for task...                   ┃  lib-b request 4                                                                  ┃
+ └                                           ┃  lib-b request 5                                                                  ┃
+  ✖    @play/app-a:lint                2.1s  ┃  lib-b request 6                                                                  ┃
+  ✔    @play/srv-c:lint                2.1s  ┃  lib-b request 7                                                                  ┃
+  ✔    @play/lib-b:lint                2.2s  ┃  lib-b request 8                                                                  ┃
+  ✔    @play/lib-b:build               5.1s  ┃  lib-b request 9                                                                  ┃
+  ✔    @play/srv-c:build               3.6s  ┃  █                                                                                ┃
+  ✔    @play/app-a:build               5.1s  ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┃                                                                                   ┃
+                                             ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ 6/6 (11.1s)                                               scroll: ↑ ↓  copy: c  search: /  full screen: <enter>  quit: q  help: ?

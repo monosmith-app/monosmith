@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 )
 
 // CompleteWorkspace does the mechanical steps smith doctor would otherwise
@@ -18,17 +19,26 @@ import (
 // and leaves to doctor's own remedy.
 func CompleteWorkspace(r Report, install, eslint bool, out io.Writer) error {
 	var goRoots, nodeRoots []string
+	havePython := false
 	for _, p := range r.Projects {
 		switch p.Language {
 		case "go":
 			goRoots = append(goRoots, p.Root)
 		case "node":
 			nodeRoots = append(nodeRoots, p.Root)
+		case "python":
+			havePython = true
 		}
 	}
 	if len(goRoots) > 0 {
 		if err := writeGoWork(r.Root, goRoots, out); err != nil {
 			return err
+		}
+	}
+	if havePython && install {
+		fmt.Fprintln(out, "  creating .venv and installing requirements-dev.txt ...")
+		if _, err := venv.Ensure(r.Root); err != nil {
+			fmt.Fprintf(out, "  not done: %v; run smith ci setup\n", err)
 		}
 	}
 	if len(nodeRoots) == 0 {

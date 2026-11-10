@@ -1,0 +1,24 @@
+╭─[1]─Status──────────────╮╭─[0]─Staged changes────────────────────────────────╮
+│gitplay → main           ││diff --git a/a.txt b/a.txt                         ▐
+╰─────────────────────────╯│index f384549..ae9be42 100644                      ▐
+╭╭─Keybindings───────────────────────────────────────────(Type to filter)─────╮▐
+││              ─── Local                                                     ▐▐
+││     <ctrl+o> Copy path to clipboard                                        ▐▐
+││      <space> Stage                                                         │▐
+││     <ctrl+b> Filter files by status                                        │▐
+││            y Copy to clipboard...                                          │▐
+││            c Commit                                                        ││
+││            w Commit changes without pre-commit hook                        ││
+││            A Amend last commit                                             ││
+││            C Commit changes using git editor                               ││
+╰│     <ctrl+f> Find base commit for fixup                                    ││
+╭│            e Edit                                                          ││
+│╰────────────────────────────────────────────────────────────────────1 of 66─╯│
+╰──────────────────1 of 3─╯│+x                                                 │
+╭─[4]─Commits - Reflog────╮│diff --git a/untracked.txt b/untracked.txt         │
+│119de6a7 Te ○ fix: b on m││new file mode 100644                               │
+╰──────────────────1 of 3─╯╰───────────────────────────────────────────────────╯
+╭─[5]─Stash───────────────╮╭─Command log───────────────────────────────────────╮
+│6s WIP on main: 119de6a f││and the repository exists.                         │
+╰──────────────────1 of 1─╯╰───────────────────────────────────────────────────╯
+Execute: <enter> | Close/Cancel: <esc>                Donate Ask Question 0.66.2

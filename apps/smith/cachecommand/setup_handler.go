@@ -80,12 +80,15 @@ stay in memory and go to the clipboard, never into a file.
 			_, err = cachesetup.Run(
 				cachesetup.Facts{WorkspaceName: name, Remote: cfg.Cache.Remote, Providers: cfg.CI.Providers},
 				cachesetup.Ports{
-					In: bufio.NewReader(editor), Out: out, Run: cachesetup.ExecRunner, LookPath: exec.LookPath, Now: time.Now,
-					WriteRemote: func(remote string) error { return configedit.Set(root, "cache.remote", []string{remote}) },
-					Secret: func(noun string, produce func() (string, error), actions []cachekey.KeyAction) error {
+					Dialogue: cachesetup.Terminal{In: bufio.NewReader(editor), Out: out, SecretFn: func(noun string, produce func() (string, error), actions []cachekey.KeyAction) error {
 						s := newSession(out, clearAfter)
 						s.Noun, s.Produce, s.Actions = noun, produce, actions
 						return runSecretSession(s, out, keys)
+					}},
+					Run: cachesetup.ExecRunner, LookPath: exec.LookPath, Now: time.Now,
+					// The command's own --commit flag, through operation.Wrap, commits the change.
+					WriteRemote: func(remote string, _ bool) (string, error) {
+						return "", configedit.Set(root, "cache.remote", []string{remote})
 					},
 				})
 			return err

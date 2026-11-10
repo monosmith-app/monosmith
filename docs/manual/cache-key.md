@@ -31,7 +31,7 @@ Usage: `smith cache key [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--clear-after <clear-after>` | string |  | clear the clipboard after this long if it still holds the key; 0 leaves it |
+| `--clear-after <clear-after>` | duration (`60s`, `2m`, `0`) | `60s` | clear the clipboard after this long if it still holds the key; 0 leaves it |
 | `--print` | boolean | off | print the key instead of copying it |
 
 <!-- smith:end cache key -->

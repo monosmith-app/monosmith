@@ -4,6 +4,8 @@ import type { BlankFolder } from '../empty-folder/index.ts'
 import { openSmithTerminal, smithForTerminal } from '../smith-terminal/index.ts'
 import { toAdoptArguments, toMoveArguments, type AdoptAction } from './adopt-arguments.mapper.ts'
 import type { RepositoryOffer } from './repository-offer.contract.ts'
+import { LEAVE } from './move-choices.policy.ts'
+import { askWhatToSplit } from './where-to-split.client.ts'
 import { askWhereToMove } from './where-to-move.client.ts'
 import { say } from '../words/index.ts'
 
@@ -52,7 +54,11 @@ export async function adopt (host: CommandHost, found: AdoptCandidates, subscrip
   if (answer === undefined && action === 'start' && chosen.project !== undefined) return
   const executable = await smithForTerminal(chosen.root)
   if (executable === undefined) return
+  // A project that moves is split from the workspace: ask what smith cannot place (nothing is changed yet).
+  const moving = answer !== undefined && answer.dir !== LEAVE
+  const split = moving ? await askWhatToSplit(executable, chosen.root, answer.dir) : undefined
+  if (moving && split === undefined) return
   host.note(say('vscode.adopt-offer.monosmith-into-monosmith', { part: say(action === 'start' ? 'vscode.adopt-offer.bringing' : 'vscode.adopt-offer.previewing-bringing'), name: chosen.name, why: chosen.why }))
-  const terminal = openSmithTerminal(executable, answer === undefined ? toAdoptArguments(action) : toMoveArguments(answer.dir, answer.commit), chosen.root)
+  const terminal = openSmithTerminal(executable, answer === undefined ? toAdoptArguments(action) : toMoveArguments(answer.dir, answer.commit, split), chosen.root)
   if (action === 'start' && (answer === undefined || answer.commit)) offerUndoWhenDone(terminal, `${chosen.name} is converted`, subscriptions)
 }

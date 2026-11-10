@@ -126,7 +126,9 @@ stay at the root, and other documents go to `doc/`. For a Node project, the tool
 `tsconfig.base.json` that the project's `tsconfig.json` extends. A project's own ESLint setup is a question: use the shared lint
 config (`--eslint-setup shared`) or keep your own in the project (`--eslint-setup keep`). `dependencies` and `jest.config.js` stay with the
 project. A development dependency smith does not know as a tool is asked about; `--hoist
-<name>` answers for it. Other languages move their manifest whole for now. The
+<name>` answers for it. A Python project's development tools move to the root `requirements-dev.txt` and its
+`[tool.ruff]` tables to a root `ruff.toml`; a Rust crate gets a root `Cargo.toml` with
+`[workspace]`; a Go module keeps `go.mod` and gets a root `go.work`. The
 [manual](../manual/adopt.md#a-project-at-the-repository-root) has the details.
 
 ## 3. Choose how far to go

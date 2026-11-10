@@ -1,0 +1,34 @@
+~\dev\monosmith-local\apps\smith\tui-research\.tools\samples\yz                                                      1
+   dockerplay │  docs                                                   │----- File Type Classification -----
+   gitplay    │  img                                                    │
+  yz        │  src                                                    │data
+   yazi.cmd   │  big.bin                                                │
+   yazi_1.cmd │ big_1.bin                                             │
+               │  data.json                                              │
+               │  huge.bin                                               │
+               │ 󰂺 README.md                                              │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+               │                                                          │
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │         g  Go to top                          h  Go home                           c  Go to ~/.config           │
+ │         d  Go to ~/Downloads                  t  Go to trash bin             <Space>  Jump interactively        │
+ │         f  Follow hovered symlink                                                                                 │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+               │                                                          │
+ NOR  572.2M  big_1.bin                                                                                62%   5/8  

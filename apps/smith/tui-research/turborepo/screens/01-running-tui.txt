@@ -1,0 +1,38 @@
+Tasks (/ - Search)    │  @play/app-a#dev > cache bypass, force executing a630b11829acc71a
+ »  @play/app-a#dev   │ cache bypass, force executing a630b11829acc71a
+ » •@play/lib-b#dev  e│ @play/app-a, @play/lib-b, @play/srv-c
+ » •@play/srv-c#dev li│t> @play/app-a@1.0.0 dev
+ ⨯ •@play/app-a#lint i│a>lnodeu-en"letai=0;console.log('app-a dev server on :3002');setInterval(()=>console.log('app-a request '+(
+ ✓  @play/srv-c#lint  │ ++i)),1000)"
+ ✓  @play/lib-b#lint  │ app-a dev server on :3002
+ ✓  @play/lib-b#build │ app-a request 1
+ ✓  @play/srv-c#build │ app-a request 2
+ ✓  @play/app-a#build │ app-a request 3
+                      │ app-a request 4
+                      │ app-a request 5
+                      │ app-a request 6
+                      │ app-a request 7
+                      │ app-a request 8
+                      │ app-a request 9
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+↑ ↓ - Select          │
+m - More binds        │    i - Interact   u/d - Scroll logs   U/D - Page logs   t/b - Jump to top/bottom

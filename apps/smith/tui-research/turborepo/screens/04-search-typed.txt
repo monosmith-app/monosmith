@@ -1,0 +1,38 @@
+/ srv                 │  @play/srv-c#lint > cache bypass, force executing 4cd942a822b96962
+ »  @play/app-a#dev   │ cache bypass, force executing 4cd942a822b96962
+ »  @play/lib-b#dev   │ @play/app-a, @play/lib-b, @play/srv-c
+ »  @play/srv-c#dev   │t> @play/srv-c@1.0.0 lint
+ ⨯  @play/app-a#lint  │a>lnodeu-en"console.log('srv-c lint clean')"
+ ✓  @play/srv-c#lint  │ srv-c lint clean
+ ✓  @play/lib-b#lint  │
+ ✓  @play/lib-b#build │
+ ✓  @play/srv-c#build │
+ ✓  @play/app-a#build │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+                      │
+↑ ↓ - Select          │
+m - More binds        │    u/d - Scroll logs   U/D - Page logs   t/b - Jump to top/bottom

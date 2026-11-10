@@ -1,0 +1,38 @@
+╭─[1]─Project──────────────────────────────╮╭─Logs - Stats - Container Env - Container Config - Top──────────────────────────────╮
+│tuiresearch                               ││tick 1                                                                              │
+╰──────────────────────────────────────────╯│tick 2                                                                              │
+╭─[2]─Services─────────────────────────────╮│tick 3                                                                              │
+│exited  (3) failing 0.00%               ng││tick 4                                                                              │
+│running     ticker  0.01% 80/tcp        ng││tick 5                                                                              │
+│running     web     0.00% 18080->80/tcp ng││tick 6                                                                              │
+│                                          ││tick 7                                                                              │
+│                                          ││tick 8                                                                              │
+╰──────────────────────────────────────────╯│tick 9                                                                              │
+╭─[3]─Standalone Containers────────────────╮│tick 10                                                                             │
+│                                          ││tick 11                                                                             │
+│                                          ││tick 12                                                                             │
+│                                          ││tick 13                                                                             │
+│                                          ││                                                                                    │
+│                                          ││                                                                                    │
+╰──────────────────────────────────────────╯│                                                                                    │
+╭─[4]─Images───────────────────────────────╮│                                                                                    │
+│langgenius/dify-api           1.1.3       ▐│                                                                                    │
+│langgenius/dify-plugin-daemon 0.0.6-local ▐│                                                                                    │
+│langgenius/dify-sandbox       0.2.11      ▐│                                                                                    │
+│langgenius/dify-web           1.1.3       ││                                                                                    │
+│nginx                         latest      ││                                                                                    │
+╰──────────────────────────────────────────╯│                                                                                    │
+╭─[5]─Volumes──────────────────────────────╮│                                                                                    │
+│local 6f304e046cb77e5e08fdc8d73a55c7294ff9││                                                                                    │
+│local 925edcae26db62eed5c3006f8f68ec3b1fe5││                                                                                    │
+│local adf5ccbd473c5ed8562ced45fb2c1cfcb523││                                                                                    │
+│local e40dc23ea92151527bedc0f84cbb40122182││                                                                                    │
+│                                          ││                                                                                    │
+╰──────────────────────────────────────────╯│                                                                                    │
+╭─[6]─Networks─────────────────────────────╮│                                                                                    │
+│bridge bridge                             ▐│                                                                                    │
+│bridge docker_default                     ▐│                                                                                    │
+│bridge docker_ssrf_proxy_network          ▐│                                                                                    │
+│host   host                               ││                                                                                    │
+╰──────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
+PgUp/PgDn: scroll, b: view bulk commands, q: quit, x: menu, ← → ↑ ↓: navigate                                       Donate 0.25.2

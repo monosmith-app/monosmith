@@ -1,0 +1,38 @@
+ Context: kind-tuires [RW]                         <c>       Copy                  <f> Toggle FullScree… ____  __ ________
+ Cluster: kind-tuires                              <e>       Edit                                       |    |/  /   __   \______
+ User:    kind-tuires                              <n>       Next Match                                 |       /\____    /  ___/
+ K9s Rev: v0.51.0                                  <shift-n> Prev Match                                 |    \   \  /    /\___  \
+ K8s Rev: v1.31.2                                  <r>       Toggle Auto-Refresh                        |____|\__ \/____//____  /
+ CPU:     n/a                                      <x>       Toggle Decode                                       \/           \/
+ MEM:     n/a
+┌───────────────────────────────────────────────────── Describe(demo/crash) ─────────────────────────────────────────────────────┐
+│ Name:             crash                                                                                                        │
+│ Namespace:        demo                                                                                                         │
+│ Priority:         0                                                                                                            │
+│ Service Account:  default                                                                                                      │
+│ Node:             tuires-control-plane/172.21.0.2                                                                              │
+│ Start Time:       Sat, 07 Nov 2026 09:50:41 +0000                                                                              │
+│ Labels:           run=crash                                                                                                    │
+│ Annotations:      <none>                                                                                                       │
+│ Status:           Running                                                                                                      │
+│ IP:               10.244.0.9                                                                                                   │
+│ IPs:                                                                                                                           │
+│   IP:  10.244.0.9                                                                                                              │
+│ Containers:                                                                                                                    │
+│   crash:                                                                                                                       │
+│     Container ID:  containerd://e48b0de3d8b40d3f4e7f8bfcfb9326c3a83bb797770ca553ca9bb81f50fc36cd                               │
+│     Image:         busybox                                                                                                     │
+│     Image ID:      docker.io/library/busybox@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4           │
+│     Port:          <none>                                                                                                      │
+│     Host Port:     <none>                                                                                                      │
+│     Args:                                                                                                                      │
+│       sh                                                                                                                       │
+│       -c                                                                                                                       │
+│       echo boom; sleep 2; exit 1                                                                                               │
+│     State:          Terminated                                                                                                 │
+│       Reason:       Error                                                                                                      │
+│       Exit Code:    1                                                                                                          │
+│       Started:      Sat, 07 Nov 2026 09:51:37 +0000                                                                            │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  <pod>   <describe>
+

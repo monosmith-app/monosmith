@@ -108,6 +108,9 @@ func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
 	if res.Run != nil {
 		return s.execute(res.Run, false)
 	}
+	if res.CacheSetup {
+		return s.openCacheSetup()
+	}
 	if res.Search {
 		return s.openPluginSearch(res.Term)
 	}

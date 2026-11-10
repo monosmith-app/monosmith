@@ -55,7 +55,7 @@ Usage: `smith cache setup [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--clear-after <clear-after>` | string |  | clear the clipboard after this long if it still holds the key; 0 leaves it |
+| `--clear-after <clear-after>` | duration (`60s`, `2m`, `0`) | `60s` | clear the clipboard after this long if it still holds the key; 0 leaves it |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--json` | boolean | off | print the questions as JSON (with --questions) |
 | `--questions` | boolean | off | print the questions smith cache setup asks, with their answers, and change nothing (needs --json) |
@@ -67,10 +67,39 @@ Usage: `smith cache setup [flags]`
 can ask the same questions. The choices inside a cloud come from the cloud's own program at that
 time, so those questions have no fixed answers.
 
+## In the interactive shell
+
+A bare `smith` opens the same setup as screens. Press Enter on `cache.remote` in the Settings tab,
+or open the command palette (`:`) and choose "Set up the remote cache". The decisions, the
+commands and the order are the ones above, because both read the same engine:
+
+- Each choice is a list: move with the arrows, press Enter or a number, or click and double-click.
+- A command is shown in full before it runs, with the buttons "Run it" (`y`) and "Type it by hand"
+  (`n`). While `az` or `aws` answers, the screen shows a spinner and says what it waits for.
+- The key screen has the buttons `[ Copy again  c ]`, `[ Generate another  g ]`, the user variable
+  button `u`, one button for each provider that has a command (`h` GitHub, `l` GitLab) and
+  `[ Done  q ]`. Click a button or press its key. The key is on the clipboard and never on the
+  screen. It stays in memory only while the screen is open. After 60 seconds, or on Done, the
+  clipboard is cleared if it still holds the key. A command that sends the key shows the command
+  first and runs only after `y`, with the key on standard input.
+- The steps of each provider in `[ci] providers` are one page each: Enter goes on.
+- Esc closes the setup. Nothing is written before the "Write it?" answer, so closing before it
+  changes nothing.
+
+The "Write it?" screen has the unticked box "Commit this change so it can be undone" (`c` ticks
+it, or click it). smith commits only when you tick it, or when `[workspace] commit_operations` is
+on and the work tree was clean, through the same operation log as `--commit`; `smith undo`
+reverts it. Without the tick, smith.toml changes, comments stay, and nothing is committed.
+Typing `cache.remote` by hand in the Settings tab (`smith config set`) shows no such box: no
+Settings change does.
+
 ## Needs a terminal
 
 The command asks questions and reads single key presses, so it needs a terminal. In a pipe it
 stops and names `smith config set cache.remote`.
+
+An editor cannot confirm the commands this setup runs, so the VS Code command "Cache: Set Up the
+Remote Cache in a Terminal" opens a MonoSmith terminal and runs `smith cache setup` in it.
 
 ## Exit codes
 

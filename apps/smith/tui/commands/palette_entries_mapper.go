@@ -59,7 +59,7 @@ var paletteSections = map[string]string{
 
 	"ws.doctor": SectionHealth, "ws.fix": SectionHealth, "proj.upgrade": SectionHealth, "proj.plugins": SectionHealth, "proj.plugin-search": SectionHealth, "ws.info": SectionHealth,
 	"ws.undo": SectionHealth, "ws.report": SectionHealth, "ws.completion": SectionHealth, "ws.derive-check": SectionHealth, "ws.derive": SectionHealth, "ws.derive-preview": SectionHealth, "ws.why": SectionHealth, "ws.divergences": SectionHealth, "ws.try": SectionHealth, "ws.bootstrap": SectionHealth, "ws.agent-file": SectionHealth,
-	"ws.cache-status": SectionHealth, "ws.cache-verify": SectionHealth, "ws.cache-repair": SectionHealth, "ws.cache-prune": SectionHealth, "ws.cache-clear": SectionHealth,
+	"ws.cache-setup": SectionHealth, "ws.cache-status": SectionHealth, "ws.cache-verify": SectionHealth, "ws.cache-repair": SectionHealth, "ws.cache-prune": SectionHealth, "ws.cache-clear": SectionHealth,
 	"ws.copies": SectionHealth, "ws.tools-list": SectionHealth, "ws.why-miss": SectionHealth, "ws.mcp-install": SectionHealth,
 	"ws.env-list": SectionProjects, "ws.env-add": SectionProjects, "ws.env-remove": SectionProjects, "ws.pipeline": SectionRelease, "ws.tauri-icon": SectionProjects, "ws.docker-description": SectionRelease,
 
