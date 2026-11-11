@@ -82,6 +82,15 @@ func (p *Tauri) Generate(params protocol.GenerateParams) (protocol.GenerateResul
 	if err != nil {
 		return res, err
 	}
+	if tauriapp.Detect(p.root, params.Directory) {
+		changed, err := scaffold.PointViteAtFrontend(p.root, params.Directory)
+		if err != nil {
+			return res, err
+		}
+		if changed != "" {
+			res.Files = append(res.Files, changed)
+		}
+	}
 	if excluded, err := cargoworkspace.ExcludeFromCargoWorkspace(p.root, params.Directory); err != nil {
 		return res, err
 	} else if excluded {

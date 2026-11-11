@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/extras"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -23,7 +24,8 @@ func Setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 		Scripts:         map[string]string{"tauri": "tauri"},
 	}
 	if _, err := os.Stat(filepath.Join(workspaceRoot, filepath.FromSlash(params.Directory), "index.html")); err == nil {
-		s.Files = renderSrcTauri(params.Name, params.Workspace.Name, protocol.BuildDirFromProject(params.Directory))
+		// The web build is a work file of the Tauri build (ADR 0092).
+		s.Files = renderSrcTauri(params.Name, params.Workspace.Name, protocol.FromProject(params.Directory, extras.FrontendDir(params.Directory)))
 		s.Fields = map[string]any{"dependencies": map[string]any{"@tauri-apps/api": apiVersion}}
 	}
 	return s

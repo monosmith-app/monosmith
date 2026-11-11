@@ -50,54 +50,56 @@ package = "node scripts/package.mjs"
 "tsconfig.build.json" = '''
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "outDir": "[[.Build]]/dist" },
+  "compilerOptions": { "outDir": "[[.Up]]dist/electron/[[.Dir]]/app/dist" },
   "exclude": ["src/**/*.[[.TestSuffix]].ts"]
 }
 '''
 
-# The build goes to the workspace's dist/ like every build. Electron wants the compiled code,
-# the page and package.json side by side, so assemble.mjs copies them next to it: that folder is
-# what `start` runs and what `package` packs. The copy names the Electron version in
-# devDependencies, which Electron Forge reads to know which Electron to pack.
+# Two folders (ADR 0092). The work folder dist/electron/<project dir> holds app/, the folder
+# `start` runs and `package` packs, and out/, where Electron Forge packs it. The shipped folder
+# dist/<project dir> holds only the packed app: smith links it there after `package`.
+# Electron wants the compiled code, the page and package.json side by side, so assemble.mjs
+# copies them next to it in app/. The copy names the Electron version in devDependencies, which
+# Electron Forge reads to know which Electron to pack, and sets Forge's outDir to ../out.
 "scripts/assemble.mjs" = '''
-// Copies the manifest and the page next to the compiled code in the workspace's dist/.
+// Copies the manifest and the page next to the compiled code in the work folder's app/.
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
-const out = '[[.Build]]'
+const out = '[[.Up]]dist/electron/[[.Dir]]/app'
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'))
 const electron = createRequire(import.meta.url)('electron/package.json')
 manifest.devDependencies = { electron: electron.version }
 manifest.config = { forge: './forge.config.cjs' }
 mkdirSync(join(out, 'dist', 'renderer'), { recursive: true })
 writeFileSync(join(out, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
-writeFileSync(join(out, 'forge.config.cjs'), 'module.exports = { packagerConfig: { asar: true } }\n')
+writeFileSync(join(out, 'forge.config.cjs'), "module.exports = { outDir: '../out', packagerConfig: { asar: true } }\n")
 cpSync(join('src', 'renderer', 'index.html'), join(out, 'dist', 'renderer', 'index.html'))
 '''
 
 "scripts/start.mjs" = '''
-// Builds, then opens the app with Electron from the build folder.
+// Builds, then opens the app with Electron from the work folder.
 import { execFileSync, spawnSync } from 'node:child_process'
 
 const shell = process.platform === 'win32'
 execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
-const result = spawnSync('npx', ['electron', '.'], { cwd: '[[.Build]]', stdio: 'inherit', shell })
+const result = spawnSync('npx', ['electron', '.'], { cwd: '[[.Up]]dist/electron/[[.Dir]]/app', stdio: 'inherit', shell })
 process.exitCode = result.status ?? 1
 '''
 
 # Electron Forge is the packaging tool the Electron documentation recommends
 # (https://www.electronjs.org/docs/latest/tutorial/application-distribution). `package` makes
-# the app folder for this computer, in the build folder's out/. It does not sign the app.
+# the app folder for this computer in the work folder's out/, and smith links it into the
+# shipped folder dist/<project dir>. It does not sign the app.
 # assemble.mjs wrote the config Forge reads (config.forge in the copied package.json).
 "scripts/package.mjs" = '''
 // Builds, then packs the app folder with Electron Forge (no installer, no code signing).
 import { execFileSync } from 'node:child_process'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 const shell = process.platform === 'win32'
-const built = resolve('[[.Build]]')
+const app = resolve('[[.Up]]dist/electron/[[.Dir]]/app')
 execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
-execFileSync('npx', ['electron-forge', 'package'], { cwd: built, stdio: 'inherit', shell })
-process.stdout.write(`${join(built, 'out')}\n`)
+execFileSync('npx', ['electron-forge', 'package'], { cwd: app, stdio: 'inherit', shell })
 '''

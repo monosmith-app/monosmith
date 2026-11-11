@@ -75,6 +75,10 @@ Interactions:
 - A project that keeps its own build output (its own `dist/`, `build/`) is reported by `smith doctor`,
   which can move it into the workspace's `dist/<project dir>` after you confirm; see
   [doctor](doctor.md#a-build-that-writes-outside-dist).
+- An Electron app packed with Electron Forge or electron-builder keeps its configuration. Its
+  packing scripts ship the packed app into `dist/<project dir>` at once. `smith doctor` reports
+  a tool that packs inside the project and offers to move it to `dist/electron/<project dir>`
+  after you confirm.
 - `--level conservative` (the default) keeps the repository's own build and lint
   setup. `--level full` makes smith the only tool; it exists for Nx and Turborepo
   workspaces, where it is `smith convert --level full`. For a plain repository

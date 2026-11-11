@@ -1,6 +1,6 @@
 # ADR 0092: A project ships from one folder, and a tool keeps its work files in its own folder
 
-- Status: accepted; plan items 1 and 3 and the `--release` part of item 2 implemented; the CMake and Swift work-folder move and item 4 open; owner decisions recorded below
+- Status: accepted; plan items 1, 3 and 4 and the `--release` part of item 2 implemented; the CMake and Swift work-folder move open; owner decisions recorded below
 - Date: 2026-11-10
 - Amends: [0081](0081-a-web-app-builds-once-per-environment-and-overlap-fixes-are-presented-choices.md),
   [0088](0088-doctor-checks-and-moves-the-build-folder-of-every-language-it-can-read.md)
@@ -205,6 +205,37 @@ rules.
    - Adopted Electron (Forge with its Vite plugin, electron-builder): detection and the move in
      `apps/smith/adoptmove` and the Node doctor check. This is new code: smith reads neither setup
      today.
+
+   Implemented:
+   - Smith-made Electron: `build` writes `dist/electron/<dir>/app` (the folder `start` runs) and
+     caches it; the generated `forge.config.cjs` sets `outDir: '../out'`, so Forge packs into
+     `dist/electron/<dir>/out`; `package` ships `out/*-*-*` into `dist/<dir>` and caches that folder.
+     The node plugin's discovery sets the outputs and the link (`libs/plugin-node/electronapp`).
+   - Tauri: `tauri-build` caches `dist/<dir>` and ships `release/bundle/*/*.{msi,exe,dmg,deb,rpm,
+     AppImage,app}` there; the release assets come from `dist/<dir>`. The web build goes to
+     `dist/tauri/<dir>/frontend`: the scaffold writes that `frontendDist` and moves the `outDir` of
+     `vite.config`, and `build` caches that folder when `frontendDist` names it. With sidecars or
+     resources `tauri-build` is not cached, because `tauri-verify` reads the cargo target.
+   - Adopted Electron: the detection, the link and the move are in `libs/plugin-node/electronapp`,
+     not in `apps/smith/adoptmove`. `adoptmove` moves a root project into a folder of its own; the
+     node plugin already reads `package.json` and owns the doctor fixes that move a build folder
+     (ADR 0088), and its discovery is where task outputs are set. The packing scripts
+     (`electron-forge package`/`make`, `electron-builder`) ship into `dist/<dir>` wherever the tool
+     packs. `CheckElectronDir` warns when the tool packs outside `dist/electron/<dir>` and offers the
+     move as a choice when it can edit the configuration safely (JSON, a YAML file without
+     `directories`, a Forge file with one `outDir` string or one plain exported object).
+   - Not done: Forge's Vite plugin writes `.vite/` in the project, and its documentation names no
+     setting to move it, so it stays. A Tauri app made before this change keeps `frontendDist`
+     `dist/<dir>` until the person moves it (doctor warns); its `build` and `tauri-build` then cache
+     the same folder.
+   - Tool facts checked on 2026-11-11 against the tools' documentation and source: Forge `outDir`
+     (default `./out`, resolved from the project folder: `packages/api/core/src/util/out-dir.ts`),
+     electron-builder `directories.output` (default `dist`), Tauri `build.frontendDist` (relative to
+     the configuration file) and `tauri build` builds release (CLI reference). Unverified: Forge
+     `make` writes `<outDir>/make/<maker>/...`; the native bundle folder
+     `target/release/bundle/<kind>/` (the documentation states it only for a cross build,
+     `target/<triple>/release/bundle/nsis/`; smith already relied on it); the packed folder name
+     `<name>-<platform>-<arch>`. No real Electron or Tauri build ran for this change.
 
 ## Owner decisions
 
