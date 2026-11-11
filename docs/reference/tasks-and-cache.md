@@ -403,6 +403,24 @@ allowance on Cloudflare's pricing page before you rely on it.
 one machine. The remote holds results only: which run was last (for
 `smith why-miss`) and pruning stay local.
 
+**Where a hit came from.** A task the remote served prints `✓ from remote cache`;
+a task this machine's cache held prints `✓ from cache`. The closing line counts
+both and names the remote ones: `✓ 31/31 tasks succeeded (31 from cache, 29 of
+them remote, 1m 2s saved) in 4s`. In `--json` each cached result has
+`"source": "local"` or `"source": "remote"`; in `--json-events` the
+`task.finished` event of a cached task has the same `source`, and the
+`run.finished` summary adds `cachedRemote` (left out when it is 0). So after
+`smith cache clear` a hit that still comes says where it came from.
+
+**Filling the remote.** A run uploads what it stores at once. An upload that
+fails (the remote did not answer, the machine was offline) is a warning and is
+not sent again by the next run, which finds the entry locally.
+[`smith cache push`](../manual/cache-push.md) sends every local entry the
+remote lacks, signed as a run signs it; it asks first (`HEAD`) and never
+uploads an entry the remote holds. The interactive shell shows the state of
+the remote in its header and the count of entries it lacks on Home (see
+[the shell](../manual/tui.md#the-screen)).
+
 ### Set up the remote cache
 
 Four things make a remote cache work: a storage place, a key, the backend's

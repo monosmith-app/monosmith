@@ -96,6 +96,7 @@ var answersWithoutAsking = map[string]string{
 	"plugin install":     "writes only the plugin folder of the person's machine, from the one source named, checked against its digest, and never starts the plugin",
 	"plugin draft":       "writes one skeleton at the path named and keeps a file that exists unless --force",
 	"cache prune":        "deletes only cache entries smith can rebuild, within the limit, prints what it freed; --dry-run shows it first",
+	"cache push":         "only adds signed entries the remote cache lacks, as every run does; it changes no workspace file and deletes nothing; --dry-run shows it first",
 	"ci":                 "with no phase it runs the setup phase: it installs the dependencies the lockfiles name, the same as the pipelines run it without a terminal, and changes no file git tracks",
 	"docker description": "sets a remote description from the release pipeline, idempotent, with --dry-run; it changes no workspace file",
 }

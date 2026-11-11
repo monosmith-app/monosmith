@@ -82,13 +82,13 @@ type Event struct {
 
 // Summary is the count of how the tasks of a run ended.
 type Summary struct {
-	Passed     int   `json:"passed"`
-	Failed     int   `json:"failed"`
-	Cached     int   `json:"cached"`
+	Passed int `json:"passed"`
+	Failed int `json:"failed"`
+	Cached int `json:"cached"`
 	// CachedRemote is how many of the cached tasks the remote cache served.
 	CachedRemote int   `json:"cachedRemote,omitempty"`
-	Skipped    int   `json:"skipped"`
-	DurationMs int64 `json:"durationMs"`
+	Skipped      int   `json:"skipped"`
+	DurationMs   int64 `json:"durationMs"`
 }
 
 // Sink receives events. Emit may be called from several goroutines, but the

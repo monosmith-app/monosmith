@@ -37,8 +37,13 @@ From top to bottom:
 1. **Header**: the workspace's name (`smith` when there is none, with a hint about
    `smith new` and `smith adopt` outside a workspace), the git branch, and a health summary:
    `checking…` until the first doctor run has finished (it starts with the shell), then
-   the counts of failed checks and warnings, or a check mark when everything passed. It sits
-   at the right end of its row.
+   the counts of failed checks and warnings, or a check mark when everything passed. When the
+   workspace has a remote cache, the last mark is its state: `≈ checking…` until the first
+   answer, then `≈✓` (it answers and accepts the credentials), `≈▲` (it does not answer) or
+   `≈×` (it refuses the credentials, or `SMITH_CACHE_KEY` or the store's credentials are not
+   set). ASCII terminals show `[c][v]`, `[c][!]` and `[c][x]`. smith asks the remote in the
+   background with a 5 second timeout, so the screen never waits. There is no mark without a
+   remote. The header sits at the right end of its row.
 2. **Tabs**: Home, Projects, Doctor, Deps, Release, Settings, numbered 1 to 6. When the names do
    not fit, they are shortened, then the strip scrolls with `‹` and `›`. On a short terminal
    the tabs are one row of names.
@@ -94,7 +99,15 @@ appear, in this order:
    confirmed line runs in the run panel. `Not now` is remembered for you in `tui.json` (`completionOffer`),
    and the item never comes back; so does a finished setup. The item is muted, so it never takes Enter or
    the `All good` line away. See [`smith completion`](completion.md).
-8. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
+8. **Remote cache** (only when the workspace has one): its state and how many local entries it
+   does not hold, for example `Remote cache: connected · 12 local entries not uploaded`, with
+   `Push` (runs [`smith cache push`](cache-push.md) after a confirmation) and `Cache status`.
+   smith counts in the background: it asks the remote about at most 500 entries, 8 at a time,
+   for at most 10 seconds, and says `at least 500` when it stops early. When the remote holds
+   everything the item says so and is muted. A remote that does not answer or refuses the
+   credentials is a warning, with the reason under it; for a refusal the first button is
+   `Set up again`. The count is made again after each run.
+9. When nothing needs attention, one calm line, `All good` (with the last run that passed under it), and `Build all`.
 
 A workspace without projects shows one item with `Add a project` and `Compose a stack`.
 While the first doctor run goes on, one item says `Running the health checks…` and nothing
@@ -182,7 +195,9 @@ the panel has:
 - the line `run 2 of 5 · ‹ older  newer ›` (the keys `,` and `.` do the same);
 - the command line and the progress bar with the counts, one row for each task with its mark
   (`✓` passed, `×` failed, `≈` from cache, `»` skipped, `⊘` stopped), and the log of the
-  task chosen (or all output) under a rule that says if it follows or is paused.
+  task chosen (or all output) under a rule that says if it follows or is paused. A task the
+  remote cache served says `cached … from remote cache` in its row, and the closing line counts
+  them: `31 from cache, 29 of them remote`.
 
 A failed run opens with its first failed task chosen, so the log says why. Starting a run
 from any view (a key, a Home button, the palette) switches to Projects with the panel open.

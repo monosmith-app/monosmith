@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/remotesync"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/spf13/cobra"
@@ -69,9 +70,13 @@ func push(cmd *cobra.Command, loc location, dryRun, asJSON bool) error {
 		return remoteProblem(err, remote.URL)
 	}
 	if asJSON {
-		return encode(out, result)
+		err = encode(out, result)
+	} else {
+		_, err = fmt.Fprint(out, pushClosing(result))
 	}
-	_, err = fmt.Fprint(out, pushClosing(result))
+	if err == nil && result.Failed > 0 {
+		return problem.New(fmt.Sprintf("%d %s not uploaded to %s", result.Failed, plural(result.Failed, "entry was", "entries were"), name), "run `smith cache push` again: it uploads only what is still missing")
+	}
 	return err
 }
 

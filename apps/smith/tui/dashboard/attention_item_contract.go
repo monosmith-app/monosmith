@@ -18,7 +18,7 @@ const (
 	KindCompletion Kind = "completion"
 	// KindRemote is the state of the remote cache and the entries it lacks.
 	KindRemote Kind = "remote"
-	KindGood       Kind = "good"
+	KindGood   Kind = "good"
 )
 
 // Severity is how much an item asks for attention; the page draws its icon in

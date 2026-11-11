@@ -53,7 +53,6 @@ func pushClosing(r remotesync.PushResult) string {
 	case r.Failed > 0:
 		fmt.Fprintf(&b, "%s Uploaded %d of %d %s to %s (%s); %s; %d failed.\n",
 			marks.Failed, r.Uploaded, r.Entries, plural(r.Entries, "entry", "entries"), r.Store, size, there, r.Failed)
-		b.WriteString("→ run smith cache push again: it uploads only what is still missing\n")
 	case r.Uploaded == 0:
 		fmt.Fprintf(&b, "%s %s holds all %d local %s: nothing to upload.\n", marks.Passed, r.Store, r.Entries, plural(r.Entries, "entry", "entries"))
 	default:
