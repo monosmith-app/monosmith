@@ -7,6 +7,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 // tint is a colour a log word or glyph may carry; tintNone leaves it plain.
@@ -22,25 +23,9 @@ const (
 
 var tintCodes = map[tint]string{tintGreen: "32", tintYellow: "33", tintRed: "31", tintDim: "2"}
 
-// colourWanted decides, in this one place, whether the log carries ANSI
-// colour. GitHub Actions, Azure Pipelines and GitLab render it; elsewhere it
-// is for a terminal only. NO_COLOR and TERM=dumb always win; FORCE_COLOR turns
-// it on for a captured sample.
-func colourWanted(getenv func(string) string, terminal bool) bool {
-	switch {
-	case getenv("NO_COLOR") != "" || getenv("TERM") == "dumb":
-		return false
-	case getenv("FORCE_COLOR") != "" && getenv("FORCE_COLOR") != "0":
-		return true
-	case getenv("GITHUB_ACTIONS") == "true", strings.EqualFold(getenv("TF_BUILD"), "true"), getenv("GITLAB_CI") != "":
-		return true
-	}
-	return terminal
-}
-
-// colourOn is colourWanted for this process.
+// colourOn is the single colour decision (termcolour.Wanted) for this process.
 func colourOn() bool {
-	return colourWanted(os.Getenv, term.IsTerminal(int(os.Stdout.Fd())))
+	return termcolour.Wanted(os.Getenv, term.IsTerminal(int(os.Stdout.Fd())))
 }
 
 // paint wraps text in the tint's ANSI code when colour is on.
