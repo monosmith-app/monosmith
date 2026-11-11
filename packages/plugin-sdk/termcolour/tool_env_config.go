@@ -3,6 +3,9 @@ package termcolour
 // colourEnv asks each tool smith's plugins run to colour its output although
 // its stdout is a pipe. Each entry names the tools known to honour it.
 var colourEnv = []string{
+	// An inherited NO_COLOR (from an outer plain smith) is cleared: the
+	// convention reads an empty value as unset.
+	"NO_COLOR=",
 	// Node: chalk and supports-color (jest, vitest, eslint, pnpm, yarn, mocha);
 	// Symfony Console 6.2+ (composer); many others.
 	"FORCE_COLOR=1",
