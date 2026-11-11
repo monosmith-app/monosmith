@@ -127,6 +127,27 @@ const (
 	ProjectPackage ProjectKind = "package"
 )
 
+// TaskProfile is another build profile of a task: the command that builds
+// it and what it ships (see Task.Ship).
+type TaskProfile struct {
+	// Command is an argv array; it is never passed through a shell.
+	Command []string `json:"command"`
+	// Ship names what this profile makes in a tool's work folder that the
+	// project ships, as Task.Ship does. Empty means the task ships nothing.
+	Ship []string `json:"ship,omitempty"`
+}
+
+// ForRelease returns the task as `smith run --release` runs it: the command
+// and the shipped files of its release profile, when it has one, else the
+// task unchanged.
+func (t Task) ForRelease() Task {
+	if t.Release == nil || len(t.Release.Command) == 0 {
+		return t
+	}
+	t.Command, t.Ship = t.Release.Command, t.Release.Ship
+	return t
+}
+
 // Task is a command the host can run, hash and cache.
 type Task struct {
 	// Command is an argv array; it is never passed through a shell.
@@ -149,6 +170,12 @@ type Task struct {
 	// Such a task lists the shipped folder in Outputs, never the tool's work
 	// folder: a cache restore empties each output folder first.
 	Ship []string `json:"ship,omitempty"`
+	// Release is the task as `smith run --release` runs it: the command of
+	// the optimised profile ("cargo build --release") and what that profile
+	// ships. Nil means the task has one profile and runs the same way with
+	// the flag. The cache key holds the command, so each profile has its own
+	// cache entry.
+	Release *TaskProfile `json:"release,omitempty"`
 	// DependsOn lists task names: "build" runs this project's build first,
 	// "^build" runs the build of every project this one imports first.
 	DependsOn []string `json:"dependsOn,omitempty"`

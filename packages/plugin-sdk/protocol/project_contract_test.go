@@ -18,3 +18,19 @@ func TestSetToolchainProbesOnceAndOnlyForProjects(t *testing.T) {
 		t.Errorf("%d probes, %+v", probes, r.Projects)
 	}
 }
+
+func TestForReleaseTakesTheReleaseProfile(t *testing.T) {
+	debug := Task{Command: []string{"cargo", "build"}, Ship: []string{"debug/api"}, Outputs: []string{"out"}}
+	if got := debug.ForRelease(); len(got.Command) != 2 || got.Ship[0] != "debug/api" {
+		t.Errorf("a task without a release profile changed: %+v", got)
+	}
+	both := debug
+	both.Release = &TaskProfile{Command: []string{"cargo", "build", "--release"}, Ship: []string{"release/api"}}
+	got := both.ForRelease()
+	if len(got.Command) != 3 || got.Ship[0] != "release/api" || got.Outputs[0] != "out" {
+		t.Errorf("release profile: %+v", got)
+	}
+	if len(both.Command) != 2 {
+		t.Errorf("ForRelease changed the task it was called on: %+v", both.Command)
+	}
+}

@@ -4428,6 +4428,9 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     /// <summary>Ship names what the task makes in a tool's work folder that the project ships: globs relative to the project root ("../../dist/cargo/debug/api"). After the task succeeds, smith hard-links each match into the project's shipped folder (ProjectBuildDir), a folder file by file, under its base name, and copies a file it cannot link. A glob that matches nothing is skipped. Such a task lists the shipped folder in Outputs, never the tool's work folder: a cache restore empties each output folder first.</summary>
     public IReadOnlyList<string> Ship { get; init; } = [];
 
+    /// <summary>Release is the task as <c>smith run --release</c> runs it: the command of the optimised profile ("cargo build --release") and what that profile ships. Nil means the task has one profile and runs the same way with the flag. The cache key holds the command, so each profile has its own cache entry.</summary>
+    public TaskProfile? Release { get; init; }
+
     /// <summary>DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of every project this one imports first.</summary>
     public IReadOnlyList<string> DependsOn { get; init; } = [];
 
@@ -4461,6 +4464,7 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             Inputs = ListOf(Member(map, "inputs"), Join(path, "inputs"), StringValue),
             Outputs = ListOf(Member(map, "outputs"), Join(path, "outputs"), StringValue),
             Ship = ListOf(Member(map, "ship"), Join(path, "ship"), StringValue),
+            Release = OptionalStruct<TaskProfile>(Member(map, "release"), Join(path, "release")),
             DependsOn = ListOf(Member(map, "dependsOn"), Join(path, "dependsOn"), StringValue),
             Cache = BooleanValue(Member(map, "cache"), Join(path, "cache")),
             Description = StringValue(Member(map, "description"), Join(path, "description")),
@@ -4502,6 +4506,11 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             writer.Property("ship");
             MessageWritingAlgorithm.List(writer, Ship, (builder1, item1) => builder1.String(item1));
         }
+        if (Release is not null)
+        {
+            writer.Property("release");
+            Release.Write(writer);
+        }
         if (DependsOn is { Count: > 0 })
         {
             writer.Property("dependsOn");
@@ -4536,6 +4545,41 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
         {
             writer.Property("serveTimeout");
             writer.String(ServeTimeout);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>TaskProfile is another build profile of a task: the command that builds it and what it ships (see Task.Ship).</summary>
+public sealed record TaskProfile : IProtocolValue<TaskProfile>
+{
+    /// <summary>Command is an argv array; it is never passed through a shell.</summary>
+    public IReadOnlyList<string> Command { get; init; } = [];
+
+    /// <summary>Ship names what this profile makes in a tool's work folder that the project ships, as Task.Ship does. Empty means the task ships nothing.</summary>
+    public IReadOnlyList<string> Ship { get; init; } = [];
+
+    /// <inheritdoc />
+    public static TaskProfile Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new TaskProfile
+        {
+            Command = ListOf(Member(map, "command"), Join(path, "command"), StringValue),
+            Ship = ListOf(Member(map, "ship"), Join(path, "ship"), StringValue),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("command");
+        MessageWritingAlgorithm.List(writer, Command, (builder1, item1) => builder1.String(item1));
+        if (Ship is { Count: > 0 })
+        {
+            writer.Property("ship");
+            MessageWritingAlgorithm.List(writer, Ship, (builder1, item1) => builder1.String(item1));
         }
         writer.EndObject();
     }
