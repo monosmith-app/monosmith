@@ -107,8 +107,13 @@ func Push(ctx context.Context, local taskcache.Storage, remote Remote, opts Push
 			for key := range work {
 				step, err := pushEntry(local, remote, key, opts.DryRun)
 				mu.Lock()
-				if remotecache.Refused(err) && refused == nil {
-					refused = err
+				if remotecache.Refused(err) {
+					// A refusal stops the push and is said once, by the caller.
+					if refused == nil {
+						refused = err
+					}
+					mu.Unlock()
+					continue
 				}
 				result.record(step)
 				if opts.Progress != nil {

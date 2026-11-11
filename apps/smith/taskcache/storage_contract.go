@@ -58,10 +58,19 @@ const (
 // SourceOf says which tier will serve the action-cache entry key, asked
 // before the lookup: an entry the local tier lacks comes from the remote.
 //
-// Parameters: s is the run's storage; key is the task's cache key.
+// Parameters: s is the run's storage, perhaps wrapping a Layered one (a
+// wrapper exposes it with an Unwrap() Storage method); key is the task's
+// cache key.
 // Returns: SourceRemote when s is Layered and its local tier lacks the
 // entry, SourceLocal otherwise.
 func SourceOf(s Storage, key string) Source {
+	for {
+		w, ok := s.(interface{ Unwrap() Storage })
+		if !ok {
+			break
+		}
+		s = w.Unwrap()
+	}
 	if l, ok := s.(Layered); ok {
 		if has, err := l.HasLocally(AC, key); err == nil && !has {
 			return SourceRemote

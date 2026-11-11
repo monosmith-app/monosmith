@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/remotecache"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
@@ -476,7 +477,8 @@ func TestAHitTheRemoteServedSaysFromRemoteCache(t *testing.T) {
 	remote := &memStore{objects: map[string][]byte{}}
 	tier := func() taskcache.Storage {
 		local, _ := taskcache.NewLocalStorage(t.TempDir())
-		return &remotecache.Tiered{Local: local, Remote: remote, Secret: []byte("k")}
+		// A run meters what it stores: the meter wraps the tiers, as in smith run.
+		return cachemaintenance.NewWriteMeter(&remotecache.Tiered{Local: local, Remote: remote, Secret: []byte("k")})
 	}
 	f.store = tier()
 	if s, out := f.run(t); s.Count(Succeeded) != 2 {

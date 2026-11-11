@@ -21,7 +21,9 @@ func remoteProblem(err error, remote string) error {
 	case errors.Is(err, remotesync.ErrReadOnly):
 		return problem.New("the remote cache "+store+" is read-only here", "unset SMITH_CACHE_READ_ONLY, or set remote_read_only = false under [cache] in smith.toml", "a pull-request build never writes the remote: push from the main branch")
 	case remotecache.Refused(err):
-		return problem.New("the remote cache "+store+" refused the credentials ("+err.Error()+")", credentialsRemedy(remote))
+		var se *remotecache.StatusError
+		errors.As(err, &se)
+		return problem.New("the remote cache "+store+" refused the credentials (it answered "+se.Status+")", credentialsRemedy(remote))
 	}
 	return problem.New("could not reach the remote cache "+store+": "+err.Error(), "check the network and run the command again", "`smith cache status` shows the remote settings")
 }
