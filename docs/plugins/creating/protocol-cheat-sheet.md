@@ -108,6 +108,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `dependencies/uninstall` | `dependencies` | `DependencyManager.Uninstall` | `UninstallParams` → `DependencyResult` | `smith uninstall` | 20 min |
 | `dependencies/link` | `link` | `Linker.Link` | `LinkParams` → `LinkResult` | `smith install -p <project> <library>`, the Install dialog | 20 min |
 | `dependencies/unlink` | `link` | `Linker.Unlink` | `UnlinkParams` → `DependencyResult` | `smith uninstall -p <project> <library>` | 20 min |
+| `dependencies/repair` | `repair` | `DependencyRepairer.Repair` | `RepairParams` → `RepairResult` | `smith deps repair`, the Deps tab | 1 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
 | `dependencies/rewrite` | `declarations` | `DeclarationEditor.Rewrite` | `RewriteParams` → `DependencyResult` | `smith sync`, `smith up` | 20 min |
 | `dependencies/latest` | `latest` | `LatestReader` | `LatestParams` → `LatestResult` | `smith up` | 20 min |
@@ -144,6 +145,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `link` | `dependencies/link`, `dependencies/unlink` | language |
+| `repair` | `dependencies/repair` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
 | `latest` | `dependencies/latest` | language |
 | `cancel` | the `cancel` notification: the plugin stops the work of a request when the host cancels it | any plugin with a method that can run for long |
@@ -233,6 +235,7 @@ Capabilities are the optional methods a plugin implements.
 | `changeKind` | `bool` | no | ChangeKind answers what changing a project's kind edits (smith kind). |
 | `published` | `bool` | no | Published reports what a registry has of a project. |
 | `dependencies` | `bool` | no | Dependencies installs and uninstalls packages in its projects. |
+| `repair` | `bool` | no | Repair says how to repair the installed dependencies of the plugin's projects: for each repair kind the tool has, the paths to delete and the commands to run. The host shows the plan, asks, and carries it out; the plugin never deletes anything itself. |
 | `link` | `bool` | no | Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand. |
 | `declarations` | `bool` | no | Declarations lists and rewrites declared dependency specs (sync, up). |
 | `latest` | `bool` | no | Latest reports the newest releases of dependencies and pinned tools. |
@@ -956,6 +959,46 @@ LinkOption is one way to write the dependency, with its consequence in words a p
 | `spec` | `string` | yes | Spec is the value passed back in LinkParams.Spec. |
 | `label` | `string` | yes | Label is the option in a few words. |
 | `meaning` | `string` | yes | Meaning says what happens with this option. |
+
+### RepairParams
+
+RepairParams asks a plugin how it repairs the dependencies of its projects.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `projects` | `Project[]` | yes | Projects are the plugin's projects the repair is for. The plan may also name what the projects share (the workspace's one lockfile). |
+
+### RepairResult
+
+RepairResult is one plan for each repair kind the plugin offers for the projects. A kind that is not here has no honest equivalent in the tool, or has nothing to act on (no lockfile to rebuild).
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `plans` | `RepairPlan[]` | yes |  |
+
+### RepairPlan
+
+RepairPlan says exactly what one repair kind does with the plugin's tool. The plugin only describes it: the host shows the plan, asks, deletes the paths, runs the commands and then installs, in that order.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `kind` | `string` (`prune`, `reinstall`, `lockfile`, `cache`) | yes | Kind is the repair this plan carries out. |
+| `summary` | `string` | yes | Summary says in one line what the kind does with this tool. |
+| `delete` | `string[]` | no | Delete are the files and folders the host deletes first, as workspace-relative paths with forward slashes. Name only what exists. The host deletes a link as a link and never follows it. |
+| `commands` | `RepairCommand[]` | no | Commands run after the deletions, in order; the first that fails stops the repair. |
+| `install` | `bool` | no | Install asks the host to call dependencies/install for the projects once the commands are done. |
+| `machineWide` | `bool` | no | MachineWide is true when the repair changes something outside the workspace that other workspaces on the machine use (a shared download cache). The host says so before it asks. |
+| `changesVersions` | `bool` | no | ChangesVersions is true when the repair can install other versions than the ones installed now (the lockfile is written again). |
+| `notes` | `string[]` | no | Notes are remarks the host shows with the plan. |
+
+### RepairCommand
+
+RepairCommand is one command of a repair plan.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `argv` | `string[]` | yes | Argv is the program and its arguments; no shell is involved. |
+| `dir` | `string` | no | Dir is where it runs, workspace-relative; empty is the workspace root. |
 
 ### UnlinkParams
 

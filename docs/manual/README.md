@@ -89,7 +89,7 @@ Python package). Paths in output are shortened.
 | [`smith install`](install.md), [`smith uninstall`](uninstall.md) | Add or remove packages in a project, or install the whole workspace. |
 | [`smith up`](up.md) | Show dependencies with newer releases and update the ones you pick. |
 | [`smith sync`](sync.md) | Make every project declare a shared dependency at the same version. |
-| [`smith deps`](deps.md) | Group for dependency work; [`smith deps up`](deps-up.md) is `smith up`. |
+| [`smith deps`](deps.md) | Group for dependency work; [`smith deps up`](deps-up.md) is `smith up`; [`smith deps repair`](deps-repair.md) repairs broken installed dependencies. |
 
 ## Ship
 

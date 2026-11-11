@@ -90,6 +90,11 @@ __all__ = [
     "ReleaseDefaults",
     "RemoveParams",
     "RemoveResult",
+    "RepairCommand",
+    "RepairKind",
+    "RepairParams",
+    "RepairPlan",
+    "RepairResult",
     "Request",
     "Response",
     "ResponseError",
@@ -172,11 +177,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/repair", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -198,6 +203,7 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "dependencies/uninstall": "dependencies",
     "dependencies/link": "link",
     "dependencies/unlink": "link",
+    "dependencies/repair": "repair",
     "dependencies/declared": "declarations",
     "dependencies/rewrite": "declarations",
     "dependencies/latest": "latest",
@@ -390,6 +396,12 @@ class Capabilities(TypedDict, total=False):
     workspace dependency, a path dependency, a project reference), and takes it out again. A
     plugin without it is refused by the host with one sentence that tells the user to add the
     dependency by hand.
+    """
+    repair: bool
+    """
+    Repair says how to repair the installed dependencies of the plugin's projects: for each
+    repair kind the tool has, the paths to delete and the commands to run. The host shows the
+    plan, asks, and carries it out; the plugin never deletes anything itself.
     """
     declarations: bool
     """Declarations lists and rewrites declared dependency specs (sync, up)."""
@@ -1742,6 +1754,90 @@ class RemoveResult(TypedDict, total=False):
 
     files: list[str]
     notes: list[str]
+
+
+class _RepairCommandRequired(TypedDict):
+    argv: list[str]
+    """Argv is the program and its arguments; no shell is involved."""
+
+
+class RepairCommand(_RepairCommandRequired, total=False):
+    """RepairCommand is one command of a repair plan."""
+
+    dir: str
+    """Dir is where it runs, workspace-relative; empty is the workspace root."""
+
+
+RepairKind = Literal["prune", "reinstall", "lockfile", "cache"]
+"""
+RepairKind names one way to repair the installed dependencies of a workspace. The four kinds go
+from the lightest to the heaviest; a plugin offers only the kinds its tool has an honest
+equivalent for.
+"""
+
+
+class RepairParams(TypedDict):
+    """RepairParams asks a plugin how it repairs the dependencies of its projects."""
+
+    projects: list[Project]
+    """
+    Projects are the plugin's projects the repair is for. The plan may also name what the
+    projects share (the workspace's one lockfile).
+    """
+
+
+class _RepairPlanRequired(TypedDict):
+    kind: RepairKind
+    """Kind is the repair this plan carries out."""
+    summary: str
+    """
+    Summary says in one line what the kind does with this tool ("delete every node_modules
+    folder, then npm install").
+    """
+
+
+class RepairPlan(_RepairPlanRequired, total=False):
+    """
+    RepairPlan says exactly what one repair kind does with the plugin's tool. The plugin only
+    describes it: the host shows the plan, asks, deletes the paths, runs the commands and then
+    installs, in that order.
+    """
+
+    delete: list[str]
+    """
+    Delete are the files and folders the host deletes first, as workspace-relative paths with
+    forward slashes. Name only what exists. The host deletes a link as a link and never follows
+    it.
+    """
+    commands: list[RepairCommand]
+    """Commands run after the deletions, in order; the first that fails stops the repair."""
+    install: bool
+    """
+    Install asks the host to call dependencies/install for the projects once the commands are
+    done.
+    """
+    machineWide: bool
+    """
+    MachineWide is true when the repair changes something outside the workspace that other
+    workspaces on the machine use (a shared download cache). The host says so before it asks.
+    """
+    changesVersions: bool
+    """
+    ChangesVersions is true when the repair can install other versions than the ones installed
+    now (the lockfile is written again).
+    """
+    notes: list[str]
+    """Notes are remarks the host shows with the plan."""
+
+
+class RepairResult(TypedDict):
+    """
+    RepairResult is one plan for each repair kind the plugin offers for the projects. A kind that
+    is not here has no honest equivalent in the tool, or has nothing to act on (no lockfile to
+    rebuild).
+    """
+
+    plans: list[RepairPlan]
 
 
 class _RequestRequired(TypedDict):

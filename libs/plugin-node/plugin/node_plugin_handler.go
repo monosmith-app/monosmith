@@ -118,6 +118,14 @@ func (n *Node) Install(params protocol.InstallParams) (protocol.DependencyResult
 	return dependencies.Install(n.root, params)
 }
 
+// Repair implements serve.DependencyRepairer: the plans of npm for each
+// repair kind. It only reads the disk; the host deletes and runs.
+func (n *Node) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return dependencies.Repair(n.root, params)
+}
+
 // Uninstall implements serve.DependencyManager.
 func (n *Node) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	n.mu.Lock()

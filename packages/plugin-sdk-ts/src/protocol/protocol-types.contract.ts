@@ -201,6 +201,12 @@ export interface Capabilities {
    * by hand.
    */
   link?: boolean
+  /**
+   * Repair says how to repair the installed dependencies of the plugin's projects: for each repair
+   * kind the tool has, the paths to delete and the commands to run. The host shows the plan, asks,
+   * and carries it out; the plugin never deletes anything itself.
+   */
+  repair?: boolean
   /** Declarations lists and rewrites declared dependency specs (sync, up). */
   declarations?: boolean
   /** Latest reports the newest releases of dependencies and pinned tools. */
@@ -1383,6 +1389,74 @@ export interface RemoveResult {
   notes?: string[]
 }
 
+/** RepairCommand is one command of a repair plan. */
+export interface RepairCommand {
+  /** Argv is the program and its arguments; no shell is involved. */
+  argv: string[]
+  /** Dir is where it runs, workspace-relative; empty is the workspace root. */
+  dir?: string
+}
+
+/**
+ * RepairKind names one way to repair the installed dependencies of a workspace. The four kinds go
+ * from the lightest to the heaviest; a plugin offers only the kinds its tool has an honest
+ * equivalent for.
+ */
+export type RepairKind = 'prune' | 'reinstall' | 'lockfile' | 'cache'
+
+/** RepairParams asks a plugin how it repairs the dependencies of its projects. */
+export interface RepairParams {
+  /**
+   * Projects are the plugin's projects the repair is for. The plan may also name what the projects
+   * share (the workspace's one lockfile).
+   */
+  projects: Project[]
+}
+
+/**
+ * RepairPlan says exactly what one repair kind does with the plugin's tool. The plugin only
+ * describes it: the host shows the plan, asks, deletes the paths, runs the commands and then
+ * installs, in that order.
+ */
+export interface RepairPlan {
+  /** Kind is the repair this plan carries out. */
+  kind: RepairKind
+  /**
+   * Summary says in one line what the kind does with this tool ("delete every node_modules folder,
+   * then npm install").
+   */
+  summary: string
+  /**
+   * Delete are the files and folders the host deletes first, as workspace-relative paths with
+   * forward slashes. Name only what exists. The host deletes a link as a link and never follows it.
+   */
+  delete?: string[]
+  /** Commands run after the deletions, in order; the first that fails stops the repair. */
+  commands?: RepairCommand[]
+  /** Install asks the host to call dependencies/install for the projects once the commands are done. */
+  install?: boolean
+  /**
+   * MachineWide is true when the repair changes something outside the workspace that other
+   * workspaces on the machine use (a shared download cache). The host says so before it asks.
+   */
+  machineWide?: boolean
+  /**
+   * ChangesVersions is true when the repair can install other versions than the ones installed now
+   * (the lockfile is written again).
+   */
+  changesVersions?: boolean
+  /** Notes are remarks the host shows with the plan. */
+  notes?: string[]
+}
+
+/**
+ * RepairResult is one plan for each repair kind the plugin offers for the projects. A kind that is
+ * not here has no honest equivalent in the tool, or has nothing to act on (no lockfile to rebuild).
+ */
+export interface RepairResult {
+  plans: RepairPlan[]
+}
+
 /** Request is a JSON-RPC 2.0 request, or a notification when ID is nil. */
 export interface Request {
   jsonrpc: string
@@ -1869,6 +1943,15 @@ export interface ProtocolMethods {
     params: UnlinkParams
     result: DependencyResult
     capability: 'link'
+  }
+  /**
+   * Says how the plugin repairs the installed dependencies of its projects: one plan for each
+   * repair kind its tool has, with the paths the host deletes and the commands it runs.
+   */
+  'dependencies/repair': {
+    params: RepairParams
+    result: RepairResult
+    capability: 'repair'
   }
   /** Lists the dependencies the manifests of the plugin's projects declare. */
   'dependencies/declared': {

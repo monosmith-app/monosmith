@@ -133,6 +133,10 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, lines...)
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
+		for _, row := range s.depsButtons(w, s.actionAt(s.mouseX, s.mouseY)) {
+			c.hits[len(c.lines)] = row.hit
+			c.lines = append(c.lines, row.line)
+		}
 		deps := s.deps
 		deps.Waited, deps.Projects, deps.Tick, deps.Links = s.waited(), len(s.list.Projects()), s.tick, s.hyperlinks
 		deps.Beside = s.lay().HasDetail()

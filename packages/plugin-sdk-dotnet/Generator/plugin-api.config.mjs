@@ -24,6 +24,12 @@ export const PLUGIN_INTERFACES = [
     methods: { 'dependencies/link': 'LinkAsync', 'dependencies/unlink': 'UnlinkAsync' },
   },
   {
+    name: 'IDependencyRepairer',
+    capability: 'repair',
+    summary: 'A plugin that says how to repair the installed dependencies of its projects: one plan for each repair kind its tool has. It only describes; the host deletes and runs.',
+    methods: { 'dependencies/repair': 'RepairAsync' },
+  },
+  {
     name: 'IDependencyManager',
     capability: 'dependencies',
     summary: 'A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.',

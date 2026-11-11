@@ -664,6 +664,7 @@ Usage: `smith deps <command>`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith deps repair` | Repair broken installed dependencies: prune, clean reinstall, rebuild the lockfile or clear the download cache |
 | `smith deps up` | Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync) |
 
 No flags.

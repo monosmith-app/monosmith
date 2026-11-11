@@ -201,6 +201,17 @@ export const protocolSchema: SchemaDocument = {
       "capability": "link",
       "notification": false
     },
+    "dependencies/repair": {
+      "description": "Says how the plugin repairs the installed dependencies of its projects: one plan for each repair kind its tool has, with the paths the host deletes and the commands it runs.",
+      "params": {
+        "$ref": "#/$defs/RepairParams"
+      },
+      "result": {
+        "$ref": "#/$defs/RepairResult"
+      },
+      "capability": "repair",
+      "notification": false
+    },
     "dependencies/declared": {
       "description": "Lists the dependencies the manifests of the plugin's projects declare.",
       "params": {
@@ -618,6 +629,10 @@ export const protocolSchema: SchemaDocument = {
         "link": {
           "type": "boolean",
           "description": "Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand."
+        },
+        "repair": {
+          "type": "boolean",
+          "description": "Repair says how to repair the installed dependencies of the plugin's projects: for each repair kind the tool has, the paths to delete and the commands to run. The host shows the plan, asks, and carries it out; the plugin never deletes anything itself."
         },
         "declarations": {
           "type": "boolean",
@@ -2350,6 +2365,124 @@ export const protocolSchema: SchemaDocument = {
           }
         }
       }
+    },
+    "RepairCommand": {
+      "description": "RepairCommand is one command of a repair plan.",
+      "type": "object",
+      "properties": {
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Argv is the program and its arguments; no shell is involved."
+        },
+        "dir": {
+          "type": "string",
+          "description": "Dir is where it runs, workspace-relative; empty is the workspace root."
+        }
+      },
+      "required": [
+        "argv"
+      ]
+    },
+    "RepairKind": {
+      "description": "RepairKind names one way to repair the installed dependencies of a workspace. The four kinds go from the lightest to the heaviest; a plugin offers only the kinds its tool has an honest equivalent for.",
+      "type": "string",
+      "enum": [
+        "prune",
+        "reinstall",
+        "lockfile",
+        "cache"
+      ],
+      "x-enumDescriptions": {
+        "prune": "Removes installed packages that no manifest declares.",
+        "reinstall": "Deletes the installed dependencies and installs them again from the lockfile: the versions stay.",
+        "lockfile": "Deletes the installed dependencies and the lockfile, then installs: the versions can change.",
+        "cache": "Clears the download cache of the tool, then installs. The cache usually belongs to the machine, not to the workspace."
+      }
+    },
+    "RepairParams": {
+      "description": "RepairParams asks a plugin how it repairs the dependencies of its projects.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          },
+          "description": "Projects are the plugin's projects the repair is for. The plan may also name what the projects share (the workspace's one lockfile)."
+        }
+      },
+      "required": [
+        "projects"
+      ]
+    },
+    "RepairPlan": {
+      "description": "RepairPlan says exactly what one repair kind does with the plugin's tool. The plugin only describes it: the host shows the plan, asks, deletes the paths, runs the commands and then installs, in that order.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/RepairKind",
+          "description": "Kind is the repair this plan carries out."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Summary says in one line what the kind does with this tool (\"delete every node_modules folder, then npm install\")."
+        },
+        "delete": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Delete are the files and folders the host deletes first, as workspace-relative paths with forward slashes. Name only what exists. The host deletes a link as a link and never follows it."
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepairCommand"
+          },
+          "description": "Commands run after the deletions, in order; the first that fails stops the repair."
+        },
+        "install": {
+          "type": "boolean",
+          "description": "Install asks the host to call dependencies/install for the projects once the commands are done."
+        },
+        "machineWide": {
+          "type": "boolean",
+          "description": "MachineWide is true when the repair changes something outside the workspace that other workspaces on the machine use (a shared download cache). The host says so before it asks."
+        },
+        "changesVersions": {
+          "type": "boolean",
+          "description": "ChangesVersions is true when the repair can install other versions than the ones installed now (the lockfile is written again)."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notes are remarks the host shows with the plan."
+        }
+      },
+      "required": [
+        "kind",
+        "summary"
+      ]
+    },
+    "RepairResult": {
+      "description": "RepairResult is one plan for each repair kind the plugin offers for the projects. A kind that is not here has no honest equivalent in the tool, or has nothing to act on (no lockfile to rebuild).",
+      "type": "object",
+      "properties": {
+        "plans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepairPlan"
+          }
+        }
+      },
+      "required": [
+        "plans"
+      ]
     },
     "Request": {
       "description": "Request is a JSON-RPC 2.0 request, or a notification when ID is nil.",

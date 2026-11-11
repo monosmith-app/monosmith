@@ -61,6 +61,7 @@ var catalog = []Action{
 	{Command: []string{"tools", "install"}, Safety: NeedsTerminal, Terminal: "a package manager may ask for an administrator password; the shell shows the choices and runs the install in its own dialog, and leaves only for that password", Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: "installing on the machine is the person's step: the assistant reads smith tools and says what is missing", NotInServe: "an editor shows the choices from smith tools install --dry-run --json and runs the answer with --manager"},
 	{Command: []string{"sync"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}},
 	{Command: []string{"deps"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
+	{Command: []string{"deps", "repair"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"deps", "up"}, Plan: "--check", Asks: true, Safety: Changes, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
 	{Command: []string{"up"}, Safety: NeedsTerminal, Terminal: "bare `smith up` is an interactive picker; the shell shows the same candidates in its Dependencies tab and never hands this over", Variants: []Variant{
 		{When: []string{"--yes"}, Safety: Changes},

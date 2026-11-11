@@ -139,6 +139,11 @@ type Capabilities struct {
 	// refused by the host with one sentence that tells the user to add the
 	// dependency by hand.
 	Link bool `json:"link,omitempty"`
+	// Repair says how to repair the installed dependencies of the plugin's
+	// projects: for each repair kind the tool has, the paths to delete and the
+	// commands to run. The host shows the plan, asks, and carries it out; the
+	// plugin never deletes anything itself.
+	Repair bool `json:"repair,omitempty"`
 	// Declarations lists and rewrites declared dependency specs (sync, up).
 	Declarations bool `json:"declarations,omitempty"`
 	// Latest reports the newest releases of dependencies and pinned tools.

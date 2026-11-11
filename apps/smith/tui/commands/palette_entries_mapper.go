@@ -53,7 +53,7 @@ var paletteSections = map[string]string{
 	"file.add": SectionProjects, "proj.swap": SectionProjects, "proj.remove": SectionProjects, "proj.affected": SectionProjects, "proj.graph": SectionProjects,
 	"projects.install-package": SectionProjects, "projects.remove-package": SectionProjects,
 
-	"proj.install": SectionDependencies, "deps.update": SectionDependencies, "deps.align": SectionDependencies, "deps.one-version": SectionDependencies,
+	"proj.install": SectionDependencies, "deps.update": SectionDependencies, "deps.align": SectionDependencies, "deps.one-version": SectionDependencies, "deps.repair": SectionDependencies,
 
 	"rel.preview": SectionRelease, "rel.notes": SectionRelease, "rel.release": SectionRelease, "rel.forced": SectionRelease, "ws.ci": SectionRelease,
 

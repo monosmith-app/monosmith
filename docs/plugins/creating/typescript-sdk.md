@@ -255,6 +255,7 @@ Promise<result>`. The names follow the Go interfaces.
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `link` and `unlink` | `dependencies/link`, `dependencies/unlink` | `link` | `Linker` |
+| `repair` | `dependencies/repair` | `repair` | `DependencyRepairer` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
 | `latest` | `dependencies/latest` | `latest` | `LatestReader` |
 
@@ -276,7 +277,7 @@ Everything is exported from `@monosmith/plugin-sdk`. The messages (`Project`, `T
 | `serveStreams(plugin, { input, output, log? })` | the same loop on streams you give it; resolves at `shutdown` or the end of the input |
 | `capabilitiesOf(plugin)` | the `Capabilities` the plugin would advertise |
 | `implementsMethod(plugin, method)` | whether the plugin has the members a protocol method needs |
-| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `Linker`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
+| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `Linker`, `DependencyRepairer`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
 
 ### Testing a plugin
 

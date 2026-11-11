@@ -287,6 +287,7 @@ Content-Length: 85\r\n
 | `dependencies/uninstall` | a project, packages → the files changed, notes | `dependencies` |
 | `dependencies/link` | a project, a library of the same workspace and language, `plan` (answer the manifest, the line and the range options without writing), `spec` (the range chosen) → files changed, notes ([ADR 0071](../architecture/decisions/0071-smith-install-links-a-library-of-the-workspace.md)) | `link` |
 | `dependencies/unlink` | a project, a library → the files changed, notes | `link` |
+| `dependencies/repair` | the projects → one plan per repair kind the tool has (`prune`, `reinstall`, `lockfile`, `cache`): the paths to delete, the commands to run, whether to install after, whether it is machine-wide or can change versions. The plugin only describes; `smith deps repair` deletes and runs ([ADR 0093](../architecture/decisions/0093-plugins-describe-dependency-repairs-and-smith-carries-them-out.md)) | `repair` |
 | `project/kind` | a project, the kind it becomes, its new folder → the edits the change makes, or a refusal (`smith kind`) | `changeKind` |
 | `derive` | the plugin's projects, the dependency graph, the paths smith owns → the files it derives, and the files it left alone because they differ from their siblings (`smith derive`) | `derive` |
 | `sbom/components` | a project → its dependencies, read from a lockfile (`smith release` SBOM) | `components` |

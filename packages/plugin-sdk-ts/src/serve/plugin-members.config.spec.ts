@@ -30,6 +30,7 @@ describe('PLUGIN_MEMBERS', () => {
       uninstall:    () => ({}),
       link:         () => ({}),
       unlink:       () => ({}),
+      repair:       () => ({ plans: [] }),
       declared:     () => ({ declarations: [] }),
       rewrite:      () => ({}),
       latest:       () => ({}),
@@ -39,6 +40,6 @@ describe('PLUGIN_MEMBERS', () => {
     const wanted = new Set(rows.map(row => row.capability).filter(c => c !== null))
     const advertised = new Set(Object.keys(capabilitiesOf(everything)))
     expect(advertised).toEqual(wanted)
-    expect(wanted.size).toBe(18)
+    expect(wanted.size).toBe(19)
   })
 })

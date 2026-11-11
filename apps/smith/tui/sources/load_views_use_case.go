@@ -13,6 +13,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/cachesetup"
+	"github.com/monosmith-app/monosmith/apps/smith/depsrepair"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -50,6 +51,12 @@ type Sources struct {
 	// root, stopping at the first that fails (a *doctorfix.StepError). It
 	// writes a line "… name" to out as each step starts, and honours ctx.
 	ApplyFix func(ctx context.Context, fix protocol.Fix, out io.Writer) error
+	// RepairOffer asks the plugins of the workspace how each repairs its
+	// installed dependencies (smith deps repair). Nil outside a workspace.
+	RepairOffer func() (depsrepair.Offer, error)
+	// RepairDeps carries out a repair kind for every project, writing "… name"
+	// to out as each step starts, and honours ctx.
+	RepairDeps func(ctx context.Context, kind protocol.RepairKind, out io.Writer) error
 	// Settings is what the Settings tab reads and changes.
 	Settings settingsview.Backend
 	// Start launches a smith command line as a child process (the smith
@@ -143,7 +150,27 @@ func WorkspaceSources(dir, version string) Sources {
 		},
 		Projects: func() ProjectsLoaded { return loadProjects(open) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
-		Plan:     func(argv []string) []string { return planTasks(open, argv) },
+		RepairOffer: func() (depsrepair.Offer, error) {
+			s, err := open()
+			if err != nil {
+				return depsrepair.Offer{}, err
+			}
+			defer s.Close()
+			return depsrepair.Load(s, nil)
+		},
+		RepairDeps: func(ctx context.Context, kind protocol.RepairKind, out io.Writer) error {
+			s, err := open()
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			offer, err := depsrepair.Load(s, nil)
+			if err != nil {
+				return err
+			}
+			return depsrepair.Apply(ctx, offer, kind, depsrepair.SessionPorts(s), out)
+		},
+		Plan: func(argv []string) []string { return planTasks(open, argv) },
 		Doctor: func() doctorview.Result {
 			s, err := open()
 			if err != nil {

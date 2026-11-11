@@ -399,6 +399,8 @@ func (c *Client) Supports(method string) bool {
 		return caps.Dependencies
 	case protocol.MethodLink, protocol.MethodUnlink:
 		return caps.Link
+	case protocol.MethodRepair:
+		return caps.Repair
 	case protocol.MethodDeclared, protocol.MethodRewrite:
 		return caps.Declarations
 	case protocol.MethodLatest:

@@ -32,6 +32,9 @@ const (
 	MethodLink = "dependencies/link"
 	// MethodUnlink removes that dependency.
 	MethodUnlink = "dependencies/unlink"
+	// MethodRepair asks how the plugin repairs installed dependencies: one
+	// plan for each repair kind its tool has (smith deps repair).
+	MethodRepair = "dependencies/repair"
 	// MethodDeclared lists the dependencies manifests declare.
 	MethodDeclared = "dependencies/declared"
 	// MethodRewrite changes declared specs in place.

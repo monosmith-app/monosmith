@@ -99,6 +99,9 @@ public static class ProtocolMethods
     /// <summary>Removes the dependency of a project on a library of the same workspace.</summary>
     public const string DependenciesUnlink = "dependencies/unlink";
 
+    /// <summary>Says how the plugin repairs the installed dependencies of its projects: one plan for each repair kind its tool has, with the paths the host deletes and the commands it runs.</summary>
+    public const string DependenciesRepair = "dependencies/repair";
+
     /// <summary>Lists the dependencies the manifests of the plugin's projects declare.</summary>
     public const string DependenciesDeclared = "dependencies/declared";
 
@@ -137,6 +140,7 @@ public static class ProtocolMethods
         [DependenciesUninstall] = "dependencies",
         [DependenciesLink] = "link",
         [DependenciesUnlink] = "link",
+        [DependenciesRepair] = "repair",
         [DependenciesDeclared] = "declarations",
         [DependenciesRewrite] = "declarations",
         [DependenciesLatest] = "latest",
@@ -594,6 +598,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand.</summary>
     public bool Link { get; init; }
 
+    /// <summary>Repair says how to repair the installed dependencies of the plugin's projects: for each repair kind the tool has, the paths to delete and the commands to run. The host shows the plan, asks, and carries it out; the plugin never deletes anything itself.</summary>
+    public bool Repair { get; init; }
+
     /// <summary>Declarations lists and rewrites declared dependency specs (sync, up).</summary>
     public bool Declarations { get; init; }
 
@@ -639,6 +646,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Published = BooleanValue(Member(map, "published"), Join(path, "published")),
             Dependencies = BooleanValue(Member(map, "dependencies"), Join(path, "dependencies")),
             Link = BooleanValue(Member(map, "link"), Join(path, "link")),
+            Repair = BooleanValue(Member(map, "repair"), Join(path, "repair")),
             Declarations = BooleanValue(Member(map, "declarations"), Join(path, "declarations")),
             Latest = BooleanValue(Member(map, "latest"), Join(path, "latest")),
             Cancel = BooleanValue(Member(map, "cancel"), Join(path, "cancel")),
@@ -715,6 +723,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("link");
             writer.Boolean(Link);
         }
+        if (Repair)
+        {
+            writer.Property("repair");
+            writer.Boolean(Repair);
+        }
         if (Declarations)
         {
             writer.Property("declarations");
@@ -781,6 +794,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "published" => Published,
             "dependencies" => Dependencies,
             "link" => Link,
+            "repair" => Repair,
             "declarations" => Declarations,
             "latest" => Latest,
             "cancel" => Cancel,
@@ -3958,6 +3972,238 @@ public sealed record RemoveResult : IProtocolValue<RemoveResult>
             writer.Property("notes");
             MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
         }
+        writer.EndObject();
+    }
+}
+
+/// <summary>RepairCommand is one command of a repair plan.</summary>
+public sealed record RepairCommand : IProtocolValue<RepairCommand>
+{
+    /// <summary>Argv is the program and its arguments; no shell is involved.</summary>
+    public IReadOnlyList<string> Argv { get; init; } = [];
+
+    /// <summary>Dir is where it runs, workspace-relative; empty is the workspace root.</summary>
+    public string Dir { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static RepairCommand Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new RepairCommand
+        {
+            Argv = ListOf(Member(map, "argv"), Join(path, "argv"), StringValue),
+            Dir = StringValue(Member(map, "dir"), Join(path, "dir")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("argv");
+        MessageWritingAlgorithm.List(writer, Argv, (builder1, item1) => builder1.String(item1));
+        if (Dir.Length > 0)
+        {
+            writer.Property("dir");
+            writer.String(Dir);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>RepairKind names one way to repair the installed dependencies of a workspace. The four kinds go from the lightest to the heaviest; a plugin offers only the kinds its tool has an honest equivalent for.</summary>
+/// <remarks>
+/// <para>A string, not a closed set: a newer protocol may add values, and one that is not listed here is kept as it came.</para>
+/// </remarks>
+public readonly record struct RepairKind : IProtocolValue<RepairKind>
+{
+    private readonly string? _value;
+
+    /// <summary>A repair kind given as text.</summary>
+    /// <param name="value">The text.</param>
+    public RepairKind(string value)
+    {
+        _value = value;
+    }
+
+    /// <summary>The text of the value: empty for the default one.</summary>
+    public string Value => _value ?? string.Empty;
+
+    /// <summary>Whether the value is empty, which is what an absent member reads as.</summary>
+    public bool IsEmpty => Value.Length == 0;
+
+    /// <summary>Removes installed packages that no manifest declares.</summary>
+    public static RepairKind Prune { get; } = new("prune");
+
+    /// <summary>Deletes the installed dependencies and installs them again from the lockfile: the versions stay.</summary>
+    public static RepairKind Reinstall { get; } = new("reinstall");
+
+    /// <summary>Deletes the installed dependencies and the lockfile, then installs: the versions can change.</summary>
+    public static RepairKind Lockfile { get; } = new("lockfile");
+
+    /// <summary>Clears the download cache of the tool, then installs. The cache usually belongs to the machine, not to the workspace.</summary>
+    public static RepairKind Cache { get; } = new("cache");
+
+    /// <summary>A RepairKind from text.</summary>
+    /// <param name="value">The text.</param>
+    public static implicit operator RepairKind(string value) => new(value);
+
+    /// <summary>The text of a RepairKind.</summary>
+    /// <param name="value">The value.</param>
+    public static implicit operator string(RepairKind value) => value.Value;
+
+    /// <inheritdoc />
+    public static RepairKind Read(JsonAny? value, string path) => new(MessageReadingAlgorithm.StringValue(value, path));
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer) => writer.String(Value);
+
+    /// <summary>Whether another value has the same text.</summary>
+    /// <param name="other">The other value.</param>
+    /// <returns>Whether they are equal.</returns>
+    public bool Equals(RepairKind other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Value);
+
+    /// <inheritdoc />
+    public override string ToString() => Value;
+}
+
+/// <summary>RepairParams asks a plugin how it repairs the dependencies of its projects.</summary>
+public sealed record RepairParams : IProtocolValue<RepairParams>
+{
+    /// <summary>Projects are the plugin's projects the repair is for. The plan may also name what the projects share (the workspace's one lockfile).</summary>
+    public IReadOnlyList<Project> Projects { get; init; } = [];
+
+    /// <inheritdoc />
+    public static RepairParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new RepairParams
+        {
+            Projects = ListOf(Member(map, "projects"), Join(path, "projects"), Project.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("projects");
+        MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>RepairPlan says exactly what one repair kind does with the plugin's tool. The plugin only describes it: the host shows the plan, asks, deletes the paths, runs the commands and then installs, in that order.</summary>
+public sealed record RepairPlan : IProtocolValue<RepairPlan>
+{
+    /// <summary>Kind is the repair this plan carries out.</summary>
+    public required RepairKind Kind { get; init; }
+
+    /// <summary>Summary says in one line what the kind does with this tool ("delete every node_modules folder, then npm install").</summary>
+    public required string Summary { get; init; }
+
+    /// <summary>Delete are the files and folders the host deletes first, as workspace-relative paths with forward slashes. Name only what exists. The host deletes a link as a link and never follows it.</summary>
+    public IReadOnlyList<string> Delete { get; init; } = [];
+
+    /// <summary>Commands run after the deletions, in order; the first that fails stops the repair.</summary>
+    public IReadOnlyList<RepairCommand> Commands { get; init; } = [];
+
+    /// <summary>Install asks the host to call dependencies/install for the projects once the commands are done.</summary>
+    public bool Install { get; init; }
+
+    /// <summary>MachineWide is true when the repair changes something outside the workspace that other workspaces on the machine use (a shared download cache). The host says so before it asks.</summary>
+    public bool MachineWide { get; init; }
+
+    /// <summary>ChangesVersions is true when the repair can install other versions than the ones installed now (the lockfile is written again).</summary>
+    public bool ChangesVersions { get; init; }
+
+    /// <summary>Notes are remarks the host shows with the plan.</summary>
+    public IReadOnlyList<string> Notes { get; init; } = [];
+
+    /// <inheritdoc />
+    public static RepairPlan Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new RepairPlan
+        {
+            Kind = RepairKind.Read(Member(map, "kind"), Join(path, "kind")),
+            Summary = StringValue(Member(map, "summary"), Join(path, "summary")),
+            Delete = ListOf(Member(map, "delete"), Join(path, "delete"), StringValue),
+            Commands = ListOf(Member(map, "commands"), Join(path, "commands"), RepairCommand.Read),
+            Install = BooleanValue(Member(map, "install"), Join(path, "install")),
+            MachineWide = BooleanValue(Member(map, "machineWide"), Join(path, "machineWide")),
+            ChangesVersions = BooleanValue(Member(map, "changesVersions"), Join(path, "changesVersions")),
+            Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("kind");
+        Kind.Write(writer);
+        writer.Property("summary");
+        writer.String(Summary);
+        if (Delete is { Count: > 0 })
+        {
+            writer.Property("delete");
+            MessageWritingAlgorithm.List(writer, Delete, (builder1, item1) => builder1.String(item1));
+        }
+        if (Commands is { Count: > 0 })
+        {
+            writer.Property("commands");
+            MessageWritingAlgorithm.List(writer, Commands, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Install)
+        {
+            writer.Property("install");
+            writer.Boolean(Install);
+        }
+        if (MachineWide)
+        {
+            writer.Property("machineWide");
+            writer.Boolean(MachineWide);
+        }
+        if (ChangesVersions)
+        {
+            writer.Property("changesVersions");
+            writer.Boolean(ChangesVersions);
+        }
+        if (Notes is { Count: > 0 })
+        {
+            writer.Property("notes");
+            MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>RepairResult is one plan for each repair kind the plugin offers for the projects. A kind that is not here has no honest equivalent in the tool, or has nothing to act on (no lockfile to rebuild).</summary>
+public sealed record RepairResult : IProtocolValue<RepairResult>
+{
+    /// <summary>The <c>plans</c> member of <c>RepairResult</c>.</summary>
+    public IReadOnlyList<RepairPlan> Plans { get; init; } = [];
+
+    /// <inheritdoc />
+    public static RepairResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new RepairResult
+        {
+            Plans = ListOf(Member(map, "plans"), Join(path, "plans"), RepairPlan.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("plans");
+        MessageWritingAlgorithm.List(writer, Plans, (builder1, item1) => item1.Write(builder1));
         writer.EndObject();
     }
 }

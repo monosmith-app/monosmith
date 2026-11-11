@@ -263,6 +263,8 @@ type Shell struct {
 	// applied in the background.
 	fix    *fixwizard.Wizard
 	fixing *fixRun
+	// depsRepair is set while the fix wizard walks a dependency repair.
+	depsRepair *depsRepairWalk
 	// adopt is the adopt wizard while it is open; adopting is the job it
 	// has running; adopter reads the folder; exitNote is told on leaving.
 	adopt    *adoptwizard.Model

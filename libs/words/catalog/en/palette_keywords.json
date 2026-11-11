@@ -68,5 +68,6 @@
   "palette.keywords.view.settings": "config, preferences, options, smith.toml",
   "palette.keywords.help.keys": "keys, shortcuts, hotkeys, keyboard",
   "palette.keywords.cli.guide": "help, docs, manual, commands",
-  "palette.keywords.file.quit": "exit, close, leave"
+  "palette.keywords.file.quit": "exit, close, leave",
+  "palette.keywords.deps.repair": "heal, repair, broken, fix dependencies, node_modules, reinstall, lockfile, prune, clear cache, clean install"
 }

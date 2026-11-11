@@ -143,6 +143,15 @@ type Linker interface {
 	Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error)
 }
 
+// DependencyRepairer is implemented by a plugin that says how to repair the
+// installed dependencies of its projects. Serve advertises the repair
+// capability for it. Repair only describes: it returns one plan for each
+// repair kind the tool has, and the host deletes the paths and runs the
+// commands after the person confirmed.
+type DependencyRepairer interface {
+	Repair(params protocol.RepairParams) (protocol.RepairResult, error)
+}
+
 // DeclaredDescriber is implemented by a plugin whose Discover also describes
 // the projects smith.toml declares (DiscoverParams.Declared): folders with no
 // manifest of their own. Serve advertises the declared capability for it.

@@ -370,6 +370,23 @@ registry=https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/
 
 `smith install -p <project> @acme/core` writes the library's package name in `dependencies` of the project's `package.json` and runs `npm install`, which links the workspace copy. The range follows what the workspace's libraries already use; with no habit yet, smith asks between `*` (any version, nothing to edit later) and the library's current `^x.y.z`, and `--range` decides in advance. `smith uninstall -p <project> @acme/core` removes it from every dependency section. The plugin declares the `link` capability.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability, so [`smith deps repair`](../../../manual/deps-repair.md)
+offers four repairs. npm installs the workspace as one tree, so each repair that deletes
+includes the root `node_modules`, also with `-p`.
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `prune` | nothing | `npm prune --no-audit --no-fund` |
+| `reinstall` | every `node_modules` that exists: the root one, then each project's | `npm install --no-audit --no-fund` (smith's install) |
+| `lockfile` | the same, and `package-lock.json`. Offered only when the file exists | `npm install --no-audit --no-fund`. The versions can change |
+| `cache` | nothing in the workspace | `npm cache clean --force`, then `npm install`. The npm cache belongs to your user account, so every workspace on the machine downloads again |
+
+smith's install is `npm install`, not `npm ci`. With an intact lockfile both install the locked
+versions. A workspace package that npm linked into `node_modules` (a junction on Windows) is
+deleted as a link, and its source stays.
+
 ## Doctor, dependencies and removal
 
 Doctor checks (`pipeline/`; shown when the workspace has Node projects):

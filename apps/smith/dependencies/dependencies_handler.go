@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/depsrepair"
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"io"
 	"os"
@@ -151,6 +152,7 @@ func depsCommand(version string) *cobra.Command {
 		Long:  "Dependency work that spans projects. smith deps up is smith up: it updates every project that declares a package in one change. smith deps up --align brings a dependency that projects declare at different versions to one.",
 	}
 	cmd.AddCommand(newUpCommand(version))
+	cmd.AddCommand(depsrepair.NewCommand(version))
 	return cmd
 }
 

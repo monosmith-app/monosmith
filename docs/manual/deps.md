@@ -1,9 +1,11 @@
 # smith deps
 
-`smith deps` is a group for dependency work that spans projects. Its only subcommand today
-is `smith deps up`, which is [`smith up`](up.md) under another name; `smith deps up --align`
-brings a dependency that projects declare at different versions to one, as
-[`smith sync`](sync.md) does. Running `smith deps` alone prints its help.
+`smith deps` is a group for dependency work that spans projects. `smith deps up` is
+[`smith up`](up.md) under another name; `smith deps up --align` brings a dependency that
+projects declare at different versions to one, as [`smith sync`](sync.md) does.
+[`smith deps repair`](deps-repair.md) repairs broken installed dependencies: prune, clean
+reinstall, rebuild the lockfile or clear the download cache. Running `smith deps` alone prints
+its help.
 
 ## Subcommands
 
@@ -14,13 +16,14 @@ Usage: `smith deps <command>`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith deps repair` | Repair broken installed dependencies: prune, clean reinstall, rebuild the lockfile or clear the download cache |
 | `smith deps up` | Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync) |
 
 No flags.
 
 <!-- smith:end deps -->
 
-See [`smith deps up`](deps-up.md).
+See [`smith deps up`](deps-up.md) and [`smith deps repair`](deps-repair.md).
 
 ## Exit codes
 
