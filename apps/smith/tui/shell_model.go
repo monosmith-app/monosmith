@@ -281,6 +281,8 @@ type Shell struct {
 	// behind it, which runs in the background.
 	cache    *cachewizard.Model
 	cacheRun *cachewizard.Bridge
+	// remote is the state of the remote cache, for the header and Home.
+	remote remoteCache
 	// cacheSecrets is the clipboard and environment of its key screen; nil is this machine.
 	cacheSecrets func() cachewizard.Secrets
 	// result is the dialog that closes a run that changed files or could not be
@@ -396,6 +398,9 @@ func NewShell(cfg Config) Shell {
 		// So does the release plan, for the release item of Home.
 		sh.releaseLoading = sh.sources.Release != nil
 		sh.completionWanted = sh.sources.CompletionWanted != nil && sh.sources.CompletionWanted()
+		// And the remote cache's probe: the header says "checking" from the start.
+		sh.remote.set = sh.sources.RemoteSet != nil && sh.sources.RemoteSet() && sh.sources.RemoteStatus != nil
+		sh.remote.probing = sh.remote.set
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
@@ -593,6 +598,10 @@ func (s Shell) Init() tea.Cmd {
 	if load := s.sources.Release; load != nil {
 		// Home never waits for it: the release item shows when the plan arrives.
 		cmds = append(cmds, func() tea.Msg { return load() })
+	}
+	if probe := s.sources.RemoteStatus; s.remote.set && probe != nil {
+		// Init has a value receiver: the probe's state is set when it answers.
+		cmds = append(cmds, func() tea.Msg { return remoteStatusMsg{status: probe()} })
 	}
 	return tea.Batch(cmds...)
 }

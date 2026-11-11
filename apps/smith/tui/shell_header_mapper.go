@@ -59,7 +59,7 @@ func (s Shell) headerRow() string {
 }
 
 // headerParts are the pieces of the header: the workspace, what is wrong with
-// it, its branch and its health.
+// it, its branch, its health and the state of its remote cache.
 func (s Shell) headerParts() []string {
 	name := s.header
 	if name == "" {
@@ -77,6 +77,9 @@ func (s Shell) headerParts() []string {
 	}
 	if h := s.healthSummary(); h != "" {
 		parts = append(parts, h)
+	}
+	if r := s.remoteSummary(); r != "" {
+		parts = append(parts, r)
 	}
 	return parts
 }

@@ -105,6 +105,7 @@
   "tui.forced_release.every_package_in_the_plan_has": "Every package in the plan has a releasing commit, or the plan is not read yet",
   "tui.forced_release.no_package_to_release_without_a": "No package to release without a commit",
   "tui.header.smith_toml_cannot_be_read_see": "smith.toml cannot be read: see the message below",
+  "tui.header.remote_checking": "{icon} checking…",
   "tui.keys.select_a_project_first_packages_are": "Select a project first: packages are installed on one project",
   "tui.keys.cancelled_nothing_was_released": "Cancelled: nothing was released",
   "tui.keys.no_task_failed_or_was_skipped": "No task failed or was skipped",

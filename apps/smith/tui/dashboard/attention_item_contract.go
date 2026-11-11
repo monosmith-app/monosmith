@@ -16,6 +16,8 @@ const (
 	KindUpdates  Kind = "updates"
 	// KindCompletion is the offer to set up tab completion; it only waits.
 	KindCompletion Kind = "completion"
+	// KindRemote is the state of the remote cache and the entries it lacks.
+	KindRemote Kind = "remote"
 	KindGood       Kind = "good"
 )
 

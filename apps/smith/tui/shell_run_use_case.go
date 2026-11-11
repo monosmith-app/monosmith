@@ -222,7 +222,8 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	}
 	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
 	s.last.Task = s.firstFailed()
-	cmds := []tea.Cmd{s.refreshAfter(s.run.Command)}
+	// A run stores entries and a push or a clear changes the remote: count again.
+	cmds := []tea.Cmd{s.refreshAfter(s.run.Command), s.countRemote()}
 	if _, ok := commandtext.ReportTarget(s.run.Command); ok && s.run.OK() {
 		cmds = append(cmds, s.reportWritten(s.run.Command))
 	}

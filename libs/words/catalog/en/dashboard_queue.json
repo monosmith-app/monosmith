@@ -32,5 +32,19 @@
   "dashboard.good.last": "Last run: {command} passed in {took}",
   "dashboard.good.build": "Build all",
   "dashboard.recent.label": "Recent runs",
-  "dashboard.projects.summary": "{projects} ({languages})"
+  "dashboard.projects.summary": "{projects} ({languages})",
+  "dashboard.remote.checking": "Remote cache: checking…",
+  "dashboard.remote.counting": "Remote cache: connected · counting the local entries it lacks…",
+  "dashboard.remote.synced": "Remote cache: connected · it holds every local entry",
+  "dashboard.remote.pending.one": "Remote cache: connected · {count} local entry not uploaded",
+  "dashboard.remote.pending.other": "Remote cache: connected · {count} local entries not uploaded",
+  "dashboard.remote.pending_at_least.one": "Remote cache: connected · at least {count} local entry not uploaded",
+  "dashboard.remote.pending_at_least.other": "Remote cache: connected · at least {count} local entries not uploaded",
+  "dashboard.remote.pending_detail": "Push uploads them, so the team and CI can use them",
+  "dashboard.remote.count_failed": "Remote cache: connected · could not count the local entries it lacks",
+  "dashboard.remote.unreachable": "Remote cache: does not answer",
+  "dashboard.remote.refused": "Remote cache: refuses the credentials",
+  "dashboard.remote.push": "Push",
+  "dashboard.remote.status": "Cache status",
+  "dashboard.remote.setup": "Set up again"
 }

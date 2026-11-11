@@ -37,6 +37,37 @@ type Facts struct {
 	CompletionOffer bool
 	// SettingsTip is true until the person has opened the Settings tab: Home points at it.
 	SettingsTip bool
+	// Remote is what the shell knows of the remote cache; nil when no remote is set.
+	Remote *Remote
+}
+
+// RemoteState is how the remote cache answered.
+type RemoteState int
+
+// The states of the remote cache, as Home tells them.
+const (
+	// RemoteChecking: the probe has not ended yet.
+	RemoteChecking RemoteState = iota
+	// RemoteConnected: it answers and accepts the credentials.
+	RemoteConnected
+	// RemoteUnreachable: it does not answer.
+	RemoteUnreachable
+	// RemoteRefused: it refuses the credentials, or smith has none to give.
+	RemoteRefused
+)
+
+// Remote is the remote cache in a few facts.
+type Remote struct {
+	State RemoteState
+	// Detail says why, for an unreachable or a refused remote.
+	Detail string
+	// Counted is true once the count of the local entries it lacks ended;
+	// Pending is that count, AtLeast says the count stopped early, and
+	// CountErr is why the count failed.
+	Counted  bool
+	Pending  int
+	AtLeast  bool
+	CountErr string
 }
 
 // Run is how a command ended.
