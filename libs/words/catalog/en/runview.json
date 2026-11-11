@@ -1,6 +1,8 @@
 {
   "runview.started": " ▶ started",
   "runview.summary": "{mark} {done}/{total} tasks succeeded ({cached} from cache) in {took}",
+  "runview.summary_remote": "{mark} {done}/{total} tasks succeeded ({cached} from cache, {remote} of them remote) in {took}",
+  "runview.reason.remote": "from remote cache",
   "runview.reason.unstarted": "the run ended before it started",
   "runview.reason.interrupted": "interrupted",
   "runview.reason.cancelled": "cancelled"

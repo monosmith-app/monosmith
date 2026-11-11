@@ -13,7 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/remotecache"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
@@ -440,5 +442,76 @@ func TestABuildThatShipsLinksItsFileIntoTheShippedFolder(t *testing.T) {
 	}
 	if !strings.Contains(out, "web:build │ shipped 1 file to dist/apps/web") {
 		t.Errorf("the run does not say what it shipped:\n%s", out)
+	}
+}
+
+// memStore is a remote object store in memory.
+type memStore struct {
+	mu      sync.Mutex
+	objects map[string][]byte
+}
+
+func (m *memStore) Get(name string) ([]byte, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	b, ok := m.objects[name]
+	return b, ok, nil
+}
+
+func (m *memStore) Put(name string, data []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.objects[name] = data
+	return nil
+}
+
+func (m *memStore) Has(name string) (bool, error) {
+	_, ok, err := m.Get(name)
+	return ok, err
+}
+
+func (m *memStore) Describe() string { return "memory" }
+
+func TestAHitTheRemoteServedSaysFromRemoteCache(t *testing.T) {
+	f := newFixture(t, "core")
+	remote := &memStore{objects: map[string][]byte{}}
+	tier := func() taskcache.Storage {
+		local, _ := taskcache.NewLocalStorage(t.TempDir())
+		// A run meters what it stores: the meter wraps the tiers, as in smith run.
+		return cachemaintenance.NewWriteMeter(&remotecache.Tiered{Local: local, Remote: remote, Secret: []byte("k")})
+	}
+	f.store = tier()
+	if s, out := f.run(t); s.Count(Succeeded) != 2 {
+		t.Fatalf("first run: %s\n%s", s, out)
+	}
+	// Another machine: its local cache is empty, the remote holds both results.
+	f.store = tier()
+	g, _ := taskgraph.Build(f.pg, []string{"web"}, []string{"build"})
+	var out bytes.Buffer
+	var events []runevents.Event
+	sink := runevents.NewRunStream("r", runevents.SinkFunc(func(e runevents.Event) { events = append(events, e) }))
+	s := Run(context.Background(), g, Options{Root: f.root, Files: f.files, Projects: f.pg, Storage: f.store, Parallel: 2, Out: &out, ToolVersion: "test", Events: sink})
+	if s.Count(Cached) != 2 || s.CountRemote() != 2 {
+		t.Fatalf("second run: %s\n%s", s, out.String())
+	}
+	if !strings.Contains(out.String(), "web:build ✓ from remote cache") || !strings.Contains(s.String(), "(2 from cache, 2 of them remote") {
+		t.Errorf("the run does not say the remote served it:\n%s\n%s", out.String(), s)
+	}
+	var finished, summary int
+	for _, e := range events {
+		if e.Event == runevents.TaskFinished && e.Source == "remote" {
+			finished++
+		}
+		if e.Event == runevents.RunFinished && e.Summary.CachedRemote == 2 {
+			summary++
+		}
+	}
+	if finished != 2 || summary != 1 {
+		t.Errorf("events: %d remote task.finished, %d run.finished with cachedRemote 2", finished, summary)
+	}
+	// The same machine again: the hits are local now.
+	s, text := f.run(t)
+	if s.CountRemote() != 0 || !strings.Contains(text, "web:build ✓ from cache") || s.Results[0].Source != taskcache.SourceLocal {
+		t.Errorf("third run: %s\n%s", s, text)
 	}
 }

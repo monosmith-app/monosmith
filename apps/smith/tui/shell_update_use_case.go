@@ -103,6 +103,10 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		return s.settingsMsg(msg)
 	case cacheMsg:
 		return s.cacheEvent(msg)
+	case remoteStatusMsg:
+		return s.remoteChecked(msg)
+	case remotePendingMsg:
+		s.remoteCounted(msg)
 	case fixProgressMsg:
 		if s.adopting != nil && msg.run == s.adopting {
 			return s.adoptProgress(msg)

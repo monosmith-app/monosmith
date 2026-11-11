@@ -227,6 +227,8 @@
   "commands.ws.cache-repair.hint": "smith cache verify --fix: deletes corrupt blobs and the entries that name them",
   "commands.ws.cache-prune.title": "Speed-up storage (Cache): trim to its limit…",
   "commands.ws.cache-prune.hint": "smith cache prune: removes the least recently used entries; the plan comes first",
+  "commands.ws.cache-push.title": "Speed-up storage (Cache): upload what the remote lacks",
+  "commands.ws.cache-push.hint": "smith cache push: uploads every local entry the remote cache does not hold, so the team and CI can use it",
   "commands.ws.cache-clear.title": "Speed-up storage (Cache): delete it all…",
   "commands.ws.cache-clear.hint": "smith cache clear: deletes the local cache; the remote cache stays and the next run is slower",
   "commands.ws.copies.title": "Copies between projects",

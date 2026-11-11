@@ -28,6 +28,24 @@ var _ taskcache.Storage = (*Tiered)(nil)
 
 func name(kind taskcache.Kind, key string) string { return string(kind) + "/" + key }
 
+// ObjectName is the name of a cache entry's object in a remote store, under
+// the store's prefix: "ac/<key>" or "cas/<key>".
+//
+// Parameters: kind is the entry's kind; key is its hex digest.
+// Returns: the object name.
+func ObjectName(kind taskcache.Kind, key string) string { return name(kind, key) }
+
+// Upload signs content with secret and writes it to store under the entry's
+// object name. Every remote write of an entry goes through it, so an entry
+// that `smith cache push` sends is signed exactly as a run signs it.
+//
+// Parameters: store is the remote; secret is SMITH_CACHE_KEY; kind and key
+// name the entry; content is its plain bytes.
+// Returns: the store's error, nil when the object was written.
+func Upload(store ObjectStore, secret []byte, kind taskcache.Kind, key string, content []byte) error {
+	return store.Put(name(kind, key), Sign(secret, string(kind), key, content))
+}
+
 func (t *Tiered) warn(what, detail string) {
 	if t.warned == nil {
 		t.warned = map[string]bool{}
@@ -104,10 +122,16 @@ func (t *Tiered) Put(kind taskcache.Kind, key string, content io.Reader) error {
 			return nil
 		}
 	}
-	if err := t.Remote.Put(name(kind, key), Sign(t.Secret, string(kind), key, data)); err != nil {
+	if err := Upload(t.Remote, t.Secret, kind, key, data); err != nil {
 		t.warn("the remote cache could not be written", err.Error())
 	}
 	return nil
+}
+
+// HasLocally implements taskcache.Layered: it asks the local cache only, so a
+// run can tell a hit the remote served from one this machine already had.
+func (t *Tiered) HasLocally(kind taskcache.Kind, key string) (bool, error) {
+	return t.Local.Has(kind, key)
 }
 
 // Delete implements taskcache.Storage (the local copy only).

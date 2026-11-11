@@ -63,6 +63,9 @@ func Queue(f Facts) []Item {
 		q = append(q, Item{Kind: KindCompletion, Severity: SeverityMuted, Title: words.Say("dashboard.completion.title"),
 			Buttons: []Button{queueButton("dashboard.completion.setup", "ws.completion"), queueButton("dashboard.completion.later", "ws.completion-later")}})
 	}
+	if f.Remote != nil {
+		q = append(q, remoteItem(*f.Remote))
+	}
 	if !asksForAttention(q) {
 		good := Item{Kind: KindGood, Severity: SeveritySuccess, Title: words.Say("dashboard.good.title"),
 			Buttons: []Button{queueButton("dashboard.good.build", "run.build-all")}}
@@ -154,6 +157,40 @@ func failedRunItem(r Run) Item {
 	if r.Repeatable {
 		// On Home the key of "run again" reloads the page, so the button shows none.
 		it.Buttons = append(it.Buttons, Button{Label: words.Say("dashboard.run.again"), CommandID: "run.again"})
+	}
+	return it
+}
+
+// remoteItem tells the state of the remote cache and, once counted, how many
+// local entries it lacks, with the button that uploads them. Every form has a
+// button, so the item can stand first in the queue.
+func remoteItem(r Remote) Item {
+	status := queueButton("dashboard.remote.status", "ws.cache-status")
+	it := Item{Kind: KindRemote, Severity: SeverityMuted, Buttons: []Button{status}}
+	switch r.State {
+	case RemoteChecking:
+		it.Title = words.Say("dashboard.remote.checking")
+	case RemoteUnreachable:
+		it.Severity, it.Title, it.Detail = SeverityWarning, words.Say("dashboard.remote.unreachable"), r.Detail
+	case RemoteRefused:
+		it.Severity, it.Title, it.Detail = SeverityWarning, words.Say("dashboard.remote.refused"), r.Detail
+		it.Buttons = []Button{queueButton("dashboard.remote.setup", "ws.cache-setup"), status}
+	case RemoteConnected:
+		switch {
+		case !r.Counted:
+			it.Title = words.Say("dashboard.remote.counting")
+		case r.CountErr != "":
+			it.Title, it.Detail = words.Say("dashboard.remote.count_failed"), r.CountErr
+		case r.Pending == 0 && !r.AtLeast:
+			it.Title = words.Say("dashboard.remote.synced")
+		default:
+			key := "dashboard.remote.pending"
+			if r.AtLeast {
+				key = "dashboard.remote.pending_at_least"
+			}
+			it.Severity, it.Title, it.Detail = SeverityInfo, words.Count(key, r.Pending), words.Say("dashboard.remote.pending_detail")
+			it.Buttons = []Button{queueButton("dashboard.remote.push", "ws.cache-push"), status}
+		}
 	}
 	return it
 }

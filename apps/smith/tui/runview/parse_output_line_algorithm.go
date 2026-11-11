@@ -23,6 +23,9 @@ var (
 // fromCache is how smith says a task was replayed.
 const fromCache = "from cache" // words:literal the text of `smith run` that the parser matches
 
+// fromRemoteCache is how smith says the remote cache served a replayed task.
+const fromRemoteCache = "from remote cache" // words:literal the text of `smith run` that the parser matches
+
 // ParseLine reads one line of `smith run` output (without its newline): a line
 // of the event stream (`--json-events`, see parseEventLine) or of the text.
 func ParseLine(line string) Event {
@@ -50,8 +53,8 @@ func ParseLine(line string) Event {
 		case marks.Failed:
 			return Event{Kind: Finish, Task: task, Status: Failed, Text: rest}
 		case marks.Passed:
-			if rest == fromCache {
-				return Event{Kind: Finish, Task: task, Status: Cached, Text: rest}
+			if rest == fromCache || rest == fromRemoteCache {
+				return Event{Kind: Finish, Task: task, Status: Cached, Text: rest, Remote: rest == fromRemoteCache}
 			}
 			d, _ := time.ParseDuration(rest)
 			return Event{Kind: Finish, Task: task, Status: Passed, Duration: d, Text: rest}

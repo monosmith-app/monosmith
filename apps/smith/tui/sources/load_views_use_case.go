@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/remotesync"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
@@ -80,6 +81,22 @@ type Sources struct {
 	CompletionWanted func() bool
 	// DeclineCompletion remembers "Not now" in the preferences of the person.
 	DeclineCompletion func()
+	// RemoteSet says, from smith.toml and the environment only, whether a
+	// remote cache is set; it asks no network. Nil means never.
+	RemoteSet func() bool
+	// RemoteStatus asks the remote cache, with a short timeout, whether it
+	// answers and accepts the credentials (StateNone when no remote is set).
+	// Nil outside a workspace.
+	RemoteStatus func() remotesync.Status
+	// RemotePending counts, with a cap and a timeout, the local cache entries
+	// the remote cache lacks. Nil outside a workspace.
+	RemotePending func() RemotePending
+}
+
+// RemotePending is the count of the local entries the remote cache lacks.
+type RemotePending struct {
+	Pending remotesync.Pending
+	Err     error
 }
 
 // ProjectsLoaded is the workspace's projects, loaded in the background.
@@ -170,7 +187,10 @@ func WorkspaceSources(dir, version string) Sources {
 			}
 			return depsrepair.Apply(ctx, offer, kind, depsrepair.SessionPorts(s), out)
 		},
-		Plan: func(argv []string) []string { return planTasks(open, argv) },
+		Plan:          func(argv []string) []string { return planTasks(open, argv) },
+		RemoteSet:     func() bool { return remoteSet(dir) },
+		RemoteStatus:  func() remotesync.Status { return probeRemote(dir) },
+		RemotePending: func() RemotePending { return countPending(dir) },
 		Doctor: func() doctorview.Result {
 			s, err := open()
 			if err != nil {

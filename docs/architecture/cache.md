@@ -28,6 +28,7 @@ sequenceDiagram
   R->>K: inputs(task, keys of dependencies)
   K-->>R: KeyInputs
   R->>R: key = SHA-256(encode(KeyInputs))
+  R->>L: HasLocally ac/key (taskcache.SourceOf: local or remote)
   R->>C: Lookup(key)
   C->>L: Get ac/key
   alt local miss and a remote is configured
@@ -37,7 +38,7 @@ sequenceDiagram
   alt entry found and every blob present (HIT)
     C-->>R: Entry
     R->>C: Restore(entry): replace the output directories, return the log
-    R->>R: replay the log, print "from cache"
+    R->>R: replay the log, print "from cache" or "from remote cache"
   else no entry (MISS)
     R->>R: remove the output directories, run the command
     R->>C: Save(key, outputs, log, inputs) only if exit code 0
@@ -242,6 +243,14 @@ when the store is over its limit or holds entries that can never hit, from a loo
   or `pull_request_target`, `BUILD_REASON` is `PullRequest`, `CI_PIPELINE_SOURCE` is
   `merge_request_event`).
 - `last/` never leaves the machine: it exists to explain misses on this one.
+- **Which tier served a hit.** Before the lookup the runner asks `taskcache.SourceOf`, which
+  unwraps the run's write meter and asks `Tiered.HasLocally`. A hit whose entry was not local is
+  `source: remote`, and the run says `from remote cache` ([ADR 0095](decisions/0095-the-remote-cache-says-what-it-did-and-can-be-filled.md)).
+- **Seeing and filling the remote** (package `remotesync`, no session): `Probe` asks `HEAD
+  ac/000…0` and reads 2xx or 404 as connected, 401 or 403 as refused, anything else or a
+  timeout as unreachable. `CountUnpushed` asks `HEAD` for each local entry, capped in number,
+  parallelism and time. `Push` uploads what the remote lacks through `remotecache.Upload`,
+  the one function that signs a remote write, so a pushed entry is signed as a run signs it.
 
 **Trust.** A remote store is somewhere anyone with write access to the bucket could poison. So
 every object is `signature || content`, where the signature is HMAC-SHA256 over

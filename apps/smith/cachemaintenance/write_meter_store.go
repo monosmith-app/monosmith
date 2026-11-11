@@ -33,6 +33,10 @@ func (m *WriteMeter) Put(kind taskcache.Kind, key string, content io.Reader) err
 	return err
 }
 
+// Unwrap returns the storage the meter wraps, so taskcache.SourceOf can reach
+// a tiered store behind it.
+func (m *WriteMeter) Unwrap() taskcache.Storage { return m.Storage }
+
 // Bytes is what the run has stored so far.
 func (m *WriteMeter) Bytes() int64 { return m.bytes.Load() }
 

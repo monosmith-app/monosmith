@@ -2,9 +2,10 @@
 
 `smith cache` looks after the local task cache: the folder where smith keeps the results of
 tasks that ran, so that the next run can replay them. It shows what the cache holds, trims it
-to its size limit, deletes it, and checks it for damage. It acts on the cache on this
-machine only; the shared [remote cache](../reference/tasks-and-cache.md#remote-cache) is never
-read, pruned or deleted by it.
+to its size limit, deletes it, and checks it for damage. Those commands act on the cache on
+this machine only. [`smith cache push`](cache-push.md) is the one that writes to the shared
+[remote cache](../reference/tasks-and-cache.md#remote-cache): it uploads the local entries
+the remote lacks. Nothing here prunes the remote.
 
 You rarely need to run it. smith keeps the cache under `[cache] max_size_mb` by itself (see
 below); these commands are for looking, for trimming sooner or smaller, and for repairing a
@@ -18,6 +19,8 @@ cache after a crash or a full disk.
 - After a crash, a full disk or a `smith doctor` warning about unusable entries:
   [`smith cache verify`](cache-verify.md).
 - To use a remote cache: [`smith cache setup`](cache-setup.md) guides you through it, and [`smith cache key`](cache-key.md) makes the key it needs.
+- To send the remote cache what this machine holds and it lacks (an upload that failed, a new
+  remote): [`smith cache push`](cache-push.md).
 
 ## Subcommands
 
@@ -31,6 +34,7 @@ Usage: `smith cache <command>`
 | `smith cache clear` | Delete the local cache (the remote cache is not touched) |
 | `smith cache key` | Make a key (SMITH_CACHE_KEY) for the remote cache and copy it, unseen |
 | `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
+| `smith cache push` | Upload every local cache entry the remote cache does not hold |
 | `smith cache setup` | Set up the remote cache step by step: where, the key, and each CI provider's secrets |
 | `smith cache status` | Show the local cache: where it is, how big, how full, and the largest entries |
 | `smith cache verify` | Check the local cache for damage; --fix removes what is broken |

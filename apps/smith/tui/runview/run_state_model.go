@@ -23,6 +23,8 @@ type Task struct {
 	Started  time.Time
 	Duration time.Duration
 	Reason   string
+	// Remote is true for a cached task that the remote cache served.
+	Remote bool
 	// Log is what the task wrote.
 	Log []string
 	// order is the first-seen position, to keep the list stable.
@@ -102,8 +104,12 @@ func (r *Run) Feed(line string, now time.Time) Event {
 			t.Started = now
 		}
 		t.Status, t.Duration, t.Reason = ev.Status, ev.Duration, ev.Text
+		t.Remote = ev.Status == Cached && ev.Remote
 		if ev.Status == Cached {
 			t.Reason = ""
+			if t.Remote {
+				t.Reason = words.Say("runview.reason.remote")
+			}
 		}
 		if ev.Status == Failed && t.Reason == "" {
 			t.Reason = "failed"

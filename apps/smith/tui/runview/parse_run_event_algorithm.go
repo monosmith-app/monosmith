@@ -45,7 +45,11 @@ func parseEventLine(line string) (Event, bool) {
 		case runevents.Failed:
 			return Event{Kind: Finish, Task: e.Task, Status: Failed, Text: e.Reason, Duration: dur, Display: strings.TrimSpace(e.Task + " × " + e.Reason)}, true
 		case runevents.Cached:
-			return Event{Kind: Finish, Task: e.Task, Status: Cached, Text: fromCache, Display: e.Task + " ✓ " + fromCache}, true
+			label := fromCache
+			if e.Source == "remote" {
+				label = fromRemoteCache
+			}
+			return Event{Kind: Finish, Task: e.Task, Status: Cached, Text: label, Remote: label == fromRemoteCache, Display: e.Task + " ✓ " + label}, true
 		case runevents.Skipped:
 			return Event{Kind: Skip, Task: e.Task, Status: Skipped, Text: e.Reason, Display: skipLine(e.Task, e.Reason)}, true
 		}
@@ -63,6 +67,9 @@ func parseEventLine(line string) (Event, bool) {
 		}
 		took := (time.Duration(s.DurationMs) * time.Millisecond).String()
 		text := words.Say("runview.summary", "mark", mark, "done", done, "total", total, "cached", s.Cached, "took", took)
+		if s.CachedRemote > 0 {
+			text = words.Say("runview.summary_remote", "mark", mark, "done", done, "total", total, "cached", s.Cached, "remote", s.CachedRemote, "took", took)
+		}
 		return Event{Kind: Summary, Done: done, Total: total, OK: ok, Text: text, Display: text}, true
 	}
 	return Event{}, false

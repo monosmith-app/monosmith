@@ -100,7 +100,8 @@ func (s *Shell) cacheEvent(msg cacheMsg) tea.Cmd {
 		}
 		var reload tea.Cmd
 		s.settings, reload = s.settings.Reload()
-		return reload
+		// The remote may be new or changed: ask it again.
+		return tea.Batch(reload, s.checkRemote())
 	}
 	m := s.cache.Handle(msg.ev, s.now())
 	s.cache = &m

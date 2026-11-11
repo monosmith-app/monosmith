@@ -18,13 +18,15 @@ func Command() *cobra.Command {
 smith keeps the cache under [cache] max_size_mb by itself, after runs that
 stored results. These commands show what is in it, trim it now, delete it, or
 check it for damage. They act on this machine's cache and never on the remote
-one. `+"`key`"+` makes the key a remote cache needs and `+"`setup`"+` guides you through
-setting the remote cache up.`,
+one. ` + "`push`" + ` uploads the local entries the remote cache lacks, ` + "`key`" + ` makes the
+key a remote cache needs and ` + "`setup`" + ` guides you through setting the remote
+cache up.`,
 		Example: `  smith cache status
   smith cache prune --dry-run
-  smith cache verify --fix`,
+  smith cache verify --fix
+  smith cache push --dry-run`,
 	}
-	cmd.AddCommand(statusCommand(), pruneCommand(), clearCommand(), verifyCommand(), keyCommand(), setupCommand())
+	cmd.AddCommand(statusCommand(), pruneCommand(), clearCommand(), verifyCommand(), pushCommand(), keyCommand(), setupCommand())
 	return cmd
 }
 
