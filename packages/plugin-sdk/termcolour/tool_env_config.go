@@ -6,11 +6,12 @@ var colourEnv = []string{
 	// An inherited NO_COLOR (from an outer plain smith) is cleared: the
 	// convention reads an empty value as unset.
 	"NO_COLOR=",
-	// Node: chalk and supports-color (jest, vitest, eslint, pnpm, yarn, mocha);
-	// Symfony Console 6.2+ (composer); many others.
+	// Node: chalk and supports-color (jest, vitest, eslint, pnpm, yarn, mocha,
+	// node --test); ruff; Symfony Console 6.2+ (composer); many others.
+	// CLICOLOR_FORCE is left out on purpose: Go's terminal libraries
+	// (termenv, colorprofile, so lipgloss) obey it, and a Go test suite that
+	// checks rendered text would then see colour codes.
 	"FORCE_COLOR=1",
-	// The CLICOLOR convention: Rust's anstream (ruff, uv), CMake, Ninja.
-	"CLICOLOR_FORCE=1",
 	// npm's own output (its color setting defaults to "only on a terminal").
 	"npm_config_color=always",
 	// cargo, and rustc and clippy through it.

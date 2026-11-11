@@ -325,11 +325,11 @@ Pipelines and GitLab, and in a terminal. `smith run --json`, `--json-events` (se
 MCP server and the editor engine are always plain.
 
 - **The tool's own colour.** The task's environment gets `FORCE_COLOR=1` (Node: jest, vitest,
-  eslint, pnpm, the `node --test` runner), `CLICOLOR_FORCE=1` (ruff, uv, CMake),
-  `npm_config_color=always`, `CARGO_TERM_COLOR=always`, `PY_COLORS=1` (pytest),
+  eslint, pnpm, the `node --test` runner; ruff), `npm_config_color=always`, `CARGO_TERM_COLOR=always`, `PY_COLORS=1` (pytest),
   `PYTHON_COLORS=1`, `MYPY_FORCE_COLOR=1` and
   `DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1`. A plain run gets `NO_COLOR=1` and
-  the same variables switched off instead.
+  the same variables switched off instead. smith does not set `CLICOLOR_FORCE=1`: Go's terminal
+  libraries obey it, so a Go test that checks rendered text would see colour codes.
 - **smith paint.** A tool with no colour of its own in a pipe (`go test`, the Rust test
   harness, MSBuild and `tsc` errors) has its result lines painted: pass green, fail and error
   red, warning yellow, skipped dim. smith paints a line only when it has no colour already, and

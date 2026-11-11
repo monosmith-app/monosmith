@@ -20,10 +20,12 @@ engine, every parser (failure hint, CI tail, test counts, annotations, job summa
    own text. `termcolour.ToolWanted` adds `SMITH_TOOL_COLOR`, which smith sets for the processes
    whose stdout is a pipe it owns: its plugins and the child smith of the TUI.
 2. A run that streams to a person who sees colour sets the colour variables in each task's
-   environment (`FORCE_COLOR=1`, `CLICOLOR_FORCE=1`, `npm_config_color=always`,
-   `CARGO_TERM_COLOR=always`, `PY_COLORS=1`, `PYTHON_COLORS=1`, `MYPY_FORCE_COLOR=1`,
-   `DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1`). A plain run sets `NO_COLOR=1` and the
-   same variables off. They are not the task's declared env, so they never join the cache key.
+   environment (`FORCE_COLOR=1`, `npm_config_color=always`, `CARGO_TERM_COLOR=always`,
+   `PY_COLORS=1`, `PYTHON_COLORS=1`, `MYPY_FORCE_COLOR=1`,
+   `DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1`) and clears `NO_COLOR`. A plain run
+   sets `NO_COLOR=1` and the same variables off. They are not the task's declared env, so they
+   never join the cache key. `CLICOLOR_FORCE=1` is not set: Go's terminal libraries (termenv,
+   colorprofile, lipgloss) obey it, and smith's own TUI tests failed in CI when it was set.
 3. Only SGR codes pass to a colour destination; every other escape sequence is removed. A plain
    destination gets no escape code at all.
 4. smith paint wraps a recognised result line in one palette colour when the line has no colour
