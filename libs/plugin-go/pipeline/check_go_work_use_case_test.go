@@ -52,8 +52,8 @@ func TestCIInstallsGolangciLintOnlyWhenUsed(t *testing.T) {
 		{Name: "a", Root: "apps/a", Tasks: map[string]protocol.Task{"lint": lint}},
 		{Name: "b", Root: "libs/b", Tasks: map[string]protocol.Task{"lint": lint}},
 	}})
-	if len(res.Setup) != 2 || res.Setup[1].Command[2] != "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@"+GolangciLintVersion {
-		t.Fatalf("one pinned install: %+v", res.Setup)
+	if len(res.Setup) != 2 || !reflect.DeepEqual(res.Setup[1].Command, ciLintInstallCommand) {
+		t.Fatalf("one install for every module: %+v", res.Setup)
 	}
 }
 

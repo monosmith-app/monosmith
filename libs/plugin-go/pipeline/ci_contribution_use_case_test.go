@@ -56,3 +56,12 @@ func TestWithoutGoWorkTheToolchainIsTheNewestGoModVersionNotTheDefault(t *testin
 		t.Errorf("no go.work and no go.mod: %q, want the default", v)
 	}
 }
+
+func TestCIInstallsGolangciLintIntoTheFolderTheLintTaskPutsOnPath(t *testing.T) {
+	projects := []protocol.Project{{Name: "api", Root: "apps/api", Tasks: map[string]protocol.Task{"lint": {Command: []string{"golangci-lint", "run"}}}}}
+	setup := CI(t.TempDir(), protocol.CIParams{Projects: projects}).Setup
+	want := protocol.Step{Name: "Install golangci-lint", Command: []string{"{smith}", "tools", "install", "golangci-lint", "--manager", "go-managed"}, Blocking: true}
+	if len(setup) != 2 || !reflect.DeepEqual(setup[1], want) {
+		t.Errorf("a plain go install lands off PATH on Azure Pipelines: %+v", setup)
+	}
+}
