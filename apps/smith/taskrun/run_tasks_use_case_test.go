@@ -35,6 +35,13 @@ func TestMain(m *testing.M) {
 				os.Exit(6)
 			}
 		}
+		if arg == "colour" {
+			// A go test result line, a line the tool coloured itself with a
+			// cursor code in front, and what the environment asked for.
+			fmt.Println("--- FAIL: TestX (0.00s)")
+			fmt.Println("\x1b[2K\x1b[1G\x1b[31mred by the tool\x1b[0m")
+			fmt.Println("FORCE_COLOR=" + os.Getenv("FORCE_COLOR") + " NO_COLOR=" + os.Getenv("NO_COLOR"))
+		}
 		if arg == "sleep" {
 			time.Sleep(time.Minute)
 		}

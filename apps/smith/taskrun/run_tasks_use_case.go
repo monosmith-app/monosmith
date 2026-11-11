@@ -19,6 +19,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/shiplink"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
@@ -58,6 +59,11 @@ type Options struct {
 	// Installable reports whether smith tools install knows a tool by name;
 	// see Spec.Installable.
 	Installable func(name string) bool
+	// Colour says the output streams to a person who sees colour
+	// (termcolour.ToolWanted): tools are asked for colour, only SGR codes
+	// pass and smith paint applies. Off (the default), tools are asked for
+	// plain text and every escape code is removed. It never joins a cache key.
+	Colour bool
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -177,7 +183,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 				if r.opts.Quiet {
 					replayTo = io.Discard
 				}
-				Replay(prefix, log, replayTo, &r.outMu, r.outputOf(t.ID))
+				Replay(prefix, log, replayTo, &r.outMu, r.outputOf(t.ID), r.opts.Colour)
 				r.say("%s ✓ from cache\n", t.ID)
 				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration}
 			}
@@ -201,6 +207,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		_ = os.MkdirAll(filepath.Join(r.opts.Root, filepath.FromSlash(dropDir)), 0o755)
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
+	out.colour = r.opts.Colour
 	out.onLine = r.outputOf(t.ID)
 	out.hold = r.opts.Quiet
 	began := time.Now()
@@ -230,7 +237,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		}
 		out.Release()
 		r.say("%s × %s\n", t.ID, reason)
-		if hint := FailureHint(out.log.String(), r.opts.Root); hint != "" {
+		if hint := FailureHint(string(out.Plain()), r.opts.Root); hint != "" {
 			r.say("%s → %s\n", t.ID, hint)
 		}
 		return Result{Task: t.ID, Status: Failed, Key: key, Duration: took, Reason: reason}
@@ -242,7 +249,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		}
 	}
 	if t.Def.Cache && r.opts.Storage != nil {
-		if err := taskcache.Save(r.opts.Storage, r.opts.Root, key, t.ID, t.Project.Root, t.Def.Outputs, out.log.Bytes(), took, &inputs); err != nil {
+		if err := taskcache.Save(r.opts.Storage, r.opts.Root, key, t.ID, t.Project.Root, t.Def.Outputs, out.Plain(), took, &inputs); err != nil {
 			r.say("%s ! not cached: %v\n", t.ID, err)
 		}
 	}
@@ -290,8 +297,15 @@ func (r *runner) cwd(t *taskgraph.Task) string {
 	return filepath.Join(r.opts.Root, filepath.FromSlash(dir))
 }
 
+// env is the task's environment. The colour entries come before the task's
+// own env, which may override them; they never join the cache key, which
+// takes only the task's own env (taskcache.KeyInputs.Env).
 func (r *runner) env(t *taskgraph.Task, key string) []string {
 	extra := map[string]string{"SMITH_TASK": t.ID, "SMITH_TASK_KEY": key, "SMITH_WORKSPACE_ROOT": r.opts.Root}
+	for _, kv := range append(termcolour.Env(r.opts.Colour), termcolour.ToolEntry(r.opts.Colour)) {
+		k, v, _ := strings.Cut(kv, "=")
+		extra[k] = v
+	}
 	// The workspace's Python environment comes first on PATH, as
 	// node_modules/.bin does for npm scripts, so `python` is the venv's.
 	if bin := VenvBin(r.opts.Root); bin != "" {

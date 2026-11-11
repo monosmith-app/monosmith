@@ -50,6 +50,7 @@ func (r *runner) startServe(ctx context.Context, t *taskgraph.Task, key string) 
 	sctx, cancel := context.WithCancel(ctx)
 	app := &served{id: st.ID, cancel: cancel, exited: make(chan servedExit, 1)}
 	out := newPrefixWriter(st.ID+" │ ", r.opts.Out, &r.outMu)
+	out.colour = r.opts.Colour
 	r.say("%s ▶ %s (served for %s)\n", st.ID, strings.Join(st.Def.Command, " "), t.ID)
 	go func() {
 		code, err := RunProcess(sctx, Spec{Argv: r.expand(st, st.Def.Command), Dir: r.cwd(st), Env: r.env(st, key), Out: out, Installable: r.opts.Installable})

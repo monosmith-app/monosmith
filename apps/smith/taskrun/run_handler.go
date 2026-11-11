@@ -64,6 +64,8 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			// shows every log.
 			req.Quiet = !verbose && len(fixed) == 1 && fixed[0] == "build"
 			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
+			// --json and --json-events are read by programs: they stay plain.
+			req.Colour = !asJSON && !jsonEvents && ToolColour(req.Out)
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
 				// output arrives as task.output events.

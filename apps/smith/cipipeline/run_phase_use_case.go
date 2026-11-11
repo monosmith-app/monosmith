@@ -223,7 +223,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		// Native projects are verified by the native job, on every OS.
 		outputs := newTaskOutputs()
 		tee := io.MultiWriter(out, outputs)
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: nativeExcluded, Affected: base != "", Base: base, NoCache: run.NoCache, Release: true, Out: tee})
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: nativeExcluded, Affected: base != "", Base: base, NoCache: run.NoCache, Release: true, Out: tee, Colour: taskrun.ToolColour(os.Stdout)})
 		if err != nil {
 			return err
 		}
@@ -288,7 +288,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		log.banner(packIntro(s)...)
 		// Native projects are packed by the native job, on each OS.
 		outputs := newTaskOutputs()
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{PackTask}, Projects: nativeExcluded, Release: true, Out: io.MultiWriter(out, outputs)})
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{PackTask}, Projects: nativeExcluded, Release: true, Out: io.MultiWriter(out, outputs), Colour: taskrun.ToolColour(os.Stdout)})
 		if err != nil {
 			return err
 		}
