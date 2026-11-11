@@ -106,6 +106,10 @@ The subcommand [`smith release pub`](release-pub.md) publishes a Dart app to pub
 [`smith release assets`](release-assets.md) builds the files of an app whose `[release]` has a
 `build` command and uploads them to its GitHub Release.
 
+Before it publishes a project, `smith release` runs its `build` task with `--release`: a Rust
+app builds `cargo build --release`, a .NET app `-c Release`
+([the release profile](../reference/tasks-and-cache.md#the-release-profile)).
+
 Interactions:
 
 - `--dry-run` computes the plan and prints it; it publishes nothing, tags nothing and does

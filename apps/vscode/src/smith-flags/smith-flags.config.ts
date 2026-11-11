@@ -10,6 +10,7 @@ export const flag = {
   dryRun:    '--dry-run',
   json:      '--json',
   commit:    '--commit',
+  release:   '--release',
 } as const
 
 /** The long form of each shared flag. */
@@ -22,4 +23,5 @@ export const longFlag = {
   dryRun:    '--dry-run',
   json:      '--json',
   commit:    '--commit',
+  release:   '--release',
 } as const

@@ -51,4 +51,10 @@ object SmithFlagsConfig {
 
     /** The long form of [COMMIT]. */
     const val COMMIT_LONG = "--commit"
+
+    /** Build the optimised profile (cargo --release, dotnet -c Release); a tool without profiles ignores it. */
+    const val RELEASE = "--release"
+
+    /** The long form of [RELEASE]. */
+    const val RELEASE_LONG = "--release"
 }

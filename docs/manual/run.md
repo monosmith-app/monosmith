@@ -24,7 +24,7 @@ For the four common tasks use their shortcut; for several apps at once with pref
 ## Synopsis
 
 ```sh
-smith run <task>... [-p <projects>] [--affected [--base <branch>]] [--parallel <n>] [--bail] [--no-cache] [--json | --json-events]
+smith run <task>... [-p <projects>] [--affected [--base <branch>]] [--parallel <n>] [--bail] [--no-cache] [--release] [--json | --json-events]
 ```
 
 ## Arguments and flags
@@ -48,6 +48,7 @@ Usage: `smith run <task>... [flags]`
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
 | `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--release` | boolean | off | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it |
 | `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end run -->
@@ -82,6 +83,10 @@ Interactions:
   output arrives as `task.output` events). The events are the ones
   [`smith serve`](serve.md) sends.
 - `--no-cache` runs every task even when a cached result exists.
+- `--release` runs the release profile of each task that has one: `cargo ... --release`,
+  `dotnet ... -c Release`, Android `assembleRelease`. Other tasks run as usual. Each profile
+  has its own cache entry, and `dist/<project dir>` holds the files of the last build
+  ([the release profile](../reference/tasks-and-cache.md#the-release-profile)).
 - `--bail` stops starting tasks after the first failure.
 - `--parallel` is a task count, default the number of CPUs.
 

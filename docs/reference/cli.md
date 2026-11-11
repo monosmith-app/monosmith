@@ -354,6 +354,7 @@ Usage: `smith run <task>... [flags]`
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--release` | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it | off |
 | `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end run -->
@@ -392,6 +393,7 @@ Usage: `smith build [project]... [flags]`
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--release` | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it | off |
 | `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end build -->
@@ -415,6 +417,7 @@ Usage: `smith test [project]... [flags]`
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--release` | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it | off |
 | `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end test -->
@@ -438,6 +441,7 @@ Usage: `smith lint [project]... [flags]`
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--release` | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it | off |
 | `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end lint -->
@@ -461,6 +465,7 @@ Usage: `smith typecheck [project]... [flags]`
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--release` | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it | off |
 | `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end typecheck -->

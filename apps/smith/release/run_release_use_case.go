@@ -234,15 +234,15 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 	return nil
 }
 
-// buildProject runs the project's build task before it is published or packed.
-// noCache is set when the version was stamped into its files, which the cache
+// buildProject runs the project's build task before it is published or packed,
+// in its release profile (smith build --release, ADR 0092). noCache is set when the version was stamped into its files, which the cache
 // key does not see.
 func buildProject(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, opts Options, noCache bool, say func(string, ...any)) error {
 	if _, has := p.Tasks["build"]; !has {
 		return nil
 	}
 	say("building %s", item.Next)
-	summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"build"}, Projects: []string{p.Name}, Out: opts.Out, NoCache: noCache})
+	summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"build"}, Projects: []string{p.Name}, Out: opts.Out, NoCache: noCache, Release: true})
 	if err != nil {
 		return err
 	}

@@ -48,7 +48,7 @@ func Run(ctx context.Context, s *session.Session, out io.Writer) error {
 	if err := os.MkdirAll(filepath.Join(s.Root, "dist", "drop"), 0o755); err != nil {
 		return err
 	}
-	summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: Tasks, Projects: []string{"tag:" + release.NativeTag}, Out: out})
+	summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: Tasks, Projects: []string{"tag:" + release.NativeTag}, Release: true, Out: out})
 	if err != nil {
 		return err
 	}

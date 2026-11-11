@@ -79,6 +79,16 @@
       "near": ["git-commit", "commit-changes"],
       "meaning": "commit the change as one operation so smith undo can revert it",
       "commands": []
+    },
+    {
+      "id": "release",
+      "flag": "release",
+      "short": "",
+      "type": "bool",
+      "synonyms": [],
+      "near": ["prod", "production", "optimized", "optimised", "release-mode"],
+      "meaning": "build the optimised profile (cargo --release, dotnet -c Release); a tool without profiles ignores it",
+      "commands": ["build", "lint", "run", "test", "typecheck"]
     }
   ],
   "exceptions": [

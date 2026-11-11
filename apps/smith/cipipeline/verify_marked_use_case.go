@@ -30,7 +30,7 @@ func verifyMarked(ctx context.Context, s *session.Session, base string, out io.W
 	sort.Strings(names)
 	var results []taskrun.Result
 	for _, name := range names {
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{name}, Projects: byTask[name], Affected: base != "", Base: base, Out: out})
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{name}, Projects: byTask[name], Affected: base != "", Base: base, Release: true, Out: out})
 		if err != nil {
 			return results, err
 		}
