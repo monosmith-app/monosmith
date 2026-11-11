@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -120,6 +121,60 @@ func TestTheColourVariablesNeverJoinTheCacheKey(t *testing.T) {
 	}
 	if len(plainIn.Env) != len(colourIn.Env) {
 		t.Errorf("KeyInputs.Env differs: %v vs %v", plainIn.Env, colourIn.Env)
+	}
+}
+
+func TestRunColourKeepsWhatProgramsReadPlain(t *testing.T) {
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	always := func(int) bool { return true }
+	tui := env(map[string]string{termcolour.ToolColourEnv: "1"})
+	cases := []struct {
+		name              string
+		getenv            func(string) string
+		asJSON, jsonEvent bool
+		want              bool
+	}{
+		{"--json in a terminal", env(nil), true, false, false},
+		{"--json handed colour", tui, true, false, false},
+		{"--json-events in a terminal", env(nil), false, true, false},
+		{"--json-events forced by the shell", env(map[string]string{"FORCE_COLOR": "1"}), false, true, false},
+		{"--json-events for the TUI", tui, false, true, true},
+		{"--json-events for the TUI, NO_COLOR", env(map[string]string{termcolour.ToolColourEnv: "1", "NO_COLOR": "1"}), false, true, false},
+		{"text in a terminal", env(nil), false, false, true},
+		{"text, NO_COLOR", env(map[string]string{"NO_COLOR": "1"}), false, false, false},
+	}
+	for _, c := range cases {
+		if got := runColour(c.getenv, c.asJSON, c.jsonEvent, os.Stdout, always); got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestTheEventLineIsPlainAndStyledCarriesTheColour(t *testing.T) {
+	f := newFixture(t, "colour")
+	g, _ := taskgraph.Build(f.pg, []string{"core"}, []string{"build"})
+	got := &collected{}
+	Run(context.Background(), g, Options{Root: f.root, Files: f.files, Projects: f.pg, Out: &bytes.Buffer{}, ToolVersion: "test", Colour: true,
+		Events: runevents.NewRunStream("r1", got)})
+	var styled []string
+	for _, e := range got.events {
+		if e.Event == runevents.TaskOutput && e.Styled != "" {
+			styled = append(styled, e.Styled)
+			if strings.Contains(e.Line, "\x1b") || termcolour.Strip(e.Styled) != e.Line {
+				t.Errorf("line %q, styled %q", e.Line, e.Styled)
+			}
+		}
+	}
+	if !slices.Contains(styled, termcolour.Wrap("--- FAIL: TestX (0.00s)", termcolour.Red)) || !slices.Contains(styled, "\x1b[31mred by the tool\x1b[0m") {
+		t.Errorf("styled lines %q", styled)
+	}
+	plain := &collected{}
+	Run(context.Background(), g, Options{Root: f.root, Files: f.files, Projects: f.pg, Out: &bytes.Buffer{}, ToolVersion: "test",
+		Events: runevents.NewRunStream("r2", plain)})
+	for _, e := range plain.events {
+		if e.Styled != "" {
+			t.Errorf("a run without colour sent styled %q", e.Styled)
+		}
 	}
 }
 

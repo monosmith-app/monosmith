@@ -47,6 +47,18 @@ func TestPaintNeverChangesTheCharactersOfALine(t *testing.T) {
 	}
 }
 
+func TestLineEndsAColouredLineWithAReset(t *testing.T) {
+	if got := Line("\x1b[33mstill yellow", true); got != "\x1b[33mstill yellow\x1b[0m" {
+		t.Errorf("got %q", got)
+	}
+	if got := Line("\x1b[33my\x1b[m", true); got != "\x1b[33my\x1b[m" {
+		t.Errorf("a line that resets itself keeps its bytes: %q", got)
+	}
+	if got := Line("plain", true); got != "plain" {
+		t.Errorf("a plain line gets no reset: %q", got)
+	}
+}
+
 func TestLineIsPlainWhenColourIsOff(t *testing.T) {
 	if got := Line("\x1b[31m--- FAIL: TestX\x1b[0m", false); got != "--- FAIL: TestX" {
 		t.Errorf("got %q", got)

@@ -338,7 +338,13 @@ func (r *runner) outputOf(task string) func(string) {
 		return nil
 	}
 	return func(line string) {
-		r.opts.Events.Emit(runevents.Event{Event: runevents.TaskOutput, Task: task, Stream: runevents.Combined, Line: line})
+		plain, styled := termcolour.Strip(line), ""
+		if r.opts.Colour {
+			if s := termcolour.Line(line, true); s != plain {
+				styled = s
+			}
+		}
+		r.opts.Events.Emit(runevents.Event{Event: runevents.TaskOutput, Task: task, Stream: runevents.Combined, Line: plain, Styled: styled})
 	}
 }
 

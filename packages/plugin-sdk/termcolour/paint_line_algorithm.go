@@ -1,6 +1,9 @@
 package termcolour
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 // paintRules are the result lines smith paint recognises, first match wins.
 // They cover go test, which has no colour of its own, and the
@@ -43,15 +46,22 @@ func Paint(line string) string {
 }
 
 // Line prepares one line of tool output for its destination: with colour on,
-// only SGR codes stay and smith paint applies; with colour off, every escape
-// sequence goes.
+// only SGR codes stay, smith paint applies and a coloured line ends in a
+// reset, so its colour never runs on into the next line or a pane's border;
+// with colour off, every escape sequence goes.
 //
 // Parameters: line is one line of tool output; colour is the destination's
 // decision.
 // Returns: the line to write.
 func Line(line string, colour bool) string {
-	if colour {
-		return Paint(KeepSGR(line))
+	if !colour {
+		return Strip(line)
 	}
-	return Strip(line)
+	out := Paint(KeepSGR(line))
+	if HasSGR(out) && !strings.HasSuffix(out, reset) && !strings.HasSuffix(out, "\x1b[m") {
+		out += reset
+	}
+	return out
 }
+
+const reset = "\x1b[0m"

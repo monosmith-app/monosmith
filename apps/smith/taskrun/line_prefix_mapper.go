@@ -21,8 +21,8 @@ type prefixWriter struct {
 	// writes them. A quiet run holds a task's output until it knows the task failed.
 	hold bool
 	held bytes.Buffer
-	// onLine, when set, receives every line without its prefix and without
-	// escape codes, for the event stream.
+	// onLine, when set, receives every line as the tool wrote it, without its
+	// prefix, for the event stream (which keeps Line plain).
 	onLine func(string)
 	// colour is the destination's decision: on, a line keeps only its SGR
 	// codes and smith paint applies; off, every escape code goes.
@@ -67,7 +67,7 @@ func (w *prefixWriter) emit(line []byte) {
 	_, _ = io.WriteString(dest, termcolour.Line(text, w.colour))
 	_, _ = io.WriteString(dest, "\n")
 	if w.onLine != nil {
-		w.onLine(termcolour.Strip(text))
+		w.onLine(text)
 	}
 }
 
@@ -88,8 +88,8 @@ func (w *prefixWriter) Release() {
 // escape codes (stored by an older smith) is filtered like live output.
 //
 // Parameters: prefix starts every line; log is the cached log; out and mu are
-// the destination and its lock; onLine, when not nil, receives each plain
-// line; colour is the destination's colour decision.
+// the destination and its lock; onLine, when not nil, receives each line;
+// colour is the destination's colour decision.
 func Replay(prefix string, log []byte, out io.Writer, mu *sync.Mutex, onLine func(string), colour bool) {
 	w := newPrefixWriter(prefix, out, mu)
 	w.onLine = onLine

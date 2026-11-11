@@ -59,7 +59,12 @@ type Event struct {
 
 	// task.output
 	Stream Stream `json:"stream,omitempty"`
-	Line   string `json:"line,omitempty"`
+	// Line is always plain text, without escape codes.
+	Line string `json:"line,omitempty"`
+	// Styled is the same line with SGR colour codes (the tool's own colour
+	// and smith paint). It is set only when the line has colour and the run
+	// was handed tool colour (SMITH_TOOL_COLOR=1, as the TUI does).
+	Styled string `json:"styled,omitempty"`
 
 	// task.finished
 	Status     Status `json:"status,omitempty"`
