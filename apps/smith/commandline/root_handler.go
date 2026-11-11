@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/completioncommand"
+	"github.com/monosmith-app/monosmith/apps/smith/consolecolour"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
@@ -178,6 +179,8 @@ func canAsk(root *cobra.Command, args []string) bool {
 // interactive run (the interface, or smith doctor in a terminal) it offers,
 // once, to set up tab completion; see offerCompletion.
 func Execute(version string, args []string) int {
+	// The colour smith and its tools print renders in a classic Windows console too.
+	consolecolour.Enable()
 	if len(args) > 0 || !tui.Interactive() {
 		code := run(version, args)
 		if offersCompletionAfter(args) {
