@@ -240,6 +240,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Detail:  doctorchecks.Summary(outside, "; ", doctorchecks.ShownProblems),
 		Remedy:  "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin; or, for a folder a tool needs the output in (a go:embed folder), list it under [workspace] allowed_outputs",
 	})
+	out = append(out, sharedWorkOutputFinding(SharedWorkOutputs(s.Graph.Projects)))
 	out = append(out, doctorchecks.BuildWritesFinding(s))
 	out = append(out, outputOverlapFinding(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs, readConfigText(s.Root)))
 	out = append(out, doctorchecks.WebEnvironmentFindings(s.Root, s.Graph.Projects)...)

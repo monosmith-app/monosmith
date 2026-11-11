@@ -88,7 +88,8 @@ lists every check with its remedy.
   (`GITHUB_TOKEN`, `GH_TOKEN` or `gh auth login`) or a network; `SMITH_NO_UPDATE_CHECK=1`
   turns it off.
 - `the clone has full history`, `tracked files are not generated files`, `every build writes to
-  dist/` and `projects depend only on what the boundaries allow`.
+  dist/`, `no task caches a work folder other projects share` and `projects depend only on what
+  the boundaries allow`.
 - `package-lock.json holds the packages every platform needs`: a lockfile made on one OS that
   would fail `npm ci` on another. `smith doctor --fix` regenerates it. If `npm ci` still fails,
   list the missing packages in the root `devDependencies`; when `overrides` names one of them
@@ -161,7 +162,36 @@ git-ignored.
 | Maven | `dist/maven/<artifactId>` | `<build><directory>` of the module pom, else of the parent poms it names (default `../pom.xml` or its `relativePath`), else `target/` | the module `pom.xml`: sets `<build><directory>${project.basedir}/../../dist/maven/${project.artifactId}</directory>` |
 | Gradle (Kotlin and Groovy DSL) | `dist/gradle/<artifactId>` | `layout.buildDirectory` or `buildDir` in the module script, else `build/` | the module script only: adds or replaces `layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("dist/gradle/<id>"))` after the `plugins` block. `settings.gradle(.kts)` and `gradle/libs.versions.toml` are never touched |
 | CMake | `dist/<project dir>` | the `-B` of the configure task, and `binaryDir` of each configure preset in `CMakePresets.json` | `CMakePresets.json`: the `binaryDir` values (`${sourceDir}/../../dist/<project dir>`; with several presets `.../${presetName}`). A wrong `-B` in a task written by hand in `smith.toml` is reported with the manual step: smith does not rewrite a command line |
-| Go, Python, Dart | `go build -o`, `python -m build --outdir`, `dart compile -o` / `flutter build -o` into `dist/<project dir>` | the build task: a command that passes no output option, or one that names a folder outside `dist/` | nothing: the finding names the option to pass in `[projects.<name>.tasks.build]` of `smith.toml` |
+| Go, Python, Dart | `go build -o`, `python -m build --outdir`, `dart compile -o` / `flutter build -o` into `dist/<project dir>` | the build task: a command that passes no output option, or one that names a folder outside `dist/`; a task whose `outputs` do not hold the folder the command writes (a cache hit restores nothing) | nothing: the finding names the option to pass, or the outputs to list, in `[projects.<name>.tasks.build]` of `smith.toml` |
+
+#### Two folders: the work folder and the shipped folder
+
+A build has two folders (ADR 0092). The **shipped folder** `dist/<project dir>` holds what the
+project ships: the binary, the jar, the package. The **work folder** `dist/<tool>/...` holds the
+tool's intermediate files. Rust and .NET share one work folder among all projects (`dist/cargo`,
+`dist/dotnet`). A Maven or Gradle module has its own (`dist/maven/<artifactId>`,
+`dist/gradle/<id>`). Go, Python and Dart write straight to the shipped folder and have no work
+folder in `dist/`.
+
+Doctor checks both folders:
+
+- **The work folder is the one the build ships from.** A Rust crate links its program from
+  `dist/cargo/<profile>`, a .NET app from `dist/dotnet/bin/<project>/<configuration>` and a Maven
+  module its jar from `dist/maven/<artifactId>`. A `target-dir`, `ArtifactsPath` or
+  `<build><directory>` that names another folder, also one inside `dist/`, leaves the shipped
+  folder empty. Doctor reports it and offers the same move as above.
+- **The build task caches the shipped folder, and never a shared work folder.** A cache restore
+  empties each output folder first. If a crate's build listed `dist/cargo` as an output, a restore
+  would delete the build state of every other crate. Doctor fails the check `<project> caches only
+  dist/<project dir>` when a build task lists `dist/cargo` or `dist/dotnet` (or a folder in them,
+  or `dist/` itself) as an output. It also reports a build task that ships files but does not list
+  `dist/<project dir>`: a failure when the task is cached, else a warning. A module's own work
+  folder (`dist/maven/<artifactId>`) can stay an output, because no other project builds there.
+- **Across the workspace**, the check `no task caches a work folder other projects share` fails when
+  a task of any plugin lists a folder that another project ships from.
+
+These findings name the manual step: list only `dist/<project dir>` in the `outputs` of the task in
+`smith.toml`. smith does not rewrite them.
 
 The move is refused, with the reason and the manual step, when it would break something:
 

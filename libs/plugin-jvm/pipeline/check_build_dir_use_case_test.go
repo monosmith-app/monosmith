@@ -181,3 +181,31 @@ func TestGradleRefusesWithAWarningAndTheReason(t *testing.T) {
 		})
 	}
 }
+
+func TestMavenModuleThatBuildsElsewhereInDistGetsItsWorkFolder(t *testing.T) {
+	ws := jvmWorkspace(t, map[string]string{
+		"libs/kit/pom.xml": "<project>\n  <artifactId>kit</artifactId>\n  <build>\n    <directory>${project.basedir}/../../dist/libs/kit</directory>\n  </build>\n</project>\n",
+	})
+	f, _ := CheckBuildDir(ws, kitModule)
+	if len(f) != 1 || f[0].OK || f[0].Warning || !strings.Contains(f[0].Detail, "not into dist/maven/kit/") || !strings.Contains(f[0].Detail, "shipped folder stays empty") {
+		t.Fatalf("%+v", f)
+	}
+	firstMove(t, f[0])
+}
+
+func TestJvmBuildTaskThatShipsMustCacheTheShippedFolder(t *testing.T) {
+	ws := jvmWorkspace(t, map[string]string{
+		"apps/api/build.gradle.kts": "layout.buildDirectory = rootProject.layout.projectDirectory.dir(\"dist/gradle/api\")\n",
+	})
+	api := []protocol.Project{{Name: "api", Root: "apps/api", Tasks: map[string]protocol.Task{
+		"build": {Outputs: []string{"../../dist/gradle/api"}, Ship: []string{"../../dist/gradle/api/libs/*.jar"}, Cache: true},
+	}}}
+	f, _ := CheckBuildDir(ws, api)
+	if len(f) != 2 || !f[0].OK || f[1].OK || f[1].Warning || f[1].Problem != "does not cache dist/apps/api" {
+		t.Fatalf("%+v", f)
+	}
+	api[0].Tasks["build"] = protocol.Task{Outputs: []string{"../../dist/apps/api"}, Ship: []string{"../../dist/gradle/api/libs/*.jar"}, Cache: true}
+	if f, _ := CheckBuildDir(ws, api); len(f) != 1 || !f[0].OK {
+		t.Fatalf("the module's own work folder is not shared: %+v", f)
+	}
+}

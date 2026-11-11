@@ -132,3 +132,28 @@ func TestDotnetBuildDirLeavesAChainedPropsFileUnchecked(t *testing.T) {
 		t.Fatalf("nothing is guessed: %+v", f)
 	}
 }
+
+func TestDotnetBuildDirMovesAnArtifactsPathInDistThatIsNotTheSharedWorkFolder(t *testing.T) {
+	ws := dotnetWorkspace(t, map[string]string{
+		"src/App/App.csproj":    csproj,
+		"Directory.Build.props": "<Project><PropertyGroup><ArtifactsPath>$(MSBuildThisFileDirectory)dist/apps</ArtifactsPath></PropertyGroup></Project>",
+	})
+	f, _ := CheckBuildDir(ws, appProject)
+	if len(f) != 1 || f[0].OK || f[0].Warning || f[0].Fix == nil || !strings.Contains(f[0].Detail, "shipped folder stays empty") {
+		t.Fatalf("%+v", f)
+	}
+}
+
+func TestDotnetBuildDirRefusesTheSharedArtifactsFolderAsATaskOutput(t *testing.T) {
+	ws := dotnetWorkspace(t, map[string]string{
+		"src/App/App.csproj":    csproj,
+		"Directory.Build.props": "<Project><PropertyGroup><ArtifactsPath>$(MSBuildThisFileDirectory)dist/dotnet</ArtifactsPath></PropertyGroup></Project>",
+	})
+	app := []protocol.Project{{Name: "app", Root: "src/App", Tasks: map[string]protocol.Task{
+		"build": {Outputs: []string{"../../dist/dotnet/bin"}, Ship: []string{"../../dist/dotnet/bin/App/debug/*"}},
+	}}}
+	f, _ := CheckBuildDir(ws, app)
+	if len(f) != 2 || !f[0].OK || f[1].OK || f[1].Problem != "caches dist/dotnet/bin, a work folder other projects share" {
+		t.Fatalf("%+v", f)
+	}
+}

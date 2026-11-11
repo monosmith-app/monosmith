@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/buildrefs"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/taskoutput"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tomltext"
 )
 
@@ -34,11 +35,17 @@ type buildHome struct {
 	config, value string
 }
 
-// CheckBuildDir reports where the Rust crates build, from what cargo reads:
-// the target-dir of the nearest .cargo/config.toml (cargo reads the files from
-// the crate's folder up to the root), else the default target/ folder. The
-// CARGO_TARGET_DIR of the environment wins over both. A crate whose build
-// goes outside the workspace's dist/ is a finding with a fix that asks first.
+// CheckBuildDir checks both folders of a Rust build (ADR 0092). The work
+// folder is where cargo builds, from what cargo reads: the target-dir of the
+// nearest .cargo/config.toml (cargo reads the files from the crate's folder
+// up to the root), else the default target/ folder. The CARGO_TARGET_DIR of
+// the environment wins over both. It must be dist/cargo, the target folder
+// every crate shares, because an app crate ships its program from
+// dist/cargo/<profile>. A home that builds anywhere else, another folder
+// under dist/ included, is a finding with a fix that asks first. The shipped
+// folder is the one output of each crate's build task: a build task that
+// caches dist/cargo, or ships without caching dist/<project dir>, is a
+// finding with the manual step (taskoutput.CheckShippedOutput).
 //
 // Cargo.toml has no target-dir key (cargo reads it only from its
 // configuration), so the manifest is not read for it. A configuration that
@@ -65,6 +72,11 @@ func CheckBuildDir(workspaceRoot string, projects []protocol.Project) ([]protoco
 	var findings []protocol.Finding
 	for _, key := range order {
 		if f, ok := homeFinding(workspaceRoot, *homes[key], projects); ok {
+			findings = append(findings, f)
+		}
+	}
+	for _, p := range projects {
+		if f, ok := taskoutput.CheckShippedOutput(p, "build", cargoTargetDir); ok {
 			findings = append(findings, f)
 		}
 	}
@@ -133,7 +145,7 @@ func homeFinding(workspaceRoot string, h buildHome, projects []protocol.Project)
 		}
 		resolved = path.Clean(path.Join(base, filepath.ToSlash(where)))
 	}
-	if protocol.InBuildDir(resolved) {
+	if resolved == cargoTargetDir {
 		return filed(protocol.Finding{Check: check, OK: true}, h.crates), true
 	}
 	f := protocol.Finding{
@@ -142,6 +154,9 @@ func homeFinding(workspaceRoot string, h buildHome, projects []protocol.Project)
 		Remedy: "set [build] target-dir = \"" + relativeTarget(h.dir) + "\" in " + configFile(h) + ", or run smith doctor --fix",
 	}
 	f.Problem = f.Detail
+	if protocol.InBuildDir(resolved) {
+		f.Detail += ". An app crate ships its program from " + cargoTargetDir + "/<profile>, so its shipped folder stays empty"
+	}
 	if len(h.crates) == 1 {
 		f.Problem = strings.TrimPrefix(f.Detail, names+" ")
 	}

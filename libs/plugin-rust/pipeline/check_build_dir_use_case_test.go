@@ -129,3 +129,34 @@ func TestBuildDirLeavesAnUnreadableTargetDirUnchecked(t *testing.T) {
 		t.Fatalf("nothing is guessed: %+v", f)
 	}
 }
+
+func TestBuildDirMovesATargetDirInDistThatIsNotTheSharedWorkFolder(t *testing.T) {
+	ws := rustWorkspace(t, map[string]string{
+		"Cargo.toml":            "[workspace]\nmembers = [\"crates/kit\"]\n",
+		"crates/kit/Cargo.toml": "[package]\nname = \"kit\"\n",
+		".cargo/config.toml":    "[build]\ntarget-dir = \"dist/target\"\n",
+	})
+	findings, _ := CheckBuildDir(ws, kitCrate[:1])
+	if len(findings) != 1 || findings[0].OK || findings[0].Warning || findings[0].Fix == nil ||
+		!strings.Contains(findings[0].Detail, "into dist/target/") || !strings.Contains(findings[0].Detail, "shipped folder stays empty") {
+		t.Fatalf("%+v", findings)
+	}
+}
+
+func TestBuildDirRefusesTheSharedTargetFolderAsATaskOutput(t *testing.T) {
+	ws := rustWorkspace(t, map[string]string{
+		"Cargo.toml":          "[workspace]\nmembers = [\"apps/cli\"]\n",
+		"apps/cli/Cargo.toml": "[package]\nname = \"cli\"\n",
+		".cargo/config.toml":  "[build]\ntarget-dir = \"dist/cargo\"\n",
+	})
+	shipped := protocol.Task{Outputs: []string{"../../dist/apps/cli"}, Ship: []string{"../../dist/cargo/debug/cli"}}
+	cli := []protocol.Project{{Name: "cli", Root: "apps/cli", Tasks: map[string]protocol.Task{"build": shipped}}}
+	if findings, _ := CheckBuildDir(ws, cli); len(findings) != 1 || !findings[0].OK {
+		t.Fatalf("the shipped folder is the output: %+v", findings)
+	}
+	cli[0].Tasks["build"] = protocol.Task{Outputs: []string{"../../dist/cargo"}, Ship: shipped.Ship}
+	findings, _ := CheckBuildDir(ws, cli)
+	if len(findings) != 2 || findings[1].OK || findings[1].Project != "cli" || findings[1].Problem != "caches dist/cargo, a work folder other projects share" {
+		t.Fatalf("%+v", findings)
+	}
+}
