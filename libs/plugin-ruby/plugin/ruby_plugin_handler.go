@@ -104,6 +104,12 @@ func (r *Ruby) Uninstall(params protocol.UninstallParams) (protocol.DependencyRe
 	return dependencies.Uninstall(r.root, params)
 }
 
+// Repair implements serve.DependencyRepairer: the plans of the tool for each
+// repair kind it has. It only reads the disk; the host deletes and runs.
+func (r *Ruby) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(r.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (r *Ruby) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	return dependencies.Declared(r.root, params)

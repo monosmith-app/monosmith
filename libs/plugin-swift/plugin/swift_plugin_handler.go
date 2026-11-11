@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-swift/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-swift/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-swift/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-swift/pipeline"
@@ -20,6 +21,12 @@ type Swift struct {
 
 // New returns the plugin; version is reported in the handshake.
 func New(version string) *Swift { return &Swift{Version: version} }
+
+// Repair implements serve.DependencyRepairer: SwiftPM's plans for each repair
+// kind it has. It only reads the disk; the host deletes and runs.
+func (s *Swift) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(s.root, params)
+}
 
 // Describe implements serve.Plugin.
 func (s *Swift) Describe(params protocol.InitializeParams) (protocol.InitializeResult, error) {

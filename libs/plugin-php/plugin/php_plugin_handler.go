@@ -100,6 +100,12 @@ func (p *PHP) Uninstall(params protocol.UninstallParams) (protocol.DependencyRes
 	return dependencies.Uninstall(p.root, params)
 }
 
+// Repair implements serve.DependencyRepairer: the plans of the tool for each
+// repair kind it has. It only reads the disk; the host deletes and runs.
+func (p *PHP) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(p.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (p *PHP) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	return dependencies.Declared(p.root, params)

@@ -103,6 +103,12 @@ func (d *Dart) Uninstall(params protocol.UninstallParams) (protocol.DependencyRe
 	return dependencies.Uninstall(d.root, params)
 }
 
+// Repair implements serve.DependencyRepairer: the plans of the tool for each
+// repair kind it has. It only reads the disk; the host deletes and runs.
+func (d *Dart) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(d.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (d *Dart) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	return dependencies.Declared(d.root, params)

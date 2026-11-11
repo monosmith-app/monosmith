@@ -111,6 +111,12 @@ func (p *Python) Uninstall(params protocol.UninstallParams) (protocol.Dependency
 	return dependencies.Uninstall(p.root, params)
 }
 
+// Repair implements serve.DependencyRepairer: the plans of the tool for each
+// repair kind it has. It only reads the disk; the host deletes and runs.
+func (p *Python) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(p.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (p *Python) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	return dependencies.Declared(p.root, params)

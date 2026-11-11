@@ -101,6 +101,12 @@ func (g *Go) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, er
 	return linking.Unlink(g.root, params)
 }
 
+// Repair implements serve.DependencyRepairer: the plans of the tool for each
+// repair kind it has. It only reads the disk; the host deletes and runs.
+func (g *Go) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(g.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (g *Go) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	return dependencies.Declared(g.root, params)

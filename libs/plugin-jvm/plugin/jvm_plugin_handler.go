@@ -83,6 +83,12 @@ func (j *JVM) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(j.root, params), nil
 }
 
+// Repair implements serve.DependencyRepairer: the plans of the tool for each
+// repair kind it has. It only reads the disk; the host deletes and runs.
+func (j *JVM) Repair(params protocol.RepairParams) (protocol.RepairResult, error) {
+	return dependencies.Repair(j.root, params)
+}
+
 // Declared implements serve.DeclarationEditor.
 func (j *JVM) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
 	return dependencies.Declared(j.root, params)
