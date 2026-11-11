@@ -20,6 +20,15 @@ func TestPaintColoursTheResultLinesOfGoTestAndMSBuild(t *testing.T) {
 		{"--- PASS: TestX (0.00s)", Green},
 		{"ok  \tgithub.com/x/y\t0.012s", Green},
 		{"PASS", Green},
+		{"Build FAILED.", Red},
+		{"Build succeeded.", Green},
+		// The Rust test harness, as cargo test prints it into a pipe.
+		{"test tests::fails ... FAILED", Red},
+		{"test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s", Red},
+		{"thread 'tests::fails' (17300) panicked at src\\lib.rs:15:9:", Red},
+		{"test tests::later ... ignored", Dim},
+		{"test tests::passes ... ok", Green},
+		{"test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s", Green},
 	}
 	for _, c := range cases {
 		if got, want := Paint(c.line), Wrap(c.line, c.code); got != want {

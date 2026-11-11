@@ -6,8 +6,10 @@ import (
 )
 
 // paintRules are the result lines smith paint recognises, first match wins.
-// They cover go test, which has no colour of its own, and the
-// "error CODE:" and "warning CODE:" lines of tsc and MSBuild (dotnet build).
+// They cover go test and the Rust test harness (cargo passes its colour to
+// rustc, not to the tests it runs), which print plain text into a pipe, and
+// the "error CODE:" and "warning CODE:" lines of tsc and MSBuild (dotnet
+// build).
 var paintRules = []struct {
 	line *regexp.Regexp
 	code string
@@ -15,8 +17,15 @@ var paintRules = []struct {
 	{regexp.MustCompile(`^\s*--- FAIL`), Red},
 	{regexp.MustCompile(`^FAIL(\s|$)`), Red},
 	{regexp.MustCompile(`^(panic|fatal error): `), Red},
+	{regexp.MustCompile(`^test result: FAILED\.`), Red},
+	{regexp.MustCompile(`^test .+ \.\.\. FAILED$`), Red},
+	{regexp.MustCompile(`^thread '.*' (\(\d+\) )?panicked at `), Red},
+	{regexp.MustCompile(`^test .+ \.\.\. ignored`), Dim},
+	{regexp.MustCompile(`^test result: ok\.`), Green},
+	{regexp.MustCompile(`^test .+ \.\.\. ok$`), Green},
 	{regexp.MustCompile(`^\s*(error|Error|ERROR)(\[[\w-]+\])?: `), Red},
 	{regexp.MustCompile(`(^|\s)error [A-Z]+\d+: `), Red},
+	{regexp.MustCompile(`^Build FAILED\.$`), Red},
 	{regexp.MustCompile(`^\s*(warning|Warning|WARNING|WARN)(\[[\w-]+\])?: `), Yellow},
 	{regexp.MustCompile(`(^|\s)warning [A-Z]+\d+: `), Yellow},
 	{regexp.MustCompile(`^\s*--- SKIP`), Dim},
@@ -24,6 +33,7 @@ var paintRules = []struct {
 	{regexp.MustCompile(`^\s*--- PASS`), Green},
 	{regexp.MustCompile(`^ok\s+\S`), Green},
 	{regexp.MustCompile(`^PASS$`), Green},
+	{regexp.MustCompile(`^Build succeeded\.$`), Green},
 }
 
 // Paint is smith paint: it colours a result line it recognises (pass green,

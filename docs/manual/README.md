@@ -47,7 +47,8 @@ Python package). Paths in output are shortened.
 - **Missing arguments.** `smith new` and `smith add` ask for a missing argument in a terminal
   (and when `CI` is unset); everywhere else a missing argument is an error that gives an
   example.
-- **Colour and update checks.** `NO_COLOR` turns colour off. `SMITH_NO_UPDATE_CHECK` stops
+- **Colour and update checks.** `NO_COLOR` turns colour off, also for the tools smith runs
+  ([tool colour](../reference/tasks-and-cache.md#tool-colour)). `SMITH_NO_UPDATE_CHECK` stops
   `smith info` from asking the registry for the newest release.
 - **Help.** `smith --help` lists the commands in four groups; `smith <command> --help` is
   the command's own help. `smith help <command>` is the same.
