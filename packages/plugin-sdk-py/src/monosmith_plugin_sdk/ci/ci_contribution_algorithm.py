@@ -8,7 +8,7 @@ from ..protocol import ActionStep, Credential, Step
 
 
 def action_step(uses: str, inputs: Mapping[str, str] | Sequence[tuple[str, str]] | None = None) -> ActionStep:
-    """A provider-native step: a GitHub action (`"actions/setup-node@v6"`) or an Azure task (`"NodeTool@0"`).
+    """A provider-native step: a GitHub action (`"actions/setup-node@v6"`) or an Azure task (`"UseNode@1"`).
 
     The inputs are written in the order given. The values of a pipeline are written as quoted YAML
     strings, except `true` and `false`, so pass strings.

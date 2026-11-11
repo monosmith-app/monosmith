@@ -57,3 +57,11 @@ func TestCIOnlyWhenNodeProjectsExist(t *testing.T) {
 		t.Errorf("an extension publishes to the Marketplace, not npm: %+v", r.Credentials)
 	}
 }
+
+func TestCIInstallsNodeOnAzureWithTheTaskThatIsNotDeprecated(t *testing.T) {
+	got := CI(t.TempDir(), protocol.CIParams{Projects: []protocol.Project{{Name: "web", Root: "apps/web"}}}, "24").Toolchains[0].Azure
+	want := &protocol.ActionStep{Uses: "UseNode@1", Inputs: []protocol.Input{{Name: "version", Value: "24.x"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("NodeTool@0 is deprecated and warns in every Azure run: %+v", got)
+	}
+}

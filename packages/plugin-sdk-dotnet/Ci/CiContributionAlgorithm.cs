@@ -6,7 +6,7 @@ namespace MonoSmith.Plugin.Sdk;
 public static class CiSteps
 {
     /// <summary>
-    /// A provider-native step: a GitHub action (<c>"actions/setup-node@v6"</c>) or an Azure task (<c>"NodeTool@0"</c>).
+    /// A provider-native step: a GitHub action (<c>"actions/setup-node@v6"</c>) or an Azure task (<c>"UseNode@1"</c>).
     /// The inputs are written in the order given. The values of a pipeline are written as quoted YAML strings, except
     /// <c>true</c> and <c>false</c>, so pass strings.
     /// </summary>
