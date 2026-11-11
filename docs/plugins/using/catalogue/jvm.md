@@ -99,7 +99,7 @@ prints almost nothing.
 
 | Task | Command | Inputs | Outputs | dependsOn | Cached | Appears |
 |---|---|---|---|---|---|---|
-| `build` | `mvn -B -q -pl <g:a> install -DskipTests` | `src/**`, `pom.xml`, `{workspaceRoot}/pom.xml`, `{workspaceRoot}/.mvn/**` | `../../dist/maven/<artifactId>` | `^build` (the modules it imports) | no | every module |
+| `build` | `mvn -B -q -pl <g:a> install -DskipTests` | `src/**`, `pom.xml`, `{workspaceRoot}/pom.xml`, `{workspaceRoot}/.mvn/**` | `../../dist/<project dir>`, where it ships the jar of `dist/maven/<artifactId>` | `^build` (the modules it imports) | no | every module |
 | `test` | `mvn -B -q -pl <g:a> test` | same | none | `build` | yes | every module |
 | `lint` | `mvn -B -q -pl <g:a> checkstyle:check` | same | none | `build` | yes | every module |
 | `start` | `mvn -B -q -pl <g:a> exec:java` | every file of the project | none | `build` | no | kind `app` |
@@ -117,7 +117,7 @@ example `:apps:tool`), with `--console=plain -q`. `gradle` must be on `PATH`.
 
 | Task | Command | Outputs | dependsOn | Cached | Appears |
 |---|---|---|---|---|---|
-| `build` | `gradle --console=plain -q :path:assemble` | `../../dist/gradle/<artifactId>` when the script sets it | `^build` | no | every module |
+| `build` | `gradle --console=plain -q :path:assemble` | `../../dist/<project dir>` when the script sets the build folder; it ships the jar of `dist/gradle/<artifactId>/libs/`, or the APK of `outputs/apk/debug/` | `^build` | no | every module |
 | `test` | `gradle ... :path:test` | none | `build` | yes | every module |
 | `lint` | `gradle ... :path:ktlintCheck` (or `checkstyleMain checkstyleTest`; Android adds `:path:lint`) | none | `build`; for an Android module `test` | yes | when a lint plugin is detected |
 | `start` | `gradle ... :path:run` | none | `build` | no | kind `app`, not Android |
@@ -303,7 +303,10 @@ neither is configurable.
   Android module.
 - **Where output goes.** `dist/maven/<artifactId>` for Maven (the root pom
   sets it) and `dist/gradle/<artifactId>` for Gradle (the generated scripts set
-  it). Maven's `install` also writes to `~/.m2`. Gradle's caches
+  it): the work folder of the module. The build hard-links the jar (or the
+  debug APK) into the shipped folder `dist/<project dir>` after every build
+  ([the shipped folder](../../../reference/tasks-and-cache.md#the-shipped-folder-and-the-work-folder)).
+  Maven's `install` also writes to `~/.m2`. Gradle's caches
   (`.gradle/`, `.kotlin/`) stay in the workspace root and are ignored by git.
 
 ## Releasing

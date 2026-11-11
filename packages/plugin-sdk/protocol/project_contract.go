@@ -140,6 +140,15 @@ type Task struct {
 	// Outputs are directories relative to the project root, restored on a
 	// cache hit.
 	Outputs []string `json:"outputs,omitempty"`
+	// Ship names what the task makes in a tool's work folder that the
+	// project ships: globs relative to the project root
+	// ("../../dist/cargo/debug/api"). After the task succeeds, smith
+	// hard-links each match into the project's shipped folder
+	// (ProjectBuildDir), a folder file by file, under its base name, and
+	// copies a file it cannot link. A glob that matches nothing is skipped.
+	// Such a task lists the shipped folder in Outputs, never the tool's work
+	// folder: a cache restore empties each output folder first.
+	Ship []string `json:"ship,omitempty"`
 	// DependsOn lists task names: "build" runs this project's build first,
 	// "^build" runs the build of every project this one imports first.
 	DependsOn []string `json:"dependsOn,omitempty"`

@@ -59,7 +59,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     crate.PathDependencies,
 			Version:     crate.Version,
 			Description: crate.Description,
-			Tasks:       Tasks(crate.Name, kind, fmtArgs),
+			Tasks:       Tasks(root, crate.Name, kind, fmtArgs),
 			Stack:       crate.Stack,
 			Tags:        tags,
 		})

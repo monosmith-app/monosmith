@@ -4425,6 +4425,9 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     /// <summary>Outputs are directories relative to the project root, restored on a cache hit.</summary>
     public IReadOnlyList<string> Outputs { get; init; } = [];
 
+    /// <summary>Ship names what the task makes in a tool's work folder that the project ships: globs relative to the project root ("../../dist/cargo/debug/api"). After the task succeeds, smith hard-links each match into the project's shipped folder (ProjectBuildDir), a folder file by file, under its base name, and copies a file it cannot link. A glob that matches nothing is skipped. Such a task lists the shipped folder in Outputs, never the tool's work folder: a cache restore empties each output folder first.</summary>
+    public IReadOnlyList<string> Ship { get; init; } = [];
+
     /// <summary>DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of every project this one imports first.</summary>
     public IReadOnlyList<string> DependsOn { get; init; } = [];
 
@@ -4457,6 +4460,7 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             Env = MapOf(Member(map, "env"), Join(path, "env"), StringValue),
             Inputs = ListOf(Member(map, "inputs"), Join(path, "inputs"), StringValue),
             Outputs = ListOf(Member(map, "outputs"), Join(path, "outputs"), StringValue),
+            Ship = ListOf(Member(map, "ship"), Join(path, "ship"), StringValue),
             DependsOn = ListOf(Member(map, "dependsOn"), Join(path, "dependsOn"), StringValue),
             Cache = BooleanValue(Member(map, "cache"), Join(path, "cache")),
             Description = StringValue(Member(map, "description"), Join(path, "description")),
@@ -4492,6 +4496,11 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
         {
             writer.Property("outputs");
             MessageWritingAlgorithm.List(writer, Outputs, (builder1, item1) => builder1.String(item1));
+        }
+        if (Ship is { Count: > 0 })
+        {
+            writer.Property("ship");
+            MessageWritingAlgorithm.List(writer, Ship, (builder1, item1) => builder1.String(item1));
         }
         if (DependsOn is { Count: > 0 })
         {

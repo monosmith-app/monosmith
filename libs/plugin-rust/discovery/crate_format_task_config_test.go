@@ -19,14 +19,14 @@ func write(t *testing.T, root, rel, body string) {
 }
 
 func TestFormatRunsRustfmtOnSmithsDefaultUnlessTheRepositoryConfiguresIt(t *testing.T) {
-	def := Tasks("core", protocol.ProjectLib, []string{"--config-path", "{workspaceRoot}/.smith/defaults/rustfmt.toml"})["format"]
+	def := Tasks("libs/core", "core", protocol.ProjectLib, []string{"--config-path", "{workspaceRoot}/.smith/defaults/rustfmt.toml"})["format"]
 	if got := strings.Join(def.Command, " "); got != "cargo fmt -p core --check -- --config-path {workspaceRoot}/.smith/defaults/rustfmt.toml" {
 		t.Fatalf("command: %s", got)
 	}
 	if last := def.Inputs[len(def.Inputs)-1]; last != "{workspaceRoot}/.smith/defaults/rustfmt.toml" {
 		t.Fatalf("the default's content is an input: %v", def.Inputs)
 	}
-	own := Tasks("core", protocol.ProjectLib, nil)["format"]
+	own := Tasks("libs/core", "core", protocol.ProjectLib, nil)["format"]
 	if got := strings.Join(own.Command, " "); got != "cargo fmt -p core --check" {
 		t.Fatalf("command: %s", got)
 	}

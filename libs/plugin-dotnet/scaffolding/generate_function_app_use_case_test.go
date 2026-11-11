@@ -82,7 +82,7 @@ func TestGenerateWritesAFunctionAppForEveryHostAndTrigger(t *testing.T) {
 						t.Errorf("a Lambda project is a class library with the serializer:\n%s\n%s", csproj, handler)
 					}
 					template := read("template.yaml")
-					for _, want := range []string{"Runtime: dotnet10", "CodeUri: ../../dist/dotnet/publish/Acme.Api/release", "Handler: Acme.Api::Acme.Api.Functions.GreetingHandler::Handle"} {
+					for _, want := range []string{"Runtime: dotnet10", "CodeUri: ../../dist/apps/api", "Handler: Acme.Api::Acme.Api.Functions.GreetingHandler::Handle"} {
 						if !strings.Contains(template, want) {
 							t.Errorf("template.yaml lacks %q:\n%s", want, template)
 						}
@@ -104,7 +104,7 @@ func TestGenerateWritesAFunctionAppForEveryHostAndTrigger(t *testing.T) {
 				}
 				switch host {
 				case "azure-functions":
-					if tasks["start"].Command[0] != "func" || tasks["start"].Cwd != "dist/dotnet/publish/Acme.Api/release" {
+					if tasks["start"].Command[0] != "func" || tasks["start"].Cwd != "dist/apps/api" {
 						t.Errorf("start %+v", tasks["start"])
 					}
 				case "aws-lambda":

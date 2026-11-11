@@ -1,0 +1,11 @@
+{
+  "shiplink.shipped.one": "shipped 1 file to {folder}",
+  "shiplink.shipped.other": "shipped {count} files to {folder}",
+  "shiplink.copied.one": "1 of them is a copy, not a link: {folder} is on another volume or its file system has no hard links",
+  "shiplink.copied.other": "{count} of them are copies, not links: {folder} is on another volume or its file system has no hard links",
+  "shiplink.in_use": "{program} is in use, so {folder} keeps its old copy. The new build is in the tool's folder.",
+  "shiplink.in_use.remedy": "close {program} and build again",
+  "shiplink.failed": "could not ship {file}: {reason}",
+  "shiplink.none": "the build made no file to ship to {folder}",
+  "shiplink.none.remedy": "run smith doctor to check where the tool builds"
+}

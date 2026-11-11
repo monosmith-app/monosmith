@@ -90,7 +90,7 @@ each slice's handler; most commands start by opening a `session`.
 | `adoptflow`, `turboplan`, `turboworkspace` | the adopt/convert wizard's steps, and converting Turborepo workspaces |
 | `recipe`, `recipecatalog`, `recipechoice`, `recipestack`, `recipewizard`, `recipedrift`, `recipereleases` | recipes: reading and resolving them, their choices and stacks, `smith recipe new`, drift checks, recipe releases |
 | `sbom`, `linuxpackages`, `pubpackage`, `pubrelease`, `splitrepo` | release outputs: CycloneDX SBOMs, `.deb`/`.rpm`, pub.dev packages, mirroring a package to its own repository |
-| `buildoutputs`, `cachecredentials`, `toolchainpin`, `npm*`, `pypolicy`, `rustpolicy` | smaller pieces: where builds write, remote-cache secrets for pipelines, tool version pins, per-ecosystem audit and pack policies |
+| `buildoutputs`, `shiplink`, `cachecredentials`, `toolchainpin`, `npm*`, `pypolicy`, `rustpolicy` | smaller pieces: where builds write, the link of what a tool builds in its work folder into the shipped folder (ADR 0092), remote-cache secrets for pipelines, tool version pins, per-ecosystem audit and pack policies |
 | `goldenpath` | the end-to-end tests: new workspace, every kind in every language, build, test, release |
 
 ## Plugins
@@ -140,7 +140,9 @@ where they live is decided in [ADR 0038](decisions/0038-a-plugin-is-packed-as-a-
 3. `taskgraph` expands `lint` and `test` into the tasks they depend on.
 4. `taskrun` runs them in dependency order, in parallel where it can. For each
    task `taskcache` computes the key: on a hit the outputs are restored and
-   the log replayed, on a miss the task runs and a success is stored.
+   the log replayed, on a miss the task runs and a success is stored. A task
+   that names files in `ship` has them linked into `dist/<project dir>`
+   (`shiplink`) before the store.
 
 ### `smith release`
 

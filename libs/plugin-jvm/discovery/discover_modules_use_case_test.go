@@ -34,7 +34,7 @@ func TestDiscover(t *testing.T) {
 	if api.Kind != protocol.ProjectApp || api.Version != "1.2.0" || api.Exports[0] != "dev.acme:acme-api" || api.Imports[0] != "dev.acme:acme-core" || api.Tasks["start"].Command[5] != "exec:java" {
 		t.Errorf("api %+v", api)
 	}
-	if build := api.Tasks["build"]; build.Cwd != "." || build.Command[4] != "dev.acme:acme-api" || build.Outputs[0] != "../../dist/maven/acme-api" || build.DependsOn[0] != "^build" {
+	if build := api.Tasks["build"]; build.Cwd != "." || build.Command[4] != "dev.acme:acme-api" || build.Outputs[0] != "../../dist/apps/api" || build.Ship[0] != "../../dist/maven/acme-api/*.jar" || build.DependsOn[0] != "^build" {
 		t.Errorf("api build %+v", build)
 	}
 	if api.Tasks["lint"].DependsOn[0] != "build" {
@@ -98,7 +98,7 @@ publishing {
 	if api.Kind != protocol.ProjectApp || api.Stack != "kotlin" || api.Version != "1.2.0" || api.Exports[0] != ":apps:api" || len(api.Exports) != 1 || api.Imports[0] != ":libs:core" {
 		t.Errorf("api %+v", api)
 	}
-	if build := api.Tasks["build"]; build.Cwd != "." || build.Command[3] != ":apps:api:assemble" || build.Outputs[0] != "../../dist/gradle/acme-api" || build.DependsOn[0] != "^build" {
+	if build := api.Tasks["build"]; build.Cwd != "." || build.Command[3] != ":apps:api:assemble" || build.Outputs[0] != "../../dist/apps/api" || build.Ship[0] != "../../dist/gradle/acme-api/libs/*.jar" || build.DependsOn[0] != "^build" {
 		t.Errorf("api build %+v", build)
 	}
 	if lint := api.Tasks["lint"]; lint.Command[3] != ":apps:api:ktlintCheck" || lint.DependsOn[0] != "build" || api.Tasks["start"].Command[3] != ":apps:api:run" {

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // Package versions the function projects pin, checked on 2026-11-02; bump them
@@ -32,8 +33,9 @@ type Data struct {
 	Plan
 	// Up leads from the app folder to the workspace root: ../../.
 	Up string
-	// PublishDir is the folder dotnet publish writes to, relative to the app
-	// (Directory.Build.props sends every build to the workspace's dist/dotnet).
+	// PublishDir is the folder the published app ships in, relative to the
+	// app: the workspace's dist/<project dir>, where the package task links
+	// what dotnet publish writes into dist/dotnet.
 	PublishDir string
 	// HostLabel and LocalTool are words for the readme.
 	HostLabel, LocalTool string
@@ -51,7 +53,7 @@ func PublishFolder(projectID string) string {
 // relative) with the project id.
 func DataOf(plan Plan, dir, projectID string) Data {
 	up := strings.Repeat("../", strings.Count(strings.Trim(dir, "/"), "/")+1)
-	d := Data{Plan: plan, Up: up, PublishDir: up + PublishFolder(projectID)}
+	d := Data{Plan: plan, Up: up, PublishDir: up + protocol.ProjectBuildDir(dir)}
 	switch plan.Host {
 	case functionhost.Azure:
 		d.HostLabel, d.LocalTool = "Azure Functions", "Azure Functions Core Tools (func)"

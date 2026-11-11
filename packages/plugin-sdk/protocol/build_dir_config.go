@@ -23,6 +23,13 @@ func BuildDirFromProject(root string) string {
 	return strings.Repeat("../", strings.Count(root, "/")+1) + ProjectBuildDir(root)
 }
 
+// FromProject is a workspace-relative path seen from the project at root
+// (dist/cargo seen from apps/api is ../../dist/cargo): what a task's Outputs
+// or Ship name for a folder outside the project.
+func FromProject(root, workspacePath string) string {
+	return strings.Repeat("../", strings.Count(strings.Trim(root, "/"), "/")+1) + strings.Trim(workspacePath, "/")
+}
+
 // InBuildDir reports whether a workspace-relative path is inside BuildDir.
 func InBuildDir(path string) bool {
 	return path == BuildDir || strings.HasPrefix(path, BuildDir+"/")

@@ -51,7 +51,7 @@ All tasks run in the project directory. MSBuild builds a project's references it
 
 | Task | Command | Appears for | dependsOn | Cached |
 |---|---|---|---|---|
-| `build` | `dotnet build <tests project, else project file> --nologo` | every project | `^build` | no |
+| `build` | `dotnet build <tests project, else project file> --nologo` | every project | `^build` | no; an app outputs `dist/<project dir>` and ships `dist/dotnet/bin/<Project>/debug/` there |
 | `lint` | `dotnet format <project file> --verify-no-changes --no-restore` | every project | `build` | yes |
 | `test` | `dotnet test <tests project> --nologo --no-build` | a project that has a tests project | `build` | yes |
 | `start` | `dotnet run --project <project file> --no-build` | `app` | `build` | no |
@@ -134,7 +134,7 @@ Wrote 6 file(s):
 ## Function apps
 
 `smith add app api --lang dotnet --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
-serverless function app: the isolated worker for Azure (`Program.cs`, `host.json`, the Worker packages), a class library with `Amazon.Lambda.Core` and the serializer attribute plus `template.yaml` for AWS, a Functions Framework class (`Google.Cloud.Functions.Hosting`) for Google. Runtimes `dotnet10` (suggested) and `dotnet8` (not with Google, which retires it on 2026-11-10). `package` is `dotnet publish` into `dist/dotnet/publish/<project>/release`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+serverless function app: the isolated worker for Azure (`Program.cs`, `host.json`, the Worker packages), a class library with `Amazon.Lambda.Core` and the serializer attribute plus `template.yaml` for AWS, a Functions Framework class (`Google.Cloud.Functions.Hosting`) for Google. Runtimes `dotnet10` (suggested) and `dotnet8` (not with Google, which retires it on 2026-11-10). `package` is `dotnet publish` into `dist/dotnet/publish/<project>/release`, shipped (hard-linked) to `dist/<project dir>`, its one output; `start` (Azure) and the SAM template (AWS) run that shipped folder. smith asks the trigger (`http-trigger`, `timer-trigger`,
 `queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
 terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
 `lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
@@ -170,7 +170,7 @@ The pin label is `dotnet`, probed with `dotnet --version`. Real output with `[to
 
 The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it also compares the SDK with CI's channel (another version, older or newer, is a warning).
 
-Output: all `bin/` and `obj/` go to `dist/dotnet` (set by the `Directory.Build.props` the plugin writes: `dist/dotnet/bin/<Project>/debug/...`); `pack` writes the `.nupkg` to `dist/<project dir>` (real: `dist/packages/kit/NetDemo.Kit.0.0.0.nupkg`).
+Output: all `bin/` and `obj/` go to `dist/dotnet` (set by the `Directory.Build.props` the plugin writes: `dist/dotnet/bin/<Project>/debug/...`), the work folder of the whole workspace; an app's build hard-links its `bin/<Project>/debug/` files into `dist/<project dir>` after every build ([the shipped folder](../../../reference/tasks-and-cache.md#the-shipped-folder-and-the-work-folder)); `pack` writes the `.nupkg` to `dist/<project dir>` (real: `dist/packages/kit/NetDemo.Kit.0.0.0.nupkg`).
 
 ## Releasing
 
@@ -271,7 +271,7 @@ Removal: the plugin cleans nothing outside the project directory. Real dry run: 
 
 - The .NET SDK on PATH; generated projects need SDK 10 (they target `net10.0`). `smith add` itself needs no SDK (it only writes files), the first build does, plus network access to restore xunit.
 - Because `Directory.Build.props` sets `TreatWarningsAsErrors`, a new warning (for instance a nullable warning) fails the build and `lint`.
-- `build` is not cached and has no declared outputs; the test results are cached (`test`, `lint`).
+- `build` is not cached; an app declares its shipped folder as the output, a library none; the test results are cached (`test`, `lint`).
 - A project needs its own directory: the name comes from the directory, and a project file at the workspace root is ignored.
 - Newer versions come from nuget.org only (private feeds are not asked), the vulnerability audit does not tell fixable findings from the rest, and there is no `format` or `typecheck` task. Release archives are self-contained single-file zips only (no framework-dependent or NativeAOT builds, no `.tar.gz`).
 - NuGet package versions are not asked from a private feed.
