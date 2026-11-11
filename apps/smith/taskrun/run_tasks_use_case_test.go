@@ -472,6 +472,15 @@ func (m *memStore) Has(name string) (bool, error) {
 
 func (m *memStore) Describe() string { return "memory" }
 
+func (m *memStore) List(string, func(string) error) error { return remotecache.ErrCannotList }
+
+func (m *memStore) Delete(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.objects, name)
+	return nil
+}
+
 func TestAHitTheRemoteServedSaysFromRemoteCache(t *testing.T) {
 	f := newFixture(t, "core")
 	remote := &memStore{objects: map[string][]byte{}}

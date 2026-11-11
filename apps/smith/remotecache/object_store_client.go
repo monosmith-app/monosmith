@@ -22,22 +22,38 @@ type ObjectStore interface {
 	Has(name string) (bool, error)
 	// Describe names the store for messages.
 	Describe() string
+	// List calls visit with the name of every object whose name starts with
+	// prefix ("ac/", "cas/"), names as Get takes them. It reads the listing
+	// page by page. A store that cannot list returns ErrCannotList.
+	List(prefix string, visit func(name string) error) error
+	// Delete removes an object; an object that does not exist is a success.
+	Delete(name string) error
 }
 
+// ErrCannotList is returned by List on a plain https:// store, which takes
+// PUT, GET, HEAD and DELETE but has no listing.
+var ErrCannotList = errors.New("a plain https:// store cannot list its objects")
+
 // httpStore is an object store reached over HTTP: a plain server (PUT, GET,
-// HEAD under a base URL), S3 or Azure Blob, which differ only in the URL of
-// an object and how a request is authorised.
+// HEAD, DELETE under a base URL), S3 or Azure Blob, which differ in the URL of
+// an object, how a request is authorised and how a listing is read.
 type httpStore struct {
 	describe  string
 	objectURL func(name string) string
 	authorise func(req *http.Request, payloadHash string)
-	client    *http.Client
+	// list reads the listing of names under a prefix; nil when the store has none.
+	list   func(s httpStore, prefix string, visit func(name string) error) error
+	client *http.Client
 }
 
 func (s httpStore) Describe() string { return s.describe }
 
 func (s httpStore) do(method, name string, body []byte) (*http.Response, error) {
-	req, err := http.NewRequest(method, s.objectURL(name), bytes.NewReader(body))
+	return s.doURL(method, s.objectURL(name), body)
+}
+
+func (s httpStore) doURL(method, target string, body []byte) (*http.Response, error) {
+	req, err := http.NewRequest(method, target, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +122,41 @@ func (s httpStore) Put(name string, data []byte) error {
 	return nil
 }
 
+func (s httpStore) Delete(name string) error {
+	resp, err := s.do(http.MethodDelete, name, nil)
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound || (resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		return nil
+	}
+	return statusError(http.MethodDelete, name, resp)
+}
+
+func (s httpStore) List(prefix string, visit func(name string) error) error {
+	if s.list == nil {
+		return ErrCannotList
+	}
+	return s.list(s, prefix, visit)
+}
+
+// getPage reads one page of a listing; what names the listing in an error.
+func (s httpStore) getPage(target, what string) ([]byte, error) {
+	resp, err := s.doURL(http.MethodGet, target, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, statusError("LIST", what, resp)
+	}
+	return io.ReadAll(resp.Body)
+}
+
+// azureEndpoint is the Blob service of an account; tests point it at a local server.
+var azureEndpoint = func(account string) string { return "https://" + account + ".blob.core.windows.net" }
+
 // Open returns the store a remote URL names:
 //
 //	https://host/path   a server taking PUT, GET and HEAD under the path;
@@ -151,18 +202,22 @@ func Open(remote string) (ObjectStore, error) {
 		}
 		return httpStore{describe: remote, client: client, objectURL: func(n string) string { return join(base, n) }, authorise: func(req *http.Request, hash string) {
 			SignS3(req, creds, hash, time.Now())
+		}, list: func(s httpStore, p string, visit func(string) error) error {
+			return listS3(s, base, prefix, p, visit)
 		}}, nil
 	case "azblob":
 		sas := strings.TrimPrefix(os.Getenv("AZURE_STORAGE_SAS_TOKEN"), "?")
 		if sas == "" {
 			return nil, fmt.Errorf("[cache] remote %s needs AZURE_STORAGE_SAS_TOKEN", remote)
 		}
-		base := "https://" + u.Host + ".blob.core.windows.net"
+		base := azureEndpoint(u.Host)
 		return httpStore{describe: remote, client: client, objectURL: func(n string) string { return join(base, n) + "?" + sas }, authorise: func(req *http.Request, _ string) {
 			req.Header.Set("x-ms-version", "2021-08-06")
 			if req.Method == http.MethodPut {
 				req.Header.Set("x-ms-blob-type", "BlockBlob")
 			}
+		}, list: func(s httpStore, p string, visit func(string) error) error {
+			return listAzure(s, base, prefix, sas, p, visit)
 		}}, nil
 	}
 	return nil, fmt.Errorf("[cache] remote %q: use https://, s3:// or azblob://", remote)
