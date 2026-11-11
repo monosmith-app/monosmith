@@ -51,9 +51,11 @@ func (s Shell) tabRow(strip tabs.Strip) string {
 	return left + strings.Repeat(" ", max(s.w-pane.Width(left)-pane.Width(right)-1, 1)) + right + " "
 }
 
-// headerRow is the top row: the workspace, its branch and its health.
+// headerRow is the top row: the workspace, its branch and its health, at the
+// right end of the row, where the tab row has them on a wide screen.
 func (s Shell) headerRow() string {
-	return pane.Fit(strings.Join(s.headerParts(), "  "), s.w)
+	text := pane.Cut(strings.TrimLeft(strings.Join(s.headerParts(), "  "), " "), max(s.w-1, 0))
+	return strings.Repeat(" ", max(s.w-pane.Width(text)-1, 0)) + text + " "
 }
 
 // headerParts are the pieces of the header: the workspace, what is wrong with

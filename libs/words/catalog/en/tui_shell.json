@@ -126,6 +126,7 @@
   "tui.main.run_verify": "Verify",
   "tui.main.run_build": "Build",
   "tui.main.run_build_release": "Build release",
+  "tui.main.clear_cache": "Clear cache",
   "tui.main.run_test": "Test",
   "tui.main.run_lint": "Lint",
   "tui.main.run_typecheck": "Typecheck",
