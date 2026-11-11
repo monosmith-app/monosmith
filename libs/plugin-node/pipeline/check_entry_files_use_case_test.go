@@ -132,6 +132,41 @@ func TestCheckEntryFilesPassesWhenTheBuildEmitsDeclarations(t *testing.T) {
 	}
 }
 
+func TestCheckEntryFilesSaysWhyTscWroteNoDeclarationWhereNamed(t *testing.T) {
+	write := func(root, name, content string) {
+		file := filepath.Join(root, "packages", "atlassian", filepath.FromSlash(name))
+		_ = os.MkdirAll(filepath.Dir(file), 0o755)
+		if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cases := []struct {
+		name, build, config, built, want string
+	}{
+		{"no tsconfig", "tsc -p tsconfig.lib.json", "", "", "packages/atlassian/tsconfig.lib.json, which does not exist"},
+		{"no declaration option", "tsc -p tsconfig.lib.json", `{"compilerOptions": {"outDir": "dist"}}`, "", `packages/atlassian/tsconfig.lib.json does not set "declaration": true`},
+		{"written elsewhere", "tsc -p tsconfig.lib.json", `{"compilerOptions": {"declaration": true, "rootDir": "src"}}`, "dist/index.d.ts",
+			`tsc wrote packages/atlassian/dist/index.d.ts instead. Point types and the types of exports in package.json at ./dist/index.d.ts, or change rootDir in packages/atlassian/tsconfig.lib.json (now "src")`},
+		{"not compiled", "tsc -p tsconfig.lib.json", `{"compilerOptions": {"declaration": true}, "include": ["lib/**/*.ts"]}`, "",
+			`tsc wrote no index.d.ts under packages/atlassian/dist: the include of packages/atlassian/tsconfig.lib.json (now ["lib/**/*.ts"]) must hold`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			root, p := bundledPackage(t, c.build, false)
+			if c.config != "" {
+				write(root, "tsconfig.lib.json", c.config)
+			}
+			if c.built != "" {
+				write(root, c.built, "")
+			}
+			f, ok := CheckEntryFiles(root, p)
+			if !ok || f.OK || !strings.Contains(f.Remedy, c.want) {
+				t.Fatalf("remedy %q, want it to hold %q", f.Remedy, c.want)
+			}
+		})
+	}
+}
+
 func TestCheckEntryFilesPointsAtTscWhenItDoesNotWriteWhereNamed(t *testing.T) {
 	root, p := bundledPackage(t, "esbuild src/index.ts --bundle --outfile=dist/index.js && tsc -p tsconfig.build.json --emitDeclarationOnly", false)
 	f, ok := CheckEntryFiles(root, p)

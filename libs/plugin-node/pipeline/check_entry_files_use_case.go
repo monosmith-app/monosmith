@@ -105,7 +105,7 @@ func isDeclarationFile(f string) bool {
 // that appends it.
 func declarationRemedy(workspaceRoot string, p protocol.Project, build string, missing []string, types string, finding *protocol.Finding) string {
 	if declarationEmit.MatchString(build) {
-		return "the build script already writes declarations, but not to the files package.json names: make tsc's --declarationDir (or rootDir) put them there, or point types and exports at where they are; rebuild from clean to check"
+		return "the build script already writes declarations, but not to " + missing[0] + ": " + declarationDiagnosis(workspaceRoot, p, build, missing[0]) + "; rebuild from clean to check"
 	}
 	dir := ""
 	if types != "" {
@@ -117,6 +117,71 @@ func declarationRemedy(workspaceRoot string, p protocol.Project, build string, m
 		finding.Fix = manifestfixes.EmitDeclarationsFix(workspaceRoot, p, dir)
 	}
 	return "emit the declarations in the build: a bundler such as esbuild writes none, so append `&& tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <the directory of the types entry>` to the build script (smith doctor --fix does); or remove the types entries from package.json"
+}
+
+var (
+	// tscProject is the tsconfig a tsc command of the build script reads.
+	tscProject = regexp.MustCompile(`\btsc\b[^&|;]*?\s(?:-p|--project)[= ]+"?([^"\s&;|]+)"?`)
+	// declarationOn finds what makes tsc write declarations, in a tsconfig
+	// or on the command line.
+	declarationOn = regexp.MustCompile(`"(?:declaration|composite)"\s*:\s*true|--declaration\b|--emitDeclarationOnly\b|\s-d\b`)
+	rootDirOption = regexp.MustCompile(`"rootDir"\s*:\s*"([^"]*)"`)
+	includeOption = regexp.MustCompile(`(?s)"include"\s*:\s*(\[[^\]]*\])`)
+)
+
+// declarationDiagnosis says why tsc did not write want, a declaration file
+// the package.json names, by reading the tsconfig the build gives tsc and
+// looking for the file under another path of the build output.
+func declarationDiagnosis(workspaceRoot string, p protocol.Project, build, want string) string {
+	if !regexp.MustCompile(`\btsc\b`).MatchString(build) {
+		return "make the tool that writes them put them there, or point types and exports at where they are"
+	}
+	name := "tsconfig.json"
+	if m := tscProject.FindStringSubmatch(build); m != nil {
+		name = m[1]
+	}
+	config := path.Join(p.Root, filepath.ToSlash(name))
+	raw, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(config)))
+	if err != nil {
+		return "the build runs tsc with " + config + ", which does not exist: create it with the package's sources in its include, or point -p at the tsconfig that has them"
+	}
+	text := string(raw)
+	if !declarationOn.MatchString(text) && !declarationOn.MatchString(build) {
+		return config + " does not set \"declaration\": true, so tsc writes no declarations: add it under compilerOptions"
+	}
+	outRoot := p.Root + "/dist"
+	if strings.HasPrefix(want, protocol.ProjectBuildDir(p.Root)+"/") {
+		outRoot = protocol.ProjectBuildDir(p.Root)
+	}
+	if found := findByName(workspaceRoot, outRoot, path.Base(want)); len(found) > 0 {
+		rootDir := "not set, so tsc keeps the folders from the common folder of the files it compiles"
+		if m := rootDirOption.FindStringSubmatch(text); m != nil {
+			rootDir = `"` + m[1] + `"`
+		}
+		return "tsc wrote " + strings.Join(found, ", ") + " instead. Point types and the types of exports in package.json at ./dist/" +
+			strings.TrimPrefix(found[0], outRoot+"/") + ", or change rootDir in " + config + " (now " + rootDir + ") so the path matches"
+	}
+	include := "not set, so tsc compiles every .ts file beside it"
+	if m := includeOption.FindStringSubmatch(text); m != nil {
+		include = strings.Join(strings.Fields(m[1]), " ")
+	}
+	return "tsc wrote no " + path.Base(want) + " under " + outRoot + ": the include of " + config + " (now " + include + ") must hold the source of that entry, such as src/index.ts"
+}
+
+// findByName lists, workspace-relative and sorted, the files named base under
+// dir (at most three).
+func findByName(workspaceRoot, dir, base string) []string {
+	var found []string
+	_ = filepath.WalkDir(filepath.Join(workspaceRoot, filepath.FromSlash(dir)), func(p string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && d.Name() == base && len(found) < 3 {
+			if rel, err := filepath.Rel(workspaceRoot, p); err == nil {
+				found = append(found, filepath.ToSlash(rel))
+			}
+		}
+		return nil
+	})
+	sort.Strings(found)
+	return found
 }
 
 // collectExportFiles walks package.json exports: a path, a list of
