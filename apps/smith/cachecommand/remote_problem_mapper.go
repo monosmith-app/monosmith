@@ -34,7 +34,7 @@ func credentialsRemedy(remote string) string {
 	case strings.HasPrefix(remote, "s3://"):
 		return "check AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_REGION: the key needs read, write and list rights on the bucket (without list, S3 answers 403 for a missing object)"
 	case strings.HasPrefix(remote, "azblob://"):
-		return "check AZURE_STORAGE_SAS_TOKEN: it must not be expired and needs read, write, create and list rights (`smith cache setup` makes one)"
+		return "check AZURE_STORAGE_SAS_TOKEN: it must not be expired and needs read, write, delete, create and list rights (`smith cache setup` makes one)"
 	}
 	return "check SMITH_CACHE_TOKEN: the server must accept it"
 }

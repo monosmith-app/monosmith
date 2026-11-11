@@ -204,12 +204,13 @@ func SASChoices() []SASChoice {
 }
 
 // GenerateSAS is the command that makes a SAS token for a container with read,
-// write, create and list permission.
+// write, delete, create and list permission (delete for `smith cache clear
+// --remote`).
 //
 // Parameters: way is a SASChoice value; expiry is when the token ends.
 func GenerateSAS(subscription, account, container, way string, expiry time.Time) []string {
 	argv := append([]string{"az", "storage", "container", "generate-sas", "--account-name", account, "--name", container}, subArgs(subscription,
-		"--permissions", "rwcl", "--expiry", expiry.UTC().Format("2006-01-02T15:04Z"), "--auth-mode", way)...)
+		"--permissions", "rwdcl", "--expiry", expiry.UTC().Format("2006-01-02T15:04Z"), "--auth-mode", way)...)
 	if way == "login" {
 		argv = append(argv, "--as-user")
 	}

@@ -327,7 +327,7 @@ type sasTarget struct{ subscription, account, container string }
 // sasToken offers to make the container's SAS token with az and copy it.
 func (f flow) sasToken(t sasTarget) {
 	f.say("Azure Blob also needs AZURE_STORAGE_SAS_TOKEN: a token that lets smith reach the container. Signing in through az directly is not supported by the backend today.")
-	if !f.yesNo("Make a SAS token now?", "Yes, make and copy one", "read, write, create and list permission, for this container only", "No, I will make one", "") {
+	if !f.yesNo("Make a SAS token now?", "Yes, make and copy one", "read, write, delete, create and list permission, for this container only (delete lets smith cache clear --remote work)", "No, I will make one", "") {
 		return
 	}
 	var options []Option
