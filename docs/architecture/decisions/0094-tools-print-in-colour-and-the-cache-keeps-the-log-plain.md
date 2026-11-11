@@ -1,4 +1,4 @@
-# ADR 0093: Tools print in colour for a person, and the cache keeps the log plain
+# ADR 0094: Tools print in colour for a person, and the cache keeps the log plain
 
 - Status: accepted, implemented
 - Date: 2026-11-11
