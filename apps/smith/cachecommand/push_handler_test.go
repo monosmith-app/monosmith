@@ -28,6 +28,9 @@ func objectServer(t *testing.T) (*httptest.Server, *int) {
 			body, _ := io.ReadAll(r.Body)
 			objects[r.URL.Path] = body
 			puts++
+		case http.MethodDelete:
+			delete(objects, r.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
 		default:
 			if _, ok := objects[r.URL.Path]; !ok {
 				w.WriteHeader(http.StatusNotFound)

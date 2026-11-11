@@ -2,6 +2,7 @@ package cachecommand
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -13,6 +14,8 @@ type location struct {
 	Dir        string
 	LimitBytes int64
 	Remote     session.RemotePlan
+	// Workspace is the workspace's name ([workspace] name, or its folder's).
+	Workspace string
 }
 
 // locate finds the workspace containing the current directory (honouring
@@ -31,7 +34,12 @@ func locateFrom(dir string) (location, error) {
 	if err != nil {
 		return location{}, err
 	}
+	name := cfg.Workspace.Name
+	if name == "" {
+		name = filepath.Base(root)
+	}
 	return location{
+		Workspace:  name,
 		Dir:        session.LocalCacheDir(root, cfg, os.Getenv),
 		LimitBytes: session.CacheLimitBytes(cfg),
 		Remote:     session.PlanRemote(cfg, os.Getenv),
