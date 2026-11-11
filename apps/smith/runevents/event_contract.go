@@ -71,6 +71,9 @@ type Event struct {
 	DurationMs int64  `json:"durationMs,omitempty"`
 	CacheKey   string `json:"cacheKey,omitempty"`
 	Reason     string `json:"reason,omitempty"`
+	// Source is the cache tier that served a cached task: "local" or
+	// "remote". It is empty for a task that was not replayed.
+	Source string `json:"source,omitempty"`
 
 	// run.finished
 	OK      *bool    `json:"ok,omitempty"`
@@ -82,6 +85,8 @@ type Summary struct {
 	Passed     int   `json:"passed"`
 	Failed     int   `json:"failed"`
 	Cached     int   `json:"cached"`
+	// CachedRemote is how many of the cached tasks the remote cache served.
+	CachedRemote int   `json:"cachedRemote,omitempty"`
 	Skipped    int   `json:"skipped"`
 	DurationMs int64 `json:"durationMs"`
 }

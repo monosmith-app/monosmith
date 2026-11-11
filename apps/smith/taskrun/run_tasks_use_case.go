@@ -102,8 +102,9 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 		s.Results = append(s.Results, r.results[id])
 	}
 	ok := s.OK()
-	opts.Events.Emit(runevents.Event{Event: runevents.RunFinished, OK: &ok, Summary: runevents.Summarize(
-		s.Count(Succeeded), s.Count(Failed), s.Count(Cached), s.Count(Skipped), s.Duration)})
+	summary := runevents.Summarize(s.Count(Succeeded), s.Count(Failed), s.Count(Cached), s.Count(Skipped), s.Duration)
+	summary.CachedRemote = s.CountRemote()
+	opts.Events.Emit(runevents.Event{Event: runevents.RunFinished, OK: &ok, Summary: summary})
 	return s
 }
 
@@ -175,6 +176,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	key, inputs := r.key(t)
 	prefix := t.ID + " │ "
 	if t.Def.Cache && !r.opts.NoCache && r.opts.Storage != nil {
+		source := taskcache.SourceOf(r.opts.Storage, key)
 		if entry, err := taskcache.Lookup(r.opts.Storage, key); err == nil {
 			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, r.clearable(t), entry)
 			if err == nil {
@@ -184,8 +186,8 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 					replayTo = io.Discard
 				}
 				Replay(prefix, log, replayTo, &r.outMu, r.outputOf(t.ID), r.opts.Colour)
-				r.say("%s ✓ from cache\n", t.ID)
-				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration}
+				r.say("%s ✓ %s\n", t.ID, hitLabel(source))
+				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration, Source: source}
 			}
 		}
 	}
@@ -351,7 +353,16 @@ func (r *runner) outputOf(task string) func(string) {
 // finishedEvent is the task.finished event of a result.
 func finishedEvent(res Result) runevents.Event {
 	status := map[Status]runevents.Status{Succeeded: runevents.Passed, Cached: runevents.Cached, Failed: runevents.Failed, Skipped: runevents.Skipped}[res.Status]
-	return runevents.Event{Event: runevents.TaskFinished, Task: res.Task, Status: status, DurationMs: res.Duration.Milliseconds(), CacheKey: res.Key, Reason: res.Reason}
+	return runevents.Event{Event: runevents.TaskFinished, Task: res.Task, Status: status, DurationMs: res.Duration.Milliseconds(), CacheKey: res.Key, Reason: res.Reason, Source: string(res.Source)}
+}
+
+// hitLabel is what a replayed task's line says after its mark: "from cache",
+// or "from remote cache" when the remote served the hit.
+func hitLabel(source taskcache.Source) string {
+	if source == taskcache.SourceRemote {
+		return "from remote cache"
+	}
+	return "from cache"
 }
 
 func (r *runner) say(format string, args ...any) {

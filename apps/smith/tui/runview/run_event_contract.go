@@ -65,6 +65,8 @@ type Event struct {
 	Status Status
 	// Duration is how long a task took (Finish).
 	Duration time.Duration
+	// Remote is true for a Cached Finish that the remote cache served.
+	Remote bool
 	// Done and Total are the counts in a Summary line; OK says whether it
 	// is the success form.
 	Done, Total int

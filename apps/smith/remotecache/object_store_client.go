@@ -15,6 +15,7 @@ import (
 type ObjectStore interface {
 	// Get returns an object; found is false when it does not exist.
 	Get(name string) (data []byte, found bool, err error)
+	// Put writes an object, replacing one of the same name.
 	Put(name string, data []byte) error
 	// Has reports whether an object exists, without reading it.
 	Has(name string) (bool, error)
@@ -58,7 +59,7 @@ func (s httpStore) Get(name string) ([]byte, bool, error) {
 	case resp.StatusCode == http.StatusNotFound:
 		return nil, false, nil
 	case resp.StatusCode != http.StatusOK:
-		return nil, false, fmt.Errorf("GET %s: %s", name, resp.Status)
+		return nil, false, statusError(http.MethodGet, name, resp)
 	}
 	data, err := io.ReadAll(resp.Body)
 	return data, err == nil, err
@@ -76,7 +77,7 @@ func (s httpStore) Has(name string) (bool, error) {
 	case http.StatusNotFound:
 		return false, nil
 	}
-	return false, fmt.Errorf("HEAD %s: %s", name, resp.Status)
+	return false, statusError(http.MethodHead, name, resp)
 }
 
 func (s httpStore) Put(name string, data []byte) error {
@@ -86,7 +87,7 @@ func (s httpStore) Put(name string, data []byte) error {
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("PUT %s: %s", name, resp.Status)
+		return statusError(http.MethodPut, name, resp)
 	}
 	return nil
 }

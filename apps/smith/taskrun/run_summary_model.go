@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 )
 
 // Status is a task's outcome.
@@ -29,6 +30,9 @@ type Result struct {
 	// Saved is the original duration of a task replayed from cache.
 	Saved  time.Duration `json:"savedNs,omitempty"`
 	Reason string        `json:"reason,omitempty"`
+	// Source is the tier that served a cached task: "local" or "remote".
+	// It is empty for a task that was not replayed.
+	Source taskcache.Source `json:"source,omitempty"`
 }
 
 // Summary is the outcome of a run.
@@ -58,6 +62,17 @@ func (s Summary) Count(st Status) int {
 	return n
 }
 
+// CountRemote returns how many cached results the remote cache served.
+func (s Summary) CountRemote() int {
+	n := 0
+	for _, r := range s.Results {
+		if r.Status == Cached && r.Source == taskcache.SourceRemote {
+			n++
+		}
+	}
+	return n
+}
+
 // String is the one-paragraph report printed after a run.
 func (s Summary) String() string {
 	var b strings.Builder
@@ -74,6 +89,9 @@ func (s Summary) String() string {
 	}
 	done := s.Count(Succeeded) + s.Count(Cached)
 	fmt.Fprintf(&b, "%s %d/%d tasks succeeded (%d from cache", mark(map[bool]Status{true: Succeeded, false: Failed}[s.OK()]), done, len(s.Results), s.Count(Cached))
+	if remote := s.CountRemote(); remote > 0 {
+		fmt.Fprintf(&b, ", %d of them remote", remote)
+	}
 	if saved > 0 {
 		fmt.Fprintf(&b, ", %s saved", saved.Round(time.Millisecond))
 	}
