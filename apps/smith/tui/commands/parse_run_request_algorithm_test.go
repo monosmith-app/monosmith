@@ -35,3 +35,38 @@ func TestRunArgv(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestTheReleaseBuildRunsTheBuildWithTheReleaseFlag(t *testing.T) {
+	c, ok := ByID("run.build-release")
+	if !ok {
+		t.Fatal("no run.build-release command")
+	}
+	if got := c.TaskArgv("api"); !reflect.DeepEqual(got, []string{"run", "build", "-p", "api", "--release"}) {
+		t.Errorf("one project: %v", got)
+	}
+	if got := c.TaskArgv(""); !reflect.DeepEqual(got, []string{"run", "build", "--release"}) {
+		t.Errorf("every project: %v", got)
+	}
+	plain, _ := ByID("run.build")
+	if got := plain.TaskArgv("api"); !reflect.DeepEqual(got, []string{"run", "build", "-p", "api"}) {
+		t.Errorf("the plain build takes no flag: %v", got)
+	}
+}
+
+func TestThePaletteOffersTheReleaseBuild(t *testing.T) {
+	hints := func(s State) map[string]string {
+		out := map[string]string{}
+		for _, e := range PaletteEntries(s) {
+			out[e.ID] = e.Hint
+		}
+		return out
+	}
+	home := hints(State{InWorkspace: true, View: TabHome, Projects: 3})
+	if home["run.build-release-all"] != "smith run build --release" {
+		t.Errorf("every project: %q", home["run.build-release-all"])
+	}
+	projects := hints(State{InWorkspace: true, View: TabProjects, Project: "web", Projects: 3})
+	if projects["run.build-release"] != "smith run build -p web --release" {
+		t.Errorf("the selected project: %q", projects["run.build-release"])
+	}
+}

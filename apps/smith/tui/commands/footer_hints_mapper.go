@@ -97,7 +97,7 @@ func scopedLabel(c Command, s State) string {
 // selected project and shows its scope in the footer.
 func hasScopedSibling(c Command) bool {
 	for _, o := range all {
-		if o.Kind == RunTask && !o.All && o.ScopeInFooter && o.Task == c.Task {
+		if o.Kind == RunTask && !o.All && o.ScopeInFooter && o.Task == c.Task && o.Release == c.Release {
 			return true
 		}
 	}

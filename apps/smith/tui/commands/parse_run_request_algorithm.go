@@ -75,6 +75,16 @@ func RunArgv(task, project string) []string {
 	return argv
 }
 
+// TaskArgv builds the command line a RunTask command starts on project (every
+// project when it is empty): RunArgv, with --release for a release build.
+func (c Command) TaskArgv(project string) []string {
+	argv := RunArgv(c.Task, project)
+	if c.Release {
+		argv = append(argv, flagvocabulary.Arg("release"))
+	}
+	return argv
+}
+
 // inlineProjects reads the "--project=a,b" form of the project flag (in any of
 // its spellings) and returns the names; nil when arg is not that form.
 func inlineProjects(arg string) []string {

@@ -16,7 +16,7 @@ type buttonRow struct {
 
 // workspaceButtons are the actions on the whole workspace, side by side: the
 // button that adds a project, then verify, build, test, lint and typecheck of
-// every project. A button that does not fit in w cells starts the next line, so
+// every project, and last the release build. A button that does not fit in w cells starts the next line, so
 // none is cut. under is the id of the button under the pointer.
 func (s Shell) workspaceButtons(w int, under string) []buttonRow {
 	buttons := []struct{ id, label string }{
@@ -26,6 +26,7 @@ func (s Shell) workspaceButtons(w int, under string) []buttonRow {
 		{"run.test-all", words.Say("tui.main.run_test")},
 		{"run.lint-all", words.Say("tui.main.run_lint")},
 		{"run.typecheck-all", words.Say("tui.main.run_typecheck")},
+		{"run.build-release-all", words.Say("tui.main.run_build_release")},
 	}
 	var rows []buttonRow
 	var line strings.Builder
