@@ -221,7 +221,8 @@ directory:
 store, [`prune`](../manual/cache-prune.md) runs `PruneWith` now (with a dry run),
 [`clear`](../manual/cache-clear.md) deletes the `v1` folder and
 [`verify`](../manual/cache-verify.md) hashes every blob and checks every entry. All of it works
-on a cache directory and never on the remote tier. [`smith doctor`](../manual/doctor.md) warns
+on a cache directory; only `clear --remote` and `--all` reach the remote tier (see below).
+[`smith doctor`](../manual/doctor.md) warns
 when the store is over its limit or holds entries that can never hit, from a look that hashes nothing.
 
 ## The remote tier
@@ -251,6 +252,13 @@ when the store is over its limit or holds entries that can never hit, from a loo
   timeout as unreachable. `CountUnpushed` asks `HEAD` for each local entry, capped in number,
   parallelism and time. `Push` uploads what the remote lacks through `remotecache.Upload`,
   the one function that signs a remote write, so a pushed entry is signed as a run signs it.
+- **Clearing the remote** (`smith cache clear --remote`, `--all`): `ObjectStore.List` reads
+  S3 `ListObjectsV2` (`list-type=2`, `continuation-token`) or Azure List Blobs
+  (`restype=container&comp=list`, `marker`) page by page under the store's prefix;
+  `ObjectStore.Delete` sends `DELETE` and takes 404 as done. A plain `https://` store returns
+  `ErrCannotList`, and `remotesync.FindObjects` names the local entries and blobs instead.
+  `remotesync.ClearRemote` deletes 8 at a time and stops at the first 401 or 403
+  ([ADR 0096](decisions/0096-the-remote-cache-can-be-cleared-from-the-cli-and-the-tui.md)).
 
 **Trust.** A remote store is somewhere anyone with write access to the bucket could poison. So
 every object is `signature || content`, where the signature is HMAC-SHA256 over

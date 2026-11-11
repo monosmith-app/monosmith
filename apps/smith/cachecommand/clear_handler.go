@@ -159,7 +159,9 @@ func clearTiers(cmd *cobra.Command, loc location, f clearFlags) error {
 	if f.all {
 		flag = "--all"
 	}
-	if err := ask(out, f.yes, question, "smith cache clear "+flag+" --yes", "delete what the question above names"); err != nil {
+	first, _, _ := strings.Cut(question, "\n")
+	what := "delete " + strings.TrimSuffix(strings.TrimPrefix(first, "Delete "), "?") + ", which the team and CI share"
+	if err := ask(out, f.yes, question, "smith cache clear "+flag+" --yes", what); err != nil {
 		return err
 	}
 	report := ClearReport{}
@@ -205,7 +207,7 @@ func ask(out io.Writer, yes bool, question, withYes, what string) error {
 		return nil
 	}
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		return problem.New("refusing to delete without a terminal to ask in", "run `"+withYes+"` to "+what)
+		return problem.New("refusing to delete the cache without a terminal to ask in", "run `"+withYes+"` to "+what)
 	}
 	if !confirm(os.Stdin, out, question+" [y/N] ") {
 		return errors.New("clear cancelled")

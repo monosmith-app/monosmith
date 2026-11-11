@@ -913,7 +913,7 @@ Usage: `smith cache <command>`
 
 | Subcommand | Meaning |
 |---|---|
-| `smith cache clear` | Delete the local cache (the remote cache is not touched) |
+| `smith cache clear` | Delete the local cache; --remote deletes this workspace's remote cache, --all both |
 | `smith cache key` | Make a key (SMITH_CACHE_KEY) for the remote cache and copy it, unseen |
 | `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
 | `smith cache push` | Upload every local cache entry the remote cache does not hold |

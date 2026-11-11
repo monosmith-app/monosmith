@@ -45,7 +45,9 @@ screen.
    (`glab variable set SMITH_CACHE_KEY --masked`). The command is shown, you confirm with `y`,
    and the key goes in through standard input, never as an argument.
 5. **The SAS token (Azure).** smith offers to make the container's token with
-   `az storage container generate-sas` and copy it, unseen. You choose how it is signed: as
+   `az storage container generate-sas` and copy it, unseen. The token has read, write, delete,
+   create and list permission (`rwdcl`); delete and list let `smith cache clear --remote` work. A
+   token made by an older smith has no delete right: make a new one for the remote clear. You choose how it is signed: as
    yourself (`--auth-mode login --as-user`; Azure limits it to 7 days, so you renew it weekly) or
    with the account key (`--auth-mode key`; it can last months, and rotating the account key voids
    it). Signing in to Azure through `az` directly, with no token, is not supported by the backend
