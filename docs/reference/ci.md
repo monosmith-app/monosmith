@@ -669,8 +669,8 @@ so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
 
 1. Create a storage account and a container for the cache, for example
    `smith-cache` in `acmecache`.
-2. Create a SAS token for the container with read, write and create
-   permission, and make the key with `smith cache key` (see
+2. Create a SAS token for the container with read, write, delete, create and
+   list permission (`rwdcl`; delete and list are for `smith cache clear --remote`), and make the key with `smith cache key` (see
    [Set up the remote cache](tasks-and-cache.md#set-up-the-remote-cache)).
 3. Configure the remote (a recipe can set this once for every repository):
 

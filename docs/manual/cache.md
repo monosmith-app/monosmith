@@ -5,7 +5,8 @@ tasks that ran, so that the next run can replay them. It shows what the cache ho
 to its size limit, deletes it, and checks it for damage. Those commands act on the cache on
 this machine only. [`smith cache push`](cache-push.md) is the one that writes to the shared
 [remote cache](../reference/tasks-and-cache.md#remote-cache): it uploads the local entries
-the remote lacks. Nothing here prunes the remote.
+the remote lacks. [`smith cache clear --remote`](cache-clear.md) deletes this workspace's
+objects on it (after a question). Nothing here prunes the remote.
 
 You rarely need to run it. smith keeps the cache under `[cache] max_size_mb` by itself (see
 below); these commands are for looking, for trimming sooner or smaller, and for repairing a
@@ -31,7 +32,7 @@ Usage: `smith cache <command>`
 
 | Subcommand | Meaning |
 |---|---|
-| `smith cache clear` | Delete the local cache (the remote cache is not touched) |
+| `smith cache clear` | Delete the local cache; --remote deletes this workspace's remote cache, --all both |
 | `smith cache key` | Make a key (SMITH_CACHE_KEY) for the remote cache and copy it, unseen |
 | `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
 | `smith cache push` | Upload every local cache entry the remote cache does not hold |

@@ -283,6 +283,9 @@ type Shell struct {
 	cacheRun *cachewizard.Bridge
 	// remote is the state of the remote cache, for the header and Home.
 	remote remoteCache
+	// cacheTierChosen is set while a cache clear chosen in the "which cache"
+	// dialog goes on to its confirmation.
+	cacheTierChosen bool
 	// cacheSecrets is the clipboard and environment of its key screen; nil is this machine.
 	cacheSecrets func() cachewizard.Secrets
 	// result is the dialog that closes a run that changed files or could not be

@@ -421,6 +421,15 @@ uploads an entry the remote holds. The interactive shell shows the state of
 the remote in its header and the count of entries it lacks on Home (see
 [the shell](../manual/tui.md#the-screen)).
 
+**Clearing the remote.** `smith cache clear --remote` deletes every entry and
+blob under the remote's prefix (`--all` clears the local cache too); plain
+`smith cache clear` stays local. It lists the prefix (S3 `ListObjectsV2`, Azure
+List Blobs, page by page) and deletes each object, after a question that names
+the store, the workspace and the count. A plain `https://` store cannot list:
+smith deletes there only the entries this machine's cache holds, and says so.
+The credentials need list and delete rights; a 403 says which. See
+[`smith cache clear`](../manual/cache-clear.md).
+
 ### Set up the remote cache
 
 Four things make a remote cache work: a storage place, a key, the backend's
@@ -475,8 +484,10 @@ are slower once.
 
 **SAS token or key.** They are different secrets. The key (`SMITH_CACHE_KEY`)
 proves an object is yours. For Azure Blob the SAS token
-(`AZURE_STORAGE_SAS_TOKEN`) lets smith reach the container, with read, write
-and create permission (a developer who only reads needs read). A SAS token
+(`AZURE_STORAGE_SAS_TOKEN`) lets smith reach the container, with read, write,
+delete, create and list permission (`rwdcl`; a developer who only reads needs
+read). Delete and list are for `smith cache clear --remote`: a token made before
+smith asked for them cannot clear the remote, so issue a new one. A SAS token
 expires, so renew it before its date and update the secret. Signing in to Azure
 through `az` directly is not supported by the backend today.
 

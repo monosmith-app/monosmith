@@ -49,6 +49,6 @@ func cacheBackendFinding(remote string, keyOK bool, getenv func(string) string) 
 		Check: "the remote cache has its SAS token", OK: ok, Warning: true, Area: doctorchecks.AreaConfig,
 		Problem: doctorchecks.ProblemWhen(!ok, "AZURE_STORAGE_SAS_TOKEN is not set, so the remote cache "+remote+" is off"),
 		Detail:  "[cache] remote is " + remote + " and SMITH_CACHE_KEY is set, but AZURE_STORAGE_SAS_TOKEN is not: smith cannot reach the container, so nothing is read from it or written to it",
-		Remedy:  "export AZURE_STORAGE_SAS_TOKEN with a SAS token for the container (read, write, create and list permission): `smith cache setup` makes one and copies it, and the pipeline keeps it as a secret variable",
+		Remedy:  "export AZURE_STORAGE_SAS_TOKEN with a SAS token for the container (read, write, delete, create and list permission): `smith cache setup` makes one and copies it, and the pipeline keeps it as a secret variable",
 	}}
 }

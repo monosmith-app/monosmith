@@ -79,6 +79,10 @@ func (s *Shell) afterResult(out resultdialog.Outcome) tea.Cmd {
 		return s.execute(out.Install, false)
 	case out.Check != nil:
 		s.result, s.resultKept = nil, nil
+		// A cache clear chosen in the dialog goes on to its confirmation,
+		// without asking which cache again.
+		s.cacheTierChosen = true
+		defer func() { s.cacheTierChosen = false }()
 		return s.execute(out.Check, false)
 	case out.Open != "":
 		s.copyText(out.Open)

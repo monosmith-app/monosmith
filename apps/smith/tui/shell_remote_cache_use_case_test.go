@@ -113,6 +113,51 @@ func TestHomeSaysTheRemoteRefusesTheCredentials(t *testing.T) {
 	}
 }
 
+func TestClearCacheAsksWhichCacheThenShowsTheCLIQuestion(t *testing.T) {
+	for _, tc := range []struct {
+		downs int
+		plan  string
+		runs  string
+	}{
+		{0, "cache clear --dry-run", "cache clear --yes"},
+		{1, "cache clear --remote --dry-run", "cache clear --remote --yes"},
+		{2, "cache clear --all --dry-run", "cache clear --all --yes"},
+	} {
+		t.Run(tc.runs, func(t *testing.T) {
+			s, p := connected(0, false)
+			l := remoteLab(t, 140, s, p, nil)
+			question := "Delete 6 objects of the remote cache s3://b/team for the workspace acme?\nThe team and CI share the remote cache: their next runs build again what it held."
+			l.answers(map[string]sources.Captured{tc.plan: {OK: true, Text: question}})
+			l.ask("cache", "clear")
+			l.has("Which cache do you clear?", "The local cache", "The remote cache", "Both")
+			for range tc.downs {
+				l.keys("down")
+			}
+			l.keys("enter")
+			if len(l.started) != 0 {
+				t.Fatalf("nothing may run before the confirmation: %v", l.started)
+			}
+			l.has("for the workspace acme?", "The team and CI share the remote cache")
+			l.keys("enter")
+			if got := l.lastStarted(); got != tc.runs {
+				t.Fatalf("started %q, want %q", got, tc.runs)
+			}
+		})
+	}
+}
+
+func TestClearCacheWithoutARemoteAsksNoExtraQuestion(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.answers(map[string]sources.Captured{"cache clear --dry-run": {OK: true, Text: "Delete the local cache at /w/.smith/cache (2 entries, 1.0 KB)? The remote cache is not touched."}})
+	l.ask("cache", "clear")
+	l.hasNot("Which cache do you clear?")
+	l.has("Delete the local cache at")
+	l.keys("enter")
+	if got := l.lastStarted(); got != "cache clear --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
 func TestHomeSaysWhenTheCountFailed(t *testing.T) {
 	s, _ := connected(0, false)
 	page := strings.Join(remoteLab(t, 160, s, sources.RemotePending{Err: errors.New("disk")}, nil).lines(), "\n")

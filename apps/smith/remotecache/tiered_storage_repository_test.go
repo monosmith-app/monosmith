@@ -29,6 +29,9 @@ func objectServer(t *testing.T) (*httptest.Server, map[string][]byte) {
 		case http.MethodPut:
 			body, _ := io.ReadAll(r.Body)
 			objects[r.URL.Path] = body
+		case http.MethodDelete:
+			delete(objects, r.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
 		case http.MethodGet, http.MethodHead:
 			body, ok := objects[r.URL.Path]
 			if !ok {

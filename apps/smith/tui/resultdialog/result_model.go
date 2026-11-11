@@ -134,6 +134,39 @@ func NewWhichVersion(argv []string) Model {
 	return m
 }
 
+// ChoosesCacheTier is true for a plain `cache clear` in a workspace that has a
+// remote cache: which cache goes is the person's choice, asked before the
+// confirmation. A line that already names a tier, or a dry run, is the person's own.
+//
+// Parameters: argv is the command line; remote is true when a remote cache is set.
+// Returns: whether NewWhichCache asks first.
+func ChoosesCacheTier(argv []string, remote bool) bool {
+	if !remote || len(argv) < 2 || argv[0] != "cache" || argv[1] != "clear" {
+		return false
+	}
+	return !slices.ContainsFunc(argv[2:], func(a string) bool { return a == "--remote" || a == "--all" || a == "--dry-run" })
+}
+
+// NewWhichCache asks which cache a clear deletes: the local one, the remote
+// one or both. Each choice goes on to the usual confirmation, which shows the
+// same question as the command line (it runs the line with --dry-run).
+//
+// Parameters: argv is the `cache clear` command line.
+// Returns: the dialog, on the first choice.
+func NewWhichCache(argv []string) Model {
+	m := Model{title: words.Say("resultdialog.cache.title")}
+	m.facts = []Fact{{Info, words.Say("resultdialog.cache.fact")}}
+	with := func(flag ...string) []string { return append(append([]string(nil), argv...), flag...) }
+	m.choices = []choice{
+		{words.Say("resultdialog.cache.local.label"), words.Say("resultdialog.cache.local.hint"), Outcome{Check: with()}},
+		{words.Say("resultdialog.cache.remote.label"), words.Say("resultdialog.cache.remote.hint"), Outcome{Check: with("--remote")}},
+		{words.Say("resultdialog.cache.all.label"), words.Say("resultdialog.cache.all.hint"), Outcome{Check: with("--all")}},
+		{words.Say("resultdialog.cache.cancel.label"), words.Say("resultdialog.cache.cancel.hint"), Outcome{Done: true, Note: words.Say("resultdialog.cache.cancel.note")}},
+	}
+	m.foot = words.Say("resultdialog.foot.cache")
+	return m
+}
+
 // NewCommitChoice builds the question that is asked once: should smith commit
 // each change it makes, so that it can be undone. Each choice says what it
 // writes and where; Esc cancels and nothing is saved.

@@ -230,7 +230,7 @@
   "commands.ws.cache-push.title": "Speed-up storage (Cache): upload what the remote lacks",
   "commands.ws.cache-push.hint": "smith cache push: uploads every local entry the remote cache does not hold, so the team and CI can use it",
   "commands.ws.cache-clear.title": "Speed-up storage (Cache): delete it all…",
-  "commands.ws.cache-clear.hint": "smith cache clear: deletes the local cache; the remote cache stays and the next run is slower",
+  "commands.ws.cache-clear.hint": "smith cache clear: deletes the local cache, the remote cache (--remote) or both (--all); with a remote it asks which; the next run is slower",
   "commands.ws.copies.title": "Copies between projects",
   "commands.ws.copies.hint": "smith copies: the files projects keep as exact copies of each other, and the lines they cost",
   "commands.ws.tools-list.title": "Tools the workspace needs",

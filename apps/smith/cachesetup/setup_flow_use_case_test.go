@@ -127,7 +127,7 @@ func TestParsersReadTheCloudsOutput(t *testing.T) {
 	if _, err := AzureSubscriptions().Parse("not json"); err == nil {
 		t.Fatal("want an error")
 	}
-	if line := CommandLine(GenerateSAS("", "a", "c", "login", time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC))); !strings.Contains(line, "--as-user") || !strings.Contains(line, "--expiry 2026-11-12T00:00Z") || strings.Contains(line, "--subscription") {
+	if line := CommandLine(GenerateSAS("", "a", "c", "login", time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC))); !strings.Contains(line, "--as-user") || !strings.Contains(line, "--expiry 2026-11-12T00:00Z") || strings.Contains(line, "--subscription") || !strings.Contains(line, "--permissions rwdcl") {
 		t.Fatal(line)
 	}
 }
