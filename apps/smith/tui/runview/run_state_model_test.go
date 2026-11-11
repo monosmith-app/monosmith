@@ -67,6 +67,17 @@ func TestFailuresComeFirstThenRunningThenQueued(t *testing.T) {
 	}
 }
 
+func TestARemoteHitSaysSoInItsReason(t *testing.T) {
+	r := NewRun([]string{"build"}, []string{"a:build", "b:build"}, t0)
+	feed(r, 0, "a:build ✓ from remote cache", "b:build ✓ from cache")
+	if a := r.Task("a:build"); a.Status != Cached || !a.Remote || a.Reason != "from remote cache" {
+		t.Fatalf("remote hit: %+v", a)
+	}
+	if b := r.Task("b:build"); b.Status != Cached || b.Remote || b.Reason != "" {
+		t.Fatalf("local hit: %+v", b)
+	}
+}
+
 func TestTheClosingSummaryMarksSkippedTasks(t *testing.T) {
 	r := NewRun([]string{"test"}, []string{"kit:test", "web:test"}, t0)
 	feed(r, 0, "kit:test × exited with code 2", "  × kit:test exited with code 2", "  » web:test because kit:test did not succeed", "× 0/2 tasks succeeded (0 from cache) in 1s")

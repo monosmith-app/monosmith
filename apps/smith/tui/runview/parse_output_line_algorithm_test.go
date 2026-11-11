@@ -15,6 +15,7 @@ func TestParseLineReadsWhatSmithPrints(t *testing.T) {
 		{"kit:build ✓ 106ms", Event{Kind: Finish, Task: "kit:build", Status: Passed, Duration: 106 * time.Millisecond, Text: "106ms"}},
 		{"orders:build ✓ 3.31s", Event{Kind: Finish, Task: "orders:build", Status: Passed, Duration: 3310 * time.Millisecond, Text: "3.31s"}},
 		{"kit:test ✓ from cache", Event{Kind: Finish, Task: "kit:test", Status: Cached, Text: "from cache"}},
+		{"kit:test ✓ from remote cache", Event{Kind: Finish, Task: "kit:test", Status: Cached, Text: "from remote cache", Remote: true}},
 		{"web:test × exited with code 1", Event{Kind: Finish, Task: "web:test", Status: Failed, Text: "exited with code 1"}},
 		{"sdk:build │ * Creating isolated environment", Event{Kind: Output, Task: "sdk:build", Text: "* Creating isolated environment"}},
 		{"sdk:build │   - setuptools>=75", Event{Kind: Output, Task: "sdk:build", Text: "  - setuptools>=75"}},

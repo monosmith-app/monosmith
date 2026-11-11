@@ -2,6 +2,7 @@ package remotecache
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,7 +47,20 @@ func (s httpStore) do(method, name string, body []byte) (*http.Response, error) 
 		req.ContentLength = int64(len(body))
 	}
 	s.authorise(req, hash)
-	return s.client.Do(req)
+	resp, err := s.client.Do(req)
+	return resp, withoutQuery(err)
+}
+
+// withoutQuery drops the query of the URL a transport error names: on Azure
+// it holds the SAS token, which must never reach a message.
+func withoutQuery(err error) error {
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		if i := strings.IndexByte(ue.URL, '?'); i >= 0 {
+			ue.URL = ue.URL[:i]
+		}
+	}
+	return err
 }
 
 func (s httpStore) Get(name string) ([]byte, bool, error) {
