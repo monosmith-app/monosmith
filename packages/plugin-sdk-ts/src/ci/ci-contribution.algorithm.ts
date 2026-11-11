@@ -2,7 +2,7 @@ import type { ActionStep, Credential, Step } from '../protocol/index.ts'
 
 /**
  * A provider-native step: a GitHub action (`'actions/setup-node@v6'`) or an
- * Azure task (`'NodeTool@0'`) with its inputs, written in the order given. The
+ * Azure task (`'UseNode@1'`) with its inputs, written in the order given. The
  * values of a pipeline are written as quoted YAML strings, except `true` and
  * `false`, so pass strings.
  */

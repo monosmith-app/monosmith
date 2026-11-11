@@ -193,7 +193,14 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 			log.markdown = table.Markdown()
 		}
 		if problems := problemNames(outcomes); len(problems) > 0 {
-			warn(out, fmt.Sprintf("%s reported problems (not blocking): %s", plural(len(problems), "step"), listSome(problems, 3)))
+			summary := fmt.Sprintf("%s reported problems (not blocking): %s", plural(len(problems), "step"), listSome(problems, 3))
+			if sections != nil {
+				warn(out, summary)
+			} else {
+				// runSteps raised a warning for each of these steps already:
+				// a second one for the same finding is noise in the run summary.
+				log.say("%s", summary)
+			}
 			log.say("→ read each step's findings in the folded output above")
 		}
 		if err == nil {

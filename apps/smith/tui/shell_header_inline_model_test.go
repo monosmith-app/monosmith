@@ -31,3 +31,24 @@ func TestBelowTheInlineWidthTheHeaderKeepsItsOwnRow(t *testing.T) {
 		t.Fatalf("and the tabs on the second: %q", lines[1])
 	}
 }
+
+func TestTheHeaderOnItsOwnRowSitsAtTheRightEnd(t *testing.T) {
+	l := newLab(t, true, 110, 30)
+	row := l.sh().headerRow()
+	if !strings.HasPrefix(row, "   ") || strings.HasSuffix(row, "  ") || !strings.Contains(row, "acme") {
+		t.Fatalf("the workspace and the branch belong at the right end: %q", row)
+	}
+}
+
+func TestTheWorkspaceButtonsOfferToClearTheCache(t *testing.T) {
+	l := newLab(t, true, 160, 30)
+	var ids []string
+	for _, row := range l.sh().workspaceButtons(200, "") {
+		for _, sp := range row.hit.spans {
+			ids = append(ids, sp.id)
+		}
+	}
+	if len(ids) == 0 || ids[len(ids)-1] != "ws.cache-clear" {
+		t.Fatalf("the last workspace button deletes the local cache: %v", ids)
+	}
+}

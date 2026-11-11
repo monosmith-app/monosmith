@@ -7,7 +7,8 @@ func runtime(version string) protocol.Toolchain {
 	return protocol.Toolchain{
 		Name: "node", Version: version,
 		GitHub: &protocol.ActionStep{Uses: "actions/setup-node@v7", Inputs: []protocol.Input{{Name: "node-version", Value: version}}},
-		Azure:  &protocol.ActionStep{Uses: "NodeTool@0", Inputs: []protocol.Input{{Name: "versionSpec", Value: version + ".x"}}},
+		// UseNode@1 replaces NodeTool@0, which Azure Pipelines deprecated (a warning in every run).
+		Azure: &protocol.ActionStep{Uses: "UseNode@1", Inputs: []protocol.Input{{Name: "version", Value: version + ".x"}}},
 		// Elsewhere (GitLab CI, on a Debian image, as root): NodeSource.
 		Install: "curl -fsSL https://deb.nodesource.com/setup_" + version + ".x | bash -\napt-get install -y -qq nodejs",
 		Devcontainer: &protocol.DevcontainerFeature{
