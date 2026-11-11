@@ -346,6 +346,7 @@ a plugin implements as many as it needs.
 | `IContributor` | `ContributeAsync` | `contribute` | `contribute` | `Contributor` |
 | `IDependencyManager` | `InstallAsync` and `UninstallAsync` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `ILinker` | `LinkAsync` and `UnlinkAsync` | `dependencies/link`, `dependencies/unlink` | `link` | `Linker` |
+| `IDependencyRepairer` | `RepairAsync` | `dependencies/repair` | `repair` | `DependencyRepairer` |
 | `IDeclarationEditor` | `DeclaredAsync` and `RewriteAsync` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
 | `ILatestReader` | `LatestAsync` | `dependencies/latest` | `latest` | `LatestReader` |
 | `Cancellable => true` | | the `cancel` notification | `cancel` | `Cancellable` |
@@ -366,7 +367,7 @@ waiting refused with `-32800`, and any other finishes what it is doing.
 | `PluginServer.RunAsync(plugin)` | runs the plugin on standard input and output; returns the exit code; the whole body of an entry point |
 | `PluginServer.ServeAsync(plugin, new ServeStreams(input, output, log), cancellation)` | the same loop on streams you give it; returns at `shutdown` or the end of the input |
 | `ClaimStdioUseCase.Claim()` | takes standard input and output for the protocol and returns the two streams; `RunAsync` calls it |
-| `IPlugin`, `IDiscoverer`, `IGenerator`, `IVersioner`, `IPublisher`, `IRegistryReader`, `ICiContributor`, `IDoctorContributor`, `IRemover`, `IKindChanger`, `IContributor`, `IDependencyManager`, `ILinker`, `IDeclarationEditor`, `ILatestReader` | the shapes of the plugin |
+| `IPlugin`, `IDiscoverer`, `IGenerator`, `IVersioner`, `IPublisher`, `IRegistryReader`, `ICiContributor`, `IDoctorContributor`, `IRemover`, `IKindChanger`, `IContributor`, `IDependencyManager`, `ILinker`, `IDependencyRepairer`, `IDeclarationEditor`, `ILatestReader` | the shapes of the plugin |
 | `CancellationExtensions.ThrowIfCancelled(token, message?)` | throws `RequestCancelledError` when the work was asked to stop |
 | `RequestCancelledError` | what `ThrowIfCancelled` throws |
 

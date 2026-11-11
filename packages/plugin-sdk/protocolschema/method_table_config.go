@@ -132,6 +132,12 @@ var Methods = []MethodSpec{
 		Capability: "Link",
 	},
 	{
+		Method:      protocol.MethodRepair,
+		Description: "Says how the plugin repairs the installed dependencies of its projects: one plan for each repair kind its tool has, with the paths the host deletes and the commands it runs.",
+		Params:      reflect.TypeFor[protocol.RepairParams](), Result: reflect.TypeFor[protocol.RepairResult](),
+		Capability: "Repair",
+	},
+	{
 		Method:      protocol.MethodDeclared,
 		Description: "Lists the dependencies the manifests of the plugin's projects declare.",
 		Params:      reflect.TypeFor[protocol.DeclaredParams](), Result: reflect.TypeFor[protocol.DeclaredResult](),

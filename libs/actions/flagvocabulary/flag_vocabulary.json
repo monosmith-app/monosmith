@@ -8,7 +8,7 @@
       "synonyms": [{ "name": "workspace", "short": "w" }, { "name": "projects" }],
       "near": ["app", "apps", "target", "targets", "for", "in"],
       "meaning": "the project or projects a command acts on; repeat it or separate names with commas (in smith the workspace is the whole repository, so -w is only a synonym)",
-      "commands": ["build", "docker description", "install", "lint", "pipeline", "release assets", "release pub", "run", "tauri icon", "test", "typecheck", "uninstall"]
+      "commands": ["build", "deps repair", "docker description", "install", "lint", "pipeline", "release assets", "release pub", "run", "tauri icon", "test", "typecheck", "uninstall"]
     },
     {
       "id": "lang",

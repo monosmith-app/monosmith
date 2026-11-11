@@ -220,6 +220,22 @@ Each row is a message you can see, what it means and what to do.
 | `smith add` asks nothing and picks a build tool you did not choose | The project follows its sibling projects. It says why. `--fresh` gives the stack's default, `--like <project>` copies one project. |
 | `release --rehearse` says the registry refused the credential (401) | The token is missing or cannot publish this name. Create a token for the registry and set the variable the message names. |
 
+## Installed dependencies are broken
+
+Do not delete `node_modules`, `.venv` or a lockfile by hand. Run
+[`smith deps repair`](../manual/deps-repair.md) (or `H` on the Deps tab of the TUI) and pick the
+lightest repair that can clear the problem:
+
+| Symptom | Repair |
+|---|---|
+| A package is installed that no manifest declares, or a tool warns about extraneous packages | `prune` |
+| An install stopped half-way, files of a package are damaged, a binary of a package is missing | `reinstall` (the versions stay) |
+| The lockfile is damaged or does not match the manifests, and `reinstall` did not help | `lockfile` (the versions can change: review and commit the new lockfile) |
+| A download is corrupt (an integrity or checksum error) | `cache` (other workspaces on the machine download again) |
+
+`smith deps repair --dry-run` shows what each repair deletes and runs. smith deletes a link as a
+link, so the workspace packages npm links into `node_modules` keep their files.
+
 ## Windows
 
 - **Run smith from PowerShell, Git Bash or Windows Terminal.** Paths smith

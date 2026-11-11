@@ -26,6 +26,7 @@ export const PLUGIN_MEMBERS: Readonly<Record<string, { member: Member, requires:
   'dependencies/uninstall': { member: 'uninstall', requires: ['install', 'uninstall'] },
   'dependencies/link':      { member: 'link', requires: ['link', 'unlink'] },
   'dependencies/unlink':    { member: 'unlink', requires: ['link', 'unlink'] },
+  'dependencies/repair':    { member: 'repair', requires: ['repair'] },
   'dependencies/declared':  { member: 'declared', requires: ['declared', 'rewrite'] },
   'dependencies/rewrite':   { member: 'rewrite', requires: ['declared', 'rewrite'] },
   'dependencies/latest':    { member: 'latest', requires: ['latest'] },

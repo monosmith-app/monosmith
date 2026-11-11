@@ -6,7 +6,7 @@ One idea has one flag in every smith command. This page lists the ideas that sev
 
 | Meaning | Flag | Also accepted | Value | Commands |
 |---|---|---|---|---|
-| The project or projects a command acts on; repeat it or separate names with commas (in smith the workspace is the whole repository, so -w is only a synonym) | `-p, --project` | `-w`, `--workspace`, `--projects` | text, repeatable or comma separated | `smith build`, `smith docker description`, `smith install`, `smith lint`, `smith pipeline`, `smith release assets`, `smith release pub`, `smith run`, `smith tauri icon`, `smith test`, `smith typecheck`, `smith uninstall` |
+| The project or projects a command acts on; repeat it or separate names with commas (in smith the workspace is the whole repository, so -w is only a synonym) | `-p, --project` | `-w`, `--workspace`, `--projects` | text, repeatable or comma separated | `smith build`, `smith deps repair`, `smith docker description`, `smith install`, `smith lint`, `smith pipeline`, `smith release assets`, `smith release pub`, `smith run`, `smith tauri icon`, `smith test`, `smith typecheck`, `smith uninstall` |
 | A programming language, by the name its plugin has | `-l, --lang` | `--language` | text | `smith add`, `smith compose`, `smith new`, `smith plugin draft`, `smith slices check` |
 | The file or folder a command writes its result to | `-o, --output` | `--out` | text | `smith graph`, `smith npm-prune`, `smith plugin draft`, `smith plugin pack`, `smith report` |
 | Do not ask for confirmation: take the safe answer | `-y, --yes` | - | on or off | many commands |

@@ -575,3 +575,19 @@ func TestOnlyAPluginThatLinksAdvertisesTheLinkCapability(t *testing.T) {
 		t.Fatal("a plugin that links advertises it")
 	}
 }
+
+// repairLab says how it repairs dependencies.
+type repairLab struct{ lab }
+
+func (repairLab) Repair(protocol.RepairParams) (protocol.RepairResult, error) {
+	return protocol.RepairResult{Plans: []protocol.RepairPlan{{Kind: protocol.RepairPrune, Summary: "prune"}}}, nil
+}
+
+func TestOnlyAPluginThatRepairsAdvertisesTheRepairCapability(t *testing.T) {
+	if serve.CapabilitiesOf(lab{}).Repair {
+		t.Fatal("a plain plugin does not repair")
+	}
+	if !serve.CapabilitiesOf(repairLab{}).Repair {
+		t.Fatal("a plugin that repairs advertises it")
+	}
+}

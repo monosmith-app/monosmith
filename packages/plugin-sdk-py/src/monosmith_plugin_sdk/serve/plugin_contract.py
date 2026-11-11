@@ -51,6 +51,8 @@ from ..protocol import (
     PublishResult,
     RemoveParams,
     RemoveResult,
+    RepairParams,
+    RepairResult,
     RewriteParams,
     UninstallParams,
     UnlinkParams,
@@ -156,6 +158,13 @@ class Linker(Protocol):
     def link(self, params: LinkParams, cancel: CancelToken) -> LinkResult: ...
 
     def unlink(self, params: UnlinkParams, cancel: CancelToken) -> DependencyResult: ...
+
+
+class DependencyRepairer(Protocol):
+    """`dependencies/repair`: one plan for each repair kind the tool has. It only describes; the host
+    deletes the paths and runs the commands."""
+
+    def repair(self, params: RepairParams, cancel: CancelToken) -> RepairResult: ...
 
 
 class DeclarationEditor(Protocol):

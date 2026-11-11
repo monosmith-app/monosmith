@@ -320,6 +320,7 @@ rest are `Protocol` classes that document the signatures, and a plugin does not 
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `link` and `unlink` | `dependencies/link`, `dependencies/unlink` | `link` | `Linker` |
+| `repair` | `dependencies/repair` | `repair` | `DependencyRepairer` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
 | `latest` | `dependencies/latest` | `latest` | `LatestReader` |
 | `cancellable = True` | the `cancel` notification | `cancel` | `Cancellable` |
@@ -345,7 +346,7 @@ is the `initialize` result without the two members the SDK fills in.
 | `serve(plugin)` | runs the plugin on standard input and output and exits the process; the whole body of an entry point |
 | `serve_streams(plugin, ServeStreams(input, output, log=None))` | the same loop on streams you give it (binary file objects); returns at `shutdown` or the end of the input |
 | `capabilities_of(plugin)` | the `Capabilities` the plugin would advertise |
-| `Plugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `Linker`, `DeclarationEditor`, `LatestReader` | the shapes of the plugin object |
+| `Plugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `Linker`, `DependencyRepairer`, `DeclarationEditor`, `LatestReader` | the shapes of the plugin object |
 | `CancelToken` | `cancelled`, `cancel()`, `wait(timeout=None)`, `raise_if_cancelled(message?)`, `on_cancel(callback)` |
 | `RequestCancelledError` | what `raise_if_cancelled` raises |
 

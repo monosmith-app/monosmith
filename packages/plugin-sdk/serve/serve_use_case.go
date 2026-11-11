@@ -238,6 +238,10 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 		if l, ok := p.(Linker); ok {
 			return call(req.Params, l.Unlink)
 		}
+	case protocol.MethodRepair:
+		if r, ok := p.(DependencyRepairer); ok {
+			return call(req.Params, r.Repair)
+		}
 	case protocol.MethodDeclared:
 		if d, ok := p.(DeclarationEditor); ok {
 			return call(req.Params, d.Declared)
@@ -309,7 +313,8 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, declared := p.(DeclaredDescriber)
 	_, link := p.(Linker)
 	_, packs := p.(PackPublisher)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs}
+	_, repair := p.(DependencyRepairer)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs, Repair: repair}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

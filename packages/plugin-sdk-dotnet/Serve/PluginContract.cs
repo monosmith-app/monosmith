@@ -161,6 +161,16 @@ public interface ILinker
     Task<DependencyResult> UnlinkAsync(UnlinkParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A plugin that says how to repair the installed dependencies of its projects: one plan for each repair kind its tool has. It only describes; the host deletes and runs.</summary>
+public interface IDependencyRepairer
+{
+    /// <summary>Says how the plugin repairs the installed dependencies of its projects: one plan for each repair kind its tool has, with the paths the host deletes and the commands it runs.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<RepairResult> RepairAsync(RepairParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.</summary>
 public interface IDependencyManager
 {

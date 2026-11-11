@@ -158,7 +158,7 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 	rows = append(rows, "")
 	for i, o := range w.question.Options {
 		label := fmt.Sprint(i+1) + ") " + strings.ReplaceAll(o.Label, "{name}", w.text)
-		if i == 0 {
+		if i == 0 && !w.style.NoSuggestion {
 			label += words.Say("fixwizard.suggested")
 		}
 		if o.Disabled != "" {

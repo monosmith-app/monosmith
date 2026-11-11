@@ -163,6 +163,7 @@ which capability each method needs.
 | `doctor` | `doctor` | `DoctorContributor` | `smith doctor` |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | `DependencyManager` | `smith install`, `uninstall` |
 | `link` | `dependencies/link`, `dependencies/unlink` | `Linker` | `smith install -p <project> <library>`, `smith uninstall` (`internallink`); a plugin without it is refused with one sentence that names the manifest to edit by hand |
+| `repair` | `dependencies/repair` | `DependencyRepairer` | `smith deps repair`, the Deps tab (`depsrepair`): the plugin answers one plan per repair kind and never deletes; the host checks the paths, deletes links as links, runs, installs ([ADR 0093](decisions/0093-plugins-describe-dependency-repairs-and-smith-carries-them-out.md)) |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | `DeclarationEditor` | `smith sync`, `smith up --align` |
 | `latest` | `dependencies/latest` | `LatestReader` | `smith up` |
 | `cancel` | `cancel` (a notification) | `Cancellable` | the host, when a call's context ends or its time runs out |
@@ -208,6 +209,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `doctor` | `DoctorParams{projects}` | `DoctorResult{findings}` | `Finding{check, ok, detail, remedy, warning, fix}`; a `Fix` has `files`, `steps`, `choices`, `safe` |
 | `dependencies/install`, `uninstall` | `InstallParams`, `UninstallParams` | `DependencyResult` | adds or removes packages in one project |
 | `dependencies/link`, `unlink` | `LinkParams{project, library, quiet, plan, spec}`, `UnlinkParams{project, library}` | `LinkResult{files, notes, manifest, line, options}`, `DependencyResult` | makes a project depend on a library of the same workspace in the ecosystem's own form, and takes it out; `plan` writes nothing and answers what would be written, with the range `options` ([ADR 0071](decisions/0071-smith-install-links-a-library-of-the-workspace.md)) |
+| `dependencies/repair` | `RepairParams{projects}` | `RepairResult{plans}` | `RepairPlan{kind, summary, delete, commands, install, machineWide, changesVersions, notes}`; kinds `prune`, `reinstall`, `lockfile`, `cache`; delete paths are workspace-relative with forward slashes |
 | `dependencies/declared`, `rewrite` | `DeclaredParams`, `RewriteParams` | `DeclaredResult`, `DependencyResult` | reads and edits declared specs |
 | `dependencies/latest` | `LatestParams` | `LatestResult{latest, unreachable, tools}` (`tools` are `ToolPin`s) | newest releases and pinned tools |
 | `cancel` | `CancelParams{id}`, a notification | none | stops the in-flight request with that id |

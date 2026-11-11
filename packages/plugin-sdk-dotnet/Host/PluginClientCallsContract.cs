@@ -237,6 +237,22 @@ public static class PluginClientCalls
         return client.CallAsync<UnlinkParams, DependencyResult>(ProtocolMethods.DependenciesUnlink, parameters, timeout, cancellation);
     }
 
+    /// <summary>Says how the plugin repairs the installed dependencies of its projects: one plan for each repair kind its tool has, with the paths the host deletes and the commands it runs.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<RepairResult> RepairAsync(
+        this PluginClient client,
+        RepairParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<RepairParams, RepairResult>(ProtocolMethods.DependenciesRepair, parameters, timeout, cancellation);
+    }
+
     /// <summary>Lists the dependencies the manifests of the plugin's projects declare.</summary>
     /// <param name="client">The connected plugin.</param>
     /// <param name="parameters">The params of the request.</param>

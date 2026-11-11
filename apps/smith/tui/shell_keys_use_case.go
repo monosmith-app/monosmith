@@ -363,6 +363,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.openFormPresenting("deps up")
 	case "deps-sync":
 		return s.openFormPresenting("sync")
+	case "deps-repair":
+		return s.openDepsRepair()
 	case "reload":
 		return s.reload()
 	case "detail-zoom":

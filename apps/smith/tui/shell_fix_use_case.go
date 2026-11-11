@@ -141,11 +141,14 @@ func (s *Shell) afterFix(out fixwizard.Outcome) tea.Cmd {
 	switch {
 	case out.Done:
 		failed := s.fix.Phase() == fixwizard.Failed
-		s.fix = nil
+		s.fix, s.depsRepair = nil, nil
 		if !failed {
 			s.say(words.Say("tui.fix.cancelled_nothing_was_changed"))
 		}
 	case out.Apply:
+		if s.depsRepair != nil {
+			return s.applyDepsRepair()
+		}
 		return s.applyFix()
 	case out.Stop:
 		if s.fixing != nil {
@@ -200,6 +203,9 @@ func (s *Shell) fixProgress(msg fixProgressMsg) tea.Cmd {
 func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 	if msg.run != s.fixing || s.fix == nil {
 		return nil
+	}
+	if s.depsRepair != nil {
+		return s.depsRepairDone(msg)
 	}
 	s.fixing = nil
 	if s.repair != nil && msg.err == nil {

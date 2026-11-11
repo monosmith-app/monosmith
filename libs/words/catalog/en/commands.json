@@ -117,6 +117,8 @@
   "commands.deps.sync.title": "Sync the versions…",
   "commands.deps.sync.hint": "smith sync: a form asks the options, then the confirmation shows the plan",
   "commands.deps.sync.footer": "sync",
+  "commands.deps.repair.title": "Repair the dependencies…",
+  "commands.deps.repair.hint": "smith deps repair: pick prune, clean reinstall, rebuild the lockfile or clear the download cache, review the plan, confirm",
   "commands.settings.move.title": "Move in the list of sections or its rows",
   "commands.settings.move.shortcut": "Up Down / j k",
   "commands.settings.move.glyph": "↑↓",
