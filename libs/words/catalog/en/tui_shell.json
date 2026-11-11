@@ -88,6 +88,7 @@
   "tui.detail.why_file": "Why is {file} here?",
   "tui.detail.why_file_hint": "opens the smith why form for this file: who owns it, what produced it, how to change it",
   "tui.detail.extra_not_run": "Doctor does not run this check itself. Run it now to see the result in the run panel.",
+  "tui.detail.run_extra_hint": "runs {command} now; each project's result and any failure show in the run panel",
   "tui.detail.run_every_check_again_nothing_changes": "run every check again; nothing changes",
   "tui.detail.what_is_wrong": "What is wrong",
   "tui.detail.build_details": "Build details",

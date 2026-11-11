@@ -650,9 +650,13 @@ The detail of the selected check has four parts, always in this order, and each 
 `PgUp` and `PgDn` scroll the detail (`↑ more` and `↓ more` tell when there is more). Under 100 columns, `z` shows the detail alone.
 
 Under the checks, **Checks doctor does not run itself** lists the checks that only run on request:
-**Vertical-slice layout** (`smith slices check`). `Enter` on the row, or the **Run this check now** button
-of its detail, opens the same form the palette opens, with the folders of the projects in the
-workspace's main language and that language filled in.
+**Vertical-slice layout**. `Enter` on the row, or the **Run this check now** button of its detail,
+runs the check at once, with no question. It runs `slice-check`, the cached task of each project in a
+language the checker knows (Go, Python, Rust and others), and `lint` when the workspace has Node
+projects, because ESLint's vertical-slices rules check a Node project's layout as part of its lint.
+A workspace with a Go app and Node packages runs `smith run slice-check lint`. Each project's
+result, and the output of a failure, show in the run panel. The row is absent when no project has
+either task.
 
 ## Wizards
 

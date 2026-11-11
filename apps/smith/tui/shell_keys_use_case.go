@@ -257,7 +257,12 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 	project := s.selectedProject()
 	if id, ok := strings.CutPrefix(action, "form:"); ok {
 		// A check of the Doctor tab run now: the form the palette opens.
-		return s.openFormFor(id, s.extraAnswers(id))
+		return s.openFormFor(id, nil)
+	}
+	if action == "extra" {
+		// A check doctor does not run itself, run now with no question.
+		cmd, _ := s.runSelectedExtra()
+		return cmd
 	}
 	if task, ok := strings.CutPrefix(action, "run:"); ok {
 		if project == "" {
@@ -603,7 +608,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		case (name == "tab" || (name == "right" && !s.doctor.OnHeader())) && s.beside():
 			s.focusSide()
 		case commands.NavNamed(name) == commands.NavConfirm && s.onDoctorExtra():
-			// Enter on a check doctor does not run opens the form that runs it.
+			// Enter on a check doctor does not run runs it, with no question.
 			cmd, _ := s.runSelectedExtra()
 			return cmd
 		case commands.NavNamed(name) == commands.NavConfirm && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
