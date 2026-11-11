@@ -1,15 +1,15 @@
 {
   "depsrepair.kind.prune.label": "Prune",
-  "depsrepair.kind.prune.explain": "remove the installed packages that no manifest declares. Nothing else is deleted and no version changes.",
+  "depsrepair.kind.prune.explain": "remove the installed packages or requirements that nothing declares or uses. The plan of each tool says what else it changes.",
   "depsrepair.kind.reinstall.label": "Clean reinstall",
-  "depsrepair.kind.reinstall.explain": "delete the installed dependencies, then install them again from the lockfile. The versions stay.",
+  "depsrepair.kind.reinstall.explain": "delete the installed dependencies, then install them again. A lockfile keeps the versions.",
   "depsrepair.kind.lockfile.label": "Rebuild the lockfile",
-  "depsrepair.kind.lockfile.explain": "delete the installed dependencies and the lockfile, then install. The versions can change.",
+  "depsrepair.kind.lockfile.explain": "delete the lockfile (and the installed dependencies), then resolve again. The versions can change.",
   "depsrepair.kind.cache.label": "Clear the download cache",
   "depsrepair.kind.cache.explain": "clear the download cache of the tool, then install. Other workspaces on this machine use the same cache.",
   "depsrepair.kind.none": "no tool of this workspace has it",
   "depsrepair.warn.machine_wide": "This clears a cache that every workspace on this machine uses: they download their packages again.",
-  "depsrepair.warn.machine_wide.remedy": "to repair this workspace only, choose Clean reinstall",
-  "depsrepair.warn.versions": "The versions can change: the lockfile is written again.",
-  "depsrepair.warn.versions.remedy": "review the lockfile diff before you commit it. smith does not commit it"
+  "depsrepair.warn.machine_wide.remedy": "to repair this workspace only, choose a lighter repair",
+  "depsrepair.warn.versions": "The versions can change: a manifest or a lockfile is written again.",
+  "depsrepair.warn.versions.remedy": "review the diff before you commit it. smith does not commit it"
 }

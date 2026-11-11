@@ -76,9 +76,19 @@ Usage: `smith deps repair [flags]`
 | Language | prune | reinstall | lockfile | cache |
 |---|---|---|---|---|
 | Node (npm) | `npm prune` | delete each `node_modules`, then `npm install` | delete each `node_modules` and `package-lock.json`, then `npm install` | `npm cache clean --force`, then `npm install` |
+| Python (pip) | — | delete `.venv`, then install (no lockfile: versions can change) | — | `pip cache purge`, then install |
+| Go | `go mod tidy` in each module | — | delete `go.sum` (and `go.work.sum`), then `go mod tidy` | `go clean -modcache`, then `go mod download` |
+| Rust (cargo) | — | — | delete `Cargo.lock`, then `cargo fetch` | — |
+| .NET (NuGet) | — | `dotnet restore --force` | delete `packages.lock.json`, then `dotnet restore --force-evaluate` | `dotnet nuget locals all --clear`, then `dotnet restore` |
+| Dart / Flutter (pub) | — | delete `.dart_tool`, then `pub get` | delete `.dart_tool` and `pubspec.lock`, then `pub get` | `pub cache clean --force`, then `pub get` |
+| Ruby (Bundler) | — | `bundle install --redownload` | delete `Gemfile.lock`, then `bundle install` | — |
+| PHP (Composer) | — | delete `vendor`, then `composer install` | delete `vendor` and `composer.lock`, then `composer install` | `composer clear-cache`, then `composer install` |
+| Swift (SwiftPM) | — | `swift package reset`, then `swift package resolve` | delete `Package.resolved`, then `swift package resolve` | `swift package purge-cache`, then `swift package resolve` |
+| JVM (Maven) | — | — | — | `mvn dependency:purge-local-repository` |
 
-The other languages follow. Until their plugin offers a repair, smith says that the tool has no
-dependency repair, and the language's page in the plugin catalogue has the manual steps.
+A dash is a kind the tool has no honest equivalent for. The language's page in the plugin
+catalogue says why. Gradle, C and C++, and Lua have no repair: their pages say why and what to do
+by hand.
 
 ## Exit codes
 

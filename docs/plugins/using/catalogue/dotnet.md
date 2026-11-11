@@ -228,6 +228,18 @@ Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] re
 
 `smith install -p <project> Acme.Core` runs `dotnet add <project file> reference <library file>`, which writes a `ProjectReference` and restores the project. `smith uninstall` runs `dotnet remove ... reference`. The plugin declares the `link` capability.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. [`smith deps repair`](../../../manual/deps-repair.md) offers these repairs:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `reinstall` | nothing | `dotnet restore --force` in each project: NuGet resolves and restores every package again. The versions stay |
+| `lockfile` | each `packages.lock.json` that exists | `dotnet restore --force-evaluate` in those projects, which writes the lockfile again. Offered only when a project has one |
+| `cache` | nothing in the workspace | `dotnet nuget locals all --clear`, then `dotnet restore`. The NuGet caches belong to your user account |
+
+No `prune`: a restore keeps no package that no project references.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): `.NET builds into dist/dotnet` reads `ArtifactsPath` of the nearest `Directory.Build.props`, else `bin/` and `obj/`. The fix asks and adds or updates the `ArtifactsPath` block, keeping the other content; it is refused when a project sets `OutputPath` or `BaseOutputPath`, a file names `bin/` or `obj/`, or a `HintPath` reads a built file. Another folder inside `dist/` is reported too: an app ships its build from `dist/dotnet/bin/<project>/<configuration>`. `<project> caches only dist/<project dir>` fails when a build task lists `dist/dotnet` (the artifacts folder every project shares) as an output, or ships without listing `dist/<project dir>`. See [doctor](../../../manual/doctor.md#the-other-languages).

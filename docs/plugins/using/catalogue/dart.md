@@ -339,6 +339,19 @@ Azure output (Flutter): a bash step cloning Flutter with
 `--branch 3.41.0`, `##vso[task.prependpath]$HOME/flutter/bin`, a `Cache@2` step
 and `PUB_CACHE` as a pipeline variable. GitLab was not generated for Dart by me.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. smith resolves the workspace with one `pub get` at
+the root (`flutter pub get` when a project uses Flutter). [`smith deps repair`](../../../manual/deps-repair.md) offers these repairs:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `reinstall` | every `.dart_tool` that exists (the root one, then each project's) | `pub get`. `pubspec.lock` keeps the versions |
+| `lockfile` | the same, and every `pubspec.lock` | `pub get`, which resolves every constraint again. Offered only when a `pubspec.lock` exists |
+| `cache` | nothing in the workspace | `dart pub cache clean --force` (or `flutter`), then `pub get`. The pub cache belongs to your user account |
+
+No `prune`: pub has no command that removes unused packages.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `dart compile`, `dart build` or `flutter build` without `-o` is reported, with the option to pass. The `build/` folder of `flutter run` is not read. A task whose `outputs` do not hold the folder the command writes is reported too: a cache hit would restore nothing. See [doctor](../../../manual/doctor.md#the-other-languages).
