@@ -12,10 +12,12 @@ import (
 func TestDoctorChecksFrontendDist(t *testing.T) {
 	ws := t.TempDir()
 	projects := []protocol.Project{{Name: "studio", Root: "apps/studio", Tasks: map[string]protocol.Task{"build": {}}}}
-	for dist, ok := range map[string]bool{"../../../dist/apps/studio": true, "../dist": false} {
+	// The shipped folder dist/apps/studio holds the installers, so the web app
+	// is a work file in dist/tauri/apps/studio/frontend (ADR 0092).
+	for dist, ok := range map[string]bool{"../../../dist/tauri/apps/studio/frontend": true, "../../../dist/apps/studio": false, "../dist": false} {
 		write(t, ws, "apps/studio/src-tauri/tauri.conf.json", `{"build":{"frontendDist":"`+dist+`"}}`)
 		found := frontendDistFindings(ws, projects)
-		if len(found) != 1 || found[0].OK != ok || !found[0].Warning || (!ok && !strings.Contains(found[0].Remedy, `"../../../dist/apps/studio"`)) {
+		if len(found) != 1 || found[0].OK != ok || !found[0].Warning || (!ok && !strings.Contains(found[0].Remedy, `"../../../dist/tauri/apps/studio/frontend"`)) {
 			t.Errorf("%s: %+v", dist, found)
 		}
 	}

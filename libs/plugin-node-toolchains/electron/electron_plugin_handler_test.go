@@ -68,6 +68,25 @@ func TestThePlanHasTheMainProcessThePreloadAndThePage(t *testing.T) {
 	}
 }
 
+// The app that start runs and Forge's out/ are in the work folder
+// dist/electron/<project dir>; nothing of Forge's lands in dist/<project dir>
+// (ADR 0092, owner decision 2).
+func TestTheBuildAndThePackageUseTheWorkFolder(t *testing.T) {
+	plan, err := electronChoices.Plan([]string{"electron"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	work := "[[.Up]]dist/electron/[[.Dir]]/app"
+	for _, path := range []string{"tsconfig.build.json", "scripts/assemble.mjs", "scripts/start.mjs", "scripts/package.mjs"} {
+		if body := plan.Files[path]; !strings.Contains(body, work) || strings.Contains(body, "[[.Build]]") {
+			t.Errorf("%s does not use the work folder:\n%s", path, body)
+		}
+	}
+	if !strings.Contains(plan.Files["scripts/assemble.mjs"], "outDir: '../out'") {
+		t.Errorf("Forge packs into the work folder's out/:\n%s", plan.Files["scripts/assemble.mjs"])
+	}
+}
+
 func TestOnlyAnAppIsGenerated(t *testing.T) {
 	_, err := New("test").Generate(protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "x"})
 	if err == nil || !strings.Contains(err.Error(), "is an app") {

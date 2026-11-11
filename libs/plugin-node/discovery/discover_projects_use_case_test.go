@@ -71,6 +71,29 @@ func TestDiscoverTagsNativeProjects(t *testing.T) {
 	}
 }
 
+// The Electron app smith makes builds into its work folder and its package
+// task ships the packed app into dist/<project dir> (ADR 0092).
+func TestDiscoverGivesAnElectronAppItsTwoFolders(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "apps", "desk")
+	_ = os.MkdirAll(filepath.Join(dir, "scripts"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "scripts", "assemble.mjs"), nil, 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"desk","private":true,"smith":{"kind":"app"},
+		"scripts":{"build":"tsc && node scripts/assemble.mjs","package":"node scripts/package.mjs"},
+		"devDependencies":{"@electron-forge/cli":"^7"}}`), 0o644)
+	res, err := Discover(ws, []string{"apps/desk/package.json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tasks := res.Projects[0].Tasks
+	if got := tasks["build"].Outputs; len(got) != 1 || got[0] != "../../dist/electron/apps/desk/app" {
+		t.Errorf("build outputs %v", got)
+	}
+	if p := tasks["package"]; len(p.Ship) != 1 || p.Ship[0] != "../../dist/electron/apps/desk/out/*-*-*" || len(p.Outputs) != 1 || p.Outputs[0] != "../../dist/apps/desk" {
+		t.Errorf("package %+v", p)
+	}
+}
+
 func TestDiscoverGivesAnAppThatBuildsAPruneTask(t *testing.T) {
 	ws := t.TempDir()
 	for dir, body := range map[string]string{

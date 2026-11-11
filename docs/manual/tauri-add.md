@@ -15,8 +15,8 @@ exists, so running it again is safe.
    right for a project built with exactly the `react` toolchain; derived from the project's own
    stack, the other tools it uses (Jest, Playwright, a structure plugin) are not lost.
 3. Has the tauri plugin write `src-tauri` as the scaffold does: `Cargo.toml` with its own empty
-   `[workspace]`, `tauri.conf.json` whose `frontendDist` is the folder smith builds the web app
-   into, `build.rs`, `src/main.rs`, `src/lib.rs`, `capabilities/default.json`, generated icons and a
+   `[workspace]`, `tauri.conf.json` whose `frontendDist` is `dist/tauri/<project dir>/frontend`
+   (the `outDir` of the project's `vite.config` moves there too), `build.rs`, `src/main.rs`, `src/lib.rs`, `capabilities/default.json`, generated icons and a
    `.gitignore`.
 4. Adds `@tauri-apps/cli` to the root `devDependencies` (where smith keeps dev tools, once for
    the workspace), `@tauri-apps/api` to the project's dependencies and a `tauri` script to its

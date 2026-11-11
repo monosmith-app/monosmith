@@ -207,9 +207,40 @@ process (`src/main/app.handler.ts`), a preload script that uses `contextBridge`
 and one renderer page with a content security policy. The window has `contextIsolation` on,
 `nodeIntegration` off and `sandbox` on, and a unit test checks that. The page greets by asking the
 main process through the preload api, which uses the greeting slice. The tasks are `build`,
-`typecheck`, `lint`, `test`, `start` (builds, then opens the window from the build folder) and
-`package` (Electron Forge makes the app folder under `dist/apps/<name>/out`). There is no installer
-and no code signing in v2. The first install downloads the Electron binary, so it needs a network.
+`typecheck`, `lint`, `test`, `start` (builds, then opens the window from the work folder) and
+`package` (Electron Forge packs the app, and smith links it into the shipped folder). There is no
+installer and no code signing in v2. The first install downloads the Electron binary, so it needs a
+network.
+
+An Electron app uses two folders ([ADR 0092](../../../architecture/decisions/0092-a-project-ships-from-one-folder-and-a-tool-works-in-its-own.md)):
+
+```text
+dist/
+  electron/apps/desk/      work folder
+    app/                   what `build` writes and `start` runs (cached by `build`)
+    out/desk-win32-x64/    what Electron Forge packs (forge.config.cjs sets outDir to ../out)
+  apps/desk/
+    desk-win32-x64/        the packed app, hard links into out/ (cached by `package`)
+```
+
+### Adopted Electron setups
+
+The node plugin also reads an Electron app that smith did not make:
+
+| Setup | Detected by | Packing tasks | Where the tool packs |
+|---|---|---|---|
+| Electron Forge, with or without its Vite plugin | `@electron-forge/cli` in the dependencies | every script that runs `electron-forge package` (ships `<outDir>/*-*-*`) or `electron-forge make` (also ships `<outDir>/make/*`) | `outDir` in `config.forge` of `package.json` or in `forge.config.{js,cjs,mjs,ts}`; default `out` |
+| electron-builder | `electron-builder` in the dependencies | every script that runs `electron-builder` (ships the installers, `*-unpacked` and `mac*/*.app`) | `directories.output` in `build` of `package.json`, `electron-builder.json` or `electron-builder.yml`; default `dist` |
+
+Each packing task links what the tool packs into `dist/<project dir>` and lists that folder as its
+output, wherever the tool packs. `smith doctor` warns when the tool packs outside
+`dist/electron/<project dir>` (Forge: `dist/electron/<project dir>/out`) and offers the move as a
+choice: move, or leave the project as it is. The move edits one file: `package.json`,
+`electron-builder.json`, an `electron-builder.yml` without a `directories` key, or a Forge
+configuration file with one `outDir` string or one plain exported object. smith does not edit any
+other configuration file, and the remedy then says what to set by hand. A value with a macro
+(`${os}`) or computed in code cannot be read, so its tasks ship nothing. The `.vite/` folder of
+Forge's Vite plugin stays in the project: the plugin fixes that path.
 Electron is on the framework axis with `layer = "shell"`, `needs = ["lint", "test"]`, and conflicts
 with `jest`, the function hosts and `tauri`. Packaging uses Electron Forge because the Electron
 documentation recommends it ([application distribution](https://www.electronjs.org/docs/latest/tutorial/application-distribution),

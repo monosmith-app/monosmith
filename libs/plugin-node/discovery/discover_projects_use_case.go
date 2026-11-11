@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/electronapp"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pruning"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -71,6 +72,11 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 	project.Imports = mergeDeclared(imports, pkg)
 	for script := range pkg.Scripts {
 		project.Tasks[script] = TaskFor(script, root, pkg.Scripts)
+	}
+	// An Electron app packs in its work folder and ships into its shipped
+	// folder (ADR 0092).
+	if setup := electronapp.Detect(filepath.Join(workspaceRoot, filepath.FromSlash(root))); setup.Tool != electronapp.None {
+		electronapp.ApplyTasks(project.Tasks, root, setup, pkg.Scripts)
 	}
 	// An app, or a VS Code extension, is packed into dist/drop: the
 	// deliverable smith ci pack keeps (a .vsix for an extension).

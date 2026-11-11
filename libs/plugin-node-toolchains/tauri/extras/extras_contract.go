@@ -46,9 +46,21 @@ func PrepareDir(root string) string {
 }
 
 // TargetDir is where a project's Cargo target directory goes, workspace-relative:
-// dist/tauri/<project dir>, beside the web build rather than in it.
+// dist/tauri/<project dir>, the work folder of the Tauri build (ADR 0092). The
+// installers it makes are linked into the shipped folder dist/<project dir>.
 func TargetDir(root string) string {
 	return protocol.BuildDir + "/tauri/" + strings.Trim(root, "/")
+}
+
+// FrontendDir is where a Tauri project's web build goes, workspace-relative:
+// dist/tauri/<project dir>/frontend. The frontend is a work file of the Tauri
+// build (ADR 0092, owner decision 1): tauri build embeds it in the app, and the
+// shipped folder holds only the installers.
+//
+// Parameters: root is the workspace-relative project folder.
+// Returns the folder, workspace-relative.
+func FrontendDir(root string) string {
+	return TargetDir(root) + "/frontend"
 }
 
 // fromSrcTauri is the path from a project's src-tauri folder back to the

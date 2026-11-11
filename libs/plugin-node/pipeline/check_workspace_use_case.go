@@ -83,6 +83,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		if f, ok := CheckLibraryBuildDir(workspaceRoot, p, libraries, dependents[p.Name]...); ok {
 			findings = append(findings, f)
 		}
+		if f, ok := CheckElectronDir(workspaceRoot, p); ok {
+			findings = append(findings, f)
+		}
 		if p.Kind == protocol.ProjectPackage {
 			findings = append(findings, CheckPackageImports(workspaceRoot, p))
 		}

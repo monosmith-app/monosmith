@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -23,8 +24,16 @@ func TestContribute(t *testing.T) {
 		t.Fatalf("only the Tauri project: %+v", res.Projects)
 	}
 	task := res.Projects["studio"].Replace[TaskName]
-	if !task.Cache || task.Outputs[0] != "../../dist/tauri/apps/studio" || strings.Join(task.DependsOn, ",") != "^build,build" {
+	// The task caches only the shipped folder and links the installers into it
+	// from cargo's work folder (ADR 0092).
+	if !task.Cache || len(task.Outputs) != 1 || task.Outputs[0] != "../../dist/apps/studio" || strings.Join(task.DependsOn, ",") != "^build,build" {
 		t.Errorf("tauri-build %+v", task)
+	}
+	if !slices.Contains(task.Ship, "../../dist/tauri/apps/studio/release/bundle/*/*.msi") || !slices.Contains(task.Ship, "../../dist/tauri/apps/studio/release/bundle/*/*.app") {
+		t.Errorf("tauri-build ships %v", task.Ship)
+	}
+	if _, ok := res.Projects["studio"].Replace["build"]; ok {
+		t.Errorf("a frontendDist elsewhere leaves the build task alone: %+v", res.Projects["studio"].Replace["build"])
 	}
 	if got := task.Command[len(task.Command)-1]; got != "{workspaceRoot}/dist/tauri/apps/studio" {
 		t.Errorf("target dir must be absolute: %q", got)
@@ -34,8 +43,21 @@ func TestContribute(t *testing.T) {
 	}
 	rel := res.Projects["studio"].Release
 	if rel == nil || rel.Build != "smith run tauri-build -p studio" || strings.Join(rel.Platforms, ",") != "windows-x64,macos-arm64,macos-x64,linux-x64" ||
-		rel.Assets[0] != "dist/tauri/apps/studio/release/bundle/**/*.{msi,exe,dmg,deb,rpm,AppImage}" || !rel.Checksums || rel.AssetName == "" {
+		rel.Assets[0] != "dist/apps/studio/*.{msi,exe,dmg,deb,rpm,AppImage}" || !rel.Checksums || rel.AssetName == "" {
 		t.Errorf("release defaults %+v", rel)
+	}
+}
+
+func TestContributeCachesTheFrontendInItsWorkFolder(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", `{"build":{"frontendDist":"../../../dist/tauri/apps/studio/frontend"}}`)
+	build := protocol.Task{Command: []string{"npm", "run", "build"}, Outputs: []string{"../../dist/apps/studio"}, Cache: true}
+	res := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{
+		{Name: "studio", Root: "apps/studio", Tasks: map[string]protocol.Task{"build": build}},
+	}})
+	got, ok := res.Projects["studio"].Replace["build"]
+	if !ok || strings.Join(got.Outputs, ",") != "../../dist/tauri/apps/studio/frontend" || !got.Cache || got.Command[2] != "build" {
+		t.Errorf("build %+v", got)
 	}
 }
 
@@ -165,7 +187,9 @@ func TestContributeWithExtras(t *testing.T) {
 	if !strings.Contains(strings.Join(build.Command, " "), "--config {workspaceRoot}/dist/tauri-prepare/apps/studio/tauri.config.json") {
 		t.Errorf("build command: %v", build.Command)
 	}
-	if !build.Cache || !prepare.Cache || len(build.DependsOn) != 2 || build.DependsOn[1] != extras.PrepareTask || c.Replace[DevTask].DependsOn[0] != extras.PrepareTask {
+	// tauri-verify reads cargo's work folder, which a cache hit on tauri-build
+	// does not restore, so that build is not cached (ADR 0092).
+	if build.Cache || !prepare.Cache || len(build.DependsOn) != 2 || build.DependsOn[1] != extras.PrepareTask || c.Replace[DevTask].DependsOn[0] != extras.PrepareTask {
 		t.Errorf("build %+v prepare %+v", build, prepare)
 	}
 	if prepare.Env[SettingsEnv] == "" || verify.DependsOn[0] != TaskName || !strings.Contains(c.Release.Build, "tauri-build tauri-verify") {
@@ -191,6 +215,7 @@ func TestGenerateWritesSrcTauriForAWebApp(t *testing.T) {
 	write(t, ws, "Cargo.toml", "[workspace]\nmembers = [\"apps/*/src-tauri\"]\n")
 	write(t, ws, "apps/studio/package.json", `{"name":"studio","dependencies":{"react":"^19.0.0"}}`)
 	write(t, ws, "apps/studio/index.html", "<div id=\"app\"></div>")
+	write(t, ws, "apps/studio/vite.config.ts", "export default defineConfig({\n  build: {\n    outDir:      '../../dist/apps/studio',\n  },\n})\n")
 	write(t, ws, "apps/studio/src-tauri/build.rs", "// mine\n")
 	p := New("1.0.0")
 	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
@@ -203,10 +228,13 @@ func TestGenerateWritesSrcTauriForAWebApp(t *testing.T) {
 		return string(b)
 	}
 	conf := read("apps/studio/src-tauri/tauri.conf.json")
-	for _, want := range []string{`"frontendDist": "../../../dist/apps/studio"`, `"identifier": "com.acme.my-studio"`} {
+	for _, want := range []string{`"frontendDist": "../../../dist/tauri/apps/studio/frontend"`, `"identifier": "com.acme.my-studio"`} {
 		if !strings.Contains(conf, want) {
 			t.Errorf("tauri.conf.json lacks %s: %s", want, conf)
 		}
+	}
+	if got := read("apps/studio/vite.config.ts"); !strings.Contains(got, "outDir:      '../../dist/tauri/apps/studio/frontend'") || !slices.Contains(res.Files, "apps/studio/vite.config.ts") {
+		t.Errorf("the web build goes to the frontend work folder: %s %v", got, res.Files)
 	}
 	if strings.Contains(conf, "beforeBuildCommand") {
 		t.Errorf("smith builds the web app first: %s", conf)

@@ -60,7 +60,8 @@ Tauri and Electron with the other options (smith add app web --lang node --with 
 smith:
 
   - writes src-tauri: Cargo.toml (with its own empty [workspace]), tauri.conf.json
-    whose frontendDist is the folder smith builds the web app into, build.rs,
+    whose frontendDist is dist/tauri/<project dir>/frontend (the outDir of
+    vite.config moves there too), build.rs,
     src/main.rs, src/lib.rs, capabilities and generated icons;
   - adds @tauri-apps/cli (to the root devDependencies, where smith keeps dev tools),
     @tauri-apps/api (to the project) and a tauri script (to the project);

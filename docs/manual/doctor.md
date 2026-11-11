@@ -171,7 +171,9 @@ project ships: the binary, the jar, the package. The **work folder** `dist/<tool
 tool's intermediate files. Rust and .NET share one work folder among all projects (`dist/cargo`,
 `dist/dotnet`). A Maven or Gradle module has its own (`dist/maven/<artifactId>`,
 `dist/gradle/<id>`). Go, Python and Dart write straight to the shipped folder and have no work
-folder in `dist/`.
+folder in `dist/`. A Tauri app keeps its cargo target and its web build in `dist/tauri/<project
+dir>`, and an Electron app what it runs and packs in `dist/electron/<project dir>`; both ship the
+installers or the packed app into `dist/<project dir>`.
 
 Doctor checks both folders:
 
@@ -189,6 +191,16 @@ Doctor checks both folders:
   folder (`dist/maven/<artifactId>`) can stay an output, because no other project builds there.
 - **Across the workspace**, the check `no task caches a work folder other projects share` fails when
   a task of any plugin lists a folder that another project ships from.
+- **An adopted Electron app packs in its work folder.** The check `<project> packs into
+  dist/electron/<project dir>` (Electron Forge: `.../out`) is a warning when Forge's `outDir` or
+  electron-builder's `directories.output` names another folder, such as the default `out/` or
+  `dist/` in the project. The packing tasks ship the app into `dist/<project dir>` in both cases.
+  Doctor offers the move as a choice (move, or leave as it is) when it can edit the file safely:
+  `package.json`, `electron-builder.json`, an `electron-builder.yml` without a `directories` key,
+  or a Forge configuration file with one `outDir` string or one plain exported object. Otherwise
+  the remedy says what to set by hand. See [the node plugin](../plugins/using/catalogue/node.md#adopted-electron-setups).
+- **A Tauri app takes its web build from its work folder.** The check `frontendDist of <project>
+  is dist/tauri/<project dir>/frontend` is a warning when `tauri.conf.json` names another folder.
 
 These findings name the manual step: list only `dist/<project dir>` in the `outputs` of the task in
 `smith.toml`. smith does not rewrite them.
