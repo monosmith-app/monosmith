@@ -201,6 +201,8 @@ Doctor checks both folders:
   the remedy says what to set by hand. See [the node plugin](../plugins/using/catalogue/node.md#adopted-electron-setups).
 - **A Tauri app takes its web build from its work folder.** The check `frontendDist of <project>
   is dist/tauri/<project dir>/frontend` is a warning when `tauri.conf.json` names another folder.
+  When that folder is the shipped folder `dist/<project dir>`, the web build is not cached until
+  you move it, because `tauri-build` caches that folder.
 
 These findings name the manual step: list only `dist/<project dir>` in the `outputs` of the task in
 `smith.toml`. smith does not rewrite them.

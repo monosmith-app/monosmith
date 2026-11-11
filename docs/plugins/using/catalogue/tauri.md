@@ -65,6 +65,10 @@ The web build goes to `dist/tauri/<project dir>/frontend` when `build.frontendDi
 `tauri.conf.json` names that folder: the build task then caches it. A new Tauri app (the
 `react-tauri` stack, `smith tauri add`) gets both: `frontendDist` names the folder, and the `outDir`
 in `vite.config.ts` points there. The release assets are the installers in `dist/<project dir>`.
+An app made before this layout can still have `frontendDist` in `dist/<project dir>`, which
+`tauri-build` caches. A restore of a task empties its output folder, so smith then does not cache
+the web build: a restore of one task cannot delete the other's files. Move `frontendDist` (doctor
+warns) and the web build is cached again.
 
 The target path is absolute: cargo runs inside `src-tauri`, and the Tauri CLI reads the same flag
 to find the bundles, so a relative path would depend on which of them resolves it.
@@ -76,7 +80,7 @@ to find the bundles, so a relative path would depend on which of them resolves i
 | `Rust (cargo) is installed` | `rustc` or `cargo` is not on `PATH`. Remedy: install Rust from rustup.rs |
 | `the tauri CLI is installed` | `node_modules` has no `@tauri-apps/cli`. Remedy: `smith install -D @tauri-apps/cli` |
 | `src-tauri is outside the root Cargo workspace` | A warning: the root `Cargo.toml` `[workspace] members` glob matches `<project>/src-tauri` and `exclude` does not name it. Remedy: narrow `members`, or list it under `exclude` |
-| `frontendDist of <project> is dist/tauri/<project dir>/frontend` | A warning: `build.frontendDist` in `src-tauri/tauri.conf.json` is a folder other than the one smith builds the web app of a Tauri app into (`dist/tauri/<project dir>/frontend`). The shipped folder `dist/<project dir>` is for the installers. A URL is not checked. Remedy: set it to the path the check prints, and point the web build's `outDir` there |
+| `frontendDist of <project> is dist/tauri/<project dir>/frontend` | A warning: `build.frontendDist` in `src-tauri/tauri.conf.json` is a folder other than the one smith builds the web app of a Tauri app into (`dist/tauri/<project dir>/frontend`). The shipped folder `dist/<project dir>` is for the installers. A URL is not checked. Remedy: set it to the path the check prints, and point the web build's `outDir` there. When it is in `dist/<project dir>`, the remedy also says that the web build stays uncached until the move |
 | `the versions of <project> agree` | A warning: `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` carry different versions (a `tauri.conf.json` version that is a path to `package.json` counts as the same). Remedy: use `"version": "../package.json"` and the same version in `Cargo.toml`, or let `smith release` write them |
 | `the tauri settings of <project> are valid` | `[projects.<p>.settings.tauri]` has an unknown key or an entry that is not a table of the shape above. Remedy: fix it in `smith.toml` |
 | `the sidecar <name> of <project> is a project that exists` | The sidecar's `project` is not a project of the workspace, or not a Rust project. Remedy: name one of `smith projects`, or give a `from` |

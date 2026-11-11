@@ -56,6 +56,10 @@ func frontendDistFindings(workspaceRoot string, projects []protocol.Project) []p
 		folder := extras.FrontendDir(p.Root)
 		want := "../" + protocol.FromProject(p.Root, folder)
 		ok := dist == folder
+		remedy := `set build.frontendDist to "` + want + `" in ` + p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json, build the web app into " + folder + " (outDir in vite.config), and leave beforeBuildCommand empty (smith builds the web app first)"
+		if inShippedFolder(dist, p.Root) {
+			remedy += ". Until you move it, smith does not cache the web build, because tauri-build caches " + protocol.ProjectBuildDir(p.Root)
+		}
 		findings = append(findings, protocol.Finding{
 			Check:   "frontendDist of " + p.Name + " is " + folder,
 			Project: p.Name,
@@ -63,7 +67,7 @@ func frontendDistFindings(workspaceRoot string, projects []protocol.Project) []p
 			Warning: true,
 			Problem: toolrun.ProblemUnless(ok, "frontendDist is "+dist+", not "+folder),
 			Detail:  p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json takes the web app from " + dist + ". smith builds the web app of a Tauri app into " + folder + ", and keeps " + protocol.ProjectBuildDir(p.Root) + " for the installers",
-			Remedy:  `set build.frontendDist to "` + want + `" in ` + p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json, build the web app into " + folder + " (outDir in vite.config), and leave beforeBuildCommand empty (smith builds the web app first)",
+			Remedy:  remedy,
 		})
 	}
 	return findings

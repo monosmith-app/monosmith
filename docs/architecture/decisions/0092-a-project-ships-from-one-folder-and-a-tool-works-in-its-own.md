@@ -226,8 +226,9 @@ rules.
      `directories`, a Forge file with one `outDir` string or one plain exported object).
    - Not done: Forge's Vite plugin writes `.vite/` in the project, and its documentation names no
      setting to move it, so it stays. A Tauri app made before this change keeps `frontendDist`
-     `dist/<dir>` until the person moves it (doctor warns); its `build` and `tauri-build` then cache
-     the same folder.
+     `dist/<dir>` until the person moves it (doctor warns). Until then its `build` is not cached
+     (`contribute_tauri_use_case.go`), so it and `tauri-build` never cache the same folder and a
+     restore of one cannot delete the other's files.
    - Tool facts checked on 2026-11-11 against the tools' documentation and source: Forge `outDir`
      (default `./out`, resolved from the project folder: `packages/api/core/src/util/out-dir.ts`),
      electron-builder `directories.output` (default `dist`), Tauri `build.frontendDist` (relative to
