@@ -29,3 +29,27 @@ func TestColourFollowsTheCIThatRendersItAndNeverNoColourOrDumb(t *testing.T) {
 		}
 	}
 }
+
+func TestToolWantedHonoursWhatSmithHandsOnAndNoColourFirst(t *testing.T) {
+	cases := []struct {
+		name     string
+		env      map[string]string
+		terminal bool
+		want     bool
+	}{
+		{"handed on by the TUI", map[string]string{ToolColourEnv: "1"}, false, true},
+		{"handed on as plain", map[string]string{ToolColourEnv: "0", "FORCE_COLOR": "1"}, true, false},
+		{"NO_COLOR beats the hand-on", map[string]string{ToolColourEnv: "1", "NO_COLOR": "1"}, false, false},
+		{"dumb beats the hand-on", map[string]string{ToolColourEnv: "1", "TERM": "dumb"}, false, false},
+		{"no hand-on: a terminal", nil, true, true},
+		{"no hand-on: piped", nil, false, false},
+	}
+	for _, c := range cases {
+		if got := ToolWanted(envOf(c.env), c.terminal); got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+	if ToolEntry(true) != "SMITH_TOOL_COLOR=1" || ToolEntry(false) != "SMITH_TOOL_COLOR=0" {
+		t.Error("ToolEntry spells the variable")
+	}
+}

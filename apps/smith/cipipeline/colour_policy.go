@@ -21,7 +21,7 @@ const (
 	tintDim
 )
 
-var tintCodes = map[tint]string{tintGreen: "32", tintYellow: "33", tintRed: "31", tintDim: "2"}
+var tintCodes = map[tint]string{tintGreen: termcolour.Green, tintYellow: termcolour.Yellow, tintRed: termcolour.Red, tintDim: termcolour.Dim}
 
 // colourOn is the single colour decision (termcolour.Wanted) for this process.
 func colourOn() bool {
