@@ -1,6 +1,10 @@
 package termcolour
 
-import "testing"
+import (
+	"bytes"
+	"os"
+	"testing"
+)
 
 func envOf(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
 
@@ -51,5 +55,22 @@ func TestToolWantedHonoursWhatSmithHandsOnAndNoColourFirst(t *testing.T) {
 	}
 	if ToolEntry(true) != "SMITH_TOOL_COLOR=1" || ToolEntry(false) != "SMITH_TOOL_COLOR=0" {
 		t.Error("ToolEntry spells the variable")
+	}
+}
+
+func TestToolWantedForCountsOnlyAFileThatIsATerminal(t *testing.T) {
+	always := func(int) bool { return true }
+	never := func(int) bool { return false }
+	if ToolWantedFor(envOf(nil), &bytes.Buffer{}, always) {
+		t.Error("a buffer is no terminal")
+	}
+	if !ToolWantedFor(envOf(nil), os.Stderr, always) || ToolWantedFor(envOf(nil), os.Stderr, never) {
+		t.Error("a file counts as a terminal when the check says so")
+	}
+	if !ToolWantedFor(envOf(map[string]string{"GITHUB_ACTIONS": "true"}), &bytes.Buffer{}, never) {
+		t.Error("GitHub Actions renders colour whatever the writer")
+	}
+	if ToolWantedFor(envOf(map[string]string{"NO_COLOR": "1"}), os.Stderr, always) {
+		t.Error("NO_COLOR wins")
 	}
 }

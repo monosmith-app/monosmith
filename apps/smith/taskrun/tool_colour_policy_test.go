@@ -43,8 +43,8 @@ func TestColourAsksTheToolAndPaintsWhatItCannotColour(t *testing.T) {
 	}
 	for _, want := range []string{
 		"core:build │ " + termcolour.Wrap("--- FAIL: TestX (0.00s)", termcolour.Red), // smith paint
-		"core:build │ \x1b[31mred by the tool\x1b[0m",                                 // the tool's own colour, cursor codes gone
-		"core:build │ FORCE_COLOR=1 NO_COLOR=\n",                                      // the tool was asked for colour
+		"core:build │ \x1b[31mred by the tool\x1b[0m",                                // the tool's own colour, cursor codes gone
+		"core:build │ FORCE_COLOR=1 NO_COLOR=\n",                                     // the tool was asked for colour
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%q", want, out)

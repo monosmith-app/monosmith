@@ -16,7 +16,8 @@ func Folded(dir string, argv []string, extraEnv ...string) ([]string, error) {
 	if v := os.Getenv(VerboseEnv); v != "" && v != "0" {
 		return nil, Run(dir, argv, extraEnv...)
 	}
-	cmd, err := command(dir, argv, extraEnv)
+	// Plain text: the warnings are read and folded.
+	cmd, err := command(dir, argv, extraEnv, false)
 	if err != nil {
 		return nil, err
 	}

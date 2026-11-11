@@ -1,6 +1,10 @@
 package termcolour
 
-import "strings"
+import (
+	"io"
+	"os"
+	"strings"
+)
 
 // Wanted decides, in this one place, whether output meant for a person
 // carries ANSI colour. GitHub Actions, Azure Pipelines and GitLab render it;
@@ -46,6 +50,18 @@ func ToolWanted(getenv func(string) string, terminal bool) bool {
 		return false
 	}
 	return Wanted(getenv, terminal)
+}
+
+// ToolWantedFor is ToolWanted for output written to out: only a file that
+// is a terminal counts as one. A buffer or a pipe smith reads is not, so only
+// a CI that renders colour, FORCE_COLOR or ToolColourEnv turn colour on.
+//
+// Parameters: getenv reads an environment variable; out is where the text
+// goes; isTerminal checks a file descriptor (term.IsTerminal in smith).
+// Returns: the decision for tools whose output goes to out.
+func ToolWantedFor(getenv func(string) string, out io.Writer, isTerminal func(fd int) bool) bool {
+	f, ok := out.(*os.File)
+	return ToolWanted(getenv, ok && f != nil && isTerminal(int(f.Fd())))
 }
 
 // ToolEntry is the ToolColourEnv entry (KEY=VALUE) that hands the decision on

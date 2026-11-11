@@ -8,11 +8,14 @@ import (
 	"sort"
 	"sync"
 
+	"golang.org/x/term"
+
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 // Options configure Start.
@@ -33,7 +36,14 @@ func Start(opts Options) (*PluginSet, error) {
 	}
 	// Built-in plugins are this binary and keep the whole environment;
 	// external ones get the minimal one built below.
-	builtinEnv := append(os.Environ(), "SMITH_PLUGIN=1")
+	log := opts.Log
+	if log == nil {
+		log = os.Stderr
+	}
+	// A plugin's stdout is the protocol pipe, so it cannot tell whether the
+	// tools it runs reach a person who sees colour: the host decides for it.
+	colour := termcolour.ToolEntry(termcolour.ToolWantedFor(os.Getenv, log, term.IsTerminal))
+	builtinEnv := append(os.Environ(), "SMITH_PLUGIN=1", colour)
 	type launch struct {
 		name    string
 		command []string
@@ -65,7 +75,7 @@ func Start(opts Options) (*PluginSet, error) {
 			return nil, fmt.Errorf("smith.toml [plugins.external.%s]: %w", name, err)
 		}
 		approved = append(approved, p)
-		env := append(pluginenv.Build(os.Environ(), p.ManifestEnv, p.WorkspaceEnv, runtime.GOOS), "SMITH_PLUGIN=1")
+		env := append(pluginenv.Build(os.Environ(), p.ManifestEnv, p.WorkspaceEnv, runtime.GOOS), "SMITH_PLUGIN=1", colour)
 		launches = append(launches, launch{name, p.Command, env})
 	}
 	// No plugin starts until every external one the workspace needs is
@@ -87,10 +97,6 @@ func Start(opts Options) (*PluginSet, error) {
 		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}, builtinEnv})
 	}
 
-	log := opts.Log
-	if log == nil {
-		log = os.Stderr
-	}
 	clients := make([]*host.Client, len(launches))
 	errs := make([]error, len(launches))
 	var wg sync.WaitGroup
