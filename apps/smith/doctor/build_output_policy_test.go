@@ -26,6 +26,30 @@ func TestOutsideBuildDir(t *testing.T) {
 	}
 }
 
+func TestSharedWorkOutputsRefusesAWorkFolderAnotherProjectShipsFrom(t *testing.T) {
+	api := &projectgraph.Project{Project: protocol.Project{Name: "api", Root: "apps/api", Tasks: map[string]protocol.Task{
+		"build": {Outputs: []string{"../../dist/apps/api"}, Ship: []string{"../../dist/cargo/debug/api", "../../dist/cargo/debug/api.exe"}},
+	}}}
+	cli := &projectgraph.Project{Project: protocol.Project{Name: "cli", Root: "apps/cli", Tasks: map[string]protocol.Task{
+		"build": {Outputs: []string{"../../dist/cargo"}},
+	}}}
+	jar := &projectgraph.Project{Project: protocol.Project{Name: "kit", Root: "libs/kit", Tasks: map[string]protocol.Task{
+		"build": {Outputs: []string{"../../dist/apps/kit", "../../dist/maven/kit"}, Ship: []string{"../../dist/maven/kit/*.jar"}},
+	}}}
+	projects := []*projectgraph.Project{api, cli, jar}
+	if got := OutsideBuildDir(projects); len(got) != 0 {
+		t.Errorf("a work folder under dist/<tool> is a build folder: %v", got)
+	}
+	got := SharedWorkOutputs(projects)
+	if want := "cli:build caches dist/cargo, where api ships from"; strings.Join(got, "\n") != want {
+		t.Fatalf("got %v, want %q (kit's own work folder is not shared)", got, want)
+	}
+	cli.Tasks["build"] = protocol.Task{Outputs: []string{"../../dist/apps/cli"}}
+	if got := SharedWorkOutputs(projects); len(got) != 0 {
+		t.Errorf("only the shipped folder: %v", got)
+	}
+}
+
 func TestAnAllowedOutputOutsideDistIsNotReported(t *testing.T) {
 	stage := &projectgraph.Project{Project: protocol.Project{Name: "mvd", Root: "apps/mvd", Tasks: map[string]protocol.Task{"stage-web": {Outputs: []string{"appwindow/web"}}}}}
 	projects := []*projectgraph.Project{stage}

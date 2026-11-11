@@ -10,18 +10,25 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/buildrefs"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/taskoutput"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/xmltext"
 )
 
-// CheckBuildDir reports where each JVM module builds, from what its build tool
-// reads, and offers to move a module that builds outside the workspace's
-// dist/ (dist/maven/<artifactId> for Maven, dist/gradle/<artifactId> for
-// Gradle).
+// CheckBuildDir checks both folders of each JVM module (ADR 0092). The work
+// folder is where the build tool builds, from what it reads; a module that
+// builds anywhere but its work folder (dist/maven/<artifactId> for Maven,
+// dist/gradle/... for Gradle) gets the offer to move it. The shipped folder
+// is the one output of the build task: a build task that ships its jar or APK
+// without caching dist/<project dir> is a finding with the manual step
+// (taskoutput.CheckShippedOutput). A module's work folder is its own, so the
+// task may cache it too.
 //
 // Maven: the <build><directory> of the module's pom, else of the parent pom
 // the module names by the default relativePath (../pom.xml), up to the
-// workspace root, else target/. A directory written with a property smith
-// cannot evaluate, or a parent with another relativePath, is left unchecked.
+// workspace root, else target/. It must be dist/maven/<artifactId>, where the
+// build task ships the jar from; another folder under dist/ is a finding too.
+// A directory written with a property smith cannot evaluate, or a parent with
+// another relativePath, is left unchecked.
 //
 // Gradle: layout.buildDirectory or buildDir in the module's script, else
 // build/. A workspace whose root script sets the build directory for all
@@ -43,6 +50,9 @@ func CheckBuildDir(workspaceRoot string, projects []protocol.Project) ([]protoco
 			f, ok = mavenFinding(workspaceRoot, p, projects)
 		}
 		if ok {
+			findings = append(findings, f)
+		}
+		if f, ok := taskoutput.CheckShippedOutput(p, "build"); ok {
 			findings = append(findings, f)
 		}
 	}
@@ -154,7 +164,7 @@ func mavenFinding(workspaceRoot string, p protocol.Project, projects []protocol.
 	if !readable {
 		return protocol.Finding{}, false
 	}
-	if protocol.InBuildDir(dir) {
+	if dir == target {
 		return protocol.Finding{Check: check, Project: p.Name, OK: true}, true
 	}
 	source := "no <build><directory> in " + pom + " or its parent pom"
@@ -168,6 +178,9 @@ func mavenFinding(workspaceRoot string, p protocol.Project, projects []protocol.
 		Remedy:  "set <build><directory>${project.basedir}/" + upTo(p.Root) + target + "</directory></build> in " + pom + ", or run smith doctor --fix",
 	}
 	f.Problem = f.Detail
+	if protocol.InBuildDir(dir) {
+		f.Detail += ". The build task ships the jar from " + target + ", so its shipped folder stays empty"
+	}
 	if slices.Contains(p.Tasks["build"].Outputs, upTo(p.Root)+target) {
 		f.Detail += ". The build task caches " + target + " instead, which that build never writes, so a cache hit restores nothing"
 	}

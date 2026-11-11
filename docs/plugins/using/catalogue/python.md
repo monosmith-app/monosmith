@@ -290,7 +290,7 @@ With the `python` audit policy turned on, the generated `requirements-dev.txt` p
 
 ## Doctor, dependencies and removal
 
-Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `python -m build` without `--outdir` is reported, with the option to pass. The folders a build backend makes inside the project (`build/`, `*.egg-info`) are not read. See [doctor](../../../manual/doctor.md#the-other-languages).
+Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `python -m build` without `--outdir` is reported, with the option to pass. The folders a build backend makes inside the project (`build/`, `*.egg-info`) are not read. A task whose `outputs` do not hold the folder the command writes is reported too: a cache hit would restore nothing. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use_case.go`; shown only when the workspace has Python projects):
 

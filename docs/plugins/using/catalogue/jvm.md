@@ -396,7 +396,7 @@ Kotlin plus Android workspace:
 
 ## Doctor, dependencies and removal
 
-Build folder (`pipeline/check_build_dir_use_case.go`): `<module> builds into dist/maven/<artifactId>` reads `<build><directory>` of the pom and its parents (else `target/`); `<module> builds into dist/gradle/<artifactId>` reads `layout.buildDirectory` or `buildDir` of the module script (Kotlin or Groovy DSL, else `build/`). The fix asks and edits only that pom or module script; `settings.gradle(.kts)` and `libs.versions.toml` are never touched. See [doctor](../../../manual/doctor.md#the-other-languages).
+Build folder (`pipeline/check_build_dir_use_case.go`): `<module> builds into dist/maven/<artifactId>` reads `<build><directory>` of the pom and its parents (else `target/`); `<module> builds into dist/gradle/<artifactId>` reads `layout.buildDirectory` or `buildDir` of the module script (Kotlin or Groovy DSL, else `build/`). The fix asks and edits only that pom or module script; `settings.gradle(.kts)` and `libs.versions.toml` are never touched. A Maven `<directory>` elsewhere in `dist/` is reported too, because the build ships the jar from `dist/maven/<artifactId>`. `<module> caches only dist/<project dir>` reports a build task that ships its jar or APK without listing `dist/<project dir>` as an output (a failure when the task is cached); the module's own work folder may stay an output. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 **Doctor.** Run only when the workspace has JVM projects.
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/buildrefs"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/taskoutput"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/xmltext"
 )
 
@@ -40,11 +41,18 @@ type dotnetGroup struct {
 	artifacts string
 }
 
-// CheckBuildDir reports where the .NET projects build, from what MSBuild
-// reads: the ArtifactsPath of the nearest Directory.Build.props (MSBuild reads
-// the first one it finds going up, and no other), else bin/ and obj/ in each
-// project. A project file that sets OutputPath or BaseOutputPath itself is
-// reported too, but it is never rewritten: those win over the artifacts path.
+// CheckBuildDir checks both folders of a .NET build (ADR 0092). The work
+// folder is where MSBuild builds, from what it reads: the ArtifactsPath of the
+// nearest Directory.Build.props (MSBuild reads the first one it finds going
+// up, and no other), else bin/ and obj/ in each project. It must be
+// dist/dotnet, the artifacts folder every project shares, because an app
+// ships its build from dist/dotnet/bin/<project>/<configuration>; another
+// folder, one under dist/ included, is a finding with a fix that asks first.
+// A project file that sets OutputPath or BaseOutputPath itself is reported
+// too, but it is never rewritten: those win over the artifacts path. The
+// shipped folder is the one output of each build task: a build task that
+// caches dist/dotnet, or ships without caching dist/<project dir>, is a
+// finding with the manual step (taskoutput.CheckShippedOutput).
 //
 // A Directory.Build.props that imports another file, or sets ArtifactsPath
 // from a property smith cannot evaluate, is left unchecked.
@@ -72,6 +80,11 @@ func CheckBuildDir(workspaceRoot string, projects []protocol.Project) ([]protoco
 	var findings []protocol.Finding
 	for _, key := range order {
 		if f, ok := groupFinding(workspaceRoot, groups[key]); ok {
+			findings = append(findings, f)
+		}
+	}
+	for _, p := range projects {
+		if f, ok := taskoutput.CheckShippedOutput(p, "build", artifactsDir); ok {
 			findings = append(findings, f)
 		}
 	}
@@ -137,7 +150,7 @@ func groupFinding(workspaceRoot string, g *dotnetGroup) (protocol.Finding, bool)
 		}
 	}
 	explicit := explicitOutputs(workspaceRoot, g, src)
-	if g.artifacts != "" && protocol.InBuildDir(g.artifacts) && len(explicit) == 0 {
+	if g.artifacts == artifactsDir && len(explicit) == 0 {
 		return pinned(protocol.Finding{Check: check, OK: true}, names), true
 	}
 	where := "bin/ and obj/ of each project"
@@ -152,6 +165,9 @@ func groupFinding(workspaceRoot string, g *dotnetGroup) (protocol.Finding, bool)
 	f.Problem = f.Detail
 	if len(names) == 1 {
 		f.Problem = strings.TrimPrefix(f.Detail, names[0]+" ")
+	}
+	if g.artifacts != artifactsDir && protocol.InBuildDir(g.artifacts) {
+		f.Detail += ". An app ships its build from " + artifactsDir + "/bin/<project>/<configuration>, so its shipped folder stays empty"
 	}
 	f = pinned(f, names)
 	if refusal := dotnetRefusal(workspaceRoot, g, explicit); refusal != "" {

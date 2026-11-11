@@ -50,6 +50,23 @@ func TestCheckReportsACommandThatWritesElsewhereAndSaysWhatToPass(t *testing.T) 
 	}
 }
 
+func TestCheckAcceptsAWorkFolderUnderDistAndReadsTheDeclaredOutputs(t *testing.T) {
+	p := project("tool", "-o", "{workspaceRoot}/dist/tool/libs/kit")
+	if f, ok := Check(p, "build", spec); ok {
+		t.Errorf("a work folder under dist/<tool> is accepted: %+v", f)
+	}
+	p.Tasks["build"] = protocol.Task{Command: []string{"tool", "-o", "{workspaceRoot}/dist/libs/kit/bin"}, Outputs: []string{"../../dist/libs/kit"}}
+	if f, ok := Check(p, "build", spec); ok {
+		t.Errorf("the output holds the build: %+v", f)
+	}
+	p.Tasks["build"] = protocol.Task{Command: []string{"tool", "-o", "{workspaceRoot}/dist/libs/kit"}, Outputs: []string{"../../dist/other"}}
+	f, ok := Check(p, "build", spec)
+	if !ok || f.OK || f.Warning || f.Problem != "caches dist/other, not where it builds" || !strings.Contains(f.Detail, "a cache hit restores nothing") ||
+		f.Remedy != "list ../../dist/libs/kit in the outputs of [projects.kit.tasks.build] in smith.toml" {
+		t.Fatalf("%+v", f)
+	}
+}
+
 func TestCheckNamesTheProjectApartFromTheProblem(t *testing.T) {
 	f, _ := Check(project("tool", "."), "build", spec)
 	if f.Project != "kit" || f.Area != "" || strings.HasPrefix(f.Problem, "kit") || !strings.HasPrefix(f.Problem, "builds ") {

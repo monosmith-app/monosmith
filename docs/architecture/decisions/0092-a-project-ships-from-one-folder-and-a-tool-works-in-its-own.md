@@ -1,6 +1,6 @@
 # ADR 0092: A project ships from one folder, and a tool keeps its work files in its own folder
 
-- Status: accepted (not implemented); owner decisions recorded below
+- Status: accepted; plan items 1 and 3 and the `--release` part of item 2 implemented; the CMake and Swift work-folder move and item 4 open; owner decisions recorded below
 - Date: 2026-11-10
 - Amends: [0081](0081-a-web-app-builds-once-per-environment-and-overlap-fixes-are-presented-choices.md),
   [0088](0088-doctor-checks-and-moves-the-build-folder-of-every-language-it-can-read.md)
@@ -188,6 +188,15 @@ rules.
    check_build_dir_use_case.go` check both folders; `packages/plugin-sdk/taskoutput/
    check_task_output_use_case.go` and `apps/smith/doctor/build_output_policy.go` accept a work
    folder under `dist/<tool>` and refuse it as a task output when the tool shares it.
+   Implemented: Rust, .NET and Maven require the exact work folder the build ships from
+   (`dist/cargo`, `dist/dotnet`, `dist/maven/<artifactId>`); Gradle already required
+   `dist/gradle/...`. `taskoutput.CheckShippedOutput` refuses a shared work folder as an output and
+   reports a shipping task that does not cache `dist/<project dir>`; `taskoutput.Check` (Go, Python,
+   Dart) reports outputs that do not hold what the command writes; doctor's `SharedWorkOutputs`
+   refuses an output that holds a folder another project ships from. Node and CMake are unchanged:
+   Node writes straight to the shipped folder, and CMake's tree is still `dist/<project dir>` until
+   its work folder moves. Not done: the JVM work folders keep the `<artifactId>` key, not the
+   project folder of owner decision 5, because the scaffolding and the discovery name them so.
 4. **Electron and Tauri.**
    - Smith-made Electron: `libs/plugin-node-toolchains/electron/choices/base.toml` (Forge's
      `out/` to `dist/electron/<name>`, then the link).

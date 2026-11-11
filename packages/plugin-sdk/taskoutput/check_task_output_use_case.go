@@ -33,11 +33,14 @@ type Spec struct {
 // command was written or changed by hand.
 //
 // The option's value is read only when it is a plain path or starts with
-// {workspaceRoot}; a value with another placeholder is left unchecked.
+// {workspaceRoot}; a value with another placeholder is left unchecked. Any
+// folder under dist/ is accepted, a tool's work folder (dist/<tool>/...)
+// included. A task that builds into dist/ but whose declared outputs do not
+// hold that folder is a finding too: a cache hit would restore nothing.
 //
 // Parameters: p is the project; task the task name; spec the build command.
 // Returns the finding, and false when the task is absent, is not that
-// command, builds into dist/, or cannot be read.
+// command, builds into dist/ and caches what it builds, or cannot be read.
 func Check(p protocol.Project, task string, spec Spec) (protocol.Finding, bool) {
 	t, ok := p.Tasks[task]
 	if !ok || !spec.Match(t.Command) {
@@ -56,11 +59,34 @@ func Check(p protocol.Project, task string, spec Spec) (protocol.Finding, bool) 
 		}
 		resolved := resolve(p, t, value)
 		if protocol.InBuildDir(resolved) {
-			return protocol.Finding{}, false
+			return cachesElsewhere(p, task, t, resolved, check)
 		}
 		return protocol.Finding{Check: check, Project: p.Name, Problem: "builds into " + resolved + ", not " + target, Detail: "the " + task + " task writes into " + resolved + ", not into " + target + "/", Remedy: remedy}, true
 	}
 	return protocol.Finding{Check: check, Project: p.Name, Problem: "builds " + spec.Default + ", not into " + target, Detail: "the " + task + " task (" + strings.Join(t.Command, " ") + ") passes no " + spec.Flag + ", so it writes " + spec.Default + ", not into " + target + "/", Remedy: remedy}, true
+}
+
+// cachesElsewhere reports a task that builds into dist/ but declares outputs
+// none of which holds what it builds (or sits inside it): a cache hit then
+// restores nothing. A task that declares no output is not reported.
+func cachesElsewhere(p protocol.Project, task string, t protocol.Task, built, check string) (protocol.Finding, bool) {
+	if len(t.Outputs) == 0 {
+		return protocol.Finding{}, false
+	}
+	var declared []string
+	for _, o := range t.Outputs {
+		out := path.Clean(path.Join(p.Root, o))
+		if within(built, out) || within(out, built) {
+			return protocol.Finding{}, false
+		}
+		declared = append(declared, out)
+	}
+	return protocol.Finding{
+		Check: check, Project: p.Name,
+		Problem: "caches " + strings.Join(declared, ", ") + ", not where it builds",
+		Detail:  "the " + task + " task writes into " + built + " but caches " + strings.Join(declared, ", ") + ", which that build never writes, so a cache hit restores nothing",
+		Remedy:  "list " + protocol.BuildDirFromProject(p.Root) + " in the outputs of [projects." + p.Name + ".tasks." + task + "] in smith.toml",
+	}, true
 }
 
 func hasFlagPrefix(arg string, flags []string) bool {

@@ -341,7 +341,7 @@ and `PUB_CACHE` as a pipeline variable. GitLab was not generated for Dart by me.
 
 ## Doctor, dependencies and removal
 
-Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `dart compile`, `dart build` or `flutter build` without `-o` is reported, with the option to pass. The `build/` folder of `flutter run` is not read. See [doctor](../../../manual/doctor.md#the-other-languages).
+Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `dart compile`, `dart build` or `flutter build` without `-o` is reported, with the option to pass. The `build/` folder of `flutter run` is not read. A task whose `outputs` do not hold the folder the command writes is reported too: a cache hit would restore nothing. See [doctor](../../../manual/doctor.md#the-other-languages).
 
 **Doctor.** Run only when the workspace has Dart projects.
 
