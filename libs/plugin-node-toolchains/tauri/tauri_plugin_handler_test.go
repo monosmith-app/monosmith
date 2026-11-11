@@ -61,6 +61,26 @@ func TestContributeCachesTheFrontendInItsWorkFolder(t *testing.T) {
 	}
 }
 
+func TestContributeNeverCachesTheShippedFolderTwice(t *testing.T) {
+	// An app made before ADR 0092 takes its web build from the shipped folder,
+	// which tauri-build caches: a restore of one would delete the other's files.
+	for _, dist := range []string{"../../../dist/apps/studio", "../../../dist/apps/studio/web"} {
+		ws := t.TempDir()
+		write(t, ws, "apps/studio/src-tauri/tauri.conf.json", `{"build":{"frontendDist":"`+dist+`"}}`)
+		build := protocol.Task{Command: []string{"npm", "run", "build"}, Outputs: []string{"../../dist/apps/studio"}, Cache: true}
+		res := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{
+			{Name: "studio", Root: "apps/studio", Tasks: map[string]protocol.Task{"build": build}},
+		}})
+		got, ok := res.Projects["studio"].Replace["build"]
+		if !ok || got.Cache || got.Command[2] != "build" {
+			t.Errorf("%s: build must not be cached: %+v", dist, got)
+		}
+		if !res.Projects["studio"].Replace[TaskName].Cache {
+			t.Errorf("%s: tauri-build keeps its cache", dist)
+		}
+	}
+}
+
 func TestDoctor(t *testing.T) {
 	realLook, realPlatform, realPkg := lookPath, platform, pkgConfigHas
 	t.Cleanup(func() { lookPath, platform, pkgConfigHas = realLook, realPlatform, realPkg })

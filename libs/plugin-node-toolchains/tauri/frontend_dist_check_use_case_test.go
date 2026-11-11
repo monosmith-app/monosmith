@@ -20,6 +20,10 @@ func TestDoctorChecksFrontendDist(t *testing.T) {
 		if len(found) != 1 || found[0].OK != ok || !found[0].Warning || (!ok && !strings.Contains(found[0].Remedy, `"../../../dist/tauri/apps/studio/frontend"`)) {
 			t.Errorf("%s: %+v", dist, found)
 		}
+		// Only the shipped folder makes the web build uncached until the move.
+		if uncached := strings.Contains(found[0].Remedy, "does not cache the web build"); uncached != (dist == "../../../dist/apps/studio") {
+			t.Errorf("%s: remedy %q", dist, found[0].Remedy)
+		}
 	}
 	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", `{"build":{"frontendDist":"http://localhost:5173"}}`)
 	if found := frontendDistFindings(ws, projects); len(found) != 0 {

@@ -79,7 +79,9 @@ var inputs = []string{"**/*", "!node_modules/**", "!" + tauriapp.SrcDir + "/targ
 // dir>, links the installers into the shipped folder dist/<project dir> and
 // caches only that folder (ADR 0092). A project whose tauri.conf.json takes the
 // web build from dist/tauri/<project dir>/frontend has its build task cache
-// that folder. A project whose [projects.<p>.settings.tauri] declares sidecars
+// that folder. One whose frontendDist is still the shipped folder (an app made
+// before ADR 0092) has its build task left uncached, so the two tasks never
+// cache the same folder. A project whose [projects.<p>.settings.tauri] declares sidecars
 // or resources also gets tauri-prepare, which both run first, and
 // tauri-verify. Its tauri-build is then not cached: tauri-verify reads the
 // work folder, which a cache hit does not restore.
@@ -124,14 +126,30 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 			Cache:       cache,
 			Description: "Build the Tauri app's installers into " + protocol.ProjectBuildDir(p.Root) + " (cargo work files in " + extras.TargetDir(p.Root) + ")",
 		}
-		if build, ok := p.Tasks["build"]; ok && frontendDistOf(workspaceRoot, p.Root) == extras.FrontendDir(p.Root) {
-			build.Outputs = []string{protocol.FromProject(p.Root, extras.FrontendDir(p.Root))}
-			replace["build"] = build
+		if build, ok := p.Tasks["build"]; ok {
+			switch dist := frontendDistOf(workspaceRoot, p.Root); {
+			case dist == extras.FrontendDir(p.Root):
+				build.Outputs = []string{protocol.FromProject(p.Root, extras.FrontendDir(p.Root))}
+				replace["build"] = build
+			case inShippedFolder(dist, p.Root):
+				// An app made before ADR 0092 builds its web app into the shipped
+				// folder, which tauri-build caches: a restore of either task would
+				// empty the folder and delete the other's files.
+				build.Cache = false
+				replace["build"] = build
+			}
 		}
 		replace[DevTask] = protocol.Task{Command: dev, DependsOn: devDeps, Description: "Run the Tauri app in development mode"}
 		res.Projects[p.Name] = protocol.Contribution{Release: releaseDefaults(p, len(settings) > 0), Replace: replace}
 	}
 	return res
+}
+
+// inShippedFolder reports whether a workspace-relative folder is the shipped
+// folder dist/<project dir> of the project at root, or inside it.
+func inShippedFolder(dir, root string) bool {
+	shipped := protocol.ProjectBuildDir(root)
+	return dir == shipped || strings.HasPrefix(dir, shipped+"/")
 }
 
 // prepareTask copies the sidecars and resources. It is cached, and so is the
