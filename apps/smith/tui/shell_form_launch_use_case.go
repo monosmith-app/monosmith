@@ -10,9 +10,9 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// slicesCheck is the catalogue action of `smith slices check`, the check of the
-// vertical-slice layout that doctor does not run itself.
-const slicesCheck = "slices check" // words:literal
+// sliceTask is the cached task the vertical-slices plugin gives each project
+// of a language its checker knows: `smith slices check` on the project.
+const sliceTask = "slice-check" // words:literal
 
 // openFormFor opens the guided form of an action of the catalogue ("why"), the
 // same one the palette and the Start tab open, with answers already filled in
@@ -30,33 +30,36 @@ func (s *Shell) openFormFor(id string, answers map[string][]string) tea.Cmd {
 }
 
 // doctorExtras are the checks the Doctor tab lists after the findings because
-// doctor does not run them: the vertical-slice layout, when the workspace has
-// its form.
+// doctor does not run them: the vertical-slice layout, when a project can run it.
 func (s Shell) doctorExtras() []doctorview.Extra {
-	if _, ok := s.guide.ActionPresenting(slicesCheck); !ok {
+	var tasks []string
+	if s.anyProjectHas(sliceTask, "") {
+		tasks = append(tasks, sliceTask)
+	}
+	if s.anyProjectHas("lint", "node") {
+		// The checker does not know Node: ESLint's vertical-slices rules check
+		// the layout of a Node project as part of lint.
+		tasks = append(tasks, "lint")
+	}
+	if len(tasks) == 0 {
 		return nil
 	}
-	return []doctorview.Extra{{Title: words.Say("doctor.extra.slices"), Hint: words.Say("doctor.extra.slices.hint"), Presents: slicesCheck}}
+	return []doctorview.Extra{{
+		Title: words.Say("doctor.extra.slices"),
+		Hint:  words.Say("doctor.extra.slices.hint", "tasks", strings.Join(tasks, " and ")),
+		Run:   append([]string{"run"}, tasks...),
+	}}
 }
 
-// extraAnswers fill in the form of a check doctor does not run: the slice
-// check starts on the folders of the projects in the workspace's main
-// language, checked as that language.
-func (s Shell) extraAnswers(id string) map[string][]string {
-	if id != slicesCheck {
-		return nil
-	}
-	lang := s.mainLanguage()
-	var roots []string
+// anyProjectHas is true when a project of the workspace has the task; a
+// language that is not "" also asks that the project is in it.
+func (s Shell) anyProjectHas(task, language string) bool {
 	for _, p := range s.list.Projects() {
-		if p.Language == lang {
-			roots = append(roots, p.Root)
+		if _, ok := p.Task(task); ok && (language == "" || p.Language == language) {
+			return true
 		}
 	}
-	if len(roots) == 0 {
-		return nil
-	}
-	return map[string][]string{"arg:project directory": {strings.Join(roots, " ")}, "flag:lang": {lang}}
+	return false
 }
 
 // onDoctorExtra is true when the Doctor list has a check doctor does not run
@@ -66,14 +69,15 @@ func (s Shell) onDoctorExtra() bool {
 	return ok
 }
 
-// runSelectedExtra opens the form of the check doctor does not run that the
-// Doctor list has selected; ok is false when none is.
+// runSelectedExtra runs the check doctor does not run that the Doctor list has
+// selected, at once and with no question, in the run panel; ok is false when
+// none is selected.
 func (s *Shell) runSelectedExtra() (tea.Cmd, bool) {
 	e, ok := s.doctor.SelectedExtra()
 	if !ok {
 		return nil, false
 	}
-	return s.openFormFor(e.Presents, s.extraAnswers(e.Presents)), true
+	return s.execute(e.Run, false), true
 }
 
 // whyFile opens the why form for the file the selected finding is about.

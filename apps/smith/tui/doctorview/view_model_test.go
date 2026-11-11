@@ -269,7 +269,7 @@ func TestTextTellsTheProblemTheRemedyAndTheFixOnce(t *testing.T) {
 
 func TestAnExtraCheckIsTheLastRowAndTheCursorAndAClickReachIt(t *testing.T) {
 	m := sample()
-	m.Extras = []Extra{{Title: "Vertical-slice layout", Hint: "enter runs smith slices check", Presents: "slices check"}}
+	m.Extras = []Extra{{Title: "Vertical-slice layout", Hint: "enter runs slice-check", Run: []string{"run", "slice-check"}}}
 	lines, rowOf := m.View(plainTheme, 100, false)
 	at := -1
 	for row, code := range rowOf {
@@ -293,7 +293,7 @@ func TestAnExtraCheckIsTheLastRowAndTheCursorAndAClickReachIt(t *testing.T) {
 		}
 		up = up.Update(key("down"))
 	}
-	if e, ok := up.SelectedExtra(); !ok || e.Presents != "slices check" || !up.IsCursorRow(ExtraCode(0)) {
+	if e, ok := up.SelectedExtra(); !ok || e.Title != "Vertical-slice layout" || !up.IsCursorRow(ExtraCode(0)) {
 		t.Fatal("the keys never reach the extra check")
 	}
 	if _, ok := up.Selected(); ok {
@@ -306,7 +306,7 @@ func TestAnExtraCheckIsTheLastRowAndTheCursorAndAClickReachIt(t *testing.T) {
 
 func TestReplaceKeepsTheExtraChecks(t *testing.T) {
 	m := sample()
-	m.Extras = []Extra{{Title: "Vertical-slice layout", Presents: "slices check"}}
+	m.Extras = []Extra{{Title: "Vertical-slice layout", Run: []string{"run", "slice-check"}}}
 	next := m.Replace(Result{Report: *m.Report})
 	if len(next.Extras) != 1 {
 		t.Fatal("checking again dropped the extra checks")

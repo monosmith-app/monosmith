@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -45,27 +46,76 @@ func TestABoundaryFindingHasAButtonThatRunsSmithBoundariesNow(t *testing.T) {
 	}
 }
 
-func TestTheSliceCheckIsARowOfDoctorThatOpensItsForm(t *testing.T) {
-	l := newLab(t, true, 140, 34).withCheckForms()
-	l.keys("3")
-	l.send(boundaryResult())
-	l.has("Checks doctor does not run itself", "Vertical-slice layout")
+// withProjectTasks gives the first sample project extra tasks.
+func (l *lab) withProjectTasks(tasks ...string) *lab {
+	projects := slices.Clone(sampleProjects)
+	projects[0].Tasks = slices.Clone(projects[0].Tasks)
+	for _, t := range tasks {
+		projects[0].Tasks = append(projects[0].Tasks, projectlist.Task{Name: t})
+	}
+	sh := l.sh()
+	sh.list = projectlist.New(projects)
+	l.m = sh
+	return l
+}
+
+// toDoctorExtra moves the Doctor cursor to the check doctor does not run.
+func (l *lab) toDoctorExtra() {
+	l.t.Helper()
 	for range 10 {
 		if l.sh().onDoctorExtra() {
-			break
+			return
 		}
 		l.keys("down")
 	}
-	if !l.sh().onDoctorExtra() {
-		t.Fatal("the keys never reach the slice check row")
-	}
+	l.t.Fatal("the keys never reach the slice check row")
+}
+
+func TestEnterOnTheSliceCheckRowRunsTheTaskOfEveryProjectWithNoQuestion(t *testing.T) {
+	l := newLab(t, true, 140, 34).withCheckForms().withProjectTasks("slice-check")
+	l.keys("3")
+	l.send(boundaryResult())
+	l.has("Checks doctor does not run itself", "Vertical-slice layout", "enter runs slice-check")
+	l.toDoctorExtra()
 	l.has("Doctor does not run this check itself", "Run this check now")
 	l.keys("enter")
-	if l.sh().tab != commands.TabGuide || l.sh().guide.Title() != "Check that files are role-named" {
-		t.Fatalf("Enter opened %q on %q", l.sh().guide.Title(), l.sh().tab)
+	if l.sh().tab == commands.TabGuide {
+		t.Fatal("Enter opened a form; the check needs no question")
 	}
-	// The form starts on the folders of the projects in the main language (go).
-	l.has("apps/orders libs/kit")
+	if got := l.lastStarted(); got != "run slice-check" {
+		t.Fatalf("Enter started %q, not the slice-check task of every project", got)
+	}
+}
+
+func TestAWorkspaceWithGoAndNodeChecksTheLayoutWithBothTasks(t *testing.T) {
+	// The first sample project is node: its lint carries the ESLint slice rules.
+	l := newLab(t, true, 140, 34).withProjectTasks("slice-check", "lint")
+	l.keys("3")
+	l.send(boundaryResult())
+	l.has("enter runs slice-check and lint")
+	l.toDoctorExtra()
+	l.clickText("Run this check now")
+	if got := l.lastStarted(); got != "run slice-check lint" {
+		t.Fatalf("the button started %q: the Node packages need lint, the checker refuses node", got)
+	}
+}
+
+func TestANodeOnlyWorkspaceChecksTheLayoutWithLint(t *testing.T) {
+	l := newLab(t, true, 140, 34).withProjectTasks("lint")
+	l.keys("3")
+	l.send(boundaryResult())
+	l.toDoctorExtra()
+	l.keys("enter")
+	if got := l.lastStarted(); got != "run lint" {
+		t.Fatalf("Enter started %q, not lint", got)
+	}
+}
+
+func TestWithoutSliceCheckOrLintDoctorListsNoExtraCheck(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("3")
+	l.send(boundaryResult())
+	l.hasNot("Checks doctor does not run itself")
 }
 
 func TestAFindingAboutAFileHasAWhyButtonThatOpensTheWhyFormForIt(t *testing.T) {

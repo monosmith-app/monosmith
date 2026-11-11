@@ -405,7 +405,7 @@ func (s Shell) doctorPanel() detail.Panel {
 func (s Shell) extraPanel(e doctorview.Extra) detail.Panel {
 	return detail.Panel{
 		Sections: []detail.Section{{Heading: e.Title, Items: []string{words.Say("tui.detail.extra_not_run")}}},
-		Actions:  []detail.Action{{ID: "x:form:" + e.Presents, Label: words.Say("tui.detail.run_check_now"), Hint: words.Say("tui.detail.run_check_now_hint", "action", e.Presents), Disabled: s.running()}},
+		Actions:  []detail.Action{{ID: "x:extra", Label: words.Say("tui.detail.run_check_now"), Hint: words.Say("tui.detail.run_extra_hint", "command", "smith "+strings.Join(e.Run, " ")), Disabled: s.running()}},
 	}
 }
 

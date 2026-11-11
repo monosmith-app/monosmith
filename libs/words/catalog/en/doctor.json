@@ -11,7 +11,7 @@
   "doctor.passed.hint": "enter or p shows them",
   "doctor.extra.heading": "Checks doctor does not run itself",
   "doctor.extra.slices": "Vertical-slice layout",
-  "doctor.extra.slices.hint": "enter runs smith slices check",
+  "doctor.extra.slices.hint": "enter runs {tasks}",
   "doctor.remedy.prefix": "→ ",
   "doctor.fix.prefix": "fix: ",
   "doctor.fix.safe.hint": " (safe: f shows what changes, then applies it)",
