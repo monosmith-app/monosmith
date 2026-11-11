@@ -100,6 +100,7 @@ __all__ = [
     "Step",
     "TagMove",
     "Task",
+    "TaskProfile",
     "ToolInstall",
     "ToolNeed",
     "ToolPin",
@@ -1888,6 +1889,13 @@ class Task(_TaskRequired, total=False):
     a task lists the shipped folder in Outputs, never the tool's work folder: a cache restore
     empties each output folder first.
     """
+    release: TaskProfile
+    """
+    Release is the task as `smith run --release` runs it: the command of the optimised profile
+    ("cargo build --release") and what that profile ships. Nil means the task has one profile and
+    runs the same way with the flag. The cache key holds the command, so each profile has its own
+    cache entry.
+    """
     dependsOn: list[str]
     """
     DependsOn lists task names: "build" runs this project's build first, "^build" runs the build
@@ -1916,6 +1924,24 @@ class Task(_TaskRequired, total=False):
     """
     serveTimeout: str
     """ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s."""
+
+
+class _TaskProfileRequired(TypedDict):
+    command: list[str]
+    """Command is an argv array; it is never passed through a shell."""
+
+
+class TaskProfile(_TaskProfileRequired, total=False):
+    """
+    TaskProfile is another build profile of a task: the command that builds it and what it ships
+    (see Task.Ship).
+    """
+
+    ship: list[str]
+    """
+    Ship names what this profile makes in a tool's work folder that the project ships, as
+    Task.Ship does. Empty means the task ships nothing.
+    """
 
 
 class _ToolInstallRequired(TypedDict):

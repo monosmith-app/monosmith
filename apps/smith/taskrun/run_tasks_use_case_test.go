@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -374,6 +375,48 @@ func TestASharedOutputFolderKeepsTheFilesAnotherTaskWrote(t *testing.T) {
 				t.Errorf("earlier file kept = %v, want %v", kept, tc.wantKept)
 			}
 		})
+	}
+}
+
+// The release profile has its own command, so its own cache key: a switch to
+// it builds, and a switch back restores the other profile from the cache.
+func TestTheReleaseProfileHasItsOwnCacheEntry(t *testing.T) {
+	f := newFixture(t, "core")
+	web := f.pg.Get("web")
+	build := web.Tasks["build"]
+	build.Release = &protocol.TaskProfile{Command: append(slices.Clone(build.Command[:len(build.Command)-1]), "web-release")}
+	web.Tasks["build"] = build
+	runProfile := func(release bool) (Result, string) {
+		t.Helper()
+		g, err := taskgraph.Build(f.pg, []string{"web"}, []string{"build"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if release {
+			g.UseRelease()
+		}
+		var out bytes.Buffer
+		s := Run(context.Background(), g, Options{Root: f.root, Files: f.files, Projects: f.pg, Storage: f.store, Parallel: 2, Out: &out, ToolVersion: "test"})
+		body, _ := os.ReadFile(filepath.Join(f.root, "apps", "web", "out", "result.txt"))
+		for _, r := range s.Results {
+			if r.Task == "web:build" {
+				return r, string(body)
+			}
+		}
+		t.Fatalf("no web:build in %s\n%s", s, out.String())
+		return Result{}, ""
+	}
+	debug, body := runProfile(false)
+	if debug.Status != Succeeded || body != "web" {
+		t.Fatalf("debug: %+v %q", debug, body)
+	}
+	release, body := runProfile(true)
+	if release.Status != Succeeded || body != "web-release" || release.Key == debug.Key {
+		t.Fatalf("release must run its own command under its own key: %+v %q (debug key %s)", release, body, debug.Key)
+	}
+	back, body := runProfile(false)
+	if back.Status != Cached || body != "web" || back.Key != debug.Key {
+		t.Fatalf("the switch back must restore the debug build from the cache: %+v %q", back, body)
 	}
 }
 

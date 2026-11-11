@@ -13,23 +13,25 @@ var inputs = []string{"**/*", "!bin/**", "!obj/**", "{workspaceRoot}/Directory.B
 // builds the project), and the tasks that read the build (test, lint, start)
 // wait for it and do not build again. lint is dotnet format, which also runs
 // the analyzers; a package packs into the workspace's dist/<project dir>, and
-// an app's build ships its output there (withShippedBuild).
+// an app's build ships its output there (withShippedBuild). build, test and
+// start have a release profile (-c Release): test and start read the build
+// of the same configuration.
 func Tasks(root, file, tests string, kind protocol.ProjectKind) map[string]protocol.Task {
 	target := file
 	if tests != "" {
 		target = tests
 	}
 	tasks := map[string]protocol.Task{
-		"build": {Command: []string{"dotnet", "build", target, "--nologo"}, Inputs: inputs, DependsOn: []string{"^build"}, Description: "dotnet build (the project and its tests)"},
+		"build": withReleaseConfiguration(protocol.Task{Command: []string{"dotnet", "build", target, "--nologo"}, Inputs: inputs, DependsOn: []string{"^build"}, Description: "dotnet build (the project and its tests)"}),
 		"lint":  {Command: []string{"dotnet", "format", file, "--verify-no-changes", "--no-restore"}, Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "dotnet format --verify-no-changes (style and analyzers)"},
 	}
 	if tests != "" {
-		tasks["test"] = protocol.Task{Command: []string{"dotnet", "test", tests, "--nologo", "--no-build"}, Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "dotnet test"}
+		tasks["test"] = withReleaseConfiguration(protocol.Task{Command: []string{"dotnet", "test", tests, "--nologo", "--no-build"}, Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "dotnet test"})
 	}
 	switch kind {
 	case protocol.ProjectApp:
-		tasks["build"] = withShippedBuild(tasks["build"], root, file, DebugConfiguration)
-		tasks["start"] = protocol.Task{Command: []string{"dotnet", "run", "--project", file, "--no-build"}, DependsOn: []string{"build"}, Description: "Run the app"}
+		tasks["build"] = withShippedBuild(tasks["build"], root, file)
+		tasks["start"] = withReleaseConfiguration(protocol.Task{Command: []string{"dotnet", "run", "--project", file, "--no-build"}, DependsOn: []string{"build"}, Description: "Run the app"})
 	case protocol.ProjectPackage:
 		out := protocol.ProjectBuildDir(root)
 		tasks["pack"] = protocol.Task{Command: []string{"dotnet", "pack", file, "--nologo", "-c", "Release", "-o", "{workspaceRoot}/" + out}, Inputs: inputs, DependsOn: []string{"^build"}, Outputs: []string{protocol.BuildDirFromProject(root)}, Cache: true, Description: "dotnet pack into " + out + "/"}

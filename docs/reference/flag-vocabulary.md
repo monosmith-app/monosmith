@@ -14,6 +14,7 @@ One idea has one flag in every smith command. This page lists the ideas that sev
 | Show what the command would do and change nothing | `--dry-run` | - | on or off | many commands |
 | Print the result as JSON | `--json` | - | on or off | many commands |
 | Commit the change as one operation so smith undo can revert it | `--commit` | - | on or off | many commands |
+| Build the optimised profile (cargo --release, dotnet -c Release); a tool without profiles ignores it | `--release` | - | on or off | `smith build`, `smith lint`, `smith run`, `smith test`, `smith typecheck` |
 
 The synonyms behave exactly like the flag: they can be mixed on one command line, and `--help` shows the flag once.
 

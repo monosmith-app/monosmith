@@ -51,7 +51,8 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 		Example: `  smith build                       every project
   smith test -p web,ui              two projects (and what they depend on)
   smith run lint test --affected    only what changed since main (or the PR target)
-  smith build -p kind:package       every publishable package`,
+  smith build -p kind:package       every publishable package
+  smith build --release             the optimised profile (cargo, dotnet, Android)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			req.Tasks = fixed
 			if fixed == nil {
@@ -107,6 +108,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 	f.IntVar(&req.Parallel, "parallel", 0, "tasks to run at once (default: CPU count)")
 	f.BoolVar(&req.Bail, "bail", false, "stop starting tasks after the first failure")
 	f.BoolVar(&req.NoCache, "no-cache", false, "run every task even if a cached result exists")
+	commandflags.AddReleaseFlag(cmd, &req.Release, "build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it")
 	f.BoolVar(&verbose, "verbose", false, "show the log of every project, not only the ones that fail")
 	f.BoolVar(&asJSON, "json", false, "print the summary as JSON")
 	f.BoolVar(&jsonEvents, "json-events", false, "print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else")

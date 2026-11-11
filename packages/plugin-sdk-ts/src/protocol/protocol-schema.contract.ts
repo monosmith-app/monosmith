@@ -2616,6 +2616,10 @@ export const protocolSchema: SchemaDocument = {
           },
           "description": "Ship names what the task makes in a tool's work folder that the project ships: globs relative to the project root (\"../../dist/cargo/debug/api\"). After the task succeeds, smith hard-links each match into the project's shipped folder (ProjectBuildDir), a folder file by file, under its base name, and copies a file it cannot link. A glob that matches nothing is skipped. Such a task lists the shipped folder in Outputs, never the tool's work folder: a cache restore empties each output folder first."
         },
+        "release": {
+          "$ref": "#/$defs/TaskProfile",
+          "description": "Release is the task as `smith run --release` runs it: the command of the optimised profile (\"cargo build --release\") and what that profile ships. Nil means the task has one profile and runs the same way with the flag. The cache key holds the command, so each profile has its own cache entry."
+        },
         "dependsOn": {
           "type": "array",
           "items": {
@@ -2645,6 +2649,29 @@ export const protocolSchema: SchemaDocument = {
         "serveTimeout": {
           "type": "string",
           "description": "ServeTimeout is how long to wait for ServeURL, as a Go duration (\"60s\"); empty means 60s."
+        }
+      },
+      "required": [
+        "command"
+      ]
+    },
+    "TaskProfile": {
+      "description": "TaskProfile is another build profile of a task: the command that builds it and what it ships (see Task.Ship).",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Command is an argv array; it is never passed through a shell."
+        },
+        "ship": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ship names what this profile makes in a tool's work folder that the project ships, as Task.Ship does. Empty means the task ships nothing."
         }
       },
       "required": [

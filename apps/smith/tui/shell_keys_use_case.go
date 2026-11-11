@@ -413,7 +413,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.All {
 			project = ""
 		}
-		return s.execute(commands.RunArgv(c.Task, project), false)
+		return s.execute(c.TaskArgv(project), false)
 	case commands.Guided:
 		if c.Guide == addProjectTitle() {
 			return s.openAddProject()

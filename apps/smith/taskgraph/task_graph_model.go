@@ -26,5 +26,15 @@ type Graph struct {
 	Order []string
 }
 
+// UseRelease makes every task of the graph run its release profile
+// (protocol.Task.ForRelease): what `smith run --release` runs. A task without
+// one stays as it is. The cache key holds the command, so a task's two
+// profiles never share a cache entry.
+func (g *Graph) UseRelease() {
+	for _, t := range g.Tasks {
+		t.Def = t.Def.ForRelease()
+	}
+}
+
 // ID builds a task id.
 func ID(project, task string) string { return project + ":" + task }

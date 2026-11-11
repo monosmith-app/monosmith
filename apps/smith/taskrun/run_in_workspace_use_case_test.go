@@ -116,3 +116,10 @@ func TestWithNoLimitTheRunNeverPrunes(t *testing.T) {
 		}
 	}
 }
+
+func TestTheCommandOfAReleaseRunNamesTheFlag(t *testing.T) {
+	got := Request{Tasks: []string{"build"}, Projects: []string{"api"}, Release: true}.Command()
+	if got != "smith run build -p api --release" {
+		t.Errorf("command %q", got)
+	}
+}

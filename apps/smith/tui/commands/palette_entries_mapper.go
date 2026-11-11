@@ -45,7 +45,7 @@ func keywordsOf(id string) string {
 var paletteSections = map[string]string{
 	"file.new": SectionStart, "file.adopt": SectionStart, "file.compose": SectionStart, "ws.commit": SectionHealth, "ws.tools": SectionHealth,
 
-	"run.build": SectionBuild, "run.build-all": SectionBuild,
+	"run.build": SectionBuild, "run.build-all": SectionBuild, "run.build-release": SectionBuild, "run.build-release-all": SectionBuild,
 	"run.test": SectionBuild, "run.test-all": SectionBuild,
 	"run.lint": SectionBuild, "run.lint-all": SectionBuild,
 	"run.typecheck": SectionBuild, "run.typecheck-all": SectionBuild, "run.verify": SectionBuild, "run.affected": SectionBuild, "run.stop": SectionBuild,
@@ -107,17 +107,17 @@ func paletteText(c Command, s State) (title, hint string) {
 	switch {
 	case c.Kind == RunTask && c.All:
 		if s.Projects > 0 {
-			return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
+			return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(c.TaskArgv(""))
 		}
-		return words.Say("commands.palette.all", "verb", c.verb()), Line(RunArgv(c.Task, ""))
+		return words.Say("commands.palette.all", "verb", c.verb()), Line(c.TaskArgv(""))
 	case c.Kind == RunTask:
 		if s.RunProject() == "" {
 			if s.Projects > 0 {
-				return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
+				return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(c.TaskArgv(""))
 			}
-			return words.Say("commands.palette.all", "verb", c.verb()), Line(RunArgv(c.Task, ""))
+			return words.Say("commands.palette.all", "verb", c.verb()), Line(c.TaskArgv(""))
 		}
-		return c.verb() + " " + s.RunProject(), Line(RunArgv(c.Task, s.RunProject()))
+		return c.verb() + " " + s.RunProject(), Line(c.TaskArgv(s.RunProject()))
 	case c.Kind == ShowTab:
 		return words.Say("commands.palette.goto", "title", c.Title), c.Hint
 	case len(c.Argv) > 0:
@@ -131,7 +131,7 @@ func paletteText(c Command, s State) (title, hint string) {
 // hasAllSibling is true when another command runs the same task on every project.
 func hasAllSibling(c Command) bool {
 	for _, o := range all {
-		if o.Kind == RunTask && o.All && o.Task == c.Task {
+		if o.Kind == RunTask && o.All && o.Task == c.Task && o.Release == c.Release {
 			return true
 		}
 	}
@@ -144,7 +144,7 @@ func hasAllSibling(c Command) bool {
 func (c Command) verb() string {
 	if c.All {
 		for _, o := range all {
-			if o.Kind == RunTask && !o.All && o.Task == c.Task {
+			if o.Kind == RunTask && !o.All && o.Task == c.Task && o.Release == c.Release {
 				return o.Title
 			}
 		}

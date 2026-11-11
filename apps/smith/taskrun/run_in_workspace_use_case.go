@@ -28,6 +28,9 @@ type Request struct {
 	Parallel int
 	Bail     bool
 	NoCache  bool
+	// Release runs each task's release profile (protocol.Task.Release), the
+	// optimised build; a task without one runs as it is.
+	Release bool
 	// Quiet keeps the output of tasks that succeed (and of cache hits) off
 	// the screen; a failed task still shows all of its output.
 	Quiet bool
@@ -55,6 +58,9 @@ func (r Request) Command() string {
 	}
 	if r.NoCache {
 		parts = append(parts, "--no-cache")
+	}
+	if r.Release {
+		parts = append(parts, flagvocabulary.Arg("release"))
 	}
 	return strings.Join(parts, " ")
 }
@@ -129,6 +135,9 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	g, err := taskgraph.Build(s.Graph, withTask, req.Tasks)
 	if err != nil {
 		return Summary{}, err
+	}
+	if req.Release {
+		g.UseRelease()
 	}
 	store, err := s.Storage()
 	if err != nil {

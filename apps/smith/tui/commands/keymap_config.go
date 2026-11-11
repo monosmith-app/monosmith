@@ -243,6 +243,10 @@ var all = []Command{
 	{ID: "file.find", Group: GroupHelp, Title: words.Say("commands.file.find.title"), Hint: words.Say("commands.file.find.hint"), Keys: []string{"/"}, Kind: Palette},
 	{ID: "help.keys", Group: GroupHelp, Title: words.Say("commands.help.keys.title"), Hint: words.Say("commands.help.keys.hint"), Keys: []string{"?", "f1"}, Kind: Help, WhileEditing: true, Footer: words.Say("commands.help.keys.footer"), Tail: true},
 	{ID: "file.quit", Group: GroupHelp, Title: words.Say("commands.file.quit.title"), Hint: words.Say("commands.file.quit.hint"), Keys: []string{"q"}, Kind: Quit, Footer: words.Say("commands.file.quit.footer"), Tail: true},
+
+	// Added last, so its footer hint comes after every older one and a narrow footer drops it first.
+	{ID: "run.build-release", Group: GroupRun, Title: words.Say("commands.run.build-release.title"), Hint: words.Say("commands.run.build-release.hint"), Keys: []string{"ctrl+b"}, Kind: RunTask, Task: "build", Release: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}, Footer: words.Say("commands.run.build-release.footer"), ScopeInFooter: true, ShowIn: vWorkspace},
+	{ID: "run.build-release-all", Group: GroupRun, Title: words.Say("commands.run.build-release-all.title"), Hint: words.Say("commands.run.build-release-all.hint"), Kind: RunTask, Task: "build", Release: true, All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}},
 }
 
 // All returns every command.

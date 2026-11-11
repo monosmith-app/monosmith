@@ -1503,6 +1503,13 @@ export interface Task {
    */
   ship?: string[]
   /**
+   * Release is the task as `smith run --release` runs it: the command of the optimised profile
+   * ("cargo build --release") and what that profile ships. Nil means the task has one profile and
+   * runs the same way with the flag. The cache key holds the command, so each profile has its own
+   * cache entry.
+   */
+  release?: TaskProfile
+  /**
    * DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of
    * every project this one imports first.
    */
@@ -1530,6 +1537,20 @@ export interface Task {
   serveUrl?: string
   /** ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s. */
   serveTimeout?: string
+}
+
+/**
+ * TaskProfile is another build profile of a task: the command that builds it and what it ships (see
+ * Task.Ship).
+ */
+export interface TaskProfile {
+  /** Command is an argv array; it is never passed through a shell. */
+  command: string[]
+  /**
+   * Ship names what this profile makes in a tool's work folder that the project ships, as Task.Ship
+   * does. Empty means the task ships nothing.
+   */
+  ship?: string[]
 }
 
 /**

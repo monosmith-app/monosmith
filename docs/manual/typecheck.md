@@ -40,6 +40,7 @@ Usage: `smith typecheck [project]... [flags]`
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
 | `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--release` | boolean | off | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it |
 | `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end typecheck -->

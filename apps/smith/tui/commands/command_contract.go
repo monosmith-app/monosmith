@@ -114,6 +114,8 @@ type Command struct {
 	All bool
 	// Task is the task for RunTask.
 	Task string
+	// Release makes RunTask run the task's release profile (--release).
+	Release bool
 	// Tab is the view for ShowTab.
 	Tab string
 	// Guide is the title of the guided action for Guided.

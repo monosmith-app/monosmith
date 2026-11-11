@@ -31,6 +31,25 @@ func TestAnAppBuildShipsItsArtifactsFolderAndOutputsOnlyTheShippedFolder(t *test
 	}
 }
 
+func TestTheReleaseProfileBuildsReleaseAndShipsTheReleaseFolder(t *testing.T) {
+	tasks := Tasks("apps/api", "Acme.Api.csproj", "tests/Acme.Api.Tests.csproj", protocol.ProjectApp)
+	build := tasks["build"]
+	if build.Release == nil || !slices.Equal(build.Release.Command, []string{"dotnet", "build", "tests/Acme.Api.Tests.csproj", "--nologo", "-c", "Release"}) {
+		t.Fatalf("release profile %+v", build.Release)
+	}
+	if !slices.Equal(build.Release.Ship, []string{"../../dist/dotnet/bin/Acme.Api/release/*"}) {
+		t.Errorf("release ship %v", build.Release.Ship)
+	}
+	// test and start read the build without building: they must read the
+	// configuration the build wrote.
+	for _, name := range []string{"test", "start"} {
+		r := tasks[name].Release
+		if r == nil || !slices.Equal(r.Command[len(r.Command)-2:], []string{"-c", "Release"}) {
+			t.Errorf("%s has no release profile: %+v", name, r)
+		}
+	}
+}
+
 func TestALibraryBuildShipsNothing(t *testing.T) {
 	build := Tasks("libs/kit", "Kit.csproj", "", protocol.ProjectLib)["build"]
 	if len(build.Ship) != 0 || len(build.Outputs) != 0 {
@@ -45,7 +64,7 @@ func TestAFunctionAppShipsWhatItPublishes(t *testing.T) {
 	if !slices.Equal(pkg.Outputs, []string{"../../dist/apps/fn"}) || !slices.Equal(pkg.Ship, []string{"../../dist/dotnet/publish/Acme.Fn/release/*"}) {
 		t.Errorf("package %+v", pkg)
 	}
-	if len(build.Ship)+len(build.Outputs) != 0 {
+	if len(build.Ship)+len(build.Outputs) != 0 || (build.Release != nil && len(build.Release.Ship) != 0) {
 		t.Errorf("the build of a function app ships nothing, the package does: %+v", build)
 	}
 	noSharedWorkFolder(t, pkg)

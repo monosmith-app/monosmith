@@ -15,7 +15,7 @@ For tests, lint and type checks use their own shortcuts; for something else, `sm
 ## Synopsis
 
 ```sh
-smith build [project]... [-p <projects>] [--affected [--base <branch>]] [--parallel <n>] [--bail] [--no-cache] [--json | --json-events]
+smith build [project]... [-p <projects>] [--affected [--base <branch>]] [--parallel <n>] [--bail] [--no-cache] [--release] [--json | --json-events]
 ```
 
 ## Arguments and flags
@@ -39,6 +39,7 @@ Usage: `smith build [project]... [flags]`
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
 | `-p, --project <project>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) |
+| `--release` | boolean | off | build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it |
 | `--verbose` | boolean | off | show the log of every project, not only the ones that fail |
 
 <!-- smith:end build -->
@@ -92,6 +93,16 @@ Every publishable package:
 
 ```sh
 smith build -p kind:package
+```
+
+The optimised build. A Rust app runs `cargo build --release` and ships
+`dist/cargo/release/<bin>` to `dist/<project dir>`; a .NET app builds `-c Release`; an
+Android module runs `assembleRelease`. A tool without profiles (Go, Python, Vite...) builds
+as usual. `smith release` and the CI phases always build this way
+([the release profile](../reference/tasks-and-cache.md#the-release-profile)):
+
+```sh
+smith build cli --release
 ```
 
 ## Common errors

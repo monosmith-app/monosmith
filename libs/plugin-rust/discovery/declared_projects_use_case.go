@@ -98,14 +98,14 @@ func binTasks(root, crate, bin string, kind protocol.ProjectKind) map[string]pro
 		return slices.Concat([]string{"cargo"}, args, []string{"-p", crate, "--bin", bin})
 	}
 	tasks := map[string]protocol.Task{
-		"build":     {Command: scoped("build"), Inputs: inputs, Description: "cargo build --bin " + bin},
-		"test":      {Command: scoped("test"), Inputs: inputs, Cache: true, Description: "cargo test --bin " + bin},
+		"build":     withReleaseProfile(protocol.Task{Command: scoped("build"), Inputs: inputs, Description: "cargo build --bin " + bin}),
+		"test":      withReleaseProfile(protocol.Task{Command: scoped("test"), Inputs: inputs, Cache: true, Description: "cargo test --bin " + bin}),
 		"lint":      {Command: append(scoped("clippy"), "--", "-D", "warnings"), Inputs: inputs, Cache: true, Description: "cargo clippy, warnings are errors"},
 		"typecheck": {Command: scoped("check"), Inputs: inputs, Cache: true, Description: "cargo check --bin " + bin},
 	}
 	if kind == protocol.ProjectApp {
-		tasks["build"] = withShippedBinary(tasks["build"], root, DebugProfile, bin)
-		tasks["start"] = protocol.Task{Command: scoped("run"), Description: "Run the app"}
+		tasks["build"] = withShippedBinaries(tasks["build"], root, bin)
+		tasks["start"] = withReleaseProfile(protocol.Task{Command: scoped("run"), Description: "Run the app"})
 	}
 	return tasks
 }

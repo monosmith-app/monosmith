@@ -33,6 +33,8 @@
   "palette.keywords.ws.bootstrap": "launcher, same smith, pin version, team, everyone, write the launcher",
   "palette.keywords.run.build": "compile, bundle, make, build",
   "palette.keywords.run.build-all": "compile, bundle, make, build everything",
+  "palette.keywords.run.build-release": "release, optimised, optimized, production, prod build, cargo --release, dotnet -c Release",
+  "palette.keywords.run.build-release-all": "release everything, optimised, optimized, production, prod build all",
   "palette.keywords.run.test": "tests, spec, unit tests, run tests",
   "palette.keywords.run.test-all": "tests, spec, unit tests, test everything",
   "palette.keywords.run.lint": "style, eslint, format, lint, code style, lint",
