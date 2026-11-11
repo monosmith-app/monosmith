@@ -283,7 +283,7 @@ variables:
 |---|---|
 | Toolchain | Go at the `go.work` version (`1.24` when none): `actions/setup-go@v7` (with `cache: false`; the module cache is handled as a store), `GoTool@0` on Azure (a `major.minor` version gets `.0` appended), a `curl` of the release tarball for other providers, and the `go` dev container feature with `golangciLintVersion` set to the pinned version |
 | Package store | `~/go/pkg/mod` (`GOMODCACHE` on Azure), keyed on each module's `go.sum` |
-| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0` |
+| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `smith tools install golangci-lint --manager go-managed`: it installs v2.15.0 into the workspace's `.smith/bin`, which the lint task puts first on `PATH`. A plain `go install` would land in the Go bin folder, which is not on `PATH` on Azure Pipelines |
 | Audit (`smith ci audit`) | `govulncheck` v1.9.0 (`go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`), once per module, non-blocking, cached on that module's `go.mod` and `go.sum`. With `[ci] audit_policies = ["go"]` also `go mod verify` per module, blocking unless `"go"` is in `audit_warn` |
 | Credentials, permissions | none; the plugin asks for no secret. The workflow-level `permissions` come from smith, not from this plugin. |
 

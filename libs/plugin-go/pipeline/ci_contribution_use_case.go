@@ -17,6 +17,10 @@ const GovulncheckVersion = "v1.9.0"
 // bump it deliberately.
 const GolangciLintVersion = "v2.15.0"
 
+// ciLintInstallCommand installs the pinned golangci-lint into the workspace's
+// .smith/bin with no prompt, as the doctor's recommended fix does.
+var ciLintInstallCommand = []string{"{smith}", "tools", "install", "golangci-lint", "--manager", "go-managed"}
+
 // DefaultGoVersion is used when go.work does not say.
 const DefaultGoVersion = "1.24"
 
@@ -69,7 +73,9 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	}
 	for _, p := range params.Projects {
 		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {
-			result.Setup = append(result.Setup, protocol.Step{Name: "Install golangci-lint", Command: LintInstallCommand(), Blocking: true})
+			// Into .smith/bin, which the lint task puts first on PATH: the Go bin
+			// folder of a plain go install is not on PATH on Azure Pipelines.
+			result.Setup = append(result.Setup, protocol.Step{Name: "Install golangci-lint", Command: ciLintInstallCommand, Blocking: true})
 			break
 		}
 	}
