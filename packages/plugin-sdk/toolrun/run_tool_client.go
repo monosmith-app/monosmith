@@ -10,29 +10,38 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 // Log is where tool output goes; tests may replace it.
 var Log io.Writer = os.Stderr
 
 // Run executes argv in dir, streaming its output to Log. extraEnv entries are
-// KEY=VALUE pairs added to the plugin's environment.
+// KEY=VALUE pairs added to the plugin's environment. When the host handed on
+// tool colour (ToolColour), the tool is asked for colour, only its SGR codes
+// pass and smith paint applies; otherwise it is asked for plain text and
+// every escape code is removed.
 func Run(dir string, argv []string, extraEnv ...string) error {
-	cmd, err := command(dir, argv, extraEnv)
+	colour := ToolColour()
+	cmd, err := command(dir, argv, extraEnv, colour)
 	if err != nil {
 		return err
 	}
-	cmd.Stdout = Log
-	cmd.Stderr = Log
+	out := termcolour.NewLineWriter(Log, colour)
+	defer out.Flush()
+	cmd.Stdout = out
+	cmd.Stderr = out
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s failed: %w", strings.Join(argv, " "), err)
 	}
 	return nil
 }
 
-// Output executes argv in dir and returns its stdout; stderr goes to Log.
+// Output executes argv in dir and returns its stdout; stderr goes to Log. The
+// tool is asked for plain text: its output is read, not shown.
 func Output(dir string, argv []string, extraEnv ...string) (string, error) {
-	cmd, err := command(dir, argv, extraEnv)
+	cmd, err := command(dir, argv, extraEnv, false)
 	if err != nil {
 		return "", err
 	}
@@ -46,9 +55,10 @@ func Output(dir string, argv []string, extraEnv ...string) (string, error) {
 }
 
 // Capture executes argv in dir and returns its stdout and stderr, for a
-// caller that tells failures apart by what the tool printed.
+// caller that tells failures apart by what the tool printed. The tool is
+// asked for plain text.
 func Capture(dir string, argv []string, extraEnv ...string) (stdout, stderr string, err error) {
-	cmd, err := command(dir, argv, extraEnv)
+	cmd, err := command(dir, argv, extraEnv, false)
 	if err != nil {
 		return "", "", err
 	}
@@ -76,7 +86,7 @@ func CaptureTimeout(dir string, argv []string, timeout time.Duration, extraEnv .
 	defer cancel()
 	cmd := exec.CommandContext(ctx, path, argv[1:]...)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), extraEnv...)
+	cmd.Env = toolEnv(extraEnv, false)
 	var out, errOut bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &errOut
@@ -98,7 +108,7 @@ func Available(program string) bool {
 	return err == nil
 }
 
-func command(dir string, argv []string, extraEnv []string) (*exec.Cmd, error) {
+func command(dir string, argv []string, extraEnv []string, colour bool) (*exec.Cmd, error) {
 	if len(argv) == 0 {
 		return nil, fmt.Errorf("empty command")
 	}
@@ -108,9 +118,24 @@ func command(dir string, argv []string, extraEnv []string) (*exec.Cmd, error) {
 	}
 	cmd := exec.Command(path, argv[1:]...)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), extraEnv...)
+	cmd.Env = toolEnv(extraEnv, colour)
 	return cmd, nil
 }
+
+// toolEnv is the plugin's environment, then the entries that ask the tool
+// for colour or plain text, then the caller's: os/exec keeps the last value of
+// a repeated key.
+func toolEnv(extraEnv []string, colour bool) []string {
+	env := append(os.Environ(), termcolour.Env(colour)...)
+	return append(env, extraEnv...)
+}
+
+// ToolColour reports whether the tools a plugin runs stream to a person who
+// sees colour. A plugin's stdout is the protocol pipe, so it relies on what
+// the host handed on in termcolour.ToolColourEnv.
+//
+// Returns: true when Run asks tools for colour.
+func ToolColour() bool { return termcolour.ToolWanted(os.Getenv, false) }
 
 // Probe executes argv in dir to learn whether a tool exists and what it
 // prints, for a check such as `cargo audit --version`. It returns stdout and

@@ -107,6 +107,13 @@ unless `cache.dir` or `SMITH_CACHE_DIR` says otherwise) and each task's declared
 read-only. See [Tasks, cache and affected](../reference/tasks-and-cache.md) and
 [Configuration](../reference/configuration.md).
 
+In a terminal, or on GitHub Actions, Azure Pipelines and GitLab, the tools print in colour:
+smith asks each tool for colour (`FORCE_COLOR=1`, `CARGO_TERM_COLOR=always`, `PY_COLORS=1`
+and others), and paints the result lines of a tool without colour of its own (`go test`: pass
+green, fail red, skipped dim). Only colour codes pass, never cursor movement or a progress bar.
+`NO_COLOR`, `TERM=dumb`, a piped output, `--json` and `--json-events` keep it plain, and the
+cache stores the log plain. See [Tool colour](../reference/tasks-and-cache.md#tool-colour).
+
 Output goes to standard output as `<project>:<task> <symbol> ...` lines. With `--json` the
 same task log lines are printed first and the JSON summary follows on standard output
 (checked with `2>NUL` and `>NUL`: nothing is written to standard error), so a parser must

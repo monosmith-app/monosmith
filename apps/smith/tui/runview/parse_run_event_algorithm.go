@@ -33,7 +33,13 @@ func parseEventLine(line string) (Event, bool) {
 	case runevents.TaskStarted:
 		return Event{Kind: Started, Task: e.Task, Display: e.Task + words.Say("runview.started")}, true
 	case runevents.TaskOutput:
-		return Event{Kind: Output, Task: e.Task, Text: e.Line, Display: e.Task + " │ " + e.Line}, true
+		// styled is the line with its colour, sent when the TUI handed tool
+		// colour on; the pane shows it, and measures it without the codes.
+		text := e.Line
+		if e.Styled != "" {
+			text = e.Styled
+		}
+		return Event{Kind: Output, Task: e.Task, Text: text, Display: e.Task + " │ " + text}, true
 	case runevents.TaskFinished:
 		switch e.Status {
 		case runevents.Failed:

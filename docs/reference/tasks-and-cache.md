@@ -266,7 +266,8 @@ A task's **key** is a SHA-256 over a versioned, canonical encoding of:
 
 - the task id and its command (before `{workspaceRoot}` and `{smith}` are expanded, so keys do
   not depend on where the repository is checked out)
-- the declared env
+- the declared env (the task's own `env`, never the colour variables smith adds; see
+  [Tool colour](#tool-colour))
 - the content of every input file
 - the sources of every project it depends on, transitively
 - the keys of the tasks it depends on
@@ -314,6 +315,42 @@ toolchain (`toolchain  node 20.11.0 → 22.3.0`). It runs nothing; `--json` prin
 Everything goes through a `Storage` interface (`Has/Get/Put/Delete/Walk/Touch`)
 with a conformance test. It stores three kinds (`ac`, `cas`, `last`); the
 remote backends below implement the same interface.
+
+### Tool colour
+
+When a run's output reaches a person who sees colour, smith asks each tool to colour its own
+output, although the tool's stdout is a pipe. The decision is the one smith uses for its own
+text: never with `NO_COLOR` or `TERM=dumb`; yes with `FORCE_COLOR`, on GitHub Actions, Azure
+Pipelines and GitLab, and in a terminal. `smith run --json`, `--json-events` (see below), the
+MCP server and the editor engine are always plain.
+
+- **The tool's own colour.** The task's environment gets `FORCE_COLOR=1` (Node: jest, vitest,
+  eslint, pnpm, the `node --test` runner; ruff), `npm_config_color=always`, `CARGO_TERM_COLOR=always`, `PY_COLORS=1` (pytest),
+  `PYTHON_COLORS=1`, `MYPY_FORCE_COLOR=1` and
+  `DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1`. A plain run gets `NO_COLOR=1` and
+  the same variables switched off instead. smith does not set `CLICOLOR_FORCE=1`: Go's terminal
+  libraries obey it, so a Go test that checks rendered text would see colour codes.
+- **smith paint.** A tool with no colour of its own in a pipe (`go test`, the Rust test
+  harness, MSBuild and `tsc` errors) has its result lines painted: pass green, fail and error
+  red, warning yellow, skipped dim. smith paints a line only when it has no colour already, and
+  only wraps it in colour codes: the characters stay the same.
+- **Only colour passes.** Every other escape code (cursor movement, line erasing, progress
+  bars, window titles, links) is removed, and a coloured line ends with a reset.
+- **What smith reads stays plain.** The failure hint, the CI failure tail, the test counts, the
+  CI annotations and the job summary read the output without its codes. A plugin's `Output`,
+  `Capture` and `CaptureTimeout` always ask the tool for plain text.
+- **The cache stores the log plain.** An entry can come from another machine (the remote
+  cache), so the log is stored without escape codes. A replay to a plain destination has none;
+  a replay to a colour destination gets smith paint again, but not the tool's own colour.
+- **The cache key does not change.** The colour variables are not part of the task's declared
+  env, so a run with colour and a run without share their entries.
+- **Plugins.** A plugin's stdout is the protocol pipe, so the host passes the decision on in
+  `SMITH_TOOL_COLOR` (`1` or `0`); `toolrun.Run` and `toolrun.Quiet` follow it.
+- **`--json-events`.** `line` is always plain. When the run was handed tool colour
+  (`SMITH_TOOL_COLOR=1`, which only the terminal interface sets) a coloured line also comes
+  in `styled` ([Serve](serve.md)).
+- **Windows.** smith turns on virtual terminal processing in a classic console, so the codes
+  render there too.
 
 ### Remote cache
 

@@ -96,6 +96,25 @@ func TestCommandLineIsWhatTheUserWouldType(t *testing.T) {
 	}
 }
 
+func TestTheChildGetsToolColourOnlyWhenAskedAndNoColourIsUnset(t *testing.T) {
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	cases := []struct {
+		name   string
+		getenv func(string) string
+		colour bool
+		want   string
+	}{
+		{"a run pane", env(nil), true, "SMITH_INTERFACE=tui FORCE_COLOR=0 SMITH_TOOL_COLOR=1"},
+		{"a capture the TUI reads", env(nil), false, "SMITH_INTERFACE=tui NO_COLOR=1 SMITH_TOOL_COLOR=0"},
+		{"NO_COLOR wins", env(map[string]string{"NO_COLOR": "1"}), true, "SMITH_INTERFACE=tui NO_COLOR=1 SMITH_TOOL_COLOR=0"},
+	}
+	for _, c := range cases {
+		if got := strings.Join(childEnv(c.getenv, c.colour), " "); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
 func TestStartingAMissingProgramFails(t *testing.T) {
 	if _, err := Start(context.Background(), Spec{Program: "definitely-not-a-program-xyz"}); err == nil {
 		t.Fatal("expected an error")

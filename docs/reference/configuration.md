@@ -795,6 +795,10 @@ See [Releasing](releasing.md#apps).
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/`, and the external plugins you trust are recorded in its `trust.json` |
 | `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
 | `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
+| `NO_COLOR`, `TERM=dumb` | no colour anywhere: smith's own text, and the tools it runs are asked for plain text |
+| `FORCE_COLOR` | anything but empty or `0` turns colour on where stdout is not a terminal, for a captured sample; `NO_COLOR` still wins |
+| `SMITH_TOOL_COLOR` | `1` or `0`: set by smith for its plugins and for the child smith of the terminal interface, whose stdout is a pipe, to say whether the tools they run stream to a person who sees colour. `NO_COLOR` wins. See [Tool colour](tasks-and-cache.md#tool-colour) |
+| `FORCE_COLOR=1`, `npm_config_color=always`, `CARGO_TERM_COLOR=always`, `PY_COLORS=1`, `PYTHON_COLORS=1`, `MYPY_FORCE_COLOR=1`, `DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1` | set by smith in a task's environment, and for a tool a plugin streams, when the output reaches a person who sees colour; otherwise smith sets `NO_COLOR=1` and the same variables to their "off" value. They never join the cache key. A task's own `env` can override them |
 | `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release, and the update notice asking npm |
 | `SMITH_UPDATE_CHECK` | `on` or `off`: whether smith asks the npm registry once a day for a newer smith on your channel; wins over `[workspace] update_check` |
 | `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |

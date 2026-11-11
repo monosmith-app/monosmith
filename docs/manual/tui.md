@@ -854,7 +854,7 @@ again, scroll the wheel, change tab, resize the terminal, or the text under the 
 | `CI` | Any value stops a bare `smith` from opening the shell. |
 | `SMITH_SCREEN_READER` | Anything but empty, `0`, `false`, `no` or `off` draws no full-screen shell, no colour and no mouse: plain numbered questions, then the command, which smith runs in the terminal. |
 | `SMITH_THEME` | `light`, `dark` or `plain`. `plain` also selects plain mode. Without it the choice saved in the Settings tab decides, and without that the terminal's background. |
-| `NO_COLOR` | Any value gives the plain colours. |
+| `NO_COLOR` | Any value gives the plain colours, and the tools a run starts print plain text. Without it, the log of a run shows each tool's own colour and smith paint (go test pass green, fail red). The interface hands this on to the smith it starts with `SMITH_TOOL_COLOR=1`; output the interface reads (a plan, a dry run) stays plain. |
 | `SMITH_ASCII` | Any value (or `TERM=dumb` or `TERM=linux`) uses ASCII symbols instead of Unicode. Without it the symbols saved in the Settings tab decide. |
 | `SMITH_HOME` | Where the smith home is (`~/.smith` by default): installed plugins, trust decisions and `tui.json`, the theme and symbols chosen in the Settings tab. |
 

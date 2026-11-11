@@ -117,7 +117,7 @@ func WorkspaceSources(dir, version string) Sources {
 			}, nil
 		},
 		Start: func(argv []string) (runner.Handle, error) {
-			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir})
+			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir, Colour: true})
 			if err != nil {
 				return nil, err
 			}

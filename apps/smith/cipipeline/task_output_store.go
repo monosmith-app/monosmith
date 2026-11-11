@@ -3,6 +3,8 @@ package cipipeline
 import (
 	"strings"
 	"sync"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 // taskTailLines is how many of the last lines of each task are kept, to show
@@ -36,7 +38,9 @@ func (o *taskOutputs) Write(p []byte) (int, error) {
 		if i < 0 {
 			break
 		}
-		o.read(strings.TrimRight(o.pending[:i], "\r"))
+		// The tail, the test counts and the job summary are read and
+		// printed outside the group: they stay plain whatever the log shows.
+		o.read(termcolour.Strip(strings.TrimRight(o.pending[:i], "\r")))
 		o.pending = o.pending[i+1:]
 	}
 	return len(p), nil

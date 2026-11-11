@@ -88,9 +88,14 @@ logger   2.0.1  › 2.0.2  patch  dependency core 1.5.0       ✓ registry.npmjs
 - Colour is allowed and wanted on the CI systems that render ANSI: GitHub Actions
   (`GITHUB_ACTIONS=true`), Azure Pipelines (`TF_BUILD=True`) and GitLab (`GITLAB_CI`), and in a
   terminal. Never when `NO_COLOR` is set or `TERM=dumb`, and never when stdout is not a terminal and
-  no such CI is detected. The decision lives in one place, `colourWanted` in
-  `apps/smith/cipipeline/colour_policy.go`; every table goes through `resultTable`, which pads on
-  the plain text and paints after, so colour never moves a column.
+  no such CI is detected. The decision lives in one place, `termcolour.Wanted` in
+  `packages/plugin-sdk/termcolour/colour_wanted_policy.go` (`ToolWanted` adds the
+  `SMITH_TOOL_COLOR` hand-on for plugins and the TUI's child smith); every table goes through
+  `resultTable`, which pads on the plain text and paints after, so colour never moves a column.
+- Tool output follows the same decision: smith asks the tool for colour through its environment
+  and paints the result lines of a tool without colour (smith paint, `termcolour.Paint`). Only
+  SGR codes pass (`termcolour.Line`). Anything smith parses (the failure tail, test counts,
+  annotations, the job summary, `toolrun.Output`/`Capture`) and the cached log stay plain.
 - Colour is for status words and glyphs only, and never the only carrier of meaning: the glyph and
   the word stay. Still no cursor movement, spinners or progress bars (a bar is noise in a log).
   The job-summary Markdown and the `::notice::` lines stay plain.

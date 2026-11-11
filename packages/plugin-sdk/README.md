@@ -27,7 +27,8 @@ minor version may change the Go API; the wire protocol is versioned on its own
 | `projectkind` | a project's kind when its manifest declares none, and the directory each kind lives in |
 | `registry` | `registry.GetJSON`: read a JSON document from a package registry with a 10-second timeout and a status check |
 | `discovery` | `discovery.WithDeclared`: add the projects `smith.toml` declares to a discover result |
-| `toolrun` | run toolchain commands with their output on stderr, keeping stdout for the protocol |
+| `toolrun` | run toolchain commands with their output on stderr, keeping stdout for the protocol; `Run` and `Quiet` colour a tool's output when the host hands colour on, `Output` and `Capture` always ask for plain text |
+| `termcolour` | smith's one colour decision (`Wanted`, `ToolWanted`), the environment that asks a tool for colour or plain text, the filter that lets only SGR codes through, and smith paint for tools without colour |
 | `buildrefs` | find the files that name a build folder, so a doctor fix that moves the build can refuse with the file named |
 | `components` | what every plugin's SBOM listing needs: find a lockfile or manifest up to the workspace, and write package URLs |
 | `fileedits` | collect a plugin's edits to workspace files in memory, so several rewrites of one file add up; `RetargetDependents` points the other projects' files at a moved directory |

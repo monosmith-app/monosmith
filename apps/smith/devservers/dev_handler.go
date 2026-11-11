@@ -73,7 +73,7 @@ for every one to run at once; --dry-run prints that command.`,
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"start"}, Projects: chosen, Parallel: parallel, Bail: true, Out: cmd.OutOrStdout()})
+			summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"start"}, Projects: chosen, Parallel: parallel, Bail: true, Out: cmd.OutOrStdout(), Colour: taskrun.ToolColour(cmd.OutOrStdout())})
 			if err != nil {
 				return err
 			}

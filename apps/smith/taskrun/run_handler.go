@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"golang.org/x/term"
+
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/spf13/cobra"
@@ -64,6 +66,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			// shows every log.
 			req.Quiet = !verbose && len(fixed) == 1 && fixed[0] == "build"
 			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
+			req.Colour = runColour(os.Getenv, asJSON, jsonEvents, req.Out, term.IsTerminal)
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
 				// output arrives as task.output events.

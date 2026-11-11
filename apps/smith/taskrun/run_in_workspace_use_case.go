@@ -39,6 +39,9 @@ type Request struct {
 	// in it; empty means a generated one.
 	Events runevents.Sink
 	RunID  string
+	// Colour says Out streams to a person who sees colour; see Options.Colour.
+	// Leave it off for output smith or another program reads.
+	Colour bool
 }
 
 // Command is the smith command line the request stands for.
@@ -149,6 +152,7 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
 		Events: stream, Command: req.Command(), SharedOutputs: s.Config.Workspace.SharedOutputs,
 		Installable: func(name string) bool { return toolinstall.Declares(s, name) },
+		Colour:      req.Colour,
 	})
 	pruneAfterRun(s, meter, os.Stderr)
 	return summary, nil

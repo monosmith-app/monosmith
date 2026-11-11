@@ -215,7 +215,9 @@ stay visible; the same table goes to the job summary (`$GITHUB_STEP_SUMMARY` on 
 summary section). Status words and glyphs are coloured (green passed, yellow warning or dependency-caused,
 red failed, dim unchanged) only where the CI renders it: GitHub Actions, Azure Pipelines and
 GitLab, or a terminal. `NO_COLOR` and `TERM=dumb` switch it off, and a piped log has none, so the
-words read the same without it; the job summary is always plain. `SMITH_ASCII=1` swaps the symbols for `[v]` `[x]` `[!]`.
+words read the same without it; the job summary is always plain. The tool output inside the
+groups follows the same rule ([tool colour](../reference/tasks-and-cache.md#tool-colour)); the
+failure tail printed outside a group is plain. `SMITH_ASCII=1` swaps the symbols for `[v]` `[x]` `[!]`.
 
 ```text
 ══ Audit ═══════════════════════════════════════════════════

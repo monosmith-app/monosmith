@@ -21,7 +21,7 @@ the other fields depend on the kind and are absent otherwise.
 | `run.started` | `command`, `tasks` | the run begins: the smith command line it stands for, and every task it will consider, in dependency order |
 | `task.queued` | `task` | once per task, right after `run.started` |
 | `task.started` | `task` | the task got a slot; it is about to run, or to be replayed from the cache |
-| `task.output` | `task`, `stream`, `line` | one line the task wrote, without its newline; a cached task replays its log the same way |
+| `task.output` | `task`, `stream`, `line`, `styled` | one line the task wrote, without its newline; a cached task replays its log the same way. `line` is always plain text. `styled` is the same line with SGR colour codes, and comes only when the line has colour and the run was handed tool colour (`SMITH_TOOL_COLOR=1`, as the terminal interface does) |
 | `task.finished` | `task`, `status`, `durationMs`, `cacheKey`, `reason` | the task ended |
 | `run.finished` | `ok`, `summary` | the run ended; the last event |
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 // VerboseEnv, when set to anything but "" or "0", makes Quiet stream a tool's
@@ -20,7 +22,8 @@ func Quiet(dir string, argv []string, extraEnv ...string) error {
 	if v := os.Getenv(VerboseEnv); v != "" && v != "0" {
 		return Run(dir, argv, extraEnv...)
 	}
-	cmd, err := command(dir, argv, extraEnv)
+	colour := ToolColour()
+	cmd, err := command(dir, argv, extraEnv, colour)
 	if err != nil {
 		return err
 	}
@@ -28,7 +31,9 @@ func Quiet(dir string, argv []string, extraEnv ...string) error {
 	cmd.Stdout, cmd.Stderr = &captured, &captured
 	_, _ = fmt.Fprintf(Log, "Running %s ...\n", strings.Join(argv, " "))
 	if err := cmd.Run(); err != nil {
-		_, _ = Log.Write(captured.Bytes())
+		out := termcolour.NewLineWriter(Log, colour)
+		_, _ = out.Write(captured.Bytes())
+		out.Flush()
 		return fmt.Errorf("%s failed: %w", strings.Join(argv, " "), err)
 	}
 	return nil
