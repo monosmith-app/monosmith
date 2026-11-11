@@ -117,7 +117,7 @@ example `:apps:tool`), with `--console=plain -q`. `gradle` must be on `PATH`.
 
 | Task | Command | Outputs | dependsOn | Cached | Appears |
 |---|---|---|---|---|---|
-| `build` | `gradle --console=plain -q :path:assemble` | `../../dist/<project dir>` when the script sets the build folder; it ships the jar of `dist/gradle/<artifactId>/libs/`, or the APK of `outputs/apk/debug/` | `^build` | no | every module |
+| `build` | `gradle --console=plain -q :path:assemble` | `../../dist/<project dir>` when the script sets the build folder; it ships the jar of `dist/gradle/<artifactId>/libs/`, or the APK of `outputs/apk/debug/`; with `--release` an Android module runs `:path:assembleRelease` and ships `outputs/apk/release/` | `^build` | no | every module |
 | `test` | `gradle ... :path:test` | none | `build` | yes | every module |
 | `lint` | `gradle ... :path:ktlintCheck` (or `checkstyleMain checkstyleTest`; Android adds `:path:lint`) | none | `build`; for an Android module `test` | yes | when a lint plugin is detected |
 | `start` | `gradle ... :path:run` | none | `build` | no | kind `app`, not Android |

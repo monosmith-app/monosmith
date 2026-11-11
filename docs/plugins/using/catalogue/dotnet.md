@@ -51,10 +51,10 @@ All tasks run in the project directory. MSBuild builds a project's references it
 
 | Task | Command | Appears for | dependsOn | Cached |
 |---|---|---|---|---|
-| `build` | `dotnet build <tests project, else project file> --nologo` | every project | `^build` | no; an app outputs `dist/<project dir>` and ships `dist/dotnet/bin/<Project>/debug/` there |
+| `build` | `dotnet build <tests project, else project file> --nologo` (with `--release`, `-c Release` too) | every project | `^build` | no; an app outputs `dist/<project dir>` and ships `dist/dotnet/bin/<Project>/debug/` there (`release/` with `--release`) |
 | `lint` | `dotnet format <project file> --verify-no-changes --no-restore` | every project | `build` | yes |
-| `test` | `dotnet test <tests project> --nologo --no-build` | a project that has a tests project | `build` | yes |
-| `start` | `dotnet run --project <project file> --no-build` | `app` | `build` | no |
+| `test` | `dotnet test <tests project> --nologo --no-build` (with `--release`, `-c Release` too) | a project that has a tests project | `build` | yes |
+| `start` | `dotnet run --project <project file> --no-build` (with `--release`, `-c Release` too) | `app` | `build` | no |
 | `pack` | `dotnet pack <project file> --nologo -c Release -o {workspaceRoot}/dist/<project dir>` | `package` | `^build` | yes; outputs `dist/<project dir>` |
 
 `dotnet build` builds the tests project when there is one, and that builds the project. `dotnet format` also runs the analyzers; the generated `Directory.Build.props` sets `TreatWarningsAsErrors`. There is no `typecheck` and no `format` task, and the packaging task is called `pack`, not `package`, so it is a different task from the `package` task other plugins give apps for `smith ci pack`; apps have no packaging task here (not verified in a CI run).
@@ -271,7 +271,7 @@ Removal: the plugin cleans nothing outside the project directory. Real dry run: 
 
 - The .NET SDK on PATH; generated projects need SDK 10 (they target `net10.0`). `smith add` itself needs no SDK (it only writes files), the first build does, plus network access to restore xunit.
 - Because `Directory.Build.props` sets `TreatWarningsAsErrors`, a new warning (for instance a nullable warning) fails the build and `lint`.
-- `build` is not cached; an app declares its shipped folder as the output, a library none; the test results are cached (`test`, `lint`).
+- `build` is not cached; `--release` builds, tests and runs the `Release` configuration, and `smith release` and the CI phases always use it; an app declares its shipped folder as the output, a library none; the test results are cached (`test`, `lint`).
 - A project needs its own directory: the name comes from the directory, and a project file at the workspace root is ignored.
 - Newer versions come from nuget.org only (private feeds are not asked), the vulnerability audit does not tell fixable findings from the rest, and there is no `format` or `typecheck` task. Release archives are self-contained single-file zips only (no framework-dependent or NativeAOT builds, no `.tar.gz`).
 - NuGet package versions are not asked from a private feed.

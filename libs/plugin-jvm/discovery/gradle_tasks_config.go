@@ -21,7 +21,8 @@ var gradleInputs = []string{
 // depends on (^build); test and start wait for it; lint is what the
 // module's plugins add (ktlint for Kotlin, Checkstyle for Java, Android
 // Lint for an Android module). A module whose build folder smith knows ships
-// its jar, or its debug APK, into dist/<root>.
+// its jar, or its debug APK, into dist/<root>. An Android module's build has
+// a release profile (assembleRelease) that ships the release APK.
 func GradleTasks(root string, b GradleBuild, kind protocol.ProjectKind) map[string]protocol.Task {
 	gradle := func(tasks ...string) []string {
 		argv := []string{"gradle", "--console=plain", "-q"}
@@ -31,8 +32,15 @@ func GradleTasks(root string, b GradleBuild, kind protocol.ProjectKind) map[stri
 		return argv
 	}
 	build := protocol.Task{Command: gradle("assemble"), Cwd: ".", Inputs: gradleInputs, DependsOn: []string{"^build"}, Description: "gradle assemble"}
+	if b.Android {
+		// --release builds and ships only the release variant.
+		build.Release = &protocol.TaskProfile{Command: gradle("assembleRelease")}
+	}
 	if b.BuildDir != "" {
 		build = withShippedArchive(build, root, gradleArchive(b.BuildDir, b.Android, DebugVariant))
+		if b.Android {
+			build.Release.Ship = []string{protocol.FromProject(root, gradleArchive(b.BuildDir, true, ReleaseVariant))}
+		}
 	}
 	tasks := map[string]protocol.Task{
 		"build": build,

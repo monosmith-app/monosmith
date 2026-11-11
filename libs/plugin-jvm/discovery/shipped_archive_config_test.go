@@ -38,3 +38,19 @@ func TestAGradleBuildShipsItsJarOrItsDebugAPK(t *testing.T) {
 	}
 	noWorkFolder(t, android)
 }
+
+func TestOnlyAnAndroidBuildHasAReleaseProfile(t *testing.T) {
+	android := GradleTasks("apps/phone", GradleBuild{Path: ":apps:phone", BuildDir: "dist/gradle/phone", Android: true}, protocol.ProjectApp)["build"]
+	r := android.Release
+	if r == nil || !slices.Equal(r.Command, []string{"gradle", "--console=plain", "-q", ":apps:phone:assembleRelease"}) {
+		t.Fatalf("android release profile %+v", r)
+	}
+	if !slices.Equal(r.Ship, []string{"../../dist/gradle/phone/outputs/apk/release/*.apk"}) {
+		t.Errorf("android release ship %v", r.Ship)
+	}
+	jvm := GradleTasks("apps/api", GradleBuild{Path: ":apps:api", BuildDir: "dist/gradle/api"}, protocol.ProjectApp)["build"]
+	maven := Tasks("apps/api", "dev.acme:api", "api", protocol.ProjectApp)["build"]
+	if jvm.Release != nil || maven.Release != nil {
+		t.Errorf("a JVM build has one profile: gradle %+v, maven %+v", jvm.Release, maven.Release)
+	}
+}

@@ -14,10 +14,11 @@ A task is a command a plugin infers for a project: `build`, `test`, `lint`,
 | `inputs` | globs relative to the project, `{workspaceRoot}/...` for root files, `!` to exclude; default: every file of the project |
 | `outputs` | directories restored on a cache hit (`dist`) |
 | `ship` | files a tool writes into its own work folder that smith links into the shipped folder `dist/<project dir>` after the task ([below](#the-shipped-folder-and-the-work-folder)); set by a plugin |
+| `release` | the `command` and `ship` of the optimised profile, which `--release` runs ([below](#the-release-profile)); set by a plugin |
 | `cache` | whether results are cached |
 
 ```sh
-smith run <task>... [-p <projects>] [--affected] [--parallel N] [--bail] [--no-cache] [--json]
+smith run <task>... [-p <projects>] [--affected] [--parallel N] [--bail] [--no-cache] [--release] [--json]
 smith build | test | lint | typecheck [project...]
 ```
 
@@ -142,8 +143,8 @@ folder there: Cargo builds into `dist/cargo` (`target-dir` in
 | Lua | `dist/<project dir>/`: the rock installed by `luarocks make --tree` |
 | Swift | `dist/<project dir>/`: the SwiftPM build (`swift build --scratch-path`) |
 | AppleScript | `dist/<project dir>/<name>.scpt` (`osacompile`, macOS only) |
-| Rust | `dist/<project dir>/`: an app's binary, linked from `dist/cargo/debug/` (the work folder of the whole workspace) |
-| .NET | `dist/<project dir>/`: an app's build, linked from `dist/dotnet/bin/<project>/debug/`; a function app's published folder, linked from `dist/dotnet/publish/<project>/release/`; `dist/dotnet` (`bin/` and `obj/`) is the work folder of the whole workspace |
+| Rust | `dist/<project dir>/`: an app's programs, linked from `dist/cargo/debug/` (`release/` with `--release`; the work folder of the whole workspace) |
+| .NET | `dist/<project dir>/`: an app's build, linked from `dist/dotnet/bin/<project>/debug/` (`release/` with `--release`); a function app's published folder, linked from `dist/dotnet/publish/<project>/release/`; `dist/dotnet` (`bin/` and `obj/`) is the work folder of the whole workspace |
 | JVM | `dist/<project dir>/`: the jar, linked from `dist/maven/<artifactId>/`, or the jar or debug APK, linked from `dist/gradle/<artifactId>/` |
 
 ### The shipped folder and the work folder
@@ -177,6 +178,33 @@ restore empties each output folder first, so a shared work folder as an output
 would lose the build state of every other project. The Cargo and .NET builds
 are not cached: `dotnet test --no-build` and `dotnet run --no-build` read the
 work folder. A cache hit restores copies of the shipped files, not links.
+
+### The release profile
+
+`smith build --release` (and `smith run <task> --release`) builds the
+optimised profile. A task with a `release` field runs that command and ships
+that profile's files:
+
+| Tool | Default | With `--release` |
+|---|---|---|
+| Rust | `cargo build -p <crate>`, ships `dist/cargo/debug/<bin>` | `cargo build -p <crate> --release`, ships `dist/cargo/release/<bin>`; `test` and `start` add `--release` too |
+| .NET | `dotnet build`, ships `dist/dotnet/bin/<project>/debug/` | `dotnet build -c Release`, ships `.../release/`; `test` and `start` read the same configuration (`-c Release --no-build`) |
+| Android | `gradle :path:assemble`, ships `outputs/apk/debug/` | `gradle :path:assembleRelease`, ships `outputs/apk/release/` |
+
+Every other tool (Go, Python, Dart, plain JVM, Maven...) has one profile and
+ignores the flag. A Vite, Angular or Astro build is already the production
+build. A web app with environments takes its mode from the environment
+(`build:<env>`), not from `--release`.
+
+- Both profiles stay in the work folder (`dist/cargo/debug/` and
+  `dist/cargo/release/`). The shipped folder `dist/<project dir>` holds the
+  files of the last build.
+- The cache key holds the command, so each profile has its own cache entry. A
+  switch back to the other profile restores it from the cache when the task is
+  cached.
+- `smith release` and the CI phases (`smith ci verify`, `pack`, `native`)
+  always run with `--release`. The generated pipelines run these phases, so
+  they need no flag of their own.
 
 TypeScript libraries don't build at all. A library's `package.json` exports
 its sources (`"exports": "./src/index.ts"`). TypeScript reads them, and so

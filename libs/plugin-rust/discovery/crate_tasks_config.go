@@ -38,19 +38,24 @@ func formatTask(cargo func(...string) []string, name string, fmtArgs []string) p
 // (clippy, warnings are errors), typecheck (check), format (fmt --check) and
 // package (cargo package, what crates.io would get). Cargo builds the
 // crates a crate depends on itself, so no task depends on another project's.
-// An app's build ships its program into dist/<root> (withShippedBinary).
-func Tasks(root, name string, kind protocol.ProjectKind, fmtArgs []string) map[string]protocol.Task {
+// An app's build ships its programs into dist/<root> (withShippedBinaries):
+// bins names them (CrateBinaries); none means one named after the crate.
+// build, test and start also have a release profile (--release).
+func Tasks(root, name string, kind protocol.ProjectKind, fmtArgs []string, bins ...string) map[string]protocol.Task {
 	cargo := func(args ...string) []string { return append([]string{"cargo"}, args...) }
 	tasks := map[string]protocol.Task{
-		"build":     {Command: cargo("build", "-p", name), Inputs: inputs, Description: "cargo build"},
-		"test":      {Command: cargo("test", "-p", name), Inputs: inputs, Cache: true, Description: "cargo test"},
+		"build":     withReleaseProfile(protocol.Task{Command: cargo("build", "-p", name), Inputs: inputs, Description: "cargo build"}),
+		"test":      withReleaseProfile(protocol.Task{Command: cargo("test", "-p", name), Inputs: inputs, Cache: true, Description: "cargo test"}),
 		"lint":      {Command: cargo("clippy", "-p", name, "--all-targets", "--", "-D", "warnings"), Inputs: inputs, Cache: true, Description: "cargo clippy, warnings are errors"},
 		"typecheck": {Command: cargo("check", "-p", name, "--all-targets"), Inputs: inputs, Cache: true, Description: "cargo check"},
 		"format":    formatTask(cargo, name, fmtArgs),
 	}
 	if kind == protocol.ProjectApp {
-		tasks["build"] = withShippedBinary(tasks["build"], root, DebugProfile, name)
-		tasks["start"] = protocol.Task{Command: cargo("run", "-p", name), Description: "Run the app"}
+		if len(bins) == 0 {
+			bins = []string{name}
+		}
+		tasks["build"] = withShippedBinaries(tasks["build"], root, bins...)
+		tasks["start"] = withReleaseProfile(protocol.Task{Command: cargo("run", "-p", name), Description: "Run the app"})
 	}
 	if kind == protocol.ProjectPackage {
 		tasks["package"] = protocol.Task{Command: cargo("package", "-p", name, "--allow-dirty"), Description: "cargo package: the .crate crates.io would get"}

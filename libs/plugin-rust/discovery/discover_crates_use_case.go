@@ -38,7 +38,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			continue
 		}
 		fallback := protocol.ProjectLib
-		if _, err := os.Stat(filepath.Join(dir, "src", "main.rs")); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, "src", "main.rs")); err == nil || len(crate.Bins) > 0 {
 			fallback = protocol.ProjectApp
 		}
 		kind := projectkind.Resolve(crate.Kind, root, fallback)
@@ -59,7 +59,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     crate.PathDependencies,
 			Version:     crate.Version,
 			Description: crate.Description,
-			Tasks:       Tasks(root, crate.Name, kind, fmtArgs),
+			Tasks:       Tasks(root, crate.Name, kind, fmtArgs, CrateBinaries(dir, crate)...),
 			Stack:       crate.Stack,
 			Tags:        tags,
 		})

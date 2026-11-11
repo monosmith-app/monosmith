@@ -31,6 +31,21 @@ type Crate struct {
 	// HasWorkspace is true when the manifest has a [workspace] table: a crate
 	// that has one is the root of its own workspace, not a member of another.
 	HasWorkspace bool
+	// Bins are the [[bin]] tables: the programs the manifest names itself.
+	Bins []CargoBin
+	// AutoBins is [package] autobins, true unless set to false: cargo also
+	// builds src/main.rs and src/bin/*.rs as programs.
+	AutoBins bool
+}
+
+// CargoBin is one [[bin]] table of a Cargo.toml.
+type CargoBin struct {
+	// Name is the program's name: the file cargo writes into the profile
+	// folder (dist/cargo/debug/<name>).
+	Name string
+	// Path is the program's main file, crate-relative; empty means cargo's
+	// default place for Name.
+	Path string
 }
 
 type manifest struct {
@@ -38,7 +53,8 @@ type manifest struct {
 		Name    string `toml:"name"`
 		Version any    `toml:"version"`
 		// Description is a string, or a table when inherited from the workspace.
-		Description any `toml:"description"`
+		Description any   `toml:"description"`
+		Autobins    *bool `toml:"autobins"`
 		Metadata    struct {
 			Smith struct {
 				Kind   string `toml:"kind"`
@@ -51,6 +67,10 @@ type manifest struct {
 		Members []string `toml:"members"`
 		Exclude []string `toml:"exclude"`
 	} `toml:"workspace"`
+	Bin []struct {
+		Name string `toml:"name"`
+		Path string `toml:"path"`
+	} `toml:"bin"`
 	Dependencies      map[string]any `toml:"dependencies"`
 	DevDependencies   map[string]any `toml:"dev-dependencies"`
 	BuildDependencies map[string]any `toml:"build-dependencies"`
@@ -62,8 +82,14 @@ func ParseCargo(src []byte) (Crate, error) {
 	if err := toml.Unmarshal(src, &m); err != nil {
 		return Crate{}, err
 	}
-	var c Crate
+	c := Crate{AutoBins: true}
+	for _, b := range m.Bin {
+		c.Bins = append(c.Bins, CargoBin{Name: b.Name, Path: b.Path})
+	}
 	if m.Package != nil {
+		if m.Package.Autobins != nil {
+			c.AutoBins = *m.Package.Autobins
+		}
 		c.Name = m.Package.Name
 		if v, ok := m.Package.Version.(string); ok {
 			c.Version = v

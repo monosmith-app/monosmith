@@ -6,6 +6,10 @@ import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 // (outputs/apk/debug); `gradle assemble` builds every variant.
 const DebugVariant = "debug"
 
+// ReleaseVariant is the Android build variant `smith build --release` builds
+// (assembleRelease) and ships (outputs/apk/release).
+const ReleaseVariant = "release"
+
 // withShippedArchive makes a build task ship what the module builds into its
 // work folder: smith links each archive the globs name into the project's
 // shipped folder, which becomes the task's one output. The work folder is

@@ -26,6 +26,11 @@ func WithFunctionTasks(tasks map[string]protocol.Task, host, root, file, dir str
 	shipped := protocol.ProjectBuildDir(root)
 	build := tasks["build"]
 	build.Outputs, build.Ship = nil, nil
+	if build.Release != nil {
+		release := *build.Release
+		release.Ship = nil
+		build.Release = &release
+	}
 	tasks["build"] = build
 	tasks["package"] = protocol.Task{
 		Command: []string{"dotnet", "publish", file, "-c", "Release", "--nologo"}, Inputs: inputs,
