@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"io"
 	"os"
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 // Spec is the command to start: smith's arguments (without the program name)
@@ -19,6 +21,24 @@ type Spec struct {
 	Dir  string
 	// Program is the executable; empty means this very smith (os.Executable).
 	Program string
+	// Colour asks the child to have the tools it runs colour their output
+	// (SMITH_TOOL_COLOR=1), for a pane that shows it. Leave it off for output
+	// the TUI reads. NO_COLOR in the TUI's environment always keeps it off.
+	Colour bool
+}
+
+// childEnv is what the child gets on top of the TUI's environment. Its own
+// text stays plain: it is not a terminal, and FORCE_COLOR=0 (or NO_COLOR=1)
+// keeps an inherited FORCE_COLOR from colouring it.
+//
+// Parameters: getenv reads the TUI's environment; colour is Spec.Colour.
+// Returns: KEY=VALUE entries to append.
+func childEnv(getenv func(string) string, colour bool) []string {
+	env := []string{"SMITH_INTERFACE=tui"} // words:literal
+	if colour && getenv("NO_COLOR") == "" { // words:literal
+		return append(env, "FORCE_COLOR=0", termcolour.ToolEntry(true)) // words:literal
+	}
+	return append(env, "NO_COLOR=1", termcolour.ToolEntry(false)) // words:literal
 }
 
 // CommandLine is the line as a user would type it, for display.
@@ -69,8 +89,9 @@ func Start(parent context.Context, spec Spec) (*Process, error) {
 	ctx, cancel := context.WithCancel(parent)
 	cmd := exec.CommandContext(ctx, program, spec.Argv...)
 	cmd.Dir = spec.Dir
-	// The child is not a terminal: it prints plain lines, one per event.
-	cmd.Env = append(os.Environ(), "NO_COLOR=1", "SMITH_INTERFACE=tui") // words:literal
+	// The child is not a terminal: it prints plain lines, one per event; the
+	// tools it runs may colour theirs (see childEnv).
+	cmd.Env = append(os.Environ(), childEnv(os.Getenv, spec.Colour)...)
 	cmd.Stdin = nil
 	// Ask the child to stop the way a terminal would (Ctrl+C), so it can clean
 	// up its own task processes; where that is not possible, kill it.

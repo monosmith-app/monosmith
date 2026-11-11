@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
 )
 
 var (
@@ -29,10 +30,16 @@ func ParseLine(line string) Event {
 	if ev, ok := parseEventLine(line); ok {
 		return ev
 	}
-	if m := taskLine.FindStringSubmatch(line); m != nil {
+	// A tool's line may carry colour: the markers are matched on the plain
+	// text, and a task's output keeps its colour for the pane.
+	plain := termcolour.Strip(line)
+	if m := taskLine.FindStringSubmatch(plain); m != nil {
 		task, marker, rest := m[1], m[2], m[3]
 		switch marker {
 		case "│":
+			if _, coloured, ok := strings.Cut(line, " │ "); ok {
+				rest = coloured
+			}
 			return Event{Kind: Output, Task: task, Text: rest}
 		case "▶":
 			return Event{Kind: Started, Task: task, Text: rest}
@@ -50,12 +57,12 @@ func ParseLine(line string) Event {
 			return Event{Kind: Finish, Task: task, Status: Passed, Duration: d, Text: rest}
 		}
 	}
-	if m := summaryLine.FindStringSubmatch(line); m != nil {
+	if m := summaryLine.FindStringSubmatch(plain); m != nil {
 		done, _ := strconv.Atoi(m[2])
 		total, _ := strconv.Atoi(m[3])
-		return Event{Kind: Summary, Done: done, Total: total, OK: m[1] == marks.Passed, Text: line}
+		return Event{Kind: Summary, Done: done, Total: total, OK: m[1] == marks.Passed, Text: plain}
 	}
-	if m := summaryTask.FindStringSubmatch(line); m != nil {
+	if m := summaryTask.FindStringSubmatch(plain); m != nil {
 		if m[1] == marks.Skipped {
 			return Event{Kind: Skip, Task: m[2], Status: Skipped, Text: m[3]}
 		}

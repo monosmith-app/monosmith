@@ -6,6 +6,14 @@ import (
 	"time"
 )
 
+func TestAStyledOutputEventShowsItsColour(t *testing.T) {
+	line := `{"event":"task.output","run":"r","seq":4,"time":"2026-10-25T10:00:00Z","task":"a:test","stream":"combined","line":"--- FAIL: TestX","styled":"\u001b[31m--- FAIL: TestX\u001b[0m"}`
+	want := Event{Kind: Output, Task: "a:test", Text: "\x1b[31m--- FAIL: TestX\x1b[0m", Display: "a:test │ \x1b[31m--- FAIL: TestX\x1b[0m"}
+	if got := ParseLine(line); !reflect.DeepEqual(got, want) {
+		t.Errorf("got %+v\nwant %+v", got, want)
+	}
+}
+
 func TestParseLineReadsTheEventStream(t *testing.T) {
 	cases := []struct {
 		line string

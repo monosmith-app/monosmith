@@ -35,6 +35,21 @@ func TestParseLineReadsWhatSmithPrints(t *testing.T) {
 	}
 }
 
+func TestParseLineMatchesColouredLinesOnTheirPlainText(t *testing.T) {
+	if got := ParseLine("web:test │ \x1b[32mok\x1b[0m"); got.Kind != Output || got.Task != "web:test" || got.Text != "\x1b[32mok\x1b[0m" {
+		t.Errorf("output keeps its colour: %+v", got)
+	}
+	if got := ParseLine("\x1b[32m✓\x1b[0m 4/4 tasks succeeded (0 from cache) in 1s"); got.Kind != Summary || got.Done != 4 || got.Text != "✓ 4/4 tasks succeeded (0 from cache) in 1s" {
+		t.Errorf("a coloured summary is still the summary: %+v", got)
+	}
+	if got := ParseLine("\x1b[31m  × web:build exited with code 1\x1b[0m"); got.Kind != Failure || got.Task != "web:build" {
+		t.Errorf("a coloured failure line: %+v", got)
+	}
+	if got := ParseLine("\x1b[33mnpm warn\x1b[0m deprecated"); got.Kind != Plain || got.Text != "\x1b[33mnpm warn\x1b[0m deprecated" {
+		t.Errorf("a coloured plain line keeps its colour: %+v", got)
+	}
+}
+
 func TestParseLineIgnoresACarriageReturn(t *testing.T) {
 	if got := ParseLine("kit:build ✓ 1s\r"); got.Kind != Finish || got.Duration != time.Second {
 		t.Fatalf("%+v", got)
