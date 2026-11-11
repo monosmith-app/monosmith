@@ -288,6 +288,19 @@ With the `python` audit policy turned on, the generated `requirements-dev.txt` p
 
 `smith install -p <project> shop-core-py` writes the library's distribution name (the `[project] name` of its `pyproject.toml`, not its import name) in `[project] dependencies`. The library is installed editable in the shared `.venv` before the project, so pip finds the requirement there and never asks PyPI; `smith install` and `smith ci` install projects in dependency order for the same reason. `smith uninstall` removes the line and leaves the library in the venv. The plugin declares the `link` capability.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. [`smith deps repair`](../../../manual/deps-repair.md) offers two repairs for the one `.venv` at
+the workspace root.
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `reinstall` | `.venv` | smith's install: it creates `.venv` again and installs each project in editable mode. smith keeps no lockfile for pip, so pip resolves the version ranges again: the versions can change |
+| `cache` | nothing in the workspace | `<.venv python> -m pip cache purge`, then the install. Offered only while `.venv` exists. pip's cache belongs to your user account |
+
+No `prune`: pip has no command that removes the packages nothing requires. No `lockfile`: smith
+keeps no lockfile for pip.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `python -m build` without `--outdir` is reported, with the option to pass. The folders a build backend makes inside the project (`build/`, `*.egg-info`) are not read. A task whose `outputs` do not hold the folder the command writes is reported too: a cache hit would restore nothing. See [doctor](../../../manual/doctor.md#the-other-languages).

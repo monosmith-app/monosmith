@@ -361,6 +361,18 @@ The GitHub fragment from a real run:
 
 See [CI pipelines](../../../reference/ci.md).
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. [`smith deps repair`](../../../manual/deps-repair.md) offers these repairs:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `reinstall` | `vendor` | `composer install`. `composer.lock` keeps the versions |
+| `lockfile` | `vendor` and `composer.lock` | `composer install`, which resolves `composer.json` again. Offered only when `composer.lock` exists |
+| `cache` | nothing in the workspace | `composer clear-cache`, then `composer install`. Composer's cache belongs to your user account |
+
+No `prune`: `composer install` already removes from `vendor` what the lockfile does not list.
+
 ## Doctor, dependencies and removal
 
 **Doctor.** Two checks, run only when the workspace has PHP projects:

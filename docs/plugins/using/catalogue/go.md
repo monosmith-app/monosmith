@@ -293,6 +293,19 @@ Real audit run: `smith ci audit` printed `No vulnerabilities found.` for each mo
 
 `smith install -p <project> core-go` requires the library's module path in the project's `go.mod` (`require example.com/shop/libs/core-go v0.0.0`) and adds the library to `go.work` with `go work use`, which is how Go finds the folder; nothing is fetched. A workspace with no `go.work` gets a `replace` line instead. A requirement in `go.mod` is also a graph edge before any file imports the module. `smith uninstall` removes the requirement and its `replace`, and leaves `go.work` alone. The plugin declares the `link` capability.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. Go keeps no installed dependencies in the workspace,
+so [`smith deps repair`](../../../manual/deps-repair.md) offers these repairs:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `prune` | nothing | `go mod tidy` in each module. It removes the requirements nothing imports, and adds one the code imports but `go.mod` lacks, so the plan says versions can change |
+| `lockfile` | each `go.sum` that exists, and `go.work.sum` | `go mod tidy` in each module, which writes `go.sum` again. `go.mod` keeps the versions. Offered only when a `go.sum` exists |
+| `cache` | nothing in the workspace | `go clean -modcache`, then `go mod download` in each module. The module cache belongs to the machine |
+
+No `reinstall`: nothing is installed in the workspace to delete.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `go build` without `-o` (or with a folder outside `dist/`) is reported, with the option to pass. `go build ./...` writes no binary and is not reported. A task whose `outputs` do not hold the folder the command writes is reported too: a cache hit would restore nothing. See [doctor](../../../manual/doctor.md#the-other-languages).

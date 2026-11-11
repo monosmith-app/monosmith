@@ -1,6 +1,6 @@
 # ADR 0093: Plugins describe dependency repairs, and smith carries them out
 
-- Status: accepted; the protocol, `smith deps repair`, the TUI action and the Node plans implemented; the other languages follow in a second pull request
+- Status: accepted; implemented for Node, Python, Go, Rust, .NET, Dart, Ruby, PHP, Swift and Maven
 - Date: 2026-11-11
 
 ## Context
@@ -69,6 +69,26 @@ deletes, also with `-p`.
 
 smith's install is `npm install`, not `npm ci`. With an intact lockfile both install the
 locked versions.
+
+## The other languages
+
+Each language offers only the kinds its tool has an honest equivalent for.
+
+| Language | prune | reinstall | lockfile | cache |
+|---|---|---|---|---|
+| Python (pip) | no command | delete `.venv`, install (no lockfile, versions can change) | no lockfile | `pip cache purge` |
+| Go | `go mod tidy` | nothing installed in the workspace | delete `go.sum`, `go mod tidy` | `go clean -modcache` |
+| Rust | nothing installed | nothing installed | delete `Cargo.lock`, `cargo fetch` | no stable command |
+| .NET | nothing to prune | `dotnet restore --force` | delete `packages.lock.json`, `--force-evaluate` | `dotnet nuget locals all --clear` |
+| Dart | no command | delete `.dart_tool`, `pub get` | and `pubspec.lock` | `pub cache clean --force` |
+| Ruby | `bundle clean` is unsafe | `bundle install --redownload` | delete `Gemfile.lock` | no command |
+| PHP | install already prunes | delete `vendor` | and `composer.lock` | `composer clear-cache` |
+| Swift | no command | `swift package reset` + `resolve` | delete `Package.resolved` | `swift package purge-cache` |
+| Maven | nothing installed | nothing installed | no lockfile | `dependency:purge-local-repository` |
+
+Gradle, C and C++ and Lua offer no repair. Not verified by a real run: the Dart, Swift, Ruby,
+PHP and Maven commands (taken from each tool's documentation), and `dotnet restore
+--force-evaluate` on a workspace with lockfiles.
 
 ## Consequences
 

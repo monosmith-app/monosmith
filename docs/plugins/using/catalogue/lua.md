@@ -104,6 +104,11 @@ installs `lua5.4` and `luarocks` from the distribution's packages when
 `luarocks install`. There is no dev container feature, audit, package store or
 credential.
 
+## Repairing the dependencies
+
+[`smith deps repair`](../../../manual/deps-repair.md) offers no repair for Lua. smith does not install rocks for a workspace (each project's
+`luarocks make` installs its own rock), so there is nothing to prune, reinstall or rebuild.
+
 ## Doctor, dependencies and removal
 
 **Doctor.** Run when the workspace has Lua projects: `LuaRocks is installed`

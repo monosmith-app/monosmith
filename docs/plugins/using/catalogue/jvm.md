@@ -394,6 +394,19 @@ Kotlin plus Android workspace:
           cache: 'gradle'
 ```
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. [`smith deps repair`](../../../manual/deps-repair.md) offers one repair, for Maven only:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `cache` | nothing in the workspace | `mvn -B dependency:purge-local-repository`, at the root when it has a `pom.xml`, else in each Maven project. It deletes the projects' dependencies from `~/.m2` and resolves them again, so another project that uses the same artifacts downloads them again |
+
+No `prune` and no `reinstall`: Maven and Gradle keep no installed dependencies in the workspace.
+No `lockfile`: neither keeps a lockfile by default. Gradle has no repair: it has no command that
+clears its cache (`--refresh-dependencies` checks again, it does not clear), and smith never
+deletes outside the workspace.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): `<module> builds into dist/maven/<artifactId>` reads `<build><directory>` of the pom and its parents (else `target/`); `<module> builds into dist/gradle/<artifactId>` reads `layout.buildDirectory` or `buildDir` of the module script (Kotlin or Groovy DSL, else `build/`). The fix asks and edits only that pom or module script; `settings.gradle(.kts)` and `libs.versions.toml` are never touched. A Maven `<directory>` elsewhere in `dist/` is reported too, because the build ships the jar from `dist/maven/<artifactId>`. `<module> caches only dist/<project dir>` reports a build task that ships its jar or APK without listing `dist/<project dir>` as an output (a failure when the task is cached); the module's own work folder may stay an output. See [doctor](../../../manual/doctor.md#the-other-languages).

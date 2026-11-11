@@ -214,6 +214,19 @@ Real output of `smith ci generate` (GitHub):
 | Audit | `bundle-audit check --update` (bundler-audit) against `Gemfile.lock`, reported and not blocking, remembered per content of the `Gemfile`, `Gemfile.lock` and the gemspecs so it is skipped while they are unchanged. On a CI runner (`CI` or `TF_BUILD` set) a missing bundler-audit is installed first (`gem install bundler-audit`); on a developer machine the step says `bundler-audit is not installed: run gem install bundler-audit` and fails as a warning. |
 | Credentials | `GEM_HOST_API_KEY` (required, when a package exists). `smith ci check`: `GitHub: add the repository secrets GEM_HOST_API_KEY`. Trusted publishing replaces it (above). |
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. [`smith deps repair`](../../../manual/deps-repair.md) offers these repairs:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `reinstall` | nothing | `bundle install --redownload`: every gem is downloaded and installed again. `Gemfile.lock` keeps the versions |
+| `lockfile` | `Gemfile.lock` | `bundle install`, which resolves the Gemfile again. Offered only when `Gemfile.lock` exists |
+
+No `prune`: `bundle clean` works only on a bundle path the project configured, and with `--force`
+it removes gems of the whole Ruby installation. No `cache`: Bundler and RubyGems have no command
+that clears their download cache.
+
 ## Doctor, dependencies and removal
 
 Doctor checks (`pipeline/ci_contribution_use_case.go`), shown only when the workspace has Ruby gems:

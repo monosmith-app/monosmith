@@ -253,6 +253,18 @@ Real output of `smith ci generate` (GitHub):
 
 `smith install -p <project> shop-core` runs `cargo add --path <library>` in the project's `Cargo.toml`, so the dependency is a path dependency and `Cargo.lock` follows. `smith uninstall` runs `cargo remove`. The plugin declares the `link` capability.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. [`smith deps repair`](../../../manual/deps-repair.md) offers one repair:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `lockfile` | `Cargo.lock` | `cargo fetch`, which resolves every version requirement again and writes `Cargo.lock`. Offered only when `Cargo.lock` exists |
+
+No `prune` and no `reinstall`: cargo keeps the sources in the machine's registry, and `target/`
+is build output, not dependencies. No `cache`: cargo has no stable command that clears its
+registry cache (`cargo clean gc` is unstable), and smith never deletes outside the workspace.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): `Rust builds into dist/cargo` reads `build.target-dir` of the nearest `.cargo/config.toml` (else the default `target/`; `CARGO_TARGET_DIR` wins). A workspace that builds into `target/` gets a fix that asks and writes `[build] target-dir = "dist/cargo"`, keeping the other lines; it is refused, with the reason, when a Dockerfile, script or pipeline names `target/` or the environment sets the folder. Another folder inside `dist/` is reported too: an app crate ships its program from `dist/cargo/<profile>`. `<crate> caches only dist/<project dir>` fails when a build task lists `dist/cargo` (the target folder every crate shares) as an output, or ships without listing `dist/<project dir>`. See [doctor](../../../manual/doctor.md#the-other-languages).

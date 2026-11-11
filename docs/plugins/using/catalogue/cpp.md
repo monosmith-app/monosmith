@@ -275,6 +275,12 @@ no permission: a C++ release is the tag. The GitHub fragment from a real run:
 (The `case` and `shell: bash` are new with the native release jobs; the fragment above is the older one-line form.) The CI images are assumed to be Debian or Ubuntu; a native app's macOS and Windows runners use the script's other branches. Not verified: GitLab and
 Azure output for cpp (generated from the same contribution, not run).
 
+## Repairing the dependencies
+
+[`smith deps repair`](../../../manual/deps-repair.md) offers no repair for C and C++. CMake projects have no package manager that smith
+installs with, so there is nothing to prune, reinstall or rebuild. Clear a vcpkg or Conan cache
+with that tool's own command.
+
 ## Doctor, dependencies and removal
 
 Build folder (`pipeline/check_build_dir_use_case.go`): `<project> builds into dist/<project dir>` reads the `-B` of the configure task and `binaryDir` of each preset in `CMakePresets.json`. The fix asks and rewrites the `binaryDir` values; a wrong `-B` in a task written by hand is reported with the manual step. See [doctor](../../../manual/doctor.md#the-other-languages).

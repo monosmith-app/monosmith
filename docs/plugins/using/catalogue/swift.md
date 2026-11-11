@@ -107,6 +107,19 @@ only checks that `swift` is on PATH and fails with where to get it: swift.org
 publishes tarballs per distribution and patch release, which a generic step cannot
 name. There is no dev container feature, audit, package store or credential.
 
+## Repairing the dependencies
+
+The plugin declares the `repair` capability. Each project is a package with its own
+`Package.swift`. [`smith deps repair`](../../../manual/deps-repair.md) offers these repairs:
+
+| Kind | Deletes | Runs |
+|---|---|---|
+| `reinstall` | nothing by itself | `swift package reset` (it deletes `.build`), then `swift package resolve`, in each package. `Package.resolved` keeps the versions |
+| `lockfile` | each `Package.resolved` that exists | `swift package resolve` in those packages |
+| `cache` | nothing in the workspace | `swift package purge-cache`, then `swift package resolve` in each package. The cache belongs to your user account |
+
+No `prune`: SwiftPM has no command that removes unused dependencies.
+
 ## Doctor, dependencies and removal
 
 **Doctor.** When the workspace has Swift projects: `Swift is installed`
