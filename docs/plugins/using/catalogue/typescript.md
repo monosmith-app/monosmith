@@ -74,7 +74,10 @@ One rule holds for every stack that scaffolds a `tsconfig.json` (node-ts, functi
 reaches the root `tsconfig.base.json` through `extends`, and the base extends the `@monosmith/tsconfig` preset. A change in
 the base (a new `noUnusedLocals`, a `paths` entry) therefore reaches every project. The depth of the path comes from the
 project folder (`../../tsconfig.base.json` for `apps/api`). A workspace that smith adopted or converted keeps the base it
-has. A stack adds to its tsconfig only what is specific to
+has. Code that a bundler builds (the vite, angular, astro and vscode stacks) extends the root `tsconfig.browser.json`, which
+extends the base and sets the DOM libraries, `moduleResolution: bundler`, `noEmit`, no declarations and no
+`rewriteRelativeImportExtensions` (a `.vue` import must stay). Astro lists its own preset first and the browser file
+second. A stack adds to its tsconfig only what is specific to
 it, such as `lib`, `types` or `rootDir`.
 
 ## Settings

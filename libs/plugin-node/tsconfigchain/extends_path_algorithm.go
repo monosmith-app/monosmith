@@ -7,6 +7,9 @@ const (
 	// Base is the workspace's tsconfig.base.json: it extends the preset and holds
 	// what every project shares.
 	Base = "tsconfig.base.json"
+	// Browser is the workspace's tsconfig.browser.json: the base, with the
+	// options of code that a bundler builds.
+	Browser = "tsconfig.browser.json"
 	// Preset is the package the base extends.
 	Preset = "@monosmith/tsconfig/node.json"
 )
