@@ -50,7 +50,6 @@ module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
 shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
-alternative_outputs = [["api:build", "api:build-dev"]]  # tasks that write one folder but never run together (below)
 environments = ["lcl", "dev", "uat", "prd"]  # the builds a new web app gets, one per environment (docs/manual/environments.md)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
@@ -471,8 +470,8 @@ problems it answered.
 
 ## Output folders outside the build directory
 
-`smith doctor` checks that every build writes into `dist/` and that no two tasks
-write the same folder. Two settings in `[workspace]` say that a case is on
+`smith doctor` checks that every build writes into `dist/`, and `smith run`
+orders tasks of one run that write the same folder. Two settings in `[workspace]` say that a case is on
 purpose. Both are lists of workspace-relative paths with forward slashes, and
 each path covers the folders under it:
 
@@ -489,14 +488,11 @@ shared_outputs = ["dist/drop"]                # package tasks that fill one fold
   task's output folders, so each task must write its own files. Giving each task
   a subfolder (`dist/drop/<project>/`) is the safer choice and needs no setting.
   smith then never clears the folder, so old files stay.
-- `alternative_outputs`: groups of tasks that write one folder but never run
-  together (`api:build` and `api:build-dev`). smith doctor does not report the
-  overlap inside a group. smith still clears the folder before each task and a
-  cache restore still replaces it, so a run of two tasks of one group keeps only
-  the last one's files. Prefer giving each task its own folder; `smith doctor
-  --fix --only "no two tasks write the same output directory" --choose 2` writes
-  the group. A task that runs until it is stopped (`watch`, `serve`, `start`,
-  `dev`) is never compared with a build.
+
+Two tasks outside a shared folder may write the same folder (a local build and a
+release build into `apps/api/dist`). That is no problem until one `smith run`
+holds both: smith then runs them one after the other and warns that the folder
+keeps only the last one's files ([run](../manual/run.md#files-and-environment)).
 - `environments`: the environments a new web app is built for, lowercase words.
   See [environment builds](../manual/environments.md).
 

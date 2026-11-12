@@ -80,6 +80,11 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 	for _, id := range g.Order {
 		r.done[id] = make(chan struct{})
 	}
+	var warnings []string
+	r.after, warnings = overlapOrder(g, opts.SharedOutputs)
+	for _, w := range warnings {
+		r.say("%s\n", w)
+	}
 	opts.Events.Emit(runevents.Event{Event: runevents.RunStarted, Command: opts.Command, Tasks: append([]string(nil), g.Order...)})
 	for _, id := range g.Order {
 		opts.Events.Emit(runevents.Event{Event: runevents.TaskQueued, Task: id})
@@ -120,6 +125,9 @@ type runner struct {
 	keys    map[string]string
 	failed  bool
 	cancel  context.CancelFunc
+	// after are, per task, the tasks of the run that write the same folder
+	// and come first: it starts when they are done (overlapOrder).
+	after map[string][]string
 }
 
 func (r *runner) record(res Result) {
@@ -150,6 +158,11 @@ func (r *runner) clearable(t *taskgraph.Task) []string {
 
 func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	for _, d := range t.Deps {
+		<-r.done[d]
+	}
+	// A task that writes the folder of an earlier one waits for it, whatever
+	// its result: they never write the folder at once, a cache restore included.
+	for _, d := range r.after[t.ID] {
 		<-r.done[d]
 	}
 	r.mu.Lock()
