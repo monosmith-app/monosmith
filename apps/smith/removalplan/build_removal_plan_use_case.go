@@ -184,11 +184,22 @@ func buildLintGroup(v *legacyinventory.Tree) built {
 	}
 	pkgs := legacyinventory.ScanPackages(work, []legacyinventory.Family{legacyinventory.FamilyLint})
 	out.kept = append(out.kept, pkgs.Kept...)
+	// smith's config needs a newer ESLint than many workspaces pin: every
+	// manifest that names eslint is raised with it, or the plan says why not.
+	var raisedFrom []string
 	manifestEdits, names, err := removePackageEdits(work, pkgs.Packages, func(path, text string) (string, error) {
-		if path != "package.json" {
-			return text, nil
+		next, raised, problem, err := RaiseESLint(text)
+		if err != nil {
+			return "", err
 		}
-		return AddDevDependency(text, LintConfigPackage, LintConfigRange)
+		raisedFrom = append(raisedFrom, raised...)
+		if problem != "" {
+			out.notes = append(out.notes, fmt.Sprintf("--lint smith: %s: %s. Set eslint to %s there before you convert, or ESLint cannot load smith's config and the lint check reports a crash", path, problem, LintESLintRange))
+		}
+		if path != "package.json" {
+			return next, nil
+		}
+		return AddDevDependency(next, LintConfigPackage, LintConfigRange)
 	})
 	if err != nil {
 		out.notes = append(out.notes, err.Error())
@@ -203,6 +214,9 @@ func buildLintGroup(v *legacyinventory.Tree) built {
 		reason += ", remove " + c
 	}
 	reason += ": you chose smith's ESLint"
+	if len(raisedFrom) > 0 {
+		reason += "; raises eslint " + majorOf(raisedFrom[0]) + " → " + majorOf(LintESLintFloor) + ", which smith's config needs"
+	}
 	switch rewritten {
 	case LintSwapped:
 		reason += "; the rules you wrote in " + cfg + " stay"
@@ -213,6 +227,17 @@ func buildLintGroup(v *legacyinventory.Tree) built {
 	return out
 }
 
+// majorOf is a range's major version ("^9.39.3" is "9"), or the range itself
+// when it has no plain lowest version.
+func majorOf(r string) string {
+	floor, ok := rangeFloor(r)
+	if !ok {
+		return r
+	}
+	major, _, _ := strings.Cut(floor, ".")
+	return major
+}
+
 func boolCount(b bool) int {
 	if b {
 		return 1
@@ -221,8 +246,8 @@ func boolCount(b bool) int {
 }
 
 // removePackageEdits edits each package.json that declares a package being
-// removed. extra may change a manifest further (it is called for each, and
-// for the root even when nothing is removed from it).
+// removed. extra may change a manifest further: it is called for every
+// package.json of the workspace, also those nothing is removed from.
 func removePackageEdits(work *legacyinventory.Tree, pkgs []legacyinventory.LegacyPackage, extra func(path, text string) (string, error)) ([]protocol.FileEdit, []string, error) {
 	byManifest := map[string][]string{}
 	var all []string
@@ -238,8 +263,10 @@ func removePackageEdits(work *legacyinventory.Tree, pkgs []legacyinventory.Legac
 	}
 	sort.Strings(all)
 	if extra != nil {
-		if _, ok := byManifest["package.json"]; !ok && work.Has("package.json") {
-			byManifest["package.json"] = nil
+		for _, mf := range work.ManifestPaths() {
+			if _, ok := byManifest[mf]; !ok {
+				byManifest[mf] = nil
+			}
 		}
 	}
 	var paths []string

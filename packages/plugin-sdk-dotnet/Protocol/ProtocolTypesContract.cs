@@ -2081,7 +2081,7 @@ public sealed record Fix : IProtocolValue<Fix>
     /// <summary>Files are written first, as whole new contents.</summary>
     public IReadOnlyList<FileEdit> Files { get; init; } = [];
 
-    /// <summary>Steps run after the files, in order, from the workspace root; the first one that fails stops the rest.</summary>
+    /// <summary>Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory.</summary>
     public IReadOnlyList<FixStep> Steps { get; init; } = [];
 
     /// <summary>Choices are questions the user answers before the fix applies, in order. The answer's Fix is added to this one: its files and steps come after this fix's own. A fix with Choices is never applied unasked.</summary>
@@ -2225,6 +2225,9 @@ public sealed record FixStep : IProtocolValue<FixStep>
     /// <summary>Env are KEY=VALUE entries added to the environment of the command (GOBIN=&lt;folder&gt; makes go install write there). Absent adds none.</summary>
     public IReadOnlyList<string> Env { get; init; } = [];
 
+    /// <summary>Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and the steps after it still run.</summary>
+    public bool Advisory { get; init; }
+
     /// <inheritdoc />
     public static FixStep Read(JsonAny? value, string path)
     {
@@ -2235,6 +2238,7 @@ public sealed record FixStep : IProtocolValue<FixStep>
             Argv = ListOf(Member(map, "argv"), Join(path, "argv"), StringValue),
             Dir = StringValue(Member(map, "dir"), Join(path, "dir")),
             Env = ListOf(Member(map, "env"), Join(path, "env"), StringValue),
+            Advisory = BooleanValue(Member(map, "advisory"), Join(path, "advisory")),
         };
     }
 
@@ -2255,6 +2259,11 @@ public sealed record FixStep : IProtocolValue<FixStep>
         {
             writer.Property("env");
             MessageWritingAlgorithm.List(writer, Env, (builder1, item1) => builder1.String(item1));
+        }
+        if (Advisory)
+        {
+            writer.Property("advisory");
+            writer.Boolean(Advisory);
         }
         writer.EndObject();
     }

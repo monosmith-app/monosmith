@@ -999,7 +999,7 @@ class Fix(_FixRequired, total=False):
     steps: list[FixStep]
     """
     Steps run after the files, in order, from the workspace root; the first one that fails stops
-    the rest.
+    the rest, unless it is advisory.
     """
     choices: list[FixChoice]
     """
@@ -1057,6 +1057,11 @@ class FixStep(_FixStepRequired, total=False):
     """
     Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go
     install write there). Absent adds none.
+    """
+    advisory: bool
+    """
+    Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and
+    the steps after it still run.
     """
 
 

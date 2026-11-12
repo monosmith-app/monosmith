@@ -37,6 +37,9 @@ type Session struct {
 	report   adoption.Report
 	git      *gitclient.Git
 	view     *fullconversion.View
+	// lint is the lint choice of the last plan or conversion: smith's lint
+	// makes the closing checks fix what ESLint can first.
+	lint string
 }
 
 // Open reads the repository at dir and says what it is. It changes nothing;

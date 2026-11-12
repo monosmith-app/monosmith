@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
 )
 
 // eslintConfigPackage is the shared lint config smith's vertical-slice and
@@ -47,11 +49,26 @@ func AddESLintConfig(root string, out io.Writer) error {
 		fmt.Fprintf(out, "  not done: %v; run npm i -D %s\n", err, eslintConfigPackage)
 		return nil
 	}
+	added := changed
+	raisedText, raised, problem, err := removalplan.RaiseESLint(string(updated))
+	if err != nil {
+		fmt.Fprintf(out, "  not done: %v; set eslint to %s in package.json\n", err, removalplan.LintESLintRange)
+	} else if len(raised) > 0 {
+		updated, changed = []byte(raisedText), true
+	}
 	if changed {
 		if err := os.WriteFile(manifest, updated, 0o644); err != nil {
 			return err
 		}
+	}
+	if added {
 		fmt.Fprintf(out, "  added %s to the root devDependencies\n", eslintConfigPackage)
+	}
+	if len(raised) > 0 {
+		fmt.Fprintf(out, "  raised eslint %s to %s, which %s needs\n", raised[0], removalplan.LintESLintRange, eslintConfigPackage)
+	}
+	if problem != "" {
+		fmt.Fprintf(out, "  ! package.json: %s\n  → set eslint to %s, or ESLint cannot load the config\n", problem, removalplan.LintESLintRange)
 	}
 	return nil
 }

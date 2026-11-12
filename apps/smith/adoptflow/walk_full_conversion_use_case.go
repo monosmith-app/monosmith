@@ -69,8 +69,9 @@ func (s *Session) PlanFull(c convertchoices.Choices, verify bool) (Preview, erro
 			return Preview{}, err
 		}
 	}
+	s.lint = c.Lint
 	report := fullconversion.MakeReport(s.view.Tree, c, verify)
-	report.Finish = removalplan.Finish(convert.SmithCommand(), verify)
+	report.Finish = removalplan.Finish(convert.SmithCommand(), verify, c.Lint == convertchoices.Smith)
 	var b strings.Builder
 	changes, err := s.Changes()
 	if err == nil {
@@ -95,6 +96,7 @@ func (s *Session) Convert(_ context.Context, c convertchoices.Choices, out io.Wr
 	if s.analysis == nil {
 		return "", ErrNotConvertible
 	}
+	s.lint = c.Lint
 	fmt.Fprintln(out, "… "+ConvertStepName)
 	log := io.Discard
 	return s.analysis.Convert(c.Level == convertchoices.LevelFull && c.CI == convertchoices.Keep, log)
@@ -149,10 +151,12 @@ func (s *Session) ApplyFix(ctx context.Context, fix protocol.Fix, out io.Writer)
 
 // FinishFix is the last stage of a conversion: one install, the lockfile
 // check, then the proof that it works: the build, the tests and doctor, and
-// the lint too when withLint (the full level, where smith owns the lint).
+// the lint too when withLint (the full level). When the lint is smith's,
+// ESLint fixes what it can before it lints. What the lint finds is reported
+// and does not stop the conversion.
 func (s *Session) FinishFix(withLint bool) doctorfix.Planned {
 	if withLint {
-		return removalplan.Finish(convert.SmithCommand(), true)
+		return removalplan.Finish(convert.SmithCommand(), true, s.lint == convertchoices.Smith)
 	}
 	return removalplan.FinishBuildAndTest(convert.SmithCommand())
 }

@@ -85,7 +85,7 @@ func Run(ctx context.Context, o RunOptions) (RunResult, error) {
 		return res, nil
 	}
 	fmt.Fprintln(o.Out)
-	walked, err := doctorfix.Walk(ctx, []doctorfix.Planned{removalplan.Finish(o.Smith, o.Verify)}, walkOptions(o))
+	walked, err := doctorfix.Walk(ctx, []doctorfix.Planned{removalplan.Finish(o.Smith, o.Verify, o.Choices.Lint == convertchoices.Smith)}, walkOptions(o))
 	if err != nil {
 		return res, err
 	}

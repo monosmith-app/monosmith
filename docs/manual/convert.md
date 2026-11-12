@@ -247,7 +247,8 @@ smith: the conversion is blocked; see the report
 | `the working tree has uncommitted changes, so the conversion would not be one reviewable change` | Commit or stash, or pass `--allow-dirty` (not with `--level full`, whose message says the tree must be clean). |
 | `convert cancelled: nothing changed` | You answered anything but `y` to the confirmation prompt. |
 | `--test "mocha" is not one of jest, vitest, keep` | `--test` takes `jest`, `vitest` or `keep`. |
-| `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | A check after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
+| `▲ lint every project` or `▲ fix what ESLint can, then lint every project` (a finding, not an error) | The lint found problems, or ESLint could not run. The conversion still finishes and keeps its changes; the table under the line names each project's problems fixed and left, or the first line of ESLint's error and the remedy. `smith run lint -p <project>` shows them. |
+| `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | A build, test or doctor check after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
 | `the build writes to dist inside the package ...` (a finding, not an error) | Run `smith doctor --fix`: it offers to move each project's build into `dist/<project dir>` (scripts, tsconfig, `main`, `types`, `exports`, and the `outputs` in `smith.toml`) and shows every changed line first. Or do it by hand. |
 
 ## Related

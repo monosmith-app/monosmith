@@ -14,6 +14,14 @@ const (
 	LintConfigRange   = "^1.0.0"
 )
 
+// LintESLintRange is the eslint that LintConfigPackage runs with: its peer
+// dependency (packages/eslint-config/package.json, which a test compares). An
+// older ESLint cannot load the config and every lint crashes.
+const LintESLintRange = "^10.8.1"
+
+// LintESLintFloor is the oldest eslint version LintESLintRange accepts.
+const LintESLintFloor = "10.8.1"
+
 // SmithLintConfig is a root ESLint config that is only smith's.
 const SmithLintConfig = "import monosmith from '" + LintConfigPackage + "'\n\nexport default monosmith({ workspaceRoot: import.meta.dirname })\n"
 
