@@ -56,6 +56,11 @@ func TestInTheDetailTheArrowsChooseAnActionAndEnterRunsIt(t *testing.T) {
 	if l.sh().detailCursor != 0 {
 		t.Fatalf("Up went past the first action: %d", l.sh().detailCursor)
 	}
+	// Enter on an action of the split detail moves to the run button; Enter there runs it.
+	l.keys("enter")
+	if len(l.started) != 0 || !l.sh().detailOnRun {
+		t.Fatalf("the first Enter must move to the run button, started %v", l.started)
+	}
 	l.keys("enter")
 	if got := l.lastStarted(); got != "run build -p "+selected {
 		t.Fatalf("Enter started %q", got)
@@ -223,18 +228,22 @@ func TestTheDetailScrollsToFollowTheCursorDownAndUp(t *testing.T) {
 	l := manyTasks(t, 140, 20, 12)
 	l.keys("tab")
 	l.hasNot("task11")
+	seen := false
 	for i := 0; i < 14; i++ {
 		l.keys("down")
-		if !strings.Contains(l.view(), "› ") || !strings.Contains(l.view(), "Run task") && l.sh().detailCursor >= 2 {
+		seen = seen || strings.Contains(l.view(), "task11")
+		a := l.sh().detailActions()[l.sh().detailCursor]
+		if !strings.Contains(l.view(), "› ["+a.Label) {
 			t.Fatalf("step %d: the cursor is out of view (cursor %d, top %d):\n%s", i+1, l.sh().detailCursor, l.sh().detailTop, l.view())
 		}
 		// The cursor mark is on screen, on the action the cursor chose.
-		a := l.sh().detailActions()[l.sh().detailCursor]
 		if !strings.Contains(l.view(), "› ["+a.Label) && !strings.Contains(l.view(), "›  ["+a.Label) && !strings.Contains(l.view(), a.Label) {
 			t.Fatalf("step %d: %q is not on screen:\n%s", i+1, a.Label, l.view())
 		}
 	}
-	l.has("task11")
+	if !seen {
+		t.Fatal("task11, below the fold at the start, never came into view")
+	}
 	if l.sh().detailTop == 0 {
 		t.Fatal("the detail never scrolled")
 	}

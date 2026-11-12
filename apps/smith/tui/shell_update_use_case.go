@@ -16,6 +16,9 @@ import (
 
 // Update implements tea.Model.
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// The event acts on the detail as it is drawn now: its place and its chosen
+	// action belong to the selection on screen when the event arrives.
+	s.forgetDetailPlace()
 	cmd := s.handle(msg)
 	s.keepSelection()
 	s.forgetDetailPlace()

@@ -244,14 +244,18 @@ func TestTheDetailNamesTheKindInItsTaskButtonsAndKeepsTheRawTaskInTheHint(t *tes
 	l := buttonLab(t, 160, 100) // web, an app with package, slice-check and start tasks
 	l.has("Build app (b)", "Test app (t)", "Package app (p)", "Run slice-check (s)", "Run start (S)")
 	l.hasNot("Run build", "Run test", "Run package")
-	l.has("smith run package", "smith run build")
+	// The description of the chosen action is under the rule: Build app is chosen first.
+	l.has("smith run build")
+	l.clickText("Package app")
+	l.has("smith run package")
+	l.clickText("Run slice-check")
 	l.hasNot("smith run slice-check") // a task with no verb says nothing more than "Run <task>"
 	actions := l.sh().detailPanel().Actions
 	if actions[2].ID != "x:run:package" || actions[2].Shortcut != "p" {
 		t.Fatalf("the Package app button changed its id or key: %+v", actions[2])
 	}
-	// The same task on a library.
-	l.keys("down") // kit, a library
+	// The same task on a library. The clicks moved the keyboard to the detail: Esc gives it back to the list.
+	l.keys("esc", "down") // kit, a library
 	l.has("Build library (b)", "Test library (t)")
 	l.hasNot("Package app")
 }

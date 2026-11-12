@@ -171,7 +171,7 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 
 func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.clickText("[Fix (f)]")
+	l.runDetailAction("[Fix (f)]")
 	l.has("Which package manager?")
 	l.clickText("2) pnpm")
 	l.has("Fix · review", "$ pnpm install")

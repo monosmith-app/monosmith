@@ -326,8 +326,11 @@ type Shell struct {
 	// that lookup does not start another.
 	pressed string
 	probing bool
-	// detailCursor is the highlighted action while the detail fills the pane.
+	// detailCursor is the highlighted action while the keyboard is in the detail,
+	// and the chosen action of a split detail (see detail.Panel.Splits).
+	// detailOnRun puts the keyboard on the run button of a split detail instead.
 	detailCursor int
+	detailOnRun  bool
 	// zoom is set while the detail fills the pane on a wide screen (z).
 	zoom bool
 	// split is what the person did to the dividers between panels (see the splitter

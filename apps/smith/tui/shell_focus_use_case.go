@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 )
 
@@ -47,16 +48,25 @@ func (s *Shell) keepDetailCursorVisible() {
 	_, bodyH := s.detailSplit(r.W, r.H)
 	// Drawn with the cursor mark, as the panel is: the mark narrows the notes.
 	panel := s.detailPanel()
-	panel.Cursor = actions[s.detailCursor].ID
+	panel.Cursor = s.detailCursorID(panel)
 	lines, rows := panel.View(s.th, r.W, "")
-	if s.detailCursor == 0 {
+	if s.detailCursor == 0 && !s.detailOnRun {
 		// The first action: show the panel from its top, with the headings above it.
 		s.detailTop = 0
 		return
 	}
+	// In a split detail the run button is shown with the action it runs, so the
+	// description between them shows too.
+	want := map[string]bool{panel.Cursor: true}
+	if panel.Splits() {
+		want[detail.RunID] = true
+		if s.detailOnRun {
+			want = map[string]bool{detail.RunID: true}
+		}
+	}
 	first, last := -1, -1
 	for row, id := range rows {
-		if id == actions[s.detailCursor].ID {
+		if want[id] {
 			if first < 0 || row < first {
 				first = row
 			}
