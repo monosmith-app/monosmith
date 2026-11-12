@@ -30,8 +30,10 @@ type Confirm struct {
 	Info bool
 	// focus is 0 for Run, 1 for Cancel; hover is the button under the pointer or -1.
 	focus, hover int
-	rect         layout.Rect
-	cmdLines     []string
+	// overCommit is true while the pointer is over the commit box.
+	overCommit bool
+	rect       layout.Rect
+	cmdLines   []string
 	// Offer shows the box "Commit this change so it can be undone"; Commit is
 	// true once it is ticked. It starts unticked: smith commits only when asked.
 	Offer, Commit bool
@@ -248,6 +250,7 @@ func (c Confirm) commitRow() int {
 // Hover highlights the button under the pointer.
 func (c Confirm) Hover(x, y int) Confirm {
 	c.hover = button.At(c.buttonsRow(c.rect.W-4), c.rect, x, y)
+	c.overCommit = c.Offer && c.rect.Contains(x, y) && y == c.rect.Y+1+c.commitRow()
 	return c
 }
 

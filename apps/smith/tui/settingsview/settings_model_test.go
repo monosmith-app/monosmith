@@ -341,6 +341,34 @@ func TestAFixedListIsAPickerThatSavesWhatIsTicked(t *testing.T) {
 	}
 }
 
+func TestAClickOnATickBoxOfAListSettingTicksAndUnticksIt(t *testing.T) {
+	f := sample()
+	m := opened(t, f)
+	m = m.Show(Workspace)
+	m, _ = press(m, "down", "enter") // ci.providers: [x] github, [ ] azure, [ ] gitlab
+	w, h := 100, 28
+	row := -1
+	for y, idx := range m.frame(plainTheme(), w, h, -1, -1).rowItem {
+		if idx == 1 {
+			row = y
+		}
+	}
+	if row < 0 {
+		t.Fatalf("the azure row answers no click:\n%s", text(m, w, h))
+	}
+	m, _ = m.Click(w, h, 40, row, false)
+	if out := text(m, w, h); !strings.Contains(out, "[x] azure") {
+		t.Fatalf("a click ticks the box:\n%s", out)
+	}
+	m, _ = m.Click(w, h, 40, row, false)
+	if out := text(m, w, h); !strings.Contains(out, "[ ] azure") {
+		t.Fatalf("a second click unticks it:\n%s", out)
+	}
+	if !m.Modal() || len(f.calls) != 0 {
+		t.Fatalf("a click saves nothing; Enter does: %v", f.calls)
+	}
+}
+
 func TestATypedSettingKeepsTheEditorOpenWithTheReasonWhenTheSchemaRefuses(t *testing.T) {
 	f := sample()
 	m := opened(t, f)

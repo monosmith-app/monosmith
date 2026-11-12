@@ -84,12 +84,9 @@ func (m Model) Lines(th theme.Theme) []string {
 	end := min(m.top+m.room, len(m.plan.Items))
 	for i := m.top; i < end; i++ {
 		it := m.plan.Items[i]
-		cursor := choicerow.Cursor(th, false)
-		line := m.rowText(it, now, nameW)
-		if i == m.cursor && m.focus < 0 {
-			cursor, line = th.Accent(choicerow.Cursor(th, true)), th.Selected(pane.Fit(line, inner-2))
-		}
-		rows = append(rows, row(cursor+line))
+		selected := i == m.cursor && m.focus < 0
+		r := choicerow.Row{Label: m.rowText(it, now, nameW), Selected: selected, Hovered: i == m.overRow-1 && !selected}
+		rows = append(rows, row(choicerow.Line(th, r, inner)))
 	}
 	for len(rows) < m.head+m.room {
 		rows = append(rows, row(""))

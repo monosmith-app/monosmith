@@ -164,17 +164,10 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 		if o.Disabled != "" {
 			label += " " + words.Say("fixwizard.disabled", "reason", o.Disabled)
 		}
-		mark := choicerow.Cursor(th, i == w.cursor)
 		optionRow = append(optionRow, len(rows))
-		// A long label wraps under its number, so no option is cut off.
-		for _, part := range pane.Wrap(mark+label, inner, 5) {
-			if i == w.cursor {
-				part = th.Selected(pane.Fit(part, inner))
-			} else if o.Disabled != "" {
-				part = th.Muted(part)
-			}
-			rows = append(rows, part)
-		}
+		// A long label wraps, so no option is cut off.
+		r := choicerow.Row{Label: label, Selected: i == w.cursor, Hovered: i == w.overOption-1 && i != w.cursor, Disabled: o.Disabled != ""}
+		rows = append(rows, choicerow.Lines(th, r, inner)...)
 	}
 	// The row after the last option closes the last one's extent.
 	optionRow = append(optionRow, len(rows))

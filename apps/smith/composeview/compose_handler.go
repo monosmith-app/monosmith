@@ -90,7 +90,7 @@ func screen(cmd *cobra.Command, s *session.Session, o Options) error {
 	if o.Search != "" {
 		m = m.WithSearch(o.Search)
 	}
-	if _, err := tea.NewProgram(composer.NewProgram(m, planner, &result), tea.WithAltScreen()).Run(); err != nil {
+	if _, err := tea.NewProgram(composer.NewProgram(m, planner, &result), tea.WithAltScreen(), tea.WithMouseAllMotion()).Run(); err != nil {
 		return err
 	}
 	out := cmd.OutOrStdout()

@@ -46,19 +46,40 @@ func (p Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		p.m = p.m.Place(msg.Width, msg.Height)
 	case tea.KeyMsg:
 		m, out := p.m.Key(msg)
-		p.m = m
-		if out.Plan != nil {
-			p.m = p.m.WithPlan(p.plan(*out.Plan))
+		return p.after(m, out)
+	case tea.MouseMsg:
+		// The same mouse as in the shell: a press ticks or picks, the pointer
+		// shows the row hover, the wheel scrolls.
+		switch {
+		case msg.Action == tea.MouseActionMotion:
+			p.m = p.m.Hover(msg.X, msg.Y)
+		case msg.Action != tea.MouseActionPress:
+		case msg.Button == tea.MouseButtonWheelUp:
+			p.m = p.m.Wheel(-3)
+		case msg.Button == tea.MouseButtonWheelDown:
+			p.m = p.m.Wheel(3)
+		case msg.Button == tea.MouseButtonLeft:
+			m, out := p.m.Click(msg.X, msg.Y)
+			return p.after(m, out)
 		}
-		if out.Copy != "" {
-			p.result.Copied = out.Copy
-		}
-		if out.Run != nil {
-			p.result.Run = out.Run
-		}
-		if out.Done {
-			return p, tea.Quit
-		}
+	}
+	return p, nil
+}
+
+// after keeps the screen and does what its outcome asks.
+func (p Program) after(m Model, out Outcome) (tea.Model, tea.Cmd) {
+	p.m = m
+	if out.Plan != nil {
+		p.m = p.m.WithPlan(p.plan(*out.Plan))
+	}
+	if out.Copy != "" {
+		p.result.Copied = out.Copy
+	}
+	if out.Run != nil {
+		p.result.Run = out.Run
+	}
+	if out.Done {
+		return p, tea.Quit
 	}
 	return p, nil
 }

@@ -47,7 +47,9 @@ type Model struct {
 	// focus is -1 for the list, 0 for Continue and 1 for Cancel; hover is the
 	// button under the pointer, or -1.
 	focus, hover int
-	rect         layout.Rect
+	// overRow is 1 + the index of the package row under the pointer, 0 for none.
+	overRow int
+	rect    layout.Rect
 	// sw and sh are the screen the dialog was placed on.
 	sw, sh int
 	// topMargin and bottomMargin are the screen rows the dialog stays clear of.
@@ -187,9 +189,10 @@ func (m Model) rowAt(x, y int) int {
 	return i
 }
 
-// Hover highlights the button under the pointer.
+// Hover highlights the button or the package row under the pointer.
 func (m Model) Hover(x, y int) Model {
 	m.hover = button.At(m.buttons(m.rect.W-4), m.rect, x, y)
+	m.overRow = m.rowAt(x, y) + 1
 	return m
 }
 

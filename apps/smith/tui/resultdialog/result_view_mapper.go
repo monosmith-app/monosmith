@@ -55,12 +55,9 @@ func (m Model) body(th theme.Theme) (body []string, spans []span) {
 	}
 	body = append(body, "")
 	for i, c := range m.choices {
-		mark, label := choicerow.Cursor(th, false), c.label
-		if i == m.cursor {
-			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
-		}
+		r := choicerow.Row{Label: c.label, Hint: c.hint, Selected: i == m.cursor, Hovered: i == m.over-1 && i != m.cursor}
 		from := len(body)
-		body = append(body, pane.Wrap(mark+label+"  "+th.Muted(c.hint), inner, 4)...)
+		body = append(body, choicerow.Lines(th, r, inner)...)
 		spans = append(spans, span{from, len(body)})
 	}
 	body = append(body, "", th.Muted(m.foot))
@@ -76,19 +73,34 @@ func (m Model) body(th theme.Theme) (body []string, spans []span) {
 // cells; double says the press is the second of a double click.
 // Returns: the new dialog and what the host must do.
 func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
-	if !m.rect.Contains(x, y) {
-		return m, Outcome{}
-	}
-	_, spans := m.body(th)
-	row := y - m.rect.Y - 1
-	for i, sp := range spans {
-		if row < m.rect.H-2 && row >= sp.from && row < sp.to {
-			m.cursor = i
-			if double {
-				return m.Key("enter")
-			}
-			return m, Outcome{}
+	if i := m.choiceAt(th, x, y); i >= 0 {
+		m.cursor = i
+		if double {
+			return m.Key("enter")
 		}
 	}
 	return m, Outcome{}
+}
+
+// Hover notes the choice under the pointer at (x, y), drawn in the row hover look.
+//
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
+// Returns: the dialog with the hover set.
+func (m Model) Hover(th theme.Theme, x, y int) Model {
+	m.over = m.choiceAt(th, x, y) + 1
+	return m
+}
+
+// choiceAt is the choice drawn at the screen cell (x, y), or -1.
+func (m Model) choiceAt(th theme.Theme, x, y int) int {
+	row := y - m.rect.Y - 1
+	if !m.rect.Contains(x, y) || row < 0 || row >= m.rect.H-2 {
+		return -1
+	}
+	_, spans := m.body(th)
+	sp := make([]choicerow.Span, len(spans))
+	for i, s := range spans {
+		sp[i] = choicerow.Span{From: s.from, To: s.to}
+	}
+	return choicerow.At(sp, row)
 }

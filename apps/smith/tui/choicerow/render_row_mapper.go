@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -40,9 +41,80 @@ func Cursor(th theme.Theme, selected bool) string {
 	return strings.Repeat(" ", ansi.StringWidth(mark))
 }
 
-// Render is a row of a choice list: the cursor mark, the tick box and the
-// label. The cursor mark is the theme's pointer when selected, and blank
-// cells of the same width when not, so a selection never moves the box.
-func Render(th theme.Theme, label string, checked, selected, tri bool) string {
-	return Cursor(th, selected) + Box(checked, tri) + " " + label
+// Lines draws a row in w cells: the cursor mark, the lead (a tick box, a radio
+// mark, an icon), the label and the muted hint. A row too long for w wraps
+// under its label. The selected row has the cursor mark and an accent label; a
+// hovered row has the theme's row hover background on every line, the full
+// width; a disabled row has a muted label. The cursor mark is blank cells when
+// the row is not selected, so a selection never moves the box.
+//
+// Parameters: th is the theme; r is the row; w is the width, 0 for no limit
+// (one line, no background past the text).
+// Returns: the lines of the row, at least one.
+func Lines(th theme.Theme, r Row, w int) []string {
+	label := r.Label
+	switch {
+	case r.Disabled:
+		label = th.Muted(pane.Strip(label))
+	case r.Selected:
+		label = th.Accent(label)
+	}
+	mark := Cursor(th, r.Selected)
+	if r.Selected {
+		mark = th.Accent(mark)
+	}
+	text := mark + r.Lead + label
+	if r.Hint != "" {
+		text += "  " + th.Muted(r.Hint)
+	}
+	lines := []string{text}
+	if w > 0 {
+		lines = pane.Wrap(text, w, pane.Width(Cursor(th, false)+r.Lead))
+		for i := range lines {
+			lines[i] = pane.Fit(lines[i], w)
+		}
+	}
+	if r.Hovered {
+		for i := range lines {
+			lines[i] = th.RowHover(lines[i])
+		}
+	}
+	return lines
+}
+
+// Toggle is a lone tick box with its label, outside any list (the "commit this
+// change" box of a dialog): no cursor column, the row hover look while the
+// pointer is over it. A click on it ticks or unticks it, as its key does.
+//
+// Parameters: th is the theme; label is the text; checked ticks the box;
+// hovered is true while the pointer is over it.
+// Returns: the line.
+func Toggle(th theme.Theme, label string, checked, hovered bool) string {
+	line := Box(checked, false) + " " + label
+	if hovered {
+		return th.RowHover(line)
+	}
+	return line
+}
+
+// Line is a row on one line of w cells (0 for no limit): Lines, cut to its
+// first line with an ellipsis when it would wrap.
+//
+// Parameters: th is the theme; r is the row; w is the width.
+// Returns: the line.
+func Line(th theme.Theme, r Row, w int) string {
+	if w <= 0 {
+		return Lines(th, r, 0)[0]
+	}
+	hovered := r.Hovered
+	r.Hovered = false
+	line := Lines(th, r, 0)[0]
+	if pane.Width(line) > w {
+		line = ansi.Truncate(line, w-1, "") + "…"
+	}
+	line = pane.Fit(line, w)
+	if hovered {
+		line = th.RowHover(line)
+	}
+	return line
 }

@@ -17,6 +17,8 @@ type Model struct {
 	facts   []Fact
 	choices []choice
 	cursor  int
+	// over is 1 + the index of the choice under the pointer, 0 for none.
+	over int
 	// foot is the sentence under the list that tells what is safe.
 	foot string
 	rect layout.Rect

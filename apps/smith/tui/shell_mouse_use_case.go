@@ -132,7 +132,18 @@ func (s *Shell) modalMouse(e tea.MouseEvent) tea.Cmd {
 // cursor; panes read the pointer position when they are drawn.
 func (s *Shell) hover(x, y int) {
 	switch {
-	case s.tools != nil, s.compose != nil, s.result != nil, s.cache != nil:
+	case s.compose != nil:
+		m := s.compose.Hover(x, y)
+		s.compose = &m
+	case s.cache != nil:
+		m := s.cache.Hover(s.th, x, y)
+		s.cache = &m
+	case s.tools != nil:
+		m := s.tools.Hover(s.th, x, y)
+		s.tools = &m
+	case s.result != nil:
+		m := s.result.Hover(s.th, x, y)
+		s.result = &m
 	case s.adopt != nil:
 		m := s.adopt.Hover(x, y)
 		s.adopt = &m
@@ -166,7 +177,7 @@ func (s *Shell) click(x, y int) tea.Cmd {
 	}
 	switch {
 	case s.compose != nil:
-		return nil
+		return s.composeClick(x, y)
 	case s.cache != nil:
 		return s.cacheClick(x, y, double)
 	case s.tools != nil:

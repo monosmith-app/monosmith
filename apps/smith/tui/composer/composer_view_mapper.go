@@ -59,7 +59,7 @@ func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 	status := m.statusLines(th, inner)
 	keys := th.Muted(words.Say("composer.keys.browse", "target", words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])))
 	room := max(height-len(lines)-len(status)-1, 3)
-	list := m.listLines(th, inner)
+	list, _ := m.listLines(th, inner)
 	for i := range list {
 		list[i] = pane.Fit(list[i], inner-1) // the scrollbar takes the last cell
 	}
@@ -84,67 +84,70 @@ func (m Model) summaryLine(th theme.Theme) string {
 }
 
 // listLines draws the rows of the catalogue or of the stack and sets where the
-// cursor row is, so the window can follow it.
-func (m *Model) listLines(th theme.Theme, inner int) []string {
-	var lines []string
+// cursor row is, so the window can follow it. items has, for each line, the
+// index of the row it draws, or -1 for a heading or a note.
+func (m *Model) listLines(th theme.Theme, inner int) (lines []string, items []int) {
+	add := func(line string, item int) {
+		lines, items = append(lines, line), append(items, item)
+	}
 	if m.stack {
 		entries := m.entries()
 		last := ""
 		for i, it := range entries {
 			if it.Layer != last {
 				last = it.Layer
-				lines = append(lines, th.Muted(m.layerTitle(it.Layer)))
+				add(th.Muted(m.layerTitle(it.Layer)), -1)
 			}
 			if i == m.cursor {
 				m.cursorLine = len(lines)
 			}
-			lines = append(lines, m.row(th, it, i == m.cursor, true))
+			add(m.row(th, it, i, inner, true), i)
 		}
 		if len(entries) == 0 {
-			lines = append(lines, th.Muted(words.Say("composer.list.empty.stack")))
+			add(th.Muted(words.Say("composer.list.empty.stack")), -1)
 		}
-		return lines
+		return lines, items
 	}
 	last := ""
 	grouped := m.search.Value() == ""
 	for i, h := range m.hits {
 		if grouped && h.Layer != last {
 			last = h.Layer
-			lines = append(lines, th.Muted(m.layerTitle(h.Layer)+": "+m.layerAbout(h.Layer)))
+			add(th.Muted(m.layerTitle(h.Layer)+": "+m.layerAbout(h.Layer)), -1)
 		}
 		if i == m.cursor {
 			m.cursorLine = len(lines)
 		}
-		lines = append(lines, m.row(th, h.Item, i == m.cursor, false))
+		add(m.row(th, h.Item, i, inner, false), i)
 	}
 	if len(m.hits) == 0 {
-		lines = append(lines, th.Muted(words.Say("composer.list.empty.search")))
+		add(th.Muted(words.Say("composer.list.empty.search")), -1)
 	}
-	return lines
+	return lines, items
 }
 
-// row is one item: a box, the title, where it is for, and what it is.
-func (m Model) row(th theme.Theme, it compose.Item, selected, inStack bool) string {
-	text := choicerow.Box(m.isTicked(it), it.Kind == compose.KindPlugin) + " " + it.Title
+// row is the item at index i of the list: a box, the title, where it is for,
+// and what it is, drawn as the one pick-list row (see choicerow.Lines).
+func (m Model) row(th theme.Theme, it compose.Item, i, inner int, inStack bool) string {
+	label := it.Title
 	if it.Language != "" && it.Kind != compose.KindLanguage {
-		text += th.Muted(" (" + it.Language + ")")
+		label += th.Muted(" (" + it.Language + ")")
 	}
 	switch {
 	case it.Default:
-		text += th.Muted(words.Say("composer.row.default"))
+		label += th.Muted(words.Say("composer.row.default"))
 	case it.Suggested:
-		text += th.Muted(words.Say("composer.row.suggested"))
-	}
-	if !inStack && it.Description != "" {
-		text += th.Muted("  " + it.Description)
+		label += th.Muted(words.Say("composer.row.suggested"))
 	}
 	if it.Problem != "" {
-		text += " " + th.Warning(words.Say("composer.row.problem", "problem", it.Problem))
+		label += " " + th.Warning(words.Say("composer.row.problem", "problem", it.Problem))
 	}
-	if selected {
-		return th.Selected(choicerow.Cursor(th, true) + text)
+	r := choicerow.Ticks(label, m.isTicked(it), it.Kind == compose.KindPlugin)
+	if !inStack {
+		r.Hint = it.Description
 	}
-	return choicerow.Cursor(th, false) + text
+	r.Selected, r.Hovered = i == m.cursor, i == m.hover && i != m.cursor
+	return choicerow.Line(th, r, inner-1)
 }
 
 // isTicked reports whether the item is ticked.
@@ -211,18 +214,12 @@ func (m Model) questionBody(th theme.Theme, inner int) []string {
 	}
 	lines = append(lines, th.Muted(words.Say("composer.question.hint")), "")
 	for i, o := range q.Options {
-		text := o.Title
+		label := o.Title
 		if o.Suggested {
-			text += th.Muted(words.Say("composer.row.suggested"))
+			label += th.Muted(words.Say("composer.row.suggested"))
 		}
-		if o.Description != "" {
-			text += th.Muted("  " + o.Description)
-		}
-		if i == m.qcursor {
-			lines = append(lines, th.Selected(choicerow.Cursor(th, true)+text))
-		} else {
-			lines = append(lines, choicerow.Cursor(th, false)+text)
-		}
+		r := choicerow.Row{Label: label, Hint: o.Description, Selected: i == m.qcursor, Hovered: i == m.hover && i != m.qcursor}
+		lines = append(lines, choicerow.Line(th, r, inner))
 	}
 	return append(lines, "", th.Muted(words.Say("composer.question.keys")))
 }

@@ -23,6 +23,10 @@ type Model struct {
 	scr    Screen
 	notes  []string
 	cursor int
+	// over is 1 + the index of the option under the pointer, 0 for none;
+	// overToggle is true while the pointer is over the commit box.
+	over       int
+	overToggle bool
 	// list keeps where the window of a long list starts.
 	list  *pane.Scroll
 	input []rune
@@ -340,11 +344,33 @@ func (m Model) jumpTo(r rune, now time.Time) (Model, bool) {
 	return m, false
 }
 
-// Click handles a left press: a press on an option moves the cursor to it and
-// a second press (double is true) answers; a press on a button does what the
-// button says. A press elsewhere does nothing.
+// Hover notes the option or the commit box under the pointer at (x, y), drawn
+// in the row hover look.
 //
 // Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
+// Returns: the dialog with the hover set.
+func (m Model) Hover(th theme.Theme, x, y int) Model {
+	m.over, m.overToggle = 0, false
+	if !m.rect.Contains(x, y) {
+		return m
+	}
+	row, col := y-m.rect.Y-1, x-m.rect.X-2
+	_, hits := m.body(th, 0, time.Time{})
+	for _, h := range hits {
+		if h.row == row && col >= h.x0 && col < h.x1 {
+			m.over, m.overToggle = h.option+1, h.toggle
+		}
+	}
+	return m
+}
+
+// Click handles a left press: a press on an option moves the cursor to it and
+// a second press (double is true) answers; a press on the commit box ticks or
+// unticks it; a press on a button does what the button says. A press elsewhere
+// does nothing.
+//
+// Parameters: th is the theme the dialog is drawn with; x and y are screen
+// cells; double says the press is the second of a double click.
 func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 	if !m.rect.Contains(x, y) {
 		return m, Outcome{}

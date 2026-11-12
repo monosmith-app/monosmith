@@ -72,14 +72,11 @@ func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 	lines = append(lines, words.Say("toolsdialog.pick.question"))
 	first = len(lines)
 	for i, o := range p.Options {
-		mark, label := choicerow.Cursor(th, false), o.Label
+		label := o.Label
 		if o.Value == p.Default {
 			label += words.Say("toolsdialog.default")
 		}
-		if i == m.cursor {
-			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
-		}
-		lines = append(lines, mark+label)
+		lines = append(lines, choicerow.Line(th, m.optionRow(i, label), inner))
 	}
 	o := p.Options[m.cursor]
 	lines = append(lines, "")
@@ -112,14 +109,11 @@ func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) 
 	lines = append(lines, "")
 	first = len(lines)
 	for i, a := range adminAnswers() {
-		mark, label := choicerow.Cursor(th, false), a
+		label := a
 		if i == 0 {
 			label += words.Say("toolsdialog.default")
 		}
-		if i == m.cursor {
-			mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
-		}
-		lines = append(lines, mark+label)
+		lines = append(lines, choicerow.Line(th, m.optionRow(i, label), inner))
 	}
 	lines = append(lines, "")
 	return append(lines, th.Muted(words.Say("toolsdialog.admin.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
@@ -171,8 +165,35 @@ func (m Model) doneBody(th theme.Theme, inner int) []string {
 // cells; double says the press is the second of a double click.
 // Returns: the new dialog and what the host must do.
 func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
-	if !m.rect.Contains(x, y) {
+	i := m.optionAt(th, x, y)
+	if i < 0 {
 		return m, Outcome{}
+	}
+	m.cursor = i
+	if double {
+		return m.Key("enter")
+	}
+	return m, Outcome{}
+}
+
+// Hover notes the option under the pointer at (x, y), drawn in the row hover look.
+//
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
+// Returns: the dialog with the hover set.
+func (m Model) Hover(th theme.Theme, x, y int) Model {
+	m.over = m.optionAt(th, x, y) + 1
+	return m
+}
+
+// optionRow is option i of the open question as the one pick-list row.
+func (m Model) optionRow(i int, label string) choicerow.Row {
+	return choicerow.Row{Label: label, Selected: i == m.cursor, Hovered: i == m.over-1 && i != m.cursor}
+}
+
+// optionAt is the option of the open question drawn at the screen cell (x, y), or -1.
+func (m Model) optionAt(th theme.Theme, x, y int) int {
+	if !m.rect.Contains(x, y) {
+		return -1
 	}
 	inner := m.rect.W - 4
 	var first, n int
@@ -184,15 +205,11 @@ func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 		_, first = m.adminBody(th, inner)
 		n = len(adminAnswers())
 	default:
-		return m, Outcome{}
+		return -1
 	}
 	i := y - m.rect.Y - 1 - first
 	if i < 0 || i >= n || y-m.rect.Y-1 >= m.rect.H-2 {
-		return m, Outcome{}
+		return -1
 	}
-	m.cursor = i
-	if double {
-		return m.Key("enter")
-	}
-	return m, Outcome{}
+	return i
 }

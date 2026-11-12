@@ -39,9 +39,11 @@ func adminAnswers() []string {
 // at a time, and keeps a result for each. It starts nothing: a key that decides
 // an install returns an Outcome for the host to carry out.
 type Model struct {
-	plans   []toolinstall.ToolPlan
-	at      int
-	cursor  int
+	plans  []toolinstall.ToolPlan
+	at     int
+	cursor int
+	// over is 1 + the index of the option under the pointer, 0 for none.
+	over    int
 	ph      phase
 	opt     toolinstall.Option
 	out     []string

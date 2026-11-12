@@ -72,8 +72,8 @@ func (t Theme) Paint(s, fg, bg string) string {
 	return style.Render(s)
 }
 
-// Accent, Success, Warning, Failure, Info, Muted, Faint, Title, Selected,
-// Hover and Bar render s in the token's meaning.
+// Accent, Success, Warning, Failure, Info, Muted, Faint, Title and Selected
+// render s in the token's meaning (RowHover and Bar are below).
 func (t Theme) Accent(s string) string   { return t.accent.Render(s) }
 func (t Theme) Success(s string) string  { return t.success.Render(s) }
 func (t Theme) Warning(s string) string  { return t.warning.Render(s) }
@@ -83,7 +83,6 @@ func (t Theme) Muted(s string) string    { return t.muted.Render(s) }
 func (t Theme) Faint(s string) string    { return t.faint.Render(s) }
 func (t Theme) Title(s string) string    { return t.title.Render(s) }
 func (t Theme) Selected(s string) string { return t.selected.Render(s) }
-func (t Theme) Hover(s string) string    { return t.hover.Render(s) }
 
 // Button, ButtonHover and ButtonActive render s as a clickable item at rest,
 // under the pointer, and pressed or selected. Without colour a resting item is

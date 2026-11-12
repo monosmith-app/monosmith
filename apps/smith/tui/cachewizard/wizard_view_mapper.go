@@ -92,12 +92,9 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		room := max(height-len(lines)-len(foot)-2, 3)
 		top := m.list.Show(m.cursor, room, len(m.scr.Options))
 		for i := top; i < min(top+room, len(m.scr.Options)); i++ {
-			mark, label := choicerow.Cursor(th, false), fmt.Sprintf("%d. %s", i+1, m.scr.Options[i].Label)
-			if i == m.cursor {
-				mark, label = th.Accent(choicerow.Cursor(th, true)), th.Bold(label)
-			}
+			r := choicerow.Row{Label: fmt.Sprintf("%d. %s", i+1, m.scr.Options[i].Label), Selected: i == m.cursor, Hovered: i == m.over-1 && i != m.cursor}
 			hits = append(hits, hit{row: len(lines), x0: 0, x1: inner, option: i})
-			add(mark + label)
+			add(choicerow.Line(th, r, inner))
 		}
 		if n := len(m.scr.Options); n > room {
 			add(th.Muted(fmt.Sprintf("  %d of %d", m.cursor+1, n)))
@@ -128,9 +125,9 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		}
 		add("", th.Bold(strings.TrimSpace(c.Prompt)), "")
 		if c.OfferCommit {
-			box := choicerow.Box(m.ticked, false) + " "
-			hits = append(hits, hit{row: len(lines), x0: 0, x1: ansi.StringWidth(box + dialog.CommitLabel + "  (C)"), option: -1, toggle: true})
-			add(box+dialog.CommitLabel+"  (C)", "")
+			line := choicerow.Toggle(th, dialog.CommitLabel+"  (C)", m.ticked, m.overToggle)
+			hits = append(hits, hit{row: len(lines), x0: 0, x1: ansi.StringWidth(line), option: -1, toggle: true})
+			add(line, "")
 		}
 		yes, no := true, false
 		labels, keys := []string{c.Yes, c.No}, []string{"y", "n"}

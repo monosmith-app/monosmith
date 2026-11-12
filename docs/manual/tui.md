@@ -878,6 +878,24 @@ mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shif
 and click the box in the heading to mark every row shown, or none. Shift+drag still selects
 text in most terminals, and `m` turns the mouse off.
 
+**Tick boxes and pick lists.** Every list of choices and every tick box in smith is the same
+component, so it looks and acts the same everywhere: Compose a stack, the guided forms (Add a
+project and the others), the doctor fix wizard and the dependency repair, the result dialog after a
+change (with the cache clear choice), the missing tools dialog, the remote cache wizard, the
+release adjust list, the Settings editors and the commit box of a confirmation. The row at the
+keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. A box reads
+`[ ]`, `[x]` or `[-]` (part ticked, or cannot be ticked), and a one-of-several choice reads `( )`
+or `(●)`. A row that cannot be chosen now is muted. The row under the pointer takes the row hover
+look. With the mouse:
+
+- A click on a tick box row ticks or unticks it (Compose a stack, a form with several answers,
+  a list setting in Settings, the box of a Deps row, the commit box). In Compose a stack and the Settings
+  list editor, a click is the same as the key that ticks (`Enter` and `Space`).
+- A click on a row of a list with one answer moves the cursor to it; a double click, or `Enter`,
+  picks it. In the doctor fix wizard and the dependency repair, a click on an option picks it at
+  once.
+- A click on an answer of the open question of Compose a stack picks it.
+
 **Hover.** Everything you can click shows a hover look while the pointer is over it. A button,
 a tab and a footer hint take the button hover colour, which is between the resting colour and the
 pressed (or selected) colour. A row that a click selects or ticks (a project, a check, a
