@@ -3,6 +3,7 @@ package settingsview
 import (
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -33,7 +34,7 @@ func (m Model) previewLines(th theme.Theme, it item, w int) []string {
 		pt.Success(pt.Icons.Passed + words.Say("settingsview.preview.passed")), pt.Success(pt.Icons.Cached + words.Say("settingsview.preview.cached")), pt.Failure(pt.Icons.Failed + words.Say("settingsview.preview.failed")),
 		pt.Warning(pt.Icons.Warning + words.Say("settingsview.preview.warning")), pt.Info(pt.Icons.Running + words.Say("settingsview.preview.running")), pt.Muted(pt.Icons.Queued + words.Say("settingsview.preview.queued")),
 	}, "  "))
-	out = append(out, pt.Selected(pane.Fit(" "+pt.Icons.Pointer+words.Say("settingsview.preview.selected"), min(w, 30)))+"  "+pt.Accent(words.Say("settingsview.preview.accent"))+" "+pt.Muted(words.Say("settingsview.preview.muted"))+" "+pt.Faint(words.Say("settingsview.preview.faint")))
+	out = append(out, pane.Fit(" "+pt.Accent(choicerow.Cursor(pt, true)+words.Say("settingsview.preview.selected")), min(w, 30))+"  "+pt.Accent(words.Say("settingsview.preview.accent"))+" "+pt.Muted(words.Say("settingsview.preview.muted"))+" "+pt.Faint(words.Say("settingsview.preview.faint")))
 	out = append(out, " "+progress.Draw(pt, 3, 5, min(max(w/3, 10), 24), false))
 	if path := m.b.Style.Path; path != "" {
 		out = append(out, th.Muted(words.Say("settingsview.preview.saved", "path", path)))

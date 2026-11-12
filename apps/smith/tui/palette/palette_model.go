@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -302,8 +303,11 @@ func (p Palette) line(th theme.Theme, e Entry, selected bool, w int) string {
 	if e.unavailable() {
 		right, desc = "unavailable", e.Unavailable
 	}
-	// One cell on each side, two after the name and one before the shortcut.
-	room := max(w-2-2-1-pane.Width(e.Title)-pane.Width(right), 0)
+	// The cursor mark in front (two cells), two cells after the name, one before
+	// the shortcut and one after it.
+	mark := choicerow.Cursor(th, selected)
+	lead := pane.Width(mark)
+	room := max(w-lead-2-1-1-pane.Width(e.Title)-pane.Width(right), 0)
 	if pane.Width(desc) > room {
 		// Cell already ends a cut text with its own ellipsis.
 		desc = strings.TrimRight(pane.Cell(desc, room), " ")
@@ -311,9 +315,10 @@ func (p Palette) line(th theme.Theme, e Entry, selected bool, w int) string {
 			desc = ""
 		}
 	}
-	gap := max(w-2-2-pane.Width(e.Title)-pane.Width(desc)-pane.Width(right), 1)
+	gap := max(w-lead-2-1-pane.Width(e.Title)-pane.Width(desc)-pane.Width(right), 1)
 	if selected {
-		return th.Selected(pane.Fit(" "+e.Title+"  "+desc+strings.Repeat(" ", gap)+right+" ", w))
+		// The selected look of every pick list: the cursor mark and an accent label.
+		return pane.Fit(th.Accent(mark+e.Title+"  "+desc+strings.Repeat(" ", gap)+right), w)
 	}
-	return pane.Fit(" "+e.Title+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Bold(right)+" ", w)
+	return pane.Fit(mark+e.Title+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Bold(right)+" ", w)
 }

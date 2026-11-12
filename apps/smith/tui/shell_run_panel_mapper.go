@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -268,22 +269,30 @@ func (s Shell) countsText(c runview.Counts) string {
 
 // taskLine is one row of the task list.
 func (s Shell) taskLine(id string, w int, now time.Time) string {
+	// The selected row has the look of every pick list: the cursor mark and an
+	// accent label. The status mark keeps its colour.
+	selected := id == s.runSel
+	mark := choicerow.Cursor(s.th, selected)
+	if selected {
+		mark = s.th.Accent(mark)
+	}
 	if id == "" {
-		line := words.Say("tui.main.all_output_2", "pointer", s.th.Icons.Pointer, "say", s.th.Muted(words.Say("tui.main.lines", "len", len(s.run.Lines))))
-		if s.runSel == "" {
-			return s.th.Selected(pane.Fit(pane.Strip(line), w))
+		line := words.Say("tui.main.all_output_2", "say", s.th.Muted(words.Say("tui.main.lines", "len", len(s.run.Lines))))
+		if selected {
+			line = s.th.Accent(pane.Strip(line))
 		}
-		return pane.Fit(line, w)
+		// The blank cells stand where a task row has its status mark.
+		return pane.Fit(" "+mark+strings.Repeat(" ", pane.Width(s.th.Icons.Passed)+1)+line, w)
 	}
 	t := s.run.Task(id)
 	if t == nil {
 		return ""
 	}
-	line := " " + s.statusIcon(t.Status) + " " + pad(t.ID, taskNameW(w)) + " " + s.th.Muted(s.taskDetail(t, now))
-	if id == s.runSel {
-		line = s.th.Selected(pane.Fit(pane.Strip(line), w))
+	line := pad(t.ID, taskNameW(w)) + " " + s.th.Muted(s.taskDetail(t, now))
+	if selected {
+		line = s.th.Accent(pane.Strip(line))
 	}
-	return pane.Fit(line, w)
+	return pane.Fit(" "+mark+s.statusIcon(t.Status)+" "+line, w)
 }
 
 // taskDetail is what a task row says after the name: the state, the time and the
@@ -320,9 +329,9 @@ func (s Shell) taskInfo(w int) []string {
 	}
 	now := s.now()
 	detail := s.taskDetail(t, now)
-	// The row is the space, the mark, the space, the name column, the space and
-	// the detail; the last cell is the scrollbar's.
-	if 1+pane.Width(s.statusIcon(t.Status))+1+taskNameW(w)+1+pane.Width(detail) > w-1 {
+	// The row is the space, the cursor mark, the status mark, the space, the name
+	// column, the space and the detail; the last cell is the scrollbar's.
+	if 1+pane.Width(choicerow.Cursor(s.th, false))+pane.Width(s.statusIcon(t.Status))+1+taskNameW(w)+1+pane.Width(detail) > w-1 {
 		for _, part := range pane.Wrap(s.th.Muted(detail), max(w-2, 4), 0) {
 			out = append(out, pane.Fit(" "+part, w))
 		}

@@ -34,5 +34,5 @@
   "packageprompt.library.line": "Library: ‹ {name} · {kind} · {language} ›",
   "packageprompt.library.position": "  {at}/{total} (Left, Right)",
   "packageprompt.range.line": "Range: ‹ {choice} ›  (Left, Right)",
-  "packageprompt.dev.line": " {box} a development dependency (-D)"
+  "packageprompt.dev.line": "{box} a development dependency (-D)"
 }

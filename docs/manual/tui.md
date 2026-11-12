@@ -891,9 +891,11 @@ component, so it looks and acts the same everywhere: Compose a stack, the guided
 project and the others), the doctor fix wizard and the dependency repair, the result dialog after a
 change (with the cache clear choice), the missing tools dialog, the remote cache wizard, the
 release adjust list, the Settings editors and the commit box of a confirmation. The row at the
-keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. The list of
-projects and the sections and rows of Settings mark their selected row the same way, with no
-background; a Settings list that does not have the keyboard keeps the mark in bold. A box reads
+keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. Every
+other list marks its selected row the same way, with no background: the list of projects, the
+sections and rows of Settings, the command palette, the Deps rows, the task rows of the run panel,
+the recent runs (under the projects and on Home, where the mark sits in the gap before the run) and
+the rows of the Install packages box; a status mark keeps its colour. A Settings list that does not have the keyboard keeps the mark in bold. A box reads
 `[ ]`, `[x]` or `[-]` (part ticked, or cannot be ticked), and a one-of-several choice reads `( )`
 or `(●)`. A row that cannot be chosen now is muted. The row under the pointer takes the row hover
 look. With the mouse:
@@ -918,7 +920,7 @@ the footer do (`Enter`, `Esc`, `Space`, `Tab`, `↑↓`), then what it does, wit
 a tab and a footer hint take the button hover colour, which is between the resting colour and the
 pressed (or selected) colour. A row that a click selects or ticks (a project, a check, a
 dependency, an option of a form, a run) takes the row hover background, which is between the
-terminal's own background and the background of the selected row. The selected row keeps its own
+terminal's own background and the highlight colour of the theme. The selected row keeps its own
 look. Nothing behind a dialog shows a hover. Without colour (`NO_COLOR` or the plain theme) a
 hovered button is in reverse video and a hovered row is underlined. smith draws the hover at
 most about 40 times a second, so a fast pointer does not slow the screen.

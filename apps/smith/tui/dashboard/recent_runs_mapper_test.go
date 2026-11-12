@@ -72,3 +72,23 @@ func TestAStoppedRunAndAFailedRunHaveTheirOwnMark(t *testing.T) {
 		t.Fatalf("%q", line)
 	}
 }
+
+func TestTheSelectedRecentRunHasTheCursorMarkInTheGapAndTheTargetsStayPut(t *testing.T) {
+	f := runsFacts("run build", "run lint", "run test")
+	_, rest := recentLine(Page(plainTheme(), f, 100, Away))
+	at := -1
+	for i, tg := range Page(plainTheme(), f, 100, Away).Targets {
+		if tg.Command == "" && tg.Run == 1 {
+			at = i
+		}
+	}
+	line, targets := recentLine(PageAt(plainTheme(), f, 100, Away, at))
+	if strings.Count(line, "› ") != 1 || !strings.Contains(line, "› ✓ lint") {
+		t.Fatalf("the cursor mark is not before the selected run: %q", line)
+	}
+	for i := range targets {
+		if targets[i].From != rest[i].From || targets[i].To != rest[i].To {
+			t.Fatalf("the selection moved run %d: %v, want %v", i, targets[i], rest[i])
+		}
+	}
+}

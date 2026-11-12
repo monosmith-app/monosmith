@@ -62,3 +62,27 @@ func TestALongAddressKeepsItsStartAndItsEndOnANarrowScreen(t *testing.T) {
 		t.Errorf("screen:\n%s", out)
 	}
 }
+
+func TestTheSelectedDependencyHasTheCursorMarkAndTheBoxesStayInOneColumn(t *testing.T) {
+	m := withPages()
+	m.Cursor = 1
+	box, rows := -1, 0
+	for _, l := range render(m, 80, 24) {
+		i := strings.Index(l, "[ ]")
+		if i < 0 || !strings.Contains(l, " minor ") {
+			continue
+		}
+		rows++
+		i = pane.Width(l[:i])
+		if box >= 0 && i != box {
+			t.Fatalf("the box moved to column %d, want %d: %q", i, box, l)
+		}
+		box = i
+		if strings.HasPrefix(l, "› ") != strings.Contains(l, "acme-internal") {
+			t.Fatalf("only the selected row carries the cursor mark: %q", l)
+		}
+	}
+	if rows != 2 {
+		t.Fatalf("%d dependency rows, want 2", rows)
+	}
+}

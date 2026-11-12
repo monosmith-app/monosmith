@@ -238,7 +238,7 @@
   "tui.settings.undo_offer": "{note}  ·  undo ({shortcut})",
   "tui.waiting.this_smith_cannot_read_that_here": "This smith cannot read that here: run {line} in a terminal",
   "tui.forced_release.to_choose_its_first_version_make": "To choose its first version, make this commit:\n  git commit --allow-empty -m \"version({neverReleased})[1.0.0]\"",
-  "tui.main.all_output_2": " {pointer} All output  {say}",
+  "tui.main.all_output_2": "All output  {say}",
   "tui.capture.this_smith_cannot_read_that_here": "This smith cannot read that here: run {line} in a terminal",
   "tui.capture.cannot": "Cannot {title}",
   "tui.capture.add": "Add {name}?",

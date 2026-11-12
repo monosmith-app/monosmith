@@ -49,7 +49,7 @@
   "settingsview.preview.warning": " warning",
   "settingsview.preview.running": " running",
   "settingsview.preview.queued": " queued",
-  "settingsview.preview.selected": " a selected row",
+  "settingsview.preview.selected": "a selected row",
   "settingsview.preview.accent": "accent",
   "settingsview.preview.muted": "muted",
   "settingsview.preview.faint": "faint",
