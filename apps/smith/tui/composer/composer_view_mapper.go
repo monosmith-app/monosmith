@@ -40,16 +40,16 @@ func (m Model) Lines(th theme.Theme) []string {
 		// A question, the name or the plan taller than the screen scrolls above
 		// its key line, under the shared scrollbar in the cell next to the border.
 		text, foot, _ := m.stageBody(th, inner)
-		body = pane.DialogBody(th, text, foot, inner+1, height, m.top)
+		body = pane.DialogBody(th, text, foot, pane.DialogRowWidth(r.W), height, m.top)
 	}
 	rows := make([]string, 0, height)
 	for _, l := range body {
 		if len(rows) >= height {
 			break
 		}
-		// inner+1: the cell left of the border is the list's scrollbar, as in
-		// every pane; text is wrapped to inner, so it keeps a blank cell there.
-		rows = append(rows, " "+pane.Fit(l, inner+1))
+		// The cell left of the border is the list's scrollbar, as in every
+		// pane; text is wrapped to inner, so it keeps a blank cell there.
+		rows = append(rows, " "+pane.Fit(l, pane.DialogRowWidth(r.W)))
 	}
 	return pane.Frame(th, title, rows, r.W, r.H, true)
 }

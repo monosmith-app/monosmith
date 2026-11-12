@@ -35,6 +35,17 @@ func DialogBody(th theme.Theme, body, foot []string, w, h, top int) []string {
 	return append(out, foot[:min(len(foot), h)]...)
 }
 
+// DialogRowWidth is the cells a row of a dialog boxW cells wide has after the
+// one blank cell left of its text: the inside of the border less that cell.
+// Its last cell is the one next to the right border, where DialogBody and
+// Scrollbar draw the shared scrollbar, as in every pane. Every dialog passes
+// it as the width to DialogBody and Scrollbar and fits its rows to it; its
+// text wraps narrower, so the bar never takes a last letter.
+//
+// Parameters: boxW is the dialog's width, its border included.
+// Returns: boxW-3, at least 1.
+func DialogRowWidth(boxW int) int { return max(boxW-3, 1) }
+
 // BodyRoom is the rows the scrolling body of a dialog gets: the rows h of the
 // dialog's inside less the foot rows pinned under the body.
 //

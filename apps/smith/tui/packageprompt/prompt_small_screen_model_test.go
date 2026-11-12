@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // fits fails when the dialog leaves the rows between a 3-row header and a
@@ -56,4 +57,32 @@ func TestTheDialogSizesItselfAgainWhenItsBodyGrows(t *testing.T) {
 	if !strings.Contains(strings.Join(strings.Fields(screen(p)), " "), "yet-another-one") {
 		t.Fatalf("the whole command must show:\n%s", screen(p))
 	}
+}
+
+// scrollbarOnTheBorder fails unless the lines draw a scrollbar and every cell
+// of its track is the last one inside the right border, as in every pane.
+func scrollbarOnTheBorder(t *testing.T, lines []string) {
+	t.Helper()
+	track := []rune(theme.Default().Icons.Track)[0]
+	bars := 0
+	for _, l := range lines {
+		r := []rune(pane.Strip(l))
+		for x, c := range r {
+			if c != track {
+				continue
+			}
+			if x != len(r)-2 {
+				t.Fatalf("the scrollbar is in column %d, not next to the border in column %d: %q", x, len(r)-2, string(r))
+			}
+			bars++
+		}
+	}
+	if bars == 0 {
+		t.Fatalf("the test needs a body that scrolls:\n%s", pane.Strip(strings.Join(lines, "\n")))
+	}
+}
+
+func TestTheInstallPackagesScrollbarSitsNextToTheBorder(t *testing.T) {
+	p := NewInstall("web", []string{"web", "api"}).WithLanguages(map[string]string{"web": "node"}).WithLibraries(libs).Within(3, 2).Place(100, 16)
+	scrollbarOnTheBorder(t, p.Lines(theme.Default()))
 }

@@ -73,7 +73,7 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	}
 	inner := r.W - 4
 	rows := make([]string, 0, r.H-2)
-	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
+	row := func(content string) string { return " " + pane.Fit(content, pane.DialogRowWidth(r.W)) }
 	head := c.headLines(inner)
 	var spin []string
 	if c.Working() && len(head) > 0 {
@@ -84,7 +84,7 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	}
 	// The head scrolls under the shared scrollbar and "more" rows; the commit
 	// box, the command and the buttons stay under it.
-	for _, l := range pane.DialogBody(th, head, spin, inner, c.headRoom(), c.scroll) {
+	for _, l := range pane.DialogBody(th, head, spin, pane.DialogRowWidth(r.W), c.headRoom(), c.scroll) {
 		rows = append(rows, row(l))
 	}
 	tail := c.tailLinesIn(th)

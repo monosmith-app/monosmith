@@ -108,7 +108,7 @@ func (p Prompt) Lines(th theme.Theme) []string {
 	}
 	inner := r.W - 4
 	rows := make([]string, 0, r.H-2)
-	row := func(content string) string { return " " + pane.Fit(content, inner) }
+	row := func(content string) string { return " " + pane.Fit(content, pane.DialogRowWidth(r.W)) }
 	// A row that takes the focus has the look of every pick list: the cursor
 	// mark in the column in front of the text, and an accent label.
 	focusable := func(l string, id int) string {
@@ -154,7 +154,7 @@ func (p Prompt) Lines(th theme.Theme) []string {
 		}
 	}
 	// A body taller than the dialog scrolls above the buttons, which stay.
-	for _, l := range pane.DialogBody(th, styled, []string{"", line}, inner, r.H-2, p.top) {
+	for _, l := range pane.DialogBody(th, styled, []string{"", line}, pane.DialogRowWidth(r.W), r.H-2, p.top) {
 		rows = append(rows, row(l))
 	}
 	return pane.Frame(th, p.Title(), rows, r.W, r.H, true)
