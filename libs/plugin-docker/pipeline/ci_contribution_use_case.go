@@ -3,6 +3,7 @@ package pipeline
 import (
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-docker/images"
@@ -81,8 +82,17 @@ func CI(workspaceRoot string, params protocol.CIParams) (protocol.CIResult, erro
 	return res, nil
 }
 
-// probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
+// probeTimeout is how long the daemon probe waits. A Docker Desktop that is
+// starting or stuck lets docker version hang: without a limit the plugin waits
+// for ever, and when the host stops the plugin the docker process lives on,
+// holding the workspace folder (smith try then cannot delete its copy).
+const probeTimeout = 15 * time.Second
+
+// probe runs a tool for its output, killed after probeTimeout; tests replace it.
+var probe = func(dir string, argv []string) (string, error) {
+	out, _, err := toolrun.CaptureTimeout(dir, argv, probeTimeout)
+	return out, err
+}
 
 // Doctor checks that Docker answers when an app ships as an image, and that
 // each app's registry settings agree.
