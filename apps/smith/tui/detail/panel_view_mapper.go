@@ -1,6 +1,7 @@
 package detail
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -194,6 +195,9 @@ func (p Panel) rows(s Section) []Row {
 	return out
 }
 
+// numbered is the "2. " in front of a numbered answer.
+var numbered = regexp.MustCompile(`^[0-9]+\. `)
+
 // section appends one section's lines.
 func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int) []string {
 	if len(lines) > 0 {
@@ -255,7 +259,13 @@ func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int)
 				lines = append(lines, pane.Fit(part, w))
 			}
 		default:
-			for _, part := range pane.Wrap("  "+it, w, 2) {
+			// An item that starts indented (a numbered answer under its question)
+			// wraps under its own text.
+			indent := 2 + len(it) - len(strings.TrimLeft(it, " "))
+			if n := numbered.FindString(strings.TrimLeft(it, " ")); n != "" && indent > 2 {
+				indent += len(n)
+			}
+			for _, part := range pane.Wrap("  "+it, w, indent) {
 				lines = append(lines, pane.Fit(part, w))
 			}
 		}
