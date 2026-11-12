@@ -113,6 +113,10 @@ func TestAnAdvisoryStepThatFailsIsShownAndTheNextStepsStillRun(t *testing.T) {
 	if strings.Contains(out.String(), "✓ lint") {
 		t.Fatalf("a failed advisory step is not marked passed:\n%s", out.String())
 	}
+	findings, err := ApplyWithFindings(context.Background(), root, fix, io.Discard)
+	if err != nil || len(findings) != 1 || findings[0].Step.Description != lint.Description || !strings.Contains(findings[0].Output, "the build exploded") {
+		t.Fatalf("the failed advisory step is a finding with its output: %+v, %v", findings, err)
+	}
 }
 
 func TestApplyRefusesWhatLeavesTheWorkspaceOrStillAsks(t *testing.T) {

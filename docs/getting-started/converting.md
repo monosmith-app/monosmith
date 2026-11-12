@@ -273,12 +273,30 @@ sure, it keeps.
 
 Afterwards one `npm install` refreshes `package-lock.json` for everything taken
 out and put in, and the workspace is checked the way a teammate would: it builds,
-tests and lints, and `smith doctor` finds nothing wrong. When a build, test or
-doctor step fails, the conversion stops there: the step is named, with the end
-of its output.
+tests and lints, and `smith doctor` finds nothing wrong. When a build or test
+step fails, the conversion stops there: the step is named, with the end of its
+output. A build or test that fails after the install means the conversion broke
+something, so smith does not go on as if it worked.
 
-The lint never stops it. Lint problems are findings: the conversion finishes,
-keeps its changes, and reports them. With `--lint smith`, ESLint first fixes
+The lint and doctor never stop it. What they find are findings: the conversion
+finishes, keeps its changes, and its last lines list each check that found
+something, with each failure and its remedy, and the command that checks
+again. The closing line says `▲ The conversion finished with findings`, and
+the exit code is 2 (a warning, not a failure). The end of a real run:
+
+```text
+▲ check the workspace with doctor
+  × app:build writes apps/app/dist-dev (from smith.toml [projects.app.tasks.build]), not dist/apps/app/ (and 2 more)
+    → build each project into dist/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); ...
+  × api:build writes dist/apps/api but its task caches apps/api/dist: a cache hit would leave ../../dist/apps/api empty
+    → declare outputs = ["../../dist/apps/api", "dist"] under [projects.api.tasks.build] in smith.toml
+  → check again: smith doctor
+
+▲ The conversion finished with findings: the changes stay, and 2 checks found something to fix (listed above).
+```
+
+The `outputs` of a converted task are the ones Nx declared for it. When Nx's
+`outputs` did not match where the tool writes, doctor reports it, as above. With `--lint smith`, ESLint first fixes
 what it can, in each Node project that has a lint task, in its own folder with
 its own `eslint.config.*`, one project after the other (a crash in one does not
 stop the others). Then a table gives each project's problems fixed and left, or,

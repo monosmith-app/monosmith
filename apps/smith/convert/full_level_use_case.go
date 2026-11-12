@@ -13,9 +13,11 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/fullconversion"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
 )
@@ -142,7 +144,27 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	if a.Commit {
 		CommitConversion(a.Root, log)
 	}
+	if len(run.Findings) > 0 {
+		fmt.Fprint(log, findingsText(run.Findings))
+		return ErrFindings
+	}
 	return nil
+}
+
+// findingsText closes a conversion whose advisory checks found something:
+// each check with its failures and remedies, then the outcome.
+func findingsText(findings []doctorfix.Finding) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	for _, f := range findings {
+		b.WriteString(doctorfix.FindingText(f))
+	}
+	checks := "1 check"
+	if len(findings) > 1 {
+		checks = fmt.Sprintf("%d checks", len(findings))
+	}
+	fmt.Fprintf(&b, "\n%s The conversion finished with findings: the changes stay, and %s found something to fix (listed above).\n", marks.Warning, checks)
+	return b.String()
 }
 
 // smithCommand is how the checks run smith, and how a screen names the command

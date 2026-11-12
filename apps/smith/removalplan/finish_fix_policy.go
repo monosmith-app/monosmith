@@ -23,15 +23,15 @@ const (
 // builds, tests, lints, and doctor finds nothing wrong. smith is the command
 // to run smith with: "smith" to show the plan, the running executable to run
 // it. fixLint (the lint choice is smith's) runs ESLint's fixes before the
-// lint. The lint is advisory either way: what it finds is reported, and the
-// conversion still finishes.
+// lint. The lint and doctor are advisory: what they find is reported, and the
+// conversion still finishes. The build and the tests stop it.
 func Finish(smith string, verify, fixLint bool) doctorfix.Planned {
 	return finish(smith, verify, verify, fixLint)
 }
 
 // FinishBuildAndTest is the last step of a conservative conversion: the same
-// install, then the workspace builds, its tests pass and doctor finds nothing
-// wrong. Lint is left out: the conservative level keeps the repository's own
+// install, then the workspace builds, its tests pass and doctor checks it
+// (what doctor finds is reported, as in Finish). Lint is left out: the conservative level keeps the repository's own
 // lint setup, which may have complaints that have nothing to do with smith.
 func FinishBuildAndTest(smith string) doctorfix.Planned {
 	return finish(smith, true, false, false)
@@ -58,7 +58,10 @@ func finish(smith string, verify, lint, fixLint bool) doctorfix.Planned {
 			}
 			steps = append(steps, step)
 		}
-		steps = append(steps, protocol.FixStep{Description: StepDoctor, Argv: []string{smith, "doctor"}})
+		// What doctor finds is reported like the lint: the conversion keeps
+		// its changes and finishes with findings. A build or test that fails
+		// after the install still stops it: the conversion broke something.
+		steps = append(steps, protocol.FixStep{Description: StepDoctor, Argv: []string{smith, "doctor"}, Advisory: true})
 	}
 	return doctorfix.Planned{
 		Fix:    protocol.Fix{Description: description, Safe: true, Steps: steps},
