@@ -46,7 +46,8 @@ func pascal(name string) string {
 }
 
 // ProjectID is a project's assembly, namespace and package id:
-// Workspace.Name (Acme.WebApi).
+// the package prefix, then the name (Acme.WebApi).
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func ProjectID(workspace, name string) string {
 	if workspace == "" {
 		return pascal(name)
@@ -64,7 +65,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, projectTemplate)
 	plan, isFunction := functions.PlanOf(params.Choices)
-	id := cmp.Or(params.PackageName, ProjectID(params.Workspace.Name, params.Name))
+	id := cmp.Or(params.PackageName, ProjectID(params.Workspace.PackagePrefix(), params.Name))
 	switch {
 	case isFunction && params.Kind != protocol.ProjectApp:
 		return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang dotnet --with %s", params.Name, plan.Host)

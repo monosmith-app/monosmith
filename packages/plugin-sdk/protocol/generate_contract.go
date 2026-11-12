@@ -1,5 +1,7 @@
 package protocol
 
+import "strings"
+
 // GenerateParams asks a plugin to scaffold a project. The host chooses the
 // directory from the kind (apps/, libs/, packages/).
 type GenerateParams struct {
@@ -54,6 +56,19 @@ type WorkspaceInfo struct {
 	Scope string `json:"scope,omitempty"`
 	// ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.
 	ModulePrefix string `json:"modulePrefix,omitempty"`
+}
+
+// PackagePrefix is the word every language puts before a project's name to
+// build its default package name (pargic-core, pargic_core, Pargic.Core): the
+// workspace's Scope without its @ when the workspace has one, else its Name.
+// Each plugin shapes it to its language's rules; --package-name still wins.
+//
+// Returns: the prefix, or "" when the workspace has neither.
+func (w WorkspaceInfo) PackagePrefix() string {
+	if scope := strings.TrimPrefix(strings.TrimSpace(w.Scope), "@"); scope != "" {
+		return scope
+	}
+	return w.Name
 }
 
 // GenerateResult lists what the plugin wrote, workspace-relative.

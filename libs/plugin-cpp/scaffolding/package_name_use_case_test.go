@@ -28,3 +28,13 @@ func TestGenerateNamesTheTargetAfterThePackageName(t *testing.T) {
 	}
 	manifestHas(t, ws, "libs/core/CMakeLists.txt", "pargic_core")
 }
+
+// The default name starts with the workspace scope without its @, not the
+// workspace name, as npm names do.
+func TestGenerateBuildsTheTargetFromTheScope(t *testing.T) {
+	ws := t.TempDir()
+	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Scope: "@pargic"}}); err != nil {
+		t.Fatal(err)
+	}
+	manifestHas(t, ws, "libs/core/CMakeLists.txt", "pargic_core")
+}

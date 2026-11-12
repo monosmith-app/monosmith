@@ -43,6 +43,7 @@ func snake(name string) string {
 
 // GemName is a project's gem: the workspace's name first, so a published
 // gem does not clash on RubyGems (acme_core).
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func GemName(workspace, name string) string {
 	if workspace == "" {
 		return snake(name)
@@ -68,7 +69,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	gem := cmp.Or(params.PackageName, GemName(params.Workspace.Name, params.Name))
+	gem := cmp.Or(params.PackageName, GemName(params.Workspace.PackagePrefix(), params.Name))
 	data := templateData{Dir: params.Directory, Name: params.Name, Workspace: params.Workspace.Name, Gem: gem, Module: moduleName(gem), Kind: string(params.Kind), Stack: params.Stack}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, gemTemplate)

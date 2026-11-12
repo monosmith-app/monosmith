@@ -24,7 +24,7 @@ type templateData struct {
 // Generate scaffolds one Python project, creating the workspace venv and its
 // tooling the first time, and installs the project in editable mode.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
-	distribution := cmp.Or(params.PackageName, distributionName(params.Workspace.Name, params.Name))
+	distribution := cmp.Or(params.PackageName, distributionName(params.Workspace.PackagePrefix(), params.Name))
 	data := templateData{Dir: params.Directory, Name: params.Name, Distribution: distribution, Import: discovery.ImportName(distribution), Kind: string(params.Kind), Stack: params.Stack, Dependencies: "[]"}
 	plan, isFunction := functions.PlanOf(params.Choices)
 	if isFunction {
@@ -94,6 +94,7 @@ func distributionIdentifier(name string) string {
 
 // distributionName prefixes the workspace name so packages are unique on a
 // shared index: workspace "acme" and project "sdk" give "acme-sdk".
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func distributionName(workspace, project string) string {
 	ws := distributionIdentifier(workspace)
 	if ws == "" || strings.HasPrefix(project, ws+"-") {

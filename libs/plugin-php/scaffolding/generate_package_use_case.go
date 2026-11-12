@@ -62,6 +62,7 @@ func pascal(name string) string {
 
 // PackageName is a project's Composer name: the workspace is the vendor
 // (acme/core).
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func PackageName(workspace, name string) string {
 	vendor := kebab(workspace)
 	if vendor == "" {
@@ -81,7 +82,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	pkg := PackageName(params.Workspace.Name, params.Name)
+	pkg := PackageName(params.Workspace.PackagePrefix(), params.Name)
 	switch {
 	case strings.Contains(params.PackageName, "/"):
 		pkg = params.PackageName
@@ -89,8 +90,8 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		// A name without a vendor keeps the workspace's vendor.
 		pkg = strings.Split(pkg, "/")[0] + "/" + params.PackageName
 	}
-	namespace := pascal(params.Workspace.Name) + `\` + pascal(params.Name)
-	if params.Workspace.Name == "" {
+	namespace := pascal(params.Workspace.PackagePrefix()) + `\` + pascal(params.Name)
+	if params.Workspace.PackagePrefix() == "" {
 		namespace = pascal(params.Name)
 	}
 	data := templateData{
