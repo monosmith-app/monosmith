@@ -155,7 +155,8 @@ an npm package. A project name that already starts with the namespace is not pre
 (`pargic-core` stays `pargic-core`). The npm scope is `[workspace] scope` when it is set, and the
 module path of a Go module is `[workspace] module_prefix` when it is set. Swift, Objective-C, VBA and
 Lua name a module or a class in code, so they use the project name alone.
-`smith upgrade` adds `namespace` to a workspace whose scope differs from its name.
+`smith upgrade` adds `namespace` to a workspace whose scope differs from its name, and `smith doctor`
+warns about a project whose package name does not start with the namespace.
 `--package-name <name>` sets another name. smith checks the name against the rule of the language
 before it shows the plan, and the plan shows the name. The folder and the project name do not change.
 

@@ -3151,6 +3151,9 @@ public sealed record Project : IProtocolValue<Project>
     /// <summary>Exports are the identifiers other projects import this one by: an npm package name, a Go module path, a Python import name.</summary>
     public IReadOnlyList<string> Exports { get; init; } = [];
 
+    /// <summary>PackageName is the name the project's manifest gives its package: the npm package, the Cargo crate, the Python distribution, the pub package, the Composer name, the gem, the .NET package id, the Maven artifactId. smith doctor compares it with the workspace namespace. Empty when the plugin does not say.</summary>
+    public string PackageName { get; init; } = string.Empty;
+
     /// <summary>Imports are identifiers this project's sources import. The host keeps the ones another project exports and turns them into graph edges.</summary>
     public IReadOnlyList<string> Imports { get; init; } = [];
 
@@ -3204,6 +3207,7 @@ public sealed record Project : IProtocolValue<Project>
             Language = StringValue(Member(map, "language"), Join(path, "language")),
             Kind = ProjectKind.Read(Member(map, "kind"), Join(path, "kind")),
             Exports = ListOf(Member(map, "exports"), Join(path, "exports"), StringValue),
+            PackageName = StringValue(Member(map, "packageName"), Join(path, "packageName")),
             Imports = ListOf(Member(map, "imports"), Join(path, "imports"), StringValue),
             Version = StringValue(Member(map, "version"), Join(path, "version")),
             Toolchain = StringValue(Member(map, "toolchain"), Join(path, "toolchain")),
@@ -3237,6 +3241,11 @@ public sealed record Project : IProtocolValue<Project>
         {
             writer.Property("exports");
             MessageWritingAlgorithm.List(writer, Exports, (builder1, item1) => builder1.String(item1));
+        }
+        if (PackageName.Length > 0)
+        {
+            writer.Property("packageName");
+            writer.String(PackageName);
         }
         if (Imports is { Count: > 0 })
         {

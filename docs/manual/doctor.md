@@ -90,6 +90,13 @@ lists every check with its remedy.
 - `the clone has full history`, `tracked files are not generated files`, `every build writes to
   dist/`, `no task caches a work folder other projects share` and `projects depend only on what
   the boundaries allow`.
+- `every package name starts with the workspace namespace`: a warning for each project whose npm,
+  Cargo, Python, Maven, Dart, CMake, Ruby, Composer or .NET package name does not start with
+  `[workspace] namespace` (or the workspace name) the way `smith add` would name it. For an npm,
+  Composer, Cargo or Python project that no other project depends on, `smith doctor --fix` shows
+  the rename of the manifest and asks before it writes it. A project others depend on is renamed
+  by hand, because the dependents name it too. A name kept on purpose is accepted with
+  `[[doctor.accept]]`.
 - `package-lock.json holds the packages every platform needs`: a lockfile made on one OS that
   would fail `npm ci` on another. `smith doctor --fix` regenerates it. If `npm ci` still fails,
   list the missing packages in the root `devDependencies`; when `overrides` names one of them

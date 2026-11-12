@@ -49,6 +49,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Language:    "php",
 			Kind:        kind,
 			Exports:     []string{m.Name},
+			PackageName: m.Name,
 			Imports:     m.Requires,
 			Version:     m.Version,
 			Description: m.Description,
