@@ -32,8 +32,8 @@ type Confirm struct {
 	focus, hover int
 	// overCommit is true while the pointer is over the commit box.
 	overCommit bool
-	rect         layout.Rect
-	cmdLines     []string
+	rect       layout.Rect
+	cmdLines   []string
 	// Offer shows the box "Commit this change so it can be undone"; Commit is
 	// true once it is ticked. It starts unticked: smith commits only when asked.
 	Offer, Commit bool
