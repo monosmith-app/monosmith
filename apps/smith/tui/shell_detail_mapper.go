@@ -69,8 +69,17 @@ func (s Shell) detailContent(w, h int) content {
 	split := panel.Splits()
 	// The fixed top of a project's detail (see detailSplit) is drawn above the body that scrolls.
 	top, h := s.detailSplit(w, h)
+	panel, h, limit := s.pinRun(panel, w, h)
 	all, rows := panel.View(s.th, w, "")
 	_, hits := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
+	var pinned []string
+	if limit > 0 {
+		var pinnedHits map[int]string
+		pinned, pinnedHits = panel.PinnedRun(s.th, w, "", limit)
+		for row, id := range pinnedHits {
+			hits[h+row] = id
+		}
+	}
 	hover := ""
 	if r := s.detailRect(); r.Contains(s.mouseX, s.mouseY) {
 		hover = hits[s.mouseY-r.Y-len(top)]
@@ -78,6 +87,13 @@ func (s Shell) detailContent(w, h int) content {
 	all, _ = panel.View(s.th, w, hover)
 	lines, _ := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
 	lines = pane.Scrollbar(s.th, lines, w, pane.ClampTop(s.detailTop, len(all), h), len(all))
+	if len(pinned) > 0 {
+		for len(lines) < h {
+			lines = append(lines, "")
+		}
+		pinned, _ = panel.PinnedRun(s.th, w, hover, limit)
+		lines = append(lines, pinned...)
+	}
 	c := content{lines: append(top, lines...), hits: map[int]hit{}}
 	for row, id := range hits {
 		h := hit{kind: "action", id: id}
@@ -88,6 +104,23 @@ func (s Shell) detailContent(w, h int) content {
 		c.hits[len(top)+row] = h
 	}
 	return c
+}
+
+// pinRun keeps the second part of a split detail (what the chosen action does
+// and its run button) in view on a short screen: when the whole panel does not
+// fit in h rows, the part leaves the scrolling body and is drawn under it, in
+// at most half of the rows. It returns the panel to draw, the rows left for the
+// body and the rows the pinned part may take (0 when nothing is pinned).
+func (s Shell) pinRun(panel detail.Panel, w, h int) (detail.Panel, int, int) {
+	if !panel.Splits() {
+		return panel, h, 0
+	}
+	if all, _ := panel.View(s.th, w, ""); len(all) <= h {
+		return panel, h, 0
+	}
+	panel.PinRun = true
+	pinned, _ := panel.PinnedRun(s.th, w, "", max(h/2, 2))
+	return panel, max(h-len(pinned), 1), len(pinned)
 }
 
 // detailCursorID is the ID the keyboard cursor of the detail is on: the run
@@ -120,8 +153,9 @@ func (s Shell) sideContent(w, h int) content {
 // scrollDetail moves the detail by delta lines, never past its ends.
 func (s *Shell) scrollDetail(delta int) {
 	r := s.detailRect()
-	lines, _ := s.detailPanel().View(s.th, r.W, "")
 	_, h := s.detailSplit(r.W, r.H)
+	panel, h, _ := s.pinRun(s.detailPanel(), r.W, h)
+	lines, _ := panel.View(s.th, r.W, "")
 	s.detailTop = pane.ClampTop(s.detailTop+delta, len(lines), h)
 }
 

@@ -117,7 +117,11 @@ same index the keyboard cursor uses) and the keyboard stop on the run button in 
 `forgetDetailPlace` resets both when the selection changes. `detailContent` gives the chooser rows
 the hit kind `choose` and the run button the kind `action`, so only the run button takes the press,
 release and active look of a button. The shortcut keys go through the keymap, not the panel, so they
-run the action at once.
+run the action at once. When the whole panel does not fit, `pinRun` sets `Panel.PinRun`: `View` leaves
+the run part out and `Panel.PinnedRun` draws it under the scrolling body, in at most half of the rows
+(the rule and the button always stay), so it never falls below the fold; `scrollDetail` and
+`keepDetailCursorVisible` count the body without it. The footer says `go to run (Enter)` while the
+keyboard is above the rule (`tabPage.Footer`), since `Enter` there moves to the run button.
 
 Home has no second panel. Its keys are `home.move`, `home.scroll` and `Ctrl+U`/`Ctrl+D`
 (`shell_home_keys_use_case.go`): the keyboard is on one target of the page (`homeSel`, counted in
