@@ -26,7 +26,8 @@ for why.
 
 Every app: `package.json` (ES module, `engines.node`), `tsconfig.json`, `tsconfig.build.json`, the
 greeting slice, `src/functions/greeting.handler.ts` with its test, `scripts/assemble.mjs`,
-`scripts/package.mjs`, `scripts/start.mjs`, `README.md`. The workspace gets
+`scripts/package.mjs`, `scripts/start.mjs`, `README.md`. The app's `tsconfig.json` extends the
+workspace's `tsconfig.base.json` (written when it is absent), like every TypeScript project. The workspace gets
 `eslint` and `vitest` (the defaults); `jest` is refused.
 
 | Host | Also writes | `start` runs |

@@ -39,7 +39,7 @@ package = "node scripts/package.mjs"
 # The tests are compiled by the type check and left out of the build.
 "tsconfig.json" = '''
 {
-  "extends": "@monosmith/tsconfig/node.json",
+  "extends": "[[.Up]]tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
     "types": ["node"[[range index .Slots "tsconfig.types"]], "[[.]]"[[end]]]

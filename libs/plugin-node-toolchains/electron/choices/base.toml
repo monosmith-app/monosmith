@@ -36,7 +36,7 @@ package = "node scripts/package.mjs"
 # CommonJS (a sandboxed preload cannot be a module): TypeScript turns its import into require.
 "tsconfig.json" = '''
 {
-  "extends": "@monosmith/tsconfig/node.json",
+  "extends": "[[.Up]]tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
     "lib": ["es2023", "DOM"],
