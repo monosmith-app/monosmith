@@ -98,7 +98,7 @@ func (s Shell) recentSection(w, room int) content {
 	case len(s.runs) > n:
 		note = s.th.Muted(words.Count("tui.main.recent_runs.more", len(s.runs)-n))
 	}
-	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), false), pane.Fit(" "+title+"  "+note, w))
+	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), false), pane.Fit(pane.CutEllipsis(" "+title+"  "+note, w), w))
 	rows, first := s.recentRows(w, n)
 	for i := range rows {
 		c.hits[len(c.lines)] = hit{kind: "recent", index: first + i}
