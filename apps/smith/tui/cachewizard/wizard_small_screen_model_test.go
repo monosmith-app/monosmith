@@ -28,3 +28,22 @@ func TestOnASmallScreenTheWizardScrollsItsListAboveTheButtons(t *testing.T) {
 		t.Fatalf("a click on the scrolled option must pick it: %+v", out)
 	}
 }
+
+func TestAShortScreenIsCentredInTheFreeRows(t *testing.T) {
+	m := listOf("one", "two").Within(3, 2).Place(100, 40)
+	r := m.Rect()
+	if r.H >= 22 {
+		t.Fatalf("the test needs a screen shorter than the room: %+v", r)
+	}
+	if got := len(m.Lines(theme.Default(), 0, time.Now())); got != r.H {
+		t.Fatalf("the wizard draws %d rows in a %d-row box", got, r.H)
+	}
+	above, below := r.Y-3, 40-2-(r.Y+r.H)
+	if above-below > 1 || below-above > 1 {
+		t.Fatalf("the box must sit in the middle of the free rows: %d above, %d below", above, below)
+	}
+	x, y := cellOf(t, m, "2) two")
+	if _, out := m.Click(theme.Default(), x+1, y); out.Reply == nil || out.Reply.Value != "two" {
+		t.Fatalf("a click on the centred box must pick the option: %+v", out)
+	}
+}

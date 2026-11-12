@@ -20,7 +20,10 @@ const maxNotes = 200
 type Model struct {
 	// margins are the rows above and below the dialog that stay free.
 	margins layout.Margins
-	rect    layout.Rect
+	// rect is the room Place gave the dialog; the frame is drawn in box.
+	rect layout.Rect
+	// sw and sh are the screen's size, kept to centre the box.
+	sw, sh int
 	scr     Screen
 	notes   []string
 	cursor  int
@@ -64,12 +67,18 @@ func (m Model) Within(top, bottom int) Model {
 // buttons, and the window follows the cursor.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
+	m.sw, m.sh = sw, sh
 	m.rect = m.margins.Centre(sw, sh, w, 22)
 	return m.follow()
 }
 
-// Rect is where the dialog sits after Place.
-func (m Model) Rect() layout.Rect { return m.rect }
+// Rect is where the dialog is drawn: as tall as the screen's content, up to
+// the room Place gave it, centred between the margins as every dialog is.
+func (m Model) Rect() layout.Rect {
+	rows, _ := m.layout(theme.Default(), 0, time.Time{})
+	h := min(max(len(rows)+2, 8), m.rect.H)
+	return m.margins.Centre(m.sw, m.sh, m.rect.W, h)
+}
 
 // Kind is the kind of the screen now.
 func (m Model) Kind() Kind { return m.scr.Kind }
@@ -368,10 +377,11 @@ func (m Model) jumpTo(r rune, now time.Time) (Model, bool) {
 // Returns: the dialog with the hover set.
 func (m Model) Hover(th theme.Theme, x, y int) Model {
 	m.over, m.overToggle, m.overButton = 0, false, [2]int{}
-	if !m.rect.Contains(x, y) {
+	r := m.Rect()
+	if !r.Contains(x, y) {
 		return m
 	}
-	row, col := y-m.rect.Y-1, x-m.rect.X-2
+	row, col := y-r.Y-1, x-r.X-2
 	_, hits := m.layout(th, 0, time.Time{})
 	for _, h := range hits {
 		if h.row == row && col >= h.x0 && col < h.x1 {
@@ -390,10 +400,11 @@ func (m Model) Hover(th theme.Theme, x, y int) Model {
 //
 // Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
 func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
-	if !m.rect.Contains(x, y) {
+	r := m.Rect()
+	if !r.Contains(x, y) {
 		return m, Outcome{}
 	}
-	row, col := y-m.rect.Y-1, x-m.rect.X-2
+	row, col := y-r.Y-1, x-r.X-2
 	_, hits := m.layout(th, 0, time.Time{})
 	for _, h := range hits {
 		if h.row != row || col < h.x0 || col >= h.x1 {

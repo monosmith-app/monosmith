@@ -344,7 +344,8 @@ The arrows move the cursor and the text follows it; the wheel, `PgUp`, `PgDn`, `
 Compose a stack (its question, name and plan screens), Install packages (which also grows when an
 error or a longer command appears), the help, a confirmation (its spinner stays in view while smith
 reads the plan), the fix and repair dialogs, the result, tools and cache dialogs and the release
-picker.
+picker. On a short screen the Compose a stack list keeps its rows: the summary of what is ticked
+moves into the title (`Compose a stack · nothing ticked yet`) and the key line gets shorter.
 
 While a box is open (the palette, help, a confirmation, a picker, the fix, adopt and compose
 screens, the tools and result dialogs) it blocks the screen. The whole screen behind it, from the

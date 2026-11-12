@@ -37,6 +37,22 @@ func TestOnASmallScreenBrowsingFitsAndClicksStillTick(t *testing.T) {
 	}
 }
 
+func TestOnASmallScreenTheListKeepsFiveRowsAndTheSummaryMovesToTheTitle(t *testing.T) {
+	m := small(screen())
+	lines := m.Lines(theme.Default())
+	if !strings.Contains(pane.Strip(lines[0]), "nothing ticked yet") {
+		t.Errorf("the summary must be in the title: %q", pane.Strip(lines[0]))
+	}
+	th := theme.Default()
+	inner := m.rect.W - 4
+	if got := m.listRoom(len(m.statusLines(th, inner)), len(m.keyLines(th, inner))); got < 5 {
+		t.Fatalf("the list gets %d rows on 100x16, want at least 5:\n%s", got, text(m))
+	}
+	if !strings.Contains(text(m), "Esc back") {
+		t.Errorf("the short key line must still say every key:\n%s", text(m))
+	}
+}
+
 func TestOnASmallScreenTheQuestionScrollsAndFollowsTheCursor(t *testing.T) {
 	m := typed(small(screen()), "serverless")
 	m, _ = press(m, "down", " ")
