@@ -346,5 +346,10 @@
   "tui.detail.noun.app": "app",
   "tui.detail.noun.lib": "library",
   "tui.detail.noun.package": "package",
-  "tui.doctor.checked_again": "Checked again: {failed} failed, {warnings}"
+  "tui.doctor.checked_again": "Checked again: {failed} failed, {warnings}",
+  "tui.cache.closed": "Remote cache setup closed. Nothing more was changed.",
+  "tui.cache.stopped": "Remote cache setup stopped: {reason}",
+  "tui.cache.finished.for": "Remote cache setup finished for {remote}",
+  "tui.cache.finished": "Remote cache setup finished",
+  "tui.cache.not_here": "The remote cache setup is not available here: run smith cache setup in a terminal"
 }

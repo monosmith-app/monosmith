@@ -27,6 +27,9 @@ type Model struct {
 	// overToggle is true while the pointer is over the commit box.
 	over       int
 	overToggle bool
+	// overButton is the button under the pointer: 1 + its body line and its
+	// first column, the zero value for none.
+	overButton [2]int
 	// list keeps where the window of a long list starts.
 	list  *pane.Scroll
 	input []rune
@@ -247,13 +250,13 @@ func (m Model) confirmKey(name string) (Model, Outcome) {
 		return m.escape()
 	case "ctrl+c":
 		return m, Outcome{Cancel: true}
-	case "b", "B", "left":
+	case "b", "B", "left": // words:literal
 		return m.back()
-	case "c", "C":
+	case "c", "C": // words:literal
 		m.ticked = m.ticked != m.scr.Confirmation.OfferCommit
-	case "y", "Y":
+	case "y", "Y": // words:literal
 		return m.answered(Reply{Yes: true, Commit: m.ticked})
-	case "n", "N":
+	case "n", "N": // words:literal
 		return m.answered(Reply{})
 	case "tab", "right", "h", "l":
 		m.focus = 1 - m.focus
@@ -344,13 +347,14 @@ func (m Model) jumpTo(r rune, now time.Time) (Model, bool) {
 	return m, false
 }
 
-// Hover notes the option or the commit box under the pointer at (x, y), drawn
-// in the row hover look.
+// Hover notes the option, the commit box or the button under the pointer at
+// (x, y): an option and the box take the row hover look, a button the button
+// hover look.
 //
 // Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
 // Returns: the dialog with the hover set.
 func (m Model) Hover(th theme.Theme, x, y int) Model {
-	m.over, m.overToggle = 0, false
+	m.over, m.overToggle, m.overButton = 0, false, [2]int{}
 	if !m.rect.Contains(x, y) {
 		return m
 	}
@@ -359,6 +363,9 @@ func (m Model) Hover(th theme.Theme, x, y int) Model {
 	for _, h := range hits {
 		if h.row == row && col >= h.x0 && col < h.x1 {
 			m.over, m.overToggle = h.option+1, h.toggle
+			if h.option < 0 && !h.toggle {
+				m.overButton = [2]int{h.row + 1, h.x0}
+			}
 		}
 	}
 	return m

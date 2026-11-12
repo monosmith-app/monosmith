@@ -34,7 +34,7 @@ type Spec struct {
 // Parameters: getenv reads the TUI's environment; colour is Spec.Colour.
 // Returns: KEY=VALUE entries to append.
 func childEnv(getenv func(string) string, colour bool) []string {
-	env := []string{"SMITH_INTERFACE=tui"} // words:literal
+	env := []string{"SMITH_INTERFACE=tui"}  // words:literal
 	if colour && getenv("NO_COLOR") == "" { // words:literal
 		return append(env, "FORCE_COLOR=0", termcolour.ToolEntry(true)) // words:literal
 	}

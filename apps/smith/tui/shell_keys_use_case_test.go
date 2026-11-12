@@ -385,9 +385,9 @@ func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
 	l.hasNot("The command that will run:")
 	l = newLab(t, true, 120, 30)
 	l.keys("5", "x")
-	l.has("Release: hold back or bump", "Continue (enter)")
+	l.has("Release: hold back or bump", "Continue (Enter)")
 	l.keys("enter")
-	l.has("Release", "$ smith release --yes", "Release anyway (y)", "Cancel (esc)")
+	l.has("Release", "$ smith release --yes", "Release anyway (y)", "Cancel (Esc)")
 	if len(l.started) != 0 {
 		t.Fatal("release must wait for the dialog")
 	}

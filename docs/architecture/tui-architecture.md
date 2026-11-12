@@ -67,7 +67,7 @@ flowchart TD
 | `tui/sources` | loading what the views show (replaceable in tests) |
 | `tui/screenreader`, `clipboard`, `pointer`, `progress` | plain mode, OSC 52 copy, double-click detection, progress bars |
 | `tui/choicerow` | the one pick-list and tick-box row: `Row`, `Lines`/`Line` (cursor mark, lead, label, hint; selected, hovered and disabled looks), `Toggle` (a lone box), `At` (a click or a hover on a row that wraps). Every list of choices draws its rows with it: composer, guide, doctorview, fixwizard, resultdialog, toolsdialog, cachewizard, releasepick and settingsview |
-| `tui/button`, `tui/detail` | the one button (rest, hover, active, disabled) and the detail panel with its split action panel |
+| `tui/button`, `tui/detail` | the one button (rest, hover, active, disabled; its key spelled as the footer and the help spell it, `Enter`, `Esc`, `Ctrl+C`, whatever name the caller passes; a row of buttons centred with `RowSpans` in every dialog, the remote cache setup included) and the detail panel with its split action panel |
 
 ## One keymap, three consumers
 
