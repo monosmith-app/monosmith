@@ -24,7 +24,7 @@ func (s *Shell) openAdopt() tea.Cmd {
 		return nil
 	}
 	m, job := adoptwizard.New(s.adopter)
-	m = m.Place(s.w, s.h)
+	m = m.Within(s.dialogMargins()).Place(s.w, s.h)
 	s.adopt = &m
 	return s.runAdoptJob(job)
 }

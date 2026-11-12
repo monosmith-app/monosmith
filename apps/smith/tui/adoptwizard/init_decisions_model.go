@@ -43,7 +43,7 @@ func (m Model) askInit() Model {
 	desc := words.Say("adopt.init.desc")
 	style := adoptStyle
 	style.Back, style.Ask = true, words.Say("adopt.init.ask")
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 

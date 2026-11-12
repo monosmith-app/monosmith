@@ -124,7 +124,7 @@ func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 		s.say(words.Say("tui.fix.a_run_is_in_progress_ctrl"))
 		return nil
 	}
-	w := fixwizard.New(p, s.sources.ShowFix).Place(s.w, s.h)
+	w := fixwizard.New(p, s.sources.ShowFix).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.fix = &w
 	return nil
 }
@@ -261,7 +261,7 @@ func (s *Shell) verifyFix(res doctorview.Result) {
 	if still := doctor.StillFailing(res.Report, checks); len(still) > 0 {
 		// The steps passed and the check still fails: show what they printed,
 		// not only a toast, so the person sees why.
-		w := s.verifiedFix.FailVerify(strings.TrimPrefix(doctor.StillFailingText(still[0]), "Still not fixed: "), s.verifiedOutput).Place(s.w, s.h)
+		w := s.verifiedFix.FailVerify(strings.TrimPrefix(doctor.StillFailingText(still[0]), "Still not fixed: "), s.verifiedOutput).Within(s.dialogMargins()).Place(s.w, s.h)
 		s.fix = &w
 		return
 	}

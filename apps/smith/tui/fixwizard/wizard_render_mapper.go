@@ -90,12 +90,12 @@ func (w Wizard) visible() int { return max(w.Rect().H-4, 1) }
 // Rect is where the dialog sits.
 func (w Wizard) Rect() layout.Rect {
 	width := w.width()
-	h := max(w.sh-2, 5)
+	h := max(w.margins.Room(w.sh), 5)
 	if !w.LogOpen() {
 		rows, _ := w.rows(theme.Default(), 0)
 		h = min(len(rows)+4, h)
 	}
-	return layout.Rect{X: max((w.sw-width)/2, 0), Y: max((w.sh-h)/2, 0), W: width, H: h}
+	return w.margins.Centre(w.sw, w.sh, width, h)
 }
 
 func (w Wizard) bodyRows() []string {

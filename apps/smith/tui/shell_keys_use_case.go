@@ -143,7 +143,7 @@ func (s *Shell) openPackages(remove bool) {
 	if remove {
 		p = packageprompt.NewRemove(project, names)
 	}
-	p = p.WithLanguages(languages).WithLibraries(func(project string) []packageprompt.Library { return linkableLibraries(s.list.Projects(), project) }).Place(s.w, s.h)
+	p = p.WithLanguages(languages).WithLibraries(func(project string) []packageprompt.Library { return linkableLibraries(s.list.Projects(), project) }).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.pkg = &p
 }
 
@@ -513,7 +513,7 @@ func (s *Shell) openHelp() {
 	for _, r := range commands.HelpRows(s.state(), tabTitles()[s.tab]) {
 		rows = append(rows, helpdialog.HelpRow(r))
 	}
-	h := helpdialog.NewHelp(rows, mouseHelp()).Place(s.w, s.h)
+	h := helpdialog.NewHelp(rows, mouseHelp()).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.help = &h
 }
 

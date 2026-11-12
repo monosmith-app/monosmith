@@ -37,6 +37,8 @@ type Model struct {
 	fw    fixwizard.Wizard
 	sw    int
 	sh    int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 	// retry runs the job again after a failure.
 	retry *Job
 
@@ -126,9 +128,22 @@ func (m Model) Dispose() {
 }
 
 // Place tells the wizard the screen size.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
+// Place sizes the dialog for a screen of w by h cells, between the margins
+// Within set.
 func (m Model) Place(w, h int) Model {
 	m.sw, m.sh = w, h
-	m.fw = m.fw.Place(w, h)
+	m.fw = m.fw.Within(m.margins.Top, m.margins.Bottom).Place(w, h)
 	return m
 }
 
@@ -362,7 +377,7 @@ func (m Model) running(stage Stage, headline string, job Job, style fixwizard.St
 	p := doctorfix.Planned{Fix: protocol.Fix{Description: headline, Steps: steps}}
 	m.stage = stage
 	m.retry = &job
-	m.fw = fixwizard.New(p, nil).Styled(style).Place(m.sw, m.sh).Start(headline, job.Steps)
+	m.fw = fixwizard.New(p, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh).Start(headline, job.Steps)
 	return m
 }
 
@@ -370,7 +385,7 @@ func (m Model) running(stage Stage, headline string, job Job, style fixwizard.St
 func (m Model) runFix(stage Stage, p doctorfix.Planned, job Job, style fixwizard.Style) Model {
 	m.stage = stage
 	m.retry = &job
-	m.fw = fixwizard.New(p, nil).Styled(style).Place(m.sw, m.sh).Start(p.Description, len(p.Steps))
+	m.fw = fixwizard.New(p, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh).Start(p.Description, len(p.Steps))
 	return m
 }
 
@@ -381,7 +396,7 @@ func (m Model) reviewOf(stage Stage, title, text string, style fixwizard.Style) 
 	m.stage = stage
 	m.retry = nil
 	p := doctorfix.Planned{Fix: protocol.Fix{Description: title}}
-	m.fw = fixwizard.New(p, func(doctorfix.Planned) (string, error) { return text, nil }).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(p, func(doctorfix.Planned) (string, error) { return text, nil }).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -416,7 +431,7 @@ func (m Model) askLevel() Model {
 	}}}
 	style := adoptStyle
 	style.Back, style.Ask = true, words.Say("adopt.level.ask")
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -436,7 +451,7 @@ func (m Model) askChoices() Model {
 	desc := words.Say("adopt.choices.desc")
 	style := adoptStyle
 	style.Back, style.Ask = true, words.Say("adopt.choices.ask")
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -571,7 +586,7 @@ func (m Model) askGroup(g removalplan.Group) Model {
 		text, err := flow.ShowFix(p)
 		return groupText(g, text), err
 	}
-	m.fw = fixwizard.New(g.Fix, show).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(g.Fix, show).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 

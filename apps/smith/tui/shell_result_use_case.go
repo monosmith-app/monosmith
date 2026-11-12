@@ -35,13 +35,13 @@ func (s *Shell) afterRun() {
 	argv := s.run.Command
 	if !s.run.OK() {
 		if tool, ok := resultdialog.ParseMissingTool(argv, s.runLines); ok {
-			m := resultdialog.NewMissingTool(tool).Place(s.w, s.h)
+			m := resultdialog.NewMissingTool(tool).Within(s.dialogMargins()).Place(s.w, s.h)
 			s.result, s.resultKept = &m, &m
 		}
 		return
 	}
 	if slices.ContainsFunc(s.runLines, func(l string) bool { return strings.HasPrefix(strings.TrimSpace(l), notCommittedMark()) }) {
-		m := resultdialog.NewAfterChange(argv, s.runLines).Place(s.w, s.h)
+		m := resultdialog.NewAfterChange(argv, s.runLines).Within(s.dialogMargins()).Place(s.w, s.h)
 		s.result = &m
 	}
 }
@@ -105,6 +105,6 @@ func (s *Shell) reopenResult() {
 	if s.resultKept == nil || s.result != nil {
 		return
 	}
-	m := s.resultKept.Place(s.w, s.h)
+	m := s.resultKept.Within(s.dialogMargins()).Place(s.w, s.h)
 	s.result = &m
 }

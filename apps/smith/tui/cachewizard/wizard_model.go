@@ -19,10 +19,12 @@ const maxNotes = 200
 // (see Screen) and turns keys and clicks into answers (Outcome); it runs
 // nothing and holds no secret: the key lives in the engine's session only.
 type Model struct {
-	rect   layout.Rect
-	scr    Screen
-	notes  []string
-	cursor int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
+	rect    layout.Rect
+	scr     Screen
+	notes   []string
+	cursor  int
 	// over is 1 + the index of the option under the pointer, 0 for none;
 	// overToggle is true while the pointer is over the commit box.
 	over       int
@@ -49,11 +51,22 @@ type Model struct {
 // New is the wizard before the engine has said anything: a spinner.
 func New(now time.Time) Model { return Model{since: now, list: &pane.Scroll{}} }
 
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
 // Place sizes the dialog for a screen.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
-	h := min(max(sh-2, 12), 22)
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	h := min(max(m.margins.Room(sh), 12), 22)
+	m.rect = m.margins.Centre(sw, sh, w, h)
 	return m
 }
 

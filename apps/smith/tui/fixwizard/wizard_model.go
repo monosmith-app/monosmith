@@ -3,6 +3,7 @@ package fixwizard
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"strconv"
 	"strings"
@@ -62,7 +63,9 @@ type Wizard struct {
 	tailing bool
 
 	sw, sh int
-	hover  int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
+	hover   int
 	// overOption is 1 + the index of the option under the pointer, 0 for none.
 	overOption int
 }
@@ -99,6 +102,19 @@ func (w Wizard) Start(headline string, total int) Wizard {
 func (w Wizard) Resolved() protocol.Fix { return w.resolved }
 
 // Place tells the wizard the screen size; the dialog is centred on it.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (w Wizard) Within(top, bottom int) Wizard {
+	w.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return w
+}
+
+// Place sizes the dialog for a screen of sw by sh cells, between the margins
+// Within set.
 func (w Wizard) Place(sw, sh int) Wizard {
 	w.sw, w.sh = sw, sh
 	return w

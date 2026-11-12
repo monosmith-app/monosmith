@@ -26,6 +26,8 @@ type Help struct {
 	extra []string
 	top   int
 	rect  layout.Rect
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 }
 
 // NewHelp builds the overlay from the shortcuts and some free-text lines
@@ -66,11 +68,23 @@ func (h Help) content(th theme.Theme, w int) []string {
 	return out
 }
 
-// Place centres the overlay on a screen of the given size.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (h Help) Within(top, bottom int) Help {
+	h.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return h
+}
+
+// Place centres the overlay on a screen of the given size, between the margins
+// Within set.
 func (h Help) Place(sw, sh int) Help {
 	w := min(max(sw-6, 10), 92)
-	hh := min(max(sh-2, 3), 28)
-	h.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-hh)/2, 0), W: w, H: hh}
+	hh := min(max(h.margins.Room(sh), 3), 28)
+	h.rect = h.margins.Centre(sw, sh, w, hh)
 	return h
 }
 

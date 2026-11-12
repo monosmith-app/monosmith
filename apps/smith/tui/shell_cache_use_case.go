@@ -42,7 +42,7 @@ func (s *Shell) openCacheSetup() tea.Cmd {
 		secrets = s.cacheSecrets()
 	}
 	b := cachewizard.NewBridge(secrets)
-	m := cachewizard.New(s.now()).Place(s.w, s.h)
+	m := cachewizard.New(s.now()).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.cache, s.cacheRun = &m, b
 	b.Start(func(d cachesetup.Dialogue) (string, error) {
 		facts, ports, err := setup()

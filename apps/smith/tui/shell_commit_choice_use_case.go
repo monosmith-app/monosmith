@@ -34,14 +34,14 @@ func (s Shell) asksCommit(argv []string) bool {
 // answer, or nil when the question was opened on its own.
 func (s *Shell) askCommitChoice(pending []string, confirmed bool) {
 	s.commitPending, s.commitPendingOK = slices.Clone(pending), confirmed
-	m := resultdialog.NewCommitChoice(pending != nil).Place(s.w, s.h)
+	m := resultdialog.NewCommitChoice(pending != nil).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.result = &m
 }
 
 // openUndoOff tells why there is nothing to undo when commits are off, with a
 // button that opens the question.
 func (s *Shell) openUndoOff() {
-	m := resultdialog.NewUndoOff().Place(s.w, s.h)
+	m := resultdialog.NewUndoOff().Within(s.dialogMargins()).Place(s.w, s.h)
 	s.result = &m
 }
 
