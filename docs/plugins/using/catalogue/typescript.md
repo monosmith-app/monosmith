@@ -74,7 +74,7 @@ One rule holds for every stack that scaffolds a `tsconfig.json` (node-ts, functi
 reaches the root `tsconfig.base.json` through `extends`, and the base extends the `@monosmith/tsconfig` preset. A change in
 the base (a new `noUnusedLocals`, a `paths` entry) therefore reaches every project. The depth of the path comes from the
 project folder (`../../tsconfig.base.json` for `apps/api`). A workspace that smith adopted or converted keeps the base it
-has; `smith doctor` reports a project whose tsconfig does not reach it. A stack adds to its tsconfig only what is specific to
+has. A stack adds to its tsconfig only what is specific to
 it, such as `lib`, `types` or `rootDir`.
 
 ## Settings
