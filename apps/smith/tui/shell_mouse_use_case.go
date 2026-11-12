@@ -179,13 +179,13 @@ func (s *Shell) click(x, y int) tea.Cmd {
 	case s.compose != nil:
 		return s.composeClick(x, y)
 	case s.cache != nil:
-		return s.cacheClick(x, y, double)
+		return s.cacheClick(x, y)
 	case s.tools != nil:
-		m, out := s.tools.Click(s.th, x, y, double)
+		m, out := s.tools.Click(s.th, x, y)
 		s.tools = &m
 		return s.afterTools(out)
 	case s.result != nil:
-		return s.resultClick(x, y, double)
+		return s.resultClick(x, y)
 	case s.adopt != nil:
 		m, out := s.adopt.Click(x, y)
 		s.adopt = &m
@@ -343,6 +343,12 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 			s.deps = s.deps.ChooseRow(h.index, s.mouseShift)
 		}
 	case "option":
+		// One click picks in a single-choice list. In a list of tick boxes a click
+		// ticks; in the path finder it selects. There a double click goes on.
+		if s.guide.SingleChoice() {
+			s.guide = s.guide.SelectRow(h.index)
+			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
+		}
 		if double {
 			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}

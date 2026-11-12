@@ -364,14 +364,12 @@ func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 	l.has("Log: all output", "main.go:12", "ok example.com/kit")
 }
 
-func TestClickingAGuideOptionSelectsAndDoubleClickingChoosesIt(t *testing.T) {
+func TestOneClickOnAGuideOptionPicksIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("a")
 	l.has("What are you building?")
 	x, y := l.find("A package")
 	l.send(click(x+2, y))
-	l.has("› A package")
-	l.doubleClick(x+2, y)
 	l.hasNot("What are you building?")
 }
 

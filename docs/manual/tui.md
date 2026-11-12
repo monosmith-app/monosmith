@@ -417,8 +417,8 @@ consequence. The first line is always the one that does nothing, because smith n
   **Check again** (runs the first check of the project again, not the add) and **Continue without checking**
   (Doctor keeps reminding you). Esc closes the dialog and changes nothing.
 
-The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): click an entry
-to put the cursor on it, double-click to select it like `Enter`. The last line of the dialog says so.
+The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): one click
+on an entry picks it, as `Enter` does. The last line of the dialog says so.
 The dialog covers the content of the open view, but the rule under the tabs and the divider
 between the panes stay. Glyphs the log drew itself (a rule, a scrollbar thumb) are cleared with the rest, so no
 stray line shows around the dialog.
@@ -863,7 +863,7 @@ narrow screen the row at the keyboard cursor carries the cursor mark, and `Enter
 action panel, `Enter` first moves to the run button).
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
-button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
+button; click an answer of a single-choice list to pick it; double-click a project or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
 a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
 (the choices of Add a project, the languages, the plugin lists of a recipe) and in the Compose a
 stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
@@ -890,11 +890,19 @@ look. With the mouse:
 
 - A click on a tick box row ticks or unticks it (Compose a stack, a form with several answers,
   a list setting in Settings, the box of a Deps row, the commit box). In Compose a stack and the Settings
-  list editor, a click is the same as the key that ticks (`Enter` and `Space`).
-- A click on a row of a list with one answer moves the cursor to it; a double click, or `Enter`,
-  picks it. In the doctor fix wizard and the dependency repair, a click on an option picks it at
-  once.
-- A click on an answer of the open question of Compose a stack picks it.
+  list editor, a click is the same as the key that ticks (`Space`).
+- One click on a row of a list with one answer picks it, as `Enter` does: the guided forms, the
+  doctor fix wizard and the dependency repair, the result dialog, the missing tools dialog, the
+  remote cache wizard, a pick-list setting in Settings and the open question of Compose a stack.
+  There is no "click moves, double click picks" anywhere. The path finder is a browser, not a
+  choice: there a click selects a folder and a double click goes into it.
+- `Space` ticks a tick box in every list. In Compose a stack the search box takes the typed
+  letters: `Down` puts the keyboard on the list, where `Space` ticks the row under the cursor, and
+  a letter puts it back in the search box. `Enter` goes on to the next step there, as `Ctrl+N` does.
+
+**Key hints.** The line of keys under a list or a question names each key the way the buttons and
+the footer do (`Enter`, `Esc`, `Space`, `Tab`, `↑↓`), then what it does, with ` · ` between:
+`↑↓ move · Enter or a click picks · Esc goes back`.
 
 **Hover.** Everything you can click shows a hover look while the pointer is over it. A button,
 a tab and a footer hint take the button hover colour, which is between the resting colour and the

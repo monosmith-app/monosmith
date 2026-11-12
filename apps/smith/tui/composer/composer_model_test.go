@@ -75,12 +75,12 @@ func typed(m Model, text string) Model {
 
 func text(m Model) string { return strings.Join(m.Lines(theme.Default()), "\n") }
 
-func TestTypingAnAliasFindsTheItemAndEnterTicksIt(t *testing.T) {
+func TestTypingAnAliasFindsTheItemAndDownThenSpaceTicksIt(t *testing.T) {
 	m := typed(screen(), "desktop")
 	if len(m.hits) != 1 || m.hits[0].Name != "electron" {
 		t.Fatalf("hits %+v", m.hits)
 	}
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if got := strings.Join(m.Ticked(), ","); got != "electron" {
 		t.Fatalf("ticked %q", got)
 	}
@@ -96,10 +96,10 @@ func TestTypingAnAliasFindsTheItemAndEnterTicksIt(t *testing.T) {
 
 func TestAConflictIsShownAsSoonAsItIsTickedAndBlocksTheNextStep(t *testing.T) {
 	m := typed(screen(), "tailwind")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	m, _ = press(m, "esc")
 	m = typed(m, "react")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if !strings.Contains(m.Check().Conflict, "vitest") || !strings.Contains(m.Check().Conflict, "tailwind") {
 		t.Fatalf("the conflict names both: %+v", m.Check())
 	}
@@ -112,7 +112,7 @@ func TestAConflictIsShownAsSoonAsItIsTickedAndBlocksTheNextStep(t *testing.T) {
 	}
 	m, _ = press(m, "esc")
 	m = typed(m, "tailwind")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if m.Check().Conflict != "" {
 		t.Fatalf("ticking it again removes it: %+v", m.Check())
 	}
@@ -120,10 +120,10 @@ func TestAConflictIsShownAsSoonAsItIsTickedAndBlocksTheNextStep(t *testing.T) {
 
 func TestTickingASecondFrameworkTakesThePlaceOfTheFirstWithANote(t *testing.T) {
 	m := typed(screen(), "react")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	m, _ = press(m, "esc")
 	m = typed(m, "electron")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if got := strings.Join(m.Ticked(), ","); got != "electron" {
 		t.Fatalf("one framework stays, like radio buttons: %q", got)
 	}
@@ -137,7 +137,7 @@ func TestTickingASecondFrameworkTakesThePlaceOfTheFirstWithANote(t *testing.T) {
 
 func TestAHostAsksItsTriggerAndTheSuggestedAnswerIsOnlyPreselected(t *testing.T) {
 	m := typed(screen(), "serverless")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if m.stage != stQuestion || m.Check().Question == nil {
 		t.Fatalf("a host that needs a trigger asks: stage %v", m.stage)
 	}
@@ -158,7 +158,7 @@ func TestAHostAsksItsTriggerAndTheSuggestedAnswerIsOnlyPreselected(t *testing.T)
 
 func TestEscLeavesAQuestionUnansweredAndNextAsksItAgain(t *testing.T) {
 	m := typed(screen(), "serverless")
-	m, _ = press(m, "enter", "esc")
+	m, _ = press(m, "down", " ", "esc")
 	if m.stage != stBrowse || m.Check().Question == nil {
 		t.Fatal("the question stays open")
 	}
@@ -170,7 +170,7 @@ func TestEscLeavesAQuestionUnansweredAndNextAsksItAgain(t *testing.T) {
 
 func TestAWorkspacePluginIsFoundButNotTicked(t *testing.T) {
 	m := typed(screen(), "slices")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if len(m.Ticked()) != 0 || !strings.Contains(m.note, "smith plugin enable slices") {
 		t.Fatalf("it says which command turns it on: ticked %v note %q", m.Ticked(), m.note)
 	}
@@ -178,7 +178,7 @@ func TestAWorkspacePluginIsFoundButNotTicked(t *testing.T) {
 
 func TestTheLanguageNarrowsTheListToItsItems(t *testing.T) {
 	m := typed(screen(), "typescript")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if m.lang == nil || m.lang.Name != "node" {
 		t.Fatalf("the first row is the first language: %+v", m.lang)
 	}
@@ -191,7 +191,7 @@ func TestTheLanguageNarrowsTheListToItsItems(t *testing.T) {
 
 func TestTheNameStageValidatesAndAsksForThePlan(t *testing.T) {
 	m := typed(screen(), "desktop")
-	m, _ = press(m, "enter", "ctrl+n")
+	m, _ = press(m, "down", " ", "ctrl+n")
 	if m.stage != stName {
 		t.Fatalf("a complete selection goes on to the name: %v", m.stage)
 	}
@@ -217,7 +217,7 @@ func TestTheNameStageValidatesAndAsksForThePlan(t *testing.T) {
 
 func TestThePlanOffersRunCopyAndRecipe(t *testing.T) {
 	m := typed(screen(), "desktop")
-	m, _ = press(m, "enter", "ctrl+n")
+	m, _ = press(m, "down", " ", "ctrl+n")
 	m.name.SetValue("shell")
 	m, _ = press(m, "enter")
 	plan := compose.Plan{
@@ -230,7 +230,7 @@ func TestThePlanOffersRunCopyAndRecipe(t *testing.T) {
 		RecipeArgv: []string{"smith", "recipe", "new", "--name", "x"}, RecipeNote: "A recipe fixes the plugins.",
 	}
 	m = m.WithPlan(plan, nil)
-	for _, want := range []string{"smith add app shell", "create apps/shell/", "It needs these tools", "smith tools install node", "run it now"} {
+	for _, want := range []string{"smith add app shell", "create apps/shell/", "It needs these tools", "smith tools install node", "runs it now"} {
 		if !strings.Contains(text(m), want) {
 			t.Fatalf("the plan shows %q:\n%s", want, text(m))
 		}
@@ -302,5 +302,23 @@ func TestThePlanWrapsToTheDialogAndEveryLineFillsTheRectangle(t *testing.T) {
 				t.Fatalf("%v: %q was cut off:\n%s", size, want, strings.Join(lines, "\n"))
 			}
 		}
+	}
+}
+
+func TestSpaceTypesInTheSearchBoxAndTicksOnTheListAndEnterGoesOn(t *testing.T) {
+	m := typed(screen(), "desk")
+	m, _ = press(m, " ")
+	if m.search.Value() != "desk " || len(m.Ticked()) != 0 {
+		t.Fatalf("Space types while the search box has the keyboard: %q %v", m.search.Value(), m.Ticked())
+	}
+	m, _ = press(m, "esc")
+	m = typed(m, "desktop")
+	m, _ = press(m, "down", " ")
+	if got := strings.Join(m.Ticked(), ","); got != "electron" || m.search.Value() != "desktop" {
+		t.Fatalf("Space ticks the row once the list has the keyboard: %q %q", got, m.search.Value())
+	}
+	m, _ = press(m, "enter")
+	if m.stage != stName {
+		t.Fatalf("Enter goes on, as Ctrl+N does: %v", m.stage)
 	}
 }

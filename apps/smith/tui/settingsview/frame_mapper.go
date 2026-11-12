@@ -281,13 +281,11 @@ func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
 			}
 		} else if ok && m.ed.kind == editChoose && x >= f.listW {
-			// A click on a value of a pick list puts the cursor there; a double click picks it.
+			// A click on a value of a pick list picks it, as in every single-choice list.
 			e := *m.ed
 			e.at = i
 			m.ed = &e
-			if double {
-				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
-			}
+			return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
 		} else if ok && m.ed.kind == editMulti && x >= f.listW {
 			// A click on a tick box row puts the cursor there and ticks or unticks it, as Space does.
 			e := *m.ed

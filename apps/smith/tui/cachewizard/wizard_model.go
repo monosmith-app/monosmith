@@ -371,14 +371,12 @@ func (m Model) Hover(th theme.Theme, x, y int) Model {
 	return m
 }
 
-// Click handles a left press: a press on an option moves the cursor to it and
-// a second press (double is true) answers; a press on the commit box ticks or
-// unticks it; a press on a button does what the button says. A press elsewhere
-// does nothing.
+// Click handles a left press: a press on an option picks it, like a click in
+// every single-choice list; a press on the commit box ticks or unticks it; a
+// press on a button does what the button says. A press elsewhere does nothing.
 //
-// Parameters: th is the theme the dialog is drawn with; x and y are screen
-// cells; double says the press is the second of a double click.
-func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
+func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
 	if !m.rect.Contains(x, y) {
 		return m, Outcome{}
 	}
@@ -391,10 +389,7 @@ func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 		switch {
 		case h.option >= 0:
 			m.cursor = h.option
-			if double {
-				return m.pick(h.option)
-			}
-			return m, Outcome{}
+			return m.pick(h.option)
 		case h.yes != nil:
 			return m.answered(Reply{Yes: *h.yes, Commit: m.ticked && *h.yes})
 		case h.toggle:

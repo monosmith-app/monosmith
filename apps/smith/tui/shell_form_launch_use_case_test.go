@@ -75,7 +75,7 @@ func TestEnterOnTheSliceCheckRowRunsTheTaskOfEveryProjectWithNoQuestion(t *testi
 	l := newLab(t, true, 140, 34).withCheckForms().withProjectTasks("slice-check")
 	l.keys("3")
 	l.send(boundaryResult())
-	l.has("Checks doctor does not run itself", "Vertical-slice layout", "enter runs slice-check")
+	l.has("Checks doctor does not run itself", "Vertical-slice layout", "Enter runs slice-check")
 	l.toDoctorExtra()
 	l.has("Doctor does not run this check itself", "Run this check now")
 	l.keys("enter")
@@ -92,7 +92,7 @@ func TestAWorkspaceWithGoAndNodeChecksTheLayoutWithBothTasks(t *testing.T) {
 	l := newLab(t, true, 140, 34).withProjectTasks("slice-check", "lint")
 	l.keys("3")
 	l.send(boundaryResult())
-	l.has("enter runs slice-check and lint")
+	l.has("Enter runs slice-check and lint")
 	l.toDoctorExtra()
 	l.clickText("Run this check now")
 	if got := l.lastStarted(); got != "run slice-check lint" {

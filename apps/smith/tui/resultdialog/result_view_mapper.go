@@ -65,19 +65,16 @@ func (m Model) body(th theme.Theme) (body []string, spans []span) {
 	return body, spans
 }
 
-// Click handles a left press: a press on a choice moves the cursor to it, a
-// second press on the same cell (double is true) selects it like Enter. A press
-// elsewhere changes nothing.
+// Click handles a left press: a press on a choice picks it, as Enter does on
+// it, like a click in every single-choice list. A press elsewhere changes
+// nothing.
 //
-// Parameters: th is the theme the dialog is drawn with; x and y are screen
-// cells; double says the press is the second of a double click.
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
 // Returns: the new dialog and what the host must do.
-func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
+func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
 	if i := m.choiceAt(th, x, y); i >= 0 {
 		m.cursor = i
-		if double {
-			return m.Key("enter")
-		}
+		return m.Key("enter")
 	}
 	return m, Outcome{}
 }

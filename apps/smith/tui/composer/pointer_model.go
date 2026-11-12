@@ -21,7 +21,7 @@ func (m Model) Click(x, y int) (Model, Outcome) {
 	case stBrowse:
 		if i := m.rowAt(x, y); i >= 0 {
 			m.cursor = i
-			return m.enter(), Outcome{}
+			return m.focusList().enter(), Outcome{}
 		}
 	case stQuestion:
 		if i := m.answerAt(x, y); i >= 0 {
@@ -66,7 +66,7 @@ func (m Model) rowAt(x, y int) int {
 	}
 	th := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
 	inner, height := m.rect.W-4, m.rect.H-2
-	room := max(height-browseListTop-len(m.statusLines(th, inner))-1, 3)
+	room := max(height-browseListTop-len(m.statusLines(th, inner))-len(m.keyLines(th, inner)), 3)
 	probe := m
 	lines, items := probe.listLines(th, inner)
 	shown, top := len(lines), 0

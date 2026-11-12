@@ -57,8 +57,8 @@ func (s *Shell) resultKey(name string) tea.Cmd {
 
 // resultClick sends a click to the result dialog: one press picks a choice, a
 // double press selects it like Enter.
-func (s *Shell) resultClick(x, y int, double bool) tea.Cmd {
-	m, out := s.result.Click(s.th, x, y, double)
+func (s *Shell) resultClick(x, y int) tea.Cmd {
+	m, out := s.result.Click(s.th, x, y)
 	s.result = &m
 	return s.afterResult(out)
 }

@@ -45,7 +45,7 @@ func TestALongProblemFoldsSoTheRemedyAndTheActionsStayOnTheScreen(t *testing.T) 
 }
 
 // TestEnterOnThePassedLineShowsThePassedChecksBesideTheDetail keeps the promise
-// of the line "enter or p shows them" when the detail sits beside the list.
+// of the line "Enter or p shows them" when the detail sits beside the list.
 func TestEnterOnThePassedLineShowsThePassedChecksBesideTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	l.send(doctorview.Result{Report: doctor.Report{Passed: 2, Findings: []doctor.Finding{

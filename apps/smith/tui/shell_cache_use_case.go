@@ -63,8 +63,8 @@ func (s *Shell) cacheKey(msg tea.KeyMsg) tea.Cmd {
 }
 
 // cacheClick gives the setup a click.
-func (s *Shell) cacheClick(x, y int, double bool) tea.Cmd {
-	m, out := s.cache.Click(s.th, x, y, double)
+func (s *Shell) cacheClick(x, y int) tea.Cmd {
+	m, out := s.cache.Click(s.th, x, y)
 	s.cache = &m
 	return s.afterCache(out)
 }

@@ -80,7 +80,7 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		head := append(m.noteLines(th, inner, max(height/4, 2)), "")
 		head = append(head, pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
 		add(head...)
-		foot := []string{"", th.Muted(words.Say("cachewizard.hint.choose", "escape", m.escapeHint())), th.Muted(words.Say("cachewizard.hint.choose.click"))}
+		foot := []string{"", th.Muted(words.Say("cachewizard.hint.choose", "escape", m.escapeHint()))}
 		hint := m.scr.Options[m.cursor].Hint
 		if hint != "" {
 			foot = append([]string{""}, append(pane.Wrap(th.Muted(hint), inner, 2), foot[1:]...)...)

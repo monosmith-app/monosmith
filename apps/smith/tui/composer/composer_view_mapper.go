@@ -57,18 +57,25 @@ func (m Model) Lines(th theme.Theme) []string {
 func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 	lines := []string{m.search.View(), m.summaryLine(th), ""}
 	status := m.statusLines(th, inner)
-	keys := th.Muted(words.Say("composer.keys.browse", "target", words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])))
-	room := max(height-len(lines)-len(status)-1, 3)
+	keys := m.keyLines(th, inner)
+	room := max(height-len(lines)-len(status)-len(keys), 3)
 	list, _ := m.listLines(th, inner)
 	for i := range list {
 		list[i] = pane.Fit(list[i], inner-1) // the scrollbar takes the last cell
 	}
 	shown, _ := pane.Window(th, list, inner, room, m.cursorLine, m.scroll)
 	lines = append(lines, shown...)
-	for len(lines) < height-len(status)-1 {
+	for len(lines) < height-len(status)-len(keys) {
 		lines = append(lines, "")
 	}
-	return append(append(lines, status...), keys)
+	return append(append(lines, status...), keys...)
+}
+
+// keyLines are the keys of the browse screen. They wrap, as the status does, so
+// no key is cut off on a narrow screen.
+func (m Model) keyLines(th theme.Theme, inner int) []string {
+	target := words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])
+	return pane.Wrap(th.Muted(words.Say("composer.keys.browse", "target", target)), inner, 2)
 }
 
 // summaryLine says what is ticked, by layer.
