@@ -135,7 +135,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	if _, ok := plan.AddDevDependencies[JestPresetPackage]; ok {
 		plan.AddDevDependencies[JestPresetPackage] = legacyjestsupport.PackageRangeFor(in.SmithVersion)
 	}
-	planBuildOutputs(plan, w)
+	planBuildOutputs(plan, w, in.Files, in.Read)
 	planPythonTools(plan, in)
 	planNodeStack(plan)
 	planGroups(plan, w)

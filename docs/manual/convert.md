@@ -96,8 +96,28 @@ Interactions:
   workspace; the plan of `--level full --dry-run` shows what the workspace's own tooling suggests.
 - `--build smith` (the default) also moves every project that compiles with `tsc` to the
   workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
-  passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own
-  group (nothing is deleted, files are edited) and is skipped with `--build keep`.
+  passes `--outDir`, and `main`, `types` and the `start` script follow. When the build task in
+  `smith.toml` declares the old folder as an output, the output follows too
+  (`outputs = ["../../dist/apps/api"]`). It is asked as its own group (nothing is deleted,
+  files are edited) and is skipped with `--build keep`.
+- Convert checks the build outputs that Nx (`outputs`) or Turborepo (`outputs`) declare against
+  what the build script writes, with the same reading as `smith doctor`: output flags
+  (`--outDir`, `--outdir`, `--outfile`, `-o`), the `npm run` steps the script calls, and Vite's
+  default `dist` for a `vite build` whose `vite.config` names no `outDir`. When the two differ,
+  for example a build that writes `dist` while Nx declared `dist`, `dist-dev`, `dist-preprod` and
+  `dist-prod`, the plan shows a decision, and convert asks before it applies:
+
+  ```
+  app:build writes dist, but Nx declared dist, dist-dev, dist-preprod, dist-prod as its outputs. Cache:
+    1) dist, what the build writes (suggested)
+    2) dist, dist-dev, dist-preprod, dist-prod, as Nx declared them
+  Choose [1]:
+  ```
+
+  `--yes` takes the suggestion. When a step of the script takes its folder from a config file
+  (`tsc` without `--outDir`, `rollup -c`, a Vite config with an `outDir`), convert cannot see
+  everything the build writes: it keeps every declared output and adds only the missing ones.
+  `--json` lists each case under `outputChoices` (`project`, `task`, `declared`, `detected`).
 - `--level full` moves a tsc project only when doctor would: a package that another project imports by
   name, whose `main`, `types` or `exports` lead into the old folder, stays where it is, and the plan
   says why (a note of the review); so does a published package that needs a file outside the build
