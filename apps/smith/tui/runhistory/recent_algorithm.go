@@ -25,7 +25,8 @@ type Row struct {
 // come from the theme.
 func Line(r Row, w int, muted, selected func(string) string) string {
 	cmdW := max(w-3-1-10-1-8-1-10, 12)
-	line := " " + r.Pointer + " " + pane.Fit(r.Command, cmdW) + " " + pane.Fit(r.Result, 10) + " " +
+	// A command too long for its column ends with an ellipsis, as every cut line does.
+	line := " " + r.Pointer + " " + pane.Fit(pane.CutEllipsis(r.Command, cmdW), cmdW) + " " + pane.Fit(r.Result, 10) + " " +
 		fmt.Sprintf("%8s", r.Took) + " " + muted(fmt.Sprintf("%10s", r.Ago))
 	if r.Selected {
 		return selected(pane.Fit(pane.Strip(line), w))

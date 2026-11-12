@@ -32,3 +32,12 @@ func TestLineFitsItsWidthAndStylesTheChosenRow(t *testing.T) {
 		t.Fatalf("chosen row not styled: %q", got)
 	}
 }
+
+func TestACommandTooLongForItsColumnEndsWithAnEllipsis(t *testing.T) {
+	id := func(s string) string { return s }
+	r := Row{Pointer: " ", Command: "smith run test lint typecheck -p web", Result: "passed", Took: "5.2s", Ago: "now"}
+	line := Line(r, 40, id, id)
+	if !strings.Contains(line, "…") || strings.Contains(line, "typecheck") {
+		t.Fatalf("the cut command must end with an ellipsis: %q", line)
+	}
+}
