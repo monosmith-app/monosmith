@@ -165,3 +165,26 @@ func TestApplyTellsANoterWhatItWritesAndWhatTheCommandPrints(t *testing.T) {
 		t.Fatalf("command output must not flood the plain output: %q", out.String())
 	}
 }
+
+func TestApplyFilesRemovesAFolderTheDeletedFileLeavesEmpty(t *testing.T) {
+	root := t.TempDir()
+	for _, rel := range []string{"a/scripts/one.mjs", "b/scripts/one.mjs", "b/scripts/keep.mjs"} {
+		p := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fix := protocol.Fix{Files: []protocol.FileEdit{{Path: "a/scripts/one.mjs", Delete: true}, {Path: "b/scripts/one.mjs", Delete: true}}}
+	if err := ApplyFiles(root, fix); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "a", "scripts")); err == nil {
+		t.Error("an empty folder is removed with its last file")
+	}
+	if _, err := os.Stat(filepath.Join(root, "b", "scripts", "keep.mjs")); err != nil {
+		t.Error("a folder that still holds a file stays")
+	}
+}

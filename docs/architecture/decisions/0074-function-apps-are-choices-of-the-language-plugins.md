@@ -114,6 +114,8 @@ three languages say the same thing.
   installed, so `start` was checked by import and by serving the function with the Functions
   Framework, not with `func` or `sam`. `package.mjs` installs production dependencies with `npm
   install` in a staging folder, which fails for a dependency that is a library of the workspace.
+  (Superseded for Node by ADR 0099: the Node apps hold no script now; `smith func package` does
+  this and vendors the workspace libraries.)
 
 ## Sources
 
