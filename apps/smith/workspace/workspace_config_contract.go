@@ -104,9 +104,14 @@ type StackConfig struct {
 // WorkspaceSection names the monorepo.
 type WorkspaceSection struct {
 	Name string `toml:"name"`
-	// Scope is the npm scope for packages, e.g. "@acme".
+	// Namespace is the word every language puts before a new project's name:
+	// acme gives @acme/core, acme-core, acme_core and Acme.Core. It defaults to
+	// the workspace name. scope and module_prefix derive from it unless set.
+	Namespace string `toml:"namespace"`
+	// Scope is the npm scope for packages, e.g. "@acme". Unset: @<namespace>.
 	Scope string `toml:"scope"`
 	// ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.
+	// Unset: the origin remote, else example.com/<namespace>.
 	ModulePrefix string `toml:"module_prefix"`
 	// Exclude are workspace-relative globs ("examples/**") of directories
 	// whose manifests are not projects: discovery leaves them out in every

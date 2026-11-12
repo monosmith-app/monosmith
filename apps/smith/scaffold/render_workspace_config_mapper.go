@@ -1,18 +1,20 @@
 package scaffold
 
 import (
+	"cmp"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 )
 
 // renderWorkspaceConfig is the smith.toml smith new writes: the template with
 // the answers in place of the commented defaults. A setting left at its
 // default stays the commented line, so the file shows it without repeating it.
 func renderWorkspaceConfig(opts NewOptions, quotedProviders string) (string, error) {
-	text := fmt.Sprintf(configTemplate, opts.Name, opts.Scope, opts.ModulePrefix, quotedProviders)
+	text := fmt.Sprintf(configTemplate, opts.Name, namespaceLines(opts), opts.ModulePrefix, quotedProviders)
 
 	if len(opts.DefaultStacks) > 0 {
 		var lines strings.Builder
@@ -81,4 +83,21 @@ func sortedKeys(m map[string]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// namespaceLines are the namespace and scope lines of the new smith.toml. A
+// setting the person gave is written; one left at its default stays a
+// commented line, so the file shows what names new projects without
+// repeating it.
+func namespaceLines(opts NewOptions) string {
+	namespace := fmt.Sprintf("# namespace = %q", opts.Name)
+	if opts.Namespace != "" {
+		namespace = fmt.Sprintf("namespace = %q", opts.Namespace)
+	}
+	scope := fmt.Sprintf("# scope = %q", "@"+projectnaming.Kebab(cmp.Or(opts.Namespace, opts.Name)))
+	if opts.Scope != "" {
+		scope = fmt.Sprintf("scope = %q", opts.Scope)
+	}
+	return "# The word every language puts before a new project's name (acme-core, @acme/core,\n# Acme.Core). Default: the workspace name. The scope and module_prefix derive from it.\n" +
+		namespace + "\n# npm scope for Node packages. Default: @ and the namespace.\n" + scope + "\n"
 }

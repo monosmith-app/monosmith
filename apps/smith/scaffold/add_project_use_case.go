@@ -158,9 +158,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if modulePrefix == "" {
 		modulePrefix = remoteModulePrefix(gitclient.New(s.Root))
 	}
-	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
-		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
-	}}
+	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: s.Config.Workspace.Info(modulePrefix)}
 	params.Choices = st.Choices
 	params.PackageName = opts.PackageName
 	params.Settings = settings[generator.Info.Plugin.Name]

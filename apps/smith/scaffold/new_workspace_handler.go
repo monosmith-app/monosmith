@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"bufio"
+	"cmp"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"io"
@@ -127,7 +128,7 @@ nothing is asked.`,
 				describeDefaults(cmd, answers, opts, out)
 			}
 			opts.ModulePrefix = ChooseModulePrefix(PrefixRequest{
-				Given: opts.ModulePrefix, Name: opts.Name, Dir: dirOf(opts), Language: opts.Language,
+				Given: opts.ModulePrefix, Name: cmp.Or(opts.Namespace, opts.Name), Dir: dirOf(opts), Language: opts.Language,
 				Interactive: asked, In: in, Out: out,
 			})
 			decision, err := ChooseFirstCommit(CommitRequest{
@@ -173,8 +174,9 @@ nothing is asked.`,
 	flags.BoolVar(&f.asJSON, "json", false, "with --questions: print them as JSON")
 	flags.BoolVar(&f.here, "here", false, "create the workspace in the current folder, which must be empty; the name defaults to the folder's")
 	flags.StringVar(&opts.Dir, "dir", "", "directory to create the workspace in (default ./<name>)")
-	flags.StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
-	flags.StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<name>)")
+	flags.StringVar(&opts.Namespace, "namespace", "", "the word every language puts before a new project's name, as in acme-core and @acme/core (default the workspace name)")
+	flags.StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @ and the namespace)")
+	flags.StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<namespace>)")
 	flags.StringSliceVar(&f.ci, "ci", nil, "pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github)")
 	commandflags.AddLangFlag(cmd, &f.language, "", "the main language: node, python, go, jvm, dotnet, rust, or later (default later)")
 	flags.StringSliceVar(&f.defaultStacks, "default-stack", nil, "the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts")

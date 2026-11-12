@@ -148,9 +148,14 @@ before anything is written. "I know the language" keeps the order kind, then lan
 
 The language plugin gives the project a package name: the name it is published or imported under.
 By default it builds the name from a prefix and the project name (`acme-core`, `@acme/core`). The
-prefix is `[workspace] scope` without its `@`. When there is no scope, it is the workspace name.
-Every language uses the same prefix, so a workspace with scope `@pargic` gives `pargic-core` for a
-Rust crate and `@pargic/core` for an npm package.
+prefix is `[workspace] namespace`. When there is none, it is the workspace name.
+Every language uses the same prefix, so a workspace with namespace `pargic` gives `pargic-core` for a
+Rust crate, `pargic_core` for a Dart package, `Pargic.Core` for a .NET project and `@pargic/core` for
+an npm package. A project name that already starts with the namespace is not prefixed twice
+(`pargic-core` stays `pargic-core`). The npm scope is `[workspace] scope` when it is set, and the
+module path of a Go module is `[workspace] module_prefix` when it is set. Swift, Objective-C, VBA and
+Lua name a module or a class in code, so they use the project name alone.
+`smith upgrade` adds `namespace` to a workspace whose scope differs from its name.
 `--package-name <name>` sets another name. smith checks the name against the rule of the language
 before it shows the plan, and the plan shows the name. The folder and the project name do not change.
 

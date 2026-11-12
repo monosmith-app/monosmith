@@ -62,7 +62,7 @@ func PrepareMigration(s *session.Session, p *projectgraph.Project, swap Swap) (P
 	}
 	params := protocol.GenerateParams{
 		Kind: p.Kind, Name: p.Name, Directory: p.Root, Stack: p.Stack, Choices: swap.Choices, Facts: facts, Shape: p.Shape,
-		Workspace: protocol.WorkspaceInfo{Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: s.Config.Workspace.ModulePrefix},
+		Workspace: s.Config.Workspace.Info(s.Config.Workspace.ModulePrefix),
 	}
 	oldSetup, newSetup := oldPlugin.Setup(s.Root, params), newPlugin.Setup(s.Root, params)
 	shared := false
