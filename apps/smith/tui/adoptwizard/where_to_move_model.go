@@ -72,7 +72,7 @@ func (m Model) askMove() Model {
 	m.moveTo = ""
 	// A new answer to where it goes asks the split again.
 	m.splitAsked, m.splitQuestions, m.split = false, nil, adoptflow.Split{}
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).WithText(text).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).WithText(text).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 

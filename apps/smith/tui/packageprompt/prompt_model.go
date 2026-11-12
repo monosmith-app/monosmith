@@ -23,6 +23,8 @@ import (
 // another project; Tab and Shift+Tab move between the project, the packages, the development box and the buttons; Space or a click flips the
 // box; Enter on the packages or on Install goes ahead; Esc cancels.
 type Prompt struct {
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 	project string
 	// projects are the projects to choose from (project is one of them).
 	projects []string
@@ -253,12 +255,23 @@ func rowFocus(l string) int {
 	return -1
 }
 
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (p Prompt) Within(top, bottom int) Prompt {
+	p.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return p
+}
+
 // Place centres the dialog on a screen of sw by sh cells.
 func (p Prompt) Place(sw, sh int) Prompt {
 	w := min(max(sw-8, minWidth), min(max(sw-2, 10), 76))
 	p.input.Width = max(w-8, 8)
-	h := min(len(p.body(w-4))+4, max(sh, 3))
-	p.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	h := min(len(p.body(w-4))+4, max(p.margins.Room(sh), 3))
+	p.rect = p.margins.Centre(sw, sh, w, h)
 	return p
 }
 

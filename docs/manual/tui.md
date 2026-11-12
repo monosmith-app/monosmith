@@ -304,6 +304,10 @@ of each update in [`smith up --json`](up.md).
 ### The footer follows the mode
 
 - While a text box is open, the footer shows only `Enter confirm` and `Esc back`.
+- While a dialog is open (the palette, the help, a confirmation, a wizard, Compose a stack, the
+  result, tools and cache dialogs), the footer is empty: the dialog takes every key and click, and
+  shows its own keys on its buttons and in its key line. Every dialog sits between the tab strip
+  and the footer, so the tabs and the status bar stay in view.
 - When the run shown has a failed task, `r run again` and `Y copy log` lead the footer.
 - The `Esc` label says what Esc does: in the run panel, `all output` while one task's log is
   shown, then `back`; it leaves the footer while a run shows all output.

@@ -62,7 +62,7 @@ func (s *Shell) toolsRead(msg capturedMsg) tea.Cmd {
 		s.Argv, s.quit = s.toolsArgv, true
 		return nil
 	}
-	m := toolsdialog.New(plans).Place(s.w, s.h)
+	m := toolsdialog.New(plans).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.tools = &m
 	return nil
 }

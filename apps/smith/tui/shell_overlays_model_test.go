@@ -75,6 +75,32 @@ func TestOverlaysStayInsideTheFrameAtEverySize(t *testing.T) {
 	}
 }
 
+// TestEveryDialogLeavesTheTabsAloneAndTheFooterIsEmpty checks that each dialog
+// sits between the tab strip and the footer, as every dialog does, and that the
+// footer shows no hint of the view behind it, whose keys the dialog takes.
+func TestEveryDialogLeavesTheTabsAloneAndTheFooterIsEmpty(t *testing.T) {
+	for _, sz := range [][2]int{{80, 24}, {140, 42}} {
+		w, h := sz[0], sz[1]
+		for name, c := range overlayCases {
+			if strings.Contains(name, "toast") {
+				continue
+			}
+			l := newLab(t, true, w, h)
+			l.openTab(c.tab)
+			base := l.lines()
+			c.open(l)
+			lines := l.lines()
+			lay := l.sh().lay()
+			if y := lay.Main.Y - 1; lines[y] != base[y] {
+				t.Errorf("%s at %dx%d: the tab strip changed:\n%s\nwas\n%s", name, w, h, lines[y], base[y])
+			}
+			if foot := strings.TrimSpace(lines[lay.Footer.Y]); foot != "" {
+				t.Errorf("%s at %dx%d: the footer shows hints behind a dialog: %q", name, w, h, foot)
+			}
+		}
+	}
+}
+
 func TestPaletteFitsInsideTheFrameAt80x24(t *testing.T) {
 	l := newLab(t, true, 80, 24)
 	l.keys("ctrl+p")

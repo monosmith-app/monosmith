@@ -76,6 +76,8 @@ type Model struct {
 
 	w, h int
 	rect layout.Rect
+	// margins are the rows above and below the screen that stay free.
+	margins layout.Margins
 }
 
 // New builds the screen on a catalogue (the output of smith compose --json).
@@ -100,12 +102,24 @@ func (m Model) WithSearch(words string) Model {
 	return m.refresh()
 }
 
-// Place centres the screen on a terminal of sw by sh cells.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
+// Place centres the screen on a terminal of sw by sh cells, between the margins
+// Within set.
 func (m Model) Place(sw, sh int) Model {
 	m.w, m.h = sw, sh
 	w := min(max(sw-6, 40), 104)
-	h := min(max(sh-2, 12), 34)
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	h := min(max(m.margins.Room(sh), 12), 34)
+	m.rect = m.margins.Centre(sw, sh, w, h)
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)
 	return m

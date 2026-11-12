@@ -13,6 +13,8 @@ import (
 // Model is the dialog: a title, what happened, and a list of choices. It runs
 // nothing: a key that decides returns an Outcome for the host to carry out.
 type Model struct {
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 	title   string
 	facts   []Fact
 	choices []choice
@@ -207,11 +209,22 @@ func NewUndoOff() Model {
 	return m
 }
 
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
 // Place sizes the dialog for a screen of sw by sh cells.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 92)
-	h := min(len(m.facts)*2+len(m.choices)*2+6, max(sh-2, 8))
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: max(h, 8)}
+	h := max(min(len(m.facts)*2+len(m.choices)*2+6, max(m.margins.Room(sh), 8)), 8)
+	m.rect = m.margins.Centre(sw, sh, w, h)
 	return m
 }
 

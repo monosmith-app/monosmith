@@ -39,9 +39,11 @@ func adminAnswers() []string {
 // at a time, and keeps a result for each. It starts nothing: a key that decides
 // an install returns an Outcome for the host to carry out.
 type Model struct {
-	plans  []toolinstall.ToolPlan
-	at     int
-	cursor int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
+	plans   []toolinstall.ToolPlan
+	at      int
+	cursor  int
 	// over is 1 + the index of the option under the pointer, 0 for none.
 	over    int
 	ph      phase
@@ -66,11 +68,22 @@ func New(plans []toolinstall.ToolPlan) Model {
 	return m
 }
 
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
 // Place sizes the dialog for a screen.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
-	h := min(max(sh-2, 12), 30)
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	h := min(max(m.margins.Room(sh), 12), 30)
+	m.rect = m.margins.Centre(sw, sh, w, h)
 	return m
 }
 
