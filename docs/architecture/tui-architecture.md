@@ -137,12 +137,20 @@ Every dialog (`dialog.Confirm`, `helpdialog`, `composer`, `fixwizard` and the `a
 `dialogMargins()` with `Within(top, bottom)` before `Place`, and centres itself with
 `layout.Margins.Centre` in the rows between the rule under the tab strip and the footer. `Centre`
 never gives a dialog more rows than that room (`Margins.Room`), so a dialog never covers the tab
-strip or the footer. A dialog draws itself in the height of its
+strip or the footer, and no dialog has a minimum height. A dialog draws itself in the height of its
 `Rect`: the part that scrolls goes through `pane.DialogBody` (the window from `top`, the `↑ more` and
-`↓ more` rows of `WindowMarked`, the shared scrollbar) and the foot (its key line, its buttons) is
-pinned under it. `pane.FollowLines` keeps every line of the choice under the cursor in view, and
-`pane.BodyLine` maps a click or a hover row back to a body line, `-1` on a marker, before
-`choicerow.At` finds the choice, so what is drawn and what is clicked never differ. The palette
+`↓ more` rows of `WindowMarked`, the shared scrollbar) and the foot (its key line, its buttons, the
+spinner of a confirmation that waits for its plan) is pinned under it. The text that scrolls is
+wrapped one cell narrower than the inside, so the scrollbar never takes a last letter.
+`pane.FollowLines` keeps every line of the choice under the cursor in view (`pane.KeepVisible` for a
+one-line row), and `pane.BodyLine` maps a click or a hover row back to a body line, `-1` on a marker,
+before `choicerow.At` finds the choice, so what is drawn and what is clicked never differ. Every
+dialog that scrolls takes the wheel, `PgUp`, `PgDn`, `Ctrl+U` and `Ctrl+D`, which the markers name.
+The composer's browse screen keeps its own list window (`pane.Window`) and drops its spacer line
+under 14 rows; its question, name and plan screens use `DialogBody`. `packageprompt` keeps the
+screen size from `Place` and sizes itself again after every key and click (`refit`), so an error or
+a longer command makes it taller, up to the room. The release picker's list draws the shared
+`pane.Scrollbar`. The palette
 takes the same margins and centre (`paletteBox`). The shell places them again
 on a resize. A toast never covers the border of an open dialog (`toastSpot`): it sits under the
 dialog or over it when three rows are free there, and inside the dialog's border, over its first

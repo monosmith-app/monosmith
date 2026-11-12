@@ -518,16 +518,16 @@ func (m Model) planKey(key string) (Model, Outcome) {
 		if m.plan != nil {
 			return m, Outcome{Copy: m.plan.Command, Note: words.Say("composer.note.copied")}
 		}
+	case "s":
+		if m.plan != nil && len(m.plan.RecipeArgv) > 1 {
+			return m, Outcome{Done: true, Run: m.plan.RecipeArgv[1:]}
+		}
 	default:
 		switch commands.NavNamed(key) {
 		case commands.NavUp:
 			return m.scrollText(-1), Outcome{}
 		case commands.NavDown:
 			return m.scrollText(1), Outcome{}
-		}
-	case "s":
-		if m.plan != nil && len(m.plan.RecipeArgv) > 1 {
-			return m, Outcome{Done: true, Run: m.plan.RecipeArgv[1:]}
 		}
 	}
 	return m, Outcome{}

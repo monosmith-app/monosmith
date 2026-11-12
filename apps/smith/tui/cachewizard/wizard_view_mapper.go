@@ -127,7 +127,9 @@ func (m Model) noteLines(th theme.Theme, inner, max int) []string {
 // body is the lines of the screen, where a click lands, the buttons that stay
 // at the bottom and the lines that must stay in view.
 func (m Model) body(th theme.Theme, tick int, now time.Time) screen {
-	inner, height := m.rect.W-4, m.rect.H-2
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// body scrolls, so no wrapped line loses its last letter under it.
+	inner, height := m.rect.W-5, m.rect.H-2
 	var lines []string
 	var hits []hit
 	foot, focus := -1, [2]int{-1, -1}

@@ -96,7 +96,8 @@ func (p Prompt) devLine() string {
 // textW is the width of the body's text in a dialog of inner cells: the
 // column of the cursor mark comes first.
 func textW(inner int) int {
-	return inner - pane.Width(choicerow.Cursor(theme.Default(), false))
+	// One cell less: the last cell is the scrollbar's when the body scrolls.
+	return inner - pane.Width(choicerow.Cursor(theme.Default(), false)) - 1
 }
 
 // Lines draws the dialog: Rect().H lines of Rect().W cells.

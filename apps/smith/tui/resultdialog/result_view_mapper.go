@@ -64,7 +64,9 @@ type span struct{ from, to int }
 // it takes: Lines draws the first and Click maps a row to a choice with the
 // second, so what is drawn and what is clickable never differ.
 func (m Model) body(th theme.Theme) (body []string, spans []span) {
-	inner := m.rect.W - 4
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// body scrolls, so no wrapped line loses its last letter under it.
+	inner := m.rect.W - 5
 	if w := m.workingLine(th); w != "" {
 		body = append(body, pane.Wrap(w, inner, 2)...)
 	}

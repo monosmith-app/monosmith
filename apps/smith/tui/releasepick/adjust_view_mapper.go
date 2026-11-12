@@ -87,7 +87,7 @@ func (m Model) Lines(th theme.Theme) []string {
 		it := m.plan.Items[i]
 		selected := i == m.cursor && m.focus < 0
 		r := choicerow.Row{Label: m.rowText(it, now, nameW), Selected: selected, Hovered: i == m.overRow-1 && !selected}
-		list = append(list, choicerow.Line(th, r, inner))
+		list = append(list, choicerow.Line(th, r, inner-1))
 	}
 	// A list longer than the dialog has the shared scrollbar in its last cell.
 	for _, l := range pane.Scrollbar(th, list, inner, m.top, len(m.plan.Items)) {

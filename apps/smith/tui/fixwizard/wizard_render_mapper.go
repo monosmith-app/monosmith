@@ -129,7 +129,9 @@ func (w Wizard) title() string {
 // rows is the whole body, before it is windowed, and for Asking the line each
 // option is on.
 func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) {
-	inner := max(w.width()-4, 4)
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// body scrolls, so no wrapped line loses its last letter under it.
+	inner := max(w.width()-5, 4)
 	switch w.phase {
 	case Asking:
 		return w.askingRows(th, inner)

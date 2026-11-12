@@ -281,7 +281,7 @@ func (m Model) nameBody(th theme.Theme, inner int) (lines, foot []string) {
 		words.Say("composer.name.kind") + th.Bold(kinds[m.kind]) + th.Muted("   "+kindMeaning(kinds[m.kind])),
 	}
 	if m.note != "" {
-		lines = append(lines, "", th.Warning(m.note))
+		lines = append(append(lines, ""), pane.Wrap(th.Warning(m.note), inner, 2)...)
 	}
 	return append(lines, ""), pane.Wrap(th.Muted(words.Say("composer.name.keys")), inner, 2)
 }

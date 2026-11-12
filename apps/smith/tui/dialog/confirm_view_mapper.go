@@ -13,6 +13,9 @@ import (
 
 // headLines are the sentence and the details: the part that scrolls.
 func (c Confirm) headLines(inner int) []string {
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// head scrolls, so no wrapped line loses its last letter under it.
+	inner = max(inner-1, 1)
 	body := append([]string(nil), pane.WrapWords(c.Why, inner)...)
 	if len(c.Details) > 0 {
 		body = append(body, "")
@@ -72,12 +75,16 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	rows := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
 	head := c.headLines(inner)
-	if c.Working() && len(head) > 0 && len(head) <= c.headRoom() {
-		head = append(append([]string(nil), head[:len(head)-1]...), th.Accent(th.Spin(c.tick))+" "+progress.Waiting(c.working+"…", c.elapsed))
+	var spin []string
+	if c.Working() && len(head) > 0 {
+		// The line of what is read turns into the spinner, which stays in view
+		// even when the head scrolls: something always moves while smith works.
+		head = head[:len(head)-1]
+		spin = []string{th.Accent(th.Spin(c.tick)) + " " + progress.Waiting(c.working+"…", c.elapsed)}
 	}
 	// The head scrolls under the shared scrollbar and "more" rows; the commit
 	// box, the command and the buttons stay under it.
-	for _, l := range pane.DialogBody(th, head, nil, inner, c.headRoom(), c.scroll) {
+	for _, l := range pane.DialogBody(th, head, spin, inner, c.headRoom(), c.scroll) {
 		rows = append(rows, row(l))
 	}
 	tail := c.tailLinesIn(th)

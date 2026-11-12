@@ -413,6 +413,8 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		s.confirm = &c
 		return nil
 	case s.relpick != nil:
+		m := s.relpick.Wheel(dir * wheelStep)
+		s.relpick = &m
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))

@@ -36,6 +36,19 @@ func TestOnASmallScreenTheDialogStaysBetweenTheTabsAndTheFooterAndScrolls(t *tes
 	}
 }
 
+func TestTheScrollbarNeverTakesTheLastLetterOfAWrappedLine(t *testing.T) {
+	for _, m := range []Model{NewCommitChoice(false), NewUndoOff(), NewAfterChange([]string{"deps", "up", "x"}, nil)} {
+		m = m.Within(3, 2).Place(100, 16)
+		body, _ := m.body(theme.Default())
+		for _, l := range body {
+			// The inside is W-2 cells: a blank, the text, the scrollbar, a blank.
+			if w := pane.Width(l); w > m.Rect().W-5 {
+				t.Fatalf("%q is %d cells, so the scrollbar would take its last letter", pane.Strip(l), w)
+			}
+		}
+	}
+}
+
 func TestTheWheelScrollsTheResultWithoutMovingTheCursor(t *testing.T) {
 	m := NewCommitChoice(false).Within(3, 2).Place(100, 16)
 	m = m.Wheel(50)
