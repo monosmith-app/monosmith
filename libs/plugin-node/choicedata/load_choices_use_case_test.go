@@ -104,6 +104,7 @@ func TestLoadRefusesBadData(t *testing.T) {
 		"unknown member":  {map[string]string{"vue.toml": "axis = \"framework\"\nname = \"vue\"\nlanguage = \"node\"\nfacts = 1\n"}, "unknown member"},
 		"name and file":   {map[string]string{"vue.toml": "axis = \"framework\"\nname = \"svelte\"\nlanguage = \"node\"\n"}, "must be named svelte.toml"},
 		"no version":      {map[string]string{"vue.toml": "axis = \"framework\"\nname = \"vue\"\nlanguage = \"node\"\ndependencies = [\"vue\"]\n"}, "vue, which has no version in catalog.toml"},
+		"shared package":  {map[string]string{"catalog.toml": "[versions]\ntypescript = \"~1.0.0\"\n"}, "shared toolchain package"},
 		"bad role":        {map[string]string{"vue.toml": "axis = \"framework\"\nname = \"vue\"\nlanguage = \"node\"\nroles = [\"deploy\"]\n"}, "scaffold or toolchain"},
 		"path leaves":     {map[string]string{"vue.toml": "axis = \"framework\"\nname = \"vue\"\nlanguage = \"node\"\n[files]\n\"../x\" = \"\"\n"}, "inside the project"},
 		"bad toml":        {map[string]string{"vue.toml": "axis = "}, "vue.toml"},

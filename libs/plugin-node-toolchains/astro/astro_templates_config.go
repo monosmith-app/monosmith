@@ -1,9 +1,11 @@
 package astro
 
+import "github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
+
 // Versions the starter pins; bump them deliberately.
 var devDependencies = map[string]string{
 	"@astrojs/check": "^0.9.10",
-	"typescript":     "~6.0.3",
+	"typescript":     toolchainversions.TypeScript,
 }
 
 // templates are the site: Starlight with a splash page, a guide and a

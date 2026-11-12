@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -35,8 +36,8 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 	if params.Shape[discovery.ShapeTestRunner] == discovery.ShapeSwcJest {
 		devDependencies, transform = swcJest()
 	}
-	devDependencies["@jest/globals"] = "^30.5.2"
-	devDependencies["jest"] = "^30.5.2"
+	devDependencies["@jest/globals"] = toolchainversions.Jest
+	devDependencies["jest"] = toolchainversions.Jest
 	mapper := map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"}
 	maps.Copy(mapper, aliases.JestModuleNameMapper())
 	options := map[string]any{
