@@ -81,7 +81,7 @@ func TestTheAddConfirmKeepsTheCommandAndTheButtonsAndTheCommitBoxInFull(t *testi
 				t.Fatalf("%v: the dialog lost %q:\n%s", size, want, text)
 			}
 		}
-		if size[1] == 24 && !strings.Contains(flat, "more lines") {
+		if size[1] == 24 && !strings.Contains(flat, "↓ more") {
 			t.Fatalf("%v: a plan that does not fit says how much is left: %s", size, text)
 		}
 	}

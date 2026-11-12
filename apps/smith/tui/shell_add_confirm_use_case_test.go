@@ -49,7 +49,7 @@ func TestTheAddConfirmShowsTheCommandInTheRealShell(t *testing.T) {
 				t.Fatalf("%v: the dialog (rows %d-%d) covers the tab bar or the status bar (the frame is rows %d-%d)", size, r.Y, r.Y+r.H, lay.Main.Y, lay.Footer.Y)
 			}
 			if strings.Count(plan, "\n") > 11 && size[1] == 24 {
-				l.has("more lines")
+				l.has("↓ more")
 			}
 		}
 	}

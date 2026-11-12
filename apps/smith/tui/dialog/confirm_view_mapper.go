@@ -13,6 +13,9 @@ import (
 
 // headLines are the sentence and the details: the part that scrolls.
 func (c Confirm) headLines(inner int) []string {
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// head scrolls, so no wrapped line loses its last letter under it.
+	inner = max(inner-1, 1)
 	body := append([]string(nil), pane.WrapWords(c.Why, inner)...)
 	if len(c.Details) > 0 {
 		body = append(body, "")
@@ -62,21 +65,6 @@ func (c Confirm) bodyLines(inner int) []string {
 // headRoom is how many rows the head has on screen.
 func (c Confirm) headRoom() int { return max(c.rect.H-4-len(c.tailLines()), 0) }
 
-// shownHead is the part of the head on screen, and how many lines are hidden
-// below it: when the head does not fit, the last row says so.
-func (c Confirm) shownHead(inner int) (shown []string, hidden int) {
-	head, room := c.headLines(inner), c.headRoom()
-	if len(head) <= room {
-		return head, 0
-	}
-	if room < 2 {
-		return nil, len(head)
-	}
-	from := min(max(c.scroll, 0), len(head)-(room-1))
-	end := from + room - 1
-	return head[from:end], len(head) - end
-}
-
 // Lines draws the dialog: Rect().H lines of Rect().W cells, in the same rounded border as a pane, in the accent colour.
 func (c Confirm) Lines(th theme.Theme) []string {
 	r := c.rect
@@ -86,18 +74,18 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	inner := r.W - 4
 	rows := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
-	shown, hidden := c.shownHead(inner)
-	if c.Working() && hidden == 0 && len(shown) > 0 {
-		shown = append(append([]string(nil), shown[:len(shown)-1]...), th.Accent(th.Spin(c.tick))+" "+progress.Waiting(c.working+"…", c.elapsed))
+	head := c.headLines(inner)
+	var spin []string
+	if c.Working() && len(head) > 0 {
+		// The line of what is read turns into the spinner, which stays in view
+		// even when the head scrolls: something always moves while smith works.
+		head = head[:len(head)-1]
+		spin = []string{th.Accent(th.Spin(c.tick)) + " " + progress.Waiting(c.working+"…", c.elapsed)}
 	}
-	for _, l := range shown {
+	// The head scrolls under the shared scrollbar and "more" rows; the commit
+	// box, the command and the buttons stay under it.
+	for _, l := range pane.DialogBody(th, head, spin, inner, c.headRoom(), c.scroll) {
 		rows = append(rows, row(l))
-	}
-	if hidden > 0 && c.headRoom() >= 2 {
-		rows = append(rows, row(th.Muted(words.Say("dialog.more", "count", hidden))))
-	}
-	for len(rows) < c.headRoom() {
-		rows = append(rows, row(""))
 	}
 	tail := c.tailLinesIn(th)
 	for i, l := range tail {

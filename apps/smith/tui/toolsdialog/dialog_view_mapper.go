@@ -29,7 +29,7 @@ func (m Model) Lines(th theme.Theme) []string {
 		return nil
 	}
 	inner := r.W - 4
-	body, _ := m.body(th, inner)
+	body, _ := m.body(th, m.textWidth())
 	rows := pane.DialogBody(th, body, []string{th.Muted(m.keys())}, inner, r.H-2, m.top)
 	for i, l := range rows {
 		rows[i] = " " + pane.Fit(l, inner)
@@ -67,12 +67,16 @@ func (m Model) keys() string {
 	return words.Say("toolsdialog.done.keys")
 }
 
+// textWidth is the width the body is wrapped to: one cell less than the
+// inside, which is the scrollbar's when the body scrolls.
+func (m Model) textWidth() int { return m.rect.W - 5 }
+
 // room is the rows the scrolling body gets: the inside less the keys row.
 func (m Model) room() int { return pane.BodyRoom(m.rect.H-2, 1) }
 
 // follow scrolls the body so the option under the cursor shows.
 func (m Model) follow() Model {
-	body, first := m.body(theme.Default(), m.rect.W-4)
+	body, first := m.body(theme.Default(), m.textWidth())
 	if first >= 0 {
 		m.top = pane.KeepVisible(m.top, first+m.cursor, len(body), m.room())
 	}
@@ -84,7 +88,7 @@ func (m Model) follow() Model {
 // Parameters: delta is the lines to move, negative for up.
 // Returns: the dialog with the body scrolled.
 func (m Model) Wheel(delta int) Model {
-	body, _ := m.body(theme.Default(), m.rect.W-4)
+	body, _ := m.body(theme.Default(), m.textWidth())
 	m.top = pane.ClampTop(m.top+delta, len(body), m.room())
 	return m
 }
@@ -225,7 +229,7 @@ func (m Model) optionAt(th theme.Theme, x, y int) int {
 	if !m.rect.Contains(x, y) || (m.ph != phasePick && m.ph != phaseAdmin) {
 		return -1
 	}
-	body, first := m.body(th, m.rect.W-4)
+	body, first := m.body(th, m.textWidth())
 	n := len(adminAnswers())
 	if m.ph == phasePick {
 		n = len(m.current().Options)

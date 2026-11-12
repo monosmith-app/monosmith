@@ -129,7 +129,9 @@ func (w Wizard) title() string {
 // rows is the whole body, before it is windowed, and for Asking the line each
 // option is on.
 func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) {
-	inner := max(w.width()-4, 4)
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// body scrolls, so no wrapped line loses its last letter under it.
+	inner := max(w.width()-5, 4)
 	switch w.phase {
 	case Asking:
 		return w.askingRows(th, inner)
@@ -277,14 +279,10 @@ func (w Wizard) optionAt(y int) (int, bool) {
 	if w.phase != Asking {
 		return 0, false
 	}
-	r := w.Rect()
 	rows, at := w.rows(theme.Default(), 0)
-	line := y - r.Y - 1
-	if line < 0 || line >= w.visible() {
+	line := pane.BodyLine(y-w.Rect().Y-1, w.top, len(rows), w.visible())
+	if line < 0 {
 		return 0, false
-	}
-	if len(rows) > w.visible() {
-		line += pane.ClampTop(w.top, len(rows), w.visible())
 	}
 	for i := 0; i+1 < len(at); i++ {
 		if line >= at[i] && line < at[i+1] {
@@ -299,14 +297,8 @@ func (w Wizard) optionAt(y int) (int, bool) {
 // target, such as a tick box.
 func (w Wizard) TextAt(y int) string {
 	rows := w.bodyRows()
-	line := y - w.Rect().Y - 1
-	if line < 0 || line >= w.visible() {
-		return ""
-	}
-	if len(rows) > w.visible() {
-		line += pane.ClampTop(w.top, len(rows), w.visible())
-	}
-	if line >= len(rows) {
+	line := pane.BodyLine(y-w.Rect().Y-1, w.top, len(rows), w.visible())
+	if line < 0 {
 		return ""
 	}
 	return pane.Strip(rows[line])

@@ -340,7 +340,11 @@ A box never grows past those rows. On a short terminal (80x24, or 100x16) a box 
 taller than the free rows keeps its title, its key line and its buttons, and the text above them
 scrolls: `↑ more` and `↓ more` mark the hidden lines and the shared scrollbar shows where you are.
 The arrows move the cursor and the text follows it; the wheel, `PgUp`, `PgDn`, `Ctrl+U` and
-`Ctrl+D` scroll it; a click on a choice that scrolled into view picks it.
+`Ctrl+D` scroll it; a click on a choice that scrolled into view picks it. This holds for every box:
+Compose a stack (its question, name and plan screens), Install packages (which also grows when an
+error or a longer command appears), the help, a confirmation (its spinner stays in view while smith
+reads the plan), the fix and repair dialogs, the result, tools and cache dialogs and the release
+picker.
 
 While a box is open (the palette, help, a confirmation, a picker, the fix, adopt and compose
 screens, the tools and result dialogs) it blocks the screen. The whole screen behind it, from the

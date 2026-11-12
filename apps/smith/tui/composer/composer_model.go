@@ -74,6 +74,10 @@ type Model struct {
 	planErr string
 	note    string
 
+	// top is the first line shown of a question, the name or the plan when
+	// the text is taller than the screen.
+	top int
+
 	w, h int
 	rect layout.Rect
 	// margins are the rows above and below the screen that stay free.
@@ -118,15 +122,18 @@ func (m Model) Within(top, bottom int) Model {
 func (m Model) Place(sw, sh int) Model {
 	m.w, m.h = sw, sh
 	w := min(max(sw-6, 40), 104)
-	h := min(max(m.margins.Room(sh), 12), 34)
-	m.rect = m.margins.Centre(sw, sh, w, h)
+	m.rect = m.margins.Centre(sw, sh, w, 34)
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)
-	return m
+	return m.follow(m.stage)
 }
 
-// Wheel scrolls the list by delta lines; the cursor stays where it is.
+// Wheel scrolls the list, or the text of a question, the name or the plan, by
+// delta lines; the cursor stays where it is.
 func (m Model) Wheel(delta int) Model {
+	if m.stage != stBrowse {
+		return m.scrollText(delta)
+	}
 	m.scroll.By(delta)
 	return m
 }
@@ -150,7 +157,7 @@ func (m Model) Ticked() []string {
 //
 // Parameters: plan is the plan; err is why there is none, or nil.
 func (m Model) WithPlan(plan compose.Plan, err error) Model {
-	m.stage = stPlan
+	m.stage, m.top = stPlan, 0
 	if err != nil {
 		m.plan, m.planErr = nil, err.Error()
 		return m
@@ -265,8 +272,25 @@ func suggestedIndex(q *compose.Question) int {
 	return 0
 }
 
-// Key handles a key.
+// Key handles a key. A screen that is newly open starts from its top; a
+// question follows its cursor.
 func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
+	was := m.stage
+	m, out := m.key(msg)
+	return m.follow(was), out
+}
+
+// key is Key before the text follows the cursor.
+func (m Model) key(msg tea.KeyMsg) (Model, Outcome) {
+	if m.stage != stBrowse {
+		page := pane.PageStep(m.rect.H - 4)
+		switch {
+		case msg.String() == "ctrl+u" || commands.NavNamed(msg.String()) == commands.NavPageUp:
+			return m.scrollText(-page), Outcome{}
+		case msg.String() == "ctrl+d" || commands.NavNamed(msg.String()) == commands.NavPageDown:
+			return m.scrollText(page), Outcome{}
+		}
+	}
 	switch m.stage {
 	case stQuestion:
 		return m.questionKey(msg.String())
@@ -497,6 +521,13 @@ func (m Model) planKey(key string) (Model, Outcome) {
 	case "s":
 		if m.plan != nil && len(m.plan.RecipeArgv) > 1 {
 			return m, Outcome{Done: true, Run: m.plan.RecipeArgv[1:]}
+		}
+	default:
+		switch commands.NavNamed(key) {
+		case commands.NavUp:
+			return m.scrollText(-1), Outcome{}
+		case commands.NavDown:
+			return m.scrollText(1), Outcome{}
 		}
 	}
 	return m, Outcome{}
