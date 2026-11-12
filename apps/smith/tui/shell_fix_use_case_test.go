@@ -52,7 +52,7 @@ func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T
 
 func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.has("[Fix (f)]", "install the dependencies", "asks: Which package manager?")
+	l.has("[Fix (f)]", "install the dependencies", "asks first: Which package manager?")
 	l.keys("f")
 	l.has("Fix · question 1 of 1", "Which package manager?", "1) npm  (suggested)", "2) pnpm")
 	l.keys("down", "enter")

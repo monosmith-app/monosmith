@@ -459,7 +459,11 @@ func (s Shell) doctorPanel() detail.Panel {
 		after = append(after, detail.Section{Heading: words.Say("tui.detail.build_details"), Items: notes, Fold: true})
 	}
 	if len(how.Items)+len(how.Tail) > 0 {
+		// A fix that asks keeps every answer in view: none is folded away.
 		how.Collapse = 8
+		if hasFix && len(planned.Choices) > 0 {
+			how.Collapse = 0
+		}
 		after = append(after, how)
 	}
 	return detail.Panel{Sections: secs, After: after, Actions: actions}
@@ -492,8 +496,20 @@ func fixItems(p doctorfix.Planned) []string {
 	for _, st := range p.Steps {
 		items = append(items, words.Say("tui.detail.runs", "list", strings.Join(st.Argv, " ")))
 	}
+	// A choice is told in full: the question, then every answer on a line of its
+	// own, numbered as the fix wizard asks them, the suggested one first.
 	for _, c := range p.Choices {
 		items = append(items, words.Say("tui.detail.asks", "question", c.Question))
+		for i, o := range c.Options {
+			key := "tui.detail.option"
+			switch {
+			case o.Disabled != "":
+				key = "tui.detail.option_disabled"
+			case i == 0:
+				key = "tui.detail.option_suggested"
+			}
+			items = append(items, words.Say(key, "n", i+1, "label", o.Label, "reason", o.Disabled))
+		}
 	}
 	return items
 }
