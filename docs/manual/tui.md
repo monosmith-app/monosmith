@@ -57,7 +57,9 @@ From top to bottom:
    There is no left, right or bottom edge. The rule has no title: the lit tab says where
    you are, and a fact shows once. A form on the Start tab names itself on its first line.
 4. **Footer**: key hints for the open view, then the ones every view ends with
-   (`views`, `palette`, `help`, `quit`, `mouse`). Each hint can be clicked.
+   (`views`, `palette`, `help`, `quit`, `mouse`). Each hint can be clicked. When the line is
+   too narrow, these global hints go first, so the view keeps its own keys (Home keeps
+   `next (Enter)`); then the view's last hints go.
 5. **Status bar**: the exact command line running or last run, its result, the git branch
    and the smith version.
 
@@ -872,7 +874,7 @@ action panel, `Enter` first moves to the run button).
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
 button; click an answer of a single-choice list to pick it; double-click a project or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
-a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
+a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme; beside a detail, the list's scrollbar is drawn on the divider, so one line shows there) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
 (the choices of Add a project, the languages, the plugin lists of a recipe) and in the Compose a
 stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
 selection and keep it in view; a scrollbar and a line "↑ 3 more · ↓ 12 more" say what is hidden.

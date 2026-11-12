@@ -165,10 +165,11 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 }
 
 // dialogMargins are the rows a confirmation keeps clear: the header and the tab
-// bar above the framed area, the status bar below it.
+// bar and the rule under it above the content, the footer and the status bar
+// below it. The palette starts on the same first row of the content.
 func (s Shell) dialogMargins() (top, bottom int) {
 	l := s.lay()
-	return l.Main.Y, max(s.h-l.Footer.Y, 0)
+	return s.mainInner().Y, max(s.h-l.Footer.Y, 0)
 }
 
 // resize re-lays the screen out; it runs on every WindowSizeMsg.

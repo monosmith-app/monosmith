@@ -67,10 +67,7 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 // chosen action does, then the one button that runs it, with the action's own
 // label and key. Only the button clicks (as RunID).
 func (p Panel) runPart(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string) []string {
-	markW := 1
-	if p.Cursor != "" {
-		markW = pane.Width(choicerow.Cursor(th, false))
-	}
+	markW := pane.Width(choicerow.Cursor(th, false))
 	lines = append(lines, "", " "+th.Faint(strings.Repeat("─", max(w-2, 1))))
 	if a.Hint != "" {
 		for _, part := range pane.Wrap(a.Hint, max(w-markW-1, 4), 0) {
@@ -139,13 +136,12 @@ func (p Panel) group(lines []string, hits map[int]string, th theme.Theme, title 
 // shared one (see package button) in the state the action is in: Disabled, Active
 // while it is pressed under the pointer or while it is the chosen one of a
 // split panel, Hover under the pointer or at the keyboard cursor, else Rest.
-// With a Cursor the rows lead with the cursor mark. A compact action is its
+// The rows lead with the column of the cursor mark, blank without a Cursor. A compact action is its
 // button alone: no description and no note under it.
 func (p Panel) action(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string, compact, chosen bool) []string {
-	mark := " "
-	if p.Cursor != "" {
-		mark = choicerow.Cursor(th, a.ID == p.Cursor)
-	}
+	// The column of the cursor mark is there with or without a Cursor, so the
+	// buttons do not move when the detail takes the keyboard.
+	mark := choicerow.Cursor(th, p.Cursor != "" && a.ID == p.Cursor)
 	markW := pane.Width(mark)
 	label := a.Label
 	var notes []string

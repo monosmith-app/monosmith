@@ -3,6 +3,7 @@ package tui
 import (
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
@@ -157,7 +158,13 @@ func (s Shell) body() []string {
 		y := in.Y + i
 		row := s.marginCell(spots, l.Main.X, y) + list[i]
 		if l.HasDetail() {
-			row += s.th.Border("│", false) + side[i] + s.marginCell(spots, din.X+din.W, y)
+			// A scrollbar in the list's last column moves onto the divider, so the
+			// screen shows one line there, not two side by side.
+			divider := s.th.Border("│", false)
+			if glyph, ok := s.scrollbarCell(list[i], in.W); ok {
+				row, divider = s.marginCell(spots, l.Main.X, y)+pane.Splice(list[i], in.W-1, 1, " "), glyph
+			}
+			row += divider + side[i] + s.marginCell(spots, din.X+din.W, y)
 		} else {
 			row += s.marginCell(spots, in.X+in.W, y)
 		}
@@ -169,6 +176,17 @@ func (s Shell) body() []string {
 		}
 	}
 	return rows
+}
+
+// scrollbarCell is the last cell of a list line w cells wide, with its style,
+// when that cell is a scrollbar glyph (the track or the thumb).
+func (s Shell) scrollbarCell(line string, w int) (string, bool) {
+	if w < 2 {
+		return "", false
+	}
+	cell := ansi.Cut(line, w-1, w)
+	glyph := pane.Strip(cell)
+	return cell, glyph == s.th.Icons.Track || glyph == s.th.Icons.Thumb
 }
 
 // marginCell is the cell of a margin at (x, y): blank, or part of the rule when a

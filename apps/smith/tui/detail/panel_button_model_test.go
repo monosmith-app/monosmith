@@ -59,6 +59,26 @@ func TestAPressedButtonIsActiveOnlyWhileThePointerIsOverIt(t *testing.T) {
 	}
 }
 
+func TestTheButtonsKeepTheirColumnWhenTheDetailTakesTheKeyboard(t *testing.T) {
+	th := theme.Default()
+	actions := []Action{{ID: "a", Label: "Alpha", Shortcut: "a"}, {ID: "b", Label: "Beta", Shortcut: "b"}}
+	column := func(p Panel) []int {
+		lines, _ := p.View(th, 40, "")
+		var at []int
+		for _, l := range lines {
+			plain := pane.Strip(l)
+			if i := strings.Index(plain, "Beta (b)"); i >= 0 {
+				at = append(at, pane.Width(plain[:i]))
+			}
+		}
+		return at
+	}
+	without, with := column(Panel{Actions: actions}), column(Panel{Actions: actions, Cursor: "b"})
+	if len(without) == 0 || len(without) != len(with) || without[0] != with[0] {
+		t.Fatalf("the button moved from column %v to %v when the detail took the keyboard", without, with)
+	}
+}
+
 func TestEveryActionShowsItsKeyAndTheCursorRowLeadsWithTheMark(t *testing.T) {
 	th := theme.Default()
 	p := Panel{Actions: []Action{{ID: "a", Label: "Alpha", Shortcut: "a", Hint: "does alpha"}, {ID: "b", Label: "Beta", Shortcut: "b"}}, Cursor: "b"}

@@ -305,7 +305,7 @@
   "tui.detail.runs_after": "runs after {tasks}",
   "tui.detail.no_toml": "No smith.toml here.",
   "tui.forced_release.released": "Released although no commit releases it:",
-  "tui.keys.mouse_help.click": "Click: select   Double-click: open the detail (narrow terminals)",
+  "tui.keys.mouse_help.click": "Click: select   Double-click: open a project or a recent run, change a setting",
   "tui.keys.mouse_help.tab": "Click a tab to open the view, a hint in the footer to press its key",
   "tui.keys.mouse_help.action": "Click an action in the detail to do it",
   "tui.keys.mouse_help.drag": "Drag the edge between two panels to resize them",
