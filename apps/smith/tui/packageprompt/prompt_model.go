@@ -270,7 +270,7 @@ func (p Prompt) Within(top, bottom int) Prompt {
 func (p Prompt) Place(sw, sh int) Prompt {
 	w := min(max(sw-8, minWidth), min(max(sw-2, 10), 76))
 	p.input.Width = max(w-8, 8)
-	h := min(len(p.body(w-4))+4, max(p.margins.Room(sh), 3))
+	h := min(len(p.body(textW(w-4)))+4, max(p.margins.Room(sh), 3))
 	p.rect = p.margins.Centre(sw, sh, w, h)
 	return p
 }
@@ -314,11 +314,11 @@ func (p Prompt) controlAt(x, y int) int {
 	}
 	inside := x > r.X && x < r.X+r.W-1
 	for _, c := range choiceRows() {
-		if row := p.rowOf(c.prefix, inner); row >= 0 && y-r.Y-1 == row && inside {
+		if row := p.rowOf(c.prefix, textW(inner)); row >= 0 && y-r.Y-1 == row && inside {
 			return c.id
 		}
 	}
-	if !p.remove && !p.linking() && y-r.Y-1 == p.rowOf("[", inner) && inside {
+	if !p.remove && !p.linking() && y-r.Y-1 == p.rowOf("[", textW(inner)) && inside {
 		return focusDev
 	}
 	return -1

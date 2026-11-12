@@ -118,10 +118,10 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			}
 			kind := strings.Join(r.Kinds, ", ")
 			projects := strings.Join(r.Projects, ", ")
-			plain := "  " + box + cols(r.Name, r.Current, r.Latest, r.Level, kind, projects)
-			line := "  " + box + cols(r.Name, r.Current, r.Latest, level, kind, projects)
+			line := choicerow.Cursor(th, false) + box + cols(r.Name, r.Current, r.Latest, level, kind, projects)
 			if i == v.Cursor {
-				line = th.Selected(pane.Fit(plain, w))
+				// The selected look of every pick list: the cursor mark and an accent label.
+				line = th.Accent(choicerow.Cursor(th, true) + box + cols(r.Name, r.Current, r.Latest, r.Level, kind, projects))
 			}
 			rowOf[len(lines)] = i
 			lines = append(lines, line)

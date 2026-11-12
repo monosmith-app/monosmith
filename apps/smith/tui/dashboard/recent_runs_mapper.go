@@ -3,6 +3,8 @@ package dashboard
 import (
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -41,7 +43,11 @@ func (c *canvas) recent(runs []Run) {
 			x += runGap
 		}
 		if len(c.targets) == c.sel {
-			cell = th.Selected(pane.Strip(cell))
+			// The selected look of every pick list: the cursor mark, in the gap
+			// before the run, and an accent label.
+			mark := choicerow.Cursor(th, true)
+			line = ansi.Truncate(line, x-pane.Width(mark), "") + th.Accent(mark)
+			cell = th.Accent(pane.Strip(cell))
 		}
 		c.targets = append(c.targets, Target{Row: row, From: x, To: x + cw, Run: r.Index})
 		line += cell

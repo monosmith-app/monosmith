@@ -21,7 +21,7 @@ func TestWindowKeepsTheChosenRowInView(t *testing.T) {
 
 func TestLineFitsItsWidthAndStylesTheChosenRow(t *testing.T) {
 	id := func(s string) string { return s }
-	r := Row{Pointer: ">", Command: "smith run test", Result: "passed", Took: "1.2s", Ago: "just now"}
+	r := Row{Pointer: "> ", Command: "smith run test", Result: "passed", Took: "1.2s", Ago: "just now"}
 	line := Line(r, 70, id, id)
 	if pane.Width(line) != 70 || !strings.Contains(line, "smith run test") || !strings.Contains(line, "just now") {
 		t.Fatalf("line %q", line)
@@ -35,9 +35,20 @@ func TestLineFitsItsWidthAndStylesTheChosenRow(t *testing.T) {
 
 func TestACommandTooLongForItsColumnEndsWithAnEllipsis(t *testing.T) {
 	id := func(s string) string { return s }
-	r := Row{Pointer: " ", Command: "smith run test lint typecheck -p web", Result: "passed", Took: "5.2s", Ago: "now"}
+	r := Row{Pointer: "  ", Command: "smith run test lint typecheck -p web", Result: "passed", Took: "5.2s", Ago: "now"}
 	line := Line(r, 40, id, id)
 	if !strings.Contains(line, "…") || strings.Contains(line, "typecheck") {
 		t.Fatalf("the cut command must end with an ellipsis: %q", line)
+	}
+}
+
+func TestTheChosenRowKeepsItsColumnsWithTheCursorMark(t *testing.T) {
+	id := func(s string) string { return s }
+	r := Row{Pointer: "  ", Command: "smith run test", Result: "passed", Took: "1.2s", Ago: "now"}
+	rest := Line(r, 70, id, id)
+	r.Pointer, r.Selected = "› ", true
+	chosen := Line(r, 70, id, id)
+	if !strings.HasPrefix(chosen, " › smith run test") || pane.Width(chosen[:strings.Index(chosen, "passed")]) != strings.Index(rest, "passed") {
+		t.Fatalf("rows %q and %q", rest, chosen)
 	}
 }

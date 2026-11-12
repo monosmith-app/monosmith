@@ -23,7 +23,10 @@ func (p Prompt) body(inner int) []string {
 		lines = append(lines, words.Say("packageprompt.packages.label"), " "+p.input.View(), "")
 		if !p.remove {
 			lines = append(lines, p.devLine(), "")
-			lines = append(lines, words.Say("packageprompt.registry.names"), words.Say("packageprompt.registry.wrong"), "")
+			// The notes wrap rather than run past the border.
+			lines = append(lines, pane.WrapWords(words.Say("packageprompt.registry.names"), inner)...)
+			lines = append(lines, pane.WrapWords(words.Say("packageprompt.registry.wrong"), inner)...)
+			lines = append(lines, "")
 		}
 	}
 	if p.err != "" {
@@ -90,6 +93,12 @@ func (p Prompt) devLine() string {
 	return words.Say("packageprompt.dev.line", "box", choicerow.Box(p.dev, false))
 }
 
+// textW is the width of the body's text in a dialog of inner cells: the
+// column of the cursor mark comes first.
+func textW(inner int) int {
+	return inner - pane.Width(choicerow.Cursor(theme.Default(), false))
+}
+
 // Lines draws the dialog: Rect().H lines of Rect().W cells.
 func (p Prompt) Lines(th theme.Theme) []string {
 	r := p.rect
@@ -99,37 +108,34 @@ func (p Prompt) Lines(th theme.Theme) []string {
 	inner := r.W - 4
 	rows := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, inner) }
-	for _, l := range p.body(inner) {
+	// A row that takes the focus has the look of every pick list: the cursor
+	// mark in the column in front of the text, and an accent label.
+	focusable := func(l string, id int) string {
+		switch {
+		case p.focus == id:
+			return th.Accent(choicerow.Cursor(th, true) + l)
+		case p.hover == id:
+			return th.RowHover(pane.Fit(choicerow.Cursor(th, false)+l, inner))
+		}
+		return choicerow.Cursor(th, false) + l
+	}
+	for _, l := range p.body(textW(inner)) {
 		if len(rows) >= r.H-4 {
 			break
 		}
 		switch {
 		case strings.HasPrefix(l, words.Say("packageprompt.label.project")):
-			switch {
-			case p.focus == focusProject:
-				l = th.Selected(l)
-			case p.hover == focusProject:
-				l = th.RowHover(l)
-			}
+			l = focusable(l, focusProject)
 		case rowFocus(l) >= 0:
-			id := rowFocus(l)
-			switch {
-			case p.focus == id:
-				l = th.Selected(l)
-			case p.hover == id:
-				l = th.RowHover(l)
-			}
+			l = focusable(l, rowFocus(l))
 		case p.err != "" && l == p.err:
-			l = th.Failure(l)
+			l = choicerow.Cursor(th, false) + th.Failure(l)
 		case !p.remove && l == p.devLine():
-			switch {
-			case p.focus == focusDev:
-				l = th.Selected(l)
-			case p.hover == focusDev:
-				l = th.RowHover(l)
-			}
+			l = focusable(l, focusDev)
 		case strings.HasPrefix(l, "  $ "):
-			l = th.Bold(l)
+			l = choicerow.Cursor(th, false) + th.Bold(l)
+		default:
+			l = choicerow.Cursor(th, false) + l
 		}
 		rows = append(rows, row(l))
 	}
