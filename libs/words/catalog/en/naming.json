@@ -1,0 +1,3 @@
+{
+  "naming.upgrade.kept": "kept the project names the scope gave: [workspace] namespace = \"{namespace}\" is added (the workspace is named \"{name}\", so new projects would be {fromName}-core, not {fromNamespace}-core)"
+}

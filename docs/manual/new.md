@@ -54,7 +54,8 @@ Usage: `smith new <name> [flags]`
 | `--include-secrets` | boolean | off | let --first-commit all commit files whose names look like secrets (.env, keys) |
 | `--json` | boolean | off | with --questions: print them as JSON |
 | `-l, --lang <lang>` | string | later | the main language: node, python, go, jvm, dotnet, rust, or later (default later) (also --language) |
-| `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
+| `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<namespace>) |
+| `--namespace <namespace>` | string | the workspace name | the word every language puts before a new project's name, as in acme-core and @acme/core (default the workspace name) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
 | `--no-commit` | boolean | off | write the files and commit nothing |
 | `--no-devcontainer` | boolean | off | leave the dev container out; sets [ci] devcontainer = false |
@@ -64,7 +65,7 @@ Usage: `smith new <name> [flags]`
 | `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
 | `--release-remote <release-remote>` | string | `origin` | the git remote that receives release tags (default origin) |
 | `--save-recipe <save-recipe>` | string |  | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |
-| `--scope <scope>` | string | `@<name>` | npm scope for packages (default @<name>) |
+| `--scope <scope>` | string | `@<name>` | npm scope for packages (default @ and the namespace) |
 | `-y, --yes` | boolean | off | take the default for every question that has no flag, and print each |
 
 <!-- smith:end new -->
@@ -72,8 +73,9 @@ Usage: `smith new <name> [flags]`
 Notes on the flags:
 
 - `<name>` must be kebab-case: lowercase letters and digits, words joined by single
-  hyphens, starting with a letter. It becomes `[workspace] name` and the default
-  npm scope.
+  hyphens, starting with a letter. It becomes `[workspace] name` and, unless
+  `--namespace` is given, the namespace: the word every language puts before a
+  new project's name (`acme-core`, `@acme/core`).
 - `--ci` takes a comma-separated list or the flag repeated: `github`, `azure`,
   `gitlab`, `circleci` or `bitbucket`.
 - `--module-prefix` is read from the `origin` remote of the folder when it has one.

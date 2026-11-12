@@ -1,4 +1,4 @@
 {
   "keys": ["doctor.summary.warnings.one", "doctor.summary.warnings.other", "releaseview.preview"],
-  "prefixes": ["palette.keywords.", "dependencies.up.", "completion.", "cachekey.", "toolfolder.", "cachepipeline.", "cachesetup.", "shiplink.", "depsrepair.", "addproject."]
+  "prefixes": ["palette.keywords.", "dependencies.up.", "completion.", "cachekey.", "toolfolder.", "cachepipeline.", "cachesetup.", "shiplink.", "depsrepair.", "addproject.", "naming."]
 }

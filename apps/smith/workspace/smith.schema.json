@@ -14,8 +14,9 @@
       "required": ["name"],
       "properties": {
         "name": { "type": "string", "minLength": 1, "description": "The workspace's name." },
-        "scope": { "type": "string", "description": "npm scope for Node packages, e.g. @acme." },
-        "module_prefix": { "type": "string", "description": "Go module path prefix, e.g. github.com/acme/repo." },
+        "namespace": { "type": "string", "minLength": 1, "description": "The word every language puts before a new project's name: acme gives @acme/core, acme-core, acme_core and Acme.Core. Default: the workspace name. scope and module_prefix derive from it unless set." },
+        "scope": { "type": "string", "description": "npm scope for Node packages, e.g. @acme. Default: @ and the namespace." },
+        "module_prefix": { "type": "string", "description": "Go module path prefix, e.g. github.com/acme/repo. Default: the origin remote, else example.com/ and the namespace." },
         "exclude": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs (examples/**) of directories whose manifests are not projects, in any language." },
         "allowed_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative paths a task may write to outside the build directory (dist/), such as a folder a tool embeds (go:embed). smith doctor does not report them. Default: none." },
         "shared_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative folders (dist/drop) that several tasks fill on purpose, each with its own files. smith never clears them, and smith run does not warn when tasks that write there run together. Default: none." },

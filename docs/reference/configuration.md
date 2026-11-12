@@ -45,8 +45,9 @@ schema = 1
 
 [workspace]
 name = "acme"                         # required
-scope = "@acme"                       # npm scope for Node projects
-module_prefix = "github.com/acme/acme"  # Go module path prefix
+namespace = "acme"                    # the word before every new project's name: @acme/core, acme-core, acme_core, Acme.Core (default: the name)
+scope = "@acme"                       # npm scope for Node projects (default: @ and the namespace)
+module_prefix = "github.com/acme/acme"  # Go module path prefix (default: the origin remote, else example.com/ and the namespace)
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
 shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)

@@ -77,6 +77,9 @@ func Upgrade(dir, version string, check bool, log io.Writer) (Result, error) {
 	if err := declareBuildOutputs(s, check, &r); err != nil {
 		return r, err
 	}
+	if err := declareNamespace(s, check, &r); err != nil {
+		return r, err
+	}
 	if check {
 		c, err := cipipeline.Collect(s)
 		if err != nil {

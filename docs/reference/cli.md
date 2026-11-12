@@ -80,7 +80,8 @@ Usage: `smith new <name> [flags]`
 | `--include-secrets` | let --first-commit all commit files whose names look like secrets (.env, keys) | off |
 | `--json` | with --questions: print them as JSON | off |
 | `-l, --lang <lang>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) (also --language) | later |
-| `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
+| `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<namespace>) | from the `origin` remote, else `example.com/<name>` |
+| `--namespace <namespace>` | the word every language puts before a new project's name, as in acme-core and @acme/core (default the workspace name) | the workspace name |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
 | `--no-commit` | write the files and commit nothing | off |
 | `--no-devcontainer` | leave the dev container out; sets [ci] devcontainer = false | off |
@@ -90,7 +91,7 @@ Usage: `smith new <name> [flags]`
 | `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |
 | `--release-remote <release-remote>` | the git remote that receives release tags (default origin) | `origin` |
 | `--save-recipe <save-recipe>` | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |  |
-| `--scope <scope>` | npm scope for packages (default @<name>) | `@<name>` |
+| `--scope <scope>` | npm scope for packages (default @ and the namespace) | `@<name>` |
 | `-y, --yes` | take the default for every question that has no flag, and print each | off |
 
 <!-- smith:end new -->
