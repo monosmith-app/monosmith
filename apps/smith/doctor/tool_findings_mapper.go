@@ -50,6 +50,11 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 				if findings[i].Fix == nil {
 					findings[i].Fix = &fix
 				}
+				if st.OffPath != "" {
+					// The plugin only knows the program is not on PATH; smith found it.
+					findings[i].Problem = st.Title + " " + st.Problem()
+					findings[i].Remedy = "smith tools use " + st.Name
+				}
 				attached = true
 			}
 		}
@@ -58,6 +63,10 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 		}
 		detail := st.Why
 		problem := st.Title + " is not on PATH"
+		remedy := "smith tools install " + st.Name
+		if st.OffPath != "" {
+			problem, remedy = st.Title+" "+st.Problem(), "smith tools use "+st.Name
+		}
 		if st.State == toolinstall.Outdated {
 			detail = st.Title + " " + st.Version + " is installed, " + st.Wanted.String() + " is wanted"
 			problem = detail
@@ -66,7 +75,7 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 			Check: check, OK: false, Warning: true, Area: doctorchecks.AreaToolchain,
 			Problem: problem,
 			Detail:  detail + "; if you skip it, " + st.Consequence,
-			Remedy:  "smith tools install " + st.Name,
+			Remedy:  remedy,
 			Fix:     &fix,
 		}})
 	}
@@ -108,6 +117,11 @@ func ToolFix(plan toolinstall.ToolPlan) protocol.Fix {
 		var group []protocol.FixChoiceOption
 		cmd := strings.Join(o.Command, " ")
 		switch {
+		case o.ChangesPath():
+			// The folder answers: the label says what changes, not the command.
+			group = append(group, toolOption(o.Label+": "+o.Hint, o.Label+": "+plan.Title, o.Command))
+		case o.Kind == toolinstall.OptionMyself && plan.OffPath != "":
+			group = append(group, toolOption(o.Label, toolinstall.RenderFolder(plan), nil))
 		case o.Kind == toolinstall.OptionInstall && o.Admin:
 			group = append(group,
 				toolOption("I will run it myself: "+cmd+" (needs administrator rights)", "Run this yourself, then open a new terminal: "+cmd, nil),

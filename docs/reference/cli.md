@@ -938,6 +938,7 @@ Usage: `smith tools <command> [flags]`
 | Subcommand | Meaning |
 |---|---|
 | `smith tools install` | Install the programs the workspace needs, asking how for each |
+| `smith tools use` | Let smith use a tool from the folder winget put it in, without a change to PATH |
 
 | Flag | Meaning | Default |
 |---|---|---|

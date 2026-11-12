@@ -2,8 +2,10 @@ package toolinstall
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -12,7 +14,10 @@ import (
 // arguments. It tries the program, then each alternative, and takes the first
 // that runs and exits cleanly. A tool with one wanted version is looked for
 // first in the folder where smith installs its own copies for the workspace,
-// since the lint task and the doctor look there first too.
+// since the lint task and the doctor look there first too. On Windows, a tool
+// that no program on PATH answers for is looked for in the folders where
+// winget unpacks a portable package (FindWingetFolder): the probe then names
+// that folder, so smith can offer to use it.
 type ExecDetector struct{}
 
 // Detect implements Detector.
@@ -36,5 +41,20 @@ func (ExecDetector) Detect(ctx context.Context, tool Need) Probe {
 		}
 		return Probe{Program: program, Version: FindVersion(string(out))}
 	}
-	return Probe{}
+	if runtime.GOOS != "windows" {
+		return Probe{}
+	}
+	dir := FindWingetFolder(os.Getenv("LOCALAPPDATA"), tool)
+	if dir == "" {
+		return Probe{}
+	}
+	probe := Probe{Folder: dir}
+	for _, program := range append([]string{tool.Program}, tool.Alternatives...) {
+		out, err := exec.CommandContext(ctx, filepath.Join(dir, program+".exe"), args...).CombinedOutput()
+		if err == nil {
+			probe.Version = FindVersion(string(out))
+			break
+		}
+	}
+	return probe
 }

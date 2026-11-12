@@ -11,9 +11,11 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Session is an open workspace.
@@ -86,6 +88,10 @@ func Open(opts Options) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The folders of tools the person let smith use from where they are (a
+	// winget portable package) join smith's PATH before any plugin starts, so
+	// the plugins, the tool checks and the tasks all find the programs there.
+	_ = toolrun.UseToolFolders(toolrun.ToolFoldersFile(plugintrust.Home()))
 	plugins, err := pluginhost.Start(pluginhost.Options{WorkspaceRoot: root, Config: cfg, Version: opts.Version, Log: opts.Log})
 	if err != nil {
 		return nil, err

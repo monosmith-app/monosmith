@@ -11,8 +11,10 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // shownOutput is how many trailing lines of a failed step's output are shown.
@@ -120,6 +122,12 @@ func runSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 			sink = io.MultiWriter(&captured, &noteWriter{to: noter})
 		}
 		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(stepEnv(step)), Out: sink})
+		if err == nil && toolrun.WingetAlreadyInstalled(step.Argv, code) {
+			// winget found the package installed and nothing newer: the step
+			// reached its goal, so it is not a failure.
+			fmt.Fprintf(out, marks.Passed+" %s\n", words.Say("toolfolder.step.already", "step", stepName(step)))
+			continue
+		}
 		if err == nil && code != 0 {
 			err = fmt.Errorf("exited with code %d", code)
 		}
