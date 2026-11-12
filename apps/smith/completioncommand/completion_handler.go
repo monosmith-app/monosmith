@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/shellcompletion"
 	"github.com/monosmith-app/monosmith/apps/smith/shellenv"
 	"io"
@@ -111,7 +112,7 @@ already ships the file, install says so and writes nothing.`,
 		},
 	}
 	c.Flags().StringVar(&shellName, "shell", "", "bash, zsh, fish or powershell (default: the shell you are in)")
-	c.Flags().BoolVarP(&yes, "yes", "y", false, "write without asking (for scripts and CI)")
+	commandflags.AddYesFlag(c, &yes, "write without asking (for scripts and CI)")
 	c.Flags().BoolVar(&dry, "dry-run", false, "show what would be written and write nothing")
 	return c
 }
@@ -179,7 +180,7 @@ nothing else is left in it. Without --shell it looks at every shell.`,
 		},
 	}
 	c.Flags().StringVar(&shellName, "shell", "", "bash, zsh, fish or powershell (default: every shell that has it)")
-	c.Flags().BoolVarP(&yes, "yes", "y", false, "remove without asking")
+	commandflags.AddYesFlag(c, &yes, "remove without asking")
 	return c
 }
 

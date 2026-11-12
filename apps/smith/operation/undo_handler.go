@@ -2,6 +2,7 @@ package operation
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -59,7 +60,7 @@ whether to delete them; --clean deletes them without asking; otherwise it only s
 			return settleLeftovers(cmd, root, FindLeftovers(root, removed), clean, yes)
 		},
 	}
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask for confirmation")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be reverted and change nothing")
 	cmd.Flags().BoolVar(&clean, "clean", false, "also delete the generated folders the project left behind (node_modules, dist), which git ignores")
 	return cmd

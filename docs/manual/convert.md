@@ -52,8 +52,8 @@ Usage: `smith convert [flags]`
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) |
 | `--lint <lint>` | `smith` or `keep` | `smith` when the ESLint config imports a shared config smith replaces, else `keep` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) |
 | `--no-install` | boolean | off | do not run npm install afterwards (also --skip-install) |
+| `--outputs <outputs>` | string, repeatable |  | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given |
 | `--questions` | boolean | off | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) |
-| `--outputs` | `<project>:<task>=detected\|declared`, repeatable | none | the outputs to cache for a build task whose declared outputs differ from what its build writes: `detected` (what the build writes, the suggestion) or `declared` (as Nx or Turborepo declared them). A terminal asks the tasks not given |
 | `--skip-verify` | boolean | off | full level: install, but do not build, test, lint and run doctor afterwards |
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
 | `--test <test>` | `jest`, `vitest` or `keep` | the runner the workspace uses, else `keep` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep |

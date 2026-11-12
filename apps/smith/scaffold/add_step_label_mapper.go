@@ -3,6 +3,7 @@ package scaffold
 import (
 	"fmt"
 
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -15,15 +16,21 @@ var partWords = map[string]string{
 	"vitest":     "tests",
 	"mocha":      "tests",
 	"prettier":   "formatting",
+	"docker":     "a container image",
 }
 
-// partStep is the line `smith add` prints while a plugin of the stack adds its
-// part: what it adds in words, then the plugin that does it.
-func partStep(plugin string) string {
-	if words, ok := partWords[plugin]; ok {
-		return fmt.Sprintf("Adding %s (%s)", words, plugin)
+// partStep is the line `smith add` prints after a plugin of the stack or a
+// convention added its part: what it added in words, then the plugin. A plugin
+// that changed nothing (no file, no install) says it had nothing to add for the
+// kind, so a lib never reads as if docker added something to it.
+func partStep(plugin, kind string, added protocol.GenerateResult) string {
+	if len(added.Files) == 0 && len(added.Notes) == 0 && !added.InstallPending {
+		return words.Say("addproject.part.nothing", "plugin", plugin, "kind", kind)
 	}
-	return "Adding " + plugin
+	if what, ok := partWords[plugin]; ok {
+		return words.Say("addproject.part.added_named", "what", what, "plugin", plugin)
+	}
+	return words.Say("addproject.part.added", "plugin", plugin)
 }
 
 // createStep is the first line `smith add` prints: what is made and where, then

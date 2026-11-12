@@ -34,7 +34,7 @@ Usage: `smith bootstrap [flags]`
 | `--check` | boolean | off | change nothing; fail when the launcher is missing or out of date |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | show what would be written, with a diff of a launcher that exists, and change nothing |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `-y, --yes` | boolean | off | do not ask for confirmation; without a terminal the change is made only with --yes |
 
 <!-- smith:end bootstrap -->
 

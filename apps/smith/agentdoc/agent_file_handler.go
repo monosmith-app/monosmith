@@ -3,6 +3,7 @@ package agentdoc
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,7 +72,7 @@ CLAUDE.md gets a short region that imports AGENTS.md. --no-claude-md skips it.
 			return finish(cmd, s.Root, changes, check)
 		},
 	}
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are written only with --yes")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask; without a terminal the files are written only with --yes")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the files that would be written and change nothing")
 	cmd.Flags().BoolVar(&check, "check", false, "write nothing; fail when a file is missing or out of date")
 	cmd.Flags().BoolVar(&noClaude, "no-claude-md", false, "do not write CLAUDE.md")

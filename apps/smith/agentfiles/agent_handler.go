@@ -2,6 +2,7 @@ package agentfiles
 
 import (
 	"errors"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 func installFlags(cmd *cobra.Command, i *Install) {
 	cmd.Flags().BoolVar(&i.Claude, "claude", false, "for Claude Code: .mcp.json"+map[bool]string{true: " and .claude/agents/smith.md", false: ""}[i.Agent])
 	cmd.Flags().BoolVar(&i.VSCode, "vscode", false, "for VS Code: .vscode/mcp.json")
-	cmd.Flags().BoolVarP(&i.Yes, "yes", "y", false, "write without asking")
+	commandflags.AddYesFlag(cmd, &i.Yes, "write without asking")
 }
 
 func installCommand(agent bool, use, short, long, example string) *cobra.Command {

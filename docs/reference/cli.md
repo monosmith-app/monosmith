@@ -145,8 +145,8 @@ Usage: `smith convert [flags]`
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--no-install` | do not run npm install afterwards (also --skip-install) | off |
+| `--outputs <outputs>` | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given (repeatable) |  |
 | `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
-| `--outputs <project>:<task>=detected\|declared` | the outputs to cache for a build task whose declared outputs differ from what its build writes; repeatable. A terminal asks the tasks not given | none |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
 | `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
@@ -180,7 +180,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 | `--with <with>` | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default (repeatable) |  |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end add -->
 
@@ -218,7 +218,7 @@ Usage: `smith swap <project> <axis> <choice> [flags]`
 |---|---|---|
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | show the plan and change nothing | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end swap -->
 
@@ -257,7 +257,7 @@ Usage: `smith kind <project> <kind> [flags]`
 | `--dry-run` | list every file edit and the move; change nothing | off |
 | `--force` | go ahead although other projects import it or it was already released | off |
 | `--json` | print the plan and what was done as JSON | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end kind -->
 
@@ -330,7 +330,7 @@ Usage: `smith upgrade [flags]`
 | `--defaults` | move the workspace to the latest defaults vintage (smith doctor says which it uses) | off |
 | `--dry-run` | show the plan, with the change to smith.toml, and change nothing | off |
 | `--json` | print the result as JSON | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end upgrade -->
 
@@ -490,7 +490,7 @@ Usage: `smith derive [flags]`
 | `--explain <explain>` | say who owns this file and why it is in its state (repeatable) |  |
 | `--reclaim <reclaim>` | give this ejected or drifted file back to smith: shows the diff, asks, rewrites it and records smith as the owner (repeatable) |  |
 | `--replace <replace>` | overwrite this drifted or diverged file with the derived content (repeatable) |  |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end derive -->
 
@@ -1228,7 +1228,7 @@ Usage: `smith bootstrap [flags]`
 | `--check` | change nothing; fail when the launcher is missing or out of date | off |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | show what would be written, with a diff of a launcher that exists, and change nothing | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end bootstrap -->
 

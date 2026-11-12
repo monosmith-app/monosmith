@@ -74,7 +74,7 @@ template, lists them.`,
 	commandflags.AddOneProjectFlag(cmd, &opts.Project, "the app a deploy template builds")
 	cmd.Flags().StringVar(&ci, "ci", "", "github, azure or both (default: the workspace's providers)")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace a pipeline file that exists")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are written only with --yes")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask; without a terminal the files are written only with --yes")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the files that would be written and change nothing")
 	return cmd
 }

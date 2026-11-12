@@ -38,7 +38,7 @@ Usage: `smith derive [flags]`
 | `--explain <explain>` | string, repeatable |  | say who owns this file and why it is in its state |
 | `--reclaim <reclaim>` | string, repeatable |  | give this ejected or drifted file back to smith: shows the diff, asks, rewrites it and records smith as the owner |
 | `--replace <replace>` | string, repeatable |  | overwrite this drifted or diverged file with the derived content |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `-y, --yes` | boolean | off | do not ask for confirmation; without a terminal the change is made only with --yes |
 
 <!-- smith:end derive -->
 

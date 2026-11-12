@@ -101,6 +101,26 @@ var answersWithoutAsking = map[string]string{
 	"docker description": "sets a remote description from the release pipeline, idempotent, with --dry-run; it changes no workspace file",
 }
 
+// A command that refuses without a terminal names --yes as the fix, so --help
+// of every command that takes --yes must show it, with its -y shorthand.
+func TestEveryCommandThatTakesYesShowsItInHelp(t *testing.T) {
+	t.Setenv("SMITH_WORKSPACE_ROOT", "")
+	root := Root("0.0.0")
+	for _, path := range visiblePaths(root, nil) {
+		cmd, _, err := root.Find(path)
+		if err != nil || cmd == nil {
+			continue
+		}
+		f := cmd.Flags().Lookup("yes")
+		if f == nil {
+			continue
+		}
+		if f.Hidden || f.Shorthand != "y" || !strings.Contains(cmd.Flags().FlagUsages(), "-y, --yes") {
+			t.Errorf("smith %s takes --yes but its help does not show -y, --yes: register it with commandflags.AddYesFlag", strings.Join(path, " "))
+		}
+	}
+}
+
 // An action that changes the workspace must take --yes and be marked Asks, so
 // that it refuses without a terminal and the shell confirms for the person;
 // the exceptions are named above with their reason.

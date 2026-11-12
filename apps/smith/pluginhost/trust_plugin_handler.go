@@ -3,6 +3,7 @@ package pluginhost
 import (
 	"bufio"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
@@ -70,7 +71,7 @@ plugin starts only when smith.toml pins its digest and the file still has it.`,
 			return nil
 		},
 	}
-	trust.Flags().BoolVarP(&yes, "yes", "y", false, "trust without asking")
+	commandflags.AddYesFlag(trust, &yes, "trust without asking")
 	trust.Flags().BoolVar(&pin, "pin", false, "also write the plugin's sha256 to smith.toml, for CI")
 	untrust := &cobra.Command{
 		Use:     "untrust <name>",

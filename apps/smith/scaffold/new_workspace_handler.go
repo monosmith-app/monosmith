@@ -191,7 +191,7 @@ nothing is asked.`,
 	flags.BoolVar(&f.githubReleases, "github-releases", false, "create a GitHub Release for every release tag")
 	flags.StringVar(&opts.CacheDir, "cache-dir", "", "the task cache folder inside the workspace (default .smith/cache)")
 	flags.IntVar(&f.cacheMaxMB, "cache-max-mb", 0, "the largest the task cache may grow, in MB; 0 for no limit (default 2048)")
-	flags.BoolVarP(&f.yes, "yes", "y", false, "take the default for every question that has no flag, and print each")
+	commandflags.AddYesFlag(cmd, &f.yes, "take the default for every question that has no flag, and print each")
 	flags.BoolVar(&f.dryRun, "dry-run", false, "show the files smith would create and the first commit, and change nothing")
 	flags.StringVar(&opts.SaveRecipe, "save-recipe", "", "save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language)")
 	flags.StringVar(&opts.RecipeFile, "recipe-file", "", "a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked")
