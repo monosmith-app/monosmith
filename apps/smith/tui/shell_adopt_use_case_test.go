@@ -94,6 +94,10 @@ func (f *adoptFake) ShowFix(p doctorfix.Planned) (string, error) {
 	return "● " + p.Description + "\n", nil
 }
 
+func (f *adoptFake) ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error) {
+	return nil, f.ApplyFix(ctx, fix, out)
+}
+
 func (f *adoptFake) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer) error {
 	f.note("apply " + fix.Description)
 	f.mu.Lock()

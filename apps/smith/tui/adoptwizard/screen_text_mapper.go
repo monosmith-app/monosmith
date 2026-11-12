@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
@@ -174,8 +175,9 @@ func groupCounts(g removalplan.Group) string {
 }
 
 // doneText is the last screen, in three parts: what is done, what behaves
-// differently now, and what needs the person.
-func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, declined []string, kept []legacyinventory.Kept, notes []string, committed bool) string {
+// differently now, and what needs the person (the report's checks and what the
+// closing checks found: findings, said with their remedies).
+func doneText(f adoptflow.Found, r convert.Highlights, checked string, findings []doctorfix.Finding, applied, declined []string, kept []legacyinventory.Kept, notes []string, committed bool) string {
 	var b strings.Builder
 	if len(f.Projects) == 0 && r.Projects == "" {
 		say(&b, "adopt.done.empty", "name", strconv.Quote(f.Name))
@@ -189,11 +191,13 @@ func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, 
 	}
 	if checked != "" {
 		say(&b, "adopt.done.works", "checked", checked)
-		switch len(r.Checks) {
+		// A closing check that found something (the lint, doctor) needs the
+		// person as much as a check of the report does.
+		switch needs := len(r.Checks) + len(findings); needs {
 		case 0:
 			say(&b, "adopt.done.needs.none")
 		default:
-			b.WriteString(words.Count("adopt.done.needs", len(r.Checks)))
+			b.WriteString(words.Count("adopt.done.needs", needs))
 		}
 	}
 	if len(applied) > 0 {
@@ -211,6 +215,16 @@ func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, 
 		say(&b, "adopt.done.checks", "count", len(r.Checks))
 		for _, c := range r.Checks {
 			b.WriteString("  • " + c + "\n")
+		}
+	}
+	if len(findings) > 0 {
+		say(&b, "adopt.done.findings", "count", len(findings))
+		for _, f := range findings {
+			for _, line := range strings.SplitAfter(doctorfix.FindingText(f), "\n") {
+				if line != "" {
+					b.WriteString("  " + line)
+				}
+			}
 		}
 	}
 	for _, n := range notes {

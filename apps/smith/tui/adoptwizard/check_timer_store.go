@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 )
 
@@ -13,6 +14,13 @@ import (
 type checkedStep struct {
 	Name string
 	Took time.Duration
+}
+
+// finished is what the closing checks of a conversion leave: the checks that
+// passed, with their times, and the advisory ones that found something.
+type finished struct {
+	steps    []checkedStep
+	findings []doctorfix.Finding
 }
 
 // stepTimer sits between a job and the shell: it passes everything on and

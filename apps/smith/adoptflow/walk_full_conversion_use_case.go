@@ -149,6 +149,16 @@ func (s *Session) ApplyFix(ctx context.Context, fix protocol.Fix, out io.Writer)
 	return doctorfix.Apply(ctx, s.Root, fix, out)
 }
 
+// ApplyChecks is ApplyFix for the checks that close a conversion: an advisory
+// step that fails does not stop it and comes back as a finding.
+//
+// Parameters: ctx stops the steps; fix is the resolved fix; out gets the
+// progress. Returns the findings, in the order they ran, and a
+// *doctorfix.StepError for a step that stopped the fix.
+func (s *Session) ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error) {
+	return doctorfix.ApplyWithFindings(ctx, s.Root, fix, out)
+}
+
 // FinishFix is the last stage of a conversion: one install, the lockfile
 // check, then the proof that it works: the build, the tests and doctor, and
 // the lint too when withLint (the full level). When the lint is smith's,

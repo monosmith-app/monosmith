@@ -48,6 +48,7 @@
   "adopt.done.committed": "  Committed as one change: smith undo reverts it.\n",
   "adopt.done.uncommitted": "  Not committed: review with git status. git can take the changes back.\n",
   "adopt.done.checks": "\n! Needs you ({count})\n",
+  "adopt.done.findings": "\n▲ Found by the closing checks ({count}): the conversion finished, these need you\n",
   "adopt.done.changed": "\n● Behaves differently now ({count})\n",
   "adopt.done.changed.more": "  • and {count} more: the full list is in {file}\n",
   "adopt.done.kept": "\nLooks like the old tooling but stays (something still uses it):\n",
