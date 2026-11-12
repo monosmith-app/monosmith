@@ -1,6 +1,9 @@
 package toolrun
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
 
 func TestWingetAlreadyInstalled(t *testing.T) {
 	winget := []string{"winget", "install", "--id", "Google.DartSDK", "-e"}
@@ -15,7 +18,7 @@ func TestWingetAlreadyInstalled(t *testing.T) {
 		{"another version installed", winget, 0x8A15010D, true},
 		{"a newer version installed", winget, 0x8A15010E, true},
 		{"upgrade not newer", winget, 0x8A15004F, true},
-		{"winget.exe with a path", []string{`C:\x\winget.exe`, "install"}, 0x8A15002B, true},
+		{"winget.exe with a path", []string{filepath.Join("x", "winget.exe"), "install"}, 0x8A15002B, true},
 		{"a real winget failure", winget, 0x8A150107, false},
 		{"success is not this case", winget, 0, false},
 		{"another program with the same code", []string{"npm", "install"}, 0x8A15002B, false},
