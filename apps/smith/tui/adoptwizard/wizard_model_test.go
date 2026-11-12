@@ -309,9 +309,19 @@ func TestABlockedRepositoryExplainsAndClosesOnEnter(t *testing.T) {
 	f := &fakeFlow{found: adoptflow.Found{Kind: adoptflow.KindNotARepo, Name: "x", Source: "repository", Blockers: []string{"This folder is not a git repository"}}}
 	w := start(t, f)
 	w.want("× This folder is not a git repository", "Nothing was changed", "Close (Enter)")
+	// Close is the one button: a second one would offer the same thing.
+	if s := w.screen(); strings.Contains(s, "Cancel") || strings.Contains(s, "Back") {
+		t.Fatalf("the blocker dialog shows more than Close:\n%s", s)
+	}
 	w.press("enter")
 	if !w.last.Close || w.last.Job != nil {
 		t.Fatalf("outcome %+v", w.last)
+	}
+	// Esc closes it too, as in every dialog.
+	w = start(t, f)
+	w.press("esc")
+	if !w.last.Close {
+		t.Fatalf("Esc on the blocker dialog: outcome %+v", w.last)
 	}
 }
 

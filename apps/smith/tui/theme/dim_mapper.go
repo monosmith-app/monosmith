@@ -15,7 +15,7 @@ func (t Theme) Dim(row string) string {
 	if styled := t.faint.Render(plain); styled != plain {
 		return styled
 	}
-	if t.selected.Render("x") != "x" {
+	if t.buttonActive.Render("x") != "x" {
 		return "\x1b[2m" + plain + "\x1b[m"
 	}
 	return row

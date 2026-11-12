@@ -276,11 +276,34 @@ func (s Shell) overlays(rows []string) []string {
 	}
 	// The result dialog says the same in its own words: a toast over its bottom
 	// edge would cut the frame.
-	if lines := s.toast.Lines(s.th, s.w-4); lines != nil && s.result == nil {
-		// The content ends on the row above the footer: the toast sits on its
-		// last rows, one cell clear of the right edge.
-		y := max(l.Footer.Y-len(lines), l.Main.Y+1)
-		rows = pane.Overlay(rows, lines, max(s.w-2-pane.Width(lines[0]), 1), y)
+	if s.result == nil {
+		if lines, x, y, ok := s.toastSpot(); ok {
+			rows = pane.Overlay(rows, lines, x, y)
+		}
 	}
 	return rows
+}
+
+// toastSpot is the toast as drawn and where it sits. The content ends on the
+// row above the footer: the toast sits on its last rows, one cell clear of the
+// right edge. An open dialog keeps its border whole: the toast goes under the
+// dialog or over it when the rows there are free, and inside its border, over
+// its first rows, when the dialog takes the whole height.
+func (s Shell) toastSpot() (lines []string, x, y int, ok bool) {
+	if lines = s.toast.Lines(s.th, s.w-4); lines == nil {
+		return nil, 0, 0, false
+	}
+	l, h := s.lay(), len(lines)
+	right := func(lines []string, edge int) int { return max(edge-pane.Width(lines[0]), 1) }
+	r, open := s.modalRect()
+	switch {
+	case !open || l.Footer.Y-(r.Y+r.H) >= h:
+		return lines, right(lines, s.w-2), max(l.Footer.Y-h, l.Main.Y+1), true
+	case r.Y-s.mainInner().Y >= h:
+		return lines, right(lines, s.w-2), s.mainInner().Y, true
+	}
+	if lines = s.toast.Lines(s.th, r.W-2); lines == nil || r.H < len(lines)+2 {
+		return nil, 0, 0, false
+	}
+	return lines, right(lines, r.X+r.W-1), r.Y + 1, true
 }

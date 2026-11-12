@@ -47,7 +47,9 @@ func (m Model) Lines(th theme.Theme) []string {
 		if len(rows) >= height {
 			break
 		}
-		rows = append(rows, " "+pane.Fit(l, inner))
+		// inner+1: the cell left of the border is the list's scrollbar, as in
+		// every pane; text is wrapped to inner, so it keeps a blank cell there.
+		rows = append(rows, " "+pane.Fit(l, inner+1))
 	}
 	return pane.Frame(th, m.Title(), rows, r.W, r.H, true)
 }
@@ -61,9 +63,10 @@ func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 	room := max(height-len(lines)-len(status)-len(keys), 3)
 	list, _ := m.listLines(th, inner)
 	for i := range list {
-		list[i] = pane.Fit(list[i], inner-1) // the scrollbar takes the last cell
+		list[i] = pane.Fit(list[i], inner)
 	}
-	shown, _ := pane.Window(th, list, inner, room, m.cursorLine, m.scroll)
+	// The scrollbar takes the cell after the rows, the one next to the border.
+	shown, _ := pane.Window(th, list, inner+1, room, m.cursorLine, m.scroll)
 	lines = append(lines, shown...)
 	for len(lines) < height-len(status)-len(keys) {
 		lines = append(lines, "")
@@ -154,7 +157,7 @@ func (m Model) row(th theme.Theme, it compose.Item, i, inner int, inStack bool) 
 		r.Hint = it.Description
 	}
 	r.Selected, r.Hovered = i == m.cursor, i == m.hover && i != m.cursor
-	return choicerow.Line(th, r, inner-1)
+	return choicerow.Line(th, r, inner)
 }
 
 // isTicked reports whether the item is ticked.

@@ -26,6 +26,9 @@ func (w Wizard) buttons() []action {
 		out = append(out, w.navButtons()...)
 	case Reviewing:
 		out = append(out, action{w.style.apply(), "enter"})
+		if w.style.Alone {
+			return out
+		}
 		if w.hasDiff {
 			label := words.Say("fixwizard.button.show")
 			if w.full {

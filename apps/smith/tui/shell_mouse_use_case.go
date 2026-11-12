@@ -17,12 +17,13 @@ import (
 // wheelStep is how many lines one notch of the wheel scrolls.
 const wheelStep = 3
 
-// paletteBox is where the command palette is drawn.
+// paletteBox is where the command palette is drawn: centred between the tab
+// strip and the footer, as every dialog is, and never over either of them.
 func (s Shell) paletteBox() layout.Rect {
-	// Inside the content, whatever the size: never over the tabs or the footer.
-	in := s.mainInner()
-	w, h := min(max(s.w-8, 10), 100), min(max(in.H, 5), 28)
-	return layout.Rect{X: (s.w - w) / 2, Y: in.Y + max((in.H-h)/3, 0), W: w, H: h}
+	top, bottom := s.dialogMargins()
+	m := layout.Margins{Top: top, Bottom: bottom}
+	w, h := min(max(s.w-8, 10), 100), min(m.Room(s.h), 28)
+	return m.Centre(s.w, s.h, w, h)
 }
 
 // hoverDelay is the least time between two hover looks drawn while the pointer
