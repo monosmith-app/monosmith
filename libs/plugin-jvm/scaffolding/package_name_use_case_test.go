@@ -34,3 +34,19 @@ func TestGenerateNamesTheArtifactAfterThePackageName(t *testing.T) {
 		}
 	}
 }
+
+// The artifact starts with the workspace scope without its @, on Maven and
+// on a new Gradle build.
+func TestGenerateBuildsTheArtifactFromTheScope(t *testing.T) {
+	for _, stack := range []string{"", KotlinStack} {
+		ws := t.TempDir()
+		if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Scope: "@pargic"}, Stack: stack}); err != nil {
+			t.Fatal(err)
+		}
+		if stack == "" {
+			manifestHas(t, ws, "libs/core/pom.xml", "<artifactId>pargic-core</artifactId>")
+		} else {
+			manifestHas(t, ws, "libs/core/build.gradle.kts", "dist/gradle/pargic-core")
+		}
+	}
+}

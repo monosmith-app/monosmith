@@ -87,7 +87,7 @@ kit:test — RSpec
 smith add app|lib|package <name> --lang ruby
 ```
 
-The first gem writes the root `Gemfile` and `.rubocop.yml`. Each gem is added to the `Gemfile` as `gemspec path: '<dir>'`, then `bundle install` runs (it needs the network the first time), and `Gemfile.lock` is written. The gem name is the workspace name and the project name in snake_case joined with `_` (`rb-demo` + `core` = `rb_demo_core`); the Ruby module is its CamelCase form (`RbDemoCore`).
+The first gem writes the root `Gemfile` and `.rubocop.yml`. Each gem is added to the `Gemfile` as `gemspec path: '<dir>'`, then `bundle install` runs (it needs the network the first time), and `Gemfile.lock` is written. The gem name is the package prefix (`[workspace] scope` without its `@`, else the workspace name) and the project name in snake_case joined with `_` (`rb-demo` + `core` = `rb_demo_core`); the Ruby module is its CamelCase form (`RbDemoCore`).
 
 Real output:
 

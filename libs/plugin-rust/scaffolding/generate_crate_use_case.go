@@ -21,6 +21,7 @@ type templateData struct {
 
 // CrateName is a project's crate name: the workspace's name first, so a
 // published crate does not clash on crates.io (acme-core).
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func CrateName(workspace, name string) string {
 	workspace = crateIdentifier(workspace)
 	if workspace == "" || strings.HasPrefix(name, workspace+"-") {
@@ -82,7 +83,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	} else {
 		maps.Copy(templates, libTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Crate: cmp.Or(params.PackageName, CrateName(params.Workspace.Name, params.Name)), Kind: string(params.Kind), Stack: params.Stack}
+	data := templateData{Dir: params.Directory, Name: params.Name, Crate: cmp.Or(params.PackageName, CrateName(params.Workspace.PackagePrefix(), params.Name)), Kind: string(params.Kind), Stack: params.Stack}
 	written, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

@@ -149,7 +149,7 @@ An app adds `src/<import>/__main__.py`, which prints `Hello, world!`; a package 
 
 | Generated | What it is |
 |---|---|
-| `pyproject.toml` | setuptools build backend (`setuptools>=75`), `name = "<workspace>-<project>"` (the workspace name is prefixed so the name is unique on a shared index; `acme` + `sdk` is `acme-sdk`), `version = "0.0.0"`, `requires-python = ">=3.12"`, empty `dependencies`, `[tool.smith] kind` (and `stack`), `[tool.setuptools.packages.find] where = ["src"]` |
+| `pyproject.toml` | setuptools build backend (`setuptools>=75`), `name = "<workspace>-<project>"` (the package prefix comes first so the name is unique on a shared index: `[workspace] scope` without its `@`, else the workspace name; `acme` + `sdk` is `acme-sdk`), `version = "0.0.0"`, `requires-python = ">=3.12"`, empty `dependencies`, `[tool.smith] kind` (and `stack`), `[tool.setuptools.packages.find] where = ["src"]` |
 | `src/<import>/greeting/` | a worked slice: `greeting_contract.py` (a frozen `Greeting` dataclass), `greet_use_case.py` (`greet(name)`), `__init__.py` re-exporting both |
 | `tests/test_greet_use_case.py` | a pytest test of `greet` |
 | `requirements-dev.txt` (once, at the root) | the pinned toolchain, below |

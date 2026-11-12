@@ -56,7 +56,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	data := templateData{
 		Dir: params.Directory, Up: strings.Repeat("../", strings.Count(params.Directory, "/")+1),
 		Name: params.Name, Workspace: workspace, Group: GroupID(workspace),
-		ArtifactID: cmp.Or(params.PackageName, workspace+"-"+params.Name), Kind: string(params.Kind), Stack: params.Stack,
+		ArtifactID: cmp.Or(params.PackageName, params.Workspace.PackagePrefix()+"-"+params.Name), Kind: string(params.Kind), Stack: params.Stack,
 	}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, moduleTemplate)

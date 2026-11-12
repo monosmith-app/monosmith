@@ -48,6 +48,7 @@ func identifier(name string) string {
 
 // PackageName is a project's pub package name: the workspace's name first,
 // so a published package does not clash on pub.dev (acme_core).
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func PackageName(workspace, name string) string {
 	if workspace == "" {
 		return identifier(name)
@@ -81,7 +82,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		}
 		src = []byte(updated)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, PackageName(params.Workspace.Name, params.Name)), Kind: string(params.Kind), Stack: params.Stack, Flutter: flutter}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, PackageName(params.Workspace.PackagePrefix(), params.Name)), Kind: string(params.Kind), Stack: params.Stack, Flutter: flutter}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, pubspecTemplate)
 	switch {

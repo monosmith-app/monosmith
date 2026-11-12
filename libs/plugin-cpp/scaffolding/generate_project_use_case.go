@@ -37,6 +37,7 @@ func identifier(name string) string {
 
 // Target is a project's CMake target and namespace: the workspace's name
 // first, so targets never clash when one project adds another (acme_core).
+// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
 func Target(workspace, name string) string {
 	if workspace == "" {
 		return identifier(name)
@@ -51,7 +52,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	target := cmp.Or(params.PackageName, Target(params.Workspace.Name, params.Name))
+	target := cmp.Or(params.PackageName, Target(params.Workspace.PackagePrefix(), params.Name))
 	data := templateData{Dir: params.Directory, Name: params.Name, Target: target, Library: target, Kind: string(params.Kind), Stack: params.Stack}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, listsTemplate)

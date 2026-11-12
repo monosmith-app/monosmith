@@ -107,7 +107,7 @@ smith add app|lib|package <name> --lang rust
 
 The first crate creates the root `Cargo.toml` (`[workspace]`, `resolver = "2"`, `members`) and `.cargo/config.toml` (`[build] target-dir = "dist/cargo"`); later crates are appended to `members` (a single-line or multi-line array is kept in its style). A workspace that already has a `.cargo/config.toml` keeps its own. If the root `Cargo.toml` is a crate rather than a workspace, `smith add` refuses: `the root Cargo.toml is a crate (<name>), not a workspace: make it a [workspace] first`.
 
-The crate name is the workspace name, a dash and the project name (`rs-demo` + `core` = `rs-demo-core`), unless the project name already starts with that, so a published crate does not clash on crates.io.
+The crate name is the package prefix (`[workspace] scope` without its `@`, else the workspace name), a dash and the project name (`rs-demo` + `core` = `rs-demo-core`), unless the project name already starts with that, so a published crate does not clash on crates.io.
 
 Real output:
 

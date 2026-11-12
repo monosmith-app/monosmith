@@ -35,6 +35,8 @@ func GenerateGradle(workspaceRoot string, params protocol.GenerateParams) (proto
 	}
 	settingsFile := filepath.Join(workspaceRoot, settings)
 	workspace := params.Workspace.Name
+	// The artifact starts with the package prefix, or with the existing build's name.
+	prefix := params.Workspace.PackagePrefix()
 	templates := maps.Clone(kotlinSliceTemplates)
 	maps.Copy(templates, gradleModuleTemplates)
 	if params.Kind == protocol.ProjectApp {
@@ -51,12 +53,12 @@ func GenerateGradle(workspaceRoot string, params protocol.GenerateParams) (proto
 		return protocol.GenerateResult{}, err
 	default:
 		if name := RootProjectName(string(src)); name != "" {
-			workspace = name
+			workspace, prefix = name, name
 		}
 	}
 	data := templateData{
 		Dir: params.Directory, Name: params.Name, Workspace: workspace, Group: GroupID(workspace),
-		ArtifactID: cmp.Or(params.PackageName, workspace+"-"+params.Name), Kind: string(params.Kind), Stack: params.Stack,
+		ArtifactID: cmp.Or(params.PackageName, prefix+"-"+params.Name), Kind: string(params.Kind), Stack: params.Stack,
 	}
 	data.Package = data.Group + "." + identifier(params.Name)
 	data.PackagePath = strings.ReplaceAll(data.Package, ".", "/")
