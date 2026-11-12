@@ -708,7 +708,7 @@ export interface Fix {
   files?: FileEdit[]
   /**
    * Steps run after the files, in order, from the workspace root; the first one that fails stops
-   * the rest.
+   * the rest, unless it is advisory.
    */
   steps?: FixStep[]
   /**
@@ -759,6 +759,11 @@ export interface FixStep {
    * install write there). Absent adds none.
    */
   env?: string[]
+  /**
+   * Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and
+   * the steps after it still run.
+   */
+  advisory?: boolean
 }
 
 /**

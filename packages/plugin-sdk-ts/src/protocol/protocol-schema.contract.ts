@@ -1391,7 +1391,7 @@ export const protocolSchema: SchemaDocument = {
           "items": {
             "$ref": "#/$defs/FixStep"
           },
-          "description": "Steps run after the files, in order, from the workspace root; the first one that fails stops the rest."
+          "description": "Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory."
         },
         "choices": {
           "type": "array",
@@ -1477,6 +1477,10 @@ export const protocolSchema: SchemaDocument = {
             "type": "string"
           },
           "description": "Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go install write there). Absent adds none."
+        },
+        "advisory": {
+          "type": "boolean",
+          "description": "Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and the steps after it still run."
         }
       },
       "required": [

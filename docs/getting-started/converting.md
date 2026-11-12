@@ -244,7 +244,7 @@ prints the plan and stops with a non-zero exit, naming the flags that apply it.
 
 | Flag | Values | What it decides |
 |---|---|---|
-| `--lint` | `smith`, `keep` | `smith`: the root ESLint config uses `@monosmith/eslint-config` (with the vertical-slice rules) and the old lint packages and config files go. If the config imported `@mnci/eslint-config`, only the import and the call change and the rules you wrote beside it stay; a config written by hand is replaced by smith's two lines (the diff shows what is lost). Default: `smith` when the config imports a shared config smith replaces, else `keep`. |
+| `--lint` | `smith`, `keep` | `smith`: the root ESLint config uses `@monosmith/eslint-config` (with the vertical-slice rules) and the old lint packages and config files go. If the config imported `@mnci/eslint-config`, only the import and the call change and the rules you wrote beside it stay; a config written by hand is replaced by smith's two lines (the diff shows what is lost). `@monosmith/eslint-config` needs ESLint 10 (`^10.8.1`), so the lint group also raises `eslint` in every `package.json` that names an older one (an `overrides` entry `"eslint": "$eslint"` follows it); an `eslint` it cannot raise (a tag such as `latest`, a path, a `peerDependencies` range) is a note in the plan, before anything changes. Default: `smith` when the config imports a shared config smith replaces, else `keep`. |
 | `--test` | `jest`, `vitest`, `keep` | The configs and packages of the runner **not** chosen go. A runner is never rewritten to another: if the other one's tests exist, its files stay and the report says why. Default: the runner the workspace uses. |
 | `--build` | `smith`, `keep` | The configs and packages of the old build (Rollup, Webpack, SWC and Babel config files, their loaders and CLIs) go; the build is the one convert wrote, esbuild and `tsc`. Default: `smith`. |
 | `--ci` | `smith`, `keep` | `keep` leaves your pipelines as they are instead of generating smith's; they keep calling the old tool, and `smith doctor` reports the pipelines as not matching until you run `smith ci generate`. Default: `smith`. |
@@ -273,8 +273,29 @@ sure, it keeps.
 
 Afterwards one `npm install` refreshes `package-lock.json` for everything taken
 out and put in, and the workspace is checked the way a teammate would: it builds,
-tests and lints, and `smith doctor` finds nothing wrong. The step that fails is
-named, with the end of its output.
+tests and lints, and `smith doctor` finds nothing wrong. When a build, test or
+doctor step fails, the conversion stops there: the step is named, with the end
+of its output.
+
+The lint never stops it. Lint problems are findings: the conversion finishes,
+keeps its changes, and reports them. With `--lint smith`, ESLint first fixes
+what it can, in each Node project that has a lint task, in its own folder with
+its own `eslint.config.*`, one project after the other (a crash in one does not
+stop the others). Then a table gives each project's problems fixed and left, or,
+when ESLint could not run there, the first line of its error and the remedy:
+
+```text
+▲ fix what ESLint can, then lint every project
+Project   Fixed    Left  Result
+api         544     876  ▲ 870 errors, 6 warnings
+models      231     200  ▲ 200 errors, 0 warnings
+▲ ESLint fixed 775 problems; 1076 are left in 2 of 2 projects
+→ see them: smith run lint -p api
+→ see them: smith run lint -p models
+```
+
+With `--lint keep`, the check is the repository's own `smith run lint`, and its
+failure is shown the same way, without stopping the conversion.
 
 ## The report
 

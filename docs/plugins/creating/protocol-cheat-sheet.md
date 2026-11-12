@@ -720,7 +720,7 @@ Fix is a change that clears a failed finding: files' new contents, then commands
 | `description` | `string` | yes |  |
 | `safe` | `bool` | yes | Safe marks a fix that only restores what smith or the plugin owns and loses nothing of the user's; doctor --fix --yes applies only safe fixes with no Choices. |
 | `files` | `[]FileEdit` | no | Files are written first, as whole new contents. |
-| `steps` | `[]FixStep` | no | Steps run after the files, in order, from the workspace root; the first one that fails stops the rest. |
+| `steps` | `[]FixStep` | no | Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory. |
 | `choices` | `[]FixChoice` | no | Choices are questions the user answers before the fix applies, in order. |
 | `applies_to` | `[]string` | no | AppliesTo names the projects the fix is for. |
 
@@ -734,6 +734,7 @@ FixStep is a command to run in the workspace.
 | `argv` | `[]string` | yes | Argv is the program and its arguments; no shell is involved. |
 | `dir` | `string` | no | Dir is where it runs, workspace-relative; empty is the workspace root. |
 | `env` | `[]string` | no | Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go install write there). Absent adds none. |
+| `advisory` | `bool` | no | Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and the steps after it still run. |
 
 ### FixChoice
 

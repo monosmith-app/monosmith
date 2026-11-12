@@ -80,7 +80,9 @@ func Apply(ctx context.Context, root string, fix protocol.Fix, out io.Writer) er
 }
 
 // RunSteps runs commands from the workspace root (or the step's own Dir),
-// capturing what each prints, and stops at the first failure.
+// capturing what each prints, and stops at the first failure. An advisory
+// step that fails does not stop it: its mark is a warning, what it printed
+// follows, and the next step runs.
 func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io.Writer) error {
 	noter, _ := out.(Noter)
 	for i, step := range steps {
@@ -97,6 +99,13 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(stepEnv(step)), Out: sink})
 		if err == nil && code != 0 {
 			err = fmt.Errorf("exited with code %d", code)
+		}
+		if err != nil && step.Advisory {
+			fmt.Fprintf(out, marks.Warning+" %s\n", stepName(step))
+			if text := strings.TrimRight(captured.String(), "\r\n"); strings.TrimSpace(text) != "" {
+				fmt.Fprintln(out, tail(text, shownOutput))
+			}
+			continue
 		}
 		if err != nil {
 			return &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err, Output: tail(captured.String(), shownOutput)}
