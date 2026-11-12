@@ -50,7 +50,7 @@ func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 		case s == m.section:
 			label = th.Bold(" " + th.Icons.Pointer + " " + s.Title())
 		case px >= 0 && px < f.listW && py == row:
-			label = th.Hover(pane.Fit(label, f.listW))
+			label = th.RowHover(pane.Fit(label, f.listW))
 		}
 		left[row] = label
 	}
@@ -104,6 +104,9 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 		put(1, lines)
 		for line, i := range rowOf {
 			rowItem[1+line] = i
+			if i != m.ed.at && px >= 0 && px < w && py == 1+line && 1+line < h {
+				rows[1+line] = th.RowHover(rows[1+line])
+			}
 		}
 		return rows, rowItem
 	}
@@ -130,7 +133,7 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 			}
 			rowItem[1+i] = idx
 			if idx != cursor && px >= 0 && px < w && py == 1+i {
-				rows[1+i] = th.Hover(pane.Fit(pane.Strip(rows[1+i]), w))
+				rows[1+i] = th.RowHover(pane.Fit(rows[1+i], w))
 			}
 		}
 	}
@@ -285,6 +288,12 @@ func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 			if double {
 				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
 			}
+		} else if ok && m.ed.kind == editMulti && x >= f.listW {
+			// A click on a tick box row puts the cursor there and ticks or unticks it, as Space does.
+			e := *m.ed
+			e.at = i
+			m.ed = &e
+			return m.editorKey(tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}})
 		}
 		return m, Result{}
 	}

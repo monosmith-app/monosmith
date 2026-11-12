@@ -272,22 +272,19 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	case editChoose:
 		lines = append(lines, "")
 		for i, c := range e.choices {
-			row := " " + choicerow.Cursor(th, i == e.at) + choicerow.Radio(th, i == e.current) + " " + c
-			if i == e.at {
-				row = th.Selected(pane.Fit(pane.Strip(row), w))
-			}
+			r := choicerow.Row{Lead: choicerow.Radio(th, i == e.current) + " ", Label: c, Selected: i == e.at}
 			rowOf[len(lines)] = i
-			lines = append(lines, row)
+			lines = append(lines, " "+choicerow.Line(th, r, max(w-1, 1)))
 		}
 		keys = words.Say("settingsview.keys.choose")
 	case editMulti:
 		lines = append(lines, "")
 		for i, c := range e.choices {
-			row := " " + choicerow.Render(th, c, e.marked[i], i == e.at, false)
-			if i == e.at {
-				row = th.Selected(pane.Fit(pane.Strip(row), w))
-			}
-			lines = append(lines, row)
+			r := choicerow.Ticks(c, e.marked[i], false)
+			r.Selected = i == e.at
+			// Each tick box row answers a click (see Click), as in every list of boxes.
+			rowOf[len(lines)] = i
+			lines = append(lines, " "+choicerow.Line(th, r, max(w-1, 1)))
 		}
 		keys = words.Say("settingsview.keys.multi")
 	case editReview:

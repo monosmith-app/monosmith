@@ -109,7 +109,7 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			case p.focus == focusProject:
 				l = th.Selected(l)
 			case p.hover == focusProject:
-				l = th.Hover(l)
+				l = th.RowHover(l)
 			}
 		case rowFocus(l) >= 0:
 			id := rowFocus(l)
@@ -117,7 +117,7 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			case p.focus == id:
 				l = th.Selected(l)
 			case p.hover == id:
-				l = th.Hover(l)
+				l = th.RowHover(l)
 			}
 		case p.err != "" && l == p.err:
 			l = th.Failure(l)
@@ -126,7 +126,7 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			case p.focus == focusDev:
 				l = th.Selected(l)
 			case p.hover == focusDev:
-				l = th.Hover(l)
+				l = th.RowHover(l)
 			}
 		case strings.HasPrefix(l, "  $ "):
 			l = th.Bold(l)
