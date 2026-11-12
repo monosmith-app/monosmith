@@ -109,5 +109,12 @@
   "guide.web_environments.use_these_hint": "smith run build builds prd, the builds go to dist/apps/<name>/<env>, and the .env files are written for you and kept in git (smith commits nothing)",
   "guide.web_environments.change_names": "Change the names…",
   "guide.web_environments.change_details": "Change the build default, the output or the .env files…",
-  "guide.web_environments.use_these": "Use these: {defaults}"
+  "guide.web_environments.use_these": "Use these: {defaults}",
+  "guide.convert_outputs.prompt": "Which outputs of {task} should smith cache?",
+  "guide.convert_outputs.note": "The build writes {detected}, but {tool} declared {declared} as its outputs.",
+  "guide.convert_outputs.detected": "{detected}, what the build writes",
+  "guide.convert_outputs.detected_hint": "(suggested) the cache keeps what the build makes",
+  "guide.convert_outputs.declared": "{declared}, as {tool} declared them",
+  "guide.convert_outputs.declared_hint": "the cache also expects the folders the build does not write",
+  "guide.convert_outputs.unreadable": "the plan of smith convert --dry-run --json could not be read"
 }

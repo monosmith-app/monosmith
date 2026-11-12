@@ -26,6 +26,8 @@ const (
 	capSearch  = "plugin-search"
 
 	capRecipeLevels = "recipe-levels"
+
+	capConvertOutputs = "convert-outputs"
 )
 
 // The states of the choices the Add form offers.
@@ -91,6 +93,8 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.choicesRead(msg)
 	case capRecipeLevels:
 		return s.recipeLevelsRead(msg)
+	case capConvertOutputs:
+		return s.convertOutputsRead(msg)
 	case capCompose:
 		return s.composeRead(msg)
 	case capComposePlan:
@@ -374,6 +378,48 @@ func (s *Shell) showRecipeForm() tea.Cmd {
 		g = g.WithAction(guide.RecipeAction(*s.recipeBase, *s.recipeLevels))
 	}
 	if g, ok := g.Pick(recipeTitle()); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
+}
+
+// openConvertForm opens the form that converts an Nx or Turborepo workspace,
+// with a question for each build task whose declared outputs differ from what
+// its build writes. The plan is read once, with `smith convert --dry-run
+// --json`, which changes nothing.
+func (s *Shell) openConvertForm() tea.Cmd {
+	if s.sources.Capture == nil || s.convertOutputs != nil {
+		return s.showConvertForm()
+	}
+	argv := []string{"convert", "--dry-run", "--json"}
+	return s.captureWorking(capConvertOutputs, guide.ConvertTitle(), words.Say("tui.capture.the_form_asks_the_build_outputs"), argv, argv, words.Say("tui.capture.reading_the_conversion_plan"), words.Say("tui.capture.cancelled_the_form_was_not_opened"))
+}
+
+// convertOutputsRead keeps the output choices of the plan and opens the form
+// that waited for them. When the plan cannot be read, the plain form opens
+// and says why: convert then takes the suggested outputs.
+func (s *Shell) convertOutputsRead(msg capturedMsg) tea.Cmd {
+	o, err := guide.ParseConvertOutputs(msg.res.Text)
+	if err != nil {
+		s.notify(words.Say("tui.capture.could_not_read_the_conversion_plan", "firstLine", commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err))), toast.Warning)
+	}
+	s.convertOutputs = &o
+	return s.showConvertForm()
+}
+
+// showConvertForm opens the convert form, with the outputs questions when the
+// plan has any.
+func (s *Shell) showConvertForm() tea.Cmd {
+	g := s.guide
+	if s.convertBase == nil {
+		if base, ok := g.ActionTitled(guide.ConvertTitle()); ok {
+			s.convertBase = &base
+		}
+	}
+	if s.convertBase != nil && s.convertOutputs != nil {
+		g = g.WithAction(guide.ConvertOutputsAction(*s.convertBase, *s.convertOutputs))
+	}
+	if g, ok := g.Pick(guide.ConvertTitle()); ok {
 		s.guide = g
 	}
 	return s.gotoTab(commands.TabGuide)

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"slices"
 	"strings"
 	"testing"
@@ -11,6 +12,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -211,5 +214,45 @@ func TestMakeMyOwnRecipeInAFormOpensTheWriteARecipeForm(t *testing.T) {
 	l.keys("enter")
 	if !slices.ContainsFunc(l.captured, func(argv []string) bool { return strings.Join(argv, " ") == "recipe new --list-levels --json" }) {
 		t.Fatalf("the recipe form did not read its levels: %v", l.captured)
+	}
+}
+
+func TestTheConvertFormAsksTheBuildOutputsAndPassesTheAnswer(t *testing.T) {
+	l := newLab(t, false, 120, 30)
+	l.capture = func(argv []string) sources.Captured {
+		if strings.Join(argv, " ") == "convert --dry-run --json" {
+			return sources.Captured{OK: true, Text: "Reading nx.json…\n{\n  \"source\": \"nx\",\n  \"outputChoices\": [{\"project\": \"app\", \"task\": \"build\", \"declared\": [\"dist\", \"dist-dev\"], \"detected\": [\"dist\"]}]\n}"}
+		}
+		return defaultCapture(argv)
+	}
+	sh := l.sh()
+	// Outside a workspace the shell reads and starts through the same sources.
+	sh.sources.Capture = func(_ context.Context, argv []string) sources.Captured {
+		l.captured = append(l.captured, argv)
+		return l.capture(argv)
+	}
+	sh.sources.Start = func(argv []string) (runner.Handle, error) {
+		l.started = append(l.started, argv)
+		return &scripted{exit: runner.Exit{}}, nil
+	}
+	cmd := sh.perform(commands.Command{Kind: commands.Guided, Guide: guide.ConvertTitle()})
+	l.m = sh
+	l.drive(cmd)
+	// Conservative, then the outputs question with the suggestion first.
+	l.keys("enter")
+	l.has("Which outputs of app:build", "dist, what the build writes", "dist, dist-dev, as Nx declared them")
+	l.keys("down", "enter")
+	if got := l.sh().Answers["outputs:app:build"]; len(got) != 0 {
+		t.Fatalf("answered before the form ended: %v", got)
+	}
+	l.keys("enter")
+	if got := l.sh().Answers["outputs:app:build"]; len(got) != 1 || got[0] != "declared" {
+		t.Fatalf("answers %v", l.sh().Answers)
+	}
+	all := append(slices.Clone(l.captured), l.started...)
+	if !slices.ContainsFunc(all, func(argv []string) bool {
+		return slices.Contains(argv, "--outputs") && slices.Contains(argv, "app:build=declared")
+	}) {
+		t.Fatalf("the command did not get --outputs app:build=declared: captured %v, started %v", l.captured, l.started)
 	}
 }

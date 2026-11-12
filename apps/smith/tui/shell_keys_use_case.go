@@ -438,6 +438,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 			// The app is a pick list of the Tauri apps, on the selected one.
 			return s.openProjectForm(c.Guide, "project", s.projectsWhere(isTauriApp))
 		}
+		if c.Guide == guide.ConvertTitle() {
+			return s.openConvertForm()
+		}
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()
 		}
@@ -623,6 +626,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		if s.guide.Title() == "" && g.Title() == recipeTitle() && s.recipeLevels == nil {
 			// The recipe form lists the plugins of each level: read them first.
 			return s.openRecipeForm()
+		}
+		if s.guide.Title() == "" && g.Title() == guide.ConvertTitle() && s.convertOutputs == nil && s.sources.Capture != nil {
+			// The convert form asks which build outputs to cache: read the plan first.
+			return s.openConvertForm()
 		}
 		s.guide = g
 		if g.Done() {

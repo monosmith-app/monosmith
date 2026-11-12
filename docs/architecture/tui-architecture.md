@@ -240,6 +240,13 @@ a `fixwizard.Wizard`, so keys, mouse and drawing are identical. It holds no logi
 time come out as `Job`s the shell runs off the UI goroutine, and `adoptflow.Session` does the work.
 The stages and calls are in [How adopt and convert work](adopt-and-convert.md).
 
+The convert form is a guided form that reads the plan before it opens, as the recipe form reads its
+levels: `openConvertForm` captures `smith convert --dry-run --json` once (`capConvertOutputs`),
+`guide.ParseConvertOutputs` reads its `outputChoices`, and `guide.ConvertOutputsAction` adds one
+question per build task before the commit question. The answers become `--outputs
+<project>:<task>=detected|declared` on the command line, which `convert.ApplyOutputAnswers` applies
+before the terminal would ask.
+
 ## Themes, plain mode, mouse
 
 | Setting | Effect | Code |

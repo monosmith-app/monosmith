@@ -521,6 +521,14 @@ end up with and the name of each answer, and writes a `--chosen` flag (see
 no version to bump. A line names it and gives the commit that sets its first version, `git commit
 --allow-empty -m "version(<name>)[1.0.0]"`.
 
+**Convert an Nx or Turborepo workspace** reads the plan first (`smith convert --dry-run --json`,
+which changes nothing; a box says so while it reads). For each build task whose outputs, as Nx or
+Turborepo declared them, differ from what its build writes, the form asks which outputs to cache:
+what the build writes (suggested, first) or what the old tool declared. One click picks. The answer
+reaches the command as `--outputs <project>:<task>=detected|declared`. When the plan cannot be
+read (for example, the packages are not installed yet, and a plan never installs), a toast says
+why and the form asks the other questions; convert then takes the suggested outputs.
+
 While smith convert or smith new runs from the form (before a workspace exists), the box is titled with what it does (Converting this workspace to smith…, Creating a new workspace…). A spinner line says what it is doing, with the time once it passes 2 seconds, above the last lines it printed.
 
 After an add, a convert or an adopt finishes, the toast says it can be undone and where.
