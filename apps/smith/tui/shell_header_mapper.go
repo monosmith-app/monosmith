@@ -54,7 +54,8 @@ func (s Shell) tabRow(strip tabs.Strip) string {
 // headerRow is the top row: the workspace, its branch and its health, at the
 // right end of the row, where the tab row has them on a wide screen.
 func (s Shell) headerRow() string {
-	text := pane.Cut(strings.TrimLeft(strings.Join(s.headerParts(), "  "), " "), max(s.w-1, 0))
+	// A header too long for the row ends with an ellipsis, as every cut line does.
+	text := pane.CutEllipsis(strings.TrimLeft(strings.Join(s.headerParts(), "  "), " "), max(s.w-1, 0))
 	return strings.Repeat(" ", max(s.w-pane.Width(text)-1, 0)) + text + " "
 }
 
