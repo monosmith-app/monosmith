@@ -146,8 +146,12 @@ wrapped one cell narrower than the inside, so the scrollbar never takes a last l
 one-line row), and `pane.BodyLine` maps a click or a hover row back to a body line, `-1` on a marker,
 before `choicerow.At` finds the choice, so what is drawn and what is clicked never differ. Every
 dialog that scrolls takes the wheel, `PgUp`, `PgDn`, `Ctrl+U` and `Ctrl+D`, which the markers name.
-The composer's browse screen keeps its own list window (`pane.Window`) and drops its spacer line
-under 14 rows; its question, name and plan screens use `DialogBody`. `packageprompt` keeps the
+The composer's browse screen keeps its own list window (`pane.Window`). Under 14 body rows it gives
+the list the rows: the summary moves into the frame title (`Compose a stack · Stack: Go + React`,
+cut with `…` when too long; Tab shows the whole stack), the spacer goes and the key line is the
+short one, so the list keeps six rows at 100x16. Its question, name and plan screens use
+`DialogBody`. The cache wizard is as tall as its screen, up to 22 rows, and `Rect` centres that
+height with `Margins.Centre`, so a short screen sits in the middle like every other dialog. `packageprompt` keeps the
 screen size from `Place` and sizes itself again after every key and click (`refit`), so an error or
 a longer command makes it taller, up to the room. The release picker's list draws the shared
 `pane.Scrollbar`. The palette

@@ -31,8 +31,10 @@ func (m Model) Lines(th theme.Theme) []string {
 		return nil
 	}
 	inner, height := r.W-4, r.H-2
+	title := m.Title()
 	var body []string
 	if m.stage == stBrowse {
+		title = m.browseTitle(inner)
 		body = m.browseBody(th, inner, height)
 	} else {
 		// A question, the name or the plan taller than the screen scrolls above
@@ -49,15 +51,26 @@ func (m Model) Lines(th theme.Theme) []string {
 		// every pane; text is wrapped to inner, so it keeps a blank cell there.
 		rows = append(rows, " "+pane.Fit(l, inner+1))
 	}
-	return pane.Frame(th, m.Title(), rows, r.W, r.H, true)
+	return pane.Frame(th, title, rows, r.W, r.H, true)
+}
+
+// browseTitle is the frame title while browsing. On a short screen the summary
+// moves up into it, so the list keeps the row; a summary too long for the
+// border is cut, and Tab shows the whole stack.
+func (m Model) browseTitle(inner int) string {
+	if !m.short() {
+		return m.Title()
+	}
+	full := words.Say("composer.title.browse", "title", m.Title(), "summary", m.summaryText(true))
+	return pane.CutEllipsis(full, inner-2)
 }
 
 // browseBody is the search box, the list (catalogue or stack), the check and
 // the keys.
 func (m Model) browseBody(th theme.Theme, inner, height int) []string {
-	lines := []string{m.search.View(), m.summaryLine(th)}
-	if m.listTop() > len(lines) {
-		lines = append(lines, "")
+	lines := []string{m.search.View()}
+	if !m.short() {
+		lines = append(lines, th.Muted(m.summaryText(false)), "")
 	}
 	status := m.statusLines(th, inner)
 	keys := m.keyLines(th, inner)
@@ -75,18 +88,22 @@ func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 	return append(append(lines, status...), keys...)
 }
 
-// listTop is the first body line of the list while browsing: the search box,
-// the summary and, when the screen has the rows, a blank line come first.
+// listTop is the first body line of the list while browsing: the search box
+// and, when the screen has the rows, the summary and a blank line come first.
 func (m Model) listTop() int {
-	if m.rect.H-2 < roomyHeight {
-		return 2
+	if m.short() {
+		return 1
 	}
 	return 3
 }
 
-// roomyHeight is the body height from which the browse screen keeps a blank
-// line above the list.
+// roomyHeight is the body height from which the browse screen keeps the
+// summary and a blank line above the list and the long key line under it.
 const roomyHeight = 14
+
+// short reports whether the screen is too short for the roomy browse layout:
+// then the summary goes into the title and the key line is the short one.
+func (m Model) short() bool { return m.rect.H-2 < roomyHeight }
 
 // listRoom is the rows the list gets while browsing, its "more" line included:
 // what the search box, the summary, the check and the keys leave, at least 2.
@@ -113,19 +130,24 @@ func (m Model) stageBody(th theme.Theme, inner int) (body, foot []string, first 
 // no key is cut off on a narrow screen.
 func (m Model) keyLines(th theme.Theme, inner int) []string {
 	target := words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])
-	return pane.Wrap(th.Muted(words.Say("composer.keys.browse", "target", target)), inner, 2)
+	key := "composer.keys.browse"
+	if m.short() {
+		key = "composer.keys.browse.short"
+	}
+	return pane.Wrap(th.Muted(words.Say(key, "target", target)), inner, 2)
 }
 
-// summaryLine says what is ticked, by layer.
-func (m Model) summaryLine(th theme.Theme) string {
+// summaryText says what is ticked, by layer; brief is the shorter text for
+// nothing ticked, used in the title of a short screen.
+func (m Model) summaryText(brief bool) string {
 	if len(m.ticked) == 0 && m.lang == nil {
-		return th.Muted(words.Say("composer.summary.empty"))
+		return words.Say(map[bool]string{true: "composer.summary.empty.short", false: "composer.summary.empty"}[brief])
 	}
 	var parts []string
 	for _, it := range m.entries() {
 		parts = append(parts, it.Title)
 	}
-	return th.Muted(words.Say("composer.stack.label")) + strings.Join(parts, " + ")
+	return words.Say("composer.stack.label") + strings.Join(parts, " + ")
 }
 
 // listLines draws the rows of the catalogue or of the stack and sets where the

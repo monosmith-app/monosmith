@@ -38,16 +38,15 @@ type hit struct {
 //
 // Parameters: th is the theme; tick moves the spinner; now is the clock.
 func (m Model) Lines(th theme.Theme, tick int, now time.Time) []string {
-	r := m.rect
-	if r.W < 24 || r.H < 4 {
+	if m.rect.W < 24 || m.rect.H < 4 {
 		return nil
 	}
+	r := m.Rect()
 	rows, _ := m.layout(th, tick, now)
 	for i, l := range rows {
 		rows[i] = " " + pane.Fit(l, r.W-4)
 	}
-	// The box is as tall as its content, up to the room Place gave it.
-	return pane.Frame(th, words.Say("cachewizard.title"), rows, r.W, min(max(len(rows)+2, 8), r.H), true)
+	return pane.Frame(th, words.Say("cachewizard.title"), rows, r.W, r.H, true)
 }
 
 // screen is the body of a screen as body builds it: lines[foot:] are the
