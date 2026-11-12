@@ -31,7 +31,7 @@ already has a `smith.toml` (use [`smith upgrade`](upgrade.md)).
 ## Synopsis
 
 ```sh
-smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--commit] [--skip-install] [--skip-verify] [--json] [--verbose]
+smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--commit] [--outputs <project>:<task>=detected|declared]... [--skip-install] [--skip-verify] [--json] [--verbose]
 ```
 
 ## Arguments and flags
@@ -53,6 +53,7 @@ Usage: `smith convert [flags]`
 | `--lint <lint>` | `smith` or `keep` | `smith` when the ESLint config imports a shared config smith replaces, else `keep` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) |
 | `--no-install` | boolean | off | do not run npm install afterwards (also --skip-install) |
 | `--questions` | boolean | off | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) |
+| `--outputs` | `<project>:<task>=detected\|declared`, repeatable | none | the outputs to cache for a build task whose declared outputs differ from what its build writes: `detected` (what the build writes, the suggestion) or `declared` (as Nx or Turborepo declared them). A terminal asks the tasks not given |
 | `--skip-verify` | boolean | off | full level: install, but do not build, test, lint and run doctor afterwards |
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
 | `--test <test>` | `jest`, `vitest` or `keep` | the runner the workspace uses, else `keep` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep |
@@ -114,7 +115,9 @@ Interactions:
   Choose [1]:
   ```
 
-  `--yes` takes the suggestion. When a step of the script takes its folder from a config file
+  `--outputs app:build=declared` (or `=detected`) gives the answer without a terminal, and the
+  terminal then does not ask it; the TUI's convert form asks it as a choice and passes it this way.
+  `--yes` takes the suggestion for a task not given. When a step of the script takes its folder from a config file
   (`tsc` without `--outDir`, `rollup -c`, a Vite config with an `outDir`), convert cannot see
   everything the build writes: it keeps every declared output and adds only the missing ones.
   `--json` lists each case under `outputChoices` (`project`, `task`, `declared`, `detected`).

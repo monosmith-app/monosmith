@@ -29,6 +29,7 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 // Command is `smith convert`.
 func Command(version string) *cobra.Command {
 	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify, commit, questions bool
+	var outputs []string
 	choices := convertchoices.Choices{Level: convertchoices.LevelConservative}
 	cmd := &cobra.Command{
 		Use:   "convert",
@@ -47,7 +48,9 @@ yarn call smith and npm.
 
 Without a terminal convert does not apply unless you pass --yes. In a terminal
 it lists the files it deletes and whether a pnpm or yarn workspace switches to
-npm, then asks: apply, show the report and stop, or cancel.
+npm, then asks: apply, show the report and stop, or cancel. When Nx or
+Turborepo declared outputs a build does not write, it first asks which to
+cache; --outputs <project>:<task>=detected|declared gives the answer.
 
 Run it with --dry-run first: the report lists what maps, what changes behaviour
 and what needs you. Nothing is dropped silently. An Nx workspace's packages must
@@ -159,6 +162,10 @@ git undoes everything.`,
 			if err != nil {
 				return err
 			}
+			outputsGiven, err := ApplyOutputAnswers(plan, outputs)
+			if err != nil {
+				return problem.New(err.Error())
+			}
 			if !full && !plan.Blocked(strict) {
 				// The check that applying ends with, made on a copy first, so a
 				// workspace that would not load is a finding and not half a conversion.
@@ -196,7 +203,7 @@ git undoes everything.`,
 				return runFull(cmd, fullArgs{
 					Root: root, Git: git, Plan: plan, Version: version, Files: files, Strict: strict,
 					Choices: choices, Given: given, DryRun: dryRun, JSON: asJSON, Yes: yes,
-					SkipInstall: skipInstall, SkipVerify: skipVerify, Commit: commit,
+					SkipInstall: skipInstall, SkipVerify: skipVerify, Commit: commit, OutputsGiven: outputsGiven,
 				})
 			}
 			if dryRun {
@@ -212,7 +219,7 @@ git undoes everything.`,
 						"--yes applies it (it deletes the old tooling listed by --dry-run)", "--dry-run reports what it would change and changes nothing")
 				}
 				reader := bufio.NewReader(os.Stdin)
-				if err := AskOutputChoices(reader, log, plan); err != nil {
+				if err := AskOutputChoices(reader, log, plan, outputsGiven); err != nil {
 					return problem.New(err.Error())
 				}
 				fmt.Fprint(log, ConfirmationText(plan))
@@ -263,6 +270,7 @@ git undoes everything.`,
 	f.StringVar(&choices.Test, "test", convertchoices.Keep, "full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep")
 	f.StringVar(&choices.Build, "build", convertchoices.Smith, "full level: build with smith's stack build (smith) or keep the current build setup (keep)")
 	f.StringVar(&choices.CI, "ci", convertchoices.Smith, "full level: the pipeline smith generates (smith) or keep the current one (keep)")
+	f.StringArrayVar(&outputs, "outputs", nil, "the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given")
 	f.BoolVar(&skipVerify, "skip-verify", false, "full level: install, but do not build, test, lint and run doctor afterwards")
 	return cmd
 }

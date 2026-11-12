@@ -30,7 +30,7 @@ func TestAskOutputChoices(t *testing.T) {
 	for _, c := range cases {
 		plan := outputChoicePlan()
 		var out strings.Builder
-		if err := AskOutputChoices(bufio.NewReader(strings.NewReader(c.answer)), &out, plan); err != nil {
+		if err := AskOutputChoices(bufio.NewReader(strings.NewReader(c.answer)), &out, plan, nil); err != nil {
 			t.Fatal(err)
 		}
 		if got := plan.Config.Projects["app"].Tasks["build"].Outputs; !slices.Equal(got, c.want) || plan.OutputChoices[0].Kept != c.kept {
@@ -40,7 +40,7 @@ func TestAskOutputChoices(t *testing.T) {
 			t.Errorf("question:\n%s", out.String())
 		}
 	}
-	if err := AskOutputChoices(bufio.NewReader(strings.NewReader("3\n")), &strings.Builder{}, outputChoicePlan()); err == nil {
+	if err := AskOutputChoices(bufio.NewReader(strings.NewReader("3\n")), &strings.Builder{}, outputChoicePlan(), nil); err == nil {
 		t.Error("an answer outside the options is an error")
 	}
 }

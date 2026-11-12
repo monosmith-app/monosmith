@@ -141,7 +141,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: words.Say("guide.actions.convert_an_nx_or_turborepo_workspace"), Presents: "convert", Hint: words.Say("guide.actions.smith_convert_projects_keep_their_folder"), OutsideOnly: true, NeedsContent: true,
+			Title: ConvertTitle(), Presents: "convert", Hint: words.Say("guide.actions.smith_convert_projects_keep_their_folder"), OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{
 				{Key: "level", Prompt: words.Say("guide.actions.how_far_should_the_conversion_go"), Options: []Option{
 					{Label: words.Say("guide.actions.conservative_keep_what_works_list_the"), Value: "conservative", Hint: words.Say("guide.actions.the_old_tool_is_removed_eslint")},

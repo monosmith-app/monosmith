@@ -42,6 +42,8 @@ type fullArgs struct {
 	SkipVerify  bool
 	// Commit commits the whole conversion as one operation at the end.
 	Commit bool
+	// OutputsGiven are the build tasks --outputs answered: not asked again.
+	OutputsGiven map[string]bool
 }
 
 // fullJSON is `smith convert --level full --json`: the conversion plan as it
@@ -65,7 +67,7 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	reader := bufio.NewReader(os.Stdin)
 	if ask {
 		// Before the view: the removal groups read the smith.toml these answers write.
-		if err := AskOutputChoices(reader, log, a.Plan); err != nil {
+		if err := AskOutputChoices(reader, log, a.Plan, a.OutputsGiven); err != nil {
 			return problem.New(err.Error())
 		}
 	}

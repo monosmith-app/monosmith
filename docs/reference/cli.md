@@ -146,6 +146,7 @@ Usage: `smith convert [flags]`
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--no-install` | do not run npm install afterwards (also --skip-install) | off |
 | `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
+| `--outputs <project>:<task>=detected\|declared` | the outputs to cache for a build task whose declared outputs differ from what its build writes; repeatable. A terminal asks the tasks not given | none |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
 | `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
