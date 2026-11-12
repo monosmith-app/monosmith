@@ -125,7 +125,7 @@ func TestAShortScreenScrollsTheListAndKeepsTheCommandAndButtons(t *testing.T) {
 	}
 	m = press(m, "down", "down", "down", "down", "down", "down", "down", " ")
 	text := screen(m)
-	for _, want := range []string{"[x] h", "The command that will run", "$ smith release --hold h", "Continue (enter)", "packages shown"} {
+	for _, want := range []string{"[x] h", "The command that will run", "$ smith release --hold h", "Continue (Enter)", "packages shown"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("lost %q:\n%s", want, text)
 		}

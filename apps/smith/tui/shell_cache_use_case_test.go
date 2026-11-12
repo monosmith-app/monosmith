@@ -261,7 +261,7 @@ func TestEscapeGoesBackOneQuestionWithTheEarlierAnswerMarkedAndClosesOnlyTheFirs
 	c.press("3")
 	c.text("https://cache.acme.dev/x")
 	c.press("enter")
-	c.has("This changes smith.toml:", "esc goes back", "[Back (b)]", "[Cancel (ctrl+c)]")
+	c.has("This changes smith.toml:", "esc goes back", "[Back (b)]", "[Cancel (Ctrl+C)]")
 
 	c.press("esc") // the address again, as it was typed
 	c.has("Address of the cache server", "https://cache.acme.dev/x")

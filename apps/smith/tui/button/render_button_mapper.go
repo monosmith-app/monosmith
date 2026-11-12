@@ -1,17 +1,20 @@
 package button
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // Cell is the text of a button before any style: " label (key) ", or " label "
-// when key is "". Every clickable item in the TUI is drawn from it.
+// when key is "". Every clickable item in the TUI is drawn from it. The key is
+// spelled the one way the footer and the help spell it ("enter" as "Enter",
+// "ctrl+c" as "Ctrl+C"), whatever name the caller passes.
 func Cell(label, key string) string {
 	if key == "" {
 		return " " + label + " "
 	}
-	return " " + label + " (" + key + ") "
+	return " " + label + " (" + commands.KeyLabel(key) + ") "
 }
 
 // Width is the cells a button takes. It is the same in every theme, so a click

@@ -283,7 +283,7 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "x", "enter")
-	x, y := l.find("Cancel (esc)")
+	x, y := l.find("Cancel (Esc)")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
 		t.Fatal("cancel must not run")
@@ -311,7 +311,7 @@ func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "x", "enter")
 	before := l.sh().View()
-	x, y := l.find("Cancel (esc)")
+	x, y := l.find("Cancel (Esc)")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("hover should change the button")
@@ -504,7 +504,7 @@ func TestAClickOnTheModalsOwnButtonStillWorks(t *testing.T) {
 	l := newLab(t, true, 120, 40)
 	l.openTab(commands.TabRelease)
 	l.keys("x", "enter")
-	l.has("[Cancel (esc)]")
+	l.has("[Cancel (Esc)]")
 	l.clickText("Cancel")
 	if l.sh().modalOpen() {
 		t.Fatal("Cancel closes the confirmation")

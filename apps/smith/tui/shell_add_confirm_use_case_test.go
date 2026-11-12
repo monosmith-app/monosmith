@@ -42,7 +42,7 @@ func TestTheAddConfirmShowsTheCommandInTheRealShell(t *testing.T) {
 			sh := l.sh()
 			sh.addPlanRead(capturedMsg{argv: append(append([]string(nil), argv...), "--dry-run"), res: sources.Captured{OK: true, Text: plan}})
 			l.m = sh
-			l.has("The command that will run:", "$ smith add app web --lang node --with react", "Run (enter)", "Commit this change")
+			l.has("The command that will run:", "$ smith add app web --lang node --with react", "Run (Enter)", "Commit this change")
 			r := l.sh().confirm.Rect()
 			lay := l.sh().lay()
 			if r.Y < lay.Main.Y || r.Y+r.H > lay.Footer.Y {
@@ -75,5 +75,5 @@ func TestTheAddConfirmFollowsAResize(t *testing.T) {
 	l.m = sh
 	l.has("The command that will run:")
 	l.send(tea.WindowSizeMsg{Width: 100, Height: 24})
-	l.has("The command that will run:", "$ smith add app web", "Run (enter)")
+	l.has("The command that will run:", "$ smith add app web", "Run (Enter)")
 }
