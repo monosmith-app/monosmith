@@ -4,6 +4,7 @@ import (
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 )
 
 // engine is the oldest VS Code the extension supports; @types/vscode
@@ -14,8 +15,8 @@ const engine = "1.96.0"
 var devDependencies = map[string]string{
 	"@types/vscode": "~" + engine,
 	"@vscode/vsce":  "^4.0.0",
-	"esbuild":       "^0.28.2",
-	"typescript":    "~6.0.3",
+	"esbuild":       toolchainversions.Esbuild,
+	"typescript":    toolchainversions.TypeScript,
 }
 
 // publisherToken and kindToken stand for the Marketplace publisher and the

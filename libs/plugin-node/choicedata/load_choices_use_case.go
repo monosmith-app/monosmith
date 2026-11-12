@@ -11,6 +11,7 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -65,6 +66,12 @@ func Load(fsys fs.FS, dir string) (*Set, error) {
 		if err := s.add(name, raw); err != nil {
 			return nil, fmt.Errorf("%s: %w", name, err)
 		}
+	}
+	for pkg, rng := range toolchainversions.Ranges() {
+		if _, written := s.versions[pkg]; written {
+			return nil, fmt.Errorf("%s: %s is a shared toolchain package; its range comes from toolchainversions, so remove it", catalogName, pkg)
+		}
+		s.versions[pkg] = rng
 	}
 	return s, s.check()
 }

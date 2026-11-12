@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -39,7 +40,7 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 		files["vitest.config.ts"] = "import { defineConfig } from 'vitest/config'\n\nexport default defineConfig({\n" + alias + "})\n"
 	}
 	return tooling.Setup{
-		DevDependencies: map[string]string{"vitest": "^5.0.5"},
+		DevDependencies: map[string]string{"vitest": toolchainversions.Vitest},
 		Files:           files,
 		Scripts:         map[string]string{"test": "vitest run"},
 	}

@@ -4,6 +4,7 @@ import (
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 )
 
 // templates is the TypeScript starter the plugin scaffolds from.
@@ -16,14 +17,10 @@ var templates = scaffolding.TemplateSet{
 // installs "latest"; bump these deliberately. TypeScript stays on 6.x until
 // ts-jest and typescript-eslint support 7.
 var devDependencies = map[string]string{
-	"@types/node":         "^24.19.2",
-	"typescript":          "~6.0.3",
+	"@types/node":         toolchainversions.TypesNode,
+	"typescript":          toolchainversions.TypeScript,
 	"@monosmith/tsconfig": "^0.1.0",
 }
-
-// esbuildVersion is the esbuild a project that follows siblings building with
-// it pins in the workspace.
-const esbuildVersion = "^0.25.12"
 
 // GreetingSlice is the greeting slice every TypeScript project starts with:
 // a contract, a use case and the slice's index (its only public door). A
