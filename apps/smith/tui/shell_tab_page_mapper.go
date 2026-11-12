@@ -47,8 +47,20 @@ func (s Shell) guideModalName() string {
 	return ""
 }
 
-// Footer implements Page.
-func (p tabPage) Footer() (view, tail []commands.Hint) { return commands.Hints(p.sh.state()) }
+// Footer implements Page. On a button above the rule of a split detail, Enter
+// goes to the run button and does not run yet: its hint says so.
+func (p tabPage) Footer() (view, tail []commands.Hint) {
+	view, tail = commands.Hints(p.sh.state())
+	s := p.sh
+	if s.sideKeys() && !s.detailOnRun && !s.runShown() && s.detailPanel().Splits() {
+		for i, h := range view {
+			if h.Key == "enter" && h.Label == words.Say("commands.side.open.footer") {
+				view[i].Label = words.Say("commands.side.open.footer.chooser")
+			}
+		}
+	}
+	return view, tail
+}
 
 // Update implements Page: keys go to the view's own handler.
 func (p tabPage) Update(msg tea.Msg) tea.Cmd {

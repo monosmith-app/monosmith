@@ -54,7 +54,7 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 	}
 	lines = p.group(lines, hits, th, p.ActionsTitle, p.Actions, w, hover)
 	lines = p.group(lines, hits, th, p.MoreTitle, p.More, w, hover)
-	if chosen, ok := p.ChosenAction(); ok && p.Splits() {
+	if chosen, ok := p.ChosenAction(); ok && p.Splits() && !p.PinRun {
 		lines = p.runPart(lines, hits, th, chosen, w, hover)
 	}
 	for _, s := range p.After {
@@ -80,6 +80,35 @@ func (p Panel) runPart(lines []string, hits map[int]string, th theme.Theme, a Ac
 	run := a
 	run.ID, run.Hint = RunID, ""
 	return p.action(lines, hits, th, run, w, hover, false, false)
+}
+
+// PinnedRun draws the second part of a split panel on its own, for a caller
+// that keeps it in view under the part that scrolls (see Panel.PinRun): the
+// thin rule, what the chosen action does and the run button, in at most limit
+// lines. A description too long for the limit is cut and ends with "…"; the
+// rule and the button always stay.
+//
+// Parameters: th is the theme; w is the width; hover is the ID under the
+// pointer; limit is the most lines the part may take (at least 2).
+// Returns: the lines, and the line of the run button with RunID; nothing when
+// the panel does not split.
+func (p Panel) PinnedRun(th theme.Theme, w int, hover string, limit int) (lines []string, hits map[int]string) {
+	hits = map[int]string{}
+	chosen, ok := p.ChosenAction()
+	if !ok || !p.Splits() {
+		return nil, hits
+	}
+	all := p.runPart(nil, map[int]string{}, th, chosen, w, hover)[1:] // no blank line above the rule
+	limit = max(limit, 2)
+	if len(all) > limit {
+		desc := all[1 : len(all)-1][:limit-2]
+		if n := len(desc); n > 0 {
+			desc[n-1] = pane.Fit(ansi.Truncate(desc[n-1], max(w-1, 1), "")+"…", w)
+		}
+		all = append(append([]string{all[0]}, desc...), all[len(all)-1])
+	}
+	hits[len(all)-1] = RunID
+	return all, hits
 }
 
 // group appends a heading and the buttons of a list of actions, after a blank

@@ -837,10 +837,14 @@ Doctor (Fix, Run this check now, Check again, Why).
 2. **The bottom part**, under a thin rule, says what the chosen action does: what runs, what runs
    first, whether smith remembers the result, and the `smith run …` line. Under the description is
    the one button that runs it. That button has the label and the key of the chosen action.
+   When the pane is too short for the whole panel, this part stays at the bottom of the pane and
+   the buttons above it scroll, so the description and the run button are always in view. A
+   description too long for half of the pane is cut and ends with `…`.
 
 With the keyboard (after `Tab`, or in the opened detail), `Up` and `Down` choose an action. `Down`
 after the last action moves to the run button, and `Up` goes back. `Enter` on an action moves to the
-run button, and `Enter` on the run button runs the action. The shortcut letters (`b`, `t`, `l`, `c`,
+run button, and `Enter` on the run button runs the action. The footer says which: `go to run (Enter)`
+on an action, `run (Enter)` on the run button. The shortcut letters (`b`, `t`, `l`, `c`,
 `p` and the others the buttons show) do not choose: they run the action at once. They are the fast
 path that the footer and the help promise.
 
