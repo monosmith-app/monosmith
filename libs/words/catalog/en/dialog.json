@@ -9,5 +9,5 @@
   "dialog.more": "… {count} more lines (Up/Down/PgDn show them)",
   "dialog.help.mouse": "Mouse",
   "dialog.help.disabled": "Disabled: {reason}",
-  "dialog.help.title": "Keyboard shortcuts · Esc closes · ↑↓ scroll"
+  "dialog.help.title": "Keyboard shortcuts · ↑↓ scroll · Esc closes"
 }

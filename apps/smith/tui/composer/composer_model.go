@@ -63,7 +63,10 @@ type Model struct {
 	chk    compose.Check
 
 	// stack shows the ticked items by layer instead of the catalogue.
-	stack   bool
+	stack bool
+	// onList is true while the keyboard is on the list, not in the search box:
+	// Space then ticks the row under the cursor instead of typing a space.
+	onList  bool
 	stage   stage
 	qcursor int
 	kind    int
@@ -261,27 +264,38 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
 	return m.browseKey(msg)
 }
 
-// browseKey handles a key while the person searches and ticks.
+// browseKey handles a key while the person searches and ticks. The arrows put
+// the keyboard on the list, where Space ticks, as in every list; a letter puts
+// it back in the search box. Enter goes on, as Ctrl+N does.
 func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
+	last := max(m.length()-1, 0)
 	switch commands.NavNamed(msg.String()) {
 	case commands.NavUp:
-		m.cursor = max(m.cursor-1, 0)
-		return m, Outcome{}
+		if m.cursor == 0 {
+			// Up from the first row goes back to the search box.
+			m.onList = false
+			return m.focusSearch(), Outcome{}
+		}
+		m.cursor--
+		return m.focusList(), Outcome{}
 	case commands.NavDown:
-		m.cursor = min(m.cursor+1, max(m.length()-1, 0))
-		return m, Outcome{}
+		if m.onList {
+			m.cursor = min(m.cursor+1, last)
+		}
+		// From the search box the first Down lands on the row under the cursor.
+		return m.focusList(), Outcome{}
 	case commands.NavPageUp:
 		m.cursor = max(m.cursor-8, 0)
-		return m, Outcome{}
+		return m.focusList(), Outcome{}
 	case commands.NavPageDown:
-		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
-		return m, Outcome{}
+		m.cursor = min(m.cursor+8, last)
+		return m.focusList(), Outcome{}
 	case commands.NavHome:
 		m.cursor = 0
-		return m, Outcome{}
+		return m.focusList(), Outcome{}
 	case commands.NavEnd:
-		m.cursor = max(m.length()-1, 0)
-		return m, Outcome{}
+		m.cursor = last
+		return m.focusList(), Outcome{}
 	}
 	switch msg.String() {
 	case "ctrl+c":
@@ -290,27 +304,51 @@ func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
 		switch {
 		case m.search.Value() != "":
 			m.search.SetValue("")
-			return m.refresh(), Outcome{}
+			return m.focusSearch().refresh(), Outcome{}
 		case m.stack:
 			m.stack, m.cursor = false, 0
-			return m, Outcome{}
+			return m.focusSearch(), Outcome{}
 		}
 		return m, Outcome{Done: true}
 	case "tab":
 		m.stack, m.cursor = !m.stack, 0
-	case "enter":
-		return m.enter(), Outcome{}
-	case "ctrl+n":
+	case " ":
+		if m.onList {
+			return m.enter(), Outcome{}
+		}
+		return m.typeIn(msg), Outcome{}
+	case "enter", "ctrl+n":
 		return m.next()
 	default:
-		before := m.search.Value()
-		m.search, _ = m.search.Update(msg)
-		if m.search.Value() != before {
-			m.cursor = 0
-			m = m.refresh()
-		}
+		return m.typeIn(msg), Outcome{}
 	}
 	return m, Outcome{}
+}
+
+// typeIn gives a key to the search box, which takes the keyboard back.
+func (m Model) typeIn(msg tea.KeyMsg) Model {
+	m = m.focusSearch()
+	before := m.search.Value()
+	m.search, _ = m.search.Update(msg)
+	if m.search.Value() != before {
+		m.cursor = 0
+		m = m.refresh()
+	}
+	return m
+}
+
+// focusList puts the keyboard on the list: the search box shows no cursor.
+func (m Model) focusList() Model {
+	m.onList = true
+	m.search.Blur()
+	return m
+}
+
+// focusSearch puts the keyboard in the search box.
+func (m Model) focusSearch() Model {
+	m.onList = false
+	m.search.Focus()
+	return m
 }
 
 // enter ticks the item under the cursor, or in the stack view unticks it.
@@ -407,7 +445,7 @@ func (m Model) nameKey(msg tea.KeyMsg) (Model, Outcome) {
 	case "ctrl+c", "esc":
 		m.stage = stBrowse
 		m.name.Blur()
-		m.search.Focus()
+		m = m.focusSearch()
 		m.note = ""
 	case "tab":
 		m.kind = (m.kind + 1) % len(kinds)

@@ -54,7 +54,7 @@ func text(m Model) string { return strings.Join(m.Lines(theme.Default()), "\n") 
 func TestTheFirstQuestionMarksTheDefaultAndShowsTheExactCommand(t *testing.T) {
 	m := New([]toolinstall.ToolPlan{plan("go", install("brew", false, "brew", "install", "go"), install("apt", true, "sudo", "apt-get", "install", "golang-go"))}).Place(100, 30)
 	got := text(m)
-	for _, want := range []string{"GO is missing", "Install with brew (default)", "Command: brew install go", "esc cancel (nothing is installed)"} {
+	for _, want := range []string{"GO is missing", "Install with brew (default)", "Command: brew install go", "Esc cancels (nothing is installed)"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("the dialog lacks %q:\n%s", want, got)
 		}
@@ -166,7 +166,7 @@ func TestWithNoMissingToolTheDialogSaysSo(t *testing.T) {
 	}
 }
 
-func TestAClickPicksAnOptionAndADoubleClickConfirmsIt(t *testing.T) {
+func TestOneClickPicksAnOption(t *testing.T) {
 	m := New([]toolinstall.ToolPlan{plan("go", install("brew", false, "brew", "install", "go"), install("apt", false, "apt-get", "install", "golang-go"))}).Place(100, 30)
 	th := theme.Default()
 	y := -1
@@ -178,14 +178,11 @@ func TestAClickPicksAnOptionAndADoubleClickConfirmsIt(t *testing.T) {
 	if y < 0 {
 		t.Fatal("option not drawn")
 	}
-	m, out := m.Click(th, m.Rect().X+5, y, false)
-	if m.cursor != 1 || out.Run != nil {
-		t.Fatalf("a single click only moves the cursor: %d %+v", m.cursor, out)
-	}
-	if _, out = m.Click(th, m.Rect().X+5, y, true); !slices.Equal(out.Run, []string{"tools", "install", "go", "--manager", "apt"}) {
-		t.Fatalf("a double click confirms the option: %+v", out)
-	}
-	if !strings.Contains(text(m), "click an entry, double-click to select") {
+	if !strings.Contains(text(m), "Enter or a click picks") {
 		t.Fatal("hint missing")
+	}
+	m, out := m.Click(th, m.Rect().X+5, y)
+	if m.cursor != 1 || !slices.Equal(out.Run, []string{"tools", "install", "go", "--manager", "apt"}) {
+		t.Fatalf("one click picks the option: %d %+v", m.cursor, out)
 	}
 }

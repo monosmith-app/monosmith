@@ -53,7 +53,7 @@
   "resultdialog.cache.cancel.note": "Cancelled: no cache was cleared",
   "resultdialog.foot.cache": "You see what goes, with the count, before anything is deleted.",
   "resultdialog.foot.version": "You see the plan before anything is written. One dependency at a time: smith sync --to <name>=<version>.",
-  "resultdialog.hint": "up/down choose · enter select · click an entry, double-click to select · esc closes and changes nothing",
+  "resultdialog.hint": "↑↓ move · Enter or a click picks · Esc closes and changes nothing",
   "resultdialog.run.failed": "It did not finish: {operation}",
   "resultdialog.run.stop.label": "Stop it",
   "resultdialog.run.stop.hint": "the command ends; files it already wrote stay",

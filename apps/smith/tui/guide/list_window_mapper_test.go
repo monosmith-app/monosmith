@@ -78,7 +78,7 @@ func TestKeysMoveTheSelectionAndKeepItInView(t *testing.T) {
 			}
 			m = press(m, "end")
 			text, _ = windowText(m, sc.w, sc.h)
-			if m.cursor != 24 || !strings.Contains(text, "opt24") || strings.Contains(text, "↓ ") {
+			if m.cursor != 24 || !strings.Contains(text, "opt24") || strings.Contains(strings.ReplaceAll(text, "↑↓", ""), "↓ ") {
 				t.Fatalf("End: cursor %d:\n%s", m.cursor, text)
 			}
 			m = press(m, "pgup")

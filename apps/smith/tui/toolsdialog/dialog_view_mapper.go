@@ -92,7 +92,7 @@ func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 		lines = append(lines, pane.Wrap(th.Muted(words.Say("toolsdialog.note", "note", o.Note)), inner, 2)...)
 	}
 	lines = append(lines, "")
-	return append(lines, th.Muted(words.Say("toolsdialog.pick.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
+	return append(lines, th.Muted(words.Say("toolsdialog.pick.keys"))), first
 }
 
 // adminBody is the second question: who runs a command that needs
@@ -116,7 +116,7 @@ func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) 
 		lines = append(lines, choicerow.Line(th, m.optionRow(i, label), inner))
 	}
 	lines = append(lines, "")
-	return append(lines, th.Muted(words.Say("toolsdialog.admin.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
+	return append(lines, th.Muted(words.Say("toolsdialog.admin.keys"))), first
 }
 
 // runBody is the command and the end of its output, as it streams.
@@ -156,24 +156,19 @@ func (m Model) doneBody(th theme.Theme, inner int) []string {
 	return append(lines, "", th.Muted(words.Say("toolsdialog.done.keys")))
 }
 
-// Click handles a left press on the list of options or answers: one press moves
-// the cursor to the entry, a second press on the same cell (double is true)
-// answers like Enter. A press elsewhere, or while an install runs, changes
-// nothing.
+// Click handles a left press on the list of options or answers: a press on an
+// entry picks it, as Enter does on it, like a click in every single-choice
+// list. A press elsewhere, or while an install runs, changes nothing.
 //
-// Parameters: th is the theme the dialog is drawn with; x and y are screen
-// cells; double says the press is the second of a double click.
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
 // Returns: the new dialog and what the host must do.
-func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
+func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
 	i := m.optionAt(th, x, y)
 	if i < 0 {
 		return m, Outcome{}
 	}
 	m.cursor = i
-	if double {
-		return m.Key("enter")
-	}
-	return m, Outcome{}
+	return m.Key("enter")
 }
 
 // Hover notes the option under the pointer at (x, y), drawn in the row hover look.
