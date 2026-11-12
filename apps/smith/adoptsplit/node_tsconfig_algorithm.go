@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 )
 
@@ -69,7 +69,7 @@ func shareTSConfig(req Request, dir string) (string, error) {
 		return "", nil
 	}
 	project, _ := jsondoc.ParseDocument([]byte("{}"))
-	project.SetString("extends", strings.Repeat("../", strings.Count(req.Dir, "/")+1)+"tsconfig.base.json")
+	project.SetString("extends", tsconfigchain.Extends(req.Dir, tsconfigchain.Base))
 	for _, key := range doc.Keys() {
 		if key == "compilerOptions" && options.Len() == 0 {
 			continue
