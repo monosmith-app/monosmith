@@ -69,7 +69,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | View | Key | Shows |
 |---|---|---|
 | Home | `1` | An attention queue: what needs a look, the most urgent first, each with the buttons that deal with it (see [Home](#home)). The first line says what the workspace holds (`24 projects (23 TypeScript / JavaScript, 1 Go)`; its name and branch are in the header). Under the queue: the last three runs and two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
-| Projects | `2` | The top panel is the workspace: one line with the count (`24 projects · 0 affected by the changes (●)`) and the legend of the arrows (`↑ = dependencies · ↓ = dependants`), then one line of buttons for the whole workspace: `+ New project (a)` (opens the Add wizard), `Verify (V)`, `Build (B)`, `Test (T)`, `Lint (L)`, `Typecheck (C)` and `Build release` (`smith run build --release`), each on every project, and `Clear cache` (`smith cache clear`: with a remote cache set it asks first which cache goes, the local one, the remote one (`--remote`) or both (`--all`), then shows the same question as the command line, with the store, the workspace and the count; without a remote it deletes the local cache after you confirm); a button that does not fit moves to the next line. Then every project, ordered by kind and then name, with its language. The detail pane has two parts split by a thin rule. The top part never scrolls: the project's name, kind, language and stack (beside the list it leaves out the ones the list shows as columns; opened full-screen it shows them), root, version, whether it is affected, and its dependencies and dependants as names in a line that wraps. The bottom part scrolls (`Ctrl+U` `Ctrl+D`, the wheel, or the keyboard cursor after `Tab`): the actions that apply to the project, under `Run on <project>` (its tasks, the packages, How was this resolved?, Why, Graph), then **More**: the forms that apply to it (swap a choice, environments of a web app, Tauri, Docker Hub), `Change kind…`, `Eject a tool's configuration…` and `Remove project…`, and its derived files (when the workspace derives files). The version reads `current → next` while the plan of the Release tab releases the project, and the current version alone otherwise; the list has the same Version column, which shortens to `→ next` when it is narrow. At the foot of the pane, under a rule, **Recent runs** lists the last three runs of this session and says how many more are kept; `Tab` or a click opens it upward to list every kept run. The list has the columns Project, Kind, Language, Stack, Version and `↑ ↓` (the number of dependencies and of dependants); a narrow pane drops Stack, Language and Kind before Version. While a task runs, or when you open a run, the detail pane shows that run instead (see [The run panel](#the-run-panel)). |
+| Projects | `2` | The top panel is the workspace: one line with the count (`24 projects · 0 affected by the changes (●)`) and the legend of the arrows (`↑ = dependencies · ↓ = dependants`), then one line of buttons for the whole workspace: `+ New project (a)` (opens the Add wizard), `Verify (V)`, `Build (B)`, `Test (T)`, `Lint (L)`, `Typecheck (C)` and `Build release` (`smith run build --release`), each on every project, and `Clear cache` (`smith cache clear`: with a remote cache set it asks first which cache goes, the local one, the remote one (`--remote`) or both (`--all`), then shows the same question as the command line, with the store, the workspace and the count; without a remote it deletes the local cache after you confirm); a button that does not fit moves to the next line. Then every project, ordered by kind and then name, with its language. The detail pane has two parts split by a thin rule. The top part never scrolls: the project's name, kind, language and stack (beside the list it leaves out the ones the list shows as columns; opened full-screen it shows them), root, version, whether it is affected, and its dependencies and dependants as names in a line that wraps. The bottom part scrolls (`Ctrl+U` `Ctrl+D`, the wheel, or the keyboard cursor after `Tab`): the actions that apply to the project, under `Run on <project>` (its tasks, the packages, How was this resolved?, Why, Graph), then **More**: the forms that apply to it (swap a choice, environments of a web app, Tauri, Docker Hub), `Change kind…`, `Eject a tool's configuration…` and `Remove project…`, one button per line. Under them is the description of the chosen action and the one button that runs it (see [Action panels](#action-panels)). Then come its derived files (when the workspace derives files). The version reads `current → next` while the plan of the Release tab releases the project, and the current version alone otherwise; the list has the same Version column, which shortens to `→ next` when it is narrow. At the foot of the pane, under a rule, **Recent runs** lists the last three runs of this session and says how many more are kept; `Tab` or a click opens it upward to list every kept run. The list has the columns Project, Kind, Language, Stack, Version and `↑ ↓` (the number of dependencies and of dependants); a narrow pane drops Stack, Language and Kind before Version. While a task runs, or when you open a run, the detail pane shows that run instead (see [The run panel](#the-run-panel)). |
 | Doctor | `3` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Doctor detail](#the-doctor-detail)); fixes open the fix wizard. |
 | Deps | `4` | A row of chips at the top, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), limits the list to one level. Under it the summary, the warning about major releases among the chosen packages (so it shows without scrolling), and the dependencies with newer releases, grouped patch and minor, then major (columns Package, Now, Latest, Level, Kind, Projects), with the `smith deps up` command line for a selection. The one-version policy's verdict (`One version`) is in the detail beside the list; on a narrow screen it is under the list. A line under the table gives the registry page of the selected package ([Registry link](#the-registry-link-in-the-deps-view)). |
 | Release | `5` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump, and a button `Release now (x)` that releases it. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
@@ -643,7 +643,7 @@ open, also across a new check. The footer names what each key does now: `hide fa
 The detail of the selected check has four parts, always in this order, and each fact appears once:
 
 1. **State**, under the check's name: the icon and the word only (`× failed`, `▲ warning`, `✓ passed`).
-2. **Actions**, as buttons: `[ Fix  f ]` (only when the check has a fix), **Run this check now** (only for a check that a command runs on its own: the boundary checks run `smith boundaries`), `[ Check again  r ]` and **Why is <file> here?** (only for a check about a file: the file its fix writes, or a path its problem names). Why opens the **Why is this here?** form with the file filled in, so `Enter` runs `smith why <file>`. Each button shows its key and, under it, a plain line on what it does (for a fix, what it will change). Click a button or press its key.
+2. **Actions**, as an [action panel](#action-panels): `[ Fix  f ]` (only when the check has a fix), **Run this check now** (only for a check that a command runs on its own: the boundary checks run `smith boundaries`), `[ Check again  r ]` and **Why is <file> here?** (only for a check about a file: the file its fix writes, or a path its problem names). Why opens the **Why is this here?** form with the file filled in, so `Enter` runs `smith why <file>`. Each button shows its key. A click on a button chooses it. Under the rule, a plain line says what the chosen action does (for a fix, what it will change), and the run button under that line runs it. The key of an action runs it at once.
 3. **What is wrong**: the problem the check found. A long problem shows its first three items; `e` shows all.
 4. **How to fix**: the remedy, then what the fix will do (the projects it covers, the files it writes, the commands it runs, the questions it asks), and last the same fix in a terminal (`or in a terminal: smith doctor --fix --only '<check>'`). A check without a fix has no Fix button; its remedy says what to do.
 
@@ -821,16 +821,42 @@ smith said, with its fix, in a notice instead of the plan. A command that needs 
 its own (it asks questions) is handed back to smith to run after the shell closes; the shell
 prints `→ smith <command line>`.
 
+## Action panels
+
+A detail pane with two or more actions, of which at least one has a description, shows its actions
+in two parts. This rule is the same in every detail pane: Projects (the tasks and the More forms) and
+Doctor (Fix, Run this check now, Check again, Why).
+
+1. **The top part** is one compact button per line, with no description. A button here only chooses
+   an action. The chosen action has the selected look. The first action is chosen until you choose
+   another one, and a new selection starts at its first action again.
+2. **The bottom part**, under a thin rule, says what the chosen action does: what runs, what runs
+   first, whether smith remembers the result, and the `smith run …` line. Under the description is
+   the one button that runs it. That button has the label and the key of the chosen action.
+
+With the keyboard (after `Tab`, or in the opened detail), `Up` and `Down` choose an action. `Down`
+after the last action moves to the run button, and `Up` goes back. `Enter` on an action moves to the
+run button, and `Enter` on the run button runs the action. The shortcut letters (`b`, `t`, `l`, `c`,
+`p` and the others the buttons show) do not choose: they run the action at once. They are the fast
+path that the footer and the help promise.
+
+A panel with one action, or with actions that have no description, is not split. Its buttons run at
+a click, for example **Run this check now** of a check that doctor does not run itself, or **Doctor**
+and **Preview the release** in the Workspace detail. The Deps detail has no actions, and the Release
+view draws its buttons in the view, not in a detail pane.
+
 ## The mouse
 
 **Buttons.** Every action in a detail pane, and the buttons of the Projects list (`New project`,
 `Compose a stack`) and of the run panel (`Back`, `Stop`, `Run again`, `Run unfinished`, `Copy log`), is a button that shows its key in
 parentheses, for example `Test app (t)`. A button has three looks. It rests; it is lit while the
 pointer is over it; and it is pressed while you hold the mouse button on it. The action runs when you
-let go over the same button. Press a button, drag away and let go, and nothing runs. A muted line under a
-button says what it does. A task that the keymap has no key for (`package`, `start`, a task you wrote)
+let go over the same button. Press a button, drag away and let go, and nothing runs. In an
+[action panel](#action-panels) a click on a button above the rule chooses the action, and the run
+button under the rule runs it. A muted line under a single button says what it does. A task that the keymap has no key for (`package`, `start`, a task you wrote)
 gets a letter that no other key of the view uses, shown on its button. In the opened detail on a
-narrow screen the row at the keyboard cursor carries the cursor mark, and `Enter` runs it.
+narrow screen the row at the keyboard cursor carries the cursor mark, and `Enter` runs it (in an
+action panel, `Enter` first moves to the run button).
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
 button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls

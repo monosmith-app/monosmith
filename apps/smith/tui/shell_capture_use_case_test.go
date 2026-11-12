@@ -243,7 +243,7 @@ func TestDerivedActionsRunTheCommandsTheLabelsPromise(t *testing.T) {
 		"Why: who owns these files": "why apps/web",
 	} {
 		l := derivedLab(t)
-		l.clickText(label)
+		l.runDetailAction(label)
 		if got := l.lastStarted(); got != want {
 			t.Errorf("%s: started %q, want %q", label, got, want)
 		}
@@ -257,7 +257,7 @@ func TestChangingDerivedFilesAsksFirstAndShowsTheCommand(t *testing.T) {
 		"Own the files I edited":         "smith derive --eject apps/web/package.json",
 	} {
 		l := derivedLab(t)
-		l.clickText(label)
+		l.runDetailAction(label)
 		l.has(want)
 		if len(l.started) != 0 {
 			t.Errorf("%s ran before the answer: %v", label, l.started)

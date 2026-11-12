@@ -728,6 +728,7 @@ func (s *Shell) recentKey(name string) tea.Cmd {
 // to the list.
 func (s *Shell) detailKey(name string) tea.Cmd {
 	actions := s.detailActions()
+	split := s.detailPanel().Splits()
 	act := commands.NavNamed(name)
 	switch {
 	case !s.detailFull() && (act == commands.NavCancel || act == commands.NavNext || name == "left" || name == "backspace"):
@@ -738,16 +739,35 @@ func (s *Shell) detailKey(name string) tea.Cmd {
 		s.pageDetail(-1)
 	case act == commands.NavPageDown:
 		s.pageDetail(1)
-	case act == commands.NavUp:
-		s.detailCursor = max(s.detailCursor-1, 0)
+	case act == commands.NavUp && s.detailOnRun:
+		// From the run button back to the action it runs.
+		s.detailOnRun = false
 		s.keepDetailCursorVisible()
-	case act == commands.NavDown:
-		s.detailCursor = min(s.detailCursor+1, max(len(actions)-1, 0))
+	case act == commands.NavUp:
+		s.chooseDetail(max(s.detailCursor-1, 0))
+		s.keepDetailCursorVisible()
+	case act == commands.NavDown && split && !s.detailOnRun && s.detailCursor >= len(actions)-1:
+		// Past the last action is the run button.
+		s.detailOnRun = true
+		s.keepDetailCursorVisible()
+	case act == commands.NavDown && !s.detailOnRun:
+		s.chooseDetail(min(s.detailCursor+1, max(len(actions)-1, 0)))
+		s.keepDetailCursorVisible()
+	case act == commands.NavConfirm && split && !s.detailOnRun:
+		// Enter on an action of a split detail moves to the button that runs it.
+		s.detailOnRun = true
 		s.keepDetailCursorVisible()
 	case act == commands.NavConfirm:
-		if s.detailCursor < len(actions) && !actions[s.detailCursor].Disabled {
-			return s.activate(actions[s.detailCursor].ID)
-		}
+		return s.runChosen()
+	}
+	return nil
+}
+
+// runChosen runs the action at the detail cursor (the chosen one of a split
+// detail), unless it cannot run now.
+func (s *Shell) runChosen() tea.Cmd {
+	if a := s.detailActions(); s.detailCursor < len(a) && !a[s.detailCursor].Disabled {
+		return s.activate(a[s.detailCursor].ID)
 	}
 	return nil
 }

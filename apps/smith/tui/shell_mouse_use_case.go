@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/footer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -296,7 +297,18 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}
 		s.guide = s.guide.SelectRow(h.index)
+	case "choose":
+		// A button above the rule of a split detail chooses; the run button under it runs.
+		for i, a := range s.detailActions() {
+			if a.ID == h.id {
+				s.chooseDetail(i)
+			}
+		}
 	case "action":
+		if h.id == detail.RunID {
+			s.detailOnRun = true
+			return s.runChosen()
+		}
 		if s.detailFull() {
 			for i, a := range s.detailActions() {
 				if a.ID == h.id {

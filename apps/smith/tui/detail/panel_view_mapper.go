@@ -54,14 +54,37 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 	}
 	lines = p.group(lines, hits, th, p.ActionsTitle, p.Actions, w, hover)
 	lines = p.group(lines, hits, th, p.MoreTitle, p.More, w, hover)
+	if chosen, ok := p.ChosenAction(); ok && p.Splits() {
+		lines = p.runPart(lines, hits, th, chosen, w, hover)
+	}
 	for _, s := range p.After {
 		lines = p.section(lines, th, s, w, labelW)
 	}
 	return lines, hits
 }
 
+// runPart appends the second part of a split panel under a thin rule: what the
+// chosen action does, then the one button that runs it, with the action's own
+// label and key. Only the button clicks (as RunID).
+func (p Panel) runPart(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string) []string {
+	markW := 1
+	if p.Cursor != "" {
+		markW = pane.Width(choicerow.Cursor(th, false))
+	}
+	lines = append(lines, "", " "+th.Faint(strings.Repeat("─", max(w-2, 1))))
+	if a.Hint != "" {
+		for _, part := range pane.Wrap(a.Hint, max(w-markW-1, 4), 0) {
+			lines = append(lines, pane.Fit(strings.Repeat(" ", markW+1)+th.Muted(part), w))
+		}
+	}
+	run := a
+	run.ID, run.Hint = RunID, ""
+	return p.action(lines, hits, th, run, w, hover, false, false)
+}
+
 // group appends a heading and the buttons of a list of actions, after a blank
-// line; an empty list adds nothing. An empty title reads "Actions".
+// line; an empty list adds nothing. An empty title reads "Actions". In a split
+// panel the buttons are compact: one line each, no description.
 func (p Panel) group(lines []string, hits map[int]string, th theme.Theme, title string, actions []Action, w int, hover string) []string {
 	if len(actions) == 0 {
 		return lines
@@ -73,8 +96,11 @@ func (p Panel) group(lines []string, hits map[int]string, th theme.Theme, title 
 		title = words.Say("detail.actions")
 	}
 	lines = append(lines, " "+th.Title(title))
+	split := p.Splits()
+	chosen, _ := p.ChosenAction()
 	for _, a := range actions {
-		lines = p.action(lines, hits, th, a, w, hover)
+		// A chooser is one line: what it does is told once, under the rule.
+		lines = p.action(lines, hits, th, a, w, hover, split, split && a.ID == chosen.ID)
 	}
 	return lines
 }
@@ -82,9 +108,11 @@ func (p Panel) group(lines []string, hits map[int]string, th theme.Theme, title 
 // action appends the lines of one action: its button, then what it does in
 // muted text under it. Every line clicks like the action. The button is the
 // shared one (see package button) in the state the action is in: Disabled, Active
-// while it is pressed under the pointer, Hover under the pointer or at the
-// keyboard cursor, else Rest. With a Cursor the rows lead with the cursor mark.
-func (p Panel) action(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string) []string {
+// while it is pressed under the pointer or while it is the chosen one of a
+// split panel, Hover under the pointer or at the keyboard cursor, else Rest.
+// With a Cursor the rows lead with the cursor mark. A compact action is its
+// button alone: no description and no note under it.
+func (p Panel) action(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string, compact, chosen bool) []string {
 	mark := " "
 	if p.Cursor != "" {
 		mark = choicerow.Cursor(th, a.ID == p.Cursor)
@@ -100,8 +128,14 @@ func (p Panel) action(lines []string, hits map[int]string, th theme.Theme, a Act
 	if a.Hint != "" {
 		notes = append(notes, a.Hint)
 	}
+	if compact {
+		notes = nil
+	}
 	state := button.Rest
 	switch {
+	case chosen:
+		// The chosen action keeps the selected look, even when it cannot run now.
+		state = button.Active
 	case a.Disabled:
 		state = button.Disabled
 	case a.ID == hover && a.ID == p.Pressed:

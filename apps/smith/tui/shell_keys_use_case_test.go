@@ -308,7 +308,7 @@ func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 		t.Fatal("Esc should go back to the list")
 	}
 	l.has("4 projects")
-	l.keys("enter", "down", "enter") // the second action: Test app, on web
+	l.keys("enter", "down", "enter", "enter") // the second action: Test app, on web; Enter moves to its run button, then runs it
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}

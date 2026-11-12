@@ -39,7 +39,7 @@ func TestABoundaryFindingHasAButtonThatRunsSmithBoundariesNow(t *testing.T) {
 	l.keys("3")
 	l.send(boundaryResult())
 	l.has("Run this check now")
-	l.clickText("Run this check now")
+	l.runDetailAction("Run this check now")
 	if got := l.lastStarted(); got != "boundaries" {
 		t.Fatalf("the button started %q, not smith boundaries", got)
 	}
@@ -78,7 +78,7 @@ func TestAFindingAboutAFileHasAWhyButtonThatOpensTheWhyFormForIt(t *testing.T) {
 		l.keys("down")
 	}
 	l.has("Why is apps/web/Dockerfile here?")
-	l.clickText("Why is apps/web/Dockerfile here?")
+	l.runDetailAction("Why is apps/web/Dockerfile here?")
 	if l.sh().guide.Title() != "Why is this here?" {
 		t.Fatalf("the button opened %q", l.sh().guide.Title())
 	}

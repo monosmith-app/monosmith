@@ -4,8 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/muesli/termenv"
 )
 
 func TestThePanelListsRowsAndClickableActions(t *testing.T) {
@@ -111,5 +113,98 @@ func TestAnActionExplainsItselfUnderItsLabelAndTheExplanationClicksLikeIt(t *tes
 	}
 	if rows < 2 {
 		t.Fatalf("the action and its explanation click as one: %d rows hit\n%s", rows, text)
+	}
+}
+
+func TestThePanelSplitsOnlyWhenItHasSeveralActionsAndADescription(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		p    Panel
+		want bool
+	}{
+		{"one action with a description", Panel{Actions: []Action{{ID: "a", Hint: "does a"}}}, false},
+		{"two actions with no description", Panel{Actions: []Action{{ID: "a"}, {ID: "b"}}}, false},
+		{"two actions, one described", Panel{Actions: []Action{{ID: "a"}, {ID: "b", Hint: "does b"}}}, true},
+		{"one action and one more, described", Panel{Actions: []Action{{ID: "a", Hint: "does a"}}, More: []Action{{ID: "m"}}}, true},
+	} {
+		if got := tc.p.Splits(); got != tc.want {
+			t.Errorf("%s: Splits() = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestTheChosenActionIsTheFirstUntilAnotherIsChosen(t *testing.T) {
+	p := Panel{Actions: []Action{{ID: "a"}, {ID: "b"}}, More: []Action{{ID: "m"}}}
+	for chosen, want := range map[string]string{"": "a", "gone": "a", "b": "b", "m": "m"} {
+		p.Chosen = chosen
+		if got, ok := p.ChosenAction(); !ok || got.ID != want {
+			t.Errorf("Chosen %q gives %q, want %q", chosen, got.ID, want)
+		}
+	}
+	if _, ok := (Panel{}).ChosenAction(); ok {
+		t.Error("a panel with no actions has no chosen action")
+	}
+}
+
+func TestASplitPanelShowsCompactChoosersThenTheChosenDescriptionAndOneRunButton(t *testing.T) {
+	p := Panel{
+		Actions: []Action{{ID: "build", Label: "Build", Shortcut: "b", Hint: "compiles the code"}, {ID: "test", Label: "Test", Shortcut: "t", Hint: "runs the tests"}},
+		After:   []Section{{Heading: "Notes", Items: []string{"after the actions"}}},
+		Chosen:  "test",
+	}
+	lines, hits := p.View(theme.Default(), 40, "")
+	text := pane.Strip(strings.Join(lines, "\n"))
+	if strings.Contains(text, "compiles the code") {
+		t.Fatalf("only the chosen action is described:\n%s", text)
+	}
+	if strings.Count(text, "runs the tests") != 1 || strings.Count(text, "Test (t)") != 2 {
+		t.Fatalf("the chosen action is a chooser and the run button, described once:\n%s", text)
+	}
+	build, test, run, desc, notes := -1, -1, -1, -1, -1
+	for i, l := range lines {
+		s := pane.Strip(l)
+		switch {
+		case strings.Contains(s, "Build (b)"):
+			build = i
+		case strings.Contains(s, "Test (t)") && test < 0:
+			test = i
+		case strings.Contains(s, "Test (t)"):
+			run = i
+		case strings.Contains(s, "runs the tests"):
+			desc = i
+		case strings.Contains(s, "Notes"):
+			notes = i
+		}
+	}
+	if build >= test || test+1 >= desc || desc >= run || run >= notes {
+		t.Fatalf("order: choosers, rule, description, run button, then the sections after:\n%s", text)
+	}
+	if hits[build] != "build" || hits[test] != "test" || hits[run] != RunID {
+		t.Fatalf("each chooser clicks its action and the run button clicks RunID: %v", hits)
+	}
+	if _, ok := hits[desc]; ok {
+		t.Fatal("the description is not a button")
+	}
+}
+
+func TestTheRunButtonLooksDisabledWhenTheChosenActionCannotRun(t *testing.T) {
+	defer lipgloss.SetColorProfile(lipgloss.ColorProfile())
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	th := theme.Default()
+	p := Panel{Actions: []Action{{ID: "a", Label: "Alpha", Hint: "does a"}, {ID: "b", Label: "Beta", Hint: "does b"}}}
+	on, rows := p.View(th, 40, "")
+	p.Actions[0].Disabled = true
+	off, _ := p.View(th, 40, "")
+	run := -1
+	for row, id := range rows {
+		if id == RunID {
+			run = row
+		}
+	}
+	if run < 0 || on[run] == off[run] {
+		t.Fatalf("the run button of an action that cannot run looks disabled: %q", off)
+	}
+	if on[1] != off[1] {
+		t.Fatal("the chosen chooser keeps its selected look even when its action cannot run")
 	}
 }

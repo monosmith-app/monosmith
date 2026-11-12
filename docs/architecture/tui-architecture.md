@@ -104,6 +104,19 @@ Tab in Projects is list, recent runs (when a run is kept), detail, list; in Doct
 `Right` and `Left` do the same as `Tab` where they have no other meaning (a Doctor group header folds).
 A run that opens takes the keyboard (`revealRun`), a click gives it to the panel it lands on.
 
+### The action panel of a detail
+
+`detail.Panel` draws the actions of every detail pane. `Panel.Splits()` holds the one rule: two or
+more actions, and at least one with a `Hint`. A split panel draws each action as one compact button
+that only chooses, then a thin rule, the `Hint` of the chosen action and one run button. The run
+button has the hit, hover and cursor ID `detail.RunID`. `Panel.Chosen` names the chosen action, and
+`Panel.ChosenAction()` falls back to the first one. The shell keeps the choice in `detailCursor` (the
+same index the keyboard cursor uses) and the keyboard stop on the run button in `detailOnRun`.
+`forgetDetailPlace` resets both when the selection changes. `detailContent` gives the chooser rows
+the hit kind `choose` and the run button the kind `action`, so only the run button takes the press,
+release and active look of a button. The shortcut keys go through the keymap, not the panel, so they
+run the action at once.
+
 Home has no second panel. Its keys are `home.move`, `home.scroll` and `Ctrl+U`/`Ctrl+D`
 (`shell_home_keys_use_case.go`): the keyboard is on one target of the page (`homeSel`, counted in
 reading order over the `Targets` that `dashboard.PageAt` returns), and a page taller than its pane

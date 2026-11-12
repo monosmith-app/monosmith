@@ -26,6 +26,28 @@ func (l *lab) findAfter(text string, minRow int) (x, y int) {
 	return 0, 0
 }
 
+// findLast is find, for the last row that holds text.
+func (l *lab) findLast(text string) (x, y int) {
+	l.t.Helper()
+	lines := l.lines()
+	for row := len(lines) - 1; row >= 0; row-- {
+		if i := strings.Index(lines[row], text); i >= 0 {
+			return len([]rune(lines[row][:i])), row
+		}
+	}
+	l.t.Fatalf("%q not on screen:\n%s", text, l.view())
+	return 0, 0
+}
+
+// runDetailAction runs an action of a split detail as a person does: a click on
+// its button chooses it, then a click on the run button under the rule runs it.
+func (l *lab) runDetailAction(label string) *lab {
+	l.t.Helper()
+	l.clickText(label)
+	x, y := l.findLast(label)
+	return l.send(click(x+1, y)).send(letGo(x+1, y))
+}
+
 func (l *lab) doubleClick(x, y int) {
 	l.send(click(x, y))
 	l.advance(120 * time.Millisecond)
@@ -103,6 +125,10 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 	}
 	tx, ty := l.find("Test app")
 	l.send(click(tx+2, ty)).send(letGo(tx+2, ty))
+	if len(l.started) != 0 {
+		t.Fatal("a click on an action of the split detail only chooses it")
+	}
+	l.runDetailAction("Test app")
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -117,9 +143,8 @@ func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
 	l.advance(2 * time.Second)
 	l.doubleClick(x+2, y)
 	l.has("dependants", "Test library")
-	// A click on an action of the detail does it.
-	ax, ay := l.find("Test library")
-	l.send(click(ax+2, ay)).send(letGo(ax+2, ay))
+	// A click on an action of the detail chooses it; the run button under the rule does it.
+	l.runDetailAction("Test library")
 	if l.lastStarted() != "run test -p kit" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -171,6 +196,8 @@ func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 func TestClickingAnActionOfTheDetailRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.findAfter("Test app", 3)
+	l.send(click(x+3, y)).send(letGo(x+3, y))
+	x, y = l.findLast("Test app")
 	l.send(click(x+3, y)).send(letGo(x+3, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())

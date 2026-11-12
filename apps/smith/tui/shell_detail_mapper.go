@@ -63,9 +63,10 @@ func (s Shell) detailRect() layout.Rect {
 func (s Shell) detailContent(w, h int) content {
 	panel := s.detailPanel()
 	panel.Pressed = s.pressed
-	if a := s.detailActions(); s.sideKeys() && s.detailCursor < len(a) {
-		panel.Cursor = a[s.detailCursor].ID
+	if s.sideKeys() {
+		panel.Cursor = s.detailCursorID(panel)
 	}
+	split := panel.Splits()
 	// The fixed top of a project's detail (see detailSplit) is drawn above the body that scrolls.
 	top, h := s.detailSplit(w, h)
 	all, rows := panel.View(s.th, w, "")
@@ -79,9 +80,32 @@ func (s Shell) detailContent(w, h int) content {
 	lines = pane.Scrollbar(s.th, lines, w, pane.ClampTop(s.detailTop, len(all), h), len(all))
 	c := content{lines: append(top, lines...), hits: map[int]hit{}}
 	for row, id := range hits {
-		c.hits[len(top)+row] = hit{kind: "action", id: id}
+		h := hit{kind: "action", id: id}
+		if split && id != detail.RunID {
+			// In a split detail a button above the rule only chooses; the run button runs.
+			h.kind = "choose"
+		}
+		c.hits[len(top)+row] = h
 	}
 	return c
+}
+
+// detailCursorID is the ID the keyboard cursor of the detail is on: the run
+// button of a split panel, else the action at detailCursor, else "".
+func (s Shell) detailCursorID(panel detail.Panel) string {
+	if s.detailOnRun && panel.Splits() {
+		return detail.RunID
+	}
+	if a := s.detailActions(); s.detailCursor < len(a) {
+		return a[s.detailCursor].ID
+	}
+	return ""
+}
+
+// chooseDetail makes action i of the detail the chosen one, with the keyboard
+// cursor on it.
+func (s *Shell) chooseDetail(i int) {
+	s.detailCursor, s.detailOnRun = i, false
 }
 
 // sideContent is what the right panel shows: the run while one is open in
@@ -115,6 +139,10 @@ func (s Shell) detailIdentity() string {
 // forgetDetailPlace starts the detail at its top, folded, when what it shows changed.
 func (s *Shell) forgetDetailPlace() {
 	if id := s.detailIdentity(); id != s.detailFor {
+		if s.detailFor != "" {
+			// Another selection has other actions: its first one is the chosen one.
+			s.chooseDetail(0)
+		}
 		s.detailFor, s.detailTop, s.detailAll = id, 0, false
 	}
 }
@@ -142,6 +170,9 @@ func (s Shell) detailPanel() detail.Panel {
 	p.ListVisible = !s.detailFull() && s.lay().HasDetail()
 	p.Actions = s.withKeys(p.Actions)
 	p.More = s.withKeys(p.More)
+	if all := append(append([]detail.Action(nil), p.Actions...), p.More...); s.detailCursor < len(all) {
+		p.Chosen = all[s.detailCursor].ID
+	}
 	return p
 }
 

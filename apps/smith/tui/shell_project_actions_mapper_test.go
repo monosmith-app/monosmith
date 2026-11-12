@@ -127,7 +127,7 @@ func TestWithoutTheirFormsKindEjectAndAddTauriHaveNoButton(t *testing.T) {
 
 func TestTheRemoveButtonOpensTheRemoveFormOnTheSelectedProject(t *testing.T) {
 	l := projectActionsLab(t).pick("web")
-	l.clickText("[Remove project…")
+	l.runDetailAction("[Remove project…")
 	if l.sh().tab != commands.TabGuide || l.sh().guide.Title() != "Remove a project" {
 		t.Fatalf("the click opened %q on %s", l.sh().guide.Title(), l.sh().tab)
 	}

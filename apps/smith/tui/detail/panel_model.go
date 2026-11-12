@@ -66,6 +66,52 @@ type Panel struct {
 	ListVisible bool
 	// Cursor is the ID of the action the keyboard cursor is on. When it is set,
 	// every action leads with the cursor mark (see package choicerow) and the one
-	// at the cursor looks as if hovered.
+	// at the cursor looks as if hovered. RunID puts the cursor on the run button
+	// of a split panel.
 	Cursor string
+	// Chosen is the ID of the chosen action of a split panel (see Splits). An ID
+	// that names no action chooses the first one.
+	Chosen string
+}
+
+// RunID is the hit, the hover and the cursor ID of the run button of a split
+// panel: the one button under the description that runs the chosen action.
+const RunID = "\x00run"
+
+// Splits is true when the panel draws its actions in two parts: a compact
+// column of buttons that only choose, then the description of the chosen action
+// and one button that runs it. The rule is the same for every panel: two or
+// more actions, and at least one with a description. One action, or actions
+// with no description, keep buttons that run at a click.
+func (p Panel) Splits() bool {
+	all := p.all()
+	if len(all) < 2 {
+		return false
+	}
+	for _, a := range all {
+		if a.Hint != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// ChosenAction is the action the run button of a split panel runs: the one
+// Chosen names, else the first. It reports false when the panel has no actions.
+func (p Panel) ChosenAction() (Action, bool) {
+	all := p.all()
+	if len(all) == 0 {
+		return Action{}, false
+	}
+	for _, a := range all {
+		if a.ID == p.Chosen {
+			return a, true
+		}
+	}
+	return all[0], true
+}
+
+// all are the actions of both groups, in the order the keyboard visits them.
+func (p Panel) all() []Action {
+	return append(append([]Action(nil), p.Actions...), p.More...)
 }

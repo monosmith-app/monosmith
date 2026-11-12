@@ -25,6 +25,14 @@ func buttonLab(t *testing.T, w, h int) *lab {
 	return l
 }
 
+// runButton chooses the action labelled label in the split detail and returns
+// the cell of the run button under the rule, the one button that runs it.
+func (l *lab) runButton(label string) (x, y int) {
+	l.t.Helper()
+	l.clickText(label)
+	return l.findLast(label)
+}
+
 // rawRow is the screen row y with its colour codes, to tell the states of a button apart.
 func (l *lab) rawRow(y int) string { return strings.Split(l.sh().View(), "\n")[y] }
 
@@ -78,7 +86,7 @@ func TestAHoveredButtonLooksDifferentAndLeavingRestoresIt(t *testing.T) {
 
 func TestAPressedButtonShowsTheActiveStateAndRunsOnRelease(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Test app")
+	x, y := l.runButton("Test app")
 	l.send(motion(x+2, y))
 	hover := l.rawRow(y)
 	l.send(click(x+2, y))
@@ -97,7 +105,7 @@ func TestAPressedButtonShowsTheActiveStateAndRunsOnRelease(t *testing.T) {
 
 func TestDraggingAwayFromAPressedButtonCancelsIt(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Test app")
+	x, y := l.runButton("Test app")
 	l.send(click(x+2, y)).send(drag(x+2, y+4)).send(letGo(x+2, y+4))
 	if len(l.started) != 0 {
 		t.Fatalf("a release elsewhere cancels the press, started %q", l.lastStarted())
@@ -114,8 +122,8 @@ func TestDraggingAwayFromAPressedButtonCancelsIt(t *testing.T) {
 
 func TestAPressOnOneButtonReleasedOnAnotherRunsNothing(t *testing.T) {
 	l := buttonLab(t, 160, 100)
-	x, y := l.find("Build app")
 	tx, ty := l.find("Test app")
+	x, y := l.runButton("Build app")
 	l.send(click(x+2, y)).send(drag(tx+2, ty)).send(letGo(tx+2, ty))
 	if len(l.started) != 0 {
 		t.Fatalf("started %q", l.lastStarted())
