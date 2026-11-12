@@ -63,7 +63,7 @@ func (s Shell) runRect() (w, h int) {
 // logTotal is how many rows the log shown takes at the width of the run panel.
 func (s Shell) logTotal() int {
 	w, _ := s.runRect()
-	return len(logview.Rows(s.th, s.logLines(), w))
+	return len(logview.Rows(s.th, s.logLines(), w-logPad))
 }
 
 // logHeight is the number of log lines visible in the run panel.
@@ -245,7 +245,10 @@ func (s Shell) runPanelContent(w, h int) content {
 	sep := words.Say("tui.main.log", "title", title, "follow", follow)
 	c.lines = append(c.lines, s.th.Faint(pane.Fit(sep+strings.Repeat("─", max(w-pane.Width(sep), 0)), w)))
 	c.lines = append(c.lines, s.taskInfo(w)...)
-	c.lines = append(c.lines, s.log.Render(s.th, logview.Rows(s.th, s.logLines(), w), w, g.logRows)...)
+	// The log keeps the one cell of padding of every pane.
+	for _, line := range s.log.Render(s.th, logview.Rows(s.th, s.logLines(), w-logPad), w-logPad, g.logRows) {
+		c.lines = append(c.lines, strings.Repeat(" ", logPad)+line)
+	}
 	return c
 }
 
@@ -338,6 +341,9 @@ func (s Shell) taskInfo(w int) []string {
 	}
 	return out
 }
+
+// logPad is the blank cells before each line of the log.
+const logPad = 1
 
 // taskNameW is the width of the name column of the task list in w cells.
 func taskNameW(w int) int { return min(max(w/3, 12), 28) }

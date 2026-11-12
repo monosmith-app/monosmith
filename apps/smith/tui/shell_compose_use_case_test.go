@@ -26,6 +26,20 @@ func composeLab(t *testing.T) *lab {
 	return l
 }
 
+func TestComposeAStackSitsUnderTheRuleLikeEveryDialog(t *testing.T) {
+	for _, size := range [][2]int{{140, 40}, {100, 16}, {80, 24}} {
+		l := newLab(t, true, size[0], size[1])
+		sh := l.sh()
+		m := composer.New(compose.Build(compose.Source{})).Within(sh.dialogMargins()).Place(sh.w, sh.h)
+		first := sh.mainInner().Y
+		// Compose needs 12 rows: on a lower screen it may reach over the footer,
+		// never over the rule.
+		if r := m.Rect(); r.Y < first || (r.H <= sh.lay().Footer.Y-first && r.Y+r.H > sh.lay().Footer.Y) {
+			t.Errorf("%dx%d: Compose spans rows %d-%d, want inside %d-%d", size[0], size[1], r.Y, r.Y+r.H-1, first, sh.lay().Footer.Y-1)
+		}
+	}
+}
+
 func TestAClickInComposeAStackTicksTheBoxUnderIt(t *testing.T) {
 	l := composeLab(t)
 	l.clickText("[ ] ESLint")

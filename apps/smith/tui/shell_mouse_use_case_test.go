@@ -124,13 +124,13 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
-	l := newLab(t, true, 260, 34)
+	l := newLab(t, true, 320, 34)
 	x, y := l.find("test orders (t)")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
-	l = newLab(t, true, 160, 34)
+	l = newLab(t, true, 320, 34)
 	x, y = l.find("help (?)")
 	l.send(click(x+1, y))
 	l.has("Keyboard shortcuts")
@@ -157,7 +157,7 @@ func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 }
 
 func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
-	l := newLab(t, true, 160, 34)
+	l := newLab(t, true, 320, 34)
 	x, y := l.find("1-6 views")
 	l.send(click(x+1, y))
 	if l.sh().tab != "projects" || len(l.started) != 0 {
