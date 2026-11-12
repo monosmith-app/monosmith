@@ -94,3 +94,34 @@ func TestOnASmallScreenThePlanScrollsWithTheKeysAndTheWheel(t *testing.T) {
 		t.Fatalf("the wheel must scroll back to the top:\n%s", text(m))
 	}
 }
+
+// scrollbarOnTheBorder fails unless the lines draw a scrollbar and every cell
+// of its track is the last one inside the right border, as in every pane.
+func scrollbarOnTheBorder(t *testing.T, lines []string) {
+	t.Helper()
+	track := []rune(theme.Default().Icons.Track)[0]
+	bars := 0
+	for _, l := range lines {
+		r := []rune(pane.Strip(l))
+		for x, c := range r {
+			if c != track {
+				continue
+			}
+			if x != len(r)-2 {
+				t.Fatalf("the scrollbar is in column %d, not next to the border in column %d: %q", x, len(r)-2, string(r))
+			}
+			bars++
+		}
+	}
+	if bars == 0 {
+		t.Fatalf("the test needs a body that scrolls:\n%s", pane.Strip(strings.Join(lines, "\n")))
+	}
+}
+
+func TestTheComposePlanScrollbarSitsNextToTheBorder(t *testing.T) {
+	plan := compose.Plan{Command: "smith add app web --lang node --with react", Argv: []string{"smith", "add"}}
+	for i := range 20 {
+		plan.Files = append(plan.Files, compose.PlanLine{Action: "create", Path: "apps/web/file" + string(rune('a'+i))})
+	}
+	scrollbarOnTheBorder(t, small(screen()).WithPlan(plan, nil).Lines(theme.Default()))
+}

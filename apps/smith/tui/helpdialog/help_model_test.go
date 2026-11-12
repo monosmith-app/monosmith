@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -43,4 +44,31 @@ func TestHelpClosesOnEscF1AndAnOutsideClick(t *testing.T) {
 	if !h.Click(0, 0).Done || h.Click(h.rect.X+5, h.rect.Y+5).Done {
 		t.Fatal("outside closes, inside does not")
 	}
+}
+
+// scrollbarOnTheBorder fails unless the lines draw a scrollbar and every cell
+// of its track is the last one inside the right border, as in every pane.
+func scrollbarOnTheBorder(t *testing.T, lines []string) {
+	t.Helper()
+	track := []rune(theme.Default().Icons.Track)[0]
+	bars := 0
+	for _, l := range lines {
+		r := []rune(pane.Strip(l))
+		for x, c := range r {
+			if c != track {
+				continue
+			}
+			if x != len(r)-2 {
+				t.Fatalf("the scrollbar is in column %d, not next to the border in column %d: %q", x, len(r)-2, string(r))
+			}
+			bars++
+		}
+	}
+	if bars == 0 {
+		t.Fatalf("the test needs a body that scrolls:\n%s", pane.Strip(strings.Join(lines, "\n")))
+	}
+}
+
+func TestTheHelpScrollbarSitsNextToTheBorder(t *testing.T) {
+	scrollbarOnTheBorder(t, sampleHelp().Lines(theme.Default()))
 }

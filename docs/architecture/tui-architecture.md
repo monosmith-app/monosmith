@@ -140,8 +140,10 @@ never gives a dialog more rows than that room (`Margins.Room`), so a dialog neve
 strip or the footer, and no dialog has a minimum height. A dialog draws itself in the height of its
 `Rect`: the part that scrolls goes through `pane.DialogBody` (the window from `top`, the `↑ more` and
 `↓ more` rows of `WindowMarked`, the shared scrollbar) and the foot (its key line, its buttons, the
-spinner of a confirmation that waits for its plan) is pinned under it. The text that scrolls is
-wrapped one cell narrower than the inside, so the scrollbar never takes a last letter.
+spinner of a confirmation that waits for its plan) is pinned under it. Every dialog gives
+`DialogBody` and `pane.Scrollbar` the same width, `pane.DialogRowWidth(box width)`, and fits its
+rows to it, so the scrollbar sits in the cell next to the right border, as in the panes. The text
+that scrolls is wrapped narrower than that row, so the scrollbar never takes a last letter.
 `pane.FollowLines` keeps every line of the choice under the cursor in view (`pane.KeepVisible` for a
 one-line row), and `pane.BodyLine` maps a click or a hover row back to a body line, `-1` on a marker,
 before `choicerow.At` finds the choice, so what is drawn and what is clicked never differ. Every

@@ -315,9 +315,9 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 	rows, _ := w.rows(th, tick)
 	total := len(rows)
 	rows, _ = pane.WindowMarked(th, rows, nil, w.top, w.visible())
-	rows = pane.Scrollbar(th, rows, inner, pane.ClampTop(w.top, total, w.visible()), total)
+	rows = pane.Scrollbar(th, rows, pane.DialogRowWidth(r.W), pane.ClampTop(w.top, total, w.visible()), total)
 	out := make([]string, 0, r.H-2)
-	row := func(content string) string { return " " + pane.Fit(content, inner) }
+	row := func(content string) string { return " " + pane.Fit(content, pane.DialogRowWidth(r.W)) }
 	for i, l := range rows {
 		if i >= r.H-4 {
 			break

@@ -21,9 +21,9 @@ func (m Model) Lines(th theme.Theme) []string {
 		return nil
 	}
 	body, _ := m.body(th)
-	rows := pane.DialogBody(th, body, m.hintLines(th), r.W-4, r.H-2, m.top)
+	rows := pane.DialogBody(th, body, m.hintLines(th), pane.DialogRowWidth(r.W), r.H-2, m.top)
 	for i, l := range rows {
-		rows[i] = " " + pane.Fit(l, r.W-4)
+		rows[i] = " " + pane.Fit(l, pane.DialogRowWidth(r.W))
 	}
 	return pane.Frame(th, m.title, rows, r.W, r.H, true)
 }

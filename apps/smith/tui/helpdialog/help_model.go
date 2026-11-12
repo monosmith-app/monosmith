@@ -102,7 +102,7 @@ func (h Help) Lines(th theme.Theme) []string {
 	top := min(max(h.top, 0), h.maxTop(len(content)))
 	// The shared scrollbar takes the cell next to the border, and the "more"
 	// rows say what is hidden, as in every dialog.
-	rows := pane.DialogBody(th, content, nil, r.W-3, r.H-2, top)
+	rows := pane.DialogBody(th, content, nil, pane.DialogRowWidth(r.W), r.H-2, top)
 	for i, l := range rows {
 		rows[i] = " " + l
 	}

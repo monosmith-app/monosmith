@@ -28,11 +28,11 @@ func (m Model) Lines(th theme.Theme) []string {
 	if r.W < 24 || r.H < 4 {
 		return nil
 	}
-	inner := r.W - 4
+	w := pane.DialogRowWidth(r.W)
 	body, _ := m.body(th, m.textWidth())
-	rows := pane.DialogBody(th, body, []string{th.Muted(m.keys())}, inner, r.H-2, m.top)
+	rows := pane.DialogBody(th, body, []string{th.Muted(m.keys())}, w, r.H-2, m.top)
 	for i, l := range rows {
-		rows[i] = " " + pane.Fit(l, inner)
+		rows[i] = " " + pane.Fit(l, w)
 	}
 	return pane.Frame(th, m.Title(), rows, r.W, r.H, true)
 }

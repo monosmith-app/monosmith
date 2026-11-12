@@ -44,7 +44,7 @@ func (m Model) Lines(th theme.Theme, tick int, now time.Time) []string {
 	r := m.Rect()
 	rows, _ := m.layout(th, tick, now)
 	for i, l := range rows {
-		rows[i] = " " + pane.Fit(l, r.W-4)
+		rows[i] = " " + pane.Fit(l, pane.DialogRowWidth(r.W))
 	}
 	return pane.Frame(th, words.Say("cachewizard.title"), rows, r.W, r.H, true)
 }
@@ -65,7 +65,7 @@ type screen struct {
 // the shared scrollbar (pane.DialogBody), and its buttons stay at the bottom.
 func (m Model) layout(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 	sc := m.body(th, tick, now)
-	inner, height := m.rect.W-4, m.rect.H-2
+	height := m.rect.H - 2
 	if len(sc.lines) <= height {
 		for i := range sc.hits {
 			sc.hits[i].line = sc.hits[i].row
@@ -74,7 +74,7 @@ func (m Model) layout(th theme.Theme, tick int, now time.Time) ([]string, []hit)
 	}
 	body, foot := sc.lines[:sc.foot], sc.lines[sc.foot:]
 	room := pane.BodyRoom(height, len(foot))
-	rows := pane.DialogBody(th, body, foot, inner, height, m.top)
+	rows := pane.DialogBody(th, body, foot, pane.DialogRowWidth(m.rect.W), height, m.top)
 	var hits []hit
 	for _, h := range sc.hits {
 		h.line = h.row
