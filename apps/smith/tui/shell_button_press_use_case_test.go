@@ -78,7 +78,8 @@ func TestAHoveredButtonLooksDifferentAndLeavingRestoresIt(t *testing.T) {
 	if hover == rest {
 		t.Fatal("the button under the pointer must show the hover state")
 	}
-	l.send(motion(2, y))
+	// The margin cell at the left edge is on no button and no row.
+	l.send(motion(0, y))
 	if got := l.rawRow(y); got != rest {
 		t.Fatalf("the button must be back at rest:\n%q\n%q", got, rest)
 	}

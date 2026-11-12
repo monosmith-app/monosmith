@@ -236,7 +236,16 @@ The stages and calls are in [How adopt and convert work](adopt-and-convert.md).
 | stdin not a terminal, or `CI` set | `Interactive()` is false: `smith` prints its help | `tui_handler.go` |
 
 Every state keeps its word beside its symbol, so colour is never the only signal. The mouse reports
-cell motion only, so Shift+drag still selects text, and `m` turns it off. Copy uses the OSC 52
+all motion (`tea.WithMouseAllMotion`), because the hover looks need the motion with no button
+held. Terminals keep Shift+drag for their own text selection in every report mode, and `m` turns
+the mouse off. A motion with no button held does not draw at once: `deferHover` keeps the last
+one and asks for one `hoverMsg` frame after `hoverDelay` (25 ms). Until that frame, `View` gives
+back the last screen (`lastFrame`), so a pointer that sweeps the screen costs about 15 µs a cell
+instead of a full drawing (4 ms on Projects). A press, a release, a drag or the wheel forgets the
+kept motion and runs at once. The hover looks come from the theme: `ButtonHover` (a colour between
+`Button` and `ButtonActive`) for buttons, tabs and footer hints, and `RowHover` (between the
+terminal's background and `Highlight`) for rows. `withRowHover` paints the row under the pointer
+for every hit kind in `rowHoverKinds`, in one place for the list and the detail. Copy uses the OSC 52
 terminal sequence, which also works over SSH.
 
 ## Where in the code

@@ -875,9 +875,17 @@ words and marks the defaults: "React, ESLint (default), Vitest (default); no des
 ticked, the project takes the stack's defaults and the confirmation says so. While the confirmation is open the
 tab bar names the form ("Add a project"), not "Start"; "Decide in the next question" leaves the choices list empty. In Deps, click a row's box to
 mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shift+Down do the same from the keyboard),
-and click the box in the heading to mark every row shown, or none. Only
-cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
-turns the mouse off.
+and click the box in the heading to mark every row shown, or none. Shift+drag still selects
+text in most terminals, and `m` turns the mouse off.
+
+**Hover.** Everything you can click shows a hover look while the pointer is over it. A button,
+a tab and a footer hint take the button hover colour, which is between the resting colour and the
+pressed (or selected) colour. A row that a click selects or ticks (a project, a check, a
+dependency, an option of a form, a run) takes the row hover background, which is between the
+terminal's own background and the background of the selected row. The selected row keeps its own
+look. Nothing behind a dialog shows a hover. Without colour (`NO_COLOR` or the plain theme) a
+hovered button is in reverse video and a hovered row is underlined. smith draws the hover at
+most about 40 times a second, so a fast pointer does not slow the screen.
 
 ### Select text
 

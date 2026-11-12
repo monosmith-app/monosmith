@@ -160,6 +160,9 @@ func (m Model) newView() Model {
 // chosen; with Argv empty, the user left the top level.
 func (m Model) Done() bool { return m.done }
 
+// Cursor is the index of the option the keyboard cursor is on.
+func (m Model) Cursor() int { return m.cursor }
+
 // Title is the heading of the chosen action ("Add a project"), or "" while
 // the list of actions is showing.
 func (m Model) Title() string {

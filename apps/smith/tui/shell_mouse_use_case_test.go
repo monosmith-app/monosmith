@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -24,6 +25,64 @@ func (l *lab) findAfter(text string, minRow int) (x, y int) {
 	}
 	l.t.Fatalf("%q not on screen from row %d:\n%s", text, minRow, l.view())
 	return 0, 0
+}
+
+func TestPointerMotionIsDrawnOnceAFrameNotOnceACell(t *testing.T) {
+	inColour(t)
+	l := buttonLab(t, 160, 40)
+	before := l.sh().View()
+	x, y := l.find("○ kit")
+	// A sweep of the pointer: each motion is kept for the next hover frame, and
+	// the screen is not drawn again until that frame.
+	m, cmd := l.m.Update(motion(1, 1))
+	if cmd == nil {
+		t.Fatal("the first motion asks for a hover frame")
+	}
+	for i := 0; i < 20; i++ {
+		m, cmd = m.Update(motion(x+1+i%3, y))
+		if cmd != nil {
+			t.Fatal("a frame is already on its way: no second one")
+		}
+		if m.View() != before {
+			t.Fatal("a kept motion must not draw the screen again")
+		}
+	}
+	if m.(Shell).mouseY == y {
+		t.Fatal("the pointer moves only at the hover frame")
+	}
+	// The frame draws the last place of the pointer.
+	m, _ = m.Update(hoverMsg{})
+	if m.(Shell).mouseX != x+1+19%3 || m.(Shell).mouseY != y {
+		t.Fatalf("the frame applies the last motion, got %d,%d", m.(Shell).mouseX, m.(Shell).mouseY)
+	}
+	if m.View() == before {
+		t.Fatal("the hover frame draws the row under the pointer")
+	}
+}
+
+func TestAClickForgetsAMotionThatWaitsForItsFrame(t *testing.T) {
+	l := buttonLab(t, 160, 40)
+	m, _ := l.m.Update(motion(5, 5))
+	m, _ = m.Update(click(40, 6))
+	m, _ = m.Update(letGo(40, 6))
+	m, _ = m.Update(hoverMsg{})
+	if sh := m.(Shell); sh.mouseX != 40 || sh.mouseY != 6 {
+		t.Fatalf("a late hover frame moved the pointer back to %d,%d", sh.mouseX, sh.mouseY)
+	}
+}
+
+func TestADragIsNeverHeldBackForAFrame(t *testing.T) {
+	l := buttonLab(t, 160, 40)
+	sh := l.sh()
+	held := motion(10, 10)
+	held.Button = tea.MouseButtonLeft
+	if _, kept := sh.deferHover(tea.MouseEvent(held)); kept {
+		t.Fatal("a motion with a button held is a drag and runs at once")
+	}
+	sh.pressed = "run.build"
+	if _, kept := sh.deferHover(tea.MouseEvent(motion(10, 10))); kept {
+		t.Fatal("a motion while a button is pressed runs at once")
+	}
 }
 
 // findLast is find, for the last row that holds text.

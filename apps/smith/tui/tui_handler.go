@@ -183,14 +183,16 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		cfg.Outside = &outside
 	}
 	// The alternate screen gives the shell the whole terminal and puts the
-	// user's screen back on exit. Cell-motion mouse reports (clicks, drags,
-	// the wheel; no hover) keep Shift+drag free for the terminal's own text
-	// selection, and `m` turns the mouse off altogether.
+	// user's screen back on exit. All-motion mouse reports give clicks, drags,
+	// the wheel and the motion with no button held that the hover looks need
+	// (Shell coalesces that motion, see deferHover). Terminals keep Shift+drag
+	// for their own text selection in every report mode, and `m` turns the
+	// mouse off altogether.
 	// The background is decided here, from the environment, so lipgloss and
 	// termenv never ask the terminal: a terminal that ignores the query made
 	// the screen stay blank for five seconds.
 	lipgloss.SetHasDarkBackground(theme.DarkBackground(os.Getenv))
-	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithReportFocus()).Run()
+	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithReportFocus()).Run()
 	if err != nil {
 		return Chosen{}, nil, err
 	}

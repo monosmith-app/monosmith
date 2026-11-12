@@ -16,6 +16,14 @@ import (
 
 // Update implements tea.Model.
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	s.reuseFrame = false
+	if m, ok := msg.(tea.MouseMsg); ok && !s.belowMinimum() {
+		if cmd, kept := s.deferHover(tea.MouseEvent(m)); kept {
+			// Nothing changed yet: the screen stays as it was drawn.
+			s.reuseFrame = true
+			return s, cmd
+		}
+	}
 	// The event acts on the detail as it is drawn now: its place and its chosen
 	// action belong to the selection on screen when the event arrives.
 	s.forgetDetailPlace()
@@ -72,6 +80,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		return s.mouse(msg)
+	case hoverMsg:
+		return s.applyHover()
 	case tickMsg:
 		s.tick++
 		s.toast = s.toast.Tick()

@@ -14,14 +14,16 @@ type Tokens struct {
 	Muted, Faint string
 	// Text is the normal text colour.
 	Text string
-	// Highlight is the background of the hovered or selected row, and Bar the
-	// background of the status bar.
-	Highlight, Bar string
+	// Highlight is the background of the selected row, RowHover the background
+	// of a row under the pointer (between the terminal's own background and
+	// Highlight), and Bar the background of the status bar.
+	Highlight, RowHover, Bar string
 	// Border is the rule of an unfocused pane and Focus the rule of the focused one.
 	Border, Focus string
 	// Button, ButtonHover and ButtonActive are the backgrounds of a clickable
 	// item at rest, under the pointer and pressed (or the selected tab).
-	// ButtonText is the text on the first, ButtonOn the text on the other two.
+	// ButtonHover is a colour between the other two. ButtonText is the text on
+	// the first two, ButtonOn the text on the pressed one.
 	Button, ButtonHover, ButtonActive, ButtonText, ButtonOn string
 	// Colour is false for the plain theme: attributes (bold, reverse) carry
 	// the meaning instead.
@@ -31,17 +33,17 @@ type Tokens struct {
 // Dark suits a dark terminal background.
 var Dark = Tokens{
 	Name: "dark", Accent: "212", Success: "114", Warning: "215", Error: "203", Info: "75",
-	Muted: "245", Faint: "240", Text: "252", Highlight: "238", Bar: "236",
+	Muted: "245", Faint: "240", Text: "252", Highlight: "238", RowHover: "235", Bar: "236",
 	Border: "240", Focus: "212", Colour: true,
-	Button: "#2b1948", ButtonHover: "#5e4cff", ButtonActive: "#6800ff", ButtonText: "#ffffff", ButtonOn: "#ffffff",
+	Button: "#2b1948", ButtonHover: "#490ca3", ButtonActive: "#6800ff", ButtonText: "#ffffff", ButtonOn: "#ffffff",
 }
 
 // Light suits a light terminal background; the colours keep a contrast of 4.5:1.
 var Light = Tokens{
 	Name: "light", Accent: "125", Success: "28", Warning: "130", Error: "160", Info: "25",
-	Muted: "241", Faint: "243", Text: "235", Highlight: "253", Bar: "254",
+	Muted: "241", Faint: "243", Text: "235", Highlight: "253", RowHover: "255", Bar: "254",
 	Border: "243", Focus: "125", Colour: true,
-	Button: "#e6dcf7", ButtonHover: "#5e4cff", ButtonActive: "#6800ff", ButtonText: "#2b1948", ButtonOn: "#ffffff",
+	Button: "#e6dcf7", ButtonHover: "#b48cf9", ButtonActive: "#6800ff", ButtonText: "#2b1948", ButtonOn: "#ffffff",
 }
 
 // Plain has no colour at all (NO_COLOR): bold and reverse video mark the
