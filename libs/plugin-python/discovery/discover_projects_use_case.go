@@ -67,6 +67,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Kind:        kind,
 			Stack:       py.Tool.Smith.Stack,
 			Exports:     []string{importName},
+			PackageName: py.Project.Name,
 			Imports:     dedupe(imports),
 			Version:     py.Project.Version,
 			Description: strings.TrimSpace(py.Project.Description),

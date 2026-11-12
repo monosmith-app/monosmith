@@ -1,3 +1,9 @@
 {
-  "naming.upgrade.kept": "kept the project names the scope gave: [workspace] namespace = \"{namespace}\" is added (the workspace is named \"{name}\", so new projects would be {fromName}-core, not {fromNamespace}-core)"
+  "naming.upgrade.kept": "kept the project names the scope gave: [workspace] namespace = \"{namespace}\" is added (the workspace is named \"{name}\", so new projects would be {fromName}-core, not {fromNamespace}-core)",
+  "naming.doctor.check": "every package name starts with the workspace namespace",
+  "naming.doctor.problem": "the package {package} does not start with the namespace {namespace}",
+  "naming.doctor.remedy.fix": "rename the package to {expected}: smith doctor --fix shows the edit and asks first. Or keep the name and accept this warning in smith.toml ([[doctor.accept]]).",
+  "naming.doctor.remedy.dependents": "rename the package to {expected} in its manifest and in {dependents}, which depend on it. Or keep the name and accept this warning in smith.toml ([[doctor.accept]]).",
+  "naming.doctor.remedy.manual": "rename the package to {expected} in its manifest. Or keep the name and accept this warning in smith.toml ([[doctor.accept]]).",
+  "naming.doctor.fix": "rename the package {package} to {expected}"
 }

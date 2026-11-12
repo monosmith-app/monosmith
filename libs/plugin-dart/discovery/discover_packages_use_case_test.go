@@ -38,7 +38,7 @@ smith:
 		t.Fatalf("the workspace root is not a project: %v %+v", err, res.Projects)
 	}
 	web, core, tool := res.Projects[0], res.Projects[1], res.Projects[2]
-	if web.Kind != protocol.ProjectApp || web.Stack != "flutter" || web.Version != "1.2.0" || web.Exports[0] != "acme_web" || web.Imports[0] != "acme_core" || web.Imports[1] != "flutter_test" {
+	if web.Kind != protocol.ProjectApp || web.Stack != "flutter" || web.Version != "1.2.0" || web.Exports[0] != "acme_web" || web.PackageName != "acme_web" || web.Imports[0] != "acme_core" || web.Imports[1] != "flutter_test" {
 		t.Errorf("web %+v", web)
 	}
 	if build := web.Tasks["build"]; build.Command[0] != "flutter" || build.Command[len(build.Command)-1] != "{workspaceRoot}/dist/apps/web" || build.Outputs[0] != "../../dist/apps/web" {
