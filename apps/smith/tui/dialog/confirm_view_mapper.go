@@ -26,13 +26,18 @@ func (c Confirm) headLines(inner int) []string {
 // tailLines are the commit box and the command that will run: they always
 // stay on screen. A notice has none.
 func (c Confirm) tailLines() []string {
+	return c.tailLinesIn(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII}))
+}
+
+// tailLinesIn is tailLines drawn in a theme: the commit box shows the row
+// hover look in it while the pointer is over the box.
+func (c Confirm) tailLinesIn(th theme.Theme) []string {
 	if c.Info {
 		return nil
 	}
 	var tail []string
 	if c.Offer {
-		box := choicerow.Box(c.Commit, false) + " "
-		tail = append(tail, "", box+CommitLabel+words.Say("dialog.commit.key"))
+		tail = append(tail, "", choicerow.Toggle(th, CommitLabel+words.Say("dialog.commit.key"), c.Commit, c.overCommit))
 	}
 	caption := words.Say("dialog.command.will")
 	if c.reading {
@@ -94,7 +99,7 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	for len(rows) < c.headRoom() {
 		rows = append(rows, row(""))
 	}
-	tail := c.tailLines()
+	tail := c.tailLinesIn(th)
 	for i, l := range tail {
 		if i >= len(tail)-len(c.cmdLines) {
 			l = th.Bold(l)

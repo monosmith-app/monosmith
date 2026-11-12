@@ -85,6 +85,18 @@ func planOrEmpty(p *compose.Plan) compose.Plan {
 // composeKey sends a key to the screen and does what it asks.
 func (s *Shell) composeKey(msg tea.KeyMsg) tea.Cmd {
 	m, out := s.compose.Key(msg)
+	return s.afterCompose(m, out)
+}
+
+// composeClick sends a press to the screen: a row ticks or unticks, an answer
+// of the open question is picked.
+func (s *Shell) composeClick(x, y int) tea.Cmd {
+	m, out := s.compose.Click(x, y)
+	return s.afterCompose(m, out)
+}
+
+// afterCompose keeps the screen and does what it asks.
+func (s *Shell) afterCompose(m composer.Model, out composer.Outcome) tea.Cmd {
 	s.compose = &m
 	switch {
 	case out.Plan != nil:

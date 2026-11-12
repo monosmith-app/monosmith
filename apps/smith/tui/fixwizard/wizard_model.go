@@ -63,6 +63,8 @@ type Wizard struct {
 
 	sw, sh int
 	hover  int
+	// overOption is 1 + the index of the option under the pointer, 0 for none.
+	overOption int
 }
 
 // New starts the walk of a planned fix on its first question, or on the
@@ -460,6 +462,10 @@ func (w Wizard) Wheel(delta int) Wizard {
 // Hover highlights the button or the option under the pointer.
 func (w Wizard) Hover(x, y int) Wizard {
 	w.hover = button.At(w.buttonSpans(w.Rect().W-4), w.Rect(), x, y)
+	w.overOption = 0
+	if i, ok := w.optionAt(y); ok && w.phase == Asking && w.Rect().Contains(x, y) {
+		w.overOption = i + 1
+	}
 	return w
 }
 

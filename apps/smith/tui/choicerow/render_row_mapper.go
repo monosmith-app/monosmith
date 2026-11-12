@@ -82,6 +82,21 @@ func Lines(th theme.Theme, r Row, w int) []string {
 	return lines
 }
 
+// Toggle is a lone tick box with its label, outside any list (the "commit this
+// change" box of a dialog): no cursor column, the row hover look while the
+// pointer is over it. A click on it ticks or unticks it, as its key does.
+//
+// Parameters: th is the theme; label is the text; checked ticks the box;
+// hovered is true while the pointer is over it.
+// Returns: the line.
+func Toggle(th theme.Theme, label string, checked, hovered bool) string {
+	line := Box(checked, false) + " " + label
+	if hovered {
+		return th.RowHover(line)
+	}
+	return line
+}
+
 // Line is a row on one line of w cells (0 for no limit): Lines, cut to its
 // first line with an ellipsis when it would wrap.
 //

@@ -37,7 +37,7 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 	switch {
 	case m.action == nil:
 		for i, a := range m.actions {
-			add(i, Row(th, i == m.cursor, "", a.Title, a.Hint))
+			add(i, choicerow.Line(th, choicerow.Row{Label: a.Title, Hint: a.Hint, Selected: i == m.cursor}, 0))
 		}
 		lines = append(lines, "", th.Muted(words.Say("guide.guide.up_down_choose_enter_select_click")))
 	case step == nil:
@@ -117,7 +117,7 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 			if via := MatchedVia(o, m.filter); len(via) > 0 {
 				hint = words.Say("guide.guide.has_via", "via", strings.Join(via, ", "), "hint", hint)
 			}
-			add(i, Row(th, i == m.cursor, box, o.Label, hint))
+			add(i, choicerow.Line(th, choicerow.Row{Lead: box, Label: o.Label, Hint: hint, Selected: i == m.cursor}, 0))
 		}
 		if step.Filter && len(m.options()) == 0 {
 			lines = append(lines, th.Muted("  "+NothingMatches(step.Options, m.filter)))
@@ -174,18 +174,4 @@ func shown(lines []string, text string) bool {
 		}
 	}
 	return false
-}
-
-// Row draws one selectable line: a pointer, an optional checkbox, the label
-// and a dimmed hint.
-func Row(th theme.Theme, selected bool, box, label, hint string) string {
-	cursor := choicerow.Cursor(th, false)
-	if selected {
-		cursor = th.Accent(choicerow.Cursor(th, true))
-		label = th.Accent(label)
-	}
-	if hint != "" {
-		hint = "  " + th.Muted(hint)
-	}
-	return cursor + box + label + hint
 }

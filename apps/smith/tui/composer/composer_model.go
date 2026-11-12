@@ -47,6 +47,9 @@ type Model struct {
 	name   textinput.Model
 	hits   []compose.Hit
 	cursor int
+	// hover is the row under the pointer (of the list, or of the question's
+	// answers), -1 for none.
+	hover int
 	// cursorLine is the drawn line of the cursor row, so the list scrolls to it.
 	cursorLine int
 	// scroll is where the list's window starts; a pointer, so the wheel can move
@@ -82,7 +85,7 @@ func New(cat compose.Catalogue) Model {
 	search.Focus()
 	name := textinput.New()
 	name.Placeholder = words.Say("composer.name.placeholder")
-	m := Model{cat: cat, offers: compose.OffersOf(cat.Items), search: search, name: name, scroll: &pane.Scroll{}}
+	m := Model{cat: cat, offers: compose.OffersOf(cat.Items), search: search, name: name, scroll: &pane.Scroll{}, hover: -1}
 	return m.refresh()
 }
 

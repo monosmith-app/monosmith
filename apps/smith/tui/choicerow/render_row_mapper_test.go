@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/muesli/termenv"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/muesli/termenv"
 )
 
 func TestBoxIsBlankTickedOrPartialAndPartialWins(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -48,7 +48,7 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 			f := v.Report.Findings[i]
 			selected := position == v.Cursor
 			rowOf[len(lines)] = i
-			lines = append(lines, guide.Row(th, selected, indent+Mark(th, f)+" ", f.Title(), ""))
+			lines = append(lines, choicerow.Line(th, choicerow.Row{Lead: indent + Mark(th, f) + " ", Label: f.Title(), Selected: selected}, 0))
 			if selected && v.Open && expand && !f.OK {
 				lines = append(lines, Text(th, f, 5+len(indent))...)
 			}
@@ -63,14 +63,14 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 			lines = append(lines, "")
 		}
 		rowOf[len(lines)] = PassedRow
-		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", words.Say("doctor.passed.line", "count", v.Report.Passed), words.Say("doctor.passed.hint")))
+		lines = append(lines, choicerow.Line(th, choicerow.Row{Lead: th.Icons.Closed + " ", Label: words.Say("doctor.passed.line", "count", v.Report.Passed), Hint: words.Say("doctor.passed.hint"), Selected: v.OnPassedLine()}, 0))
 	}
 	if len(v.Extras) > 0 {
 		lines = append(lines, "", " "+th.Muted(words.Say("doctor.extra.heading")))
 		first := len(v.layout()) - len(v.Extras)
 		for i, e := range v.Extras {
 			rowOf[len(lines)] = ExtraCode(i)
-			lines = append(lines, guide.Row(th, v.Cursor == first+i, th.Icons.Closed+" ", e.Title, e.Hint))
+			lines = append(lines, choicerow.Line(th, choicerow.Row{Lead: th.Icons.Closed + " ", Label: e.Title, Hint: e.Hint, Selected: v.Cursor == first+i}, 0))
 		}
 	}
 	lines, rowOf = pane.WrapRows(lines, rowOf, w, 5)
@@ -171,5 +171,5 @@ func (v Model) header(th theme.Theme, g Group, open, selected bool) string {
 	if open {
 		mark = th.Icons.Open
 	}
-	return guide.Row(th, selected, mark+" ", th.Title(name)+"  "+strings.Join(facts, " · "), "")
+	return choicerow.Line(th, choicerow.Row{Lead: mark + " ", Label: th.Title(name) + "  " + strings.Join(facts, " · "), Selected: selected}, 0)
 }
