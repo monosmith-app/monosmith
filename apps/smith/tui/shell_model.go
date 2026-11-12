@@ -326,6 +326,14 @@ type Shell struct {
 	// that lookup does not start another.
 	pressed string
 	probing bool
+	// hoverAt is a pointer motion with no button held that waits for the next
+	// hover frame, and hoverWaits is set while that frame is on its way (see
+	// deferHover). reuseFrame is set when the last event changed nothing on
+	// screen, so View gives back frame, the screen it drew last.
+	hoverAt    *tea.MouseEvent
+	hoverWaits bool
+	reuseFrame bool
+	frame      *lastFrame
 	// detailCursor is the highlighted action while the keyboard is in the detail,
 	// and the chosen action of a split detail (see detail.Panel.Splits).
 	// detailOnRun puts the keyboard on the run button of a split detail instead.
@@ -380,6 +388,7 @@ func NewShell(cfg Config) Shell {
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
+		frame: &lastFrame{},
 	}
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
 	sh.hyperlinks = cfg.Hyperlinks

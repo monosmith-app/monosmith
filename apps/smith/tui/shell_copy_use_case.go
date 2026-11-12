@@ -93,5 +93,5 @@ func (s *Shell) toggleMouse() tea.Cmd {
 		return tea.DisableMouse
 	}
 	s.notify(words.Say("tui.copy.mouse_on_shift_drag_selects_text"), toast.Info)
-	return tea.EnableMouseCellMotion
+	return tea.EnableMouseAllMotion
 }

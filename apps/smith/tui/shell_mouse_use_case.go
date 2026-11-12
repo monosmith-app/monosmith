@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
@@ -21,6 +23,43 @@ func (s Shell) paletteBox() layout.Rect {
 	in := s.mainInner()
 	w, h := min(max(s.w-8, 10), 100), min(max(in.H, 5), 28)
 	return layout.Rect{X: (s.w - w) / 2, Y: in.Y + max((in.H-h)/3, 0), W: w, H: h}
+}
+
+// hoverDelay is the least time between two hover looks drawn while the pointer
+// moves with no button held: about 40 frames a second.
+var hoverDelay = 25 * time.Millisecond
+
+// hoverMsg draws the hover look of the last pointer motion that waited for it.
+type hoverMsg struct{}
+
+// deferHover keeps a pointer motion with no button held for the next hover
+// frame, so a pointer that sweeps the screen draws it once a frame and not once
+// a cell. It reports whether it kept the motion, with the command that brings
+// the frame (nil when one is on its way). Any other mouse event forgets a kept
+// motion, so a late frame never moves the pointer back.
+func (s *Shell) deferHover(e tea.MouseEvent) (tea.Cmd, bool) {
+	if e.Action != tea.MouseActionMotion || e.Button != tea.MouseButtonNone ||
+		s.pressed != "" || s.selection.Active || s.split.Dragging != "" {
+		s.hoverAt = nil
+		return nil, false
+	}
+	s.hoverAt = &e
+	if s.hoverWaits {
+		return nil, true
+	}
+	s.hoverWaits = true
+	return tea.Tick(hoverDelay, func(time.Time) tea.Msg { return hoverMsg{} }), true
+}
+
+// applyHover handles the motion that waited for the hover frame.
+func (s *Shell) applyHover() tea.Cmd {
+	s.hoverWaits = false
+	if s.hoverAt == nil {
+		return nil
+	}
+	e := *s.hoverAt
+	s.hoverAt = nil
+	return s.mouse(tea.MouseMsg(e))
 }
 
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {

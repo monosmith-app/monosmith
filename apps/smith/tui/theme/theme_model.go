@@ -40,10 +40,10 @@ func New(c Choice) Theme {
 	}
 	if t.Colour {
 		th.selected = bg(t.Highlight).Bold(true).Foreground(lipgloss.Color(t.Accent))
-		th.hover = bg(t.Highlight)
-		on := func(bgCol string) lipgloss.Style { return bg(bgCol).Foreground(lipgloss.Color(t.ButtonOn)) }
+		th.hover = bg(t.RowHover)
 		th.button = bg(t.Button).Foreground(lipgloss.Color(t.ButtonText))
-		th.buttonHover, th.buttonActive = on(t.ButtonHover), on(t.ButtonActive).Bold(true)
+		th.buttonHover = bg(t.ButtonHover).Foreground(lipgloss.Color(t.ButtonText))
+		th.buttonActive = bg(t.ButtonActive).Foreground(lipgloss.Color(t.ButtonOn)).Bold(true)
 	} else {
 		th.selected = lipgloss.NewStyle().Reverse(true).Bold(true)
 		th.hover = lipgloss.NewStyle().Underline(true)
@@ -113,8 +113,18 @@ func (t Theme) Spin(tick int) string {
 // Bar renders s on the bar background. Styled segments inside s end with a
 // reset that would drop the background, so the background is put back after
 // each one.
-func (t Theme) Bar(s string) string {
-	open, reset, ok := strings.Cut(t.bar.Render("@"), "@")
+func (t Theme) Bar(s string) string { return under(t.bar, s) }
+
+// RowHover renders a whole row (a list row, an option, a tick box row) in the
+// hover look: on the RowHover background, kept under the styled segments the
+// row already has. Without colour it is underlined. Every row under the
+// pointer takes this one look; a button takes ButtonHover.
+func (t Theme) RowHover(s string) string { return under(t.hover, s) }
+
+// under renders s in style, and puts the style back after every reset inside
+// s, so a styled segment does not end it.
+func under(style lipgloss.Style, s string) string {
+	open, reset, ok := strings.Cut(style.Render("@"), "@")
 	if !ok || open == "" {
 		return s
 	}

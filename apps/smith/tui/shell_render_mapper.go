@@ -9,10 +9,29 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
+// lastFrame is the screen View drew last, shared by every copy of a Shell, so
+// an event that changed nothing (a pointer motion that waits for the next
+// hover frame) costs no drawing.
+type lastFrame struct {
+	out string
+	ok  bool
+}
+
 // View implements tea.Model. It fills the whole terminal and can be called in
 // any state, at any size: a panic while drawing is turned into a message
 // instead of leaving the terminal in raw mode.
-func (s Shell) View() (out string) {
+func (s Shell) View() string {
+	if s.frame == nil {
+		return s.render()
+	}
+	if !s.reuseFrame || !s.frame.ok {
+		s.frame.out, s.frame.ok = s.render(), true
+	}
+	return s.frame.out
+}
+
+// render draws the screen.
+func (s Shell) render() (out string) {
 	defer func() {
 		if r := recover(); r != nil {
 			out = words.Say("tui.render.smith_the_interface_could_not_be", "r", r)
@@ -127,10 +146,10 @@ func (s Shell) body() []string {
 	in, din := l.Main.Inner(), l.DetailInner()
 	reserve := s.toastRows(in.H)
 	spots := s.dividers()
-	list := pane.Block(s.page().View(in.W, in.H-reserve).lines, in.W, in.H)
+	list := pane.Block(s.withRowHover(s.page().View(in.W, in.H-reserve), in).lines, in.W, in.H)
 	var side []string
 	if l.HasDetail() {
-		side = pane.Block(s.sideContent(din.W, din.H-reserve).lines, din.W, din.H)
+		side = pane.Block(s.withRowHover(s.sideContent(din.W, din.H-reserve), din).lines, din.W, din.H)
 	}
 	rows := make([]string, 0, l.Main.H)
 	rows = append(rows, s.th.Border(strings.Repeat("─", l.Main.W+l.Detail.W), false))
