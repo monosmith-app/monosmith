@@ -5,22 +5,23 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/eslintpeer"
 )
 
 // LintConfigPackage is the shared ESLint config smith uses, and the range
 // that installs it.
 const (
 	LintConfigPackage = legacyinventory.SmithLintPackage
-	LintConfigRange   = "^1.0.0"
+	LintConfigRange   = eslintpeer.ConfigRange
 )
 
 // LintESLintRange is the eslint that LintConfigPackage runs with: its peer
 // dependency (packages/eslint-config/package.json, which a test compares). An
 // older ESLint cannot load the config and every lint crashes.
-const LintESLintRange = "^10.8.1"
+const LintESLintRange = eslintpeer.Range
 
 // LintESLintFloor is the oldest eslint version LintESLintRange accepts.
-const LintESLintFloor = "10.8.1"
+const LintESLintFloor = eslintpeer.Floor
 
 // SmithLintConfig is a root ESLint config that is only smith's.
 const SmithLintConfig = "import monosmith from '" + LintConfigPackage + "'\n\nexport default monosmith({ workspaceRoot: import.meta.dirname })\n"
