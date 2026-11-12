@@ -114,6 +114,21 @@ green, fail red, skipped dim). Only colour codes pass, never cursor movement or 
 `NO_COLOR`, `TERM=dumb`, a piped output, `--json` and `--json-events` keep it plain, and the
 cache stores the log plain. See [Tool colour](../reference/tasks-and-cache.md#tool-colour).
 
+A task clears its output folders before it runs, and a cache hit replaces them. When one
+run holds two tasks whose outputs overlap (`smith run build build-dev`, or a dependency chain
+that pulls both in), smith runs them one after the other, never at once, and warns first:
+
+```text
+▲ api:build-dev and api:build both write apps/api/dist: smith runs them one after the other, and the folder keeps only the files of api:build, the last one
+  → give each task its own folder (its command and its outputs), or run them in separate runs
+```
+
+Tasks that write one folder but never run in the same run (a local build with source maps and
+a release build) get no warning. A folder under `[workspace] shared_outputs` is filled on
+purpose and never cleared, so its tasks are not compared. A task that runs until it is stopped
+(`watch`, `serve`, `start`, `dev`) is not compared either. See
+[ADR 0097](../architecture/decisions/0097-overlapping-outputs-are-ordered-in-one-run-not-reported-by-doctor.md).
+
 Output goes to standard output as `<project>:<task> <symbol> ...` lines. With `--json` the
 same task log lines are printed first and the JSON summary follows on standard output
 (checked with `2>NUL` and `>NUL`: nothing is written to standard error), so a parser must

@@ -142,9 +142,11 @@ and records the key as the task's **last** run.
 
 On a hit, `Restore` **replaces the output directories** with the cached files
 and replays the log. On a miss, smith first clears the outputs, so a stale file
-from an earlier build can never leak into the new result. This is why two tasks
-must not declare the same output directory: restoring one deletes what the other
-wrote (`smith doctor` reports it).
+from an earlier build can never leak into the new result. So two tasks that
+declare the same output directory must not run at once: restoring one deletes
+what the other wrote. When one run holds both, smith runs them one after the
+other, restores included, and warns that the folder keeps only the last one's
+files (ADR 0097).
 
 Only tasks with `cache = true` and exit code 0 are stored. Failures are never
 cached.

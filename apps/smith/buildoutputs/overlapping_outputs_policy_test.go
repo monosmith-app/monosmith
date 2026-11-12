@@ -1,67 +1,66 @@
 package buildoutputs
 
 import (
-	"strings"
 	"testing"
-
-	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-func projectWithOutputs(name, root string, outputs map[string][]string) *projectgraph.Project {
-	tasks := map[string]protocol.Task{}
-	for task, o := range outputs {
-		tasks[task] = protocol.Task{Outputs: o}
-	}
-	return &projectgraph.Project{Project: protocol.Project{Name: name, Root: root, Tasks: tasks}}
+func task(id, root string, outputs ...string) TaskOutputs {
+	return TaskOutputs{ID: id, Name: lastPart(id), Root: root, Outputs: outputs}
 }
 
-func TestSharedOutputsNamesTasksThatWriteTheSameDirectory(t *testing.T) {
-	host := projectWithOutputs("azure-host", "apps/azure-host", map[string][]string{"package": {"../../dist/drop"}, "build": {"../../dist/apps/azure-host"}})
-	ui := projectWithOutputs("studio-ui", "apps/studio-ui", map[string][]string{"package": {"../../dist/drop"}, "build": {"../../dist/apps/studio-ui"}})
-	got := SharedOutputs([]*projectgraph.Project{host, ui})
-	if strings.Join(got, "\n") != "azure-host:package and studio-ui:package both write dist/drop" {
-		t.Errorf("got:\n%s", strings.Join(got, "\n"))
+func lastPart(id string) string {
+	for i := len(id) - 1; i >= 0; i-- {
+		if id[i] == ':' {
+			return id[i+1:]
+		}
+	}
+	return id
+}
+
+func lines(overlaps []Overlap) []string {
+	var out []string
+	for _, o := range overlaps {
+		out = append(out, o.Line())
+	}
+	return out
+}
+
+func TestOverlapsNamesTasksThatWriteTheSameFolder(t *testing.T) {
+	got := lines(Overlaps([]TaskOutputs{
+		task("azure-host:package", "apps/azure-host", "../../dist/drop"),
+		task("azure-host:build", "apps/azure-host", "../../dist/apps/azure-host"),
+		task("studio-ui:package", "apps/studio-ui", "../../dist/drop"),
+		task("studio-ui:build", "apps/studio-ui", "../../dist/apps/studio-ui"),
+	}, nil))
+	if len(got) != 1 || got[0] != "azure-host:package and studio-ui:package both write dist/drop" {
+		t.Errorf("got %v", got)
 	}
 }
 
-func TestSharedOutputsNamesADirectoryThatHoldsAnother(t *testing.T) {
-	a := projectWithOutputs("a", "libs/a", map[string][]string{"package": {"../../dist/drop"}})
-	b := projectWithOutputs("b", "libs/b", map[string][]string{"package": {"../../dist/drop/b"}})
-	got := SharedOutputs([]*projectgraph.Project{a, b})
+func TestOverlapsNamesAFolderThatHoldsAnother(t *testing.T) {
+	got := lines(Overlaps([]TaskOutputs{task("a:package", "libs/a", "../../dist/drop"), task("b:package", "libs/b", "../../dist/drop/b")}, nil))
 	if len(got) != 1 || got[0] != "a:package and b:package both write dist/drop and dist/drop/b" {
 		t.Errorf("got %v", got)
 	}
 }
 
-func TestSharedOutputsLeavesSeparateDirectoriesAlone(t *testing.T) {
-	a := projectWithOutputs("a", "libs/a", map[string][]string{"package": {"../../dist/drop/a"}, "build": {"../../dist/libs/a"}})
-	b := projectWithOutputs("b", "libs/b", map[string][]string{"package": {"../../dist/drop/b"}, "build": {"../../dist/libs/b"}})
-	if got := SharedOutputs([]*projectgraph.Project{a, b}); len(got) != 0 {
+func TestOverlapsLeavesSeparateFoldersAlone(t *testing.T) {
+	if got := Overlaps([]TaskOutputs{task("a:package", "libs/a", "../../dist/drop/a"), task("b:package", "libs/b", "../../dist/drop/b")}, nil); len(got) != 0 {
 		t.Errorf("got %v", got)
 	}
-	// One task naming a directory twice is not a clash with itself.
-	c := projectWithOutputs("c", "libs/c", map[string][]string{"build": {"dist", "dist/types"}})
-	if got := SharedOutputs([]*projectgraph.Project{c}); len(got) != 0 {
+	// One task naming a folder twice is not a clash with itself.
+	if got := Overlaps([]TaskOutputs{task("c:build", "libs/c", "dist", "dist/types")}, nil); len(got) != 0 {
 		t.Errorf("got %v", got)
 	}
 }
 
-func TestOverlapWarningsNameBothTasksAndTheFix(t *testing.T) {
-	zip := projectWithOutputs("mvd", "apps/mvd", map[string][]string{"package-zip": {"../../dist/drop"}, "package-dmg": {"../../dist/drop"}})
-	other := projectWithOutputs("tool", "apps/tool", map[string][]string{"package": {"../../dist/drop"}})
-	projects := []*projectgraph.Project{zip, other}
-	got := OverlapWarnings(projects)
-	if len(got) == 0 {
-		t.Fatal("no warning for tasks that write dist/drop")
+func TestASharedOutputFolderMayBeFilledByManyTasks(t *testing.T) {
+	tasks := []TaskOutputs{task("a:package", "apps/a", "../../dist/drop"), task("b:package", "apps/b", "../../dist/drop")}
+	if got := Overlaps(tasks, nil); len(got) != 1 {
+		t.Fatalf("without the setting it is reported: %v", got)
 	}
-	for _, want := range []string{"mvd:package-dmg", "mvd:package-zip", "dist/drop", "shared_outputs"} {
-		if !strings.Contains(strings.Join(got, "\n"), want) {
-			t.Errorf("warnings miss %q:\n%s", want, strings.Join(got, "\n"))
-		}
-	}
-	if got := OverlapWarnings(projects, "dist/drop"); len(got) != 0 {
-		t.Errorf("a shared folder is not warned about: %v", got)
+	if got := Overlaps(tasks, []string{"dist/drop"}); len(got) != 0 {
+		t.Errorf("with the setting it is not: %v", got)
 	}
 }
 
@@ -71,19 +70,7 @@ func TestLongRunningTasksAreNotCompared(t *testing.T) {
 			t.Errorf("LongRunning(%q) = %v, want %v", name, got, want)
 		}
 	}
-	models := projectWithOutputs("models", "libs/models", map[string][]string{"build": {"dist"}, "watch": {"dist"}})
-	if got := SharedOutputs([]*projectgraph.Project{models}); len(got) != 0 {
+	if got := Overlaps([]TaskOutputs{task("models:build", "libs/models", "dist"), task("models:watch", "libs/models", "dist")}, nil); len(got) != 0 {
 		t.Errorf("models:watch is not reported: %v", got)
-	}
-}
-
-func TestAlternativeTasksAreNotReported(t *testing.T) {
-	api := projectWithOutputs("api", "apps/api", map[string][]string{"build": {"dist"}, "build-dev": {"dist"}})
-	projects := []*projectgraph.Project{api}
-	if got := Overlaps(projects, nil, nil); len(got) != 1 || got[0].Line() != "api:build and api:build-dev both write apps/api/dist" {
-		t.Fatalf("got %v", got)
-	}
-	if got := Overlaps(projects, nil, [][]string{{"api:build-dev", "api:build"}}); len(got) != 0 {
-		t.Errorf("alternatives are not reported: %v", got)
 	}
 }

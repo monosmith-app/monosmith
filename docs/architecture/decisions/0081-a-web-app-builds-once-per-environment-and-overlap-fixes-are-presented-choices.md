@@ -1,6 +1,6 @@
 # ADR 0081: A web app builds once per environment, and an output overlap is fixed by a presented choice
 
-- Status: accepted
+- Status: accepted; Part A superseded by [0097](0097-overlapping-outputs-are-ordered-in-one-run-not-reported-by-doctor.md)
 - Date: 2026-11-02
 
 ## Context
