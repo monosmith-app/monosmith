@@ -101,9 +101,14 @@ module.exports = ` + string(body[:len(body)-2]) + `,
 	}
 }
 
-// tsJest is the default compiler of the tests: ts-jest.
+// tsJest is the default compiler of the tests: ts-jest. It reads the project's
+// tsconfig.json (and so the workspace base it extends), and the options below
+// are laid over it: only the four that Jest needs. Jest runs CommonJS (module,
+// moduleResolution, verbatimModuleSyntax), and the tests must be type-checked,
+// which ts-jest skips when the tsconfig says isolatedModules (the base does).
+// A spec then fails on the errors that `smith run typecheck` reports.
 func tsJest(aliases modulealiases.Aliases) (devDependencies map[string]string, transform []any) {
-	compiler := map[string]any{"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false}
+	compiler := map[string]any{"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false, "isolatedModules": false}
 	if paths := aliases.CompilerPaths(); paths != nil {
 		compiler["paths"] = paths
 	}
