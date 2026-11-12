@@ -743,7 +743,10 @@ wizard's keys and drawing. The stages:
 8. **Done**, in three parts: what is done and what was proven (`It works: everything builds
    (9.8s), every test passes (31s), doctor finds nothing wrong (4s)`, then how many things
    need you), **Needs you** (what the conversion could not decide for you, each with its
-   reason) and **Behaves differently now** (the first five, the rest in
+   reason), **Found by the closing checks** (when the lint or doctor found something: the
+   conversion finished and kept its changes; each check with every failure, its remedy and
+   the command that checks again, and these count among the things that need you, so the box
+   never says `Nothing needs you` then) and **Behaves differently now** (the first five, the rest in
    `.smith/convert-report.txt`), then the files that look like old tooling but stay.
    **Open the workspace** (`Enter`) reopens the interface inside the new workspace; **Read
    the report** (`s`) shows `.smith/convert-report.txt` inside the wizard. When no check

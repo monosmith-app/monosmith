@@ -60,6 +60,9 @@ type Model struct {
 	notes []string
 	// checked are the closing checks that passed, with their times.
 	checked []checkedStep
+	// findings are the closing checks that found something (the lint,
+	// doctor): the conversion finished, and they need the person.
+	findings []doctorfix.Finding
 	// changes are the files the conversion writes, once they were worked out;
 	// changesDiff shows them as diffs, the way the Doctor fix dialog does.
 	changes     adoptflow.Changes
@@ -602,13 +605,14 @@ func (m Model) finish() (Model, Outcome) {
 	commit := m.commit
 	job := Job{Name: words.Say("adopt.job.finish"), Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 		timer := newStepTimer(out)
-		if err := flow.ApplyFix(ctx, fix.Fix, timer); err != nil {
+		findings, err := flow.ApplyChecks(ctx, fix.Fix, timer)
+		if err != nil {
 			return nil, err
 		}
 		if commit {
 			*note = flow.CommitConversion()
 		}
-		return timer.Steps(), nil
+		return finished{steps: timer.Steps(), findings: findings}, nil
 	}}
 	style := adoptStyle
 	style.Verb = words.Say("adopt.finish.verb")
@@ -645,7 +649,7 @@ func (m Model) done() Model {
 	if m.found.Kind.Convertible() {
 		style.Skip = words.Say("adopt.done.report")
 	}
-	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes, m.committed())
+	text := doneText(m.found, m.flow.Result(), checked, m.findings, m.applied, m.declinedN, m.kept, m.notes, m.committed())
 	if m.commit && m.commitNote != nil && !m.committed() && *m.commitNote != "" {
 		text += "\n  " + strings.TrimSpace(*m.commitNote) + "\n"
 	}

@@ -27,11 +27,13 @@ func plain() theme.Theme { return theme.New(theme.Choice{Tokens: theme.Plain, Ic
 // fakeFlow is smith, for the wizard: it records what it was asked and answers
 // from the fields.
 type fakeFlow struct {
-	found    adoptflow.Found
-	groups   []removalplan.Group
-	calls    []string
-	failOn   map[string]error
-	finish   []protocol.FixStep
+	found  adoptflow.Found
+	groups []removalplan.Group
+	calls  []string
+	failOn map[string]error
+	finish []protocol.FixStep
+	// findings are what the closing checks report as found.
+	findings []doctorfix.Finding
 	closed   bool
 	applied  map[string]bool
 	declined []map[string]bool
@@ -105,6 +107,10 @@ func (f *fakeFlow) ShowFix(p doctorfix.Planned) (string, error) {
 		b.WriteString("  $ " + strings.Join(s.Argv, " ") + "\n")
 	}
 	return b.String(), nil
+}
+
+func (f *fakeFlow) ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error) {
+	return f.findings, f.ApplyFix(ctx, fix, out)
 }
 
 func (f *fakeFlow) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer) error {
