@@ -141,7 +141,7 @@
   "commands.settings.unset.hint": "smith config unset",
   "commands.settings.unset.footer": "reset",
   "commands.guide.choose.title": "Choose and go on",
-  "commands.guide.choose.footer": "choose",
+  "commands.guide.choose.footer": "pick",
   "commands.guide.choose.glyph": "Enter",
   "commands.guide.back.title": "Back one step",
   "commands.guide.back.footer": "back",

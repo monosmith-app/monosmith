@@ -1,6 +1,7 @@
 package settingsview
 
 import (
+	"github.com/charmbracelet/x/ansi"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -46,7 +47,8 @@ func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 		label := "   " + s.Title()
 		switch {
 		case s == m.section && !m.onItems:
-			label = th.Selected(pane.Fit(" "+th.Icons.Pointer+" "+s.Title(), f.listW))
+			// The selected look of every pick list: the cursor mark and an accent label.
+			label = th.Accent(" " + th.Icons.Pointer + " " + s.Title())
 		case s == m.section:
 			label = th.Bold(" " + th.Icons.Pointer + " " + s.Title())
 		case px >= 0 && px < f.listW && py == row:
@@ -163,7 +165,8 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 		} else if note != "" {
 			note = th.Info(note)
 		}
-		rows[h-1] = " " + note
+		// A note too long for the row ends with an ellipsis instead of being cut.
+		rows[h-1] = " " + ansi.Truncate(note, max(w-1, 1), "…")
 	}
 	return rows, rowItem
 }
@@ -230,7 +233,7 @@ func (m Model) listLines(th theme.Theme, list []item, w, cursor int) (lines []st
 		}
 		switch {
 		case i == cursor && m.onItems:
-			row = th.Selected(pane.Fit(pane.Strip(row), w))
+			row = th.Accent(pane.Strip(row))
 		case i == cursor:
 			row = th.Bold(row)
 		}

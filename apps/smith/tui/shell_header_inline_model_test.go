@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 )
 
 func TestOnAWideScreenTheWorkspaceAndBranchSitAtTheRightEndOfTheTabRow(t *testing.T) {
@@ -37,6 +39,14 @@ func TestTheHeaderOnItsOwnRowSitsAtTheRightEnd(t *testing.T) {
 	row := l.sh().headerRow()
 	if !strings.HasPrefix(row, "   ") || strings.HasSuffix(row, "  ") || !strings.Contains(row, "acme") {
 		t.Fatalf("the workspace and the branch belong at the right end: %q", row)
+	}
+}
+
+func TestAHeaderTooLongForItsRowEndsWithAnEllipsis(t *testing.T) {
+	l := newLab(t, false, 50, 24)
+	row := strings.TrimRight(pane.Strip(l.sh().headerRow()), " ")
+	if !strings.HasSuffix(row, "…") {
+		t.Fatalf("the cut header must end with an ellipsis: %q", row)
 	}
 }
 
