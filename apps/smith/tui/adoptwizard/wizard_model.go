@@ -409,9 +409,11 @@ func (m Model) showFound() Model {
 	style.Review = words.Say("adopt.found.review")
 	style.Apply = words.Say("adopt.found.continue")
 	if len(m.found.Blockers) > 0 {
-		style.Apply = words.Say("adopt.found.close")
+		// Nothing can go on: Close is the one button, and Esc closes too.
+		style.Apply, style.Alone = words.Say("adopt.found.close"), true
 	}
 	if m.found.NeedsInstall {
+		style.Alone = false
 		style.Apply = words.Say("adopt.found.install.apply")
 	}
 	return m.reviewOf(StageFound, "found", foundText(m.found), style)

@@ -135,9 +135,11 @@ only while the page is taller than the pane (`Reasons["home.scroll"]`).
 Every dialog (`dialog.Confirm`, `helpdialog`, `composer`, `fixwizard` and the `adoptwizard` built on it,
 `toolsdialog`, `cachewizard`, `resultdialog`, `packageprompt`, `releasepick`) takes the shell's
 `dialogMargins()` with `Within(top, bottom)` before `Place`, and centres itself with
-`layout.Margins.Centre` in the rows between the rule under the tab strip and the footer (the first row
-of the content, where the palette starts too). The shell places them again
-on a resize. While one is open, `footerHints` is empty: `modalOpen()` gives the dialog every key and
+`layout.Margins.Centre` in the rows between the rule under the tab strip and the footer. The palette
+takes the same margins and centre (`paletteBox`). The shell places them again
+on a resize. A toast never covers the border of an open dialog (`toastSpot`): it sits under the
+dialog or over it when three rows are free there, and inside the dialog's border, over its first
+rows, when the dialog takes the whole height. While one is open, `footerHints` is empty: `modalOpen()` gives the dialog every key and
 click, so a hint of the view behind it would promise a key that does nothing.
 
 ## Pages

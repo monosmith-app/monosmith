@@ -332,8 +332,10 @@ Health section also holds the 2.0 commands, described in
 [Undo, report, why and derived files](#undo-report-why-and-derived-files): Undo the last
 change, Open the report, Write the agent file, Check the derived files, Update the derived
 files and Why is this here?
-The palette and every box drawn over the screen stay inside the content area; behind a box the
-view is emptied so no text shows at its edges, and a toast sits inside the content area.
+The palette and every box drawn over the screen sit in the middle of the content area, between
+the tab strip and the footer. Behind a box the view is emptied so no text shows at its edges. A toast sits
+inside the content area and never covers the border of a box: it goes under or over the box, or
+inside its border when the box takes the whole height.
 
 While a box is open (the palette, help, a confirmation, a picker, the fix, adopt and compose
 screens, the tools and result dialogs) it blocks the screen. The whole screen behind it, from the
@@ -712,7 +714,8 @@ wizard's keys and drawing. The stages:
 1. **Reading** the repository.
 2. **What was found**: the kind of repository (Nx, Turborepo, or plain), the projects
    (the first twelve, with their language in words), the tools in use today, and blockers
-   (`×`) and warnings (`!`). Nothing has changed yet. When the packages are not installed, or
+   (`×`) and warnings (`!`). Nothing has changed yet. With a blocker, the screen has one button,
+   **Close** (`Enter`); `Esc` closes it too. When the packages are not installed, or
    are not the ones the repository lists, the button is **Install the packages and
    continue**: smith runs `npm ci` (or `npm install` without a lockfile), reads the
    repository again and goes on. git cannot take an install back, and the screen says so.
