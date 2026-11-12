@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"os"
@@ -13,7 +14,7 @@ import (
 )
 
 type templateData struct {
-	Dir, Name, Module, Kind, Stack string
+	Dir, Name, Module, Package, Kind, Stack string
 }
 
 // Generate writes a Swift package: an app is an executable target, a lib or
@@ -29,7 +30,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	} else {
 		maps.Copy(files, libTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Module: moduleName(params.Name), Kind: string(params.Kind), Stack: params.Stack}
+	data := templateData{Dir: params.Directory, Name: params.Name, Module: moduleName(params.Name), Package: cmp.Or(params.PackageName, moduleName(params.Name)), Kind: string(params.Kind), Stack: params.Stack}
 	written, err := templating.Write(workspaceRoot, files, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

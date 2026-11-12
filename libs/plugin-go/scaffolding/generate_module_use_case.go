@@ -1,11 +1,13 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -46,6 +48,10 @@ func modulePath(params protocol.GenerateParams) string {
 	if prefix == "" {
 		prefix = fallbackModulePrefix(params.Workspace.Name)
 	}
+	if params.PackageName != "" {
+		// --package-name names the last part of the module path; the folder stays.
+		return prefix + "/" + path.Join(path.Dir(params.Directory), params.PackageName)
+	}
 	return prefix + "/" + params.Directory
 }
 
@@ -78,7 +84,7 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, template
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Module: modulePath(params), Package: PackageName(params.Name)}
+	data := templateData{Dir: params.Directory, Name: params.Name, Module: modulePath(params), Package: PackageName(cmp.Or(params.PackageName, params.Name))}
 
 	var files []string
 	// A module added to an existing workspace declares the Go version the

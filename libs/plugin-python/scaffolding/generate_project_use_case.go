@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"strings"
@@ -23,7 +24,7 @@ type templateData struct {
 // Generate scaffolds one Python project, creating the workspace venv and its
 // tooling the first time, and installs the project in editable mode.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
-	distribution := distributionName(params.Workspace.Name, params.Name)
+	distribution := cmp.Or(params.PackageName, distributionName(params.Workspace.Name, params.Name))
 	data := templateData{Dir: params.Directory, Name: params.Name, Distribution: distribution, Import: discovery.ImportName(distribution), Kind: string(params.Kind), Stack: params.Stack, Dependencies: "[]"}
 	plan, isFunction := functions.PlanOf(params.Choices)
 	if isFunction {

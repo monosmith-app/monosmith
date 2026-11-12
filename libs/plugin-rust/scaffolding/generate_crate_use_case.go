@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -81,7 +82,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	} else {
 		maps.Copy(templates, libTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Crate: CrateName(params.Workspace.Name, params.Name), Kind: string(params.Kind), Stack: params.Stack}
+	data := templateData{Dir: params.Directory, Name: params.Name, Crate: cmp.Or(params.PackageName, CrateName(params.Workspace.Name, params.Name)), Kind: string(params.Kind), Stack: params.Stack}
 	written, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

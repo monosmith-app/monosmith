@@ -145,8 +145,8 @@ Usage: `smith convert [flags]`
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--no-install` | do not run npm install afterwards (also --skip-install) | off |
+| `--outputs <outputs>` | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given (repeatable) |  |
 | `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
-| `--outputs <project>:<task>=detected\|declared` | the outputs to cache for a build task whose declared outputs differ from what its build writes; repeatable. A terminal asks the tasks not given | none |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
 | `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
@@ -177,6 +177,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `--fresh` | give the project the built-in default of its stack, without following the sibling projects | off |
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) (also --language) | the stack's, or the workspace's only language |
 | `--like <like>` | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |  |
+| `--package-name <package-name>` | the name the project is published or imported under (npm package, Cargo crate, Python distribution, last part of the Go module path), checked against the language's rules (default: built from the workspace and the project name) |  built from the workspace and the project name |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 | `--with <with>` | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default (repeatable) |  |

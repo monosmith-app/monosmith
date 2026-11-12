@@ -2302,6 +2302,9 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
     /// <summary>Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.</summary>
     public IReadOnlyList<string> Choices { get; init; } = [];
 
+    /// <summary>PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name.</summary>
+    public string PackageName { get; init; } = string.Empty;
+
     /// <inheritdoc />
     public static GenerateParams Read(JsonAny? value, string path)
     {
@@ -2318,6 +2321,7 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
             Facts = ObjectOf(Member(map, "facts"), Join(path, "facts")),
             Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
             Choices = ListOf(Member(map, "choices"), Join(path, "choices"), StringValue),
+            PackageName = StringValue(Member(map, "packageName"), Join(path, "packageName")),
         };
     }
 
@@ -2362,6 +2366,11 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
         {
             writer.Property("choices");
             MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => builder1.String(item1));
+        }
+        if (PackageName.Length > 0)
+        {
+            writer.Property("packageName");
+            writer.String(PackageName);
         }
         writer.EndObject();
     }

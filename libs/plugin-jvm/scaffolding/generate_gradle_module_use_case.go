@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -55,7 +56,7 @@ func GenerateGradle(workspaceRoot string, params protocol.GenerateParams) (proto
 	}
 	data := templateData{
 		Dir: params.Directory, Name: params.Name, Workspace: workspace, Group: GroupID(workspace),
-		ArtifactID: workspace + "-" + params.Name, Kind: string(params.Kind), Stack: params.Stack,
+		ArtifactID: cmp.Or(params.PackageName, workspace+"-"+params.Name), Kind: string(params.Kind), Stack: params.Stack,
 	}
 	data.Package = data.Group + "." + identifier(params.Name)
 	data.PackagePath = strings.ReplaceAll(data.Package, ".", "/")
