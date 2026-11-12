@@ -3101,9 +3101,13 @@ export const protocolSchema: SchemaDocument = {
         "name": {
           "type": "string"
         },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace is the word every language puts before a project's name to build its default package name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace, which is its name when none is set. Plugins build names through packages/plugin-sdk/projectnaming."
+        },
         "scope": {
           "type": "string",
-          "description": "Scope is the npm scope for packages, with its @ (e.g. \"@acme\")."
+          "description": "Scope is the npm scope for packages, with its @ (e.g. \"@acme\"). The host sends it only when the person set it; otherwise the scope is the namespace."
         },
         "modulePrefix": {
           "type": "string",

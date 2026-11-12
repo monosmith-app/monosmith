@@ -1,7 +1,5 @@
 package protocol
 
-import "strings"
-
 // GenerateParams asks a plugin to scaffold a project. The host chooses the
 // directory from the kind (apps/, libs/, packages/).
 type GenerateParams struct {
@@ -52,23 +50,17 @@ type GenerateParams struct {
 // WorkspaceInfo is the subset of workspace settings plugins may use.
 type WorkspaceInfo struct {
 	Name string `json:"name"`
-	// Scope is the npm scope for packages, with its @ (e.g. "@acme").
+	// Namespace is the word every language puts before a project's name to
+	// build its default package name (acme-core, acme_core, Acme.Core). The
+	// host sends the workspace's namespace, which is its name when none is
+	// set. Plugins build names through packages/plugin-sdk/projectnaming.
+	Namespace string `json:"namespace,omitempty"`
+	// Scope is the npm scope for packages, with its @ (e.g. "@acme"). The
+	// host sends it only when the person set it; otherwise the scope is the
+	// namespace.
 	Scope string `json:"scope,omitempty"`
 	// ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.
 	ModulePrefix string `json:"modulePrefix,omitempty"`
-}
-
-// PackagePrefix is the word every language puts before a project's name to
-// build its default package name (pargic-core, pargic_core, Pargic.Core): the
-// workspace's Scope without its @ when the workspace has one, else its Name.
-// Each plugin shapes it to its language's rules; --package-name still wins.
-//
-// Returns: the prefix, or "" when the workspace has neither.
-func (w WorkspaceInfo) PackagePrefix() string {
-	if scope := strings.TrimPrefix(strings.TrimSpace(w.Scope), "@"); scope != "" {
-		return scope
-	}
-	return w.Name
 }
 
 // GenerateResult lists what the plugin wrote, workspace-relative.

@@ -6,9 +6,8 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
@@ -30,7 +29,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	} else {
 		maps.Copy(files, libTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Module: moduleName(params.Name), Package: cmp.Or(params.PackageName, moduleName(params.Name)), Kind: string(params.Kind), Stack: params.Stack}
+	data := templateData{Dir: params.Directory, Name: params.Name, Module: projectnaming.Name(params.Workspace, projectnaming.Swift, params.Name), Package: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Swift, params.Name)), Kind: string(params.Kind), Stack: params.Stack}
 	written, err := templating.Write(workspaceRoot, files, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err
@@ -40,27 +39,4 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		note += " Others depend on it by git tag: SwiftPM resolves semantic-version tags (1.2.3 or v1.2.3), not name@1.2.3, so set [projects." + params.Name + "] tag_prefix = \"v\" in smith.toml if this is the only package released from the repository."
 	}
 	return protocol.GenerateResult{Files: written, Notes: []string{note}}, nil
-}
-
-// moduleName is the Swift module of a project: its name in UpperCamelCase,
-// with every character that is not a letter or digit dropped and a leading
-// digit given an M.
-func moduleName(name string) string {
-	var b strings.Builder
-	upper := true
-	for _, c := range name {
-		if !unicode.IsLetter(c) && !unicode.IsDigit(c) {
-			upper = true
-			continue
-		}
-		if upper {
-			c = unicode.ToUpper(c)
-			upper = false
-		}
-		b.WriteRune(c)
-	}
-	if b.Len() == 0 || unicode.IsDigit([]rune(b.String())[0]) {
-		return "M" + b.String()
-	}
-	return b.String()
 }

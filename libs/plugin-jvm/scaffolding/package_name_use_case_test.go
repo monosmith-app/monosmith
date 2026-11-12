@@ -40,7 +40,7 @@ func TestGenerateNamesTheArtifactAfterThePackageName(t *testing.T) {
 func TestGenerateBuildsTheArtifactFromTheScope(t *testing.T) {
 	for _, stack := range []string{"", KotlinStack} {
 		ws := t.TempDir()
-		if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Scope: "@pargic"}, Stack: stack}); err != nil {
+		if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Namespace: "pargic"}, Stack: stack}); err != nil {
 			t.Fatal(err)
 		}
 		if stack == "" {

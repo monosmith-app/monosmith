@@ -83,7 +83,4 @@ func TestMembers(t *testing.T) {
 	if _, err := AddMember("name: single\n", "x"); err == nil {
 		t.Fatal("a pubspec without a workspace is refused")
 	}
-	if identifier("3d-web--api") != "x3d_web_api" {
-		t.Fatal(identifier("3d-web--api"))
-	}
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
@@ -30,7 +31,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if params.Kind == protocol.ProjectApp {
 		maps.Copy(files, appTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, params.Name), Kind: string(params.Kind), Stack: params.Stack, Workspace: params.Workspace.Name}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Lua, params.Name)), Kind: string(params.Kind), Stack: params.Stack, Workspace: params.Workspace.Name}
 	written, err := templating.Write(workspaceRoot, files, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

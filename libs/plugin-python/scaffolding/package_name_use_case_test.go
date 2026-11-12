@@ -55,7 +55,7 @@ func TestGenerateBuildsTheDistributionNameFromTheScope(t *testing.T) {
 		}
 		return nil
 	}
-	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Scope: "@pargic"}}); err != nil {
+	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Namespace: "pargic"}}); err != nil {
 		t.Fatal(err)
 	}
 	manifestHas(t, ws, "libs/core/pyproject.toml", `name = "pargic-core"`)

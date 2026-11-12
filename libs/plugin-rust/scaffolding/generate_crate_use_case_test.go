@@ -69,22 +69,6 @@ func TestMembers(t *testing.T) {
 		t.Fatal("no workspace table")
 	}
 }
-func TestCrateNameIsValidForCargo(t *testing.T) {
-	for _, c := range []struct{ workspace, name, want string }{
-		{"acme", "core", "acme-core"},
-		{"jato.auto.packages", "rust-core", "jato-auto-packages-rust-core"},
-		{"My Shop!", "api", "my-shop-api"},
-		{"acme", "acme-core", "acme-core"},
-		{"jato.auto", "jato-auto-core", "jato-auto-core"},
-		{"", "core", "core"},
-		{"2024.shop", "api", "x2024-shop-api"},
-	} {
-		if got := CrateName(c.workspace, c.name); got != c.want {
-			t.Errorf("CrateName(%q, %q) = %q, want %q", c.workspace, c.name, got, c.want)
-		}
-	}
-}
-
 func TestGenerateNoteHasNoPlaceholder(t *testing.T) {
 	res, err := Generate(t.TempDir(), protocol.GenerateParams{Kind: protocol.ProjectPackage, Name: "core", Directory: "packages/core", Workspace: protocol.WorkspaceInfo{Name: "a.b"}})
 	if err != nil {

@@ -240,7 +240,7 @@ What is written:
   directory of `dist/maven/${project.artifactId}`) and `.mvn/maven.config`
   (file-lock settings so parallel Maven processes do not corrupt `~/.m2`). Each
   module is added to `<modules>`. The module's pom has the parent, artifact
-  `<workspace>-<name>`, version `0.0.0`, `<smith.kind>`, and JUnit; an app also
+  `<namespace>-<name>` (`[workspace] namespace`, else the workspace name), version `0.0.0`, `<smith.kind>`, and JUnit; an app also
   sets `exec.skip` to `false` and `exec.mainClass`.
 - **The group is a placeholder**, `dev.<workspace>`. Maven Central verifies the
   owner of a group, so replace it before you publish there.

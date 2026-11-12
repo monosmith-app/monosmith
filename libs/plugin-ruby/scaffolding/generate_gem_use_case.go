@@ -8,9 +8,8 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -23,45 +22,6 @@ type templateData struct {
 	Dir, Name, Workspace, Gem, Module, Kind, Stack string
 }
 
-// snake is a gem name part: lowercase letters, digits and underscores,
-// starting with a letter (web-api → web_api).
-func snake(name string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(name) {
-		switch {
-		case unicode.IsLetter(c) || unicode.IsDigit(c):
-			if b.Len() == 0 && unicode.IsDigit(c) {
-				b.WriteByte('x')
-			}
-			b.WriteRune(c)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "_"):
-			b.WriteByte('_')
-		}
-	}
-	return strings.TrimSuffix(b.String(), "_")
-}
-
-// GemName is a project's gem: the workspace's name first, so a published
-// gem does not clash on RubyGems (acme_core).
-// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
-func GemName(workspace, name string) string {
-	if workspace == "" {
-		return snake(name)
-	}
-	return snake(workspace) + "_" + snake(name)
-}
-
-// moduleName is a gem's Ruby module: acme_core → AcmeCore.
-func moduleName(gem string) string {
-	var b strings.Builder
-	for _, part := range strings.Split(gem, "_") {
-		if part != "" {
-			b.WriteString(strings.ToUpper(part[:1]) + part[1:])
-		}
-	}
-	return b.String()
-}
-
 // Generate writes a gem, lists it in the workspace's Gemfile (writing the
 // Gemfile and .rubocop.yml the first time), and installs the bundle.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
@@ -69,8 +29,8 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	gem := cmp.Or(params.PackageName, GemName(params.Workspace.PackagePrefix(), params.Name))
-	data := templateData{Dir: params.Directory, Name: params.Name, Workspace: params.Workspace.Name, Gem: gem, Module: moduleName(gem), Kind: string(params.Kind), Stack: params.Stack}
+	gem := cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Gem, params.Name))
+	data := templateData{Dir: params.Directory, Name: params.Name, Workspace: params.Workspace.Name, Gem: gem, Module: projectnaming.Pascal(gem), Kind: string(params.Kind), Stack: params.Stack}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, gemTemplate)
 	if params.Kind == protocol.ProjectApp {

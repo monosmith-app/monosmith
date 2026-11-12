@@ -17,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -100,7 +101,7 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 
 // newTemplateData is what the templates of a project read.
 func newTemplateData(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) templateData {
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, packageName(params.Workspace.Scope, params.Name)), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Npm, params.Name)), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
 	if params.Shape[discovery.ShapeBuildOutput] == discovery.ShapeOutputProject {
 		data.Build, data.BuildLocal = "dist", true
 	}
@@ -140,16 +141,6 @@ func pairs(m map[string]string) []Pair {
 		out = append(out, Pair{Name: name, Value: text[1 : len(text)-1]})
 	}
 	return out
-}
-
-func packageName(scope, name string) string {
-	if scope == "" {
-		return name
-	}
-	if !strings.HasPrefix(scope, "@") {
-		scope = "@" + scope
-	}
-	return scope + "/" + name
 }
 
 // ensureWorkspace writes the root Node files that do not exist yet. An

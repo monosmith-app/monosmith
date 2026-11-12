@@ -8,10 +8,9 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/functions"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
@@ -24,37 +23,6 @@ type templateData struct {
 	functions.Data
 }
 
-// pascal turns a kebab-case name into a .NET identifier part: web-api → WebApi.
-func pascal(name string) string {
-	var b strings.Builder
-	upper := true
-	for _, c := range name {
-		if !unicode.IsLetter(c) && !unicode.IsDigit(c) {
-			upper = true
-			continue
-		}
-		if b.Len() == 0 && unicode.IsDigit(c) {
-			b.WriteByte('X') // an identifier cannot start with a digit
-		}
-		if upper {
-			c = unicode.ToUpper(c)
-			upper = false
-		}
-		b.WriteRune(c)
-	}
-	return b.String()
-}
-
-// ProjectID is a project's assembly, namespace and package id:
-// the package prefix, then the name (Acme.WebApi).
-// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
-func ProjectID(workspace, name string) string {
-	if workspace == "" {
-		return pascal(name)
-	}
-	return pascal(workspace) + "." + pascal(name)
-}
-
 // Generate writes a project and its tests project, and the workspace's
 // Directory.Build.props the first time.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
@@ -65,7 +33,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, projectTemplate)
 	plan, isFunction := functions.PlanOf(params.Choices)
-	id := cmp.Or(params.PackageName, ProjectID(params.Workspace.PackagePrefix(), params.Name))
+	id := cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.DotNet, params.Name))
 	switch {
 	case isFunction && params.Kind != protocol.ProjectApp:
 		return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang dotnet --with %s", params.Name, plan.Host)

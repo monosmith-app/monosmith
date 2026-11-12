@@ -39,7 +39,7 @@ func TestGenerateBuildsThePackageNameFromTheScope(t *testing.T) {
 	real := Runner
 	defer func() { Runner = real }()
 	Runner = func(string, []string) error { return nil }
-	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Scope: "@pargic"}}); err != nil {
+	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Namespace: "pargic"}}); err != nil {
 		t.Fatal(err)
 	}
 	manifestHas(t, ws, "libs/core/pubspec.yaml", "name: pargic_core\n")

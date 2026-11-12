@@ -2264,8 +2264,18 @@ class _WorkspaceInfoRequired(TypedDict):
 class WorkspaceInfo(_WorkspaceInfoRequired, total=False):
     """WorkspaceInfo is the subset of workspace settings plugins may use."""
 
+    namespace: str
+    """
+    Namespace is the word every language puts before a project's name to build its default
+    package name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace,
+    which is its name when none is set. Plugins build names through
+    packages/plugin-sdk/projectnaming.
+    """
     scope: str
-    """Scope is the npm scope for packages, with its @ (e.g. "@acme")."""
+    """
+    Scope is the npm scope for packages, with its @ (e.g. "@acme"). The host sends it only when
+    the person set it; otherwise the scope is the namespace.
+    """
     modulePrefix: str
     """ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo."""
 

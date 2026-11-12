@@ -191,7 +191,7 @@ Wrote 6 file(s):
 What is generated:
 
 - **A package** (`libs/util/composer.json`): Composer name `<workspace>/<name>`
-  (the package prefix, `[workspace] scope` without its `@` else the workspace
+  (the workspace namespace, `[workspace] namespace` else the workspace
   name, and the project name, lower-cased, runs of other
   characters turned into one dash), `type` `library` (`project` for an app),
   `version` `0.0.0`, `require` `php >=8.2`, a PSR-4 autoload of

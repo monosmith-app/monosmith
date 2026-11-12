@@ -5344,7 +5344,10 @@ public sealed record WorkspaceInfo : IProtocolValue<WorkspaceInfo>
     /// <summary>The <c>name</c> member of <c>WorkspaceInfo</c>.</summary>
     public required string Name { get; init; }
 
-    /// <summary>Scope is the npm scope for packages, with its @ (e.g. "@acme").</summary>
+    /// <summary>Namespace is the word every language puts before a project's name to build its default package name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace, which is its name when none is set. Plugins build names through packages/plugin-sdk/projectnaming.</summary>
+    public string Namespace { get; init; } = string.Empty;
+
+    /// <summary>Scope is the npm scope for packages, with its @ (e.g. "@acme"). The host sends it only when the person set it; otherwise the scope is the namespace.</summary>
     public string Scope { get; init; } = string.Empty;
 
     /// <summary>ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.</summary>
@@ -5357,6 +5360,7 @@ public sealed record WorkspaceInfo : IProtocolValue<WorkspaceInfo>
         return new WorkspaceInfo
         {
             Name = StringValue(Member(map, "name"), Join(path, "name")),
+            Namespace = StringValue(Member(map, "namespace"), Join(path, "namespace")),
             Scope = StringValue(Member(map, "scope"), Join(path, "scope")),
             ModulePrefix = StringValue(Member(map, "modulePrefix"), Join(path, "modulePrefix")),
         };
@@ -5368,6 +5372,11 @@ public sealed record WorkspaceInfo : IProtocolValue<WorkspaceInfo>
         writer.BeginObject();
         writer.Property("name");
         writer.String(Name);
+        if (Namespace.Length > 0)
+        {
+            writer.Property("namespace");
+            writer.String(Namespace);
+        }
         if (Scope.Length > 0)
         {
             writer.Property("scope");
