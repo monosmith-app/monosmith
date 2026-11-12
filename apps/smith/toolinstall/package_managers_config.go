@@ -64,6 +64,9 @@ type Env struct {
 	// NonInteractive adds the flags that stop a manager from asking
 	// questions; set only when nobody is at the terminal.
 	NonInteractive bool
+	// ToolFolders is the file where smith records the folder of a tool that is
+	// not on PATH (toolrun.ToolFoldersFile); the options name it.
+	ToolFolders string
 }
 
 // InstallCommand is an install command ready to show and to run.

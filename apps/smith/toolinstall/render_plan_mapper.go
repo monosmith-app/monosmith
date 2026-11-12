@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // RenderNeed words one tool that is missing or outdated: what it is, why smith
@@ -17,9 +18,11 @@ func RenderNeed(st Status) string {
 		b.WriteString("  Keep yours if you prefer it: lint results can then differ from CI.\n")
 		return b.String()
 	}
-	switch st.State {
-	case Outdated:
+	switch {
+	case st.State == Outdated:
 		fmt.Fprintf(&b, "\n%s is too old: %s is installed.\n", st.Title, st.Version)
+	case st.OffPath != "":
+		fmt.Fprintf(&b, "\n%s %s.\n", st.Title, st.Problem())
 	default:
 		fmt.Fprintf(&b, "\n%s is not installed.\n", st.Title)
 	}
@@ -76,6 +79,9 @@ func RenderList(list []Status) string {
 		switch st.State {
 		case Missing:
 			mark, detail = marks.Failed, "not installed"
+			if st.OffPath != "" {
+				detail = words.Say("toolfolder.list", "folder", st.OffPath)
+			}
 			if st.Optional {
 				mark = "!"
 			}
