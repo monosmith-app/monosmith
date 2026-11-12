@@ -2,6 +2,7 @@ package scaffolding
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -99,7 +100,7 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 
 // newTemplateData is what the templates of a project read.
 func newTemplateData(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) templateData {
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, packageName(params.Workspace.Scope, params.Name)), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
 	if params.Shape[discovery.ShapeBuildOutput] == discovery.ShapeOutputProject {
 		data.Build, data.BuildLocal = "dist", true
 	}

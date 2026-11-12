@@ -38,6 +38,13 @@ type GenerateParams struct {
 	// requires. A plugin applies the choices it owns and ignores the rest.
 	// Absent when the stack is not a selection. Set by the host; read only.
 	Choices []string `json:"choices,omitempty"`
+	// PackageName is the name the person gave the project's package (smith add
+	// --package-name): the npm package, the Cargo crate, the Python
+	// distribution, the last part of the Go module path, and so on. The host
+	// has checked it against the language's naming rules. The plugin that
+	// writes the manifest uses it as given, in place of the name it builds
+	// from the workspace and Name. Empty: the plugin builds the name.
+	PackageName string `json:"packageName,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.

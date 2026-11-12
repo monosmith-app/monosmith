@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -67,7 +68,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	gem := GemName(params.Workspace.Name, params.Name)
+	gem := cmp.Or(params.PackageName, GemName(params.Workspace.Name, params.Name))
 	data := templateData{Dir: params.Directory, Name: params.Name, Workspace: params.Workspace.Name, Gem: gem, Module: moduleName(gem), Kind: string(params.Kind), Stack: params.Stack}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, gemTemplate)

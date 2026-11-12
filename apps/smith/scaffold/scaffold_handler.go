@@ -21,7 +21,7 @@ import (
 
 // AddCommand is `smith add`.
 func AddCommand(version string) *cobra.Command {
-	var lang, stack, like string
+	var lang, stack, like, packageName string
 	var choices, with []string
 	var verbose, fresh bool
 	var envFlags EnvironmentFlags
@@ -36,6 +36,11 @@ func AddCommand(version string) *cobra.Command {
 
 A combined kind from ` + "`smith kinds`" + ` names the language too: node-app is
 app --lang node.
+
+The package name (the npm package, the Cargo crate, the Python distribution,
+the last part of the Go module path) is built from the workspace and the
+project name. --package-name gives another, checked against the language's
+own naming rules; the plan shows it.
 
 When smith.toml names a recipe ([workspace] recipe), the recipe creates the
 project: it asks its choices one at a time (or take --choice name=answer, as
@@ -66,6 +71,7 @@ commits them as one operation that smith undo can revert.`,
   smith add app web --with react,vitest,bootstrap --environments lcl,dev,uat,prd
   smith add lib core --lang go
   smith add package sdk --lang python
+  smith add lib pargic-core --lang rust --package-name pargic   # the crate is named pargic
   smith add package billing --choice language=python --choice kind=library   # from the workspace's recipe`,
 		Args: argsOrAsk(commandargs.Spec{Names: []string{"a kind (app, lib or package)", "a name"}, Example: "smith add app web --lang node", More: "smith kinds lists the kinds and languages"}, isInteractive),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +101,7 @@ commits them as one operation that smith undo can revert.`,
 			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 			began := time.Now()
 			addOpts := AddOptions{
-				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with, Like: like,
+				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with, Like: like, PackageName: packageName,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
 			}
 			if addOpts.With, err = CompleteWith(s, addOpts, cmd.InOrStdin(), cmd.OutOrStdout(), interactive); err != nil {
@@ -152,6 +158,7 @@ commits them as one operation that smith undo can revert.`,
 	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
 	cmd.Flags().StringSliceVar(&with, "with", nil, "the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default")
 	cmd.Flags().BoolVar(&fresh, "fresh", false, "give the project the built-in default of its stack, without following the sibling projects")
+	cmd.Flags().StringVar(&packageName, "package-name", "", "the name the project is published or imported under (npm package, Cargo crate, Python distribution, last part of the Go module path), checked against the language's rules (default: built from the workspace and the project name)")
 	cmd.Flags().StringVar(&like, "like", "", "copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken")
 	cmd.Flags().StringSliceVar(&envFlags.Environments, "environments", nil, "a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one")
 	cmd.Flags().StringVar(&envFlags.Default, "default-environment", "", "a web app: the environment the task build builds, which CI and releases use (default: prd, else the last)")

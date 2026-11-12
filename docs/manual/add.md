@@ -55,6 +55,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) (also --language) |
 | `--like <like>` | string |  | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |
+| `--package-name <package-name>` | string |  built from the workspace and the project name | the name the project is published or imported under (npm package, Cargo crate, Python distribution, last part of the Go module path), checked against the language's rules (default: built from the workspace and the project name) |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
 | `--with <with>` | string, repeatable |  | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default |
@@ -142,6 +143,34 @@ asks the language only where the answer leaves more than one. It builds the same
 `smith add <kind> <name> --lang <language> --with <choices>` line, and shows it in the plan
 before anything is written. "I know the language" keeps the order kind, then language. See
 [the terminal interface](tui.md#guided-forms).
+
+## The package name
+
+The language plugin gives the project a package name: the name it is published or imported under.
+By default it builds the name from the workspace and the project name (`acme-core`, `@acme/core`).
+`--package-name <name>` sets another name. smith checks the name against the rule of the language
+before it shows the plan, and the plan shows the name. The folder and the project name do not change.
+
+| Language | What the name sets | Rule |
+|---|---|---|
+| node | the npm package name | lowercase, `- . _ ~`, an optional `@scope/`, at most 214 characters |
+| rust | the Cargo crate name | ASCII letters, digits, `-` and `_`, a letter first, at most 64 characters |
+| python | the distribution name (the import package follows) | PEP 508: letters, digits, `- . _`, a letter or digit at each end |
+| go | the last part of the module path, and the Go package | lowercase letters, digits, `- . _ ~`, no slash |
+| dotnet | the project id: assembly, namespace and package id | C# identifiers joined by dots |
+| dart | the pub package name | lowercase letters, digits and `_` |
+| php | the Composer name (`vendor/name`, or `name` with the workspace's vendor) | Composer's rule |
+| ruby | the gem name (the Ruby module follows) | lowercase letters, digits and `_`, a letter first |
+| jvm | the Maven or Gradle artifactId | letters, digits, `- . _` |
+| cpp | the CMake target and namespace | letters, digits and `_` |
+| swift | the SwiftPM package name | letters, digits, `-` and `_`, a letter first |
+| lua | the rock name and the rockspec file name | lowercase letters, digits, `- . _` |
+
+Other languages write no package name, and smith refuses the flag for them.
+
+```sh
+smith add lib pargic-core --lang rust --package-name pargic
+```
 
 ## After the add
 
@@ -426,6 +455,8 @@ the same `Try: smith test -p tools` hint is printed.
 | `no stack named "nope"; known stacks: android, angular, ...` | `smith stacks` lists the stacks. |
 | `a project named "web" already exists (apps/web)` | Choose another name. |
 | `app name "Bad_Name" must be kebab-case: ...` | Lowercase words joined by hyphens. |
+| `"2pargic" is not a valid Cargo crate name: use ...` | `--package-name` breaks the language's naming rule, which the message states. Change the name to follow it. |
+| `--package-name does not apply to a bicep project` | The language plugin writes no package name. Leave the flag out. |
 
 ## Related
 

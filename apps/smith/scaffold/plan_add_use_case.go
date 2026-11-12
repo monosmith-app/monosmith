@@ -39,7 +39,7 @@ func PlanAdd(s *session.Session, opts AddOptions) operationplan.Plan {
 				dir = nodeWorkspaceDirectory(s.Root, dir, opts.Name)
 			}
 			stackPlugins = st.Plugins()
-			plan.Add("Project "+opts.Name, operationplan.Line{Action: operationplan.Create, Path: dir + "/" + opts.Name + "/", Note: "made by the " + language.Info.Plugin.Name + " plugin" + followNote(s, opts, kind, language.Info.Plugin.Name)})
+			plan.Add("Project "+opts.Name, operationplan.Line{Action: operationplan.Create, Path: dir + "/" + opts.Name + "/", Note: "made by the " + language.Info.Plugin.Name + " plugin" + packageNameNote(opts.PackageName) + followNote(s, opts, kind, language.Info.Plugin.Name)})
 			for _, name := range stackPlugins {
 				plan.Add("Added by the "+name+" plugin", operationplan.Line{Action: operationplan.Change, Path: dir + "/" + opts.Name + "/", Note: "its files and tasks"})
 			}
@@ -48,7 +48,7 @@ func PlanAdd(s *session.Session, opts AddOptions) operationplan.Plan {
 		}
 	}
 	if !known {
-		note := "the stack decides the files: it comes from the recipe, the choices or the language"
+		note := "the stack decides the files: it comes from the recipe, the choices or the language" + packageNameNote(opts.PackageName)
 		plan.Add("Project "+opts.Name, operationplan.Line{Action: operationplan.Create, Path: dir + "/" + opts.Name + "/", Note: note})
 	}
 	if opts.Environments != nil {
@@ -86,4 +86,13 @@ func PlanAdd(s *session.Session, opts AddOptions) operationplan.Plan {
 		plan.Add("Generated files smith may rewrite", operationplan.Line{Action: operationplan.Change, Path: f, Note: note})
 	}
 	return operationplan.WithOwners(s.Root, plan)
+}
+
+// packageNameNote is what the plan says of a package name the person gave:
+// the name the project is published or imported under; empty when none.
+func packageNameNote(name string) string {
+	if name == "" {
+		return ""
+	}
+	return ", package name " + name
 }

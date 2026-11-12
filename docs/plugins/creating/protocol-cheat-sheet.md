@@ -418,6 +418,7 @@ GenerateParams asks a plugin to scaffold a project.
 | `facts` | `map[string]any` | no | Facts are the shared facts that hold for the new project, from smith.toml: [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin scaffolds its own default. Set by the host; read only. |
 | `shape` | `map[string]string` | no | Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project. |
 | `choices` | `[]string` | no | Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only. |
+| `packageName` | `string` | no | PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name. |
 
 ### WorkspaceInfo
 

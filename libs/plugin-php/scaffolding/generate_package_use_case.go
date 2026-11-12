@@ -82,6 +82,13 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
 	pkg := PackageName(params.Workspace.Name, params.Name)
+	switch {
+	case strings.Contains(params.PackageName, "/"):
+		pkg = params.PackageName
+	case params.PackageName != "":
+		// A name without a vendor keeps the workspace's vendor.
+		pkg = strings.Split(pkg, "/")[0] + "/" + params.PackageName
+	}
 	namespace := pascal(params.Workspace.Name) + `\` + pascal(params.Name)
 	if params.Workspace.Name == "" {
 		namespace = pascal(params.Name)

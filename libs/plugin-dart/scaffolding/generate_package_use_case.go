@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -80,7 +81,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		}
 		src = []byte(updated)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: PackageName(params.Workspace.Name, params.Name), Kind: string(params.Kind), Stack: params.Stack, Flutter: flutter}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, PackageName(params.Workspace.Name, params.Name)), Kind: string(params.Kind), Stack: params.Stack, Flutter: flutter}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, pubspecTemplate)
 	switch {

@@ -813,6 +813,14 @@ export interface GenerateParams {
    * and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.
    */
   choices?: string[]
+  /**
+   * PackageName is the name the person gave the project's package (smith add --package-name): the
+   * npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and
+   * so on. The host has checked it against the language's naming rules. The plugin that writes the
+   * manifest uses it as given, in place of the name it builds from the workspace and Name. Empty:
+   * the plugin builds the name.
+   */
+  packageName?: string
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */

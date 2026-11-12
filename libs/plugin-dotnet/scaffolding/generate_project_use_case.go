@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -63,7 +64,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, projectTemplate)
 	plan, isFunction := functions.PlanOf(params.Choices)
-	id := ProjectID(params.Workspace.Name, params.Name)
+	id := cmp.Or(params.PackageName, ProjectID(params.Workspace.Name, params.Name))
 	switch {
 	case isFunction && params.Kind != protocol.ProjectApp:
 		return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang dotnet --with %s", params.Name, plan.Host)
