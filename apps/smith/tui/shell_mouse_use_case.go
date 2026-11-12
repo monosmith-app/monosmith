@@ -404,7 +404,15 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		w := s.synced(*s.fix).Wheel(dir * wheelStep)
 		s.fix = &w
 		return nil
-	case s.pkg != nil, s.relpick != nil, s.confirm != nil:
+	case s.pkg != nil:
+		p := s.pkg.Wheel(dir * wheelStep)
+		s.pkg = &p
+		return nil
+	case s.confirm != nil:
+		c := s.confirm.Wheel(dir * wheelStep)
+		s.confirm = &c
+		return nil
+	case s.relpick != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))

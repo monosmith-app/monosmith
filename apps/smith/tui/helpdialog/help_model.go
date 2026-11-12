@@ -80,11 +80,10 @@ func (h Help) Within(top, bottom int) Help {
 }
 
 // Place centres the overlay on a screen of the given size, between the margins
-// Within set.
+// Within set: 28 rows, or the rows between the margins when there are fewer.
 func (h Help) Place(sw, sh int) Help {
 	w := min(max(sw-6, 10), 92)
-	hh := min(max(h.margins.Room(sh), 3), 28)
-	h.rect = h.margins.Centre(sw, sh, w, hh)
+	h.rect = h.margins.Centre(sw, sh, w, 28)
 	return h
 }
 
@@ -101,13 +100,11 @@ func (h Help) Lines(th theme.Theme) []string {
 	}
 	content := h.content(th, r.W-4)
 	top := min(max(h.top, 0), h.maxTop(len(content)))
-	rows := make([]string, 0, r.H-2)
-	for i := 0; i < r.H-2; i++ {
-		line := ""
-		if top+i < len(content) {
-			line = content[top+i]
-		}
-		rows = append(rows, " "+line)
+	// The shared scrollbar takes the cell next to the border, and the "more"
+	// rows say what is hidden, as in every dialog.
+	rows := pane.DialogBody(th, content, nil, r.W-3, r.H-2, top)
+	for i, l := range rows {
+		rows[i] = " " + l
 	}
 	return pane.Frame(th, words.Say("dialog.help.title"), rows, r.W, r.H, true)
 }

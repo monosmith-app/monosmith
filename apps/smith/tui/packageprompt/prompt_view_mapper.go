@@ -119,10 +119,8 @@ func (p Prompt) Lines(th theme.Theme) []string {
 		}
 		return choicerow.Cursor(th, false) + l
 	}
+	var styled []string
 	for _, l := range p.body(textW(inner)) {
-		if len(rows) >= r.H-4 {
-			break
-		}
 		switch {
 		case strings.HasPrefix(l, words.Say("packageprompt.label.project")):
 			l = focusable(l, focusProject)
@@ -137,9 +135,8 @@ func (p Prompt) Lines(th theme.Theme) []string {
 		default:
 			l = choicerow.Cursor(th, false) + l
 		}
-		rows = append(rows, row(l))
+		styled = append(styled, l)
 	}
-	rows = append(rows, row(""))
 	labels, keys := p.buttonLabels()
 	line := strings.Repeat(" ", button.RowSpans(th, labels, keys, inner)[0][0]-2)
 	for i, label := range labels {
@@ -155,6 +152,9 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			line += " "
 		}
 	}
-	rows = append(rows, row(line))
+	// A body taller than the dialog scrolls above the buttons, which stay.
+	for _, l := range pane.DialogBody(th, styled, []string{"", line}, inner, r.H-2, p.top) {
+		rows = append(rows, row(l))
+	}
 	return pane.Frame(th, p.Title(), rows, r.W, r.H, true)
 }

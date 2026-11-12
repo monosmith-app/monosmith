@@ -27,20 +27,18 @@ func (m Model) Title() string {
 // Lines draws the screen, framed, at the size Place set.
 func (m Model) Lines(th theme.Theme) []string {
 	r := m.rect
-	if r.W < 20 || r.H < 8 {
+	if r.W < 20 || r.H < 4 {
 		return nil
 	}
 	inner, height := r.W-4, r.H-2
 	var body []string
-	switch m.stage {
-	case stQuestion:
-		body = m.questionBody(th, inner)
-	case stName:
-		body = m.nameBody(th, inner)
-	case stPlan:
-		body = m.planBody(th, inner)
-	default:
+	if m.stage == stBrowse {
 		body = m.browseBody(th, inner, height)
+	} else {
+		// A question, the name or the plan taller than the screen scrolls above
+		// its key line, under the shared scrollbar in the cell next to the border.
+		text, foot, _ := m.stageBody(th, inner)
+		body = pane.DialogBody(th, text, foot, inner+1, height, m.top)
 	}
 	rows := make([]string, 0, height)
 	for _, l := range body {
@@ -57,10 +55,13 @@ func (m Model) Lines(th theme.Theme) []string {
 // browseBody is the search box, the list (catalogue or stack), the check and
 // the keys.
 func (m Model) browseBody(th theme.Theme, inner, height int) []string {
-	lines := []string{m.search.View(), m.summaryLine(th), ""}
+	lines := []string{m.search.View(), m.summaryLine(th)}
+	if m.listTop() > len(lines) {
+		lines = append(lines, "")
+	}
 	status := m.statusLines(th, inner)
 	keys := m.keyLines(th, inner)
-	room := max(height-len(lines)-len(status)-len(keys), 3)
+	room := m.listRoom(len(status), len(keys))
 	list, _ := m.listLines(th, inner)
 	for i := range list {
 		list[i] = pane.Fit(list[i], inner)
@@ -72,6 +73,40 @@ func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 		lines = append(lines, "")
 	}
 	return append(append(lines, status...), keys...)
+}
+
+// listTop is the first body line of the list while browsing: the search box,
+// the summary and, when the screen has the rows, a blank line come first.
+func (m Model) listTop() int {
+	if m.rect.H-2 < roomyHeight {
+		return 2
+	}
+	return 3
+}
+
+// roomyHeight is the body height from which the browse screen keeps a blank
+// line above the list.
+const roomyHeight = 14
+
+// listRoom is the rows the list gets while browsing, its "more" line included:
+// what the search box, the summary, the check and the keys leave, at least 2.
+func (m Model) listRoom(status, keys int) int {
+	return max(m.rect.H-2-m.listTop()-status-keys, 2)
+}
+
+// stageBody is a screen other than browsing: the text that scrolls, the key
+// line pinned under it, and the line of the first answer of a question (-1 on
+// the other screens).
+func (m Model) stageBody(th theme.Theme, inner int) (body, foot []string, first int) {
+	switch m.stage {
+	case stQuestion:
+		return m.questionBody(th, inner)
+	case stName:
+		body, foot = m.nameBody(th, inner)
+	default:
+		body, foot = m.planBody(th, inner)
+	}
+	return body, foot, -1
 }
 
 // keyLines are the keys of the browse screen. They wrap, as the status does, so
@@ -212,17 +247,19 @@ func (m Model) statusLines(th theme.Theme, inner int) []string {
 	return out
 }
 
-// questionBody asks the open axis, with what each answer means.
-func (m Model) questionBody(th theme.Theme, inner int) []string {
+// questionBody asks the open axis, with what each answer means; first is the
+// line of the first answer.
+func (m Model) questionBody(th theme.Theme, inner int) (lines, foot []string, first int) {
 	q := m.chk.Question
 	if q == nil {
-		return nil
+		return nil, nil, -1
 	}
-	lines := []string{th.Bold(words.Say("composer.question.title", "axis", q.Axis, "choice", q.Choice))}
+	lines = []string{th.Bold(words.Say("composer.question.title", "axis", q.Axis, "choice", q.Choice))}
 	if q.About != "" {
 		lines = append(lines, pane.Wrap(th.Muted(words.Say("composer.question.writes", "choice", q.Choice, "about", q.About)), inner, 2)...)
 	}
 	lines = append(lines, th.Muted(words.Say("composer.question.hint")), "")
+	first = len(lines)
 	for i, o := range q.Options {
 		label := o.Title
 		if o.Suggested {
@@ -231,12 +268,12 @@ func (m Model) questionBody(th theme.Theme, inner int) []string {
 		r := choicerow.Row{Label: label, Hint: o.Description, Selected: i == m.qcursor, Hovered: i == m.hover && i != m.qcursor}
 		lines = append(lines, choicerow.Line(th, r, inner))
 	}
-	return append(lines, "", th.Muted(words.Say("composer.question.keys")))
+	return append(lines, ""), pane.Wrap(th.Muted(words.Say("composer.question.keys")), inner, 2), first
 }
 
-// nameBody asks the name and the kind.
-func (m Model) nameBody(th theme.Theme, inner int) []string {
-	lines := []string{
+// nameBody asks the name and the kind; foot is the key line.
+func (m Model) nameBody(th theme.Theme, inner int) (lines, foot []string) {
+	lines = []string{
 		th.Bold(words.Say("composer.name.title")),
 		th.Muted(words.Say("composer.name.stack", "selection", strings.Join(m.chk.Selection, ", "), "language", m.chk.Language)),
 		"",
@@ -246,7 +283,7 @@ func (m Model) nameBody(th theme.Theme, inner int) []string {
 	if m.note != "" {
 		lines = append(lines, "", th.Warning(m.note))
 	}
-	return append(lines, "", th.Muted(words.Say("composer.name.keys")))
+	return append(lines, ""), pane.Wrap(th.Muted(words.Say("composer.name.keys")), inner, 2)
 }
 
 // kindMeaning says what a kind of project is.
@@ -260,18 +297,17 @@ func kindMeaning(kind string) string {
 	return words.Say("composer.kind.package")
 }
 
-// planBody shows the plan: the command, the files, the tools, the notes, and
-// what can be done with it.
-func (m Model) planBody(th theme.Theme, inner int) []string {
+// planBody shows the plan: the command, the files, the tools and the notes;
+// foot is what can be done with it.
+func (m Model) planBody(th theme.Theme, inner int) (lines, foot []string) {
 	if m.planErr != "" {
-		return append(pane.Wrap(th.Failure(words.Say("composer.plan.failed"))+m.planErr, inner, 2), "", th.Muted(words.Say("composer.plan.back")))
+		return append(pane.Wrap(th.Failure(words.Say("composer.plan.failed"))+m.planErr, inner, 2), ""), pane.Wrap(th.Muted(words.Say("composer.plan.back")), inner, 2)
 	}
 	if m.plan == nil {
-		return []string{th.Muted(words.Say("composer.plan.reading"))}
+		return []string{th.Muted(words.Say("composer.plan.reading"))}, nil
 	}
 	p := m.plan
 	// Every line is wrapped to the dialog, with a hanging indent, never cut.
-	var lines []string
 	add := func(l ...string) {
 		for _, one := range l {
 			lines = append(lines, pane.Wrap(one, inner, 4)...)
@@ -306,6 +342,6 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 	if p.RecipeNote != "" {
 		add(th.Muted(words.Say("composer.plan.recipe", "note", p.RecipeNote)))
 	}
-	add("", th.Muted(words.Say("composer.plan.keys")))
-	return lines
+	add("")
+	return lines, pane.Wrap(th.Muted(words.Say("composer.plan.keys")), inner, 4)
 }

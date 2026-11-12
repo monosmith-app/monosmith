@@ -293,17 +293,22 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		}
 		return c, Outcome{}
 	}
+	page := pane.PageStep(c.headRoom())
 	switch commands.Nav(name) {
 	case commands.NavUp:
-		c.scroll = max(c.scroll-1, 0)
+		return c.Wheel(-1), Outcome{}
 	case commands.NavDown:
-		c.scroll++
+		return c.Wheel(1), Outcome{}
 	case commands.NavPageUp:
-		c.scroll = max(c.scroll-max(c.headRoom()-1, 1), 0)
+		return c.Wheel(-page), Outcome{}
 	case commands.NavPageDown:
-		c.scroll += max(c.headRoom()-1, 1)
+		return c.Wheel(page), Outcome{}
 	default:
 		switch name {
+		case "ctrl+u":
+			return c.Wheel(-page), Outcome{}
+		case "ctrl+d":
+			return c.Wheel(page), Outcome{}
 		case "c", "C": // words:literal
 			if c.Offer {
 				return c.toggleCommit(), Outcome{}
@@ -318,8 +323,15 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 			c.focus = 1 - c.focus
 		}
 	}
-	if head := len(c.headLines(max(c.rect.W-4, 1))); c.scroll > head {
-		c.scroll = head
-	}
 	return c, Outcome{}
+}
+
+// Wheel scrolls the head (the sentence and the details) by delta lines, never
+// past its ends; the commit box, the command and the buttons stay.
+//
+// Parameters: delta is the lines to move, negative for up.
+// Returns: the dialog with the head scrolled.
+func (c Confirm) Wheel(delta int) Confirm {
+	c.scroll = pane.ClampTop(c.scroll+delta, len(c.headLines(max(c.rect.W-4, 1))), c.headRoom())
+	return c
 }
