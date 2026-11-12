@@ -118,3 +118,39 @@ func TestTheStartTaskRunsTheToolOfTheHostFromTheBuild(t *testing.T) {
 		t.Errorf("a zip host: %q", got)
 	}
 }
+
+// azureStartCopy is start.py of an Azure Python app, as older smith wrote it.
+const azureStartCopy = `"""Starts the Functions host (Azure Functions Core Tools: func) with the workspace venv."""
+
+import os
+import subprocess
+import sys
+
+os.environ["languageWorkers__python__defaultExecutablePath"] = sys.executable
+settings = "local.settings.json"
+if not os.path.exists(settings) and os.path.exists("local.settings.sample.json"):
+    print("No local.settings.json: copy local.settings.sample.json to it for your settings.")
+sys.exit(subprocess.call(["func", "start"], shell=sys.platform == "win32"))
+`
+
+func TestAPythonCopyAsSmithWroteItIsRemovedAndAnEditedOneIsAskedAbout(t *testing.T) {
+	ws := t.TempDir()
+	write(t, filepath.Join(ws, "apps", "api", "start.py"), azureStartCopy)
+	write(t, filepath.Join(ws, "apps", "api", "package.py"), "print('mine')\n")
+	f, ok := CopiedPythonScriptsFinding(ws, protocol.Project{Name: "api", Root: "apps/api"})
+	if !ok || f.Fix == nil || f.Fix.Safe || len(f.Fix.Choices) != 1 {
+		t.Fatalf("an edited package.py is asked about: %+v", f)
+	}
+	options := f.Fix.Choices[0].Options
+	if len(options[0].Fix.Files) != 1 || options[0].Fix.Files[0].Path != "apps/api/start.py" || !options[0].Fix.Files[0].Delete {
+		t.Errorf("keeping the edited copy still removes the scaffolded one: %+v", options[0].Fix.Files)
+	}
+	if len(options[1].Fix.Files) != 2 {
+		t.Errorf("removing all deletes both: %+v", options[1].Fix.Files)
+	}
+	only := t.TempDir()
+	write(t, filepath.Join(only, "apps", "api", "start.py"), azureStartCopy)
+	if f, _ := CopiedPythonScriptsFinding(only, protocol.Project{Name: "api", Root: "apps/api"}); f.Fix == nil || !f.Fix.Safe {
+		t.Errorf("a copy as smith wrote it has a safe fix: %+v", f.Fix)
+	}
+}

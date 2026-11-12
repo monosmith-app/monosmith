@@ -52,8 +52,53 @@ are installed into the zip too, for a host that does not install them itself (Az
 			return functionhost.AssembleFunctionApp(f.Project, f.Build)
 		},
 	}
-	cmd.AddCommand(assemble, pack)
+	cmd.AddCommand(assemble, pack, pythonStageCommand(), pythonZipCommand())
 	return cmd
+}
+
+// pythonStageCommand is `smith func stage`, the build task of a Python
+// function app.
+func pythonStageCommand() *cobra.Command {
+	var host, python string
+	cmd := &cobra.Command{
+		Use:   "stage",
+		Short: "Copy the files a Python function app deploys, and the code of the workspace libraries it needs, into the build folder",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			f, err := foldersHere()
+			if err != nil {
+				return err
+			}
+			_, err = functionhost.StagePythonApp(functionhost.StageOptions{ProjectDir: f.Project, BuildDir: f.Build, Host: host, Python: python})
+			return err
+		},
+	}
+	cmd.Flags().StringVar(&host, "host", "", "the function host: azure-functions, aws-lambda or gcp-functions")
+	cmd.Flags().StringVar(&python, "python", "python", "the interpreter of the workspace venv, which finds the workspace libraries")
+	_ = cmd.MarkFlagRequired("host")
+	return cmd
+}
+
+// pythonZipCommand is `smith func zip`, the package task of a Python function
+// app.
+func pythonZipCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "zip",
+		Short: "Zip the staged files of a Python function app into its build folder",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			f, err := foldersHere()
+			if err != nil {
+				return err
+			}
+			zip, err := functionhost.ZipPythonApp(f.Build, f.Name)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), zip)
+			return nil
+		},
+	}
 }
 
 // ElectronCommand is `smith electron`: the step that the build task of an

@@ -26,8 +26,37 @@ const CopiedScriptsFix = "run smith's commands in place of the copied scripts"
 // Returns the finding, and false when the project holds no copy.
 func CopiedScriptsFinding(workspaceRoot string, p protocol.Project, host string) (protocol.Finding, bool) {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(p.Root))
+	manifest, _ := os.ReadFile(filepath.Join(dir, "package.json"))
+	detail := "a fix to a copied script never reaches the app. smith runs the same steps itself now (" + AssembleCommand(host) + ", " + packCommand(host) + ")"
+	remedy := "smith doctor --fix removes the copies and points the scripts of package.json at smith"
+	return copiesFinding(workspaceRoot, p, CopiedScripts, detail, remedy, func(remove []string, copies map[string]string) []protocol.FileEdit {
+		return removeCopies(p, host, manifest, copies, remove)
+	})
+}
+
+// CopiedPythonScriptsFinding checks one Python function app for package.py and
+// start.py, which older smith copied into it. The tasks of the app run `smith
+// func stage`, `smith func zip` and the tool of the host now, so the fix only
+// removes the copies. A copy that was edited is asked about, as in
+// CopiedScriptsFinding.
+//
+// Parameters: workspaceRoot is the absolute workspace folder; p the project.
+// Returns the finding, and false when the project holds no copy.
+func CopiedPythonScriptsFinding(workspaceRoot string, p protocol.Project) (protocol.Finding, bool) {
+	detail := "a fix to a copied script never reaches the app. smith runs the same steps itself now (smith func stage, smith func zip) and the tool of the host starts the function"
+	remedy := "smith doctor --fix removes the copies"
+	return copiesFinding(workspaceRoot, p, CopiedPythonScripts, detail, remedy, func(remove []string, _ map[string]string) []protocol.FileEdit {
+		return deleteEdits(p, CopiedPythonScripts, remove)
+	})
+}
+
+// copiesFinding is the finding for the copied files of a project, with the
+// fix that removes them. edits makes the file edits that remove the listed
+// copies; copies holds the content of every copy found.
+func copiesFinding(workspaceRoot string, p protocol.Project, files []string, detail, remedy string, edits func(remove []string, copies map[string]string) []protocol.FileEdit) (protocol.Finding, bool) {
+	dir := filepath.Join(workspaceRoot, filepath.FromSlash(p.Root))
 	copies := map[string]string{}
-	for _, rel := range CopiedScripts {
+	for _, rel := range files {
 		if raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel))); err == nil {
 			copies[rel] = string(raw)
 		}
@@ -35,9 +64,8 @@ func CopiedScriptsFinding(workspaceRoot string, p protocol.Project, host string)
 	if len(copies) == 0 {
 		return protocol.Finding{}, false
 	}
-	names := make([]string, 0, len(copies))
-	var edited, scaffolded []string
-	for _, rel := range CopiedScripts {
+	var names, edited, scaffolded []string
+	for _, rel := range files {
 		text, ok := copies[rel]
 		if !ok {
 			continue
@@ -53,25 +81,19 @@ func CopiedScriptsFinding(workspaceRoot string, p protocol.Project, host string)
 		Check:   p.Name + " runs smith's commands, not copied scripts",
 		Project: p.Name,
 		Problem: strings.Join(names, ", ") + " in " + p.Root + " are copies of smith scripts",
-		Detail:  "a fix to a copied script never reaches the app. smith runs the same steps itself now (" + AssembleCommand(host) + ", " + packCommand(host) + ")",
-		Remedy:  "smith doctor --fix removes the copies and points the scripts of package.json at smith",
+		Detail:  detail,
+		Remedy:  remedy,
 		Warning: true,
-	}
-	manifest, err := os.ReadFile(filepath.Join(dir, "package.json"))
-	if err != nil {
-		return f, true
 	}
 	fix := protocol.Fix{Description: CopiedScriptsFix, Safe: len(edited) == 0, AppliesTo: []string{p.Name}}
 	if len(edited) == 0 {
-		fix.Files = removeCopies(p, host, manifest, copies, scaffolded)
+		fix.Files = edits(scaffolded, copies)
 		f.Fix = &fix
 		return f, true
 	}
 	f.Detail += ". " + strings.Join(edited, ", ") + " was edited by hand"
-	keep := protocol.Fix{Description: "keep the edited copies"}
-	keep.Files = removeCopies(p, host, manifest, copies, scaffolded)
-	drop := protocol.Fix{Description: "remove every copy, the edits too"}
-	drop.Files = removeCopies(p, host, manifest, copies, names)
+	keep := protocol.Fix{Description: "keep the edited copies", Files: edits(scaffolded, copies)}
+	drop := protocol.Fix{Description: "remove every copy, the edits too", Files: edits(names, copies)}
 	fix.Choices = []protocol.FixChoice{{
 		Question: p.Name + ": " + strings.Join(edited, ", ") + " was changed by hand. Keep it, or remove it and let smith run the command?",
 		Options: []protocol.FixChoiceOption{
@@ -81,6 +103,17 @@ func CopiedScriptsFinding(workspaceRoot string, p protocol.Project, host string)
 	}}
 	f.Fix = &fix
 	return f, true
+}
+
+// deleteEdits are the file edits that delete the listed copies of a project.
+func deleteEdits(p protocol.Project, files, remove []string) []protocol.FileEdit {
+	var edits []protocol.FileEdit
+	for _, rel := range files {
+		if slices.Contains(remove, rel) {
+			edits = append(edits, protocol.FileEdit{Path: path.Join(p.Root, rel), Delete: true})
+		}
+	}
+	return edits
 }
 
 // removeCopies is the file edits that remove the listed copies and point the
@@ -109,12 +142,7 @@ func removeCopies(p protocol.Project, host string, manifest []byte, copies map[s
 			}
 		}
 	}
-	for _, rel := range CopiedScripts {
-		if slices.Contains(remove, rel) {
-			edits = append(edits, protocol.FileEdit{Path: path.Join(p.Root, rel), Delete: true})
-		}
-	}
-	return edits
+	return append(edits, deleteEdits(p, CopiedScripts, remove)...)
 }
 
 // triggerOf reads the trigger of a function from the copy of its start script.

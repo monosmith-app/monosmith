@@ -37,4 +37,12 @@ Owner decision D3 of the plugin audit: no project holds a copy of a smith script
   `package.json`: smith does not touch the lock file.
 - A task that starts `func` or `sam` needs that tool on the machine. The doctor of the functions
   plugin checks it, and the script check no longer asks for an npm package of that name.
-- Python function apps still copy `package.py` and `start.py`. They are the next step.
+- Python function apps follow the same rule. Their tasks are inferred, so no `package.json` is
+  edited: `build` runs `smith func stage --host <host> --python <venv python>`, `package` runs
+  `smith func zip`, and `start` runs `func start` (with the venv's interpreter in
+  `languageWorkers__python__defaultExecutablePath`), `sam local` (after the build) or the
+  Functions Framework. The libraries of the workspace are found by a short script that the venv's
+  python runs (`importlib.metadata`, the `direct_url.json` that pip writes); the copying and the
+  zip are Go in `functionhost`. The doctor removes `package.py` and `start.py` by the same rules.
+- `smith func assemble` copies `local.settings.json` into the build folder when the project has
+  one (Azure `func start --script-root`). The build folder is `dist/`, which `.gitignore` covers.
