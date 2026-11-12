@@ -3,6 +3,8 @@ package resultdialog
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"slices"
 	"strings"
 	"time"
@@ -24,6 +26,8 @@ type Model struct {
 	// foot is the sentence under the list that tells what is safe.
 	foot string
 	rect layout.Rect
+	// top is the first body line shown when the body is taller than the dialog.
+	top int
 	// working, tick and elapsed draw the moving line of a command that runs.
 	working string
 	tick    int
@@ -220,12 +224,16 @@ func (m Model) Within(top, bottom int) Model {
 	return m
 }
 
-// Place sizes the dialog for a screen of sw by sh cells.
+// Place sizes the dialog for a screen of sw by sh cells: as tall as its
+// text, at most the rows between the margins. A body taller than that
+// scrolls, and the window follows the cursor.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 92)
-	h := max(min(len(m.facts)*2+len(m.choices)*2+6, max(m.margins.Room(sh), 8)), 8)
+	m.rect.W = w
+	body, _ := m.body(theme.Default())
+	h := len(body) + len(m.hintLines(theme.Default())) + 2
 	m.rect = m.margins.Centre(sw, sh, w, h)
-	return m
+	return m.follow()
 }
 
 // Rect is where the dialog sits after Place.
@@ -252,11 +260,23 @@ func (m Model) Key(name string) (Model, Outcome) {
 	switch commands.Nav(name) {
 	case commands.NavUp, commands.NavPrev:
 		m.cursor = max(m.cursor-1, 0)
+		return m.follow(), Outcome{}
 	case commands.NavDown, commands.NavNext:
 		m.cursor = min(m.cursor+1, len(m.choices)-1)
+		return m.follow(), Outcome{}
+	case commands.NavPageUp:
+		return m.Wheel(-pane.PageStep(m.room())), Outcome{}
+	case commands.NavPageDown:
+		return m.Wheel(pane.PageStep(m.room())), Outcome{}
 	case commands.NavCancel:
 		return m, Outcome{Done: true}
 	default:
+		switch name {
+		case "ctrl+u":
+			return m.Wheel(-pane.PageStep(m.room())), Outcome{}
+		case "ctrl+d":
+			return m.Wheel(pane.PageStep(m.room())), Outcome{}
+		}
 		if name == "enter" && m.cursor < len(m.choices) {
 			return m, m.choices[m.cursor].out
 		}

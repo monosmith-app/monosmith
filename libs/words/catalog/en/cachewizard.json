@@ -9,7 +9,6 @@
   "cachewizard.button.done": "Done",
   "cachewizard.commit": "{label}  (C)",
   "cachewizard.option": "{number}) {label}",
-  "cachewizard.list.position": "  {at} of {total}",
   "cachewizard.escape.back": "Esc goes back",
   "cachewizard.escape.close": "Esc closes",
   "cachewizard.hint.choose": "↑↓ move · Enter, a click or 1-9 picks · {escape}",

@@ -13,21 +13,48 @@ func (m Model) Title() string { return m.title }
 // Hint is the line under the choices that says how to answer.
 var Hint = words.Say("resultdialog.hint")
 
-// Lines draws the dialog, framed, at the size Place set.
+// Lines draws the dialog, framed, at the size Place set. A body taller than
+// the dialog scrolls under the shared scrollbar; the hint stays on the last rows.
 func (m Model) Lines(th theme.Theme) []string {
 	r := m.rect
-	if r.W < 24 || r.H < 8 {
+	if r.W < 24 || r.H < 4 {
 		return nil
 	}
 	body, _ := m.body(th)
-	rows := make([]string, 0, r.H-2)
-	for _, l := range body {
-		if len(rows) >= r.H-2 {
-			break
-		}
-		rows = append(rows, " "+pane.Fit(l, r.W-4))
+	rows := pane.DialogBody(th, body, m.hintLines(th), r.W-4, r.H-2, m.top)
+	for i, l := range rows {
+		rows[i] = " " + pane.Fit(l, r.W-4)
 	}
 	return pane.Frame(th, m.title, rows, r.W, r.H, true)
+}
+
+// hintLines are the lines of the hint, pinned under the body.
+func (m Model) hintLines(th theme.Theme) []string {
+	return pane.Wrap(th.Muted(Hint), max(m.rect.W-4, 1), 0)
+}
+
+// room is the rows the scrolling body gets.
+func (m Model) room() int {
+	return pane.BodyRoom(m.rect.H-2, len(m.hintLines(theme.Default())))
+}
+
+// follow scrolls the body so every line of the choice under the cursor shows.
+func (m Model) follow() Model {
+	body, spans := m.body(theme.Default())
+	if m.cursor < len(spans) {
+		m.top = pane.FollowLines(m.top, spans[m.cursor].from, spans[m.cursor].to, len(body), m.room())
+	}
+	return m
+}
+
+// Wheel scrolls the body by delta lines; the cursor stays where it is.
+//
+// Parameters: delta is the lines to move, negative for up.
+// Returns: the dialog with the body scrolled.
+func (m Model) Wheel(delta int) Model {
+	body, _ := m.body(theme.Default())
+	m.top = pane.ClampTop(m.top+delta, len(body), m.room())
+	return m
 }
 
 // span is the lines a choice takes in the body, first included, last excluded.
@@ -60,8 +87,8 @@ func (m Model) body(th theme.Theme) (body []string, spans []span) {
 		body = append(body, choicerow.Lines(th, r, inner)...)
 		spans = append(spans, span{from, len(body)})
 	}
-	body = append(body, "", th.Muted(m.foot))
-	body = append(body, pane.Wrap(th.Muted(Hint), inner, 0)...)
+	body = append(body, "")
+	body = append(body, pane.Wrap(th.Muted(m.foot), inner, 0)...)
 	return body, spans
 }
 
@@ -90,14 +117,14 @@ func (m Model) Hover(th theme.Theme, x, y int) Model {
 
 // choiceAt is the choice drawn at the screen cell (x, y), or -1.
 func (m Model) choiceAt(th theme.Theme, x, y int) int {
-	row := y - m.rect.Y - 1
-	if !m.rect.Contains(x, y) || row < 0 || row >= m.rect.H-2 {
+	if !m.rect.Contains(x, y) {
 		return -1
 	}
-	_, spans := m.body(th)
+	body, spans := m.body(th)
+	line := pane.BodyLine(y-m.rect.Y-1, m.top, len(body), m.room())
 	sp := make([]choicerow.Span, len(spans))
 	for i, s := range spans {
 		sp[i] = choicerow.Span{From: s.from, To: s.to}
 	}
-	return choicerow.At(sp, row)
+	return choicerow.At(sp, line)
 }

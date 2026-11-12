@@ -3,6 +3,7 @@ package toolsdialog
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"slices"
 	"strings"
 
@@ -51,6 +52,8 @@ type Model struct {
 	out     []string
 	results []Result
 	rect    layout.Rect
+	// top is the first body line shown when the body is taller than the dialog.
+	top int
 }
 
 // New builds the dialog on the plans of the missing tools
@@ -79,12 +82,13 @@ func (m Model) Within(top, bottom int) Model {
 	return m
 }
 
-// Place sizes the dialog for a screen.
+// Place sizes the dialog for a screen: 30 rows, or the rows between the
+// margins when there are fewer. A body taller than that scrolls, and the
+// window follows the cursor.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
-	h := min(max(m.margins.Room(sh), 12), 30)
-	m.rect = m.margins.Centre(sw, sh, w, h)
-	return m
+	m.rect = m.margins.Centre(sw, sh, w, 30)
+	return m.follow()
 }
 
 // Rect is where the dialog sits after Place.
@@ -114,6 +118,18 @@ func (m Model) current() toolinstall.ToolPlan { return m.plans[m.at] }
 // Parameters: name is the key name.
 // Returns: the new dialog and what the host must do.
 func (m Model) Key(name string) (Model, Outcome) {
+	switch {
+	case name == "ctrl+u" || commands.Nav(name) == commands.NavPageUp:
+		return m.Wheel(-pane.PageStep(m.room())), Outcome{}
+	case name == "ctrl+d" || commands.Nav(name) == commands.NavPageDown:
+		return m.Wheel(pane.PageStep(m.room())), Outcome{}
+	}
+	m, out := m.key(name)
+	return m.follow(), out
+}
+
+// key is Key before the body follows the cursor.
+func (m Model) key(name string) (Model, Outcome) {
 	switch m.ph {
 	case phasePick:
 		return m.pickKey(name)
@@ -154,7 +170,7 @@ func (m Model) pickKey(name string) (Model, Outcome) {
 		switch opt.Kind {
 		case toolinstall.OptionInstall:
 			if opt.Admin {
-				m.ph, m.opt, m.cursor = phaseAdmin, opt, 0
+				m.ph, m.opt, m.cursor, m.top = phaseAdmin, opt, 0, 0
 				return m, Outcome{}
 			}
 			return m.start(opt, false)
@@ -176,7 +192,7 @@ func (m Model) adminKey(name string) (Model, Outcome) {
 	switch name {
 	case "esc":
 		// Back to the first question: nothing was decided.
-		m.ph, m.cursor = phasePick, defaultIndex(plan)
+		m.ph, m.cursor, m.top = phasePick, defaultIndex(plan), 0
 		return m, Outcome{}
 	case "ctrl+c":
 		return m, Outcome{Done: true}
@@ -225,7 +241,7 @@ func (m Model) record(line string) Model {
 // next asks about the next tool, or shows the results after the last one.
 func (m Model) next() Model {
 	m.at++
-	m.out = nil
+	m.out, m.top = nil, 0
 	if m.at >= len(m.plans) {
 		m.ph = phaseDone
 		return m
