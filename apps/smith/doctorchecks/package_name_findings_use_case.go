@@ -23,10 +23,18 @@ import (
 // the manifest as a fix, and the person confirms it. A project others depend
 // on is renamed by hand, because every dependent names it too.
 //
+// It runs only when [workspace] namespace is set.
+//
 // Parameters: s is the open session.
-// Returns: one finding per project that does not follow the namespace, or one
+// Returns: nothing without a namespace; otherwise one finding per project that does not follow the namespace, or one
 // passed finding when every project does.
 func PackageNameFindings(s *session.Session) []protocol.Finding {
+	if strings.TrimSpace(s.Config.Workspace.Namespace) == "" {
+		// The namespace is the workspace name until the person sets one, and a
+		// repository smith adopted or converted keeps the names it had: the
+		// check starts when the person declares the namespace.
+		return nil
+	}
 	ws := s.Config.Workspace.Info("")
 	check := words.Say("naming.doctor.check")
 	var out []protocol.Finding

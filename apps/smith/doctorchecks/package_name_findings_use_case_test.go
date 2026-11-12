@@ -80,3 +80,11 @@ func TestPackagesThatFollowTheNamespacePass(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+func TestNoNamespaceSetMeansNoCheck(t *testing.T) {
+	s := namingSession(t, nodeProject("core", "@other/core"))
+	s.Config.Workspace.Namespace = ""
+	if got := PackageNameFindings(s); len(got) != 0 {
+		t.Fatalf("an adopted workspace keeps its names without a warning: %+v", got)
+	}
+}

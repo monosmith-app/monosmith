@@ -90,7 +90,8 @@ lists every check with its remedy.
 - `the clone has full history`, `tracked files are not generated files`, `every build writes to
   dist/`, `no task caches a work folder other projects share` and `projects depend only on what
   the boundaries allow`.
-- `every package name starts with the workspace namespace`: a warning for each project whose npm,
+- `every package name starts with the workspace namespace`: only when `[workspace] namespace` is
+  set (an adopted or converted workspace keeps the names it has). A warning for each project whose npm,
   Cargo, Python, Maven, Dart, CMake, Ruby, Composer or .NET package name does not start with
   `[workspace] namespace` (or the workspace name) the way `smith add` would name it. For an npm,
   Composer, Cargo or Python project that no other project depends on, `smith doctor --fix` shows
