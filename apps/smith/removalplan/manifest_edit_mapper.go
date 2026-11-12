@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/eslintpeer"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 )
 
@@ -42,29 +43,13 @@ func RemovePackages(text string, names []string) (string, error) {
 	return string(doc.Bytes()), nil
 }
 
-// simpleRange is one version with an optional ^, ~, >= or = before it: the
-// ranges whose lowest version can be read.
-var simpleRange = regexp.MustCompile(`^(?:\^|~|>=|=)?v?(\d+)(?:\.(\d+))?(?:\.(\d+))?$`)
-
 // versionRange is anything npm reads as a version range rather than a tag,
 // a path, a URL or an alias.
 var versionRange = regexp.MustCompile(`^[\d^~<>=*xX\s|.-]+$`)
 
 // rangeFloor is the lowest version a simple range accepts ("^9" is 9.0.0);
 // ok is false for any other range.
-func rangeFloor(r string) (string, bool) {
-	m := simpleRange.FindStringSubmatch(strings.TrimSpace(r))
-	if m == nil {
-		return "", false
-	}
-	part := func(s string) string {
-		if s == "" {
-			return "0"
-		}
-		return s
-	}
-	return m[1] + "." + part(m[2]) + "." + part(m[3]), true
-}
+func rangeFloor(r string) (string, bool) { return eslintpeer.RangeFloor(r) }
 
 // RaiseESLint returns a package.json whose eslint is one smith's config runs
 // with (LintESLintRange): in its dependency sections and in a top-level npm
