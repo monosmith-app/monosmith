@@ -133,3 +133,16 @@ func TestCheckScriptsDoesNotFailAFileTheBuildCreates(t *testing.T) {
 		t.Errorf("not built yet is a pass with a note: %+v", f)
 	}
 }
+
+// The start task of a function app runs the tool of its host (func, sam). The
+// functions plugin's doctor checks those, so the script check does not ask for
+// an npm package of that name.
+func TestCheckScriptsAcceptsTheToolsOfTheFunctionHosts(t *testing.T) {
+	ws := t.TempDir()
+	writeFile(t, ws, "package.json", `{"scripts":{"start":"npm run build && func start","local":"sam local start-api"}}`)
+	writeFile(t, ws, "node_modules/.bin/.keep", "")
+	f, ok := CheckScripts(ws, "", "the root package.json", protocol.Project{})
+	if !ok || !f.OK {
+		t.Fatalf("func and sam are tools of the machine: %+v", f)
+	}
+}

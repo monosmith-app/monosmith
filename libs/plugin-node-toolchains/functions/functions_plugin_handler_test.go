@@ -97,6 +97,24 @@ func TestGenerateWritesAnAppForEveryHostAndTrigger(t *testing.T) {
 						t.Errorf("task %s is missing: %v", task, manifest.Scripts)
 					}
 				}
+				// No stack copies a smith script into the app (decision D3).
+				for _, f := range res.Files {
+					if strings.HasSuffix(f, ".mjs") || strings.Contains(f, "scripts/") {
+						t.Errorf("a function app holds no copied script: %s", f)
+					}
+				}
+				if !strings.Contains(manifest.Scripts["build"], "smith func assemble") || !strings.Contains(manifest.Scripts["package"], "smith func package") {
+					t.Errorf("build and package run smith's commands: %v", manifest.Scripts)
+				}
+				for _, script := range manifest.Scripts {
+					if strings.Contains(script, "scripts/") {
+						t.Errorf("a task runs a copied script: %q", script)
+					}
+				}
+				wantStart := map[string]string{"azure-functions": "func start --script-root ../../dist/apps/api", "aws-lambda": "sam local ", "gcp-functions": "functions-framework --target="}[host]
+				if !strings.Contains(manifest.Scripts["start"], wantStart) {
+					t.Errorf("start runs the tool of the host: %q", manifest.Scripts["start"])
+				}
 				if !strings.Contains(manifest.Scripts["build"], "&&") {
 					t.Errorf("a script is shell text, not HTML-escaped: %q", manifest.Scripts["build"])
 				}

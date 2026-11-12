@@ -35,7 +35,8 @@ var (
 
 // Detect reads the Electron setup of the project in projectDir.
 //
-// The app smith makes has scripts/assemble.mjs beside @electron-forge/cli.
+// The app smith makes builds with `smith electron assemble` beside
+// @electron-forge/cli. An older one has scripts/assemble.mjs instead.
 // Another project with @electron-forge/cli is Forge; one with electron-builder
 // is Builder. A project without either is None, as is one whose package.json
 // cannot be read.
@@ -52,6 +53,10 @@ func Detect(projectDir string) Setup {
 		return Setup{}
 	}
 	switch {
+	// The app smith makes keeps its tools in the workspace's root package.json,
+	// so its own manifest need not name Forge.
+	case buildsWithSmith(doc):
+		return Setup{Tool: SmithForge}
 	case depends(doc, "@electron-forge/cli"):
 		if exists(filepath.Join(projectDir, "scripts", "assemble.mjs")) {
 			return Setup{Tool: SmithForge}
@@ -184,6 +189,17 @@ func depends(doc *jsondoc.Document, name string) bool {
 		}
 	}
 	return false
+}
+
+// buildsWithSmith reports whether the build script of the manifest runs
+// smith's Electron assemble command.
+func buildsWithSmith(doc *jsondoc.Document) bool {
+	scripts := doc.Object("scripts", false)
+	if scripts == nil {
+		return false
+	}
+	build, _ := scripts.String("build")
+	return strings.Contains(build, "smith electron assemble")
 }
 
 // exists reports whether the file is there.

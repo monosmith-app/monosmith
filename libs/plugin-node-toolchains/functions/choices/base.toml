@@ -1,19 +1,17 @@
 # What every choice of the functions plugin builds on: the package, the TypeScript
-# configuration, the greeting slice and the packaging script of a function app. A host
-# adds its entry point, its tasks and its local tool files; a trigger and a runtime set slots.
+# configuration and the greeting slice of a function app. A host adds its entry point and its
+# local tool files; a trigger and a runtime set slots. The plugin writes the build, start and
+# package tasks (functionhost.AssembleTask, StartTask, PackageTask): they run smith's own
+# commands and the host's tool, so no script is copied into the app.
 #
 # Slots read here:
 #   trigger       the kind of event the function answers: http, timer, queue or blob (one item)
 #   node.major    the Node.js major version of the runtime (one item)
 #   main          the package.json "main" (a host sets it when its tool reads it)
-#   package.mode  zip | zip-with-dependencies: what the packaging script puts in the zip
-dev_dependencies = ["typescript", "@types/node", "@monosmith/tsconfig", "bestzip"]
+dev_dependencies = ["typescript", "@types/node", "@monosmith/tsconfig"]
 
 [tasks]
-build = "tsc -p tsconfig.build.json && node scripts/assemble.mjs"
 typecheck = "tsc -p tsconfig.json --noEmit"
-start = "node scripts/start.mjs"
-package = "node scripts/package.mjs"
 
 [files]
 "package.json" = '''
@@ -54,135 +52,4 @@ package = "node scripts/package.mjs"
   "compilerOptions": { "outDir": "[[.Build]]/dist" },
   "exclude": ["src/**/*.[[.TestSuffix]].ts"]
 }
-'''
-
-# The build goes to the workspace's dist/ like every build. A function host wants the code
-# and the manifest side by side, so assemble.mjs copies package.json and host.json next to
-# the compiled code: that folder is what the host runs and what the zip holds.
-"scripts/assemble.mjs" = '''
-// Copies the manifest files next to the compiled code in the workspace's dist/.
-import { cpSync, existsSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
-
-const out = '[[.Build]]'
-mkdirSync(out, { recursive: true })
-for (const file of ['package.json', 'host.json']) {
-  if (existsSync(file)) cpSync(file, join(out, file))
-}
-'''
-
-"scripts/package.mjs" = '''
-// Builds, then packs the function app: the compiled code, the manifest and, when the host
-// does not install them itself, the production dependencies. A library of this workspace is
-// not on the registry: it is built and copied under vendor/, and the manifest of the stage
-// points at the copy, so npm installs it from there.
-import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join, relative, resolve } from 'node:path'
-import bestzip from 'bestzip'
-
-const shell = process.platform === 'win32'
-const withDependencies = '[[index .Slots "package.mode" 0]]' === 'zip-with-dependencies'
-const built = resolve('[[.Build]]')
-const stage = join(built, 'stage')
-const zip = join(built, '[[.Name]].zip')
-
-const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'))
-
-// npm links a library of the workspace as node_modules/<name>, a link to its folder.
-function linkedFolder(from, name) {
-  for (let dir = from; ; dir = dirname(dir)) {
-    const candidate = join(dir, 'node_modules', ...name.split('/'))
-    if (existsSync(candidate) && lstatSync(candidate).isSymbolicLink()) return realpathSync(candidate)
-    if (dirname(dir) === dir) return undefined
-  }
-}
-
-// The workspace root is the folder that has node_modules above the library.
-function workspaceRoot(folder) {
-  for (let dir = dirname(folder); ; dir = dirname(dir)) {
-    if (existsSync(join(dir, 'node_modules'))) return dir
-    if (dirname(dir) === dir) return dirname(folder)
-  }
-}
-
-// The libraries of the workspace the app needs, the ones its libraries need too.
-function workspaceLibraries(dependencies, found = new Map()) {
-  for (const name of Object.keys(dependencies ?? {})) {
-    const folder = found.has(name) ? undefined : linkedFolder(resolve('.'), name)
-    if (!folder) continue
-    found.set(name, folder)
-    workspaceLibraries(readJson(join(folder, 'package.json')).dependencies, found)
-  }
-  return found
-}
-
-// Builds a library, packs what it ships into vendor/ and returns the name of the tarball.
-function vendor(name, folder, vendorDir) {
-  const root = workspaceRoot(folder)
-  const pkg = readJson(join(folder, 'package.json'))
-  if (pkg.scripts?.build) execFileSync('npm', ['run', 'build'], { cwd: folder, stdio: 'inherit', shell })
-  const entry = pkg.main ?? (typeof pkg.exports === 'string' ? pkg.exports : 'index.js')
-  const name2 = name.replace(/^@/, '').replace('/', '-')
-  const target = join(vendorDir, name2)
-  rmSync(target, { recursive: true, force: true })
-  mkdirSync(target, { recursive: true })
-  const manifest = { ...pkg, scripts: undefined, devDependencies: undefined, files: undefined, types: undefined }
-  const builtHere = join(root, 'dist', relative(root, folder))
-  const source = entry.replace(/^\.\//, '').replace(/\.ts$/, '.js')
-  const built = entry.endsWith('.ts') ? [source, source.replace(/^src\//, '')].find((file) => existsSync(join(builtHere, file))) : undefined
-  if (built) {
-    // The build went to the workspace's dist/, outside the library's folder.
-    cpSync(builtHere, join(target, 'dist'), { recursive: true })
-    manifest.main = `./dist/${built}`
-    manifest.exports = undefined
-  } else if (entry.endsWith('.ts')) {
-    throw new Error(`${name} is shipped as TypeScript (${entry}) and has no build in ${builtHere}, so a function host cannot run it: give the library a build script that writes there`)
-  } else {
-    // The library ships from its own folder, or its main points into the workspace's dist/.
-    const out = dirname(resolve(folder, entry))
-    if (relative(folder, out).startsWith('..')) {
-      cpSync(out, join(target, 'dist'), { recursive: true })
-      manifest.main = `./dist/${basename(entry)}`
-      manifest.exports = undefined
-    } else {
-      cpSync(folder, target, { recursive: true, filter: (from) => !from.split(/[\\/]/).includes('node_modules') })
-    }
-  }
-  writeFileSync(join(target, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
-  // A tarball is always installed as a copy; a folder would be installed as a link, which a zip cannot hold.
-  const packed = execFileSync('npm', ['pack', `./${name2}`, '--silent', '--ignore-scripts'], { cwd: vendorDir, encoding: 'utf8', shell })
-  rmSync(target, { recursive: true, force: true })
-  return packed.trim().split(/\r?\n/).pop()
-}
-
-execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
-rmSync(stage, { recursive: true, force: true })
-rmSync(zip, { force: true })
-mkdirSync(stage, { recursive: true })
-for (const item of ['dist', 'package.json', 'host.json']) {
-  if (existsSync(join(built, item))) cpSync(join(built, item), join(stage, item), { recursive: true })
-}
-const staged = readJson(join(stage, 'package.json'))
-const libraries = workspaceLibraries(staged.dependencies)
-if (libraries.size > 0) {
-  staged.overrides = { ...staged.overrides }
-  for (const [name, folder] of libraries) {
-    const spec = `file:./vendor/${vendor(name, folder, join(stage, 'vendor'))}`
-    // A library of a library is overridden, a direct one is pointed at.
-    if (staged.dependencies?.[name] === undefined) staged.overrides[name] = spec
-    else staged.dependencies[name] = spec
-  }
-  writeFileSync(join(stage, 'package.json'), `${JSON.stringify(staged, null, 2)}\n`)
-}
-if (withDependencies && staged.dependencies) {
-  execFileSync('npm', ['install', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--workspaces=false'], {
-    cwd: stage, stdio: 'inherit', shell,
-  })
-  // The platform that runs the zip has node_modules; the copies of the libraries are not needed.
-  rmSync(join(stage, 'vendor'), { recursive: true, force: true })
-}
-await bestzip({ cwd: stage, source: '*', destination: zip })
-rmSync(stage, { recursive: true, force: true })
-process.stdout.write(`${zip}\n`)
 '''
