@@ -53,20 +53,3 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestDistributionName(t *testing.T) {
-	if distributionName("acme", "sdk") != "acme-sdk" || distributionName("acme", "acme-sdk") != "acme-sdk" || distributionName("", "sdk") != "sdk" {
-		t.Fatal("distribution names")
-	}
-}
-
-func TestDistributionNameIsValidForPyPI(t *testing.T) {
-	for _, c := range []struct{ workspace, project, want string }{
-		{"jato.auto.packages", "demo", "jato-auto-packages-demo"},
-		{"My Shop!", "api", "my-shop-api"},
-		{"", "demo", "demo"},
-	} {
-		if got := distributionName(c.workspace, c.project); got != c.want {
-			t.Errorf("distributionName(%q, %q) = %q, want %q", c.workspace, c.project, got, c.want)
-		}
-	}
-}

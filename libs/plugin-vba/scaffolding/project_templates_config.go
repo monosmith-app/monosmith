@@ -19,20 +19,3 @@ func source(module, name, kind, stack string) string {
 	}
 	return strings.Join(lines, "\r\n") + "\r\n"
 }
-
-// moduleName is a VBA identifier made from a project name: letters, digits
-// and underscores, starting with a letter.
-func moduleName(name string) string {
-	var b strings.Builder
-	for _, c := range name {
-		if c == '_' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
-			b.WriteRune(c)
-		} else {
-			b.WriteByte('_')
-		}
-	}
-	if b.Len() == 0 || !strings.ContainsAny(b.String()[:1], "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-		return "M" + b.String()
-	}
-	return b.String()
-}

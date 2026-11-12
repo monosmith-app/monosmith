@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/discovery"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -30,31 +30,6 @@ type templateData struct {
 
 // identifier is a Dart package name part: lowercase letters, digits and
 // underscores, starting with a letter (web-api → web_api).
-func identifier(name string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(name) {
-		switch {
-		case unicode.IsLetter(c) || unicode.IsDigit(c):
-			if b.Len() == 0 && unicode.IsDigit(c) {
-				b.WriteByte('x')
-			}
-			b.WriteRune(c)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "_"):
-			b.WriteByte('_')
-		}
-	}
-	return strings.TrimSuffix(b.String(), "_")
-}
-
-// PackageName is a project's pub package name: the workspace's name first,
-// so a published package does not clash on pub.dev (acme_core).
-// workspace is the package prefix (protocol.WorkspaceInfo.PackagePrefix: the scope, else the name).
-func PackageName(workspace, name string) string {
-	if workspace == "" {
-		return identifier(name)
-	}
-	return identifier(workspace) + "_" + identifier(name)
-}
 
 // Generate writes a package (a Flutter app on the flutter stack), lists it
 // in the root pub workspace (creating the workspace the first time), and
@@ -72,7 +47,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	src, err := os.ReadFile(rootManifest)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
-		src = []byte(NewWorkspace(identifier(params.Workspace.Name), params.Directory))
+		src = []byte(NewWorkspace(projectnaming.Snake(params.Workspace.Name), params.Directory))
 	case err != nil:
 		return protocol.GenerateResult{}, err
 	default:
@@ -82,7 +57,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		}
 		src = []byte(updated)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, PackageName(params.Workspace.PackagePrefix(), params.Name)), Kind: string(params.Kind), Stack: params.Stack, Flutter: flutter}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Dart, params.Name)), Kind: string(params.Kind), Stack: params.Stack, Flutter: flutter}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, pubspecTemplate)
 	switch {

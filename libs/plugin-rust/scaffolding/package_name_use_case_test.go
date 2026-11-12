@@ -33,7 +33,7 @@ func TestGenerateNamesTheCrateAfterThePackageName(t *testing.T) {
 // workspace name, as npm names do.
 func TestGenerateBuildsTheCrateNameFromTheScope(t *testing.T) {
 	ws := t.TempDir()
-	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Scope: "@pargic"}}); err != nil {
+	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "opencraw", Namespace: "pargic"}}); err != nil {
 		t.Fatal(err)
 	}
 	manifestHas(t, ws, "libs/core/Cargo.toml", `name = "pargic-core"`)

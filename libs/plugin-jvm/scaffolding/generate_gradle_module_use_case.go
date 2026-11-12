@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/discovery"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
@@ -35,8 +36,8 @@ func GenerateGradle(workspaceRoot string, params protocol.GenerateParams) (proto
 	}
 	settingsFile := filepath.Join(workspaceRoot, settings)
 	workspace := params.Workspace.Name
-	// The artifact starts with the package prefix, or with the existing build's name.
-	prefix := params.Workspace.PackagePrefix()
+	// The artifact starts with the namespace, or with the existing build's name.
+	naming := params.Workspace
 	templates := maps.Clone(kotlinSliceTemplates)
 	maps.Copy(templates, gradleModuleTemplates)
 	if params.Kind == protocol.ProjectApp {
@@ -53,14 +54,14 @@ func GenerateGradle(workspaceRoot string, params protocol.GenerateParams) (proto
 		return protocol.GenerateResult{}, err
 	default:
 		if name := RootProjectName(string(src)); name != "" {
-			workspace, prefix = name, name
+			workspace, naming.Namespace = name, name
 		}
 	}
 	data := templateData{
-		Dir: params.Directory, Name: params.Name, Workspace: workspace, Group: GroupID(workspace),
-		ArtifactID: cmp.Or(params.PackageName, prefix+"-"+params.Name), Kind: string(params.Kind), Stack: params.Stack,
+		Dir: params.Directory, Name: params.Name, Workspace: workspace, Group: projectnaming.GroupID(naming),
+		ArtifactID: cmp.Or(params.PackageName, projectnaming.Name(naming, projectnaming.Maven, params.Name)), Kind: string(params.Kind), Stack: params.Stack,
 	}
-	data.Package = data.Group + "." + identifier(params.Name)
+	data.Package = data.Group + "." + projectnaming.Flat(params.Name)
 	data.PackagePath = strings.ReplaceAll(data.Package, ".", "/")
 	files, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {
