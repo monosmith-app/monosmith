@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
@@ -211,7 +212,7 @@ func (s Shell) projectsContent(w, h int) content {
 	c.lines = append(c.lines, "")
 
 	cols := s.projectColumns(w)
-	head := "   " + pane.Cell(words.Say("tui.main.project"), cols.Name+1)
+	head := strings.Repeat(" ", projectlist.LeadW-1) + pane.Cell(words.Say("tui.main.project"), cols.Name+1)
 	if cols.Kind {
 		head += pane.Cell(words.Say("tui.main.kind"), projectlist.KindW)
 	}
@@ -241,7 +242,10 @@ func (s Shell) projectsContent(w, h int) content {
 		if p.Affected {
 			dot = s.th.Warning(s.th.Icons.Dot)
 		}
-		line := " " + dot + " " + pane.Cell(p.Name+s.treeStatus(p.Name, ""), cols.Name+1)
+		selected := p.Name == s.selectedProject()
+		// The rest of the row after the mark and the dot: the accent of the
+		// selected row, as every pick list draws it (see package choicerow).
+		line := pane.Cell(p.Name+s.treeStatus(p.Name, ""), cols.Name+1)
 		if cols.Kind {
 			line += pane.Cell(p.Kind, projectlist.KindW)
 		}
@@ -255,9 +259,11 @@ func (s Shell) projectsContent(w, h int) content {
 			line += pane.Cell(s.versionOf(p, projectlist.VersionW-1), projectlist.VersionW)
 		}
 		line += pane.Cell(words.Say("tui.main.text", "len", len(p.Deps), "len2", len(p.Dependents)), projectlist.DepsW)
-		if p.Name == s.selectedProject() {
-			line = s.th.Selected(pane.Fit(pane.Strip(line), w))
+		mark := choicerow.Cursor(s.th, selected)
+		if selected {
+			mark, line = s.th.Accent(mark), s.th.Accent(pane.Strip(line))
 		}
+		line = mark + dot + " " + line
 		c.hits[len(c.lines)] = hit{kind: "project", id: p.Name, index: i}
 		c.lines = append(c.lines, pane.Fit(line, w))
 	}

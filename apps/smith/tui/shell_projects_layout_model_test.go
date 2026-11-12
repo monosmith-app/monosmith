@@ -23,6 +23,31 @@ func pendingRelease(l *lab) {
 	l.m = sh
 }
 
+func TestTheSelectedProjectHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T) {
+	l := newLab(t, true, 140, 34).openTab("projects")
+	sel := l.sh().list.SelectedName()
+	marked := 0
+	for _, line := range l.lines() {
+		if i := strings.Index(line, "› "); i >= 0 && i < 4 {
+			marked++
+			if !strings.Contains(line, sel) {
+				t.Fatalf("the mark is on another row: %q (selected %s)", line, sel)
+			}
+		}
+	}
+	if marked != 1 {
+		t.Fatalf("%d rows carry the cursor mark, want 1", marked)
+	}
+	l.keys("down")
+	next := l.sh().list.SelectedName()
+	for _, line := range l.lines() {
+		row := strings.TrimLeft(line, " ›")
+		if (strings.HasPrefix(row, "○ "+next+" ") || strings.HasPrefix(row, "● "+next+" ")) && !strings.Contains(line, "› ") {
+			t.Fatalf("the mark did not follow the selection to %s: %q", next, line)
+		}
+	}
+}
+
 func TestAPendingReleaseShowsAsCurrentArrowNextInTheListAndTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	pendingRelease(l)

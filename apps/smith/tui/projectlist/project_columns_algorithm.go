@@ -8,8 +8,9 @@ const (
 	// VersionW holds "0.4.0 → 0.5.0" and the blank cell after it.
 	VersionW = 15
 	DepsW    = 6
-	// LeadW is the dot and the spaces before the name, and the one after.
-	LeadW = 4
+	// LeadW is the cursor mark, the dot and the space before the name, and the
+	// one after.
+	LeadW = 5
 	// minNameW is the least the name column may get.
 	minNameW = 8
 )

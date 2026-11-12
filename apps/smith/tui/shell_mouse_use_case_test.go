@@ -397,7 +397,10 @@ func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 	// Every tab is a button with its key, so the strip needs more room than the names alone.
 	l := newLab(t, true, 99, 30)
-	l.hasNot("›", "‹")
+	// No scroll marker on the strip (a list row below may carry the cursor mark).
+	if strip := l.lines()[l.sh().lay().Tabs.Y]; strings.ContainsAny(strip, "›‹") {
+		t.Fatalf("the strip scrolls: %q", strip)
+	}
 	for _, name := range []string{"Home", "Proj", "Doctor", "Deps", "Rel"} {
 		l.has(name)
 	}

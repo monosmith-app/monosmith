@@ -891,7 +891,9 @@ component, so it looks and acts the same everywhere: Compose a stack, the guided
 project and the others), the doctor fix wizard and the dependency repair, the result dialog after a
 change (with the cache clear choice), the missing tools dialog, the remote cache wizard, the
 release adjust list, the Settings editors and the commit box of a confirmation. The row at the
-keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. A box reads
+keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. The list of
+projects and the sections and rows of Settings mark their selected row the same way, with no
+background; a Settings list that does not have the keyboard keeps the mark in bold. A box reads
 `[ ]`, `[x]` or `[-]` (part ticked, or cannot be ticked), and a one-of-several choice reads `( )`
 or `(●)`. A row that cannot be chosen now is muted. The row under the pointer takes the row hover
 look. With the mouse:
