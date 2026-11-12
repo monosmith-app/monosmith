@@ -3,6 +3,7 @@ package cipipeline
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"io/fs"
 	"os"
 	"os/signal"
@@ -150,7 +151,7 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 	}
 	generate.Flags().BoolVar(&check, "check", false, "report drift without writing")
 	generate.Flags().BoolVar(&dryRun, "dry-run", false, "show every file it would create, rewrite or delete, with a diff; write nothing")
-	generate.Flags().BoolVarP(&yes, "yes", "y", false, "write without asking")
+	commandflags.AddYesFlag(generate, &yes, "write without asking")
 	cmd.AddCommand(generate)
 	cmd.AddCommand(&cobra.Command{
 		Use:   "check",

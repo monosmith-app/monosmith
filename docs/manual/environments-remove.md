@@ -36,6 +36,6 @@ Usage: `smith environments remove <project> <name...> [flags]`
 |---|---|---|---|
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | show the plan and change nothing |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `-y, --yes` | boolean | off | do not ask for confirmation; without a terminal the change is made only with --yes |
 
 <!-- smith:end environments remove -->

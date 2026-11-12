@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"io"
 	"strings"
 
@@ -130,7 +131,7 @@ hand-written workflow, an editor task, a doc). It does not change them.`,
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "remove a project other projects still import")
 	cmd.Flags().BoolVar(&opts.KeepCopy, "keep-copy", false, "move the project folder to .smith/removed/<name>-<time>/ instead of deleting it")
 	cmd.Flags().BoolVar(&opts.Delete, "delete", false, "delete the folder for good, including files git cannot bring back")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask for confirmation")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print what changed as JSON")
 	return operation.Wrap(cmd, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "remove " + args[0] }})
 }

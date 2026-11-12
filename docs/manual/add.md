@@ -58,7 +58,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
 | `--with <with>` | string, repeatable |  | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `-y, --yes` | boolean | off | do not ask for confirmation; without a terminal the change is made only with --yes |
 
 <!-- smith:end add -->
 
@@ -354,8 +354,8 @@ smith add app web --lang node
 
 ```text
 Creating app web in apps/web: node-jest
-Adding linting (eslint)
-Adding tests (jest)
+Added linting (eslint)
+Added tests (jest)
 Wrote 14 file(s):
   .devcontainer/devcontainer.json
   .github/workflows/ci.yml

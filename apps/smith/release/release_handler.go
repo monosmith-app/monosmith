@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"io"
 	"os"
 	"os/signal"
@@ -201,7 +202,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 		},
 	}
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be released; change nothing")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask for confirmation")
 	cmd.Flags().StringSliceVar(&hold, "hold", nil, "do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too")
 	cmd.Flags().StringSliceVar(&bumpFlags, "bump", nil, "release a package with this bump instead of the one its commits ask for: <project>=patch|minor|major")
 	cmd.Flags().BoolVar(&force, "force", false, "with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal")

@@ -309,7 +309,6 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		if !c.Supports(protocol.MethodGenerate) {
 			continue
 		}
-		fmt.Fprintln(out, partStep(c.Info.Plugin.Name))
 		asked := params
 		asked.Convention = conventions[c.Info.Plugin.Name]
 		asked.Settings = settings[c.Info.Plugin.Name]
@@ -317,6 +316,7 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		if err := c.Call(protocol.MethodGenerate, asked, &added, 20*time.Minute); err != nil {
 			return fmt.Errorf("plugin %s: %w", c.Info.Plugin.Name, err)
 		}
+		fmt.Fprintln(out, partStep(c.Info.Plugin.Name, string(params.Kind), added))
 		res.Files = append(res.Files, added.Files...)
 		res.Notes = append(res.Notes, added.Notes...)
 		if added.InstallPending {
