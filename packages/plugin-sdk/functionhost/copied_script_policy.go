@@ -12,6 +12,10 @@ import (
 // `smith electron assemble`). A project holds no copy of a smith script now.
 var CopiedScripts = []string{"scripts/assemble.mjs", "scripts/package.mjs", "scripts/start.mjs"}
 
+// CopiedPythonScripts are the files that smith scaffolded into Python function
+// apps, at the project root.
+var CopiedPythonScripts = []string{"package.py", "start.py"}
+
 // quoted matches a single-quoted JavaScript string.
 var quoted = regexp.MustCompile(`'[^']*'`)
 
@@ -22,16 +26,32 @@ var quoted = regexp.MustCompile(`'[^']*'`)
 //
 // Parameters: text is the script.
 // Returns the hash of the shape, in hexadecimal.
-func Fingerprint(text string) string {
+func Fingerprint(text string) string { return shapeHash(text, quoted) }
+
+// shapeHash hashes the lines of a script without blanks and indentation, with
+// the strings that literal matches left out.
+func shapeHash(text string, literal *regexp.Regexp) string {
 	var shape []string
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" {
-			shape = append(shape, quoted.ReplaceAllString(line, "''"))
+			shape = append(shape, literal.ReplaceAllString(line, "''"))
 		}
 	}
 	sum := sha256.Sum256([]byte(strings.Join(shape, "\n")))
 	return hex.EncodeToString(sum[:])
+}
+
+// pyQuoted matches a double-quoted Python string.
+var pyQuoted = regexp.MustCompile(`"[^"]*"`)
+
+// PythonFingerprint is Fingerprint for a Python script: the text of every
+// double-quoted string is left out.
+//
+// Parameters: text is the script.
+// Returns the hash of the shape, in hexadecimal.
+func PythonFingerprint(text string) string {
+	return shapeHash(text, pyQuoted)
 }
 
 // IsScaffolded reports whether a copied script is still as smith wrote it, so
@@ -40,7 +60,7 @@ func Fingerprint(text string) string {
 // Parameters: text is the content of the copy.
 // Returns true when its fingerprint is one of the scaffolded scripts.
 func IsScaffolded(text string) bool {
-	return scaffoldedPrints[Fingerprint(text)]
+	return scaffoldedPrints[Fingerprint(text)] || scaffoldedPrints[PythonFingerprint(text)]
 }
 
 // scaffoldedPrints are the fingerprints of every script smith scaffolded.
@@ -58,4 +78,14 @@ var scaffoldedPrints = map[string]bool{
 	"118061cce4be63410a8b3c8434aaf888ab74b05b5a35144eb82d712f19be681b": true,
 	"e79cd964ac401bffa87fe5e34741b78f5a27aa8ebba1afd858cdcaa9f30be833": true,
 	"789170de8e858eb9183f24cabe993c33093a03364deb874d0f63b76eeeb67201": true,
+	// python functions: package.py of Azure, AWS, GCP
+	"4c67f78ad61edcfd34c61970d24d77fe3528a41d9776030757ce8a9d5d3acfc7": true,
+	"89003c354ce9d389c57ddef2436d2f6adea1ff82153130d6723164a7bf0183b3": true,
+	"629117df4109f7822943826255ff79c2cc2260742bc2900cdba941618239d126": true,
+	// python functions: start.py of Azure, AWS (http, other), GCP (http, other)
+	"111b5c3fef1b8d1a85ce8dbb278d1d0540372f3eba66867ac1d7a0e70bbd8aa7": true,
+	"424678a74a7503d6613e58b7919f908acf5bbede76422d616102bfa92e344ce0": true,
+	"ed2dc4039fb9092888b230d86848543e23ddfa4dfc9f4c02c0e03f70794d90e0": true,
+	"d81effa241f2b36fbc6854865752da5431692299b77f03901ed74f256b84e622": true,
+	"59e9ee0d1107f4cd5467fdfbff02ec9824fc7b79ef0f46aebec804a3885ebd4b": true,
 }

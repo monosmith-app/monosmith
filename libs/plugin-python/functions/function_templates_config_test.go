@@ -1,20 +1,19 @@
 package functions
 
 import (
-	"strings"
+	"path/filepath"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
 )
 
-// A library of the workspace is not on a registry, so the packaging script
-// must carry its code into the zip (checked by hand with the built binary).
-func TestThePackagingScriptShipsTheLibrariesOfTheWorkspace(t *testing.T) {
+// No host writes a script of smith's into the app: the tasks run smith's own
+// commands and the tool of the host (decision D3).
+func TestNoHostTemplateWritesAScript(t *testing.T) {
 	for _, host := range []string{functionhost.Azure, functionhost.AWS, functionhost.GCP} {
-		script := Templates(host)["[[.Dir]]/package.py"]
-		for _, want := range []string{"def workspace_packages", "direct_url.json", "workspace_packages()"} {
-			if !strings.Contains(script, want) {
-				t.Errorf("%s: package.py lacks %q", host, want)
+		for name := range Templates(host) {
+			if base := filepath.Base(name); base == "package.py" || base == "start.py" {
+				t.Errorf("%s writes %s", host, name)
 			}
 		}
 	}

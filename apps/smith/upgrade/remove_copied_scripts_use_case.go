@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -14,7 +15,8 @@ import (
 )
 
 // removeCopiedScripts removes the smith scripts that older smith copied into
-// function and Electron apps (scripts/assemble.mjs, package.mjs, start.mjs),
+// function and Electron apps (scripts/assemble.mjs, package.mjs, start.mjs, and
+// package.py and start.py in Python function apps),
 // and points the package.json scripts at smith's own commands. A copy still as
 // smith wrote it goes. A copy that was edited by hand stays, and a hint names
 // it: smith doctor --fix asks whether to keep it. With check it changes
@@ -22,7 +24,7 @@ import (
 func removeCopiedScripts(s *session.Session, check bool, r *Result) error {
 	only := map[string]bool{}
 	for _, p := range s.Graph.Projects {
-		for _, rel := range functionhost.CopiedScripts {
+		for _, rel := range append(slices.Clone(functionhost.CopiedScripts), functionhost.CopiedPythonScripts...) {
 			if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(p.Root), filepath.FromSlash(rel))); err == nil {
 				only[p.Name] = true
 			}

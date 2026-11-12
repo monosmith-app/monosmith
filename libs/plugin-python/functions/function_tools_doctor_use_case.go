@@ -11,7 +11,8 @@ import (
 // lookPath is replaced by tests.
 var lookPath = exec.LookPath
 
-// Findings checks, for each host the workspace's function apps use, that the
+// Findings checks that no function app holds a copy of a smith script, and,
+// for each host the workspace's function apps use, that the
 // tool that runs them locally is installed. A missing tool is a warning: the
 // build and the tests need no cloud tool.
 func Findings(workspaceRoot string, projects []protocol.Project) []protocol.Finding {
@@ -19,6 +20,9 @@ func Findings(workspaceRoot string, projects []protocol.Project) []protocol.Find
 	var findings []protocol.Finding
 	for _, p := range projects {
 		host := DetectHost(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root)))
+		if f, found := functionhost.CopiedPythonScriptsFinding(workspaceRoot, p); found && host != "" {
+			findings = append(findings, f)
+		}
 		tool, ok := functionhost.ToolOf(host)
 		if host == "" || seen[host] || !ok {
 			continue
