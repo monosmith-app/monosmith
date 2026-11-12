@@ -44,7 +44,6 @@ func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolA
 	switch kind {
 	case protocol.ProjectPackage:
 		addDepsCheck(tasks, root)
-		addDepsCheck(tasks, root)
 		// Into the workspace's dist/, like every build: nothing in the source tree.
 		tasks["build"] = protocol.Task{Command: []string{py, "-m", "build", "--outdir", "{workspaceRoot}/" + protocol.ProjectBuildDir(root), "."}, Inputs: inputs, Outputs: []string{protocol.BuildDirFromProject(root)}, Cache: true, Description: "Build the wheel and sdist into " + protocol.ProjectBuildDir(root) + "/"}
 	case protocol.ProjectApp:
