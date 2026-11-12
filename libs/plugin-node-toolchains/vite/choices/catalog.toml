@@ -3,6 +3,7 @@
 [versions]
 # typescript and the other shared toolchain packages come from libs/plugin-node/toolchainversions.
 vite = "^8.3.4"
+"@monosmith/tsconfig" = "^0.1.0"
 
 react = "^19.3.1"
 react-dom = "^19.3.1"

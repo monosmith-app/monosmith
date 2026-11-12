@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -70,7 +71,7 @@ func templateSet(plan choicedata.Plan) scaffolding.TemplateSet {
 		files["[[.Dir]]/"+path] = body
 	}
 	return scaffolding.TemplateSet{
-		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
+		Slice: files, Root: tsconfigchain.NodeRoot(), DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
 		Slots: plan.Slots, Scripts: plan.Tasks, Dependencies: plan.Dependencies,
 	}
 }

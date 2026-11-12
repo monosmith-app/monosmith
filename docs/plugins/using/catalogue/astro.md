@@ -19,6 +19,9 @@ stack, which lints with [eslint](eslint.md).
 
 ## What it does
 
+The site's `tsconfig.json` extends an array: Astro's `astro/tsconfigs/strict` first, then the workspace's
+`tsconfig.browser.json`, which extends `tsconfig.base.json`. See [the tsconfig chain](typescript.md#the-tsconfig-chain).
+
 ```json
 "scripts": {
   "build": "astro check && astro build",
