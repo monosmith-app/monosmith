@@ -124,7 +124,8 @@ Interactions:
 | Code | Meaning |
 |---|---|
 | 0 | The plan was printed (`--dry-run`) or the conversion and its checks succeeded. |
-| 1 | The folder is already a smith workspace, the tree is dirty, `--strict` found a blocker, a flag value is invalid, or a step of the full conversion failed. |
+| 1 | The folder is already a smith workspace, the tree is dirty, `--strict` found a blocker, a flag value is invalid, or a step of the full conversion failed (the install, the build or the tests). |
+| 2 | The full conversion finished and kept its changes, but the lint or doctor found something. The last lines list each finding with its remedy. |
 
 ## Files and environment
 
@@ -248,7 +249,8 @@ smith: the conversion is blocked; see the report
 | `convert cancelled: nothing changed` | You answered anything but `y` to the confirmation prompt. |
 | `--test "mocha" is not one of jest, vitest, keep` | `--test` takes `jest`, `vitest` or `keep`. |
 | `▲ lint every project` or `▲ fix what ESLint can, then lint every project` (a finding, not an error) | The lint found problems, or ESLint could not run. The conversion still finishes and keeps its changes; the table under the line names each project's problems fixed and left, or the first line of ESLint's error and the remedy. `smith run lint -p <project>` shows them. |
-| `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | A build, test or doctor check after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
+| `▲ check the workspace with doctor` (a finding, not an error) | Doctor found something. The conversion still finishes and keeps its changes. Its last lines repeat each doctor failure with its remedy, then `→ check again: smith doctor`, and close with `▲ The conversion finished with findings`; the exit code is 2. |
+| `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | The install, a build or a test after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
 | `the build writes to dist inside the package ...` (a finding, not an error) | Run `smith doctor --fix`: it offers to move each project's build into `dist/<project dir>` (scripts, tsconfig, `main`, `types`, `exports`, and the `outputs` in `smith.toml`) and shows every changed line first. Or do it by hand. |
 
 ## Related

@@ -254,7 +254,7 @@ func runCommand(version string, args []string) (int, string) {
 		var p *problem.Error
 		message, newer := newerSmithMessage(err, version, wantsVerbose(args))
 		switch {
-		case errors.Is(err, release.ErrPropagationPending):
+		case errors.Is(err, release.ErrPropagationPending), errors.Is(err, convert.ErrFindings):
 			// The report said what to run; code 2 is a warning, not a failure.
 			return 2, ""
 		case newer:

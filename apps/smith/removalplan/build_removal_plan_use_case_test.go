@@ -158,7 +158,9 @@ func TestFinishInstallsOnceThenChecksTheWorkspace(t *testing.T) {
 	}
 }
 
-func TestTheLintCheckOfAFullConversionReportsAndNeverStopsIt(t *testing.T) {
+// The lint and doctor report and never stop a conversion; the install, the
+// build and the tests stop it.
+func TestTheLintAndDoctorChecksOfAConversionReportAndNeverStopIt(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		fixLint bool
@@ -171,8 +173,13 @@ func TestTheLintCheckOfAFullConversionReportsAndNeverStopsIt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			f := Finish("smith", true, tc.fixLint)
 			for i, s := range f.Steps {
-				if (s.Description == tc.want) != s.Advisory {
+				if (s.Description == tc.want || s.Description == StepDoctor) != s.Advisory {
 					t.Errorf("step %d %q: advisory = %v", i+1, s.Description, s.Advisory)
+				}
+			}
+			for i, s := range FinishBuildAndTest("smith").Steps {
+				if (s.Description == StepDoctor) != s.Advisory {
+					t.Errorf("conservative step %d %q: advisory = %v", i+1, s.Description, s.Advisory)
 				}
 			}
 			lint := f.Steps[3]

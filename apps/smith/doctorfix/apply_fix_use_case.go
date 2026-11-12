@@ -67,16 +67,33 @@ func (w *noteWriter) Write(p []byte) (int, error) {
 // first that fails. A fix that still has Choices must be resolved first.
 // Progress goes to out; a failed step's output is in the returned StepError.
 func Apply(ctx context.Context, root string, fix protocol.Fix, out io.Writer) error {
+	_, err := ApplyWithFindings(ctx, root, fix, out)
+	return err
+}
+
+// Finding is an advisory step that failed: the fix went on after it.
+type Finding struct {
+	Step protocol.FixStep
+	// Output is everything the step printed.
+	Output string
+}
+
+// ApplyWithFindings is Apply, and it also returns the advisory steps that
+// failed, in the order they ran.
+//
+// Parameters: root is the workspace, fix the resolved fix, out the progress.
+// Returns the findings, and a *StepError for a step that stopped the fix.
+func ApplyWithFindings(ctx context.Context, root string, fix protocol.Fix, out io.Writer) ([]Finding, error) {
 	if len(fix.Choices) > 0 {
-		return fmt.Errorf("%q has questions to answer first", fix.Description)
+		return nil, fmt.Errorf("%q has questions to answer first", fix.Description)
 	}
 	if n, ok := out.(Noter); ok && len(fix.Files) > 0 {
 		n.Note(filesNote(fix.Files))
 	}
 	if err := ApplyFiles(root, fix); err != nil {
-		return err
+		return nil, err
 	}
-	return RunSteps(ctx, root, fix.Steps, out)
+	return runSteps(ctx, root, fix.Steps, out)
 }
 
 // RunSteps runs commands from the workspace root (or the step's own Dir),
@@ -84,11 +101,17 @@ func Apply(ctx context.Context, root string, fix protocol.Fix, out io.Writer) er
 // step that fails does not stop it: its mark is a warning, what it printed
 // follows, and the next step runs.
 func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io.Writer) error {
+	_, err := runSteps(ctx, root, steps, out)
+	return err
+}
+
+func runSteps(ctx context.Context, root string, steps []protocol.FixStep, out io.Writer) ([]Finding, error) {
 	noter, _ := out.(Noter)
+	var findings []Finding
 	for i, step := range steps {
 		dir, err := inside(root, orRoot(step.Dir))
 		if err != nil {
-			return &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err}
+			return findings, &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err}
 		}
 		fmt.Fprintf(out, "… %s\n", stepName(step))
 		var captured bytes.Buffer
@@ -105,14 +128,15 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 			if text := strings.TrimRight(captured.String(), "\r\n"); strings.TrimSpace(text) != "" {
 				fmt.Fprintln(out, tail(text, shownOutput))
 			}
+			findings = append(findings, Finding{Step: step, Output: captured.String()})
 			continue
 		}
 		if err != nil {
-			return &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err, Output: tail(captured.String(), shownOutput)}
+			return findings, &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err, Output: tail(captured.String(), shownOutput)}
 		}
 		fmt.Fprintf(out, marks.Passed+" %s\n", stepName(step))
 	}
-	return nil
+	return findings, nil
 }
 
 func orRoot(dir string) string {
