@@ -211,9 +211,13 @@ git undoes everything.`,
 					return problem.New("nobody can confirm this conversion: there is no terminal and --yes was not given",
 						"--yes applies it (it deletes the old tooling listed by --dry-run)", "--dry-run reports what it would change and changes nothing")
 				}
+				reader := bufio.NewReader(os.Stdin)
+				if err := AskOutputChoices(reader, log, plan); err != nil {
+					return problem.New(err.Error())
+				}
 				fmt.Fprint(log, ConfirmationText(plan))
 				fmt.Fprint(log, "\nWhat now?\n  1) Apply the conversion\n  2) Show the full report first and stop (the same as --dry-run)\n  3) Cancel\nChoice [3]: ")
-				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+				answer, _ := reader.ReadString('\n')
 				switch strings.ToLower(strings.TrimSpace(answer)) {
 				case "1", "apply", "y", "yes":
 				case "2":

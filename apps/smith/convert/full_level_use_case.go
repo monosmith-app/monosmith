@@ -61,6 +61,14 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	if a.JSON {
 		log = cmd.ErrOrStderr()
 	}
+	ask := interactive() && !a.Yes && !a.DryRun && !a.JSON
+	reader := bufio.NewReader(os.Stdin)
+	if ask {
+		// Before the view: the removal groups read the smith.toml these answers write.
+		if err := AskOutputChoices(reader, log, a.Plan); err != nil {
+			return problem.New(err.Error())
+		}
+	}
 	materialize := func(dir string) error {
 		scratch := *a.Plan
 		scratch.Root = dir
@@ -76,8 +84,6 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	usage := legacyinventory.Detect(view.Tree)
 	defaults := convertchoices.Defaults(usage)
 	choices := withDefaults(a.Choices, a.Given, defaults)
-	ask := interactive() && !a.Yes && !a.DryRun && !a.JSON
-	reader := bufio.NewReader(os.Stdin)
 	if ask {
 		if choices, err = convertchoices.Ask(reader, log, convertchoices.Questions(usage, defaults), choices, a.Given); err != nil {
 			return err
