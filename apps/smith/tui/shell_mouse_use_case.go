@@ -388,7 +388,13 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		m := s.cache.Wheel(dir * wheelStep)
 		s.cache = &m
 		return nil
-	case s.tools != nil, s.result != nil:
+	case s.tools != nil:
+		m := s.tools.Wheel(dir * wheelStep)
+		s.tools = &m
+		return nil
+	case s.result != nil:
+		m := s.result.Wheel(dir * wheelStep)
+		s.result = &m
 		return nil
 	case s.adopt != nil:
 		m := s.adopt.Wheel(dir * wheelStep)

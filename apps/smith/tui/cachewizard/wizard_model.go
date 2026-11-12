@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -32,16 +31,14 @@ type Model struct {
 	// overButton is the button under the pointer: 1 + its body line and its
 	// first column, the zero value for none.
 	overButton [2]int
-	// list keeps where the window of a long list starts.
-	list  *pane.Scroll
-	input []rune
+	input      []rune
 	// focus is the button of a Confirm screen: 0 yes, 1 no.
 	focus int
 	// ticked is the commit box of a Confirm screen that offers it.
 	ticked bool
-	// scroll is the first line of a Page.
-	scroll int
-	since  time.Time
+	// top is the first body line shown when the body is taller than the dialog.
+	top   int
+	since time.Time
 	// typed is what the person has typed to jump in a list, and typedAt when
 	// the last letter came: a pause starts a new word.
 	typed   string
@@ -49,7 +46,7 @@ type Model struct {
 }
 
 // New is the wizard before the engine has said anything: a spinner.
-func New(now time.Time) Model { return Model{since: now, list: &pane.Scroll{}} }
+func New(now time.Time) Model { return Model{since: now} }
 
 // Within keeps the dialog off the top rows (the header and the tab strip) and
 // the bottom rows (the footer and the status bar) of the screen, as every
@@ -62,12 +59,13 @@ func (m Model) Within(top, bottom int) Model {
 	return m
 }
 
-// Place sizes the dialog for a screen.
+// Place sizes the dialog for a screen: 22 rows, or the rows between the
+// margins when there are fewer. A body taller than that scrolls above the
+// buttons, and the window follows the cursor.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
-	h := min(max(m.margins.Room(sh), 12), 22)
-	m.rect = m.margins.Centre(sw, sh, w, h)
-	return m
+	m.rect = m.margins.Centre(sw, sh, w, 22)
+	return m.follow()
 }
 
 // Rect is where the dialog sits after Place.
@@ -95,7 +93,7 @@ func (m Model) Handle(ev Event, now time.Time) Model {
 		m.scr, m.since = Screen{Kind: Idle}, now
 	case AskEvent:
 		m.scr, m.since = ev.Screen, now
-		m.cursor, m.list, m.input, m.focus, m.scroll, m.ticked = 0, &pane.Scroll{}, nil, 0, 0, false
+		m.cursor, m.input, m.focus, m.top, m.ticked = 0, nil, 0, 0, false
 		for i, o := range ev.Screen.Options {
 			if o.Value == ev.Screen.Default {
 				m.cursor = i
@@ -112,6 +110,7 @@ func (m Model) Handle(ev Event, now time.Time) Model {
 		if ev.Screen.Kind == Secret {
 			m.notes = nil
 		}
+		return m.follow()
 	}
 	return m
 }
@@ -126,6 +125,15 @@ func (m Model) answered(r Reply) (Model, Outcome) {
 //
 // Returns: the model and what the host must do.
 func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
+	m, out := m.key(msg)
+	if m.scr.Kind == Page {
+		return m, out
+	}
+	return m.follow(), out
+}
+
+// key is Key before the body follows the cursor.
+func (m Model) key(msg tea.KeyMsg) (Model, Outcome) {
 	name := msg.String()
 	switch m.scr.Kind {
 	case Choose:
@@ -292,28 +300,20 @@ func (m Model) pageKey(name string) (Model, Outcome) {
 	case commands.NavConfirm:
 		return m.answered(Reply{})
 	case commands.NavUp:
-		m.scroll = max(m.scroll-1, 0)
+		return m.scrollBy(-1), Outcome{}
 	case commands.NavDown:
-		m.scroll++
+		return m.scrollBy(1), Outcome{}
 	case commands.NavPageUp:
-		m.scroll = max(m.scroll-8, 0)
+		return m.scrollBy(-8), Outcome{}
 	case commands.NavPageDown:
-		m.scroll += 8
+		return m.scrollBy(8), Outcome{}
 	}
 	return m, Outcome{}
 }
 
-// Wheel scrolls a page, or the window of a list: the wheel never moves the
-// selection of a list, only the keys and a click do.
-func (m Model) Wheel(delta int) Model {
-	switch m.scr.Kind {
-	case Page:
-		m.scroll = max(m.scroll+delta, 0)
-	case Choose:
-		m.list.By(delta)
-	}
-	return m
-}
+// Wheel scrolls the body of the screen: the wheel never moves the selection
+// of a list, only the keys and a click do.
+func (m Model) Wheel(delta int) Model { return m.scrollBy(delta) }
 
 // typeAheadWindow is how long a pause ends the word being typed.
 const typeAheadWindow = time.Second
@@ -372,12 +372,12 @@ func (m Model) Hover(th theme.Theme, x, y int) Model {
 		return m
 	}
 	row, col := y-m.rect.Y-1, x-m.rect.X-2
-	_, hits := m.body(th, 0, time.Time{})
+	_, hits := m.layout(th, 0, time.Time{})
 	for _, h := range hits {
 		if h.row == row && col >= h.x0 && col < h.x1 {
 			m.over, m.overToggle = h.option+1, h.toggle
 			if h.option < 0 && !h.toggle {
-				m.overButton = [2]int{h.row + 1, h.x0}
+				m.overButton = [2]int{h.line + 1, h.x0}
 			}
 		}
 	}
@@ -394,7 +394,7 @@ func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
 		return m, Outcome{}
 	}
 	row, col := y-m.rect.Y-1, x-m.rect.X-2
-	_, hits := m.body(th, 0, time.Time{})
+	_, hits := m.layout(th, 0, time.Time{})
 	for _, h := range hits {
 		if h.row != row || col < h.x0 || col >= h.x1 {
 			continue

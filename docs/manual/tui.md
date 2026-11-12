@@ -336,6 +336,11 @@ The palette and every box drawn over the screen sit in the middle of the content
 the tab strip and the footer. Behind a box the view is emptied so no text shows at its edges. A toast sits
 inside the content area and never covers the border of a box: it goes under or over the box, or
 inside its border when the box takes the whole height.
+A box never grows past those rows. On a short terminal (80x24, or 100x16) a box whose text is
+taller than the free rows keeps its title, its key line and its buttons, and the text above them
+scrolls: `↑ more` and `↓ more` mark the hidden lines and the shared scrollbar shows where you are.
+The arrows move the cursor and the text follows it; the wheel, `PgUp`, `PgDn`, `Ctrl+U` and
+`Ctrl+D` scroll it; a click on a choice that scrolled into view picks it.
 
 While a box is open (the palette, help, a confirmation, a picker, the fix, adopt and compose
 screens, the tools and result dialogs) it blocks the screen. The whole screen behind it, from the

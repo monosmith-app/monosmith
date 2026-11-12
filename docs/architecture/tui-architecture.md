@@ -135,7 +135,14 @@ only while the page is taller than the pane (`Reasons["home.scroll"]`).
 Every dialog (`dialog.Confirm`, `helpdialog`, `composer`, `fixwizard` and the `adoptwizard` built on it,
 `toolsdialog`, `cachewizard`, `resultdialog`, `packageprompt`, `releasepick`) takes the shell's
 `dialogMargins()` with `Within(top, bottom)` before `Place`, and centres itself with
-`layout.Margins.Centre` in the rows between the rule under the tab strip and the footer. The palette
+`layout.Margins.Centre` in the rows between the rule under the tab strip and the footer. `Centre`
+never gives a dialog more rows than that room (`Margins.Room`), so a dialog never covers the tab
+strip or the footer. A dialog draws itself in the height of its
+`Rect`: the part that scrolls goes through `pane.DialogBody` (the window from `top`, the `↑ more` and
+`↓ more` rows of `WindowMarked`, the shared scrollbar) and the foot (its key line, its buttons) is
+pinned under it. `pane.FollowLines` keeps every line of the choice under the cursor in view, and
+`pane.BodyLine` maps a click or a hover row back to a body line, `-1` on a marker, before
+`choicerow.At` finds the choice, so what is drawn and what is clicked never differ. The palette
 takes the same margins and centre (`paletteBox`). The shell places them again
 on a resize. A toast never covers the border of an open dialog (`toastSpot`): it sits under the
 dialog or over it when three rows are free there, and inside the dialog's border, over its first
