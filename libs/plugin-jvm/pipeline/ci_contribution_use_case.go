@@ -9,33 +9,20 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// Versions installed when the workspace does not pin them; bump them
-// deliberately.
+// Versions of the build tools installed when the workspace does not pin them;
+// bump them deliberately.
 const (
-	JavaVersion   = "21"
 	MavenVersion  = "3.9.11"
 	GradleVersion = "9.8.1"
 )
 
-var release = regexp.MustCompile(`<maven\.compiler\.release>\s*(\d+)\s*</maven\.compiler\.release>`)
-
-// Version is the Java release .java-version or the root pom's
-// maven.compiler.release pins, else JavaVersion.
+// Version is the Java release the workspace uses, as toolpin decides it.
 func Version(workspaceRoot string) string {
-	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, ".java-version")); err == nil {
-		if v, _, _ := strings.Cut(strings.TrimSpace(string(raw)), "."); v != "" {
-			return v
-		}
-	}
-	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, "pom.xml")); err == nil {
-		if m := release.FindSubmatch(raw); m != nil {
-			return string(m[1])
-		}
-	}
-	return JavaVersion
+	return toolpin.Version(workspaceRoot, "java")
 }
 
 // buildTools says which build tools the projects use, and whether any is

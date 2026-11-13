@@ -1,36 +1,20 @@
 package pipeline
 
 import (
-	"encoding/json"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/registries"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// SDKVersion is installed when global.json does not pin one; bump it
-// deliberately.
-const SDKVersion = "10.0"
-
-// Version is the SDK global.json pins (its major.minor channel), else
-// SDKVersion.
+// Version is the .NET SDK channel the workspace uses, as toolpin decides it.
 func Version(workspaceRoot string) string {
-	var g struct {
-		SDK struct{ Version string } `json:"sdk"`
-	}
-	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, "global.json")); err == nil && json.Unmarshal(raw, &g) == nil && g.SDK.Version != "" {
-		parts := strings.SplitN(g.SDK.Version, ".", 3)
-		if len(parts) >= 2 {
-			return parts[0] + "." + parts[1]
-		}
-	}
-	return SDKVersion
+	return toolpin.Version(workspaceRoot, "dotnet")
 }
 
 func runtime(version string) protocol.Toolchain {

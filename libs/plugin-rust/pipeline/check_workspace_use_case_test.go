@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 func TestDoctor(t *testing.T) {
@@ -37,7 +38,7 @@ func TestDoctor(t *testing.T) {
 func TestCI(t *testing.T) {
 	ws := t.TempDir()
 	res := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Kind: protocol.ProjectPackage}}})
-	if res.Toolchains[0].Version != RustVersion || len(res.Credentials) != 1 || res.Setup[0].Command[1] != "fetch" {
+	if res.Toolchains[0].Version != toolpin.Default("rustc") || len(res.Credentials) != 1 || res.Setup[0].Command[1] != "fetch" {
 		t.Fatalf("%+v", res)
 	}
 	_ = os.WriteFile(filepath.Join(ws, "rust-toolchain.toml"), []byte("[toolchain]\nchannel = \"1.85.0\"\n"), 0o644)
