@@ -10,6 +10,38 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
+func TestGenerateInheritsTheFrameworkFromTheWorkspace(t *testing.T) {
+	for name, tc := range map[string]struct {
+		props    string
+		explicit bool
+	}{
+		"new workspace":            {"", false},
+		"props sets the framework": {"<Project><PropertyGroup>\n<TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>", false},
+		"props sets none":          {"<Project>\n</Project>", true},
+	} {
+		ws := t.TempDir()
+		if tc.props != "" {
+			if err := os.WriteFile(filepath.Join(ws, "Directory.Build.props"), []byte(tc.props), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "acme"}}); err != nil {
+			t.Fatal(err)
+		}
+		for _, rel := range []string{"libs/core/Acme.Core.csproj", "libs/core/tests/Acme.Core.Tests.csproj"} {
+			raw, _ := os.ReadFile(filepath.Join(ws, filepath.FromSlash(rel)))
+			if got := strings.Contains(string(raw), "<TargetFramework>"); got != tc.explicit {
+				t.Errorf("%s: %s sets its own framework = %v, want %v\n%s", name, rel, got, tc.explicit, raw)
+			}
+		}
+		if tc.props == "" {
+			if props, _ := os.ReadFile(filepath.Join(ws, "Directory.Build.props")); !strings.Contains(string(props), "<TargetFramework>net10.0</TargetFramework>") {
+				t.Errorf("%s: Directory.Build.props:\n%s", name, props)
+			}
+		}
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	ws := t.TempDir()
 	info := protocol.WorkspaceInfo{Name: "acme"}
@@ -42,4 +74,3 @@ func TestGenerate(t *testing.T) {
 		t.Fatal("an existing directory is refused")
 	}
 }
-

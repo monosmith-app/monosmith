@@ -110,6 +110,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
 		findings = append(findings, found...)
 	}
+	if f, ok := CheckWorkspaceFramework(workspaceRoot, params.Projects); ok {
+		findings = append(findings, f)
+	}
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleaseRuntimes(p)...)
 	}

@@ -17,6 +17,9 @@ import (
 
 type templateData struct {
 	Dir, Name, Crate, Kind, Stack string
+	// Edition is the edition the crate sets for itself. It is empty when the
+	// root Cargo.toml shares one in [workspace.package], which the crate inherits.
+	Edition string
 }
 
 // Generate writes a crate, lists it in the root Cargo.toml's workspace
@@ -53,6 +56,9 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		maps.Copy(templates, libTemplates)
 	}
 	data := templateData{Dir: params.Directory, Name: params.Name, Crate: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Cargo, params.Name)), Kind: string(params.Kind), Stack: params.Stack}
+	if WorkspaceEdition(string(src)) == "" {
+		data.Edition = DefaultEdition
+	}
 	written, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

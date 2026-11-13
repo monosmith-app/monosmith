@@ -19,6 +19,9 @@ type templateData struct {
 	Dir, Name, ID, Kind, Stack string
 	// The test project's framework and packages, for the function apps that write their own.
 	TestFramework, TestSdkVersion, XunitVersion, XunitRunnerVersion string
+	// ExplicitFramework is true when the workspace's Directory.Build.props sets
+	// no target framework, so the project and its tests project set their own.
+	ExplicitFramework bool
 	// Data is what a function app (ADR 0072) adds; zero for any other project.
 	functions.Data
 }
@@ -45,12 +48,15 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	case params.Kind == protocol.ProjectApp:
 		maps.Copy(templates, appTemplates)
 	}
-	if _, err := os.Stat(filepath.Join(workspaceRoot, directoryBuildProps)); errors.Is(err, fs.ErrNotExist) {
+	explicitFramework := false
+	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, directoryBuildProps)); errors.Is(err, fs.ErrNotExist) {
 		maps.Copy(templates, rootTemplates)
 	} else if err != nil {
 		return protocol.GenerateResult{}, err
+	} else {
+		explicitFramework = Framework(string(raw)) == ""
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, ID: id, Kind: string(params.Kind), Stack: params.Stack,
+	data := templateData{Dir: params.Directory, Name: params.Name, ID: id, Kind: string(params.Kind), Stack: params.Stack, ExplicitFramework: explicitFramework,
 		TestFramework: TargetFramework, TestSdkVersion: TestSdkVersion, XunitVersion: XunitVersion, XunitRunnerVersion: XunitRunnerVersion}
 	if isFunction {
 		data.Data = functions.DataOf(plan, params.Directory, id)

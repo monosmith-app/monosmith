@@ -105,7 +105,7 @@ Your own file is the override and replaces the default whole. To start from the 
 smith add app|lib|package <name> --lang rust
 ```
 
-The first crate creates the root `Cargo.toml` (`[workspace]`, `resolver = "2"`, `members`) and `.cargo/config.toml` (`[build] target-dir = "dist/cargo"`); later crates are appended to `members` (a single-line or multi-line array is kept in its style). A workspace that already has a `.cargo/config.toml` keeps its own. If the root `Cargo.toml` is a crate rather than a workspace, `smith add` refuses: `the root Cargo.toml is a crate (<name>), not a workspace: make it a [workspace] first`.
+The first crate creates the root `Cargo.toml` (`[workspace]`, `resolver = "2"`, `members`, and `[workspace.package]` with the shared `edition = "2021"`, which every new crate inherits with `edition.workspace = true`; a workspace whose root shares no edition keeps `edition = "2021"` in each new crate) and `.cargo/config.toml` (`[build] target-dir = "dist/cargo"`); later crates are appended to `members` (a single-line or multi-line array is kept in its style). A workspace that already has a `.cargo/config.toml` keeps its own. If the root `Cargo.toml` is a crate rather than a workspace, `smith add` refuses: `the root Cargo.toml is a crate (<name>), not a workspace: make it a [workspace] first`.
 
 The crate name is the namespace (`[workspace] namespace`, else the workspace name), a dash and the project name (`rs-demo` + `core` = `rs-demo-core`), unless the project name already starts with that, so a published crate does not clash on crates.io.
 
@@ -145,7 +145,7 @@ members = ["libs/core", "apps/cli", "packages/kit"]
 
 | Generated | What it is |
 |---|---|
-| `<dir>/Cargo.toml` | `edition = "2021"`, `version = "0.0.0"`, `[package.metadata.smith] kind` (and `stack`), empty `[dependencies]`. A `package` also gets `description` and `license = "MIT"`; apps and libs get `publish = false`. |
+| `<dir>/Cargo.toml` | `edition.workspace = true` (or `edition = "2021"` when the root shares none), `version = "0.0.0"`, `[package.metadata.smith] kind` (and `stack`), empty `[dependencies]`. A `package` also gets `description` and `license = "MIT"`; apps and libs get `publish = false`. |
 | `<dir>/src/greeting/` | a worked slice: `mod.rs` and `greet_use_case.rs` with `pub fn greet(name: &str) -> String` (`Hello, <name>!`) and a unit test |
 | `<dir>/src/main.rs` (app) | prints `greeting::greet("world")` |
 | `<dir>/src/lib.rs` (lib, package) | `pub mod greeting;` |
@@ -179,6 +179,8 @@ The pin label is `rustc`, probed with `rustc --version`. Real output with `[tool
     [toolchains] pins rustc 1.90, but this machine runs 1.76.0: tasks cached on another version are misses, and results can differ from CI
     → install rustc 1.90 (`mise use rust@1.90`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] rustc
 ```
+
+For crates that repeat their edition, doctor warns "crates inherit their edition from the workspace". Its fix moves the edition to `[workspace.package]` and sets `edition.workspace = true` in the crates that share it. It is never applied unasked: it edits your manifests.
 
 smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): another version is a warning, older or newer. A machine on 1.76.0 is warned (with the fix that installs the pinned toolchain) instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
 

@@ -11,9 +11,10 @@ var (
 	quotedItem      = regexp.MustCompile(`"((?:[^"\\]|\\.)*)"`)
 )
 
-// NewWorkspace is the root Cargo.toml of a workspace that has only members.
+// NewWorkspace is the root Cargo.toml of a new workspace: its members, and
+// the [workspace.package] settings every crate inherits.
 func NewWorkspace(member string) string {
-	return "[workspace]\nresolver = \"2\"\nmembers = [\"" + member + "\"]\n"
+	return "[workspace]\nresolver = \"2\"\nmembers = [\"" + member + "\"]\n\n[workspace.package]\nedition = \"" + DefaultEdition + "\"\n"
 }
 
 // members finds the members array of the [workspace] table: where it sits,
