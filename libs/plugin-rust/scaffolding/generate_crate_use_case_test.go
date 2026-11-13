@@ -21,10 +21,13 @@ func TestGenerateMakesAWorkspaceThenAddsToIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	root, _ := os.ReadFile(filepath.Join(ws, "Cargo.toml"))
-	if string(root) != "[workspace]\nresolver = \"2\"\nmembers = [\"apps/cli\", \"packages/core\"]\n" {
+	if string(root) != "[workspace]\nresolver = \"2\"\nmembers = [\"apps/cli\", \"packages/core\"]\n\n[workspace.package]\nedition = \"2021\"\n" {
 		t.Fatalf("root Cargo.toml:\n%s", root)
 	}
 	manifest, _ := os.ReadFile(filepath.Join(ws, "packages", "core", "Cargo.toml"))
+	if !strings.Contains(string(manifest), "edition.workspace = true") || strings.Contains(string(manifest), `edition = "`) {
+		t.Fatalf("a crate inherits the shared edition:\n%s", manifest)
+	}
 	crate, err := discovery.ParseCargo(manifest)
 	if err != nil || crate.Name != "acme-core" || crate.Kind != "package" || crate.Stack != "rust" {
 		t.Fatalf("%v %+v\n%s", err, crate, manifest)
@@ -50,6 +53,20 @@ func TestGenerateMakesAWorkspaceThenAddsToIt(t *testing.T) {
 	root, _ = os.ReadFile(filepath.Join(ws, "Cargo.toml"))
 	if err != nil || len(out.Files) != 1 || strings.Contains(string(root), "apps/cli") {
 		t.Fatalf("remove: %v %+v\n%s", err, out, root)
+	}
+}
+
+func TestGenerateKeepsTheEditionInAWorkspaceThatSharesNone(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.WriteFile(filepath.Join(ws, "Cargo.toml"), []byte("[workspace]\nmembers = []\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "acme"}}); err != nil {
+		t.Fatal(err)
+	}
+	manifest, _ := os.ReadFile(filepath.Join(ws, "libs", "core", "Cargo.toml"))
+	if !strings.Contains(string(manifest), `edition = "2021"`) || strings.Contains(string(manifest), "workspace = true") {
+		t.Fatalf("the crate sets its own edition:\n%s", manifest)
 	}
 }
 

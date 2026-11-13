@@ -14,10 +14,12 @@ const (
 var rootTemplates = map[string]string{
 	directoryBuildProps: `<Project>
   <!-- Every build goes to the workspace's dist/ (smith): bin/ and obj/ of
-       every project live under dist/dotnet, never in a source tree. -->
+       every project live under dist/dotnet, never in a source tree. Every
+       project inherits the target framework below; change it here. -->
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <ArtifactsPath>$(MSBuildThisFileDirectory)dist/dotnet</ArtifactsPath>
+    <TargetFramework>` + TargetFramework + `</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -45,7 +47,9 @@ public static class GreetUseCase
 	"[[.Dir]]/tests/[[.ID]].Tests.csproj": `<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+[[- if .ExplicitFramework]]
     <TargetFramework>` + TargetFramework + `</TargetFramework>
+[[- end]]
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -79,7 +83,9 @@ var projectTemplate = map[string]string{
 	"[[.Dir]]/[[.ID]].csproj": `<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+[[- if .ExplicitFramework]]
     <TargetFramework>` + TargetFramework + `</TargetFramework>
+[[- end]]
 [[- if eq .Kind "app"]]
     <OutputType>Exe</OutputType>
 [[- end]]
