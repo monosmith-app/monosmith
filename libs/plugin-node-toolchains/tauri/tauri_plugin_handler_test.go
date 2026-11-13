@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/extras"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 func TestContribute(t *testing.T) {
@@ -165,7 +166,7 @@ func TestGenerate(t *testing.T) {
 func TestCIReusesTheWorkspacesPinnedRust(t *testing.T) {
 	app := protocol.CIParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}}
 	for name, tc := range map[string]struct{ file, body, want string }{
-		"no pin":         {"", "", RustVersion},
+		"no pin":         {"", "", toolpin.Default("rustc")},
 		"toolchain file": {"rust-toolchain.toml", "[toolchain]\nchannel = \"1.99.1\"\n", "1.99.1"},
 		"rust-version":   {"Cargo.toml", "[workspace.package]\nrust-version = \"1.88\"\n", "1.88"},
 	} {

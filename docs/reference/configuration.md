@@ -359,6 +359,8 @@ node = "22"      # any 22.x
 go = "1.23"      # any 1.23.x
 ```
 
+The pin also decides the version CI, the dev container and the project scaffolds use, for every language. One shared package (`packages/plugin-sdk/toolpin`) decides it in this order: `[toolchains]` in `smith.toml`, then the language's own pin file (`go.work`, `rust-toolchain.toml` or the `rust-version` of the root `Cargo.toml`, `global.json`, `.python-version`, `.nvmrc` or `.node-version`, `.ruby-version`, `.php-version`, `.java-version` or the root pom's `maven.compiler.release`), then smith's default. Native pin files are read as they are, so a workspace that already has `.nvmrc` needs no `[toolchains]` entry.
+
 A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([ADR 0020](../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding. The label `golangci-lint` is read by the Go plugin: `golangci-lint = "2.15.0"` records that the workspace keeps that version on purpose, though CI pins another, and doctor stops warning about it (lint results may differ from CI). `smith doctor --fix` writes it when you answer "Keep" to the golangci-lint question.
 
 ## Shared facts
