@@ -30,6 +30,9 @@ func TestShareFrameworkKeepsThePropsFrameworkAndCreatesMissingProps(t *testing.T
 	if framework != "net8.0" || out != "<Project>\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n" {
 		t.Fatalf("new props %q", out)
 	}
+	if _, changed, framework := ShareFramework("", map[string]string{"A.csproj": "<Project><PropertyGroup><TargetFramework>$(TestTargetFramework)</TargetFramework></PropertyGroup></Project>"}); framework != "" || changed != nil {
+		t.Fatalf("a property reference is left alone: %q %v", framework, changed)
+	}
 	if _, changed, framework := ShareFramework("", map[string]string{"A.csproj": "<Project><PropertyGroup><TargetFrameworks>net8.0;net9.0</TargetFrameworks></PropertyGroup></Project>"}); framework != "" || changed != nil {
 		t.Fatalf("multi-targeting is left alone: %q %v", framework, changed)
 	}

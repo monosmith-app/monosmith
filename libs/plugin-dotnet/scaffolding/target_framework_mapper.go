@@ -7,14 +7,15 @@ import (
 )
 
 var (
-	frameworkElement  = regexp.MustCompile(`<TargetFramework>\s*([^<\s]+)\s*</TargetFramework>`)
+	frameworkElement  = regexp.MustCompile(`<TargetFramework>\s*([^<\s$]+)\s*</TargetFramework>`)
 	frameworkLine     = regexp.MustCompile(`(?m)^[ \t]*<TargetFramework>[^<]*</TargetFramework>[ \t]*\r?\n`)
 	firstPropertyOpen = regexp.MustCompile(`<PropertyGroup>[ \t]*\r?\n`)
 )
 
 // Framework is the target framework a file sets with a TargetFramework
 // element (a project, or Directory.Build.props). It is "" when the file sets
-// none, or sets several with TargetFrameworks.
+// none, sets several with TargetFrameworks, or names a property ($(Name)),
+// which only its owner can move.
 func Framework(src string) string {
 	if m := frameworkElement.FindStringSubmatch(src); m != nil {
 		return m[1]
