@@ -15,6 +15,7 @@ One idea has one flag in every smith command. This page lists the ideas that sev
 | Print the result as JSON | `--json` | - | on or off | many commands |
 | Commit the change as one operation so smith undo can revert it | `--commit` | - | on or off | many commands |
 | Build the optimised profile (cargo --release, dotnet -c Release); a tool without profiles ignores it | `--release` | - | on or off | `smith build`, `smith lint`, `smith run`, `smith test`, `smith typecheck` |
+| Fix what can be fixed on its own: lint rewrites the files its tool can fix, doctor applies its safe fixes | `--fix` | - | on or off | many commands |
 
 The synonyms behave exactly like the flag: they can be mixed on one command line, and `--help` shows the flag once.
 

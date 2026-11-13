@@ -4,6 +4,7 @@ import (
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 )
 
 // Versions the starter pins; bump them deliberately, Angular's packages
@@ -14,7 +15,8 @@ var devDependencies = map[string]string{
 	"@angular/build":        angularVersion,
 	"@angular/cli":          angularVersion,
 	"@angular/compiler-cli": angularVersion,
-	"typescript":            "~6.0.3",
+	"typescript":            toolchainversions.TypeScript,
+	"@monosmith/tsconfig":   "^0.1.0",
 }
 
 // templates are the app: the greeting slice, the manifest, the workspace
@@ -83,17 +85,9 @@ var templates = withGreetingSlice(map[string]string{
 }
 `,
 	"[[.Dir]]/tsconfig.json": `{
+  "extends": "[[.Up]]tsconfig.browser.json",
   "compilerOptions": {
-    "target": "es2023",
-    "lib": ["es2023", "dom", "dom.iterable"],
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "forceConsistentCasingInFileNames": true
+    "module": "preserve"
   },
   "angularCompilerOptions": {
     "strictTemplates": true,

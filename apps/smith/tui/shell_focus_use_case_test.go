@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 )
 
@@ -16,13 +17,47 @@ func TestTabMovesTheKeyboardBetweenTheListAndTheDetailOfProjects(t *testing.T) {
 	if !l.sh().sideFocus {
 		t.Fatal("Tab did not move the keyboard to the detail")
 	}
-	l.has("[list (Tab)]", "choose action", "[run (Enter)]")
+	l.has("[list (Tab)]", "↑↓ choose", "[go to run (Enter)]")
+	l.keys("enter")
+	l.has("[run (Enter)]")
+	l.hasNot("go to run")
+	l.keys("up")
 	l.hasNot("[detail (Tab)]")
 	l.keys("tab")
 	if l.sh().sideFocus {
 		t.Fatal("a second Tab did not give the keyboard back to the list")
 	}
 	l.has("[detail (Tab)]")
+}
+
+func TestOnAShortScreenTheRunButtonOfTheDetailStaysInView(t *testing.T) {
+	for _, h := range []int{14, 18, 34} {
+		l := newLab(t, true, 140, h).openTab(commands.TabProjects)
+		l.keys("tab")
+		r := l.sh().detailRect()
+		c := l.sh().detailContent(r.W, r.H)
+		shown := false
+		for row, hit := range c.hits {
+			if hit.id == detail.RunID && row < r.H {
+				shown = true
+			}
+		}
+		if !shown {
+			t.Fatalf("%d rows: the run button is below the fold:\n%s", h, strings.Join(c.lines, "\n"))
+		}
+		// Moving down the actions never pushes it out.
+		l.keys("down", "down", "down", "down", "down")
+		c = l.sh().detailContent(r.W, r.H)
+		shown = false
+		for row, hit := range c.hits {
+			if hit.id == detail.RunID && row < r.H {
+				shown = true
+			}
+		}
+		if !shown {
+			t.Fatalf("%d rows, fifth action: the run button is below the fold", h)
+		}
+	}
 }
 
 func TestRightAndLeftMoveTheKeyboardAcrossTheListAndTheDetail(t *testing.T) {
@@ -156,7 +191,7 @@ func TestOnDoctorTabAndRightMoveTheKeyboardToTheDetail(t *testing.T) {
 	if !l.sh().sideFocus {
 		t.Fatal("Tab did not move the keyboard to the detail of the check")
 	}
-	l.has("[list (Tab)]", "choose action")
+	l.has("[list (Tab)]", "↑↓ choose")
 	cursor := l.sh().doctor.Cursor
 	l.keys("down")
 	if l.sh().doctor.Cursor != cursor {

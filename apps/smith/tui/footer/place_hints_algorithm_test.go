@@ -37,18 +37,31 @@ func TestTheViewHintsSitLeftAndTheTailRight(t *testing.T) {
 	}
 }
 
-func TestWhenTheyDoNotFitTheViewsLastHintsGoFirstAndQuitIsKept(t *testing.T) {
-	placed := Place(theme.Default(), view, tail, 40)
-	var labels []string
-	for _, p := range placed {
-		labels = append(labels, p.Hint.Label)
+func TestWhenTheyDoNotFitTheGlobalHintsGoFirstAndTheViewKeepsItsKeys(t *testing.T) {
+	labels := func(placed []Placed) string {
+		var out []string
+		for _, p := range placed {
+			out = append(out, p.Hint.Label)
+		}
+		return strings.Join(out, ",")
 	}
-	if got := strings.Join(labels, ","); got != "build,help,quit" {
-		t.Fatalf("%s", got)
-	}
-	placed = Place(theme.Default(), view, tail, 14)
-	if len(placed) != 1 || placed[0].Hint.Label != "quit" {
-		t.Fatalf("%+v", placed)
+	th := theme.Default()
+	global := append([]commands.Hint{{Glyph: "m", Label: "mouse", Key: "m"}, {Glyph: ":", Label: "palette", Key: ":"}}, tail...)
+	fitting := 2 + total(th, view) + gap + total(th, tail)
+	for _, c := range []struct {
+		w    int
+		want string
+	}{
+		{fitting + gap + total(th, global[:2]), "build,test,lint,mouse,palette,help,quit"},
+		{fitting, "build,test,lint,help,quit"},
+		{fitting - 1, "build,test,help,quit"},
+		{2 + total(th, view[:1]) + gap + total(th, tail), "build,help,quit"},
+		{2 + total(th, view[:1]) + gap + total(th, tail) - 1, "help,quit"},
+		{2 + total(th, tail[1:]) + gap, "quit"},
+	} {
+		if got := labels(Place(th, view, global, c.w)); got != c.want {
+			t.Errorf("%d columns: %s, want %s", c.w, got, c.want)
+		}
 	}
 }
 

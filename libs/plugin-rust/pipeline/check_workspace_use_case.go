@@ -62,6 +62,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			Detail: m + " is a member of the Cargo workspace but has no Cargo.toml", Remedy: "remove \"" + m + "\" from members in the root Cargo.toml",
 		})
 	}
+	if f, ok := CheckWorkspaceEdition(workspaceRoot, string(src), params.Projects); ok {
+		findings = append(findings, f)
+	}
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleaseTargets(workspaceRoot, p)...)
 		listing := workspaceListing(workspaceRoot, string(src), root, p.Root)

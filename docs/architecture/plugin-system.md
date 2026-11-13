@@ -321,7 +321,7 @@ and optionally a fix. A fix is files (whole new contents, so the host can show
 a diff), then ordered command *steps* (argv, no shell, run from the workspace
 root), and *choices*: questions whose options are fixes themselves, which turn a
 remedy like "install the tool or remove the script" into a wizard. The core adds
-its own invariants (builds go to `dist/`, no two tasks write the same directory,
+its own invariants (builds go to `dist/`,
 no cycles, a full clone…) and prints one report, with the fixes folded: the same
 fix on many projects is one that says which it applies to. A fix is applied
 unasked only when it is marked safe, restores something smith or a plugin owns,

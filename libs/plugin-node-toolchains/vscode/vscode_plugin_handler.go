@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -59,7 +60,7 @@ func (p *VSCode) Generate(params protocol.GenerateParams) (protocol.GenerateResu
 	files := maps.Clone(templates)
 	manifest := "[[.Dir]]/package.json"
 	files[manifest] = strings.NewReplacer(publisherToken, publisher, kindToken, string(params.Kind)).Replace(files[manifest])
-	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: files, DevDependencies: devDependencies})
+	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: files, Root: tsconfigchain.BrowserRoot(), DevDependencies: devDependencies})
 }
 
 // Contribute implements serve.Contributor: the package task of an extension app.

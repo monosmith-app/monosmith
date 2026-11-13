@@ -44,7 +44,7 @@ Usage: `smith upgrade [flags]`
 | `--defaults` | boolean | off | move the workspace to the latest defaults vintage (smith doctor says which it uses) |
 | `--dry-run` | boolean | off | show the plan, with the change to smith.toml, and change nothing |
 | `--json` | boolean | off | print the result as JSON |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `-y, --yes` | boolean | off | do not ask for confirmation; without a terminal the change is made only with --yes |
 
 <!-- smith:end upgrade -->
 

@@ -252,6 +252,10 @@ type Shell struct {
 	// recipeBase is the plain Write a recipe form they are added to.
 	recipeLevels *recipewizard.LevelCatalog
 	recipeBase   *guide.Action
+	// convertOutputs are the build outputs the convert form asks about, read
+	// once from the plan; convertBase is the plain convert form.
+	convertOutputs *guide.ConvertOutputs
+	convertBase    *guide.Action
 	// removeBase is the plain Remove form, which the project list turns into a pick list.
 	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.

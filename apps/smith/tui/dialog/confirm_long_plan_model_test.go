@@ -24,7 +24,7 @@ func TestALongPlanScrollsAndNeverHidesTheCommitBoxOrTheCommand(t *testing.T) {
 			c, _ = c.Key(step)
 		}
 		text := ansi.Strip(strings.Join(c.Lines(theme.Default()), "\n"))
-		for _, want := range []string{CommitLabel, "The command that will run:", "$ smith upgrade --defaults", "Run (enter)", "more lines"} {
+		for _, want := range []string{CommitLabel, "The command that will run:", "$ smith upgrade --defaults", "Run (Enter)", "↓ more"} {
 			if !strings.Contains(text, want) {
 				t.Fatalf("after %q the dialog lost %q:\n%s", step, want, text)
 			}

@@ -9,7 +9,7 @@
   "guide.add_project_choices.smith_add_fresh": "smith add --fresh",
   "guide.add_project_choices.follow_which_project": "Follow which project?",
   "guide.add_project_choices.which_project": "Which project?",
-  "guide.add_project_choices.build_it_from_choices_space_ticks": "Build it from choices? (space ticks; enter with nothing ticked uses the stack's defaults)",
+  "guide.add_project_choices.build_it_from_choices_space_ticks": "Build it from choices? (Space ticks; Enter with nothing ticked uses the stack's defaults)",
   "guide.add_project_choices.default": " (default)",
   "guide.add_project_outcomes.what_are_you_building": "What are you building?",
   "guide.add_project_outcomes.not_sure_pick_the_closest_one": "Not sure? Pick the closest one: you can change the language and the tools in the next steps.",

@@ -244,9 +244,8 @@ A `build` that runs several smith tasks into one folder (a zip task and a
 `[workspace] shared_outputs`. A task clears its output folders before it runs
 and when it restores them from the cache, so without the setting the second
 task deletes the files of the first. A folder listed there (or inside a listed
-folder) is kept as it is. Without the setting, `smith ci generate`, `smith
-doctor` and the assets run print a warning that names both tasks and the two
-fixes: list the folder, or give each task its own folder.
+folder) is kept as it is. Without the setting, the run prints a warning that
+names both tasks, and runs them one after the other.
 
 A glob in `assets` may match nothing on a platform, as `dist/drop/app_*.dmg` does
 on Windows and Linux, as long as another glob of the list matches a file there:

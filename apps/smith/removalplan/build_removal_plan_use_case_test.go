@@ -149,11 +149,78 @@ func TestTheConservativeFinishBuildsAndTestsButDoesNotLint(t *testing.T) {
 }
 
 func TestFinishInstallsOnceThenChecksTheWorkspace(t *testing.T) {
-	f := Finish("smith", true)
+	f := Finish("smith", true, false)
 	if f.Ask || !f.Safe || len(f.Steps) != 5 || f.Steps[0].Argv[1] != "npm-lockfile" || f.Steps[4].Argv[1] != "doctor" {
 		t.Fatalf("steps = %+v", f.Steps)
 	}
-	if got := Finish("smith", false); len(got.Steps) != 1 {
+	if got := Finish("smith", false, true); len(got.Steps) != 1 {
 		t.Fatalf("without the checks only the install remains, got %+v", got.Steps)
 	}
+}
+
+// The lint and doctor report and never stop a conversion; the install, the
+// build and the tests stop it.
+func TestTheLintAndDoctorChecksOfAConversionReportAndNeverStopIt(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		fixLint bool
+		want    string
+		argv    string
+	}{
+		{"smith's lint fixes first", true, StepFixLint, "smith lint --fix -p lang:node"},
+		{"the repository's own lint", false, StepLint, "smith run lint"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := Finish("smith", true, tc.fixLint)
+			for i, s := range f.Steps {
+				if (s.Description == tc.want || s.Description == StepDoctor) != s.Advisory {
+					t.Errorf("step %d %q: advisory = %v", i+1, s.Description, s.Advisory)
+				}
+			}
+			for i, s := range FinishBuildAndTest("smith").Steps {
+				if (s.Description == StepDoctor) != s.Advisory {
+					t.Errorf("conservative step %d %q: advisory = %v", i+1, s.Description, s.Advisory)
+				}
+			}
+			lint := f.Steps[3]
+			if lint.Description != tc.want || strings.Join(lint.Argv, " ") != tc.argv {
+				t.Fatalf("lint step = %+v", lint)
+			}
+		})
+	}
+}
+
+func TestTheLintGroupRaisesESLintInEveryManifestThatNamesIt(t *testing.T) {
+	files := oldTooling()
+	files["package.json"] = strings.Replace(files["package.json"], `"eslint": "^10"`, `"eslint": "^9.39.3"`, 1)
+	files["package.json"] = strings.Replace(files["package.json"], "\n}\n", ",\n  \"overrides\": {\"eslint\": \"$eslint\"}\n}\n", 1)
+	files["packages/b/package.json"] = `{"name":"b","devDependencies":{"eslint":"^9.0.0"}}`
+	lint := group(t, Build(workspace(files), fullChoices, nil), GroupLint)
+	if !strings.Contains(lint.Reason, "raises eslint 9 → 10, which smith's config needs") {
+		t.Errorf("reason = %q", lint.Reason)
+	}
+	edited := map[string]string{}
+	for _, e := range lint.Fix.Files {
+		edited[e.Path] = e.Content
+	}
+	for _, path := range []string{"package.json", "packages/b/package.json"} {
+		if !strings.Contains(edited[path], `"eslint": "`+LintESLintRange+`"`) {
+			t.Errorf("%s is not raised:\n%s", path, edited[path])
+		}
+	}
+	if !strings.Contains(edited["package.json"], `"eslint": "$eslint"`) {
+		t.Errorf("the $eslint override is gone:\n%s", edited["package.json"])
+	}
+}
+
+func TestTheLintPlanSaysWhenItCannotRaiseESLint(t *testing.T) {
+	files := oldTooling()
+	files["packages/b/package.json"] = `{"name":"b","devDependencies":{"eslint":"latest"}}`
+	p := Build(workspace(files), fullChoices, nil)
+	for _, n := range p.Notes {
+		if strings.Contains(n, "packages/b/package.json") && strings.Contains(n, `"latest"`) && strings.Contains(n, LintESLintRange) {
+			return
+		}
+	}
+	t.Fatalf("notes = %q", p.Notes)
 }

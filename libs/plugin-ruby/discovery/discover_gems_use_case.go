@@ -36,15 +36,16 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		}
 		_, specErr := os.Stat(filepath.Join(dir, "spec"))
 		result.Projects = append(result.Projects, protocol.Project{
-			Name:     path.Base(root),
-			Root:     root,
-			Language: "ruby",
-			Kind:     kind,
-			Exports:  []string{gem.Name},
-			Imports:  gem.Dependencies,
-			Version:  gem.Version,
-			Tasks:    Tasks(kind, start, specErr == nil),
-			Stack:    gem.Stack,
+			Name:        path.Base(root),
+			Root:        root,
+			Language:    "ruby",
+			Kind:        kind,
+			Exports:     []string{gem.Name},
+			PackageName: gem.Name,
+			Imports:     gem.Dependencies,
+			Version:     gem.Version,
+			Tasks:       Tasks(kind, start, specErr == nil),
+			Stack:       gem.Stack,
 		})
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("ruby", "ruby", "--version") })

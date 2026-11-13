@@ -41,7 +41,7 @@ func (f *repairFake) install(l *lab) {
 		err := f.fail
 		f.mu.Unlock()
 		for _, st := range depsrepair.Steps(repairOffer(), kind) {
-			_, _ = io.WriteString(out,"… "+st.Name+"\n")
+			_, _ = io.WriteString(out, "… "+st.Name+"\n")
 		}
 		return err
 	}

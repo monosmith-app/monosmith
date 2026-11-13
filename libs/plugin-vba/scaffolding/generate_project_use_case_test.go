@@ -41,10 +41,3 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestModuleName(t *testing.T) {
-	for in, want := range map[string]string{"report": "report", "sales-report": "sales_report", "2fa": "M2fa", "": "M", "_x": "M_x"} {
-		if got := moduleName(in); got != want {
-			t.Errorf("moduleName(%q) = %q, want %q", in, got, want)
-		}
-	}
-}

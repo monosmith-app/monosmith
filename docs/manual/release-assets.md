@@ -55,10 +55,9 @@ When the build command runs several smith tasks that write the same folder (a zi
 task, then a `package-dmg` task, both into `dist/drop`), list that folder under
 `[workspace] shared_outputs` in `smith.toml`. A task clears its output folders before it
 runs, so without the setting the second task deletes the file the first one made. With it,
-smith keeps what is in the folder. Without it, the assets run, `smith ci generate` and
-`smith doctor` warn, name both tasks and say how to fix it. Tasks that write one folder
-but never run together (a dev build and a prod build) go under `[workspace] alternative_outputs`
-instead; better, give each its own folder.
+smith keeps what is in the folder. Without it, the run warns, names both tasks, and runs
+them one after the other, so the folder keeps only the last one's files. Tasks that write
+one folder but never run in the same run (a dev build and a prod build) need nothing.
 
 ## Run it again for a tag
 

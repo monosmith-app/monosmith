@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 func TestCIDeclaresTheGoModuleCacheKeyedOnEachModulesGoSum(t *testing.T) {
@@ -52,7 +53,7 @@ func TestWithoutGoWorkTheToolchainIsTheNewestGoModVersionNotTheDefault(t *testin
 	if got != "1.27" {
 		t.Errorf("version %q, want 1.27", got)
 	}
-	if v := CI(t.TempDir(), protocol.CIParams{Projects: projects}).Toolchains[0].Version; v != DefaultGoVersion {
+	if v := CI(t.TempDir(), protocol.CIParams{Projects: projects}).Toolchains[0].Version; v != toolpin.Default("go") {
 		t.Errorf("no go.work and no go.mod: %q, want the default", v)
 	}
 }

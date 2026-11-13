@@ -124,7 +124,7 @@ Your own file is the override and replaces the default whole, because golangci-l
 smith add app|lib|package <name> --lang go
 ```
 
-`smith add` writes a Go module with one worked example, a `greeting` slice (a package, a use case, a contract and a test), `go.mod` marked with its kind, and an entry in `go.work`. The module path is `[workspace] module_prefix` plus `/` plus the directory; with no prefix it is `example.com/<workspace name, lower-cased>`. Under the hood the plugin runs `go work init` (only when there is no `go.work`), `go mod init`, `go mod edit -go=<the go.work version>` (so a module takes the version the workspace builds with, not that of the Go that happens to run) and `go work use ./<dir>`. It refuses a directory that already exists.
+`smith add` writes a Go module with one worked example, a `greeting` slice (a package, a use case, a contract and a test), `go.mod` marked with its kind, and an entry in `go.work`. The module path is `[workspace] module_prefix` plus `/` plus the directory; with no prefix it is `example.com/<namespace, lower-cased>` (`[workspace] namespace`, else the workspace name). Under the hood the plugin runs `go work init` (only when there is no `go.work`), `go mod init`, `go mod edit -go=<the go.work version>` (so a module takes the version the workspace builds with, not that of the Go that happens to run) and `go work use ./<dir>`. It refuses a directory that already exists.
 
 Real runs:
 

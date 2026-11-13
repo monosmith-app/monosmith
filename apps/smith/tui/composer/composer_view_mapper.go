@@ -27,60 +27,127 @@ func (m Model) Title() string {
 // Lines draws the screen, framed, at the size Place set.
 func (m Model) Lines(th theme.Theme) []string {
 	r := m.rect
-	if r.W < 20 || r.H < 8 {
+	if r.W < 20 || r.H < 4 {
 		return nil
 	}
 	inner, height := r.W-4, r.H-2
+	title := m.Title()
 	var body []string
-	switch m.stage {
-	case stQuestion:
-		body = m.questionBody(th, inner)
-	case stName:
-		body = m.nameBody(th, inner)
-	case stPlan:
-		body = m.planBody(th, inner)
-	default:
+	if m.stage == stBrowse {
+		title = m.browseTitle(inner)
 		body = m.browseBody(th, inner, height)
+	} else {
+		// A question, the name or the plan taller than the screen scrolls above
+		// its key line, under the shared scrollbar in the cell next to the border.
+		text, foot, _ := m.stageBody(th, inner)
+		body = pane.DialogBody(th, text, foot, pane.DialogRowWidth(r.W), height, m.top)
 	}
 	rows := make([]string, 0, height)
 	for _, l := range body {
 		if len(rows) >= height {
 			break
 		}
-		rows = append(rows, " "+pane.Fit(l, inner))
+		// The cell left of the border is the list's scrollbar, as in every
+		// pane; text is wrapped to inner, so it keeps a blank cell there.
+		rows = append(rows, " "+pane.Fit(l, pane.DialogRowWidth(r.W)))
 	}
-	return pane.Frame(th, m.Title(), rows, r.W, r.H, true)
+	return pane.Frame(th, title, rows, r.W, r.H, true)
+}
+
+// browseTitle is the frame title while browsing. On a short screen the summary
+// moves up into it, so the list keeps the row; a summary too long for the
+// border is cut, and Tab shows the whole stack.
+func (m Model) browseTitle(inner int) string {
+	if !m.short() {
+		return m.Title()
+	}
+	full := words.Say("composer.title.browse", "title", m.Title(), "summary", m.summaryText(true))
+	return pane.CutEllipsis(full, inner-2)
 }
 
 // browseBody is the search box, the list (catalogue or stack), the check and
 // the keys.
 func (m Model) browseBody(th theme.Theme, inner, height int) []string {
-	lines := []string{m.search.View(), m.summaryLine(th), ""}
+	lines := []string{m.search.View()}
+	if !m.short() {
+		lines = append(lines, th.Muted(m.summaryText(false)), "")
+	}
 	status := m.statusLines(th, inner)
-	keys := th.Muted(words.Say("composer.keys.browse", "target", words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])))
-	room := max(height-len(lines)-len(status)-1, 3)
+	keys := m.keyLines(th, inner)
+	room := m.listRoom(len(status), len(keys))
 	list, _ := m.listLines(th, inner)
 	for i := range list {
-		list[i] = pane.Fit(list[i], inner-1) // the scrollbar takes the last cell
+		list[i] = pane.Fit(list[i], inner)
 	}
-	shown, _ := pane.Window(th, list, inner, room, m.cursorLine, m.scroll)
+	// The scrollbar takes the cell after the rows, the one next to the border.
+	shown, _ := pane.Window(th, list, inner+1, room, m.cursorLine, m.scroll)
 	lines = append(lines, shown...)
-	for len(lines) < height-len(status)-1 {
+	for len(lines) < height-len(status)-len(keys) {
 		lines = append(lines, "")
 	}
-	return append(append(lines, status...), keys)
+	return append(append(lines, status...), keys...)
 }
 
-// summaryLine says what is ticked, by layer.
-func (m Model) summaryLine(th theme.Theme) string {
+// listTop is the first body line of the list while browsing: the search box
+// and, when the screen has the rows, the summary and a blank line come first.
+func (m Model) listTop() int {
+	if m.short() {
+		return 1
+	}
+	return 3
+}
+
+// roomyHeight is the body height from which the browse screen keeps the
+// summary and a blank line above the list and the long key line under it.
+const roomyHeight = 14
+
+// short reports whether the screen is too short for the roomy browse layout:
+// then the summary goes into the title and the key line is the short one.
+func (m Model) short() bool { return m.rect.H-2 < roomyHeight }
+
+// listRoom is the rows the list gets while browsing, its "more" line included:
+// what the search box, the summary, the check and the keys leave, at least 2.
+func (m Model) listRoom(status, keys int) int {
+	return max(m.rect.H-2-m.listTop()-status-keys, 2)
+}
+
+// stageBody is a screen other than browsing: the text that scrolls, the key
+// line pinned under it, and the line of the first answer of a question (-1 on
+// the other screens).
+func (m Model) stageBody(th theme.Theme, inner int) (body, foot []string, first int) {
+	switch m.stage {
+	case stQuestion:
+		return m.questionBody(th, inner)
+	case stName:
+		body, foot = m.nameBody(th, inner)
+	default:
+		body, foot = m.planBody(th, inner)
+	}
+	return body, foot, -1
+}
+
+// keyLines are the keys of the browse screen. They wrap, as the status does, so
+// no key is cut off on a narrow screen.
+func (m Model) keyLines(th theme.Theme, inner int) []string {
+	target := words.Say(map[bool]string{true: "composer.keys.catalogue", false: "composer.keys.stack"}[m.stack])
+	key := "composer.keys.browse"
+	if m.short() {
+		key = "composer.keys.browse.short"
+	}
+	return pane.Wrap(th.Muted(words.Say(key, "target", target)), inner, 2)
+}
+
+// summaryText says what is ticked, by layer; brief is the shorter text for
+// nothing ticked, used in the title of a short screen.
+func (m Model) summaryText(brief bool) string {
 	if len(m.ticked) == 0 && m.lang == nil {
-		return th.Muted(words.Say("composer.summary.empty"))
+		return words.Say(map[bool]string{true: "composer.summary.empty.short", false: "composer.summary.empty"}[brief])
 	}
 	var parts []string
 	for _, it := range m.entries() {
 		parts = append(parts, it.Title)
 	}
-	return th.Muted(words.Say("composer.stack.label")) + strings.Join(parts, " + ")
+	return words.Say("composer.stack.label") + strings.Join(parts, " + ")
 }
 
 // listLines draws the rows of the catalogue or of the stack and sets where the
@@ -147,7 +214,7 @@ func (m Model) row(th theme.Theme, it compose.Item, i, inner int, inStack bool) 
 		r.Hint = it.Description
 	}
 	r.Selected, r.Hovered = i == m.cursor, i == m.hover && i != m.cursor
-	return choicerow.Line(th, r, inner-1)
+	return choicerow.Line(th, r, inner)
 }
 
 // isTicked reports whether the item is ticked.
@@ -202,17 +269,19 @@ func (m Model) statusLines(th theme.Theme, inner int) []string {
 	return out
 }
 
-// questionBody asks the open axis, with what each answer means.
-func (m Model) questionBody(th theme.Theme, inner int) []string {
+// questionBody asks the open axis, with what each answer means; first is the
+// line of the first answer.
+func (m Model) questionBody(th theme.Theme, inner int) (lines, foot []string, first int) {
 	q := m.chk.Question
 	if q == nil {
-		return nil
+		return nil, nil, -1
 	}
-	lines := []string{th.Bold(words.Say("composer.question.title", "axis", q.Axis, "choice", q.Choice))}
+	lines = []string{th.Bold(words.Say("composer.question.title", "axis", q.Axis, "choice", q.Choice))}
 	if q.About != "" {
 		lines = append(lines, pane.Wrap(th.Muted(words.Say("composer.question.writes", "choice", q.Choice, "about", q.About)), inner, 2)...)
 	}
 	lines = append(lines, th.Muted(words.Say("composer.question.hint")), "")
+	first = len(lines)
 	for i, o := range q.Options {
 		label := o.Title
 		if o.Suggested {
@@ -221,12 +290,12 @@ func (m Model) questionBody(th theme.Theme, inner int) []string {
 		r := choicerow.Row{Label: label, Hint: o.Description, Selected: i == m.qcursor, Hovered: i == m.hover && i != m.qcursor}
 		lines = append(lines, choicerow.Line(th, r, inner))
 	}
-	return append(lines, "", th.Muted(words.Say("composer.question.keys")))
+	return append(lines, ""), pane.Wrap(th.Muted(words.Say("composer.question.keys")), inner, 2), first
 }
 
-// nameBody asks the name and the kind.
-func (m Model) nameBody(th theme.Theme, inner int) []string {
-	lines := []string{
+// nameBody asks the name and the kind; foot is the key line.
+func (m Model) nameBody(th theme.Theme, inner int) (lines, foot []string) {
+	lines = []string{
 		th.Bold(words.Say("composer.name.title")),
 		th.Muted(words.Say("composer.name.stack", "selection", strings.Join(m.chk.Selection, ", "), "language", m.chk.Language)),
 		"",
@@ -234,9 +303,9 @@ func (m Model) nameBody(th theme.Theme, inner int) []string {
 		words.Say("composer.name.kind") + th.Bold(kinds[m.kind]) + th.Muted("   "+kindMeaning(kinds[m.kind])),
 	}
 	if m.note != "" {
-		lines = append(lines, "", th.Warning(m.note))
+		lines = append(append(lines, ""), pane.Wrap(th.Warning(m.note), inner, 2)...)
 	}
-	return append(lines, "", th.Muted(words.Say("composer.name.keys")))
+	return append(lines, ""), pane.Wrap(th.Muted(words.Say("composer.name.keys")), inner, 2)
 }
 
 // kindMeaning says what a kind of project is.
@@ -250,18 +319,17 @@ func kindMeaning(kind string) string {
 	return words.Say("composer.kind.package")
 }
 
-// planBody shows the plan: the command, the files, the tools, the notes, and
-// what can be done with it.
-func (m Model) planBody(th theme.Theme, inner int) []string {
+// planBody shows the plan: the command, the files, the tools and the notes;
+// foot is what can be done with it.
+func (m Model) planBody(th theme.Theme, inner int) (lines, foot []string) {
 	if m.planErr != "" {
-		return append(pane.Wrap(th.Failure(words.Say("composer.plan.failed"))+m.planErr, inner, 2), "", th.Muted(words.Say("composer.plan.back")))
+		return append(pane.Wrap(th.Failure(words.Say("composer.plan.failed"))+m.planErr, inner, 2), ""), pane.Wrap(th.Muted(words.Say("composer.plan.back")), inner, 2)
 	}
 	if m.plan == nil {
-		return []string{th.Muted(words.Say("composer.plan.reading"))}
+		return []string{th.Muted(words.Say("composer.plan.reading"))}, nil
 	}
 	p := m.plan
 	// Every line is wrapped to the dialog, with a hanging indent, never cut.
-	var lines []string
 	add := func(l ...string) {
 		for _, one := range l {
 			lines = append(lines, pane.Wrap(one, inner, 4)...)
@@ -296,6 +364,6 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 	if p.RecipeNote != "" {
 		add(th.Muted(words.Say("composer.plan.recipe", "note", p.RecipeNote)))
 	}
-	add("", th.Muted(words.Say("composer.plan.keys")))
-	return lines
+	add("")
+	return lines, pane.Wrap(th.Muted(words.Say("composer.plan.keys")), inner, 4)
 }

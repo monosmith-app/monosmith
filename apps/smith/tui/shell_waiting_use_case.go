@@ -29,7 +29,7 @@ type planWait struct {
 // fill it with the plan when the command ends.
 func waitsForTicket(purpose string) bool {
 	switch purpose {
-	case capPlan, capAdd, capSwap, capUndo, capChoices, capRecipeLevels, capSearch, capTools, capCompose:
+	case capPlan, capAdd, capSwap, capUndo, capChoices, capRecipeLevels, capConvertOutputs, capSearch, capTools, capCompose:
 		return true
 	}
 	return false

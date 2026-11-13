@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -125,7 +126,7 @@ func TestAShortScreenScrollsTheListAndKeepsTheCommandAndButtons(t *testing.T) {
 	}
 	m = press(m, "down", "down", "down", "down", "down", "down", "down", " ")
 	text := screen(m)
-	for _, want := range []string{"[x] h", "The command that will run", "$ smith release --hold h", "Continue (enter)", "packages shown"} {
+	for _, want := range []string{"[x] h", "The command that will run", "$ smith release --hold h", "Continue (Enter)", "packages shown"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("lost %q:\n%s", want, text)
 		}
@@ -145,4 +146,35 @@ func TestClickingARowHoldsItAndClickingContinueGoesOn(t *testing.T) {
 	if _, out := m.Click(0, 0); !out.Done || out.Confirmed {
 		t.Fatalf("a click outside cancels: %+v", out)
 	}
+}
+
+// scrollbarOnTheBorder fails unless the lines draw a scrollbar and every cell
+// of its track is the last one inside the right border, as in every pane.
+func scrollbarOnTheBorder(t *testing.T, lines []string) {
+	t.Helper()
+	track := []rune(theme.Default().Icons.Track)[0]
+	bars := 0
+	for _, l := range lines {
+		r := []rune(pane.Strip(l))
+		for x, c := range r {
+			if c != track {
+				continue
+			}
+			if x != len(r)-2 {
+				t.Fatalf("the scrollbar is in column %d, not next to the border in column %d: %q", x, len(r)-2, string(r))
+			}
+			bars++
+		}
+	}
+	if bars == 0 {
+		t.Fatalf("the test needs a body that scrolls:\n%s", pane.Strip(strings.Join(lines, "\n")))
+	}
+}
+
+func TestTheReleasePickerScrollbarSitsNextToTheBorder(t *testing.T) {
+	var plan release.Plan
+	for i := range 30 {
+		plan.Items = append(plan.Items, release.Item{Project: string(rune('a' + i)), Current: "1.0.0", Next: "1.0.1", Level: "patch"})
+	}
+	scrollbarOnTheBorder(t, New(plan).Within(3, 2).Place(80, 24).Lines(theme.Default()))
 }

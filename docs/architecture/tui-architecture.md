@@ -67,7 +67,7 @@ flowchart TD
 | `tui/sources` | loading what the views show (replaceable in tests) |
 | `tui/screenreader`, `clipboard`, `pointer`, `progress` | plain mode, OSC 52 copy, double-click detection, progress bars |
 | `tui/choicerow` | the one pick-list and tick-box row: `Row`, `Lines`/`Line` (cursor mark, lead, label, hint; selected, hovered and disabled looks), `Toggle` (a lone box), `At` (a click or a hover on a row that wraps). Every list of choices draws its rows with it: composer, guide, doctorview, fixwizard, resultdialog, toolsdialog, cachewizard, releasepick and settingsview |
-| `tui/button`, `tui/detail` | the one button (rest, hover, active, disabled) and the detail panel with its split action panel |
+| `tui/button`, `tui/detail` | the one button (rest, hover, active, disabled; its key spelled as the footer and the help spell it, `Enter`, `Esc`, `Ctrl+C`, whatever name the caller passes; a row of buttons centred with `RowSpans` in every dialog, the remote cache setup included) and the detail panel with its split action panel |
 
 ## One keymap, three consumers
 
@@ -117,7 +117,11 @@ same index the keyboard cursor uses) and the keyboard stop on the run button in 
 `forgetDetailPlace` resets both when the selection changes. `detailContent` gives the chooser rows
 the hit kind `choose` and the run button the kind `action`, so only the run button takes the press,
 release and active look of a button. The shortcut keys go through the keymap, not the panel, so they
-run the action at once.
+run the action at once. When the whole panel does not fit, `pinRun` sets `Panel.PinRun`: `View` leaves
+the run part out and `Panel.PinnedRun` draws it under the scrolling body, in at most half of the rows
+(the rule and the button always stay), so it never falls below the fold; `scrollDetail` and
+`keepDetailCursorVisible` count the body without it. The footer says `go to run (Enter)` while the
+keyboard is above the rule (`tabPage.Footer`), since `Enter` there moves to the run button.
 
 Home has no second panel. Its keys are `home.move`, `home.scroll` and `Ctrl+U`/`Ctrl+D`
 (`shell_home_keys_use_case.go`): the keyboard is on one target of the page (`homeSel`, counted in
@@ -125,6 +129,39 @@ reading order over the `Targets` that `dashboard.PageAt` returns), and a page ta
 scrolls (`homeTop`). `pane.WindowMarked` draws the `↑ more` and `↓ more` rows and `pane.KeepVisible`
 moves the window just enough to show the target under no marker. The footer offers `PgUp/PgDn scroll`
 only while the page is taller than the pane (`Reasons["home.scroll"]`).
+
+### Where a dialog sits
+
+Every dialog (`dialog.Confirm`, `helpdialog`, `composer`, `fixwizard` and the `adoptwizard` built on it,
+`toolsdialog`, `cachewizard`, `resultdialog`, `packageprompt`, `releasepick`) takes the shell's
+`dialogMargins()` with `Within(top, bottom)` before `Place`, and centres itself with
+`layout.Margins.Centre` in the rows between the rule under the tab strip and the footer. `Centre`
+never gives a dialog more rows than that room (`Margins.Room`), so a dialog never covers the tab
+strip or the footer, and no dialog has a minimum height. A dialog draws itself in the height of its
+`Rect`: the part that scrolls goes through `pane.DialogBody` (the window from `top`, the `↑ more` and
+`↓ more` rows of `WindowMarked`, the shared scrollbar) and the foot (its key line, its buttons, the
+spinner of a confirmation that waits for its plan) is pinned under it. Every dialog gives
+`DialogBody` and `pane.Scrollbar` the same width, `pane.DialogRowWidth(box width)`, and fits its
+rows to it, so the scrollbar sits in the cell next to the right border, as in the panes. The text
+that scrolls is wrapped narrower than that row, so the scrollbar never takes a last letter.
+`pane.FollowLines` keeps every line of the choice under the cursor in view (`pane.KeepVisible` for a
+one-line row), and `pane.BodyLine` maps a click or a hover row back to a body line, `-1` on a marker,
+before `choicerow.At` finds the choice, so what is drawn and what is clicked never differ. Every
+dialog that scrolls takes the wheel, `PgUp`, `PgDn`, `Ctrl+U` and `Ctrl+D`, which the markers name.
+The composer's browse screen keeps its own list window (`pane.Window`). Under 14 body rows it gives
+the list the rows: the summary moves into the frame title (`Compose a stack · Stack: Go + React`,
+cut with `…` when too long; Tab shows the whole stack), the spacer goes and the key line is the
+short one, so the list keeps six rows at 100x16. Its question, name and plan screens use
+`DialogBody`. The cache wizard is as tall as its screen, up to 22 rows, and `Rect` centres that
+height with `Margins.Centre`, so a short screen sits in the middle like every other dialog. `packageprompt` keeps the
+screen size from `Place` and sizes itself again after every key and click (`refit`), so an error or
+a longer command makes it taller, up to the room. The release picker's list draws the shared
+`pane.Scrollbar`. The palette
+takes the same margins and centre (`paletteBox`). The shell places them again
+on a resize. A toast never covers the border of an open dialog (`toastSpot`): it sits under the
+dialog or over it when three rows are free there, and inside the dialog's border, over its first
+rows, when the dialog takes the whole height. While one is open, `footerHints` is empty: `modalOpen()` gives the dialog every key and
+click, so a hint of the view behind it would promise a key that does nothing.
 
 ## Pages
 
@@ -223,6 +260,13 @@ The adopt wizard (`tui/adoptwizard`) is a second state machine layered on the fi
 a `fixwizard.Wizard`, so keys, mouse and drawing are identical. It holds no logic; steps that take
 time come out as `Job`s the shell runs off the UI goroutine, and `adoptflow.Session` does the work.
 The stages and calls are in [How adopt and convert work](adopt-and-convert.md).
+
+The convert form is a guided form that reads the plan before it opens, as the recipe form reads its
+levels: `openConvertForm` captures `smith convert --dry-run --json` once (`capConvertOutputs`),
+`guide.ParseConvertOutputs` reads its `outputChoices`, and `guide.ConvertOutputsAction` adds one
+question per build task before the commit question. The answers become `--outputs
+<project>:<task>=detected|declared` on the command line, which `convert.ApplyOutputAnswers` applies
+before the terminal would ask.
 
 ## Themes, plain mode, mouse
 

@@ -22,6 +22,20 @@ func TestWithoutAConfigSmithPassesItsDefault(t *testing.T) {
 	}
 }
 
+func TestTheFixIsTheLintWithGolangciLintsFixFlag(t *testing.T) {
+	lint, err := Command(t.TempDir(), "libs/core")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "golangci-lint run --fix --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml"
+	if got := strings.Join(lint.Fix, " "); got != want {
+		t.Fatalf("fix: %s", got)
+	}
+	if strings.Contains(strings.Join(lint.Command, " "), "--fix") {
+		t.Fatalf("the plain lint must not fix: %v", lint.Command)
+	}
+}
+
 func TestTheRepositorysConfigWinsAtAnyLevel(t *testing.T) {
 	for _, where := range []string{".golangci.yml", "libs/core/.golangci.toml"} {
 		ws := t.TempDir()

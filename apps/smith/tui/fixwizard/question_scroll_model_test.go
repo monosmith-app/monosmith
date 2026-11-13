@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -39,5 +41,37 @@ func TestPageKeysScrollALongQuestionAsItsHintSays(t *testing.T) {
 	w, _ = press(t, w, "ctrl+u")
 	if w.top >= top {
 		t.Fatal("Ctrl+U scrolls it back")
+	}
+}
+
+// scrollbarOnTheBorder fails unless the lines draw a scrollbar and every cell
+// of its track is the last one inside the right border, as in every pane.
+func scrollbarOnTheBorder(t *testing.T, lines []string) {
+	t.Helper()
+	track := []rune(theme.Default().Icons.Track)[0]
+	bars := 0
+	for _, l := range lines {
+		r := []rune(pane.Strip(l))
+		for x, c := range r {
+			if c != track {
+				continue
+			}
+			if x != len(r)-2 {
+				t.Fatalf("the scrollbar is in column %d, not next to the border in column %d: %q", x, len(r)-2, string(r))
+			}
+			bars++
+		}
+	}
+	if bars == 0 {
+		t.Fatalf("the test needs a body that scrolls:\n%s", pane.Strip(strings.Join(lines, "\n")))
+	}
+}
+
+// The dependency repair is this wizard with its own words, so it is pinned here too.
+func TestTheFixAndRepairScrollbarSitsNextToTheBorder(t *testing.T) {
+	fix := New(longQuestion(), show).Place(100, 16)
+	repair := New(longQuestion(), show).Styled(Style{Name: "repair", NoRetry: true, NoSuggestion: true}).Place(100, 16)
+	for _, w := range []Wizard{fix, repair} {
+		scrollbarOnTheBorder(t, w.Lines(theme.Default(), 0))
 	}
 }

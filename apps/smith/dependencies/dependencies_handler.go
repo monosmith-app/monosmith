@@ -79,7 +79,7 @@ project, --registry for the package.`,
 	}
 	install.Flags().BoolVar(&registry, "registry", false, "install the names from the registry, even when a name is also a project of this workspace")
 	install.Flags().StringVar(&linkRange, "range", "", "the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks")
-	install.Flags().BoolVarP(&yes, "yes", "y", false, "never ask: accept the defaults, and refuse a name that could be a project or a registry package")
+	commandflags.AddYesFlag(install, &yes, "never ask: accept the defaults, and refuse a name that could be a project or a registry package")
 	install.Flags().BoolVar(&dryRun, "dry-run", false, "show where each package goes and its latest release, and change nothing")
 	install.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's own output and warnings (otherwise warnings fold into one line)")
 	commandflags.AddProjectFlag(install, &targets, "target project, by name or directory; repeat it or separate them with commas")
@@ -115,7 +115,7 @@ A development dependency is removed like any other.`,
 			return Uninstall(s, from, args, cmd.OutOrStdout(), fromRegistry)
 		},
 	}
-	uninstall.Flags().BoolVarP(&uninstallYes, "yes", "y", false, "do not ask; without a terminal the packages are removed only with --yes")
+	commandflags.AddYesFlag(uninstall, &uninstallYes, "do not ask; without a terminal the packages are removed only with --yes")
 	uninstall.Flags().BoolVar(&fromRegistry, "registry", false, "remove the names as registry packages, even when a name is also a project of this workspace")
 	commandflags.AddProjectFlag(uninstall, &from, "target project, by name or directory; repeat it or separate them with commas")
 	operation.Wrap(uninstall, operation.Spec{Describe: func(cmd *cobra.Command, args []string) string {
@@ -276,7 +276,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 	}
 	cmd.Flags().BoolVar(&align, "align", false, "bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ")
 	cmd.Flags().BoolVar(&check, "check", false, "report only; never prompt, never write")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "take every patch and minor update without prompting; major updates stay out unless --major is given")
+	commandflags.AddYesFlag(cmd, &yes, "take every patch and minor update without prompting; major updates stay out unless --major is given")
 	cmd.Flags().BoolVar(&major, "major", false, "also take major updates (with --yes or named packages), and with --align let a declaration move to another major version")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "with --align: show the plan and change nothing")
 	cmd.Flags().StringVar(&prefer, "prefer", "", "with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest)")
@@ -343,7 +343,7 @@ shows the plan and changes nothing.`,
 	cmd.Flags().BoolVar(&check, "check", false, "report only; fail when declarations disagree")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	commandflags.AddNoInstallFlag(cmd, &noInstall, "rewrite the manifests without installing")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "write the plan without asking")
+	commandflags.AddYesFlag(cmd, &yes, "write the plan without asking")
 	cmd.Flags().BoolVar(&major, "major", false, "also rewrite declarations whose major version differs from the target")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the plan and change nothing")
 	cmd.Flags().StringVar(&prefer, "prefer", "", "which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest)")

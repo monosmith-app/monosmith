@@ -8,7 +8,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	smithconfig "github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -26,6 +28,7 @@ import (
 func buildOutputGroup(v *legacyinventory.Tree) built {
 	var out built
 	var edits []protocol.FileEdit
+	var moved []movedBuild
 	importers := importersByName(v)
 	projects := 0
 	for _, manifest := range v.ManifestPaths() {
@@ -65,14 +68,86 @@ func buildOutputGroup(v *legacyinventory.Tree) built {
 		}
 		projects++
 		edits = append(edits, fix.Files...)
+		moved = append(moved, movedBuild{root: root, oldDir: outDir, script: editedBuildScript(fix.Files, manifest)})
 	}
 	if projects == 0 {
 		return out
 	}
-	sort.Slice(edits, func(i, j int) bool { return edits[i].Path < edits[j].Path })
 	reason := fmt.Sprintf("Build %s into the workspace's dist folder: smith passes the folder, so no tsconfig names one and main, types and start follow it", projectCount(projects))
+	if config, ok := followOutputs(v.Read(smithconfig.FileName), moved); ok {
+		edits = append(edits, protocol.FileEdit{Path: smithconfig.FileName, Content: config})
+		reason += ", and so do the build outputs in " + smithconfig.FileName
+	}
+	sort.Slice(edits, func(i, j int) bool { return edits[i].Path < edits[j].Path })
 	out.group = newGroup(GroupOutput, reason, 0, nil, edits)
 	return out
+}
+
+// movedBuild is a project whose build the output group moves: its root, the
+// folder its build wrote, and its build script once moved.
+type movedBuild struct {
+	root, oldDir, script string
+}
+
+// editedBuildScript reads the build script of the manifest the fix rewrites.
+func editedBuildScript(files []protocol.FileEdit, manifest string) string {
+	for _, f := range files {
+		if f.Path != manifest {
+			continue
+		}
+		var m struct{ Scripts map[string]string }
+		if json.Unmarshal([]byte(f.Content), &m) == nil {
+			return m.Scripts[buildoutputs.Task]
+		}
+	}
+	return ""
+}
+
+// followOutputs moves the declared build outputs of each moved project to
+// the folder its build writes now, with the detector smith doctor uses: the
+// declared output that held the old folder is replaced, the others stay. A
+// build task that declares no outputs, or runs another script, is left as it
+// is (the plugin's default is the workspace's dist folder already).
+//
+// Parameters: config is the smith.toml text ("" when there is none); moved
+// are the projects the group moves.
+// Returns: the new smith.toml text, and false when nothing changes.
+func followOutputs(config string, moved []movedBuild) (string, bool) {
+	if config == "" {
+		return "", false
+	}
+	cfg, err := smithconfig.Parse([]byte(config))
+	if err != nil {
+		return "", false
+	}
+	var gaps []buildoutputs.Gap
+	for _, m := range moved {
+		name := path.Base(m.root)
+		task, ok := cfg.Projects[name].Tasks[buildoutputs.Task]
+		if !ok || len(task.Outputs) == 0 {
+			continue
+		}
+		if script, _, runs := buildoutputs.RunScript(task.Command); len(task.Command) > 0 && (!runs || script != buildoutputs.Task) {
+			continue
+		}
+		written := buildoutputs.WrittenDirs(m.script)
+		if len(written) == 0 {
+			continue
+		}
+		old := path.Clean(m.oldDir)
+		var outputs []string
+		for _, d := range task.Outputs {
+			if d = path.Clean(d); !buildoutputs.Covered(old, []string{d}) && !buildoutputs.Covered(d, []string{old}) {
+				outputs = append(outputs, d)
+			}
+		}
+		outputs = buildoutputs.Collapse(append(written, outputs...))
+		gaps = append(gaps, buildoutputs.Gap{Project: name, Outputs: outputs})
+	}
+	if len(gaps) == 0 {
+		return "", false
+	}
+	return buildoutputs.DeclareOutputs(config, gaps), true
 }
 
 // importersByName maps a package name to the other packages of the tree that

@@ -76,7 +76,7 @@ func TestTheRowUnderThePointerTakesTheRowHoverLook(t *testing.T) {
 
 func TestAClickOnAnAnswerOfTheOpenQuestionPicksIt(t *testing.T) {
 	m := typed(screen(), "serverless")
-	m, _ = press(m, "enter")
+	m, _ = press(m, "down", " ")
 	if m.stage != stQuestion {
 		t.Fatalf("Azure Functions asks for a trigger first, stage %v", m.stage)
 	}

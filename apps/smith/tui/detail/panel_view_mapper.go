@@ -1,6 +1,7 @@
 package detail
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -54,7 +55,7 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 	}
 	lines = p.group(lines, hits, th, p.ActionsTitle, p.Actions, w, hover)
 	lines = p.group(lines, hits, th, p.MoreTitle, p.More, w, hover)
-	if chosen, ok := p.ChosenAction(); ok && p.Splits() {
+	if chosen, ok := p.ChosenAction(); ok && p.Splits() && !p.PinRun {
 		lines = p.runPart(lines, hits, th, chosen, w, hover)
 	}
 	for _, s := range p.After {
@@ -67,10 +68,7 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 // chosen action does, then the one button that runs it, with the action's own
 // label and key. Only the button clicks (as RunID).
 func (p Panel) runPart(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string) []string {
-	markW := 1
-	if p.Cursor != "" {
-		markW = pane.Width(choicerow.Cursor(th, false))
-	}
+	markW := pane.Width(choicerow.Cursor(th, false))
 	lines = append(lines, "", " "+th.Faint(strings.Repeat("─", max(w-2, 1))))
 	if a.Hint != "" {
 		for _, part := range pane.Wrap(a.Hint, max(w-markW-1, 4), 0) {
@@ -80,6 +78,35 @@ func (p Panel) runPart(lines []string, hits map[int]string, th theme.Theme, a Ac
 	run := a
 	run.ID, run.Hint = RunID, ""
 	return p.action(lines, hits, th, run, w, hover, false, false)
+}
+
+// PinnedRun draws the second part of a split panel on its own, for a caller
+// that keeps it in view under the part that scrolls (see Panel.PinRun): the
+// thin rule, what the chosen action does and the run button, in at most limit
+// lines. A description too long for the limit is cut and ends with "…"; the
+// rule and the button always stay.
+//
+// Parameters: th is the theme; w is the width; hover is the ID under the
+// pointer; limit is the most lines the part may take (at least 2).
+// Returns: the lines, and the line of the run button with RunID; nothing when
+// the panel does not split.
+func (p Panel) PinnedRun(th theme.Theme, w int, hover string, limit int) (lines []string, hits map[int]string) {
+	hits = map[int]string{}
+	chosen, ok := p.ChosenAction()
+	if !ok || !p.Splits() {
+		return nil, hits
+	}
+	all := p.runPart(nil, map[int]string{}, th, chosen, w, hover)[1:] // no blank line above the rule
+	limit = max(limit, 2)
+	if len(all) > limit {
+		desc := all[1 : len(all)-1][:limit-2]
+		if n := len(desc); n > 0 {
+			desc[n-1] = pane.Fit(ansi.Truncate(desc[n-1], max(w-1, 1), "")+"…", w)
+		}
+		all = append(append([]string{all[0]}, desc...), all[len(all)-1])
+	}
+	hits[len(all)-1] = RunID
+	return all, hits
 }
 
 // group appends a heading and the buttons of a list of actions, after a blank
@@ -110,13 +137,12 @@ func (p Panel) group(lines []string, hits map[int]string, th theme.Theme, title 
 // shared one (see package button) in the state the action is in: Disabled, Active
 // while it is pressed under the pointer or while it is the chosen one of a
 // split panel, Hover under the pointer or at the keyboard cursor, else Rest.
-// With a Cursor the rows lead with the cursor mark. A compact action is its
+// The rows lead with the column of the cursor mark, blank without a Cursor. A compact action is its
 // button alone: no description and no note under it.
 func (p Panel) action(lines []string, hits map[int]string, th theme.Theme, a Action, w int, hover string, compact, chosen bool) []string {
-	mark := " "
-	if p.Cursor != "" {
-		mark = choicerow.Cursor(th, a.ID == p.Cursor)
-	}
+	// The column of the cursor mark is there with or without a Cursor, so the
+	// buttons do not move when the detail takes the keyboard.
+	mark := choicerow.Cursor(th, p.Cursor != "" && a.ID == p.Cursor)
 	markW := pane.Width(mark)
 	label := a.Label
 	var notes []string
@@ -168,6 +194,9 @@ func (p Panel) rows(s Section) []Row {
 	}
 	return out
 }
+
+// numbered is the "2. " in front of a numbered answer.
+var numbered = regexp.MustCompile(`^[0-9]+\. `)
 
 // section appends one section's lines.
 func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int) []string {
@@ -230,7 +259,13 @@ func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int)
 				lines = append(lines, pane.Fit(part, w))
 			}
 		default:
-			for _, part := range pane.Wrap("  "+it, w, 2) {
+			// An item that starts indented (a numbered answer under its question)
+			// wraps under its own text.
+			indent := 2 + len(it) - len(strings.TrimLeft(it, " "))
+			if n := numbered.FindString(strings.TrimLeft(it, " ")); n != "" && indent > 2 {
+				indent += len(n)
+			}
+			for _, part := range pane.Wrap("  "+it, w, indent) {
 				lines = append(lines, pane.Fit(part, w))
 			}
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -35,8 +36,8 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 	if params.Shape[discovery.ShapeTestRunner] == discovery.ShapeSwcJest {
 		devDependencies, transform = swcJest()
 	}
-	devDependencies["@jest/globals"] = "^30.5.2"
-	devDependencies["jest"] = "^30.5.2"
+	devDependencies["@jest/globals"] = toolchainversions.Jest
+	devDependencies["jest"] = toolchainversions.Jest
 	mapper := map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"}
 	maps.Copy(mapper, aliases.JestModuleNameMapper())
 	options := map[string]any{
@@ -100,9 +101,14 @@ module.exports = ` + string(body[:len(body)-2]) + `,
 	}
 }
 
-// tsJest is the default compiler of the tests: ts-jest.
+// tsJest is the default compiler of the tests: ts-jest. It reads the project's
+// tsconfig.json (and so the workspace base it extends), and the options below
+// are laid over it: only the four that Jest needs. Jest runs CommonJS (module,
+// moduleResolution, verbatimModuleSyntax), and the tests must be type-checked,
+// which ts-jest skips when the tsconfig says isolatedModules (the base does).
+// A spec then fails on the errors that `smith run typecheck` reports.
 func tsJest(aliases modulealiases.Aliases) (devDependencies map[string]string, transform []any) {
-	compiler := map[string]any{"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false}
+	compiler := map[string]any{"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false, "isolatedModules": false}
 	if paths := aliases.CompilerPaths(); paths != nil {
 		compiler["paths"] = paths
 	}

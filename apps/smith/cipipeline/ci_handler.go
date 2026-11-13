@@ -3,6 +3,7 @@ package cipipeline
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"io/fs"
 	"os"
 	"os/signal"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -103,9 +103,6 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 				return err
 			}
 			defer s.Close()
-			for _, w := range buildoutputs.OverlapWarningsFor(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs) {
-				fmt.Fprintln(c.ErrOrStderr(), w)
-			}
 			if check {
 				contributions, err := Collect(s)
 				if err != nil {
@@ -154,7 +151,7 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 	}
 	generate.Flags().BoolVar(&check, "check", false, "report drift without writing")
 	generate.Flags().BoolVar(&dryRun, "dry-run", false, "show every file it would create, rewrite or delete, with a diff; write nothing")
-	generate.Flags().BoolVarP(&yes, "yes", "y", false, "write without asking")
+	commandflags.AddYesFlag(generate, &yes, "write without asking")
 	cmd.AddCommand(generate)
 	cmd.AddCommand(&cobra.Command{
 		Use:   "check",

@@ -161,7 +161,7 @@ func TestTheAddTauriButtonAsksAboutTheSelectedNodeApp(t *testing.T) {
 		t.Fatalf("opened %q", l.sh().guide.Title())
 	}
 	l.keys("enter")
-	l.has("smith tauri add web", "[Cancel (esc)]")
+	l.has("smith tauri add web", "[Cancel (Esc)]")
 	if len(l.started) != 0 {
 		t.Fatalf("the confirmation comes before any change: %v", l.started)
 	}
@@ -175,7 +175,7 @@ func TestTheTauriIconButtonOpensItsFormWithTheTauriAppPicked(t *testing.T) {
 	l.typeText("logo.png").keys("enter")
 	l.has("desk")
 	l.keys("enter")
-	l.has("smith tauri icon logo.png -p desk --yes", "[Cancel (esc)]")
+	l.has("smith tauri icon logo.png -p desk --yes", "[Cancel (Esc)]")
 	if len(l.started) != 0 {
 		t.Fatalf("the confirmation comes before any change: %v", l.started)
 	}

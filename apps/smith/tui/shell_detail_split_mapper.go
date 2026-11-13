@@ -44,6 +44,7 @@ func (s Shell) detailSplit(w, h int) (top []string, bodyH int) {
 	if room := max(h-minBodyRows-1, 0); len(lines) > room {
 		lines = lines[:room]
 	}
-	top = append(lines, s.th.Faint(strings.Repeat("─", w)))
+	// The same thin rule as the one over the run part of a split panel.
+	top = append(lines, " "+s.th.Faint(strings.Repeat("─", max(w-2, 1))))
 	return top, max(h-len(top), 1)
 }

@@ -1391,7 +1391,7 @@ export const protocolSchema: SchemaDocument = {
           "items": {
             "$ref": "#/$defs/FixStep"
           },
-          "description": "Steps run after the files, in order, from the workspace root; the first one that fails stops the rest."
+          "description": "Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory."
         },
         "choices": {
           "type": "array",
@@ -1477,6 +1477,10 @@ export const protocolSchema: SchemaDocument = {
             "type": "string"
           },
           "description": "Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go install write there). Absent adds none."
+        },
+        "advisory": {
+          "type": "boolean",
+          "description": "Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and the steps after it still run."
         }
       },
       "required": [
@@ -1531,6 +1535,10 @@ export const protocolSchema: SchemaDocument = {
             "type": "string"
           },
           "description": "Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only."
+        },
+        "packageName": {
+          "type": "string",
+          "description": "PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name."
         }
       },
       "required": [
@@ -1969,6 +1977,10 @@ export const protocolSchema: SchemaDocument = {
             "type": "string"
           },
           "description": "Exports are the identifiers other projects import this one by: an npm package name, a Go module path, a Python import name."
+        },
+        "packageName": {
+          "type": "string",
+          "description": "PackageName is the name the project's manifest gives its package: the npm package, the Cargo crate, the Python distribution, the pub package, the Composer name, the gem, the .NET package id, the Maven artifactId. smith doctor compares it with the workspace namespace. Empty when the plugin does not say."
         },
         "imports": {
           "type": "array",
@@ -2753,6 +2765,10 @@ export const protocolSchema: SchemaDocument = {
           "$ref": "#/$defs/TaskProfile",
           "description": "Release is the task as `smith run --release` runs it: the command of the optimised profile (\"cargo build --release\") and what that profile ships. Nil means the task has one profile and runs the same way with the flag. The cache key holds the command, so each profile has its own cache entry."
         },
+        "fix": {
+          "$ref": "#/$defs/TaskFix",
+          "description": "Fix is how `smith lint --fix` fixes what the tool can. Only a lint task sets it. Nil means the tool has no fix mode: smith says so and runs the plain lint."
+        },
         "dependsOn": {
           "type": "array",
           "items": {
@@ -2782,6 +2798,33 @@ export const protocolSchema: SchemaDocument = {
         "serveTimeout": {
           "type": "string",
           "description": "ServeTimeout is how long to wait for ServeURL, as a Go duration (\"60s\"); empty means 60s."
+        }
+      },
+      "required": [
+        "command"
+      ]
+    },
+    "TaskFix": {
+      "description": "TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how smith learns what is left. `smith lint --fix` runs it in place of the task's own command, and never caches it.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Command is an argv array that fixes the problems the tool can fix; it is never passed through a shell. Its exit code alone does not say whether problems remain, unless Count is set."
+        },
+        "probe": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Probe is an argv array that only reports, as Command does when Count is set, without changing a file. Smith runs it before Command, and the difference of the two counts is the number of problems fixed. Empty means smith does not know that number."
+        },
+        "count": {
+          "type": "string",
+          "description": "Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON. Empty means smith runs the task's own command after Command, and its exit code says whether problems remain."
         }
       },
       "required": [
@@ -3093,9 +3136,13 @@ export const protocolSchema: SchemaDocument = {
         "name": {
           "type": "string"
         },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace is the word every language puts before a project's name to build its default package name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace, which is its name when none is set. Plugins build names through packages/plugin-sdk/projectnaming."
+        },
         "scope": {
           "type": "string",
-          "description": "Scope is the npm scope for packages, with its @ (e.g. \"@acme\")."
+          "description": "Scope is the npm scope for packages, with its @ (e.g. \"@acme\"). The host sends it only when the person set it; otherwise the scope is the namespace."
         },
         "modulePrefix": {
           "type": "string",

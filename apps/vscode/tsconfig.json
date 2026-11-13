@@ -1,12 +1,13 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
     "target": "es2023",
     "lib": ["es2023"],
     "module": "preserve",
     "moduleResolution": "bundler",
-    "strict": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,

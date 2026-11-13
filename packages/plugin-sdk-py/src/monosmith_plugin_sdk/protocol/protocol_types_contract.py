@@ -105,6 +105,7 @@ __all__ = [
     "Step",
     "TagMove",
     "Task",
+    "TaskFix",
     "TaskProfile",
     "ToolInstall",
     "ToolNeed",
@@ -999,7 +1000,7 @@ class Fix(_FixRequired, total=False):
     steps: list[FixStep]
     """
     Steps run after the files, in order, from the workspace root; the first one that fails stops
-    the rest.
+    the rest, unless it is advisory.
     """
     choices: list[FixChoice]
     """
@@ -1058,6 +1059,11 @@ class FixStep(_FixStepRequired, total=False):
     Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go
     install write there). Absent adds none.
     """
+    advisory: bool
+    """
+    Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and
+    the steps after it still run.
+    """
 
 
 class _GenerateParamsRequired(TypedDict):
@@ -1112,6 +1118,14 @@ class GenerateParams(_GenerateParamsRequired, total=False):
     the order they apply: a choice comes after those it requires. A plugin applies the choices it
     owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read
     only.
+    """
+    packageName: str
+    """
+    PackageName is the name the person gave the project's package (smith add --package-name): the
+    npm package, the Cargo crate, the Python distribution, the last part of the Go module path,
+    and so on. The host has checked it against the language's naming rules. The plugin that
+    writes the manifest uses it as given, in place of the name it builds from the workspace and
+    Name. Empty: the plugin builds the name.
     """
 
 
@@ -1417,6 +1431,13 @@ class Project(_ProjectRequired, total=False):
     """
     Exports are the identifiers other projects import this one by: an npm package name, a Go
     module path, a Python import name.
+    """
+    packageName: str
+    """
+    PackageName is the name the project's manifest gives its package: the npm package, the Cargo
+    crate, the Python distribution, the pub package, the Composer name, the gem, the .NET package
+    id, the Maven artifactId. smith doctor compares it with the workspace namespace. Empty when
+    the plugin does not say.
     """
     imports: list[str]
     """
@@ -1992,6 +2013,11 @@ class Task(_TaskRequired, total=False):
     runs the same way with the flag. The cache key holds the command, so each profile has its own
     cache entry.
     """
+    fix: TaskFix
+    """
+    Fix is how `smith lint --fix` fixes what the tool can. Only a lint task sets it. Nil means
+    the tool has no fix mode: smith says so and runs the plain lint.
+    """
     dependsOn: list[str]
     """
     DependsOn lists task names: "build" runs this project's build first, "^build" runs the build
@@ -2020,6 +2046,35 @@ class Task(_TaskRequired, total=False):
     """
     serveTimeout: str
     """ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s."""
+
+
+class _TaskFixRequired(TypedDict):
+    command: list[str]
+    """
+    Command is an argv array that fixes the problems the tool can fix; it is never passed through
+    a shell. Its exit code alone does not say whether problems remain, unless Count is set.
+    """
+
+
+class TaskFix(_TaskFixRequired, total=False):
+    """
+    TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how
+    smith learns what is left. `smith lint --fix` runs it in place of the task's own command, and
+    never caches it.
+    """
+
+    probe: list[str]
+    """
+    Probe is an argv array that only reports, as Command does when Count is set, without changing
+    a file. Smith runs it before Command, and the difference of the two counts is the number of
+    problems fixed. Empty means smith does not know that number.
+    """
+    count: str
+    """
+    Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON.
+    Empty means smith runs the task's own command after Command, and its exit code says whether
+    problems remain.
+    """
 
 
 class _TaskProfileRequired(TypedDict):
@@ -2251,8 +2306,18 @@ class _WorkspaceInfoRequired(TypedDict):
 class WorkspaceInfo(_WorkspaceInfoRequired, total=False):
     """WorkspaceInfo is the subset of workspace settings plugins may use."""
 
+    namespace: str
+    """
+    Namespace is the word every language puts before a project's name to build its default
+    package name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace,
+    which is its name when none is set. Plugins build names through
+    packages/plugin-sdk/projectnaming.
+    """
     scope: str
-    """Scope is the npm scope for packages, with its @ (e.g. "@acme")."""
+    """
+    Scope is the npm scope for packages, with its @ (e.g. "@acme"). The host sends it only when
+    the person set it; otherwise the scope is the namespace.
+    """
     modulePrefix: str
     """ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo."""
 

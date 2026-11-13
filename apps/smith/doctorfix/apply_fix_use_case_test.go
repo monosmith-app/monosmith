@@ -93,6 +93,32 @@ func TestApplyStopsAtTheFirstFailingStepAndSaysWhich(t *testing.T) {
 	}
 }
 
+func TestAnAdvisoryStepThatFailsIsShownAndTheNextStepsStillRun(t *testing.T) {
+	root := t.TempDir()
+	lint := helper(t, "lint", "fail")
+	lint.Advisory = true
+	fix := protocol.Fix{Description: "check", Steps: []protocol.FixStep{lint, helper(t, "doctor", "touch", filepath.Join(root, "doctor"))}}
+	var out bytes.Buffer
+	if err := Apply(context.Background(), root, fix, &out); err != nil {
+		t.Fatalf("an advisory failure stops nothing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "doctor")); err != nil {
+		t.Fatal("the step after the advisory one ran")
+	}
+	for _, want := range []string{"▲ lint\n", "the build exploded\n", "✓ doctor\n"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output lacks %q:\n%s", want, out.String())
+		}
+	}
+	if strings.Contains(out.String(), "✓ lint") {
+		t.Fatalf("a failed advisory step is not marked passed:\n%s", out.String())
+	}
+	findings, err := ApplyWithFindings(context.Background(), root, fix, io.Discard)
+	if err != nil || len(findings) != 1 || findings[0].Step.Description != lint.Description || !strings.Contains(findings[0].Output, "the build exploded") {
+		t.Fatalf("the failed advisory step is a finding with its output: %+v, %v", findings, err)
+	}
+}
+
 func TestApplyRefusesWhatLeavesTheWorkspaceOrStillAsks(t *testing.T) {
 	root := t.TempDir()
 	if err := Apply(context.Background(), root, protocol.Fix{Files: []protocol.FileEdit{{Path: "../outside.txt", Content: "x"}}}, io.Discard); err == nil {
@@ -137,5 +163,28 @@ func TestApplyTellsANoterWhatItWritesAndWhatTheCommandPrints(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "added 12 packages") {
 		t.Fatalf("command output must not flood the plain output: %q", out.String())
+	}
+}
+
+func TestApplyFilesRemovesAFolderTheDeletedFileLeavesEmpty(t *testing.T) {
+	root := t.TempDir()
+	for _, rel := range []string{"a/scripts/one.mjs", "b/scripts/one.mjs", "b/scripts/keep.mjs"} {
+		p := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fix := protocol.Fix{Files: []protocol.FileEdit{{Path: "a/scripts/one.mjs", Delete: true}, {Path: "b/scripts/one.mjs", Delete: true}}}
+	if err := ApplyFiles(root, fix); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "a", "scripts")); err == nil {
+		t.Error("an empty folder is removed with its last file")
+	}
+	if _, err := os.Stat(filepath.Join(root, "b", "scripts", "keep.mjs")); err != nil {
+		t.Error("a folder that still holds a file stays")
 	}
 }

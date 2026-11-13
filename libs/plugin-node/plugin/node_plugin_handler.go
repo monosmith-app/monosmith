@@ -16,6 +16,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 // Node is the Node.js/TypeScript language plugin.
@@ -94,14 +95,14 @@ func (n *Node) Published(params protocol.PublishedParams) (protocol.PublishedRes
 func (n *Node) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	return ci.CI(n.root, params, scaffolding.NodeVersion), nil
+	return ci.CI(n.root, params, toolpin.Version(n.root, "node")), nil
 }
 
 // Doctor implements serve.DoctorContributor.
 func (n *Node) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	return pipeline.Doctor(n.root, params, scaffolding.NodeVersion), nil
+	return pipeline.Doctor(n.root, params, toolpin.Version(n.root, "node")), nil
 }
 
 // Remove implements serve.Remover.

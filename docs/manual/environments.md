@@ -55,7 +55,8 @@ smith run build build:lcl build:dev build:uat -p web   # all of them: build is t
 ```
 
 `smith run build:uat` reads `apps/web/.env.uat` and writes `dist/apps/web/uat`. Each environment is
-cached on its own, and no two tasks write the same folder, so [smith doctor](doctor.md) stays quiet.
+cached on its own, and no two tasks write the same folder, so all of them can run at once in one
+run (see [run](run.md#files-and-environment)).
 
 ## Secrets
 

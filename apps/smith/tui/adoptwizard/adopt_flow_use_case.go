@@ -83,7 +83,8 @@ func (m Model) Done(result any, err error) (Model, Outcome) {
 		m.applied = append(m.applied, m.group.ID)
 		return m.check()
 	case StageFinishing:
-		m.checked, _ = result.([]checkedStep)
+		done, _ := result.(finished)
+		m.checked, m.findings = done.steps, done.findings
 		return m.offerAgent(), Outcome{}
 	case StageAgentInstalling:
 		return m.done(), Outcome{}

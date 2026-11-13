@@ -54,6 +54,9 @@ type Result struct {
 	// the plan was made, by a fix applied earlier in the walk: planning again
 	// would make them from the new content.
 	Stale []string
+	// Findings are the advisory steps that failed in the fixes applied: each
+	// fix still counts as applied.
+	Findings []Finding
 }
 
 // errDeclined ends a prompt without applying; it is not a failure.
@@ -208,7 +211,9 @@ func applyOne(ctx context.Context, o Options, p Planned, res *Result) error {
 	if stale(o, p, res) {
 		return nil
 	}
-	if err := Apply(ctx, o.Root, p.Fix, o.Out); err != nil {
+	findings, err := ApplyWithFindings(ctx, o.Root, p.Fix, o.Out)
+	res.Findings = append(res.Findings, findings...)
+	if err != nil {
 		var step *StepError
 		if errors.As(err, &step) && step.Output != "" {
 			fmt.Fprintln(o.Out, step.Output)
@@ -216,7 +221,12 @@ func applyOne(ctx context.Context, o Options, p Planned, res *Result) error {
 		return fmt.Errorf("%s: %w", p.Description, err)
 	}
 	res.Applied = append(res.Applied, p.Description)
-	fmt.Fprintf(o.Out, marks.Passed+" %s\n", p.Description)
+	mark := marks.Passed
+	if len(findings) > 0 {
+		// Applied, but a check in it found something: not a clean pass.
+		mark = marks.Warning
+	}
+	fmt.Fprintf(o.Out, mark+" %s\n", p.Description)
 	return nil
 }
 

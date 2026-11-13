@@ -149,7 +149,7 @@ An app adds `src/<import>/__main__.py`, which prints `Hello, world!`; a package 
 
 | Generated | What it is |
 |---|---|
-| `pyproject.toml` | setuptools build backend (`setuptools>=75`), `name = "<workspace>-<project>"` (the workspace name is prefixed so the name is unique on a shared index; `acme` + `sdk` is `acme-sdk`), `version = "0.0.0"`, `requires-python = ">=3.12"`, empty `dependencies`, `[tool.smith] kind` (and `stack`), `[tool.setuptools.packages.find] where = ["src"]` |
+| `pyproject.toml` | setuptools build backend (`setuptools>=75`), `name = "<workspace>-<project>"` (the namespace comes first so the name is unique on a shared index: `[workspace] namespace`, else the workspace name; `acme` + `sdk` is `acme-sdk`), `version = "0.0.0"`, `requires-python = ">=3.12"`, empty `dependencies`, `[tool.smith] kind` (and `stack`), `[tool.setuptools.packages.find] where = ["src"]` |
 | `src/<import>/greeting/` | a worked slice: `greeting_contract.py` (a frozen `Greeting` dataclass), `greet_use_case.py` (`greet(name)`), `__init__.py` re-exporting both |
 | `tests/test_greet_use_case.py` | a pytest test of `greet` |
 | `requirements-dev.txt` (once, at the root) | the pinned toolchain, below |
@@ -171,7 +171,7 @@ The plugin publishes no stack. `--stack` accepts a stack declared with `language
 ## Function apps
 
 `smith add app api --lang python --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
-serverless function app: the Python v2 model for Azure (`function_app.py`, `host.json`, `requirements.txt`), a `lambda_handler` with `template.yaml` for AWS, a Functions Framework entry point (`main.py`) for Google. Runtimes `python313` (suggested), `python312`, `python314`. The plugin publishes the choices itself, and finds a function app again by its files, so its `start`, `build` and `package` tasks run `start.py` and `package.py`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+serverless function app: the Python v2 model for Azure (`function_app.py`, `host.json`, `requirements.txt`), a `lambda_handler` with `template.yaml` for AWS, a Functions Framework entry point (`main.py`) for Google. Runtimes `python313` (suggested), `python312`, `python314`. The plugin publishes the choices itself, and finds a function app again by its files, so its tasks hold no script of smith's (ADR 0099): `start` runs the tool of the host (`func start`, `sam local`, the Functions Framework), `build` runs `smith func stage` (the deployed files and the code of the workspace libraries, found through the venv's python) and `package` runs `smith func zip`. `smith doctor --fix` and `smith upgrade` remove the `package.py` and `start.py` that older smith copied (a copy you edited is kept until you choose). smith asks the trigger (`http-trigger`, `timer-trigger`,
 `queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
 terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
 `lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`

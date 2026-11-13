@@ -368,6 +368,7 @@ Task is a command the host can run, hash and cache.
 | `outputs` | `[]string` | no | Outputs are directories relative to the project root, restored on a cache hit. |
 | `ship` | `[]string` | no | Ship names what the task makes in a tool's work folder that the project ships: globs relative to the project root ("../../dist/cargo/debug/api"). After the task succeeds, smith hard-links each match into the project's shipped folder (ProjectBuildDir), a folder file by file, under its base name, and copies a file it cannot link. |
 | `release` | `TaskProfile` (`command`, `ship`) | no | Release is the task as `smith run --release` runs it: the command of the optimised profile ("cargo build --release") and what that profile ships. Nil means the task has one profile and runs the same way with the flag. |
+| `fix` | `TaskFix` (`command`, `probe`, `count`) | no | Fix is how `smith lint --fix` fixes what the tool can. Only a lint task sets it. `command` is the argv that rewrites the files. `count` is `eslint-json` when that command prints ESLint's JSON report, which smith counts; empty means smith runs the task's own command after the fix and its exit code says whether problems remain. `probe` is an argv that only reports, run before the fix, so smith can say how many problems were fixed. Nil means the tool has no fix mode: smith says so and runs the plain lint. |
 | `dependsOn` | `[]string` | no | DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of every project this one imports first. |
 | `cache` | `bool` | no |  |
 | `description` | `string` | no | Description is shown by `smith explain` and the TUI. |
@@ -418,6 +419,7 @@ GenerateParams asks a plugin to scaffold a project.
 | `facts` | `map[string]any` | no | Facts are the shared facts that hold for the new project, from smith.toml: [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin scaffolds its own default. Set by the host; read only. |
 | `shape` | `map[string]string` | no | Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project. |
 | `choices` | `[]string` | no | Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only. |
+| `packageName` | `string` | no | PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name. |
 
 ### WorkspaceInfo
 
@@ -720,7 +722,7 @@ Fix is a change that clears a failed finding: files' new contents, then commands
 | `description` | `string` | yes |  |
 | `safe` | `bool` | yes | Safe marks a fix that only restores what smith or the plugin owns and loses nothing of the user's; doctor --fix --yes applies only safe fixes with no Choices. |
 | `files` | `[]FileEdit` | no | Files are written first, as whole new contents. |
-| `steps` | `[]FixStep` | no | Steps run after the files, in order, from the workspace root; the first one that fails stops the rest. |
+| `steps` | `[]FixStep` | no | Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory. |
 | `choices` | `[]FixChoice` | no | Choices are questions the user answers before the fix applies, in order. |
 | `applies_to` | `[]string` | no | AppliesTo names the projects the fix is for. |
 
@@ -734,6 +736,7 @@ FixStep is a command to run in the workspace.
 | `argv` | `[]string` | yes | Argv is the program and its arguments; no shell is involved. |
 | `dir` | `string` | no | Dir is where it runs, workspace-relative; empty is the workspace root. |
 | `env` | `[]string` | no | Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go install write there). Absent adds none. |
+| `advisory` | `bool` | no | Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and the steps after it still run. |
 
 ### FixChoice
 

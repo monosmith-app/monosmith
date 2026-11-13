@@ -9,12 +9,13 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 func TestCI(t *testing.T) {
 	ws := t.TempDir()
 	res := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Kind: protocol.ProjectPackage}}})
-	if res.Toolchains[0].Version != RubyVersion || res.Setup[0].Command[1] != "install" || res.Credentials[0].Env != "GEM_HOST_API_KEY" {
+	if res.Toolchains[0].Version != toolpin.Default("ruby") || res.Setup[0].Command[1] != "install" || res.Credentials[0].Env != "GEM_HOST_API_KEY" {
 		t.Fatalf("%+v", res)
 	}
 	_ = os.WriteFile(filepath.Join(ws, ".ruby-version"), []byte("ruby-3.3.6\n"), 0o644)

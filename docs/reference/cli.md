@@ -80,7 +80,8 @@ Usage: `smith new <name> [flags]`
 | `--include-secrets` | let --first-commit all commit files whose names look like secrets (.env, keys) | off |
 | `--json` | with --questions: print them as JSON | off |
 | `-l, --lang <lang>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) (also --language) | later |
-| `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
+| `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<namespace>) | from the `origin` remote, else `example.com/<name>` |
+| `--namespace <namespace>` | the word every language puts before a new project's name, as in acme-core and @acme/core (default the workspace name) | the workspace name |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
 | `--no-commit` | write the files and commit nothing | off |
 | `--no-devcontainer` | leave the dev container out; sets [ci] devcontainer = false | off |
@@ -90,7 +91,7 @@ Usage: `smith new <name> [flags]`
 | `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |
 | `--release-remote <release-remote>` | the git remote that receives release tags (default origin) | `origin` |
 | `--save-recipe <save-recipe>` | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |  |
-| `--scope <scope>` | npm scope for packages (default @<name>) | `@<name>` |
+| `--scope <scope>` | npm scope for packages (default @ and the namespace) | `@<name>` |
 | `-y, --yes` | take the default for every question that has no flag, and print each | off |
 
 <!-- smith:end new -->
@@ -145,6 +146,7 @@ Usage: `smith convert [flags]`
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--no-install` | do not run npm install afterwards (also --skip-install) | off |
+| `--outputs <outputs>` | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given (repeatable) |  |
 | `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
@@ -176,10 +178,11 @@ Usage: `smith add <kind> <name> [flags]`
 | `--fresh` | give the project the built-in default of its stack, without following the sibling projects | off |
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) (also --language) | the stack's, or the workspace's only language |
 | `--like <like>` | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |  |
+| `--package-name <package-name>` | the name the project is published or imported under (npm package, Cargo crate, Python distribution, last part of the Go module path), checked against the language's rules (default: built from the workspace and the project name) |  built from the workspace and the project name |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 | `--with <with>` | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default (repeatable) |  |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end add -->
 
@@ -217,7 +220,7 @@ Usage: `smith swap <project> <axis> <choice> [flags]`
 |---|---|---|
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | show the plan and change nothing | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end swap -->
 
@@ -256,7 +259,7 @@ Usage: `smith kind <project> <kind> [flags]`
 | `--dry-run` | list every file edit and the move; change nothing | off |
 | `--force` | go ahead although other projects import it or it was already released | off |
 | `--json` | print the plan and what was done as JSON | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end kind -->
 
@@ -329,7 +332,7 @@ Usage: `smith upgrade [flags]`
 | `--defaults` | move the workspace to the latest defaults vintage (smith doctor says which it uses) | off |
 | `--dry-run` | show the plan, with the change to smith.toml, and change nothing | off |
 | `--json` | print the result as JSON | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end upgrade -->
 
@@ -349,6 +352,7 @@ Usage: `smith run <task>... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -388,6 +392,7 @@ Usage: `smith build [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -412,6 +417,7 @@ Usage: `smith test [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -436,6 +442,7 @@ Usage: `smith lint [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -460,6 +467,7 @@ Usage: `smith typecheck [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -489,7 +497,7 @@ Usage: `smith derive [flags]`
 | `--explain <explain>` | say who owns this file and why it is in its state (repeatable) |  |
 | `--reclaim <reclaim>` | give this ejected or drifted file back to smith: shows the diff, asks, rewrites it and records smith as the owner (repeatable) |  |
 | `--replace <replace>` | overwrite this drifted or diverged file with the derived content (repeatable) |  |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end derive -->
 
@@ -937,6 +945,7 @@ Usage: `smith tools <command> [flags]`
 | Subcommand | Meaning |
 |---|---|
 | `smith tools install` | Install the programs the workspace needs, asking how for each |
+| `smith tools use` | Let smith use a tool from the folder winget put it in, without a change to PATH |
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -1226,7 +1235,7 @@ Usage: `smith bootstrap [flags]`
 | `--check` | change nothing; fail when the launcher is missing or out of date | off |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | show what would be written, with a diff of a launcher that exists, and change nothing | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `-y, --yes` | do not ask for confirmation; without a terminal the change is made only with --yes | off |
 
 <!-- smith:end bootstrap -->
 

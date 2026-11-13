@@ -91,7 +91,7 @@ kit:pack — dotnet pack into dist/packages/kit/
 smith add app|lib|package <name> --lang dotnet
 ```
 
-The first project also writes `Directory.Build.props` at the workspace root. Each project is a C# project with its tests project in `<dir>/tests/`. Names are `<Workspace>.<Name>` in PascalCase (`net-demo` + `core` = `NetDemo.Core`). `smith add` does not run `dotnet restore`; the first `smith run build` restores.
+The first project also writes `Directory.Build.props` at the workspace root. It holds the target framework (`net10.0`), which the project and its tests project inherit, so one edit reaches all; a workspace whose props sets no framework gets a project that sets its own. For projects that repeat the framework, doctor warns "projects inherit their target framework from the workspace". Its fix moves the framework to `Directory.Build.props` and deletes it from the project files that share it. It is never applied unasked: it edits your project files. Function apps keep their own framework (the host's runtime decides it). Central package versions (`Directory.Packages.props`) are not generated yet: the function apps pin versions in their project files. Each project is a C# project with its tests project in `<dir>/tests/`. Names are `<Workspace>.<Name>` in PascalCase (`net-demo` + `core` = `NetDemo.Core`). `smith add` does not run `dotnet restore`; the first `smith run build` restores.
 
 Real output:
 

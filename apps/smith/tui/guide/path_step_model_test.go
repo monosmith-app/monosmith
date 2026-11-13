@@ -33,7 +33,7 @@ func pathForm(t *testing.T) Model {
 func TestAPathStepShowsTheFolderAndKeepsTypedPathsWorking(t *testing.T) {
 	m := pathForm(t)
 	view := m.View()
-	for _, want := range []string{"packages/", "README.md", "dist/", "git-ignored", "tab completes"} {
+	for _, want := range []string{"packages/", "README.md", "dist/", "git-ignored", "Tab completes"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the list lacks %q:\n%s", want, view)
 		}

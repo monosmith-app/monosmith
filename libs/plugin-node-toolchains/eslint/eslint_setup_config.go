@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/eslintpeer"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -51,9 +52,12 @@ func setup(_ string, params protocol.GenerateParams) tooling.Setup {
 	return tooling.Setup{
 		RootFiles: map[string]string{"eslint.config.mjs": configFor(params.Choices)},
 		DevDependencies: map[string]string{
-			"@monosmith/eslint-config": "^1.0.0",
-			"eslint":                   "^10.12.0",
+			eslintpeer.ConfigPackage: eslintpeer.ConfigRange,
+			"eslint":                 eslintpeer.Range,
 		},
+		// An eslint the workspace already has, older than the config's peer,
+		// cannot load the config: it is raised to the peer range.
+		Raise: map[string]func(string) (string, bool){"eslint": eslintpeer.Raised},
 		// eslint-plugin-jsx-a11y (a dependency of @monosmith/eslint-config)
 		// still declares eslint 9 as its newest peer; it works with 10, and
 		// without this npm prints a page of peer-conflict warnings on the

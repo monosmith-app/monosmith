@@ -256,12 +256,12 @@ func TestClickingTheCommitBoxTicksIt(t *testing.T) {
 func TestEscapeGoesBackOneQuestionWithTheEarlierAnswerMarkedAndClosesOnlyTheFirst(t *testing.T) {
 	c := newCacheLab(t)
 	c.open()
-	c.has("esc closes")
+	c.has("Esc closes")
 	c.hasNot("[Back (b)]")
 	c.press("3")
 	c.text("https://cache.acme.dev/x")
 	c.press("enter")
-	c.has("This changes smith.toml:", "esc goes back", "[Back (b)]", "[Cancel (ctrl+c)]")
+	c.has("This changes smith.toml:", "Esc goes back", "[Back (b)]", "[Cancel (Ctrl+C)]")
 
 	c.press("esc") // the address again, as it was typed
 	c.has("Address of the cache server", "https://cache.acme.dev/x")
@@ -269,7 +269,7 @@ func TestEscapeGoesBackOneQuestionWithTheEarlierAnswerMarkedAndClosesOnlyTheFirs
 		t.Fatal("esc on a later question goes back and writes nothing")
 	}
 	c.press("esc") // the kind again, with HTTPS marked
-	c.has("What kind of remote storage?", "esc closes", "any server that takes PUT, GET and HEAD")
+	c.has("What kind of remote storage?", "Esc closes", "any server that takes PUT, GET and HEAD")
 	c.hasNot("a container in an Azure storage account")
 	c.press("esc")
 	if c.sh().cache != nil || len(c.written) != 0 {

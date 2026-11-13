@@ -30,7 +30,11 @@ var manifestTemplate = map[string]string{
 	"[[.Dir]]/Cargo.toml": `[package]
 name = "[[.Crate]]"
 version = "0.0.0"
-edition = "2021"
+[[- if .Edition]]
+edition = "[[.Edition]]"
+[[- else]]
+edition.workspace = true
+[[- end]]
 [[- if eq .Kind "package"]]
 description = "[[.Name]]"
 license = "MIT"

@@ -8,12 +8,13 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/registries"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // CI returns the Python contribution. Setup steps are computed on the machine
 // that runs them, so the interpreter path matches that OS.
-func CI(params protocol.CIParams) protocol.CIResult {
+func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
 	}
@@ -41,7 +42,7 @@ func CI(params protocol.CIParams) protocol.CIResult {
 		setup = append(setup, protocol.Step{Name: "Install " + p.Name, Command: []string{py, "-m", "pip", "install", "--disable-pip-version-check", "-e", "./" + p.Root}, Blocking: true})
 	}
 	result := protocol.CIResult{
-		Toolchains: []protocol.Toolchain{runtime(venv.PythonVersion)},
+		Toolchains: []protocol.Toolchain{runtime(toolpin.Version(workspaceRoot, "python"))},
 		Setup:      setup,
 		Stores:     []protocol.PackageStore{{Name: "pip", Path: "~/.cache/pip", Env: "PIP_CACHE_DIR", Files: dependencyFiles(params.Projects)}},
 		Audit:      []protocol.Step{{Name: "pip-audit", Command: []string{py, "-m", "pip_audit", "--skip-editable"}, Blocking: false, CacheFiles: dependencyFiles(params.Projects)}},

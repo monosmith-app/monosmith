@@ -22,9 +22,10 @@ func Apply(workspaceRoot string, params protocol.GenerateParams, s Setup) (proto
 		return protocol.GenerateResult{}, err
 	}
 	rootChanged, err := edit(filepath.Join(workspaceRoot, "package.json"), func(doc *jsondoc.Document) (bool, error) {
+		raised := raise(doc, s.Raise)
 		changed := addStrings(doc.Object("devDependencies", true), s.DevDependencies)
 		added, err := addFields(doc, s.RootFields)
-		return changed || added, err
+		return raised || changed || added, err
 	})
 	if err != nil {
 		return protocol.GenerateResult{Files: written}, fmt.Errorf("root package.json: %w", err)
@@ -78,6 +79,32 @@ func addStrings(doc *jsondoc.Document, values map[string]string) bool {
 		if !doc.Has(key) {
 			doc.SetString(key, values[key])
 			changed = true
+		}
+	}
+	return changed
+}
+
+// dependencySections are the package.json sections Raise looks in.
+var dependencySections = []string{"dependencies", "devDependencies", "optionalDependencies"}
+
+// raise replaces the range of each dependency in rules that its function
+// raises, in every dependency section that names it.
+func raise(doc *jsondoc.Document, rules map[string]func(string) (string, bool)) bool {
+	changed := false
+	for _, section := range dependencySections {
+		deps := doc.Object(section, false)
+		if deps == nil {
+			continue
+		}
+		for _, name := range sortedKeys(rules) {
+			current, ok := deps.String(name)
+			if !ok {
+				continue
+			}
+			if next, raised := rules[name](current); raised {
+				deps.SetString(name, next)
+				changed = true
+			}
 		}
 	}
 	return changed

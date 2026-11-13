@@ -27,11 +27,13 @@ func plain() theme.Theme { return theme.New(theme.Choice{Tokens: theme.Plain, Ic
 // fakeFlow is smith, for the wizard: it records what it was asked and answers
 // from the fields.
 type fakeFlow struct {
-	found    adoptflow.Found
-	groups   []removalplan.Group
-	calls    []string
-	failOn   map[string]error
-	finish   []protocol.FixStep
+	found  adoptflow.Found
+	groups []removalplan.Group
+	calls  []string
+	failOn map[string]error
+	finish []protocol.FixStep
+	// findings are what the closing checks report as found.
+	findings []doctorfix.Finding
 	closed   bool
 	applied  map[string]bool
 	declined []map[string]bool
@@ -105,6 +107,10 @@ func (f *fakeFlow) ShowFix(p doctorfix.Planned) (string, error) {
 		b.WriteString("  $ " + strings.Join(s.Argv, " ") + "\n")
 	}
 	return b.String(), nil
+}
+
+func (f *fakeFlow) ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error) {
+	return f.findings, f.ApplyFix(ctx, fix, out)
 }
 
 func (f *fakeFlow) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer) error {
@@ -296,16 +302,26 @@ func TestTheFirstScreenTellsWhatWasFoundAndNothingHasChanged(t *testing.T) {
 	if w.m.Stage() != StageFound {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
-	w.want("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, mnci, ESLint, Jest, rollup", "api  TypeScript / JavaScript app", "Nothing has changed", "Continue (enter)")
+	w.want("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, mnci, ESLint, Jest, rollup", "api  TypeScript / JavaScript app", "Nothing has changed", "Continue (Enter)")
 }
 
 func TestABlockedRepositoryExplainsAndClosesOnEnter(t *testing.T) {
 	f := &fakeFlow{found: adoptflow.Found{Kind: adoptflow.KindNotARepo, Name: "x", Source: "repository", Blockers: []string{"This folder is not a git repository"}}}
 	w := start(t, f)
-	w.want("× This folder is not a git repository", "Nothing was changed", "Close (enter)")
+	w.want("× This folder is not a git repository", "Nothing was changed", "Close (Enter)")
+	// Close is the one button: a second one would offer the same thing.
+	if s := w.screen(); strings.Contains(s, "Cancel") || strings.Contains(s, "Back") {
+		t.Fatalf("the blocker dialog shows more than Close:\n%s", s)
+	}
 	w.press("enter")
 	if !w.last.Close || w.last.Job != nil {
 		t.Fatalf("outcome %+v", w.last)
+	}
+	// Esc closes it too, as in every dialog.
+	w = start(t, f)
+	w.press("esc")
+	if !w.last.Close {
+		t.Fatalf("Esc on the blocker dialog: outcome %+v", w.last)
 	}
 }
 
@@ -343,13 +359,13 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if got := strings.Join(f.calls, "|"); !strings.Contains(got, "plan --level full --lint smith --test vitest --build smith --ci smith verify=true") {
 		t.Fatalf("the choices were not planned as answered: %s", got)
 	}
-	w.want("Bring in · what will change", "Nothing has changed yet", "! Check these before you go ahead (1)", "Behaves differently afterwards (1)", "Remove 2 lint packages", "Convert (enter)", "Back (b)")
+	w.want("Bring in · what will change", "Nothing has changed yet", "! Check these before you go ahead (1)", "Behaves differently afterwards (1)", "Remove 2 lint packages", "Convert (Enter)", "Back (b)")
 
 	w.press("enter") // convert, then the first group is asked
 	if w.m.Stage() != StageGroup {
 		t.Fatalf("stage %v after converting", w.m.Stage())
 	}
-	w.want("We are going to delete 4 packages and 3 files", "you chose smith's ESLint", "ok?", "Yes, delete (enter)", "No, keep (n)", "Skip rest (s)")
+	w.want("We are going to delete 4 packages and 3 files", "you chose smith's ESLint", "ok?", "Yes, delete (Enter)", "No, keep (n)", "Skip rest (s)")
 	if len(w.progress) == 0 || w.progress[0] != adoptflow.ConvertStepName {
 		t.Fatalf("the conversion reported %v", w.progress)
 	}
@@ -360,14 +376,14 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v after the groups", w.m.Stage())
 	}
-	w.want("is a smith workspace now", "2 projects (1 app, 1 library)", "Needs you (1)", "azure-pipelines.yml", "Behaves differently now (1)", "Old tools removed: lint", "Left as they were, as you chose: nx", "rollup.config.js: build.sh runs rollup", "It works: everything builds (", "1 thing needs you (listed below).", "Open the workspace (enter)", "Read the report (s)")
+	w.want("is a smith workspace now", "2 projects (1 app, 1 library)", "Needs you (1)", "azure-pipelines.yml", "Behaves differently now (1)", "Old tools removed: lint", "Left as they were, as you chose: nx", "rollup.config.js: build.sh runs rollup", "It works: everything builds (", "1 thing needs you (listed below).", "Open the workspace (Enter)", "Read the report (s)")
 	if strings.Contains(w.screen(), "Open it and build everything") {
 		t.Fatalf("the checks already built it: no need to offer a build:\n%s", w.screen())
 	}
 
 	// The report opens inside the wizard, and Enter comes back to the result.
 	w.press("s")
-	w.want("Bring in · the report", "Conversion report for acme", "Rollup becomes esbuild", "Back to the result (enter)")
+	w.want("Bring in · the report", "Conversion report for acme", "Rollup becomes esbuild", "Back to the result (Enter)")
 	if w.m.Stage() != StageReport {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
@@ -416,7 +432,7 @@ func TestSkipKeepsThisGroupAndTheRestAndGoesToTheChecks(t *testing.T) {
 func TestTheConservativeLevelOfAnNxWorkspaceConvertsThenInstallsWithoutTheChecks(t *testing.T) {
 	f := &fakeFlow{found: nxFound()}
 	w := start(t, f).press("enter", "1")
-	w.want("Convert the Nx workspace \"acme\" to smith, keeping what works", "Files: smith creates 1, edits 2 and removes 1.", "Things to check: 1", "! Check these before you go ahead (1)", "azure-pipelines.yml", "Behaves differently afterwards (1)", "Rollup becomes esbuild", "Go ahead (enter)")
+	w.want("Convert the Nx workspace \"acme\" to smith, keeping what works", "Files: smith creates 1, edits 2 and removes 1.", "Things to check: 1", "! Check these before you go ahead (1)", "azure-pipelines.yml", "Behaves differently afterwards (1)", "Rollup becomes esbuild", "Go ahead (Enter)")
 	if strings.Contains(w.screen(), "stay as they are") || strings.Contains(w.screen(), "with the same tools") {
 		t.Fatalf("the review must not promise that the old tooling stays: it removes Nx:\n%s", w.screen())
 	}
@@ -446,7 +462,7 @@ func TestAPlainRepositoryAdoptsConservativelyAndSaysWhyThereIsNoFullLevel(t *tes
 	if w.m.Stage() != StageReview {
 		t.Fatalf("then it goes to the review: stage %v", w.m.Stage())
 	}
-	w.want("smith adopt --init", "your build and lint setup stay as they are", "Go ahead (enter)")
+	w.want("smith adopt --init", "your build and lint setup stay as they are", "Go ahead (Enter)")
 	w.press("enter")
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v", w.m.Stage())
@@ -459,7 +475,7 @@ func TestAPlainRepositoryAdoptsConservativelyAndSaysWhyThereIsNoFullLevel(t *tes
 func TestAFailedStepShowsItsOutputAndRetryRunsTheFinishAgain(t *testing.T) {
 	f := &fakeFlow{found: nxFound(), failOn: map[string]error{"build every project": errors.New("exited with code 1")}}
 	w := start(t, f).press("enter", "1", "enter")
-	w.want("Bring in failed", "build every project", "npm ERR! it broke", "Retry (r)", "Close (esc)")
+	w.want("Bring in failed", "build every project", "npm ERR! it broke", "Retry (r)", "Close (Esc)")
 	w.press("r")
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v after the retry", w.m.Stage())
@@ -587,7 +603,7 @@ func TestMissingPackagesAreOneClickToInstallThenTheWizardGoesOn(t *testing.T) {
 	found.Blockers = []string{"The packages are not installed, and smith needs them to read your projects."}
 	f := &fakeFlow{found: found}
 	w := start(t, f)
-	w.want("● The packages are not installed", "None of your own files are touched", "Install the packages and continue (enter)")
+	w.want("● The packages are not installed", "None of your own files are touched", "Install the packages and continue (Enter)")
 	if strings.Contains(w.screen(), "×") {
 		t.Fatalf("a step smith takes itself is not shown as a failure: %s", w.screen())
 	}
@@ -601,7 +617,7 @@ func TestMissingPackagesAreOneClickToInstallThenTheWizardGoesOn(t *testing.T) {
 	if w.m.Stage() != StageFound {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
-	w.want("Found an Nx workspace", "Continue (enter)")
+	w.want("Found an Nx workspace", "Continue (Enter)")
 }
 
 func TestEachScreenIsTitledByWhatItShowsNotByTheKindOfForm(t *testing.T) {
@@ -637,7 +653,7 @@ func TestTheAgentIsOfferedBeforeTheResultAndInstalledOnEnter(t *testing.T) {
 	if w.m.Stage() != StageAgent {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
-	w.want("The MonoSmith agent lets Claude Code and VS Code work", "smith agent install --yes", "Add the agent (enter)", "Not now")
+	w.want("The MonoSmith agent lets Claude Code and VS Code work", "smith agent install --yes", "Add the agent (Enter)", "Not now")
 	w.press("enter") // the install runs as a job
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v", w.m.Stage())

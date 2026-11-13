@@ -1,6 +1,7 @@
 package jest
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -125,6 +126,44 @@ func TestJestConfigFileWritesRootsAsAPlainRelativePath(t *testing.T) {
 		config := read(t, ws, "packages/dep/jest.config.cts")
 		if !strings.Contains(config, `"./src"`) || strings.Contains(config, `"<rootDir>/src"`) {
 			t.Errorf("shape %v: roots is not a plain relative path:\n%s", shape, config)
+		}
+	}
+}
+
+// ts-jest reads the project's tsconfig and type-checks with it: the options the
+// plugin lays over it are the four Jest needs, and isolatedModules is off so a
+// spec with an implicit any fails as it does in `smith run typecheck`.
+func TestTsJestTypeChecksWithTheProjectTsconfig(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "package.json", `{"name": "acme"}`)
+	write(t, ws, "libs/core/package.json", `{"name": "@acme/core"}`)
+	c := New("1.0.0")
+	_, _ = c.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	if _, err := c.Generate(protocol.GenerateParams{Name: "core", Directory: "libs/core"}); err != nil {
+		t.Fatal(err)
+	}
+	var project struct {
+		Jest struct {
+			Transform map[string][]any
+		}
+	}
+	if err := json.Unmarshal([]byte(read(t, ws, "libs/core/package.json")), &project); err != nil {
+		t.Fatal(err)
+	}
+	transform := project.Jest.Transform[`^.+\.ts$`]
+	if len(transform) != 2 {
+		t.Fatalf("transform %v", project.Jest.Transform)
+	}
+	settings, _ := transform[1].(map[string]any)
+	options, _ := settings["tsconfig"].(map[string]any)
+	if options["isolatedModules"] != false {
+		t.Errorf("ts-jest transpiles without type checks when isolatedModules is on: %v", options)
+	}
+	for option := range options {
+		switch option {
+		case "module", "moduleResolution", "verbatimModuleSyntax", "isolatedModules":
+		default:
+			t.Errorf("%s is set inline: the project's tsconfig sets it, so the tests compile as the code does", option)
 		}
 	}
 }

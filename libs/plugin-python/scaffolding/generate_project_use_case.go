@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"strings"
@@ -8,8 +9,10 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 type templateData struct {
@@ -23,7 +26,7 @@ type templateData struct {
 // Generate scaffolds one Python project, creating the workspace venv and its
 // tooling the first time, and installs the project in editable mode.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
-	distribution := distributionName(params.Workspace.Name, params.Name)
+	distribution := cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Python, params.Name))
 	data := templateData{Dir: params.Directory, Name: params.Name, Distribution: distribution, Import: discovery.ImportName(distribution), Kind: string(params.Kind), Stack: params.Stack, Dependencies: "[]"}
 	plan, isFunction := functions.PlanOf(params.Choices)
 	if isFunction {
@@ -31,7 +34,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 			return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang python --with %s", params.Name, plan.Host)
 		}
 		if plan.PythonVersion == "" {
-			plan.PythonVersion = venv.PythonVersion
+			plan.PythonVersion = toolpin.Version(workspaceRoot, "python")
 		}
 		data.Data, data.Dependencies = functions.DataOf(plan, protocol.BuildDirFromProject(params.Directory)), functions.Dependencies(plan.Host)
 	}
@@ -78,25 +81,3 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 // distributionIdentifier lowercases a workspace name and turns each run of
 // characters other than letters and digits (the dots of jato.auto.packages)
 // into one dash.
-func distributionIdentifier(name string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(strings.TrimSpace(name)) {
-		switch {
-		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
-			b.WriteRune(c)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
-			b.WriteByte('-')
-		}
-	}
-	return strings.TrimSuffix(b.String(), "-")
-}
-
-// distributionName prefixes the workspace name so packages are unique on a
-// shared index: workspace "acme" and project "sdk" give "acme-sdk".
-func distributionName(workspace, project string) string {
-	ws := distributionIdentifier(workspace)
-	if ws == "" || strings.HasPrefix(project, ws+"-") {
-		return project
-	}
-	return ws + "-" + project
-}

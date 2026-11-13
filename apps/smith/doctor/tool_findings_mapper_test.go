@@ -66,3 +66,23 @@ func TestToolFixWithoutAPackageManagerOffersThePageAndSkip(t *testing.T) {
 		t.Fatalf("options %+v", opts)
 	}
 }
+
+func TestToolFixForAToolOffPathOffersTheFolderChoice(t *testing.T) {
+	dart, _ := toolcatalog.Find("dart")
+	dir := `C:\Users\o\AppData\Local\Microsoft\WinGet\Packages\Google.DartSDK_x\dart-sdk\bin`
+	st := toolinstall.Status{Need: toolinstall.Need{ToolNeed: dart}, State: toolinstall.Missing, OffPath: dir}
+	fix := ToolFix(toolinstall.BuildPlan(st, []toolinstall.Manager{{Name: "winget"}}, toolinstall.Env{OS: "windows"}))
+	opts := fix.Choices[0].Options
+	if len(opts) != 4 {
+		t.Fatalf("use it, add to PATH, show, skip: %+v", opts)
+	}
+	if steps := opts[0].Fix.Steps; !strings.HasPrefix(opts[0].Label, "Let smith use it") || len(steps) != 1 || strings.Join(steps[0].Argv, " ") != "smith tools use dart" {
+		t.Fatalf("the default lets smith use the folder: %+v", opts[0])
+	}
+	if steps := opts[1].Fix.Steps; !strings.HasPrefix(opts[1].Label, "Add the folder to your user PATH") || len(steps) != 1 || steps[0].Argv[0] != "powershell" {
+		t.Fatalf("the second answer changes the user PATH: %+v", opts[1])
+	}
+	if !strings.HasPrefix(opts[2].Label, "Show me the folder") || len(opts[2].Fix.Steps) != 0 || !strings.Contains(opts[2].Fix.Description, dir) {
+		t.Fatalf("the third answer shows the folder and runs nothing: %+v", opts[2])
+	}
+}

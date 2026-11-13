@@ -52,11 +52,11 @@ func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T
 
 func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.has("[Fix (f)]", "install the dependencies", "asks: Which package manager?")
+	l.has("[Fix (f)]", "install the dependencies", "asks first: Which package manager?")
 	l.keys("f")
 	l.has("Fix · question 1 of 1", "Which package manager?", "1) npm  (suggested)", "2) pnpm")
 	l.keys("down", "enter")
-	l.has("Fix · review", "$ pnpm install", "Apply (enter)")
+	l.has("Fix · review", "$ pnpm install", "Apply (Enter)")
 	if len(l.appliedFixes()) != 0 {
 		t.Fatal("applied before the confirmation")
 	}
@@ -105,7 +105,7 @@ func TestFixWizardShowsTheFailingStepsOutputAndRetryRunsTheFixAgain(t *testing.T
 	l.m = sh
 	l.applyErr = &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("exited with code 1"), Output: "npm ERR! 404 not found"}
 	l.keys("f", "enter", "enter")
-	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "Retry (r)", "Close (esc)")
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "Retry (r)", "Close (Esc)")
 	if len(l.appliedFixes()) != 1 {
 		t.Fatalf("applied %d times", len(l.appliedFixes()))
 	}
@@ -137,7 +137,7 @@ func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *
 func TestFixWizardFixAllReviewsTheSafeFixesOnceAndAppliesThemOnConfirm(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("3", "F")
-	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "Apply (enter)")
+	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "Apply (Enter)")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
 		t.Fatal("x applied before the review was confirmed")
 	}
@@ -175,7 +175,7 @@ func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l.has("Which package manager?")
 	l.clickText("2) pnpm")
 	l.has("Fix · review", "$ pnpm install")
-	l.clickText("Apply (enter)")
+	l.clickText("Apply (Enter)")
 	if got := l.appliedFixes(); len(got) != 1 || got[0].Steps[0].Argv[0] != "pnpm" {
 		t.Fatalf("applied %+v", got)
 	}
@@ -205,7 +205,7 @@ func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t 
 	first := loads
 	l.has("[Fix (f)]", "Move the workspace to the latest defaults")
 	l.keys("f")
-	l.has("Fix · review", "$ smith upgrade --defaults --yes", "Apply (enter)")
+	l.has("Fix · review", "$ smith upgrade --defaults --yes", "Apply (Enter)")
 	if len(l.appliedFixes()) != 0 {
 		t.Fatal("applied before the person agreed")
 	}

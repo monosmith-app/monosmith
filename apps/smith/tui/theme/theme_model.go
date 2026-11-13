@@ -13,7 +13,7 @@ type Theme struct {
 	Icons  Icons
 
 	accent, success, warning, failure, info, muted, faint, text lipgloss.Style
-	selected, hover, bar, title                                 lipgloss.Style
+	hover, bar, title                                           lipgloss.Style
 	button, buttonHover, buttonActive                           lipgloss.Style
 }
 
@@ -39,13 +39,11 @@ func New(c Choice) Theme {
 		bar: bg(t.Bar).Inherit(fg(t.Text)),
 	}
 	if t.Colour {
-		th.selected = bg(t.Highlight).Bold(true).Foreground(lipgloss.Color(t.Accent))
 		th.hover = bg(t.RowHover)
 		th.button = bg(t.Button).Foreground(lipgloss.Color(t.ButtonText))
 		th.buttonHover = bg(t.ButtonHover).Foreground(lipgloss.Color(t.ButtonText))
 		th.buttonActive = bg(t.ButtonActive).Foreground(lipgloss.Color(t.ButtonOn)).Bold(true)
 	} else {
-		th.selected = lipgloss.NewStyle().Reverse(true).Bold(true)
 		th.hover = lipgloss.NewStyle().Underline(true)
 		th.buttonHover = lipgloss.NewStyle().Reverse(true)
 		th.buttonActive = lipgloss.NewStyle().Reverse(true).Bold(true)
@@ -72,17 +70,16 @@ func (t Theme) Paint(s, fg, bg string) string {
 	return style.Render(s)
 }
 
-// Accent, Success, Warning, Failure, Info, Muted, Faint, Title and Selected
+// Accent, Success, Warning, Failure, Info, Muted, Faint and Title
 // render s in the token's meaning (RowHover and Bar are below).
-func (t Theme) Accent(s string) string   { return t.accent.Render(s) }
-func (t Theme) Success(s string) string  { return t.success.Render(s) }
-func (t Theme) Warning(s string) string  { return t.warning.Render(s) }
-func (t Theme) Failure(s string) string  { return t.failure.Render(s) }
-func (t Theme) Info(s string) string     { return t.info.Render(s) }
-func (t Theme) Muted(s string) string    { return t.muted.Render(s) }
-func (t Theme) Faint(s string) string    { return t.faint.Render(s) }
-func (t Theme) Title(s string) string    { return t.title.Render(s) }
-func (t Theme) Selected(s string) string { return t.selected.Render(s) }
+func (t Theme) Accent(s string) string  { return t.accent.Render(s) }
+func (t Theme) Success(s string) string { return t.success.Render(s) }
+func (t Theme) Warning(s string) string { return t.warning.Render(s) }
+func (t Theme) Failure(s string) string { return t.failure.Render(s) }
+func (t Theme) Info(s string) string    { return t.info.Render(s) }
+func (t Theme) Muted(s string) string   { return t.muted.Render(s) }
+func (t Theme) Faint(s string) string   { return t.faint.Render(s) }
+func (t Theme) Title(s string) string   { return t.title.Render(s) }
 
 // Button, ButtonHover and ButtonActive render s as a clickable item at rest,
 // under the pointer, and pressed or selected. Without colour a resting item is

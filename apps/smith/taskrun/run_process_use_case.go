@@ -21,6 +21,9 @@ type Spec struct {
 	Dir  string
 	Env  []string
 	Out  io.Writer
+	// Err receives the command's standard error; nil means Out, so the two
+	// outputs are mixed.
+	Err io.Writer
 	// Installable reports whether smith tools install knows a tool by name; it
 	// decides if the missing-program message offers that command. Nil means no.
 	Installable func(name string) bool
@@ -50,6 +53,9 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	cmd.Env = spec.Env
 	cmd.Stdout = spec.Out
 	cmd.Stderr = spec.Out
+	if spec.Err != nil {
+		cmd.Stderr = spec.Err
+	}
 	cmd.Stdin = nil
 	prepare(cmd)
 	if err := cmd.Start(); err != nil {

@@ -2081,7 +2081,7 @@ public sealed record Fix : IProtocolValue<Fix>
     /// <summary>Files are written first, as whole new contents.</summary>
     public IReadOnlyList<FileEdit> Files { get; init; } = [];
 
-    /// <summary>Steps run after the files, in order, from the workspace root; the first one that fails stops the rest.</summary>
+    /// <summary>Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory.</summary>
     public IReadOnlyList<FixStep> Steps { get; init; } = [];
 
     /// <summary>Choices are questions the user answers before the fix applies, in order. The answer's Fix is added to this one: its files and steps come after this fix's own. A fix with Choices is never applied unasked.</summary>
@@ -2225,6 +2225,9 @@ public sealed record FixStep : IProtocolValue<FixStep>
     /// <summary>Env are KEY=VALUE entries added to the environment of the command (GOBIN=&lt;folder&gt; makes go install write there). Absent adds none.</summary>
     public IReadOnlyList<string> Env { get; init; } = [];
 
+    /// <summary>Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and the steps after it still run.</summary>
+    public bool Advisory { get; init; }
+
     /// <inheritdoc />
     public static FixStep Read(JsonAny? value, string path)
     {
@@ -2235,6 +2238,7 @@ public sealed record FixStep : IProtocolValue<FixStep>
             Argv = ListOf(Member(map, "argv"), Join(path, "argv"), StringValue),
             Dir = StringValue(Member(map, "dir"), Join(path, "dir")),
             Env = ListOf(Member(map, "env"), Join(path, "env"), StringValue),
+            Advisory = BooleanValue(Member(map, "advisory"), Join(path, "advisory")),
         };
     }
 
@@ -2255,6 +2259,11 @@ public sealed record FixStep : IProtocolValue<FixStep>
         {
             writer.Property("env");
             MessageWritingAlgorithm.List(writer, Env, (builder1, item1) => builder1.String(item1));
+        }
+        if (Advisory)
+        {
+            writer.Property("advisory");
+            writer.Boolean(Advisory);
         }
         writer.EndObject();
     }
@@ -2293,6 +2302,9 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
     /// <summary>Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.</summary>
     public IReadOnlyList<string> Choices { get; init; } = [];
 
+    /// <summary>PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name.</summary>
+    public string PackageName { get; init; } = string.Empty;
+
     /// <inheritdoc />
     public static GenerateParams Read(JsonAny? value, string path)
     {
@@ -2309,6 +2321,7 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
             Facts = ObjectOf(Member(map, "facts"), Join(path, "facts")),
             Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
             Choices = ListOf(Member(map, "choices"), Join(path, "choices"), StringValue),
+            PackageName = StringValue(Member(map, "packageName"), Join(path, "packageName")),
         };
     }
 
@@ -2353,6 +2366,11 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
         {
             writer.Property("choices");
             MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => builder1.String(item1));
+        }
+        if (PackageName.Length > 0)
+        {
+            writer.Property("packageName");
+            writer.String(PackageName);
         }
         writer.EndObject();
     }
@@ -3133,6 +3151,9 @@ public sealed record Project : IProtocolValue<Project>
     /// <summary>Exports are the identifiers other projects import this one by: an npm package name, a Go module path, a Python import name.</summary>
     public IReadOnlyList<string> Exports { get; init; } = [];
 
+    /// <summary>PackageName is the name the project's manifest gives its package: the npm package, the Cargo crate, the Python distribution, the pub package, the Composer name, the gem, the .NET package id, the Maven artifactId. smith doctor compares it with the workspace namespace. Empty when the plugin does not say.</summary>
+    public string PackageName { get; init; } = string.Empty;
+
     /// <summary>Imports are identifiers this project's sources import. The host keeps the ones another project exports and turns them into graph edges.</summary>
     public IReadOnlyList<string> Imports { get; init; } = [];
 
@@ -3186,6 +3207,7 @@ public sealed record Project : IProtocolValue<Project>
             Language = StringValue(Member(map, "language"), Join(path, "language")),
             Kind = ProjectKind.Read(Member(map, "kind"), Join(path, "kind")),
             Exports = ListOf(Member(map, "exports"), Join(path, "exports"), StringValue),
+            PackageName = StringValue(Member(map, "packageName"), Join(path, "packageName")),
             Imports = ListOf(Member(map, "imports"), Join(path, "imports"), StringValue),
             Version = StringValue(Member(map, "version"), Join(path, "version")),
             Toolchain = StringValue(Member(map, "toolchain"), Join(path, "toolchain")),
@@ -3219,6 +3241,11 @@ public sealed record Project : IProtocolValue<Project>
         {
             writer.Property("exports");
             MessageWritingAlgorithm.List(writer, Exports, (builder1, item1) => builder1.String(item1));
+        }
+        if (PackageName.Length > 0)
+        {
+            writer.Property("packageName");
+            writer.String(PackageName);
         }
         if (Imports is { Count: > 0 })
         {
@@ -4677,6 +4704,9 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     /// <summary>Release is the task as <c>smith run --release</c> runs it: the command of the optimised profile ("cargo build --release") and what that profile ships. Nil means the task has one profile and runs the same way with the flag. The cache key holds the command, so each profile has its own cache entry.</summary>
     public TaskProfile? Release { get; init; }
 
+    /// <summary>Fix is how <c>smith lint --fix</c> fixes what the tool can. Only a lint task sets it. Nil means the tool has no fix mode: smith says so and runs the plain lint.</summary>
+    public TaskFix? Fix { get; init; }
+
     /// <summary>DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of every project this one imports first.</summary>
     public IReadOnlyList<string> DependsOn { get; init; } = [];
 
@@ -4711,6 +4741,7 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             Outputs = ListOf(Member(map, "outputs"), Join(path, "outputs"), StringValue),
             Ship = ListOf(Member(map, "ship"), Join(path, "ship"), StringValue),
             Release = OptionalStruct<TaskProfile>(Member(map, "release"), Join(path, "release")),
+            Fix = OptionalStruct<TaskFix>(Member(map, "fix"), Join(path, "fix")),
             DependsOn = ListOf(Member(map, "dependsOn"), Join(path, "dependsOn"), StringValue),
             Cache = BooleanValue(Member(map, "cache"), Join(path, "cache")),
             Description = StringValue(Member(map, "description"), Join(path, "description")),
@@ -4757,6 +4788,11 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             writer.Property("release");
             Release.Write(writer);
         }
+        if (Fix is not null)
+        {
+            writer.Property("fix");
+            Fix.Write(writer);
+        }
         if (DependsOn is { Count: > 0 })
         {
             writer.Property("dependsOn");
@@ -4791,6 +4827,50 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
         {
             writer.Property("serveTimeout");
             writer.String(ServeTimeout);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how smith learns what is left. <c>smith lint --fix</c> runs it in place of the task's own command, and never caches it.</summary>
+public sealed record TaskFix : IProtocolValue<TaskFix>
+{
+    /// <summary>Command is an argv array that fixes the problems the tool can fix; it is never passed through a shell. Its exit code alone does not say whether problems remain, unless Count is set.</summary>
+    public IReadOnlyList<string> Command { get; init; } = [];
+
+    /// <summary>Probe is an argv array that only reports, as Command does when Count is set, without changing a file. Smith runs it before Command, and the difference of the two counts is the number of problems fixed. Empty means smith does not know that number.</summary>
+    public IReadOnlyList<string> Probe { get; init; } = [];
+
+    /// <summary>Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON. Empty means smith runs the task's own command after Command, and its exit code says whether problems remain.</summary>
+    public string Count { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static TaskFix Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new TaskFix
+        {
+            Command = ListOf(Member(map, "command"), Join(path, "command"), StringValue),
+            Probe = ListOf(Member(map, "probe"), Join(path, "probe"), StringValue),
+            Count = StringValue(Member(map, "count"), Join(path, "count")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("command");
+        MessageWritingAlgorithm.List(writer, Command, (builder1, item1) => builder1.String(item1));
+        if (Probe is { Count: > 0 })
+        {
+            writer.Property("probe");
+            MessageWritingAlgorithm.List(writer, Probe, (builder1, item1) => builder1.String(item1));
+        }
+        if (Count.Length > 0)
+        {
+            writer.Property("count");
+            writer.String(Count);
         }
         writer.EndObject();
     }
@@ -5326,7 +5406,10 @@ public sealed record WorkspaceInfo : IProtocolValue<WorkspaceInfo>
     /// <summary>The <c>name</c> member of <c>WorkspaceInfo</c>.</summary>
     public required string Name { get; init; }
 
-    /// <summary>Scope is the npm scope for packages, with its @ (e.g. "@acme").</summary>
+    /// <summary>Namespace is the word every language puts before a project's name to build its default package name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace, which is its name when none is set. Plugins build names through packages/plugin-sdk/projectnaming.</summary>
+    public string Namespace { get; init; } = string.Empty;
+
+    /// <summary>Scope is the npm scope for packages, with its @ (e.g. "@acme"). The host sends it only when the person set it; otherwise the scope is the namespace.</summary>
     public string Scope { get; init; } = string.Empty;
 
     /// <summary>ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.</summary>
@@ -5339,6 +5422,7 @@ public sealed record WorkspaceInfo : IProtocolValue<WorkspaceInfo>
         return new WorkspaceInfo
         {
             Name = StringValue(Member(map, "name"), Join(path, "name")),
+            Namespace = StringValue(Member(map, "namespace"), Join(path, "namespace")),
             Scope = StringValue(Member(map, "scope"), Join(path, "scope")),
             ModulePrefix = StringValue(Member(map, "modulePrefix"), Join(path, "modulePrefix")),
         };
@@ -5350,6 +5434,11 @@ public sealed record WorkspaceInfo : IProtocolValue<WorkspaceInfo>
         writer.BeginObject();
         writer.Property("name");
         writer.String(Name);
+        if (Namespace.Length > 0)
+        {
+            writer.Property("namespace");
+            writer.String(Namespace);
+        }
         if (Scope.Length > 0)
         {
             writer.Property("scope");

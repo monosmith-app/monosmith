@@ -28,7 +28,7 @@ Like [eslint](eslint.md), the plugin acts at creation time and adds only what is
 |---|---|
 | root devDependencies | `jest` `^30.5.2`, `@jest/globals` `^30.5.2`, `ts-jest` `^29.4.15` |
 | project scripts | `test`: `jest` |
-| project `package.json` field | `jest`: test environment `node`, `roots` `<rootDir>/src`, a `moduleNameMapper` that maps a relative `.js` import to its `.ts` source, and a `ts-jest` transform that compiles to CommonJS |
+| project `package.json` field | `jest`: test environment `node`, `roots` `<rootDir>/src`, a `moduleNameMapper` that maps a relative `.js` import to its `.ts` source, and a `ts-jest` transform that compiles to CommonJS. ts-jest reads the project's `tsconfig.json` (so the workspace base reaches the tests too) and only four options are laid over it: `module`, `moduleResolution`, `verbatimModuleSyntax` (Jest runs CommonJS) and `isolatedModules: false`, so the tests are type-checked and a spec fails on what `smith run typecheck` reports (`@swc/jest`, which a converted workspace may use, does not type-check) |
 | project files | `src/greeting/greet.use-case.spec.ts`, the starter's spec (only when the project has the starter's `greet.use-case.ts`), named `.test.ts` instead if the workspace's tests already use that suffix |
 
 The `test` task comes from the script (cached, after `^build`, see [node: Tasks](node.md#tasks)).
