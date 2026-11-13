@@ -56,6 +56,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Language:    "rust",
 			Kind:        kind,
 			Exports:     []string{crate.Name},
+			PackageName: crate.Name,
 			Imports:     crate.PathDependencies,
 			Version:     crate.Version,
 			Description: crate.Description,

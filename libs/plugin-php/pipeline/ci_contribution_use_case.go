@@ -1,27 +1,16 @@
 package pipeline
 
 import (
-	"os"
 	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// PHPVersion is installed when .php-version does not pin one; bump it
-// deliberately.
-const PHPVersion = "8.4"
-
-// Version is the PHP .php-version pins, else PHPVersion.
+// Version is the PHP the workspace uses, as toolpin decides it.
 func Version(workspaceRoot string) string {
-	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, ".php-version")); err == nil {
-		if v := strings.TrimSpace(string(raw)); v != "" {
-			return v
-		}
-	}
-	return PHPVersion
+	return toolpin.Version(workspaceRoot, "php")
 }
 
 func runtime(version string) protocol.Toolchain {

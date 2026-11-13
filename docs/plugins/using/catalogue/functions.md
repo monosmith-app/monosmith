@@ -25,13 +25,15 @@ for why.
 ## What it writes
 
 Every app: `package.json` (ES module, `engines.node`), `tsconfig.json`, `tsconfig.build.json`, the
-greeting slice, `src/functions/greeting.handler.ts` with its test, `scripts/assemble.mjs`,
-`scripts/package.mjs`, `scripts/start.mjs`, `README.md`. The workspace gets
+greeting slice, `src/functions/greeting.handler.ts` with its test, `README.md`. No script is copied
+into the app: the tasks run smith's own commands (`smith func assemble`, `smith func package`) and the
+tool of the host (ADR 0099). The app's `tsconfig.json` extends the
+workspace's `tsconfig.base.json` (written when it is absent), like every TypeScript project. The workspace gets
 `eslint` and `vitest` (the defaults); `jest` is refused.
 
 | Host | Also writes | `start` runs |
 |---|---|---|
-| `azure-functions` | `host.json`, `local.settings.sample.json`, `.funcignore`, `.gitignore` (ignores `local.settings.json`); `main` is `dist/functions/*.js` | `func start` in the build folder |
+| `azure-functions` | `host.json`, `local.settings.sample.json`, `.funcignore`, `.gitignore` (ignores `local.settings.json`); `main` is `dist/functions/*.js` | `func start --script-root <build folder>` (the build copies `local.settings.json` there when it exists) |
 | `aws-lambda` | `template.yaml` (SAM), `events/greeting.json` | `sam local start-api` (HTTP) or `sam local invoke` with the sample event |
 | `gcp-functions` | `src/index.ts`; `main` is `dist/index.js` | `functions-framework` in the build folder |
 
@@ -39,13 +41,18 @@ greeting slice, `src/functions/greeting.handler.ts` with its test, `scripts/asse
 
 | Task | Command |
 |---|---|
-| `build` | `tsc -p tsconfig.build.json && node scripts/assemble.mjs`: the code goes to the workspace's `dist/apps/<name>/dist` and `package.json` (and `host.json`) next to it, which is what the host runs |
+| `build` | `tsc -p tsconfig.build.json && smith func assemble`: the code goes to the workspace's `dist/apps/<name>/dist` and `package.json` (and `host.json`) next to it, which is what the host runs |
 | `typecheck` | `tsc -p tsconfig.json --noEmit` |
 | `lint`, `test` | `eslint .`, `vitest run` |
-| `start` | builds, then runs the function locally (see above) |
-| `package` | builds, then zips `dist/apps/<name>/<name>.zip`; Azure's zip holds the production dependencies, Google's does not (the platform installs them). A library of the workspace (smith install -p <app> workspace:<lib>) is built and shipped too: Node packs it into a tarball under the stage and points the manifest at it, Python copies its packages into the zip, .NET publishes the project reference. A Node library must have a build that writes to the workspace's dist/ |
+| `start` | builds, then runs the tool of the host (see above): no script |
+| `package` | `smith func package` (Azure: `--with-dependencies`) builds, then zips `dist/apps/<name>/<name>.zip`; Azure's zip holds the production dependencies, Google's does not (the platform installs them). A library of the workspace (smith install -p <app> workspace:<lib>) is built and shipped too: Node packs it into a tarball under the stage and points the manifest at it, Python copies its packages into the zip, .NET publishes the project reference. A Node library must have a build that writes to the workspace's dist/ |
 
 ## Doctor
+
+`smith doctor` also finds the scripts that older smith copied into an app (`scripts/assemble.mjs`,
+`package.mjs`, `start.mjs`). `smith doctor --fix` and `smith upgrade` remove a copy as smith wrote it and
+point the `package.json` scripts at the commands above. A copy you edited stays until you choose: the
+fix asks whether to keep it or to remove it.
 
 `smith doctor` warns, never fails, when the tool of a host the workspace uses is missing: Azure
 Functions Core Tools (`func`) or the AWS SAM CLI (`sam`), with the command that installs it. The

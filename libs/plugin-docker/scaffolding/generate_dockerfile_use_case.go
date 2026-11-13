@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-docker/images"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 // webMarkers are files a static web app's root holds: Vite's page,
@@ -68,7 +69,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		}
 	}
 	if dockerfile == "" && nodeAppBuilds(dir) {
-		data.NodeVersion = "24"
+		data.NodeVersion = toolpin.Version(workspaceRoot, "node")
 		dockerfile = nodeDockerfile
 	}
 	if dockerfile == "" {

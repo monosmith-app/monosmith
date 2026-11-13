@@ -44,3 +44,31 @@ func TestDoctorWarnsWhenTheLocalToolOfAHostIsMissing(t *testing.T) {
 		}
 	}
 }
+
+func TestDoctorFlagsACopiedSmithScriptAndOffersTheFix(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "apps", "az")
+	if err := os.MkdirAll(filepath.Join(dir, "scripts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"dependencies":{"@azure/functions":"^4"},"scripts":{"build":"tsc && node scripts/assemble.mjs"}}`
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "scripts", "assemble.mjs"), []byte("console.log('mine')\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	real := lookPath
+	defer func() { lookPath = real }()
+	lookPath = func(string) (string, error) { return "/bin/func", nil }
+	res := Doctor(ws, protocol.DoctorParams{Projects: []protocol.Project{{Name: "az", Root: "apps/az"}}})
+	var copied *protocol.Finding
+	for i, f := range res.Findings {
+		if f.Fix != nil {
+			copied = &res.Findings[i]
+		}
+	}
+	if copied == nil || copied.Fix.Safe || len(copied.Fix.Choices) != 1 {
+		t.Fatalf("an edited copy is asked about: %+v", res.Findings)
+	}
+}

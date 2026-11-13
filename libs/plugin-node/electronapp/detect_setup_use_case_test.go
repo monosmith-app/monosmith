@@ -27,9 +27,10 @@ func TestDetect(t *testing.T) {
 		files map[string]string
 		want  Setup
 	}{
-		"not electron":      {map[string]string{"package.json": `{"devDependencies":{"vite":"^6"}}`}, Setup{}},
-		"smith-made":        {map[string]string{"package.json": forge, "scripts/assemble.mjs": ""}, Setup{Tool: SmithForge}},
-		"forge in manifest": {map[string]string{"package.json": `{"devDependencies":{"@electron-forge/cli":"^7"},"config":{"forge":{"outDir":"build/out"}}}`}, Setup{Tool: Forge, OutDir: "build/out", Config: "package.json", Editable: true}},
+		"not electron":                  {map[string]string{"package.json": `{"devDependencies":{"vite":"^6"}}`}, Setup{}},
+		"smith-made":                    {map[string]string{"package.json": forge, "scripts/assemble.mjs": ""}, Setup{Tool: SmithForge}},
+		"smith-made, tools at the root": {map[string]string{"package.json": `{"scripts":{"build":"tsc -p tsconfig.build.json && smith electron assemble"}}`}, Setup{Tool: SmithForge}},
+		"forge in manifest":             {map[string]string{"package.json": `{"devDependencies":{"@electron-forge/cli":"^7"},"config":{"forge":{"outDir":"build/out"}}}`}, Setup{Tool: Forge, OutDir: "build/out", Config: "package.json", Editable: true}},
 		"forge file, default": {map[string]string{"package.json": forge, "forge.config.js": "module.exports = {\n  packagerConfig: {},\n}\n"},
 			Setup{Tool: Forge, OutDir: "out", Config: "forge.config.js", Editable: true}},
 		"forge file, outDir": {map[string]string{"package.json": forge, "forge.config.ts": "const config: ForgeConfig = { outDir: '../../dist/electron/apps/desk/out' }\n"},

@@ -24,6 +24,7 @@ minor version may change the Go API; the wire protocol is versioned on its own
 | `jsondoc` | edit JSON such as `package.json` in place, keeping key order and CRLF line endings |
 | `lineendings` | keep the line ending of an edited file; pick one for a new file from `.gitattributes`, git settings and sibling files |
 | `projectnaming` | the default name of a new project (package, crate, gem, module) from the workspace namespace, one skip-prefix rule and one sanitizer per syntax (ADR 0098) |
+| `toolpin` | the one place a language's toolchain version is decided: `[toolchains]` in smith.toml, then the native pin file, then smith's default |
 | `protocolschema` | the JSON Schema of the protocol, built from the types (see above); `schemagen` is its command |
 | `projectkind` | a project's kind when its manifest declares none, and the directory each kind lives in |
 | `registry` | `registry.GetJSON`: read a JSON document from a package registry with a 10-second timeout and a status check |

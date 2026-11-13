@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-go/gowork"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 // GovulncheckVersion is pinned; bump it deliberately.
@@ -21,18 +21,11 @@ const GolangciLintVersion = "v2.15.0"
 // .smith/bin with no prompt, as the doctor's recommended fix does.
 var ciLintInstallCommand = []string{"{smith}", "tools", "install", "golangci-lint", "--manager", "go-managed"}
 
-// DefaultGoVersion is used when go.work does not say.
-const DefaultGoVersion = "1.24"
-
-// toolchainVersion is the Go version the pipelines install: go.work's, and
-// without one (or without a go directive in it) the newest a project's go.mod
-// asks for, so a missing go.work does not downgrade the pipelines to the default.
+// toolchainVersion is the Go version the pipelines install, as toolpin decides
+// it ([toolchains], then go.work). Without either, it is the newest a
+// project's go.mod asks for, so a missing go.work does not downgrade the
+// pipelines to smith's default.
 func toolchainVersion(workspaceRoot string, projects []protocol.Project) string {
-	if src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work")); err == nil {
-		if v := gowork.ParseGoWork(string(src)).GoVersion; v != "" {
-			return v
-		}
-	}
 	newest := ""
 	for _, p := range projects {
 		src, err := os.ReadFile(gowork.ModuleFile(workspaceRoot, p.Root))
@@ -43,10 +36,7 @@ func toolchainVersion(workspaceRoot string, projects []protocol.Project) string 
 			newest = m[1]
 		}
 	}
-	if newest == "" {
-		return DefaultGoVersion
-	}
-	return newest
+	return toolpin.Version(workspaceRoot, "go", newest)
 }
 
 // versionLess compares two major.minor versions numerically ("1.9" < "1.24").

@@ -242,6 +242,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	})
 	out = append(out, sharedWorkOutputFinding(SharedWorkOutputs(s.Graph.Projects)))
 	out = append(out, doctorchecks.BuildWritesFinding(s))
+	out = append(out, doctorchecks.PackageNameFindings(s)...)
 	out = append(out, doctorchecks.WebEnvironmentFindings(s.Root, s.Graph.Projects)...)
 	badServe := BadServe(s.Graph)
 	out = append(out, protocol.Finding{

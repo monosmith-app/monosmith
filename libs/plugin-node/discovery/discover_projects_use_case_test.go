@@ -32,7 +32,7 @@ func TestDiscover(t *testing.T) {
 		t.Fatalf("root manifest must be skipped: %+v", res.Projects)
 	}
 	web, ui := res.Projects[0], res.Projects[1]
-	if web.Name != "web" || web.Kind != protocol.ProjectApp || web.Exports[0] != "@acme/web" {
+	if web.Name != "web" || web.Kind != protocol.ProjectApp || web.Exports[0] != "@acme/web" || web.PackageName != "@acme/web" {
 		t.Fatalf("web: %+v", web)
 	}
 	if len(web.Imports) != 1 || web.Imports[0] != "@acme/ui" {

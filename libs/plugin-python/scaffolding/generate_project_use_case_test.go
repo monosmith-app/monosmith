@@ -52,4 +52,3 @@ func TestGenerate(t *testing.T) {
 		t.Fatal("the venv must be created once")
 	}
 }
-

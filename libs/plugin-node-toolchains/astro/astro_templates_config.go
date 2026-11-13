@@ -4,8 +4,9 @@ import "github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 
 // Versions the starter pins; bump them deliberately.
 var devDependencies = map[string]string{
-	"@astrojs/check": "^0.9.10",
-	"typescript":     toolchainversions.TypeScript,
+	"@astrojs/check":      "^0.9.10",
+	"typescript":          toolchainversions.TypeScript,
+	"@monosmith/tsconfig": "^0.1.0",
 }
 
 // templates are the site: Starlight with a splash page, a guide and a
@@ -69,7 +70,7 @@ export const collections = {
 }
 `,
 	"[[.Dir]]/tsconfig.json": `{
-  "extends": "astro/tsconfigs/strict",
+  "extends": ["astro/tsconfigs/strict", "[[.Up]]tsconfig.browser.json"],
   "include": [".astro/types.d.ts", "**/*"]
 }
 `,

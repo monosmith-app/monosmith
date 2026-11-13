@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -46,5 +47,5 @@ func (p *Angular) Generate(params protocol.GenerateParams) (protocol.GenerateRes
 	if params.Kind != protocol.ProjectApp {
 		return protocol.GenerateResult{}, fmt.Errorf("an angular project is an app: smith add app %s --stack %s", params.Name, Name)
 	}
-	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: templates, DevDependencies: devDependencies})
+	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: templates, Root: tsconfigchain.BrowserRoot(), DevDependencies: devDependencies})
 }

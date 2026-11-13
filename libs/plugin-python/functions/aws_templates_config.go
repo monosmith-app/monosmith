@@ -1,7 +1,7 @@
 package functions
 
 // awsTemplates are the files of an AWS Lambda function. template.yaml is the SAM
-// template; its CodeUri is the staged build (package.py), where the package sits
+// template; its CodeUri is the staged build (smith func stage), where the package sits
 // at the root, as Lambda loads it from the zip.
 var awsTemplates = map[string]string{
 	"[[.Dir]]/template.yaml": `AWSTemplateFormatVersion: '2010-09-09'
@@ -85,21 +85,6 @@ Outputs:
 }
 [[end]]`,
 	"[[.Dir]]/.gitignore": `.aws-sam/
-`,
-	"[[.Dir]]/start.py": `"""Builds, then runs the function locally with the SAM CLI (sam): an HTTP function as a local
-API, any other trigger by invoking it once with the sample event in events/."""
-
-import subprocess
-import sys
-
-windows = sys.platform == "win32"
-subprocess.check_call([sys.executable, "package.py", "build"])
-[[- if eq .Trigger "http"]]
-command = ["sam", "local", "start-api"]
-[[- else]]
-command = ["sam", "local", "invoke", "GreetingFunction", "--event", "events/greeting.json"]
-[[- end]]
-sys.exit(subprocess.call(command, shell=windows))
 `,
 	"[[.Dir]]/src/[[.Import]]/functions/greeting_handler.py": `[[if eq .Trigger "http"]]import json
 from typing import Any

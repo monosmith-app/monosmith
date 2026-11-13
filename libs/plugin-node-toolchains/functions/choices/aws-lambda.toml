@@ -10,7 +10,6 @@ needs = ["trigger", "runtime", "lint", "test"]
 dev_dependencies = ["@types/aws-lambda"]
 
 [slots]
-"package.mode" = ["zip"]
 "tsconfig.types" = ["aws-lambda"]
 
 [files]
@@ -101,19 +100,6 @@ Outputs:
   ]
 }
 [[end]]'''
-
-"scripts/start.mjs" = '''
-[[- $t := index .Slots "trigger" 0 -]]
-// Builds, then runs the function locally with the SAM CLI: an HTTP function as a local API,
-// any other trigger by invoking it once with the sample event in events/.
-import { execFileSync, spawnSync } from 'node:child_process'
-
-const shell = process.platform === 'win32'
-execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
-const args = [[if eq $t "http"]]['local', 'start-api'][[else]]['local', 'invoke', 'GreetingFunction', '--event', 'events/greeting.json'][[end]]
-const result = spawnSync('sam', args, { stdio: 'inherit', shell })
-process.exitCode = result.status ?? 1
-'''
 
 ".gitignore" = '''
 .aws-sam/
