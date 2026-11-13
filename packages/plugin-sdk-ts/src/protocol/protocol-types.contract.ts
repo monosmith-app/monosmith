@@ -1098,6 +1098,13 @@ export interface Project {
    */
   exports?: string[]
   /**
+   * PackageName is the name the project's manifest gives its package: the npm package, the Cargo
+   * crate, the Python distribution, the pub package, the Composer name, the gem, the .NET package
+   * id, the Maven artifactId. smith doctor compares it with the workspace namespace. Empty when the
+   * plugin does not say.
+   */
+  packageName?: string
+  /**
    * Imports are identifiers this project's sources import. The host keeps the ones another project
    * exports and turns them into graph edges.
    */

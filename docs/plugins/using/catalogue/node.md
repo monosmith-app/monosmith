@@ -128,7 +128,7 @@ Without `--stack`, the workspace's default for node is used (`node-jest`, writte
 
 - writes the root `package.json` the first time (`name` = `<workspace>-workspace`, `private`, `workspaces` `["apps/*", "libs/*", "packages/*"]`) or, if one exists, adds only the `workspaces` and `devDependencies` that are missing, keeping key order and formatting;
 - writes `.npmrc` once (`//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`);
-- names the package `[workspace] scope` + `/` + project name (`@js-demo/util`);
+- names the package scope + `/` + project name (`@js-demo/util`): the scope is `[workspace] scope` when it is set, else `@` and the namespace (`[workspace] namespace`, else the workspace name);
 - names test files after what the workspace already uses (`*.spec.*` or `*.test.*`, the commoner one; `spec` for a new workspace);
 - runs `npm install --no-audit --no-fund` at the root so the new package is linked into `node_modules`.
 
@@ -267,7 +267,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 | `package.json` | `main`, `module`, `types`, `typings`, `exports` | what doctor checks a built package has produced | `pipeline/check_entry_files_use_case.go` |
 | root `package.json` | `workspaces` | which directories npm links; doctor checks every project is covered | `pipeline/check_workspace_use_case.go` |
 | `package.json` build script / `tsconfig.build.json` / `tsconfig.json` | `--outDir` (wins) or `compilerOptions.outDir` | doctor checks it is inside `dist/` | `pipeline/check_build_dir_use_case.go` |
-| `smith.toml` | `[workspace] scope` | npm scope of new packages | host, `scaffolding/generate_project_use_case.go` |
+| `smith.toml` | `[workspace] scope`, `[workspace] namespace` | npm scope of new packages (default `@` and the namespace) | host, `scaffolding/generate_project_use_case.go` |
 | `smith.toml` | `[toolchains] node = "24"` | version pin checked by doctor | host |
 | `smith.toml` | `[ci] audit_policies = ["node"]`, `audit_warn`, `audit_allow_install_scripts` | lockfile policy in the audit | `pipeline/ci_contribution_use_case.go` |
 | `smith.toml` | `[registries.<n>] npm`, `auth`, `token_env`; `[workspace] registry`; `[release] registry`; `[projects.<p>] registry` | private npm registry | `registries/`, `releasing/` |

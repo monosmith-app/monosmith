@@ -189,6 +189,8 @@ func ApplyFiles(root string, fix protocol.Fix) error {
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 				return err
 			}
+			// The folder the file leaves empty goes too; a folder with files stays.
+			_ = os.Remove(filepath.Dir(path))
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

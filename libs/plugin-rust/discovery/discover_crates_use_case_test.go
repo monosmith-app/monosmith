@@ -29,7 +29,7 @@ func TestDiscover(t *testing.T) {
 		t.Fatalf("the virtual root is not a project: %+v", res.Projects)
 	}
 	cli, core := res.Projects[0], res.Projects[1]
-	if cli.Name != "cli" || cli.Kind != protocol.ProjectApp || cli.Version != "0.3.0" || cli.Exports[0] != "acme-cli" || !reflect.DeepEqual(cli.Imports, []string{"acme-core", "helpers"}) {
+	if cli.Name != "cli" || cli.Kind != protocol.ProjectApp || cli.Version != "0.3.0" || cli.Exports[0] != "acme-cli" || cli.PackageName != "acme-cli" || !reflect.DeepEqual(cli.Imports, []string{"acme-core", "helpers"}) {
 		t.Errorf("cli %+v", cli)
 	}
 	if cli.Tasks["lint"].Command[1] != "clippy" || cli.Tasks["build"].Command[3] != "acme-cli" || cli.Tasks["start"].Command[1] != "run" {

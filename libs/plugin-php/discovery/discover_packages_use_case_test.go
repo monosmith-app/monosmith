@@ -35,7 +35,7 @@ func TestDiscover(t *testing.T) {
 	if _, ok := cli.Tasks["test"]; ok || cli.Tasks["lint"].Command[len(cli.Tasks["lint"].Command)-1] != "src" {
 		t.Errorf("cli has no tests/ %+v", cli.Tasks)
 	}
-	if core.Kind != protocol.ProjectPackage || core.Exports[0] != "acme/core" || core.Tasks["test"].Command[1] != "{workspaceRoot}/vendor/bin/phpunit" {
+	if core.Kind != protocol.ProjectPackage || core.Exports[0] != "acme/core" || core.PackageName != "acme/core" || core.Tasks["test"].Command[1] != "{workspaceRoot}/vendor/bin/phpunit" {
 		t.Errorf("core %+v", core)
 	}
 }

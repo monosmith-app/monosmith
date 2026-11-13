@@ -40,6 +40,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Language:    "dart",
 			Kind:        kind,
 			Exports:     []string{pub.Name},
+			PackageName: pub.Name,
 			Imports:     pub.Dependencies,
 			Version:     pub.Version,
 			Description: pub.Description,

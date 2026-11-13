@@ -80,11 +80,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 	}
 	lints = lints || usesGolangciLint(all)
 	findings = append(findings, CheckUncoveredImports(workspaceRoot, all)...)
-	required := work.GoVersion
-	if required == "" {
-		required = DefaultGoVersion
-	}
-	findings = append(findings, CheckToolVersions(workspaceRoot, required, lints)...)
+	findings = append(findings, CheckToolVersions(workspaceRoot, toolchainVersion(workspaceRoot, all), lints)...)
 	return protocol.DoctorResult{Findings: findings}
 }
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -31,7 +30,7 @@ func TestLatest(t *testing.T) {
 	if res.Latest["zod"] != "3.23.8" || res.Unreachable["offline"] != "ETIMEDOUT" || len(res.Latest) != 1 {
 		t.Fatalf("%+v", res)
 	}
-	if len(res.Tools) != 1 || res.Tools[0].Latest != "26.1.0" || res.Tools[0].Pinned != scaffolding.NodeVersion || !res.Tools[0].Newer {
+	if len(res.Tools) != 1 || res.Tools[0].Latest != "26.1.0" || res.Tools[0].Pinned != "24" || !res.Tools[0].Newer {
 		t.Fatalf("tools %+v", res.Tools)
 	}
 	FetchJSON = func(string, any) error { return errors.New("offline") }

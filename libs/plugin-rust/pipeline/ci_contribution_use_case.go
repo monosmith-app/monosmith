@@ -1,19 +1,13 @@
 package pipeline
 
 import (
-	"os"
 	"path"
-	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
-
-// RustVersion is installed when rust-toolchain.toml does not pin one; bump it
-// deliberately.
-const RustVersion = "1.90"
 
 // CargoDenyVersion is the cargo-deny the opt-in rust audit policy installs;
 // bump it deliberately.
@@ -35,17 +29,9 @@ func auditCacheFiles(projects []protocol.Project) []string {
 	return files
 }
 
-var channel = regexp.MustCompile(`(?m)^[ \t]*channel[ \t]*=[ \t]*"([^"]+)"`)
-
-// Version is the toolchain the workspace pins in rust-toolchain.toml, else
-// RustVersion.
+// Version is the Rust toolchain the workspace uses, as toolpin decides it.
 func Version(workspaceRoot string) string {
-	if src, err := os.ReadFile(filepath.Join(workspaceRoot, "rust-toolchain.toml")); err == nil {
-		if m := channel.FindStringSubmatch(string(src)); m != nil {
-			return m[1]
-		}
-	}
-	return RustVersion
+	return toolpin.Version(workspaceRoot, "rustc")
 }
 
 // runtime installs Rust with clippy and rustfmt, and the targets the apps'

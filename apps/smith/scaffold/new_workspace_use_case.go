@@ -1,6 +1,7 @@
 package scaffold
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -20,7 +21,11 @@ type NewOptions struct {
 	Name string
 	// Dir is where to create it; default ./<name>. It may already exist and
 	// hold files smith does not write (a fresh clone with a LICENSE).
-	Dir          string
+	Dir string
+	// Namespace is the word before every new project's name; empty is the
+	// workspace name (smith new --namespace).
+	Namespace string
+	// Scope is an explicit npm scope; empty derives it from the namespace.
 	Scope        string
 	ModulePrefix string
 	Providers    []string
@@ -126,14 +131,11 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	} else if prefix, err := git.Prefix(); err == nil && prefix != "" {
 		nested = true
 	}
-	if opts.Scope == "" {
-		opts.Scope = "@" + opts.Name
-	}
-	if !strings.HasPrefix(opts.Scope, "@") {
+	if opts.Scope != "" && !strings.HasPrefix(opts.Scope, "@") {
 		opts.Scope = "@" + opts.Scope
 	}
 	if opts.ModulePrefix == "" {
-		opts.ModulePrefix = modulePrefixFromRemote(git, opts.Name)
+		opts.ModulePrefix = modulePrefixFromRemote(git, cmp.Or(opts.Namespace, opts.Name))
 	}
 	if len(opts.Providers) == 0 && !opts.NoCI {
 		opts.Providers = []string{"github"}

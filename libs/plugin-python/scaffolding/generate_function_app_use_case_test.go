@@ -36,8 +36,14 @@ func TestGenerateWritesAFunctionAppForEveryHostAndTrigger(t *testing.T) {
 					}
 					return string(raw)
 				}
-				for _, rel := range []string{"src/acme_api/functions/greeting_handler.py", "src/acme_api/functions/__init__.py", "tests/test_greeting_handler.py", "package.py", "start.py", "README.md"} {
+				for _, rel := range []string{"src/acme_api/functions/greeting_handler.py", "src/acme_api/functions/__init__.py", "tests/test_greeting_handler.py", "README.md"} {
 					read(rel)
+				}
+				// No stack copies a smith script into the app (decision D3).
+				for _, f := range res.Files {
+					if strings.HasSuffix(f, "package.py") || strings.HasSuffix(f, "start.py") {
+						t.Errorf("a function app holds no copied script: %s", f)
+					}
 				}
 				if _, err := os.Stat(filepath.Join(ws, "apps", "api", "src", "acme_api", "__main__.py")); err == nil {
 					t.Error("a function app has no __main__.py")

@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 type templateData struct {
@@ -33,7 +34,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 			return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang python --with %s", params.Name, plan.Host)
 		}
 		if plan.PythonVersion == "" {
-			plan.PythonVersion = venv.PythonVersion
+			plan.PythonVersion = toolpin.Version(workspaceRoot, "python")
 		}
 		data.Data, data.Dependencies = functions.DataOf(plan, protocol.BuildDirFromProject(params.Directory)), functions.Dependencies(plan.Host)
 	}

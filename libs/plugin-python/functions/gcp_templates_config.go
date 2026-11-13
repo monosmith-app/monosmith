@@ -12,20 +12,6 @@ __all__ = ["[[.Handler]]"]
 `,
 	"[[.Dir]]/requirements.txt": `functions-framework>=3.10
 `,
-	"[[.Dir]]/start.py": `"""Runs the function locally with the Functions Framework, which the app depends on."""
-
-import subprocess
-import sys
-
-command = [
-    sys.executable,
-    "-m",
-    "functions_framework",
-    "--target=[[.Handler]]",[[if ne .Trigger "http"]]
-    "--signature-type=cloudevent",[[end]]
-]
-sys.exit(subprocess.call(command))
-`,
 	"[[.Dir]]/src/[[.Import]]/functions/greeting_handler.py": `[[if eq .Trigger "http"]]import functions_framework
 from flask import Request
 

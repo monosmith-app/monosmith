@@ -38,7 +38,8 @@ interim rule (`WorkspaceInfo.PackagePrefix`: the scope without `@`, else the nam
 7. **Existing `smith.toml` files migrate with `smith upgrade`** (a presented change, never silent). A
    workspace whose scope differs from its name gets `namespace` set to that scope, so the names of new
    projects do not change.
-8. **`smith doctor` warns** when a project name does not follow the namespace. The rename is a fix the
+8. **`smith doctor` warns** when a project name does not follow the namespace, once `[workspace] namespace`
+   is set (an adopted or converted repository keeps its names without noise). The rename is a fix the
    person confirms.
 
 ## Consequences

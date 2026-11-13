@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
@@ -69,7 +70,7 @@ func create(workspaceRoot string) error {
 	if lastErr != nil {
 		return lastErr
 	}
-	return errors.New("no Python found on PATH (tried " + strings.Join(names(), ", ") + "); install Python " + PythonVersion + " or newer")
+	return errors.New("no Python found on PATH (tried " + strings.Join(names(), ", ") + "); install Python " + toolpin.Default("python") + " or newer")
 }
 
 func names() []string {
