@@ -1,4 +1,4 @@
-package eslintfix
+package lintfix
 
 import (
 	"fmt"
