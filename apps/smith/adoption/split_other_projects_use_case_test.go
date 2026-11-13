@@ -12,7 +12,7 @@ import (
 
 // machineWarning is a doctor warning about what the runner has installed
 // (a toolchain older or newer than CI's, a missing CLI), which no split causes.
-var machineWarning = regexp.MustCompile(`^! (.+ is \d[\d.]*, CI uses|.+ is not (on PATH|installed))`)
+var machineWarning = regexp.MustCompile(`^! (.+ is \d[\d.]*, CI uses|Node\.js is|.+ is installed, .+ is wanted|.+ is not (on PATH|installed))`)
 
 // adoptFixture copies testdata/<fixture> into a new git repository named name,
 // runs the built smith there with `adopt --init --move <dir> --yes` and the
