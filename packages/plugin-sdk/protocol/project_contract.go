@@ -154,6 +154,30 @@ func (t Task) ForRelease() Task {
 	return t
 }
 
+// FixCountESLintJSON is the TaskFix.Count value for a fix command that prints
+// ESLint's JSON report (--format json) on stdout: smith counts the errors and
+// warnings the report lists.
+const FixCountESLintJSON = "eslint-json"
+
+// TaskFix is how a lint task fixes what it can: the command that rewrites the
+// files, and how smith learns what is left. `smith lint --fix` runs it in
+// place of the task's own command, and never caches it.
+type TaskFix struct {
+	// Command is an argv array that fixes the problems the tool can fix; it is
+	// never passed through a shell. Its exit code alone does not say whether
+	// problems remain, unless Count is set.
+	Command []string `json:"command"`
+	// Probe is an argv array that only reports, as Command does when Count is
+	// set, without changing a file. Smith runs it before Command, and the
+	// difference of the two counts is the number of problems fixed. Empty means
+	// smith does not know that number.
+	Probe []string `json:"probe,omitempty"`
+	// Count names the report Command prints, so smith counts the problems left:
+	// FixCountESLintJSON. Empty means smith runs the task's own command after
+	// Command, and its exit code says whether problems remain.
+	Count string `json:"count,omitempty"`
+}
+
 // Task is a command the host can run, hash and cache.
 type Task struct {
 	// Command is an argv array; it is never passed through a shell.
@@ -182,6 +206,10 @@ type Task struct {
 	// the flag. The cache key holds the command, so each profile has its own
 	// cache entry.
 	Release *TaskProfile `json:"release,omitempty"`
+	// Fix is how `smith lint --fix` fixes what the tool can. Only a lint task
+	// sets it. Nil means the tool has no fix mode: smith says so and runs the
+	// plain lint.
+	Fix *TaskFix `json:"fix,omitempty"`
 	// DependsOn lists task names: "build" runs this project's build first,
 	// "^build" runs the build of every project this one imports first.
 	DependsOn []string `json:"dependsOn,omitempty"`

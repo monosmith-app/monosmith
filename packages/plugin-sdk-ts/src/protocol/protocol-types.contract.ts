@@ -1604,6 +1604,11 @@ export interface Task {
    */
   release?: TaskProfile
   /**
+   * Fix is how `smith lint --fix` fixes what the tool can. Only a lint task sets it. Nil means the
+   * tool has no fix mode: smith says so and runs the plain lint.
+   */
+  fix?: TaskFix
+  /**
    * DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of
    * every project this one imports first.
    */
@@ -1631,6 +1636,31 @@ export interface Task {
   serveUrl?: string
   /** ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s. */
   serveTimeout?: string
+}
+
+/**
+ * TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how smith
+ * learns what is left. `smith lint --fix` runs it in place of the task's own command, and never
+ * caches it.
+ */
+export interface TaskFix {
+  /**
+   * Command is an argv array that fixes the problems the tool can fix; it is never passed through a
+   * shell. Its exit code alone does not say whether problems remain, unless Count is set.
+   */
+  command: string[]
+  /**
+   * Probe is an argv array that only reports, as Command does when Count is set, without changing a
+   * file. Smith runs it before Command, and the difference of the two counts is the number of
+   * problems fixed. Empty means smith does not know that number.
+   */
+  probe?: string[]
+  /**
+   * Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON.
+   * Empty means smith runs the task's own command after Command, and its exit code says whether
+   * problems remain.
+   */
+  count?: string
 }
 
 /**

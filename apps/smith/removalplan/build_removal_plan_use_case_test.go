@@ -167,7 +167,7 @@ func TestTheLintAndDoctorChecksOfAConversionReportAndNeverStopIt(t *testing.T) {
 		want    string
 		argv    string
 	}{
-		{"smith's lint fixes first", true, StepFixLint, "smith eslint-fix"},
+		{"smith's lint fixes first", true, StepFixLint, "smith lint --fix -p lang:node"},
 		{"the repository's own lint", false, StepLint, "smith run lint"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

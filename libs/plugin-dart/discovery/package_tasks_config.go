@@ -31,7 +31,9 @@ func Tasks(s Shape) map[string]protocol.Task {
 		analyze = append(analyze, "--no-pub")
 	}
 	tasks := map[string]protocol.Task{
-		"lint":   {Command: analyze, Inputs: inputs, Cache: true, Description: tool + " analyze --fatal-infos"},
+		"lint":   {Command: analyze, Inputs: inputs, Cache: true, Description: tool + " analyze --fatal-infos",
+			// dart fix applies the analyzer's fixes, for a Flutter package too.
+			Fix: &protocol.TaskFix{Command: []string{"dart", "fix", "--apply"}}},
 		"format": {Command: []string{"dart", "format", "--output=none", "--set-exit-if-changed", "."}, Inputs: inputs, Cache: true, Description: "dart format, failing on unformatted files"},
 	}
 	if s.Tests {

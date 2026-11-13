@@ -16,6 +16,22 @@ var gradleInputs = []string{
 	"{workspaceRoot}/gradle.properties", "{workspaceRoot}/gradle/**",
 }
 
+// gradleFixTasks are the Gradle tasks that fix what the lint tasks report:
+// ktlintFormat for ktlintCheck, lintFix for Android Lint. Checkstyle has no
+// fix mode, so a module with only Checkstyle gets none.
+func gradleFixTasks(lint []string) []string {
+	var fixes []string
+	for _, t := range lint {
+		switch t {
+		case "ktlintCheck":
+			fixes = append(fixes, "ktlintFormat")
+		case "lint":
+			fixes = append(fixes, "lintFix")
+		}
+	}
+	return fixes
+}
+
 // GradleTasks are Gradle's for one module, run from the workspace root and
 // selected by its project path. build assembles it after the modules it
 // depends on (^build); test and start wait for it; lint is what the
@@ -57,7 +73,11 @@ func GradleTasks(root string, b GradleBuild, kind protocol.ProjectKind) map[stri
 		if b.Android {
 			after = "test"
 		}
-		tasks["lint"] = protocol.Task{Command: gradle(b.Lint...), Cwd: ".", Inputs: gradleInputs, DependsOn: []string{after}, Cache: true, Description: "gradle " + strings.Join(b.Lint, " ")}
+		lint := protocol.Task{Command: gradle(b.Lint...), Cwd: ".", Inputs: gradleInputs, DependsOn: []string{after}, Cache: true, Description: "gradle " + strings.Join(b.Lint, " ")}
+		if fixes := gradleFixTasks(b.Lint); len(fixes) > 0 {
+			lint.Fix = &protocol.TaskFix{Command: gradle(fixes...)}
+		}
+		tasks["lint"] = lint
 	}
 	// An Android app runs on a device, not from Gradle.
 	if kind == protocol.ProjectApp && !b.Android {

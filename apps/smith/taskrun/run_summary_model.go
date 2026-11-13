@@ -6,8 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/lintfix"
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
+	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 )
 
 // Status is a task's outcome.
@@ -39,6 +41,9 @@ type Result struct {
 type Summary struct {
 	Results  []Result      `json:"results"`
 	Duration time.Duration `json:"durationNs"`
+	// Fixes are the lint outcomes of a fixing run (smith lint --fix), one per
+	// project; empty otherwise.
+	Fixes []lintfix.Outcome `json:"fixes,omitempty"`
 }
 
 // OK reports whether every task succeeded or was cached.
@@ -78,9 +83,21 @@ func (s Summary) String() string {
 	var b strings.Builder
 	results := append([]Result(nil), s.Results...)
 	sort.Slice(results, func(i, j int) bool { return results[i].Task < results[j].Task })
+	// The fix report closes the run unless another task failed: then the totals follow it.
+	onlyLint := len(s.Fixes) > 0
 	for _, r := range results {
-		if r.Status == Failed || r.Status == Skipped {
+		fixed := len(s.Fixes) > 0 && strings.HasSuffix(r.Task, ":"+taskgraph.LintTask)
+		onlyLint = onlyLint && (fixed || (r.Status != Failed && r.Status != Skipped))
+		if (r.Status == Failed || r.Status == Skipped) && !fixed {
 			fmt.Fprintf(&b, "  %s %s %s\n", mark(r.Status), r.Task, r.Reason)
+		}
+	}
+	if len(s.Fixes) > 0 {
+		// The fix report has its own closing line with the totals and the time.
+		text, _ := lintfix.Report(s.Fixes, s.Duration)
+		b.WriteString(text)
+		if onlyLint {
+			return strings.TrimRight(b.String(), "\n")
 		}
 	}
 	var saved time.Duration

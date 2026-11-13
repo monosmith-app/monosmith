@@ -22,7 +22,7 @@ ESLint config carries them; Go, Python and the other languages get a separate
 ## Synopsis
 
 ```sh
-smith lint [project]... [-p <projects>] [--affected [--base <branch>]] [--parallel <n>] [--bail] [--no-cache] [--json | --json-events]
+smith lint [project]... [-p <projects>] [--affected [--base <branch>]] [--parallel <n>] [--bail] [--no-cache] [--fix] [--json | --json-events]
 ```
 
 ## Arguments and flags
@@ -41,6 +41,7 @@ Usage: `smith lint [project]... [flags]`
 | `--affected` | boolean | off | only projects affected by changes since --base |
 | `--bail` | boolean | off | stop starting tasks after the first failure |
 | `--base <base>` | string | the pull request target, else the release branch | base branch for --affected (default: the PR target, else the release branch) |
+| `--fix` | boolean | off | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint |
 | `--json` | boolean | off | print the summary as JSON |
 | `--json-events` | boolean | off | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else |
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
@@ -52,8 +53,32 @@ Usage: `smith lint [project]... [flags]`
 <!-- smith:end lint -->
 
 Selector syntax and flag interactions are on [`smith run`](run.md#arguments-and-flags).
-There is no `--fix` flag; apply fixes with the linter itself (`npx eslint --fix`) or the
-command `smith explain <project>:lint` prints.
+## Fixing problems
+
+`smith lint --fix` (or `smith run lint --fix`) fixes the problems each linter can fix, then reports
+what is left. It changes files and never commits: review the changes with git.
+
+- A fixing run skips the cache. It never reads a cached result and never stores one, because the files change.
+- The fix is the one the language plugin declares. ESLint runs with `--fix` in a Node project whose lint
+  script runs ESLint; `golangci-lint run --fix` in Go; `ruff check --fix` in Python;
+  `cargo clippy --fix --allow-dirty --allow-staged` in Rust; `dotnet format` in .NET; `dart fix --apply` in Dart;
+  `rubocop -a` in Ruby; `ktlintFormat` and `lintFix` in Gradle modules.
+- A linter with no fix mode (Checkstyle, PHPStan, cppcheck, luacheck, `az bicep lint`, `pod lib lint`, or a
+  Node lint script that does not run ESLint) is named in one line, and its plain lint runs. That is not a failure.
+- The report is one table: a row per project, failures first, with the problems fixed and left, and a closing
+  line with the totals. Only ESLint counts the problems; for the other tools the closing check is the plain
+  lint, which says whether any problem is left.
+- The exit code is 1 when a linter could not run or a problem is left, 0 when nothing is left.
+- `--fix` changes only lint tasks: `smith run lint test --fix` fixes first, then tests as usual.
+
+```text
+Lint fix: fixing what the linters can in 2 projects, without the cache
+Project   Fixed    Left  Result
+api           3       2  ▲ 2 errors, 0 warnings
+web           1       0  ✓ no problems left
+▲ Lint fix found problems in 4s: 2 projects, 4 problems fixed, 2 left in 1 project
+→ see them: smith run lint -p api
+```
 
 ## Exit codes
 

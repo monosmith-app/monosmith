@@ -89,6 +89,16 @@
       "near": ["prod", "production", "optimized", "optimised", "release-mode"],
       "meaning": "build the optimised profile (cargo --release, dotnet -c Release); a tool without profiles ignores it",
       "commands": ["build", "lint", "run", "test", "typecheck"]
+    },
+    {
+      "id": "fix",
+      "flag": "fix",
+      "short": "",
+      "type": "bool",
+      "synonyms": [],
+      "near": ["autofix", "auto-fix", "fix-all", "apply-fixes"],
+      "meaning": "fix what can be fixed on its own: lint rewrites the files its tool can fix, doctor applies its safe fixes",
+      "commands": []
     }
   ],
   "exceptions": [
