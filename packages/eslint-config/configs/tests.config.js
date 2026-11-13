@@ -20,6 +20,8 @@ export default [
       '**/jest.*.{js,mjs,cjs,ts,mts,cts}',
       '**/vitest.*.{js,mjs,cjs,ts,mts,cts}',
       '**/test-setup.{js,mjs,cjs,ts,mts,cts}',
+      // Shared test support: the same relaxations apply without a spec suffix.
+      '**/{tests,testing,mocks}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}',
     ],
     plugins:         { jest },
     // Vitest's own globals go alongside Jest's. `describe`/`it`/`expect` are
@@ -40,6 +42,11 @@ export default [
       '@typescript-eslint/no-non-null-assertion':         'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       'unicorn/no-useless-undefined':                     'off',
+
+      // Mocking sometimes needs `require()` (jest.requireActual, resetting module
+      // state) and a test may need to set a global, such as `global.fetch`.
+      '@typescript-eslint/no-require-imports':        'off',
+      'unicorn/no-global-object-property-assignment': 'off',
 
       // `jest.config.ts`/`vitest.config.ts` match the patterns above, and Nx
       // writes exactly this into every workspace's root jest config:

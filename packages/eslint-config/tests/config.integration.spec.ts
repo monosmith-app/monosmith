@@ -82,6 +82,12 @@ const FIXTURES: Record<string, string> = {
   'doc.md':     '[link]()\n',
   'thing.spec.ts':
     "describe('x', () => {\n  it('y', () => {\n    const v: any = 1\n    expect(v).toBe(1)\n  })\n})\n",
+  // `require()` and a global assignment: each rule must fire in plain code and stay quiet in test support.
+  'plain-global.ts':      "export const m = require('node:path')\nglobalThis.flag = 1\n",
+  'thing-global.spec.ts': "export const m = require('node:path')\nglobalThis.flag = 1\n",
+  'mocks/setup.ts':       "export const m = require('node:path')\nglobalThis.flag = 1\n",
+  'testing/setup.ts':     "export const m = require('node:path')\nglobalThis.flag = 1\n",
+  'tests/setup.ts':       "export const m = require('node:path')\nglobalThis.flag = 1\n",
   'focused.spec.ts':
     "describe.only('x', () => {\n  it('y', () => {\n    expect(1).toBe(1)\n  })\n})\n",
   'packages/thing/package.json': '{ "name": "thing", "version": "1.0.0" }\n',
@@ -441,6 +447,18 @@ describe('@monosmith/eslint-config', () => {
 
   it('relaxes the strict TypeScript rules inside spec files', () => {
     expect(rulesFor('thing.spec.ts')).not.toContain('@typescript-eslint/no-explicit-any')
+  })
+
+  it('relaxes require and global assignment in specs and in tests, testing and mocks folders', () => {
+    expect(rulesFor('plain-global.ts')).toEqual(expect.arrayContaining([
+      '@typescript-eslint/no-require-imports',
+      'unicorn/no-global-object-property-assignment',
+    ]))
+
+    for (const file of ['thing-global.spec.ts', 'mocks/setup.ts', 'testing/setup.ts', 'tests/setup.ts']) {
+      expect(rulesFor(file)).not.toContain('@typescript-eslint/no-require-imports')
+      expect(rulesFor(file)).not.toContain('unicorn/no-global-object-property-assignment')
+    }
   })
 
   it('catches focused tests, which would silently skip the rest of a suite', () => {
