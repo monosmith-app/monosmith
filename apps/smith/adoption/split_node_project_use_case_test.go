@@ -128,7 +128,7 @@ func TestAdoptSplitsTheWorkspaceFromASingleNodeApp(t *testing.T) {
 	}
 	for _, line := range strings.Split(doctor, "\n") {
 		// What the machine has installed (Node.js, Docker, gh, ...) is not the split's doing.
-		if strings.HasPrefix(line, "! ") && !strings.HasPrefix(line, "! Node.js is") && !strings.Contains(line, "is not on PATH") {
+		if strings.HasPrefix(line, "! ") && !strings.HasPrefix(line, "! Node.js is") && !machineWarning.MatchString(line) {
 			t.Errorf("smith doctor warns: %s\n%s", line, doctor)
 		}
 	}
