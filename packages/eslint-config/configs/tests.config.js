@@ -47,6 +47,7 @@ export default [
       // state) and a test may need to set a global, such as `global.fetch`.
       '@typescript-eslint/no-require-imports':        'off',
       'unicorn/no-global-object-property-assignment': 'off',
+      'unicorn/require-array-sort-compare':           'off',
 
       // `jest.config.ts`/`vitest.config.ts` match the patterns above, and Nx
       // writes exactly this into every workspace's root jest config:
