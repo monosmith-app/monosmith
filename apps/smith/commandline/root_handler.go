@@ -69,6 +69,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/report"
 	"github.com/monosmith-app/monosmith/apps/smith/sandbox"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
+	"github.com/monosmith-app/monosmith/apps/smith/selfupdate"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
 	"github.com/monosmith-app/monosmith/apps/smith/swapchoice"
@@ -134,7 +135,7 @@ already have), then build and doctor.`,
 	}
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), removeproject.RemoveCommand(version), swapchoice.Command(version), environments.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
-	add("work", toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
+	add("work", selfupdate.Command(version), toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(apptasks.FuncCommand(), apptasks.ElectronCommand(), declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command(), completioncommand.Command(plugintrust.Home()))
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)

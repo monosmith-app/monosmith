@@ -24,6 +24,8 @@ type memory struct {
 	AnnouncedAt time.Time `json:"announcedAt,omitzero"`
 	// NoticeAt is when a newer version was last pointed out.
 	NoticeAt time.Time `json:"noticeAt,omitzero"`
+	// Muted is true when the person asked not to be reminded in the interface.
+	Muted bool `json:"muted,omitempty"`
 }
 
 // load reads the memory; a missing or broken file is an empty memory.

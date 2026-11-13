@@ -3,7 +3,6 @@ package updatenotice
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -127,10 +126,7 @@ func (p *Pending) Lines() []string {
 		return lines
 	}
 	update(p.o.Home, func(m *memory) { m.NoticeAt = p.o.Now() })
-	command := InstallCommand(p.o.Exe, p.o.GOOS)
-	if channel == "next" {
-		command = strings.Replace(command, "@latest", "@next", 1)
-	}
+	command := UpdateCommand(p.o.Exe, p.o.GOOS, channel)
 	on := ""
 	if channel == "next" {
 		on = " on the next channel"
