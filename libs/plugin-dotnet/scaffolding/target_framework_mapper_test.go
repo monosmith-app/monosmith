@@ -26,7 +26,10 @@ func TestShareFrameworkKeepsThePropsFrameworkAndCreatesMissingProps(t *testing.T
 	if framework != "net9.0" || len(changed) != 1 {
 		t.Fatalf("framework %q changed %v", framework, changed)
 	}
-	out, _, framework := ShareFramework("", map[string]string{"A.csproj": csproj("net8.0")})
+	if _, changed, framework := ShareFramework("", map[string]string{"A.csproj": csproj("net8.0")}); framework != "" || changed != nil {
+		t.Fatalf("one project has nothing to share with: %q %v", framework, changed)
+	}
+	out, _, framework := ShareFramework("", map[string]string{"A.csproj": csproj("net8.0"), "B.csproj": csproj("net8.0")})
 	if framework != "net8.0" || out != "<Project>\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n" {
 		t.Fatalf("new props %q", out)
 	}

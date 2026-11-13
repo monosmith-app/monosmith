@@ -48,7 +48,8 @@ func CrateEdition(crateSrc string) string {
 
 // ShareEdition moves the edition the crates repeat into the root's
 // [workspace.package] table. The shared edition is the root's own when it has
-// one, else the one most crates set (the lowest on a tie). A crate with that
+// one, else the one most crates set (the lowest on a tie), when at least two
+// crates set it. A crate with that
 // edition inherits it (edition.workspace = true); a crate with another edition
 // keeps its own. crates maps a crate directory to its manifest text. It returns
 // the new root text, the new text of each crate it changed, and the shared
@@ -75,6 +76,10 @@ func ShareEdition(rootSrc string, crates map[string]string) (root string, change
 			if count[e] > count[edition] {
 				edition = e
 			}
+		}
+		// One crate that sets its own edition has nothing to share it with.
+		if count[edition] < 2 {
+			return rootSrc, nil, ""
 		}
 	}
 	changed = map[string]string{}

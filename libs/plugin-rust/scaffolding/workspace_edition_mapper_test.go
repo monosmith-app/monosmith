@@ -37,9 +37,12 @@ func TestShareEditionMovesTheMajorityEditionToTheRoot(t *testing.T) {
 }
 
 func TestShareEditionKeepsTheRootsEditionAndFillsAnEmptyTable(t *testing.T) {
-	root, changed, edition := ShareEdition("[workspace]\nmembers = []\n\n[workspace.package]\nlicense = \"MIT\"\n", map[string]string{"libs/a": "[package]\nname = \"a\"\nedition = \"2024\"\n"})
-	if edition != "2024" || !strings.Contains(root, "[workspace.package]\nedition = \"2024\"\nlicense") || len(changed) != 1 {
+	root, changed, edition := ShareEdition("[workspace]\nmembers = []\n\n[workspace.package]\nlicense = \"MIT\"\n", map[string]string{"libs/a": "[package]\nname = \"a\"\nedition = \"2024\"\n", "libs/b": "[package]\nname = \"b\"\nedition = \"2024\"\n"})
+	if edition != "2024" || !strings.Contains(root, "[workspace.package]\nedition = \"2024\"\nlicense") || len(changed) != 2 {
 		t.Fatalf("root %q edition %q changed %v", root, edition, changed)
+	}
+	if _, changed, edition := ShareEdition("[workspace]\n", map[string]string{"libs/a": "[package]\nname = \"a\"\nedition = \"2021\"\n"}); edition != "" || changed != nil {
+		t.Fatalf("one crate has nothing to share with: %q %v", edition, changed)
 	}
 	if _, changed, edition := ShareEdition("[workspace.package]\nedition = \"2024\"\n", map[string]string{"libs/a": "[package]\nedition.workspace = true\n"}); edition != "" || changed != nil {
 		t.Fatalf("nothing to do: %q %v", edition, changed)

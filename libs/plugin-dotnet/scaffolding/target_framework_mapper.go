@@ -26,7 +26,7 @@ func Framework(src string) string {
 // ShareFramework moves the target framework the projects repeat into
 // Directory.Build.props, the way new projects inherit it. The shared framework
 // is the one the props file already sets, else the one most projects set (the
-// lowest on a tie). A project with that framework loses its own element; one
+// lowest on a tie), when at least two projects set it. A project with that framework loses its own element; one
 // with another framework keeps it. projects maps a project file path to its
 // text; propsSrc is "" when there is no Directory.Build.props. It returns the
 // new props text, the new text of each project it changed, and the shared
@@ -53,6 +53,10 @@ func ShareFramework(propsSrc string, projects map[string]string) (props string, 
 			if count[f] > count[framework] {
 				framework = f
 			}
+		}
+		// One project that sets its own framework has nothing to share it with.
+		if count[framework] < 2 {
+			return propsSrc, nil, ""
 		}
 	}
 	changed = map[string]string{}
