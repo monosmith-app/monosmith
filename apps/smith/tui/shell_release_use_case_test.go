@@ -55,7 +55,7 @@ func TestTheReleaseConfirmationListsTheChecksTheEffectsAndTheCommandAndStartsOnC
 	l.has("Release now", "Before you release:", "Doctor: 2 findings are open", "Tests: no test run in this session", "Branch: not known",
 		"A warning does not stop the release", "Packages and versions to publish:", "web 1.0.0 → 1.1.0 tag web@1.1.0",
 		"What will happen:", "Commit: no", "Tag: 2 tags are created.", "Push: no. There is no remote", "Publish: yes",
-		"$ smith release --yes", "Release anyway (y)", "Cancel (esc)")
+		"$ smith release --yes", "Release anyway (y)", "Cancel (Esc)")
 	l.keys("enter")
 	if len(l.started) != 0 {
 		t.Fatalf("Enter on the focused Cancel ran %v", l.started)
@@ -151,7 +151,7 @@ func TestFirstReleaseOffersTheCommitAndMakesItOnlyAfterTheConfirmation(t *testin
 	l.m = sh
 	l.has("Create the first release commit (c)", `$ git commit --allow-empty -m "feat: first version"`)
 	l.keys("c")
-	l.has("Create the first release commit", "Cancel (esc)")
+	l.has("Create the first release commit", "Cancel (Esc)")
 	l.keys("enter")
 	if made != 0 {
 		t.Fatal("Enter on the focused Cancel made the commit")

@@ -34,18 +34,6 @@ app.register_functions(blueprint)
 `,
 	"[[.Dir]]/.gitignore": `local.settings.json
 `,
-	"[[.Dir]]/start.py": `"""Starts the Functions host (Azure Functions Core Tools: func) with the workspace venv."""
-
-import os
-import subprocess
-import sys
-
-os.environ["languageWorkers__python__defaultExecutablePath"] = sys.executable
-settings = "local.settings.json"
-if not os.path.exists(settings) and os.path.exists("local.settings.sample.json"):
-    print("No local.settings.json: copy local.settings.sample.json to it for your settings.")
-sys.exit(subprocess.call(["func", "start"], shell=sys.platform == "win32"))
-`,
 	"[[.Dir]]/src/[[.Import]]/functions/greeting_handler.py": `[[if eq .Trigger "http"]]import json
 
 import azure.functions as func

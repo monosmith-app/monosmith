@@ -708,7 +708,7 @@ export interface Fix {
   files?: FileEdit[]
   /**
    * Steps run after the files, in order, from the workspace root; the first one that fails stops
-   * the rest.
+   * the rest, unless it is advisory.
    */
   steps?: FixStep[]
   /**
@@ -759,6 +759,11 @@ export interface FixStep {
    * install write there). Absent adds none.
    */
   env?: string[]
+  /**
+   * Advisory marks a check whose failure is a finding, not a stop: what it printed is shown, and
+   * the steps after it still run.
+   */
+  advisory?: boolean
 }
 
 /**
@@ -808,6 +813,14 @@ export interface GenerateParams {
    * and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.
    */
   choices?: string[]
+  /**
+   * PackageName is the name the person gave the project's package (smith add --package-name): the
+   * npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and
+   * so on. The host has checked it against the language's naming rules. The plugin that writes the
+   * manifest uses it as given, in place of the name it builds from the workspace and Name. Empty:
+   * the plugin builds the name.
+   */
+  packageName?: string
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */
@@ -1084,6 +1097,13 @@ export interface Project {
    * path, a Python import name.
    */
   exports?: string[]
+  /**
+   * PackageName is the name the project's manifest gives its package: the npm package, the Cargo
+   * crate, the Python distribution, the pub package, the Composer name, the gem, the .NET package
+   * id, the Maven artifactId. smith doctor compares it with the workspace namespace. Empty when the
+   * plugin does not say.
+   */
+  packageName?: string
   /**
    * Imports are identifiers this project's sources import. The host keeps the ones another project
    * exports and turns them into graph edges.
@@ -1584,6 +1604,11 @@ export interface Task {
    */
   release?: TaskProfile
   /**
+   * Fix is how `smith lint --fix` fixes what the tool can. Only a lint task sets it. Nil means the
+   * tool has no fix mode: smith says so and runs the plain lint.
+   */
+  fix?: TaskFix
+  /**
    * DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of
    * every project this one imports first.
    */
@@ -1611,6 +1636,31 @@ export interface Task {
   serveUrl?: string
   /** ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s. */
   serveTimeout?: string
+}
+
+/**
+ * TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how smith
+ * learns what is left. `smith lint --fix` runs it in place of the task's own command, and never
+ * caches it.
+ */
+export interface TaskFix {
+  /**
+   * Command is an argv array that fixes the problems the tool can fix; it is never passed through a
+   * shell. Its exit code alone does not say whether problems remain, unless Count is set.
+   */
+  command: string[]
+  /**
+   * Probe is an argv array that only reports, as Command does when Count is set, without changing a
+   * file. Smith runs it before Command, and the difference of the two counts is the number of
+   * problems fixed. Empty means smith does not know that number.
+   */
+  probe?: string[]
+  /**
+   * Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON.
+   * Empty means smith runs the task's own command after Command, and its exit code says whether
+   * problems remain.
+   */
+  count?: string
 }
 
 /**
@@ -1810,7 +1860,16 @@ export interface VersionResult {
 /** WorkspaceInfo is the subset of workspace settings plugins may use. */
 export interface WorkspaceInfo {
   name: string
-  /** Scope is the npm scope for packages, with its @ (e.g. "@acme"). */
+  /**
+   * Namespace is the word every language puts before a project's name to build its default package
+   * name (acme-core, acme_core, Acme.Core). The host sends the workspace's namespace, which is its
+   * name when none is set. Plugins build names through packages/plugin-sdk/projectnaming.
+   */
+  namespace?: string
+  /**
+   * Scope is the npm scope for packages, with its @ (e.g. "@acme"). The host sends it only when the
+   * person set it; otherwise the scope is the namespace.
+   */
   scope?: string
   /** ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo. */
   modulePrefix?: string

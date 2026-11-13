@@ -48,7 +48,7 @@ func (s *Shell) composeRead(msg capturedMsg) tea.Cmd {
 
 // showCompose draws the screen on the catalogue.
 func (s *Shell) showCompose() tea.Cmd {
-	m := composer.New(*s.composeCat).Place(s.w, s.h)
+	m := composer.New(*s.composeCat).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.compose = &m
 	return nil
 }

@@ -51,7 +51,10 @@ type AddOptions struct {
 	// Environments are the environment builds of a web app (ADR 0081), settled
 	// by CompleteEnvironments; nil for a project that has a single build.
 	Environments *webenv.Settings
-	Out          io.Writer
+	// PackageName is the name the project is published or imported under
+	// (smith add --package-name); empty: the language plugin builds it.
+	PackageName string
+	Out         io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -141,6 +144,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if err := checkScaffolds(generator, kind); err != nil {
 		return nil, err
 	}
+	if err := CheckPackageName(language.Info.Plugin.Name, opts.PackageName); err != nil {
+		return nil, err
+	}
 	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
 	if reason := directoryReason(opts.Kind, conventional, parent); reason != "" {
 		fmt.Fprintln(opts.Out, reason)
@@ -152,10 +158,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if modulePrefix == "" {
 		modulePrefix = remoteModulePrefix(gitclient.New(s.Root))
 	}
-	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
-		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
-	}}
+	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: s.Config.Workspace.Info(modulePrefix)}
 	params.Choices = st.Choices
+	params.PackageName = opts.PackageName
 	params.Settings = settings[generator.Info.Plugin.Name]
 	if opts.Environments != nil {
 		if generator.Info.Plugin.Name != webenv.PluginName {
@@ -309,7 +314,6 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		if !c.Supports(protocol.MethodGenerate) {
 			continue
 		}
-		fmt.Fprintln(out, partStep(c.Info.Plugin.Name))
 		asked := params
 		asked.Convention = conventions[c.Info.Plugin.Name]
 		asked.Settings = settings[c.Info.Plugin.Name]
@@ -317,6 +321,7 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		if err := c.Call(protocol.MethodGenerate, asked, &added, 20*time.Minute); err != nil {
 			return fmt.Errorf("plugin %s: %w", c.Info.Plugin.Name, err)
 		}
+		fmt.Fprintln(out, partStep(c.Info.Plugin.Name, string(params.Kind), added))
 		res.Files = append(res.Files, added.Files...)
 		res.Notes = append(res.Notes, added.Notes...)
 		if added.InstallPending {

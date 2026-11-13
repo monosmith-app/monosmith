@@ -130,7 +130,7 @@ func TestTabNamesWhereItGoesNext(t *testing.T) {
 func TestWhileTheDetailHasTheKeyboardTheFooterListsItsKeysAndNotTheLists(t *testing.T) {
 	for _, view := range []string{TabProjects, TabDoctor} {
 		hints := glyphLabels(State{View: view, InWorkspace: true, SideFocus: true, Projects: 3})
-		for _, want := range []string{"Tab list", "↑↓ choose action", "Enter run"} {
+		for _, want := range []string{"Tab list", "↑↓ choose", "Enter run"} {
 			if !hasHint(hints, want) {
 				t.Errorf("%s: missing %q in %v", view, want, hints)
 			}
@@ -143,7 +143,7 @@ func TestWhileTheDetailHasTheKeyboardTheFooterListsItsKeysAndNotTheLists(t *test
 	}
 	// With a run open the run's own keys lead, and Tab gives the keyboard back.
 	hints := glyphLabels(State{View: TabProjects, InWorkspace: true, SideFocus: true, RunOpen: true, Projects: 3})
-	if !hasHint(hints, "Tab list") || hasHint(hints, "↑↓ choose action") || !hasHint(hints, "↑↓ task") {
+	if !hasHint(hints, "Tab list") || hasHint(hints, "↑↓ choose") || !hasHint(hints, "↑↓ task") {
 		t.Errorf("run open: %v", hints)
 	}
 }

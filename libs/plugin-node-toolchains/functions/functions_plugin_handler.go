@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -55,12 +56,32 @@ func (p *Functions) Generate(params protocol.GenerateParams) (protocol.GenerateR
 	if len(plan.Applied) == 0 {
 		return protocol.GenerateResult{}, fmt.Errorf("the functions plugin writes projects from the choices azure-functions, aws-lambda and gcp-functions, not the stack %q: smith add app <name> --lang node --with azure-functions", params.Stack)
 	}
+	addAppTasks(plan, params.Directory)
 	res, err := scaffolding.GenerateFrom(p.root, params, templateSet(plan, testModule(params.Choices)))
 	if err != nil {
 		return res, err
 	}
 	res.Notes = append(res.Notes, nextSteps(plan.Applied)...)
 	return res, nil
+}
+
+// addAppTasks gives the plan the tasks that build, start and package the app.
+// They run smith's own commands and the tool of the host, so the app holds no
+// script of smith's.
+func addAppTasks(plan choicedata.Plan, root string) {
+	host := ""
+	for _, name := range plan.Applied {
+		if _, ok := functionhost.ToolOf(name); ok {
+			host = name
+		}
+	}
+	trigger := ""
+	if t := plan.Slots["trigger"]; len(t) > 0 {
+		trigger = t[0]
+	}
+	plan.Tasks["build"] = functionhost.AssembleTask(host)
+	plan.Tasks["start"] = functionhost.StartTask(host, root, trigger)
+	plan.Tasks["package"] = functionhost.PackageTask(host, root)
 }
 
 // nextSteps are printed after a function app is made: how to run it, what the
@@ -100,7 +121,7 @@ func templateSet(plan choicedata.Plan, module string) scaffolding.TemplateSet {
 		files["[[.Dir]]/"+path] = body
 	}
 	return scaffolding.TemplateSet{
-		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
+		Slice: files, Root: tsconfigchain.NodeRoot(), DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
 		Slots: withSlot(plan.Slots, "test.module", module), Scripts: plan.Tasks, Dependencies: plan.Dependencies,
 	}
 }

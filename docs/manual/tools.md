@@ -46,6 +46,7 @@ Usage: `smith tools <command> [flags]`
 | Subcommand | Meaning |
 |---|---|
 | `smith tools install` | Install the programs the workspace needs, asking how for each |
+| `smith tools use` | Let smith use a tool from the folder winget put it in, without a change to PATH |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
@@ -81,6 +82,12 @@ It changes nothing. Git is always listed; the GitHub CLI is listed when the work
 SAM CLI, and for a Tauri app Rust, the Xcode Command Line Tools, the Microsoft C++ Build Tools,
 WebView2 and the WebKitGTK libraries) are listed only when a project's stack has that choice. A tool
 that exists on one system only is listed on that system only.
+
+On Windows, a tool that is not on PATH is also looked for where winget unpacks a portable package
+(`%LOCALAPPDATA%\Microsoft\WinGet\Packages`). When it is there, the line says
+`not on PATH, found in <folder>`, and `smith tools install` offers to use it from there
+([details](tools-install.md#a-tool-that-winget-put-off-path)). The folders you let smith use are in
+`~/.smith/tool-folders.json`, and every smith command adds them at the end of its own PATH.
 
 ## Examples
 

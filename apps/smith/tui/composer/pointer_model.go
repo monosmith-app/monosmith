@@ -5,10 +5,6 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// browseListTop is the first body line of the list while browsing: the search
-// box, the summary and a blank line come first.
-const browseListTop = 3
-
 // Click handles a left press at the screen cell (x, y). A press on a row of the
 // list moves the cursor there and ticks or unticks it, as Enter does. A press
 // on an answer of the open question picks it, as Enter does. A press anywhere
@@ -17,11 +13,18 @@ const browseListTop = 3
 // Parameters: x and y are screen cells.
 // Returns: the screen after the press and what its host must do.
 func (m Model) Click(x, y int) (Model, Outcome) {
+	was := m.stage
+	m, out := m.click(x, y)
+	return m.follow(was), out
+}
+
+// click is Click before the text follows the cursor.
+func (m Model) click(x, y int) (Model, Outcome) {
 	switch m.stage {
 	case stBrowse:
 		if i := m.rowAt(x, y); i >= 0 {
 			m.cursor = i
-			return m.enter(), Outcome{}
+			return m.focusList().enter(), Outcome{}
 		}
 	case stQuestion:
 		if i := m.answerAt(x, y); i >= 0 {
@@ -60,13 +63,13 @@ func (m Model) bodyLine(x, y int) int {
 // rowAt is the index of the list row drawn at (x, y) while browsing, or -1. It
 // counts the lines as browseBody draws them, through the same window.
 func (m Model) rowAt(x, y int) int {
-	line := m.bodyLine(x, y) - browseListTop
-	if line < 0 || m.rect.W < 20 || m.rect.H < 8 {
+	line := m.bodyLine(x, y) - m.listTop()
+	if line < 0 || m.rect.W < 20 || m.rect.H < 4 {
 		return -1
 	}
 	th := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
-	inner, height := m.rect.W-4, m.rect.H-2
-	room := max(height-browseListTop-len(m.statusLines(th, inner))-1, 3)
+	inner := m.rect.W - 4
+	room := m.listRoom(len(m.statusLines(th, inner)), len(m.keyLines(th, inner)))
 	probe := m
 	lines, items := probe.listLines(th, inner)
 	shown, top := len(lines), 0
@@ -86,17 +89,41 @@ func (m Model) rowAt(x, y int) int {
 }
 
 // answerAt is the index of the answer of the open question drawn at (x, y), or
-// -1. It counts the lines as questionBody draws them.
+// -1. It counts the lines as questionBody draws them, through the scroll.
 func (m Model) answerAt(x, y int) int {
 	if m.chk.Question == nil {
 		return -1
 	}
 	th := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
-	body := m.questionBody(th, m.rect.W-4)
-	first := len(body) - 2 - len(m.chk.Question.Options) // the keys line and a blank close the body
-	i := m.bodyLine(x, y) - first
-	if m.bodyLine(x, y) < 0 || i < 0 || i >= len(m.chk.Question.Options) {
+	body, foot, first := m.questionBody(th, m.rect.W-4)
+	row := m.bodyLine(x, y)
+	if row < 0 {
+		return -1
+	}
+	i := pane.BodyLine(row, m.top, len(body), pane.BodyRoom(m.rect.H-2, len(foot))) - first
+	if i < 0 || i >= len(m.chk.Question.Options) {
 		return -1
 	}
 	return i
+}
+
+// follow scrolls a question so its answer under the cursor shows, and starts
+// the text of a screen that was just opened from its top.
+func (m Model) follow(was stage) Model {
+	if m.stage != was {
+		m.top = 0
+	}
+	if m.stage != stQuestion || m.chk.Question == nil {
+		return m
+	}
+	body, foot, first := m.questionBody(theme.Default(), m.rect.W-4)
+	m.top = pane.KeepVisible(m.top, first+m.qcursor, len(body), pane.BodyRoom(m.rect.H-2, len(foot)))
+	return m
+}
+
+// scrollText moves the text of a question, the name or the plan by delta lines.
+func (m Model) scrollText(delta int) Model {
+	body, foot, _ := m.stageBody(theme.Default(), m.rect.W-4)
+	m.top = pane.ClampTop(m.top+delta, len(body), pane.BodyRoom(m.rect.H-2, len(foot)))
+	return m
 }

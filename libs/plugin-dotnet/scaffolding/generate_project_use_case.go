@@ -1,16 +1,16 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/functions"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
@@ -19,38 +19,11 @@ type templateData struct {
 	Dir, Name, ID, Kind, Stack string
 	// The test project's framework and packages, for the function apps that write their own.
 	TestFramework, TestSdkVersion, XunitVersion, XunitRunnerVersion string
+	// ExplicitFramework is true when the workspace's Directory.Build.props sets
+	// no target framework, so the project and its tests project set their own.
+	ExplicitFramework bool
 	// Data is what a function app (ADR 0072) adds; zero for any other project.
 	functions.Data
-}
-
-// pascal turns a kebab-case name into a .NET identifier part: web-api → WebApi.
-func pascal(name string) string {
-	var b strings.Builder
-	upper := true
-	for _, c := range name {
-		if !unicode.IsLetter(c) && !unicode.IsDigit(c) {
-			upper = true
-			continue
-		}
-		if b.Len() == 0 && unicode.IsDigit(c) {
-			b.WriteByte('X') // an identifier cannot start with a digit
-		}
-		if upper {
-			c = unicode.ToUpper(c)
-			upper = false
-		}
-		b.WriteRune(c)
-	}
-	return b.String()
-}
-
-// ProjectID is a project's assembly, namespace and package id:
-// Workspace.Name (Acme.WebApi).
-func ProjectID(workspace, name string) string {
-	if workspace == "" {
-		return pascal(name)
-	}
-	return pascal(workspace) + "." + pascal(name)
 }
 
 // Generate writes a project and its tests project, and the workspace's
@@ -63,7 +36,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, projectTemplate)
 	plan, isFunction := functions.PlanOf(params.Choices)
-	id := ProjectID(params.Workspace.Name, params.Name)
+	id := cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.DotNet, params.Name))
 	switch {
 	case isFunction && params.Kind != protocol.ProjectApp:
 		return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang dotnet --with %s", params.Name, plan.Host)
@@ -75,12 +48,15 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	case params.Kind == protocol.ProjectApp:
 		maps.Copy(templates, appTemplates)
 	}
-	if _, err := os.Stat(filepath.Join(workspaceRoot, directoryBuildProps)); errors.Is(err, fs.ErrNotExist) {
+	explicitFramework := false
+	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, directoryBuildProps)); errors.Is(err, fs.ErrNotExist) {
 		maps.Copy(templates, rootTemplates)
 	} else if err != nil {
 		return protocol.GenerateResult{}, err
+	} else {
+		explicitFramework = Framework(string(raw)) == ""
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, ID: id, Kind: string(params.Kind), Stack: params.Stack,
+	data := templateData{Dir: params.Directory, Name: params.Name, ID: id, Kind: string(params.Kind), Stack: params.Stack, ExplicitFramework: explicitFramework,
 		TestFramework: TargetFramework, TestSdkVersion: TestSdkVersion, XunitVersion: XunitVersion, XunitRunnerVersion: XunitRunnerVersion}
 	if isFunction {
 		data.Data = functions.DataOf(plan, params.Directory, id)

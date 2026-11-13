@@ -13,9 +13,11 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/fullconversion"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +42,8 @@ type fullArgs struct {
 	SkipVerify  bool
 	// Commit commits the whole conversion as one operation at the end.
 	Commit bool
+	// OutputsGiven are the build tasks --outputs answered: not asked again.
+	OutputsGiven map[string]bool
 }
 
 // fullJSON is `smith convert --level full --json`: the conversion plan as it
@@ -59,6 +63,14 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	if a.JSON {
 		log = cmd.ErrOrStderr()
 	}
+	ask := interactive() && !a.Yes && !a.DryRun && !a.JSON
+	reader := bufio.NewReader(os.Stdin)
+	if ask {
+		// Before the view: the removal groups read the smith.toml these answers write.
+		if err := AskOutputChoices(reader, log, a.Plan, a.OutputsGiven); err != nil {
+			return problem.New(err.Error())
+		}
+	}
 	materialize := func(dir string) error {
 		scratch := *a.Plan
 		scratch.Root = dir
@@ -74,8 +86,6 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	usage := legacyinventory.Detect(view.Tree)
 	defaults := convertchoices.Defaults(usage)
 	choices := withDefaults(a.Choices, a.Given, defaults)
-	ask := interactive() && !a.Yes && !a.DryRun && !a.JSON
-	reader := bufio.NewReader(os.Stdin)
 	if ask {
 		if choices, err = convertchoices.Ask(reader, log, convertchoices.Questions(usage, defaults), choices, a.Given); err != nil {
 			return err
@@ -142,7 +152,27 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	if a.Commit {
 		CommitConversion(a.Root, log)
 	}
+	if len(run.Findings) > 0 {
+		fmt.Fprint(log, findingsText(run.Findings))
+		return ErrFindings
+	}
 	return nil
+}
+
+// findingsText closes a conversion whose advisory checks found something:
+// each check with its failures and remedies, then the outcome.
+func findingsText(findings []doctorfix.Finding) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	for _, f := range findings {
+		b.WriteString(doctorfix.FindingText(f))
+	}
+	checks := "1 check"
+	if len(findings) > 1 {
+		checks = fmt.Sprintf("%d checks", len(findings))
+	}
+	fmt.Fprintf(&b, "\n%s The conversion finished with findings: the changes stay, and %s found something to fix (listed above).\n", marks.Warning, checks)
+	return b.String()
 }
 
 // smithCommand is how the checks run smith, and how a screen names the command

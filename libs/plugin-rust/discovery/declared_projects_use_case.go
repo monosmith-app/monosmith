@@ -100,7 +100,8 @@ func binTasks(root, crate, bin string, kind protocol.ProjectKind) map[string]pro
 	tasks := map[string]protocol.Task{
 		"build":     withReleaseProfile(protocol.Task{Command: scoped("build"), Inputs: inputs, Description: "cargo build --bin " + bin}),
 		"test":      withReleaseProfile(protocol.Task{Command: scoped("test"), Inputs: inputs, Cache: true, Description: "cargo test --bin " + bin}),
-		"lint":      {Command: append(scoped("clippy"), "--", "-D", "warnings"), Inputs: inputs, Cache: true, Description: "cargo clippy, warnings are errors"},
+		"lint":      {Command: append(scoped("clippy"), "--", "-D", "warnings"), Inputs: inputs, Cache: true, Description: "cargo clippy, warnings are errors",
+			Fix: &protocol.TaskFix{Command: append(scoped("clippy", "--fix", "--allow-dirty", "--allow-staged"), "--", "-D", "warnings")}},
 		"typecheck": {Command: scoped("check"), Inputs: inputs, Cache: true, Description: "cargo check --bin " + bin},
 	}
 	if kind == protocol.ProjectApp {

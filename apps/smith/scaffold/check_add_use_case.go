@@ -12,7 +12,7 @@ import (
 // CheckAdd refuses an add that cannot succeed, before the plan is shown: a
 // kind that does not exist, a bad or taken name, choices that do not fit
 // together, a like-project that is not there, and a generator that cannot make
-// the kind. It asks nothing and writes nothing, and it skips the checks that
+// the kind, or a package name the language cannot use. It asks nothing and writes nothing, and it skips the checks that
 // need an answer a person has still to give (a recipe, a language to pick).
 //
 // Parameters: s is the open session; opts are the options smith add runs with.
@@ -52,6 +52,9 @@ func CheckAdd(s *session.Session, opts AddOptions) error {
 	}
 	if language == nil {
 		return nil
+	}
+	if err := CheckPackageName(language.Info.Plugin.Name, opts.PackageName); err != nil {
+		return err
 	}
 	generator := language
 	if st.Scaffold != "" {

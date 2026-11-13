@@ -33,7 +33,7 @@ func TestNewWorkspaceInAnExistingClone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Workspace.Scope != "@acme" || cfg.Workspace.ModulePrefix != "github.com/Acme/acme-repo" || len(cfg.CI.Providers) != 2 {
+	if cfg.Workspace.Scope != "" || cfg.Workspace.Namespace != "" || cfg.Workspace.ModulePrefix != "github.com/Acme/acme-repo" || len(cfg.CI.Providers) != 2 {
 		t.Fatalf("config %+v", cfg.Workspace)
 	}
 	if body, _ := os.ReadFile(filepath.Join(dir, "README.md")); string(body) != "# mine" {

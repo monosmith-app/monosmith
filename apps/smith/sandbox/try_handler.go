@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 	"strings"
 
@@ -93,7 +94,7 @@ In CI, or without a terminal, it never asks: it prints the command to run.
 	cmd.Flags().StringSliceVar(&checks, "checks", []string{"doctor"}, "checks to run in the copy after the command: "+strings.Join(Checks, ", "))
 	cmd.Flags().BoolVar(&keep, "keep", false, "leave the copy on disk and print its folder")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the result as JSON and do not apply")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "run the command for real when the try passed, without asking")
+	commandflags.AddYesFlag(cmd, &yes, "run the command for real when the try passed, without asking")
 	return cmd
 }
 

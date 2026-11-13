@@ -67,6 +67,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Kind:        kind,
 			Stack:       py.Tool.Smith.Stack,
 			Exports:     []string{importName},
+			PackageName: py.Project.Name,
 			Imports:     dedupe(imports),
 			Version:     py.Project.Version,
 			Description: strings.TrimSpace(py.Project.Description),
@@ -82,7 +83,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 func tasksOf(dir, root string, kind protocol.ProjectKind, importName string, args ToolArgs) map[string]protocol.Task {
 	tasks := Tasks(root, kind, importName, args)
 	if kind == protocol.ProjectApp && functions.DetectHost(dir) != "" {
-		functions.WithFunctionTasks(tasks, root, venv.Interpreter(), inputs)
+		functions.WithFunctionTasks(tasks, dir, root, venv.Interpreter(), inputs)
 	}
 	return tasks
 }

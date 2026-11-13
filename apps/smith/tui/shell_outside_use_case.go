@@ -42,7 +42,7 @@ func (s *Shell) showOutside() {
 	case s.run.Finished:
 		state = resultdialog.Failed
 	}
-	m := resultdialog.NewRunOutput(s.run.Command, s.runLines, state).Place(s.w, s.h)
+	m := resultdialog.NewRunOutput(s.run.Command, s.runLines, state).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.result = &m
 }
 

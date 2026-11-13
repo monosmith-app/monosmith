@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -25,51 +25,6 @@ type templateData struct {
 	Dir, Up, Name, Vendor, Package, Namespace, NamespaceJSON, Kind, Stack string
 }
 
-// kebab is a Composer name part: lowercase letters, digits and dashes.
-func kebab(name string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(name) {
-		switch {
-		case unicode.IsLetter(c) || unicode.IsDigit(c):
-			b.WriteRune(c)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
-			b.WriteByte('-')
-		}
-	}
-	return strings.TrimSuffix(b.String(), "-")
-}
-
-// pascal is a namespace segment: web-api → WebApi, 3d → X3d.
-func pascal(name string) string {
-	var b strings.Builder
-	upper := true
-	for _, c := range name {
-		if !unicode.IsLetter(c) && !unicode.IsDigit(c) {
-			upper = true
-			continue
-		}
-		if b.Len() == 0 && unicode.IsDigit(c) {
-			b.WriteByte('X')
-		}
-		if upper {
-			c = unicode.ToUpper(c)
-			upper = false
-		}
-		b.WriteRune(c)
-	}
-	return b.String()
-}
-
-// PackageName is a project's Composer name: the workspace is the vendor
-// (acme/core).
-func PackageName(workspace, name string) string {
-	vendor := kebab(workspace)
-	if vendor == "" {
-		vendor = kebab(name)
-	}
-	return vendor + "/" + kebab(name)
-}
-
 // RepositoryKey names a package's path repository in the root
 // composer.json: its directory, dashed (apps/cli → apps-cli).
 func RepositoryKey(dir string) string { return strings.ReplaceAll(dir, "/", "-") }
@@ -81,10 +36,17 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	pkg := PackageName(params.Workspace.Name, params.Name)
-	namespace := pascal(params.Workspace.Name) + `\` + pascal(params.Name)
-	if params.Workspace.Name == "" {
-		namespace = pascal(params.Name)
+	pkg := projectnaming.Name(params.Workspace, projectnaming.Composer, params.Name)
+	switch {
+	case strings.Contains(params.PackageName, "/"):
+		pkg = params.PackageName
+	case params.PackageName != "":
+		// A name without a vendor keeps the workspace's vendor.
+		pkg = strings.Split(pkg, "/")[0] + "/" + params.PackageName
+	}
+	namespace := projectnaming.Pascal(params.Name)
+	if ns := projectnaming.Namespace(params.Workspace); ns != "" {
+		namespace = projectnaming.Pascal(ns) + `\` + namespace
 	}
 	data := templateData{
 		Dir: params.Directory, Up: strings.Repeat("../", strings.Count(params.Directory, "/")+2), Name: params.Name,

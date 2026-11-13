@@ -72,6 +72,10 @@ type Panel struct {
 	// Chosen is the ID of the chosen action of a split panel (see Splits). An ID
 	// that names no action chooses the first one.
 	Chosen string
+	// PinRun leaves the second part of a split panel (the description of the
+	// chosen action and its run button) out of View, for a caller that draws it
+	// with PinnedRun under the part that scrolls, so it stays in view.
+	PinRun bool
 }
 
 // RunID is the hit, the hover and the cursor ID of the run button of a split

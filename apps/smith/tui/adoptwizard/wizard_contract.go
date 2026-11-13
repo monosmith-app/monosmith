@@ -44,6 +44,10 @@ type Flow interface {
 	ShowFix(p doctorfix.Planned) (string, error)
 	// ApplyFix applies a fix's files and steps, writing "… name" as each starts.
 	ApplyFix(ctx context.Context, fix protocol.Fix, out io.Writer) error
+	// ApplyChecks is ApplyFix for the checks that close a conversion: an
+	// advisory step that fails (the lint, doctor) does not stop it and comes
+	// back as a finding, in the order it ran.
+	ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error)
 	// FinishFix is the install and the checks that close a conversion: the
 	// build, the tests and doctor, and the lint too with withLint.
 	FinishFix(withLint bool) doctorfix.Planned

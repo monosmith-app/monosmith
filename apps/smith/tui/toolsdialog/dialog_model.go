@@ -3,6 +3,7 @@ package toolsdialog
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"slices"
 	"strings"
 
@@ -39,9 +40,11 @@ func adminAnswers() []string {
 // at a time, and keeps a result for each. It starts nothing: a key that decides
 // an install returns an Outcome for the host to carry out.
 type Model struct {
-	plans  []toolinstall.ToolPlan
-	at     int
-	cursor int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
+	plans   []toolinstall.ToolPlan
+	at      int
+	cursor  int
 	// over is 1 + the index of the option under the pointer, 0 for none.
 	over    int
 	ph      phase
@@ -49,6 +52,8 @@ type Model struct {
 	out     []string
 	results []Result
 	rect    layout.Rect
+	// top is the first body line shown when the body is taller than the dialog.
+	top int
 }
 
 // New builds the dialog on the plans of the missing tools
@@ -66,12 +71,24 @@ func New(plans []toolinstall.ToolPlan) Model {
 	return m
 }
 
-// Place sizes the dialog for a screen.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
+// Place sizes the dialog for a screen: 30 rows, or the rows between the
+// margins when there are fewer. A body taller than that scrolls, and the
+// window follows the cursor.
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
-	h := min(max(sh-2, 12), 30)
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
-	return m
+	m.rect = m.margins.Centre(sw, sh, w, 30)
+	return m.follow()
 }
 
 // Rect is where the dialog sits after Place.
@@ -101,6 +118,18 @@ func (m Model) current() toolinstall.ToolPlan { return m.plans[m.at] }
 // Parameters: name is the key name.
 // Returns: the new dialog and what the host must do.
 func (m Model) Key(name string) (Model, Outcome) {
+	switch {
+	case name == "ctrl+u" || commands.Nav(name) == commands.NavPageUp:
+		return m.Wheel(-pane.PageStep(m.room())), Outcome{}
+	case name == "ctrl+d" || commands.Nav(name) == commands.NavPageDown:
+		return m.Wheel(pane.PageStep(m.room())), Outcome{}
+	}
+	m, out := m.key(name)
+	return m.follow(), out
+}
+
+// key is Key before the body follows the cursor.
+func (m Model) key(name string) (Model, Outcome) {
 	switch m.ph {
 	case phasePick:
 		return m.pickKey(name)
@@ -141,7 +170,7 @@ func (m Model) pickKey(name string) (Model, Outcome) {
 		switch opt.Kind {
 		case toolinstall.OptionInstall:
 			if opt.Admin {
-				m.ph, m.opt, m.cursor = phaseAdmin, opt, 0
+				m.ph, m.opt, m.cursor, m.top = phaseAdmin, opt, 0, 0
 				return m, Outcome{}
 			}
 			return m.start(opt, false)
@@ -163,7 +192,7 @@ func (m Model) adminKey(name string) (Model, Outcome) {
 	switch name {
 	case "esc":
 		// Back to the first question: nothing was decided.
-		m.ph, m.cursor = phasePick, defaultIndex(plan)
+		m.ph, m.cursor, m.top = phasePick, defaultIndex(plan), 0
 		return m, Outcome{}
 	case "ctrl+c":
 		return m, Outcome{Done: true}
@@ -212,7 +241,7 @@ func (m Model) record(line string) Model {
 // next asks about the next tool, or shows the results after the last one.
 func (m Model) next() Model {
 	m.at++
-	m.out = nil
+	m.out, m.top = nil, 0
 	if m.at >= len(m.plans) {
 		m.ph = phaseDone
 		return m

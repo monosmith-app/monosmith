@@ -10,7 +10,7 @@ import (
 
 func TestCIPointsTheVenvsPipAtThePrivateIndexBeforeInstalling(t *testing.T) {
 	feed := &protocol.Registry{Name: "libs", Auth: protocol.AuthAzureArtifacts, PyPI: "https://pkgs.dev.azure.com/acme/_packaging/libs/pypi/simple/", PyPIUpload: "https://pkgs.dev.azure.com/acme/_packaging/libs/pypi/upload/"}
-	r := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage, Registries: &protocol.Registries{Install: feed, Publish: feed}}}})
+	r := CI(".", protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage, Registries: &protocol.Registries{Install: feed, Publish: feed}}}})
 	if len(r.Setup) != 5 || r.Setup[2].Name != "Point pip at the private index" {
 		t.Fatalf("setup: %+v", r.Setup)
 	}
@@ -28,14 +28,14 @@ func TestCIPointsTheVenvsPipAtThePrivateIndexBeforeInstalling(t *testing.T) {
 }
 
 func TestCIWithoutARegistryIsUnchanged(t *testing.T) {
-	r := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage}}})
+	r := CI(".", protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage}}})
 	if len(r.Setup) != 4 || len(r.Authenticate) != 0 || len(r.Credentials) != 1 || r.Credentials[0].Env != "PYPI_TOKEN" {
 		t.Errorf("result %+v", r)
 	}
 }
 
 func TestCIShowsThePythonVersionAndKeepsTheResolversConflictReportOnProjectInstalls(t *testing.T) {
-	r := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage}}})
+	r := CI(".", protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage}}})
 	var version, toolchain, project []string
 	for _, s := range r.Setup {
 		switch s.Name {
@@ -60,16 +60,16 @@ func TestCIShowsThePythonVersionAndKeepsTheResolversConflictReportOnProjectInsta
 
 func TestCIAddsThePythonPolicyStepOnlyWhenOptedIn(t *testing.T) {
 	projects := []protocol.Project{{Name: "api", Root: "apps/api"}}
-	if got := CI(protocol.CIParams{Projects: projects}).Audit; len(got) != 1 {
+	if got := CI(".", protocol.CIParams{Projects: projects}).Audit; len(got) != 1 {
 		t.Fatalf("off by default: %+v", got)
 	}
-	got := CI(protocol.CIParams{Projects: projects, Audit: protocol.AuditSettings{Policies: []string{"python"}}}).Audit
+	got := CI(".", protocol.CIParams{Projects: projects, Audit: protocol.AuditSettings{Policies: []string{"python"}}}).Audit
 	want := protocol.Step{Name: "python policy (requirements)", Command: []string{"{smith}", "py-policy", "requirements-dev.txt", "apps/api/requirements.txt"}, Blocking: true, CacheFiles: []string{"requirements-dev.txt", "apps/api/requirements.txt"}}
 	if len(got) != 2 || !reflect.DeepEqual(got[1], want) {
 		t.Fatalf("%+v", got)
 	}
 	warn := protocol.AuditSettings{Policies: []string{"python"}, Warn: []string{"python"}}
-	if CI(protocol.CIParams{Projects: projects, Audit: warn}).Audit[1].Blocking {
+	if CI(".", protocol.CIParams{Projects: projects, Audit: warn}).Audit[1].Blocking {
 		t.Error("warn makes it report only")
 	}
 }
@@ -77,14 +77,14 @@ func TestCIAddsThePythonPolicyStepOnlyWhenOptedIn(t *testing.T) {
 func TestCIPythonPolicyExpectsThePrivateIndex(t *testing.T) {
 	feed := &protocol.Registry{Name: "libs", PyPI: "https://pkgs.example/simple/"}
 	projects := []protocol.Project{{Name: "api", Root: "apps/api", Registries: &protocol.Registries{Install: feed}}}
-	got := CI(protocol.CIParams{Projects: projects, Audit: protocol.AuditSettings{Policies: []string{"python"}}}).Audit[1].Command
+	got := CI(".", protocol.CIParams{Projects: projects, Audit: protocol.AuditSettings{Policies: []string{"python"}}}).Audit[1].Command
 	if got[2] != "--index=https://pkgs.example/simple/" {
 		t.Errorf("%v", got)
 	}
 }
 
 func TestCIDeclaresThePipCacheKeyedOnTheDependencyFiles(t *testing.T) {
-	got := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "api", Root: "apps/api"}}}).Stores
+	got := CI(".", protocol.CIParams{Projects: []protocol.Project{{Name: "api", Root: "apps/api"}}}).Stores
 	want := []protocol.PackageStore{{Name: "pip", Path: "~/.cache/pip", Env: "PIP_CACHE_DIR", Files: []string{"requirements-dev.txt", "apps/api/pyproject.toml"}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("%+v", got)

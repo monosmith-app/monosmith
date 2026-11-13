@@ -45,12 +45,12 @@ schema = 1
 
 [workspace]
 name = "acme"                         # required
-scope = "@acme"                       # npm scope for Node projects
-module_prefix = "github.com/acme/acme"  # Go module path prefix
+namespace = "acme"                    # the word before every new project's name: @acme/core, acme-core, acme_core, Acme.Core (default: the name)
+scope = "@acme"                       # npm scope for Node projects (default: @ and the namespace)
+module_prefix = "github.com/acme/acme"  # Go module path prefix (default: the origin remote, else example.com/ and the namespace)
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
 shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
-alternative_outputs = [["api:build", "api:build-dev"]]  # tasks that write one folder but never run together (below)
 environments = ["lcl", "dev", "uat", "prd"]  # the builds a new web app gets, one per environment (docs/manual/environments.md)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
@@ -359,6 +359,8 @@ node = "22"      # any 22.x
 go = "1.23"      # any 1.23.x
 ```
 
+The pin also decides the version CI, the dev container and the project scaffolds use, for every language. One shared package (`packages/plugin-sdk/toolpin`) decides it in this order: `[toolchains]` in `smith.toml`, then the language's own pin file (`go.work`, `rust-toolchain.toml` or the `rust-version` of the root `Cargo.toml`, `global.json`, `.python-version`, `.nvmrc` or `.node-version`, `.ruby-version`, `.php-version`, `.java-version` or the root pom's `maven.compiler.release`), then smith's default. Native pin files are read as they are, so a workspace that already has `.nvmrc` needs no `[toolchains]` entry.
+
 A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([ADR 0020](../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding. The label `golangci-lint` is read by the Go plugin: `golangci-lint = "2.15.0"` records that the workspace keeps that version on purpose, though CI pins another, and doctor stops warning about it (lint results may differ from CI). `smith doctor --fix` writes it when you answer "Keep" to the golangci-lint question.
 
 ## Shared facts
@@ -471,8 +473,8 @@ problems it answered.
 
 ## Output folders outside the build directory
 
-`smith doctor` checks that every build writes into `dist/` and that no two tasks
-write the same folder. Two settings in `[workspace]` say that a case is on
+`smith doctor` checks that every build writes into `dist/`, and `smith run`
+orders tasks of one run that write the same folder. Two settings in `[workspace]` say that a case is on
 purpose. Both are lists of workspace-relative paths with forward slashes, and
 each path covers the folders under it:
 
@@ -489,14 +491,11 @@ shared_outputs = ["dist/drop"]                # package tasks that fill one fold
   task's output folders, so each task must write its own files. Giving each task
   a subfolder (`dist/drop/<project>/`) is the safer choice and needs no setting.
   smith then never clears the folder, so old files stay.
-- `alternative_outputs`: groups of tasks that write one folder but never run
-  together (`api:build` and `api:build-dev`). smith doctor does not report the
-  overlap inside a group. smith still clears the folder before each task and a
-  cache restore still replaces it, so a run of two tasks of one group keeps only
-  the last one's files. Prefer giving each task its own folder; `smith doctor
-  --fix --only "no two tasks write the same output directory" --choose 2` writes
-  the group. A task that runs until it is stopped (`watch`, `serve`, `start`,
-  `dev`) is never compared with a build.
+
+Two tasks outside a shared folder may write the same folder (a local build and a
+release build into `apps/api/dist`). That is no problem until one `smith run`
+holds both: smith then runs them one after the other and warns that the folder
+keeps only the last one's files ([run](../manual/run.md#files-and-environment)).
 - `environments`: the environments a new web app is built for, lowercase words.
   See [environment builds](../manual/environments.md).
 

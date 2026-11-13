@@ -26,6 +26,9 @@ func (w Wizard) buttons() []action {
 		out = append(out, w.navButtons()...)
 	case Reviewing:
 		out = append(out, action{w.style.apply(), "enter"})
+		if w.style.Alone {
+			return out
+		}
 		if w.hasDiff {
 			label := words.Say("fixwizard.button.show")
 			if w.full {
@@ -90,12 +93,12 @@ func (w Wizard) visible() int { return max(w.Rect().H-4, 1) }
 // Rect is where the dialog sits.
 func (w Wizard) Rect() layout.Rect {
 	width := w.width()
-	h := max(w.sh-2, 5)
+	h := max(w.margins.Room(w.sh), 5)
 	if !w.LogOpen() {
 		rows, _ := w.rows(theme.Default(), 0)
 		h = min(len(rows)+4, h)
 	}
-	return layout.Rect{X: max((w.sw-width)/2, 0), Y: max((w.sh-h)/2, 0), W: width, H: h}
+	return w.margins.Centre(w.sw, w.sh, width, h)
 }
 
 func (w Wizard) bodyRows() []string {
@@ -126,7 +129,9 @@ func (w Wizard) title() string {
 // rows is the whole body, before it is windowed, and for Asking the line each
 // option is on.
 func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) {
-	inner := max(w.width()-4, 4)
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// body scrolls, so no wrapped line loses its last letter under it.
+	inner := max(w.width()-5, 4)
 	switch w.phase {
 	case Asking:
 		return w.askingRows(th, inner)
@@ -274,14 +279,10 @@ func (w Wizard) optionAt(y int) (int, bool) {
 	if w.phase != Asking {
 		return 0, false
 	}
-	r := w.Rect()
 	rows, at := w.rows(theme.Default(), 0)
-	line := y - r.Y - 1
-	if line < 0 || line >= w.visible() {
+	line := pane.BodyLine(y-w.Rect().Y-1, w.top, len(rows), w.visible())
+	if line < 0 {
 		return 0, false
-	}
-	if len(rows) > w.visible() {
-		line += pane.ClampTop(w.top, len(rows), w.visible())
 	}
 	for i := 0; i+1 < len(at); i++ {
 		if line >= at[i] && line < at[i+1] {
@@ -296,14 +297,8 @@ func (w Wizard) optionAt(y int) (int, bool) {
 // target, such as a tick box.
 func (w Wizard) TextAt(y int) string {
 	rows := w.bodyRows()
-	line := y - w.Rect().Y - 1
-	if line < 0 || line >= w.visible() {
-		return ""
-	}
-	if len(rows) > w.visible() {
-		line += pane.ClampTop(w.top, len(rows), w.visible())
-	}
-	if line >= len(rows) {
+	line := pane.BodyLine(y-w.Rect().Y-1, w.top, len(rows), w.visible())
+	if line < 0 {
 		return ""
 	}
 	return pane.Strip(rows[line])
@@ -320,9 +315,9 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 	rows, _ := w.rows(th, tick)
 	total := len(rows)
 	rows, _ = pane.WindowMarked(th, rows, nil, w.top, w.visible())
-	rows = pane.Scrollbar(th, rows, inner, pane.ClampTop(w.top, total, w.visible()), total)
+	rows = pane.Scrollbar(th, rows, pane.DialogRowWidth(r.W), pane.ClampTop(w.top, total, w.visible()), total)
 	out := make([]string, 0, r.H-2)
-	row := func(content string) string { return " " + pane.Fit(content, inner) }
+	row := func(content string) string { return " " + pane.Fit(content, pane.DialogRowWidth(r.W)) }
 	for i, l := range rows {
 		if i >= r.H-4 {
 			break

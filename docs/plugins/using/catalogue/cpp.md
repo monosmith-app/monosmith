@@ -148,9 +148,10 @@ Try: smith test -p tool
 
 A package has the same files as a lib (5 files). The names:
 
-- The **target** is `<workspace>_<project>` in lower-case with other
-  characters turned into underscores (`cpp_demo_core`), so two projects added
-  together never clash. It is also the C++ namespace.
+- The **target** is `<namespace>_<project>` (`[workspace] namespace`, else the
+  workspace name) in lower-case with other characters turned into underscores
+  (`cpp_demo_core`), so two projects added together never clash. A project
+  name that already starts with the namespace is not prefixed twice. It is also the C++ namespace.
 - For an **app**, the code is a library named `<target>_lib` and the
   executable `<target>` links it; the tests link the library too.
 - The generated `CMakeLists.txt` requires CMake 3.25, sets

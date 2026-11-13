@@ -7,6 +7,8 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -52,6 +54,9 @@ func (p *Electron) Generate(params protocol.GenerateParams) (protocol.GenerateRe
 	if len(plan.Applied) == 0 {
 		return protocol.GenerateResult{}, fmt.Errorf("the electron plugin writes projects from the choice electron, not the stack %q: smith add app <name> --lang node --with electron", params.Stack)
 	}
+	plan.Tasks["build"] = functionhost.AssembleTask(functionhost.Electron)
+	plan.Tasks["start"] = functionhost.StartTask(functionhost.Electron, params.Directory, "")
+	plan.Tasks["package"] = functionhost.PackageTask(functionhost.Electron, params.Directory)
 	res, err := scaffolding.GenerateFrom(p.root, params, templateSet(plan))
 	if err != nil {
 		return res, err
@@ -70,7 +75,7 @@ func templateSet(plan choicedata.Plan) scaffolding.TemplateSet {
 		files["[[.Dir]]/"+path] = body
 	}
 	return scaffolding.TemplateSet{
-		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
+		Slice: files, Root: tsconfigchain.NodeRoot(), DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
 		Slots: plan.Slots, Scripts: plan.Tasks, Dependencies: plan.Dependencies,
 	}
 }

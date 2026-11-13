@@ -165,6 +165,16 @@ func (m Model) follow() Model {
 	return m
 }
 
+// Wheel scrolls the list by delta rows; the cursor stays where it is until a
+// key moves it.
+//
+// Parameters: delta is the rows to move, negative for up.
+// Returns: the dialog with the list scrolled.
+func (m Model) Wheel(delta int) Model {
+	m.top = max(min(m.top+delta, len(m.plan.Items)-m.room), 0)
+	return m
+}
+
 // Rect is where the dialog sits after Place.
 func (m Model) Rect() layout.Rect { return m.rect }
 

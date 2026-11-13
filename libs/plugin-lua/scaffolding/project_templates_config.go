@@ -5,12 +5,12 @@ package scaffolding
 // rules. The source URL and the license are what luarocks write_rockspec
 // leaves for the author to fill in.
 var templates = map[string]string{
-	"[[.Dir]]/[[.Name]]-0.0.0-1.rockspec": `-- smithKind: [[.Kind]]
+	"[[.Dir]]/[[.Package]]-0.0.0-1.rockspec": `-- smithKind: [[.Kind]]
 [[- if .Stack]]
 -- smithStack: [[.Stack]]
 [[- end]]
 rockspec_format = "3.0"
-package = "[[.Name]]"
+package = "[[.Package]]"
 version = "0.0.0-1"
 source = {
   url = "*** please add URL for source tarball, zip or repository here ***",

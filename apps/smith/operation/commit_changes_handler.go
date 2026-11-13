@@ -3,6 +3,7 @@ package operation
 import (
 	"bufio"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"slices"
 	"strings"
 
@@ -117,7 +118,7 @@ changed, or cancel. Without a terminal it refuses and names the answers: --only-
 			return nil
 		},
 	}
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for the final confirmation (the choice of files still needs --only-operation or --all)")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask for the final confirmation (the choice of files still needs --only-operation or --all)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "list the files that would be committed and change nothing")
 	cmd.Flags().BoolVar(&onlyOperation, "only-operation", false, "commit only the files the last operation changed; the other changes stay in the work tree")
 	cmd.Flags().BoolVar(&everything, "all", false, "commit everything git shows as changed, your own changes included")

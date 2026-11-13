@@ -60,6 +60,7 @@ func mavenModule(root string, src []byte) (protocol.Project, bool, error) {
 		Language:    "jvm",
 		Kind:        kind,
 		Exports:     []string{pom.Coordinates()},
+		PackageName: pom.ArtifactID,
 		Imports:     pom.Dependencies,
 		Version:     pom.Version,
 		Description: pom.Description,

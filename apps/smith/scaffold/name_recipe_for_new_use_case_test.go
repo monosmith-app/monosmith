@@ -12,7 +12,7 @@ import (
 )
 
 func TestWithRecipeWritesTheSettingAfterTheModulePrefix(t *testing.T) {
-	config := fmt.Sprintf(configTemplate, "acme", "@acme", "github.com/acme/acme", `"github"`)
+	config := fmt.Sprintf(configTemplate, "acme", namespaceLines(NewOptions{Name: "acme", Scope: "@acme"}), "github.com/acme/acme", `"github"`)
 	got := withRecipe(config, "github.com/acme/acme", "recipes/team.recipe.toml")
 	cfg, err := workspace.Parse([]byte(got))
 	if err != nil {

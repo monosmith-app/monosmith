@@ -49,6 +49,8 @@ func (s *Shell) keepDetailCursorVisible() {
 	// Drawn with the cursor mark, as the panel is: the mark narrows the notes.
 	panel := s.detailPanel()
 	panel.Cursor = s.detailCursorID(panel)
+	// A run part pinned under the body is always in view: only the body scrolls.
+	panel, bodyH, _ = s.pinRun(panel, r.W, bodyH)
 	lines, rows := panel.View(s.th, r.W, "")
 	if s.detailCursor == 0 && !s.detailOnRun {
 		// The first action: show the panel from its top, with the headings above it.

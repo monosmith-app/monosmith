@@ -78,3 +78,36 @@ func TestEmbracingTheBuildLeavesAnImportedPackageUnmovedAndSaysWhy(t *testing.T)
 		t.Fatalf("the reason is a note of the review:\n%s", notes)
 	}
 }
+
+func TestEmbracingTheBuildMovesTheDeclaredBuildOutputsToo(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"package.json":               `{"name":"root","workspaces":["apps/*"]}`,
+		"apps/api/package.json":      `{"name":"api","private":true,"main":"./dist/functions.js","scripts":{"build":"tsc -p tsconfig.app.json && npm run link:prod"}}`,
+		"apps/api/tsconfig.app.json": `{"compilerOptions":{"rootDir":"./src","outDir":"./dist"}}`,
+		"smith.toml":                 "schema = 1\n\n[workspace]\nname = \"acme\"\n\n[projects.api.tasks.build]\ncommand = [\"npm\", \"run\", \"build\", \"-w\", \"api\"]\ncwd = \".\"\noutputs = [\"dist\"]\n\n[projects.api.tasks.build-dev]\ncommand = [\"npm\", \"run\", \"build:dev\", \"-w\", \"api\"]\noutputs = [\"dist\"]\n",
+	}
+	var names []string
+	for name, body := range files {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		_ = os.MkdirAll(filepath.Dir(path), 0o755)
+		_ = os.WriteFile(path, []byte(body), 0o644)
+		names = append(names, name)
+	}
+	g := group(t, Build(legacyinventory.NewTree(dir, names), fullChoices, nil), GroupOutput)
+	config := ""
+	for _, e := range g.Fix.Files {
+		if e.Path == "smith.toml" {
+			config = e.Content
+		}
+	}
+	if !strings.Contains(config, "cwd = \".\"\noutputs = [\"../../dist/apps/api\"]") {
+		t.Fatalf("the build's outputs follow the moved folder:\n%s", config)
+	}
+	if !strings.Contains(config, "\"build:dev\", \"-w\", \"api\"]\noutputs = [\"dist\"]") {
+		t.Fatalf("a task that runs another script keeps its outputs:\n%s", config)
+	}
+	if !strings.Contains(g.Reason, "and so do the build outputs in smith.toml") {
+		t.Fatalf("the reason names smith.toml: %s", g.Reason)
+	}
+}

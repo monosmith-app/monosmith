@@ -76,12 +76,12 @@ func TestTheAddConfirmKeepsTheCommandAndTheButtonsAndTheCommitBoxInFull(t *testi
 		}
 		text := strings.Join(lines, "\n")
 		flat := strings.Join(strings.Fields(strings.ReplaceAll(text, "│", " ")), " ")
-		for _, want := range []string{"Add web?", CommitLabel, "The command that will run:", "something-long", "Run (enter)", "Cancel (esc)"} {
+		for _, want := range []string{"Add web?", CommitLabel, "The command that will run:", "something-long", "Run (Enter)", "Cancel (Esc)"} {
 			if !strings.Contains(flat, want) {
 				t.Fatalf("%v: the dialog lost %q:\n%s", size, want, text)
 			}
 		}
-		if size[1] == 24 && !strings.Contains(flat, "more lines") {
+		if size[1] == 24 && !strings.Contains(flat, "↓ more") {
 			t.Fatalf("%v: a plan that does not fit says how much is left: %s", size, text)
 		}
 	}

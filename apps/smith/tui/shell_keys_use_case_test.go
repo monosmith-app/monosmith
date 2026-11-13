@@ -14,7 +14,7 @@ import (
 )
 
 func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T) {
-	l := newLab(t, true, 260, 30)
+	l := newLab(t, true, 320, 30)
 	l.hasNot("File", "Workspace  Run", "Alt+")
 	if first := l.lines()[0]; !strings.Contains(first, "acme") || !strings.Contains(first, "main") {
 		t.Fatalf("the first row names the workspace and its branch, with no menu bar above: %q", first)
@@ -385,9 +385,9 @@ func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
 	l.hasNot("The command that will run:")
 	l = newLab(t, true, 120, 30)
 	l.keys("5", "x")
-	l.has("Release: hold back or bump", "Continue (enter)")
+	l.has("Release: hold back or bump", "Continue (Enter)")
 	l.keys("enter")
-	l.has("Release", "$ smith release --yes", "Release anyway (y)", "Cancel (esc)")
+	l.has("Release", "$ smith release --yes", "Release anyway (y)", "Cancel (Esc)")
 	if len(l.started) != 0 {
 		t.Fatal("release must wait for the dialog")
 	}

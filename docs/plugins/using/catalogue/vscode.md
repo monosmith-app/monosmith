@@ -19,6 +19,9 @@ TypeScript. It plays three roles: the scaffold and `build`/`typecheck` toolchain
 
 ## What it does
 
+The extension's `tsconfig.json` extends the workspace's `tsconfig.browser.json` (the host bundles it with esbuild), which
+extends `tsconfig.base.json`; it sets `lib` and `types: ["vscode"]`. See [the tsconfig chain](typescript.md#the-tsconfig-chain).
+
 An extension is a package or an app whose `package.json` has `engines.vscode`. The scripts the
 scaffold writes become tasks through the [node plugin](node.md#tasks):
 

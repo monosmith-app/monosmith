@@ -1,0 +1,5 @@
+{
+  "addproject.part.added": "Added {plugin}",
+  "addproject.part.added_named": "Added {what} ({plugin})",
+  "addproject.part.nothing": "{plugin}: nothing to add for a {kind}"
+}

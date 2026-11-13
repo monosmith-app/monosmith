@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 	"os"
 	"slices"
@@ -143,7 +144,7 @@ option number. Steps run in the workspace root and stop at the first that fails.
 	cmd.Flags().BoolVar(&fix, "fix", false, "show the fixes doctor can make as diffs, and apply the safe ones")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "list every passed check, not one line for each check that repeats per project")
 	cmd.Flags().BoolVar(&strict, "strict", false, "exit non-zero on a warning too, for a pipeline that allows none")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "with --fix, apply without asking")
+	commandflags.AddYesFlag(cmd, &yes, "with --fix, apply without asking")
 	cmd.Flags().IntSliceVar(&choose, "choose", nil, "with --fix and --only, answer the fix's questions by option number, in order (1,2)")
 	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")
 	return commitableFixes(cmd)

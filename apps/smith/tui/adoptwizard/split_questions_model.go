@@ -61,7 +61,7 @@ func (m Model) askSplit() Model {
 	}
 	style := adoptStyle
 	style.Back, style.Ask = true, words.Say("adopt.split.ask")
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: words.Say("adopt.split.desc"), Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: words.Say("adopt.split.desc"), Choices: qs}}, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 

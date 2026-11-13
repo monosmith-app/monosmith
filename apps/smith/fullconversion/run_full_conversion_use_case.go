@@ -39,8 +39,11 @@ type RunResult struct {
 	// Applied and Declined are the groups' IDs.
 	Applied  []string
 	Declined []string
-	// Finished is true when the install and the checks ran and passed.
+	// Finished is true when the install and the checks ran and none stopped
+	// them; an advisory check that failed is in Findings.
 	Finished bool
+	// Findings are the advisory checks (the lint, doctor) that failed.
+	Findings []doctorfix.Finding
 }
 
 // Run asks each group of removals in turn and applies the ones agreed. After
@@ -85,11 +88,12 @@ func Run(ctx context.Context, o RunOptions) (RunResult, error) {
 		return res, nil
 	}
 	fmt.Fprintln(o.Out)
-	walked, err := doctorfix.Walk(ctx, []doctorfix.Planned{removalplan.Finish(o.Smith, o.Verify)}, walkOptions(o))
+	walked, err := doctorfix.Walk(ctx, []doctorfix.Planned{removalplan.Finish(o.Smith, o.Verify, o.Choices.Lint == convertchoices.Smith)}, walkOptions(o))
 	if err != nil {
 		return res, err
 	}
 	res.Finished = len(walked.Applied) > 0
+	res.Findings = walked.Findings
 	return res, nil
 }
 

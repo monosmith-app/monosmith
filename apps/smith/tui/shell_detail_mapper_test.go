@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
@@ -13,6 +14,43 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
+
+func TestAChoiceFixTellsTheQuestionAndEveryAnswerInFullAndInOrder(t *testing.T) {
+	long := "move to the latest defaults, which shows a plan first and changes nothing until you agree to it"
+	p := doctorfix.Planned{Fix: protocol.Fix{Description: "Record the defaults", Choices: []protocol.FixChoice{{
+		Question: "This workspace follows the defaults of 2026.11. What do you want?",
+		Options: []protocol.FixChoiceOption{
+			{Label: "keep the current defaults"},
+			{Label: long},
+			{Label: "something else", Disabled: "needs a newer smith"},
+		},
+	}}}}
+	items := fixItems(p)
+	want := []string{
+		"asks first: This workspace follows the defaults of 2026.11. What do you want?",
+		"  1. keep the current defaults (suggested)",
+		"  2. " + long,
+		"  3. something else (not now: needs a newer smith)",
+	}
+	if strings.Join(items, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("items:\n%s\nwant:\n%s", strings.Join(items, "\n"), strings.Join(want, "\n"))
+	}
+	// Drawn in a narrow detail, the long answer wraps under its own text and no
+	// answer is folded away.
+	how := detail.Section{Heading: "How to fix", Items: append([]string{"a remedy"}, items...)}
+	lines, _ := detail.Panel{After: []detail.Section{how}}.View(theme.Default(), 60, "")
+	text := pane.Strip(strings.Join(lines, "\n"))
+	for _, w := range []string{"1. keep the current defaults (suggested)", "2. move to the latest", "3. something else"} {
+		if !strings.Contains(text, w) {
+			t.Fatalf("missing %q in\n%s", w, text)
+		}
+	}
+	for _, l := range strings.Split(text, "\n") {
+		if strings.Contains(l, "plan first") && !strings.HasPrefix(l, "       ") {
+			t.Fatalf("a wrapped answer starts left of its text: %q\n%s", l, text)
+		}
+	}
+}
 
 func TestATaskHintSaysWhatRunsFirstWithoutNxSyntax(t *testing.T) {
 	hint := taskHint(projectlist.Task{Name: "package", DependsOn: []string{"^build", "build"}, Cache: true})

@@ -63,7 +63,10 @@ type Model struct {
 	chk    compose.Check
 
 	// stack shows the ticked items by layer instead of the catalogue.
-	stack   bool
+	stack bool
+	// onList is true while the keyboard is on the list, not in the search box:
+	// Space then ticks the row under the cursor instead of typing a space.
+	onList  bool
 	stage   stage
 	qcursor int
 	kind    int
@@ -71,8 +74,14 @@ type Model struct {
 	planErr string
 	note    string
 
+	// top is the first line shown of a question, the name or the plan when
+	// the text is taller than the screen.
+	top int
+
 	w, h int
 	rect layout.Rect
+	// margins are the rows above and below the screen that stay free.
+	margins layout.Margins
 }
 
 // New builds the screen on a catalogue (the output of smith compose --json).
@@ -97,19 +106,34 @@ func (m Model) WithSearch(words string) Model {
 	return m.refresh()
 }
 
-// Place centres the screen on a terminal of sw by sh cells.
-func (m Model) Place(sw, sh int) Model {
-	m.w, m.h = sw, sh
-	w := min(max(sw-6, 40), 104)
-	h := min(max(sh-2, 12), 34)
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
-	m.search.Width = max(w-14, 10)
-	m.name.Width = max(w-20, 10)
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
 	return m
 }
 
-// Wheel scrolls the list by delta lines; the cursor stays where it is.
+// Place centres the screen on a terminal of sw by sh cells, between the margins
+// Within set.
+func (m Model) Place(sw, sh int) Model {
+	m.w, m.h = sw, sh
+	w := min(max(sw-6, 40), 104)
+	m.rect = m.margins.Centre(sw, sh, w, 34)
+	m.search.Width = max(w-14, 10)
+	m.name.Width = max(w-20, 10)
+	return m.follow(m.stage)
+}
+
+// Wheel scrolls the list, or the text of a question, the name or the plan, by
+// delta lines; the cursor stays where it is.
 func (m Model) Wheel(delta int) Model {
+	if m.stage != stBrowse {
+		return m.scrollText(delta)
+	}
 	m.scroll.By(delta)
 	return m
 }
@@ -133,7 +157,7 @@ func (m Model) Ticked() []string {
 //
 // Parameters: plan is the plan; err is why there is none, or nil.
 func (m Model) WithPlan(plan compose.Plan, err error) Model {
-	m.stage = stPlan
+	m.stage, m.top = stPlan, 0
 	if err != nil {
 		m.plan, m.planErr = nil, err.Error()
 		return m
@@ -248,8 +272,25 @@ func suggestedIndex(q *compose.Question) int {
 	return 0
 }
 
-// Key handles a key.
+// Key handles a key. A screen that is newly open starts from its top; a
+// question follows its cursor.
 func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
+	was := m.stage
+	m, out := m.key(msg)
+	return m.follow(was), out
+}
+
+// key is Key before the text follows the cursor.
+func (m Model) key(msg tea.KeyMsg) (Model, Outcome) {
+	if m.stage != stBrowse {
+		page := pane.PageStep(m.rect.H - 4)
+		switch {
+		case msg.String() == "ctrl+u" || commands.NavNamed(msg.String()) == commands.NavPageUp:
+			return m.scrollText(-page), Outcome{}
+		case msg.String() == "ctrl+d" || commands.NavNamed(msg.String()) == commands.NavPageDown:
+			return m.scrollText(page), Outcome{}
+		}
+	}
 	switch m.stage {
 	case stQuestion:
 		return m.questionKey(msg.String())
@@ -261,27 +302,38 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
 	return m.browseKey(msg)
 }
 
-// browseKey handles a key while the person searches and ticks.
+// browseKey handles a key while the person searches and ticks. The arrows put
+// the keyboard on the list, where Space ticks, as in every list; a letter puts
+// it back in the search box. Enter goes on, as Ctrl+N does.
 func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
+	last := max(m.length()-1, 0)
 	switch commands.NavNamed(msg.String()) {
 	case commands.NavUp:
-		m.cursor = max(m.cursor-1, 0)
-		return m, Outcome{}
+		if m.cursor == 0 {
+			// Up from the first row goes back to the search box.
+			m.onList = false
+			return m.focusSearch(), Outcome{}
+		}
+		m.cursor--
+		return m.focusList(), Outcome{}
 	case commands.NavDown:
-		m.cursor = min(m.cursor+1, max(m.length()-1, 0))
-		return m, Outcome{}
+		if m.onList {
+			m.cursor = min(m.cursor+1, last)
+		}
+		// From the search box the first Down lands on the row under the cursor.
+		return m.focusList(), Outcome{}
 	case commands.NavPageUp:
 		m.cursor = max(m.cursor-8, 0)
-		return m, Outcome{}
+		return m.focusList(), Outcome{}
 	case commands.NavPageDown:
-		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
-		return m, Outcome{}
+		m.cursor = min(m.cursor+8, last)
+		return m.focusList(), Outcome{}
 	case commands.NavHome:
 		m.cursor = 0
-		return m, Outcome{}
+		return m.focusList(), Outcome{}
 	case commands.NavEnd:
-		m.cursor = max(m.length()-1, 0)
-		return m, Outcome{}
+		m.cursor = last
+		return m.focusList(), Outcome{}
 	}
 	switch msg.String() {
 	case "ctrl+c":
@@ -290,27 +342,51 @@ func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
 		switch {
 		case m.search.Value() != "":
 			m.search.SetValue("")
-			return m.refresh(), Outcome{}
+			return m.focusSearch().refresh(), Outcome{}
 		case m.stack:
 			m.stack, m.cursor = false, 0
-			return m, Outcome{}
+			return m.focusSearch(), Outcome{}
 		}
 		return m, Outcome{Done: true}
 	case "tab":
 		m.stack, m.cursor = !m.stack, 0
-	case "enter":
-		return m.enter(), Outcome{}
-	case "ctrl+n":
+	case " ":
+		if m.onList {
+			return m.enter(), Outcome{}
+		}
+		return m.typeIn(msg), Outcome{}
+	case "enter", "ctrl+n":
 		return m.next()
 	default:
-		before := m.search.Value()
-		m.search, _ = m.search.Update(msg)
-		if m.search.Value() != before {
-			m.cursor = 0
-			m = m.refresh()
-		}
+		return m.typeIn(msg), Outcome{}
 	}
 	return m, Outcome{}
+}
+
+// typeIn gives a key to the search box, which takes the keyboard back.
+func (m Model) typeIn(msg tea.KeyMsg) Model {
+	m = m.focusSearch()
+	before := m.search.Value()
+	m.search, _ = m.search.Update(msg)
+	if m.search.Value() != before {
+		m.cursor = 0
+		m = m.refresh()
+	}
+	return m
+}
+
+// focusList puts the keyboard on the list: the search box shows no cursor.
+func (m Model) focusList() Model {
+	m.onList = true
+	m.search.Blur()
+	return m
+}
+
+// focusSearch puts the keyboard in the search box.
+func (m Model) focusSearch() Model {
+	m.onList = false
+	m.search.Focus()
+	return m
 }
 
 // enter ticks the item under the cursor, or in the stack view unticks it.
@@ -407,7 +483,7 @@ func (m Model) nameKey(msg tea.KeyMsg) (Model, Outcome) {
 	case "ctrl+c", "esc":
 		m.stage = stBrowse
 		m.name.Blur()
-		m.search.Focus()
+		m = m.focusSearch()
 		m.note = ""
 	case "tab":
 		m.kind = (m.kind + 1) % len(kinds)
@@ -445,6 +521,13 @@ func (m Model) planKey(key string) (Model, Outcome) {
 	case "s":
 		if m.plan != nil && len(m.plan.RecipeArgv) > 1 {
 			return m, Outcome{Done: true, Run: m.plan.RecipeArgv[1:]}
+		}
+	default:
+		switch commands.NavNamed(key) {
+		case commands.NavUp:
+			return m.scrollText(-1), Outcome{}
+		case commands.NavDown:
+			return m.scrollText(1), Outcome{}
 		}
 	}
 	return m, Outcome{}

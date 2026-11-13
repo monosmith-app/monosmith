@@ -17,12 +17,13 @@ import (
 // wheelStep is how many lines one notch of the wheel scrolls.
 const wheelStep = 3
 
-// paletteBox is where the command palette is drawn.
+// paletteBox is where the command palette is drawn: centred between the tab
+// strip and the footer, as every dialog is, and never over either of them.
 func (s Shell) paletteBox() layout.Rect {
-	// Inside the content, whatever the size: never over the tabs or the footer.
-	in := s.mainInner()
-	w, h := min(max(s.w-8, 10), 100), min(max(in.H, 5), 28)
-	return layout.Rect{X: (s.w - w) / 2, Y: in.Y + max((in.H-h)/3, 0), W: w, H: h}
+	top, bottom := s.dialogMargins()
+	m := layout.Margins{Top: top, Bottom: bottom}
+	w, h := min(max(s.w-8, 10), 100), min(m.Room(s.h), 28)
+	return m.Centre(s.w, s.h, w, h)
 }
 
 // hoverDelay is the least time between two hover looks drawn while the pointer
@@ -179,13 +180,13 @@ func (s *Shell) click(x, y int) tea.Cmd {
 	case s.compose != nil:
 		return s.composeClick(x, y)
 	case s.cache != nil:
-		return s.cacheClick(x, y, double)
+		return s.cacheClick(x, y)
 	case s.tools != nil:
-		m, out := s.tools.Click(s.th, x, y, double)
+		m, out := s.tools.Click(s.th, x, y)
 		s.tools = &m
 		return s.afterTools(out)
 	case s.result != nil:
-		return s.resultClick(x, y, double)
+		return s.resultClick(x, y)
 	case s.adopt != nil:
 		m, out := s.adopt.Click(x, y)
 		s.adopt = &m
@@ -343,6 +344,12 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 			s.deps = s.deps.ChooseRow(h.index, s.mouseShift)
 		}
 	case "option":
+		// One click picks in a single-choice list. In a list of tick boxes a click
+		// ticks; in the path finder it selects. There a double click goes on.
+		if s.guide.SingleChoice() {
+			s.guide = s.guide.SelectRow(h.index)
+			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
+		}
 		if double {
 			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}
@@ -381,7 +388,13 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		m := s.cache.Wheel(dir * wheelStep)
 		s.cache = &m
 		return nil
-	case s.tools != nil, s.result != nil:
+	case s.tools != nil:
+		m := s.tools.Wheel(dir * wheelStep)
+		s.tools = &m
+		return nil
+	case s.result != nil:
+		m := s.result.Wheel(dir * wheelStep)
+		s.result = &m
 		return nil
 	case s.adopt != nil:
 		m := s.adopt.Wheel(dir * wheelStep)
@@ -391,7 +404,17 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		w := s.synced(*s.fix).Wheel(dir * wheelStep)
 		s.fix = &w
 		return nil
-	case s.pkg != nil, s.relpick != nil, s.confirm != nil:
+	case s.pkg != nil:
+		p := s.pkg.Wheel(dir * wheelStep)
+		s.pkg = &p
+		return nil
+	case s.confirm != nil:
+		c := s.confirm.Wheel(dir * wheelStep)
+		s.confirm = &c
+		return nil
+	case s.relpick != nil:
+		m := s.relpick.Wheel(dir * wheelStep)
+		s.relpick = &m
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))

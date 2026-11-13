@@ -8,7 +8,7 @@
 #   vite.plugins      the calls in plugins: [...]
 #   tsconfig.options  extra compilerOptions members, without the trailing comma
 #   tsconfig.include  globs the type check covers (vite.config.ts is always covered)
-dev_dependencies = ["typescript", "vite"]
+dev_dependencies = ["typescript", "vite", "@monosmith/tsconfig"]
 
 [tasks]
 build = "vite build"
@@ -67,22 +67,13 @@ export default defineConfig({
 })
 '''
 
-# Type-checks for the browser through Vite: bundler resolution, nothing emitted.
+# Type-checks for the browser through Vite. The workspace's browser file holds the options of
+# bundled code (DOM libraries, bundler resolution, no emit); the base holds the rest.
 "tsconfig.json" = '''
 {
-  "compilerOptions": {
-    "target": "es2023",
-    "lib": ["es2023", "dom", "dom.iterable"],
-    "module": "esnext",
-    "moduleResolution": "bundler",[[range index .Slots "tsconfig.options"]]
+  "extends": "[[.Up]]tsconfig.browser.json",
+  "compilerOptions": {[[range index .Slots "tsconfig.options"]]
     [[.]],[[end]]
-    "strict": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "forceConsistentCasingInFileNames": true,
     "types": ["vite/client"][[.TSPaths]]
   },
   "include": [[ "[" ]][[range index .Slots "tsconfig.include"]]"[[.]]", [[end]]"vite.config.ts"]

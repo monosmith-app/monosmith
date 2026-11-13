@@ -64,6 +64,7 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 	}
 	if pkg.Name != "" {
 		project.Exports = []string{pkg.Name}
+		project.PackageName = pkg.Name
 	}
 	imports, err := ScanImports(filepath.Join(workspaceRoot, filepath.FromSlash(root)))
 	if err != nil {

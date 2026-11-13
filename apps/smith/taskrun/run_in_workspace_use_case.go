@@ -31,6 +31,9 @@ type Request struct {
 	// Release runs each task's release profile (protocol.Task.Release), the
 	// optimised build; a task without one runs as it is.
 	Release bool
+	// Fix makes each lint task fix what its tool can (protocol.Task.Fix) in
+	// place of linting, without the cache. Other tasks run as they are.
+	Fix bool
 	// Quiet keeps the output of tasks that succeed (and of cache hits) off
 	// the screen; a failed task still shows all of its output.
 	Quiet bool
@@ -61,6 +64,9 @@ func (r Request) Command() string {
 	}
 	if r.NoCache {
 		parts = append(parts, "--no-cache")
+	}
+	if r.Fix {
+		parts = append(parts, flagvocabulary.Arg("fix"))
 	}
 	if r.Release {
 		parts = append(parts, flagvocabulary.Arg("release"))
@@ -142,6 +148,10 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	if req.Release {
 		g.UseRelease()
 	}
+	if req.Fix {
+		g.UseFix()
+		announceFix(req.Out, g, req.Tasks)
+	}
 	store, err := s.Storage()
 	if err != nil {
 		return Summary{}, err
@@ -149,7 +159,7 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	meter := cachemaintenance.NewWriteMeter(store)
 	summary := Run(ctx, g, Options{
 		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: meter,
-		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
+		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Fix: req.Fix, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
 		Events: stream, Command: req.Command(), SharedOutputs: s.Config.Workspace.SharedOutputs,
 		Installable: func(name string) bool { return toolinstall.Declares(s, name) },
 		Colour:      req.Colour,

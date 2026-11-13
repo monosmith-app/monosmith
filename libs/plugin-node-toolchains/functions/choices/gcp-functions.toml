@@ -11,25 +11,11 @@ dependencies = ["@google-cloud/functions-framework"]
 
 [slots]
 main = ["dist/index.js"]
-"package.mode" = ["zip"]
 
 [files]
 # The Functions Framework loads the module that package.json names as main.
 "src/index.ts" = '''
 import './functions/index.ts'
-'''
-
-"scripts/start.mjs" = '''
-[[- $t := index .Slots "trigger" 0 -]]
-// Builds, then runs the function locally with the Functions Framework that the project
-// depends on, from the build folder.
-import { execFileSync, spawnSync } from 'node:child_process'
-
-const shell = process.platform === 'win32'
-execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
-const args = ['functions-framework', '--target=[[if eq $t "http"]]hello[[else if eq $t "queue"]]processMessage[[else]]processObject[[end]]'[[if ne $t "http"]], '--signature-type=cloudevent'[[end]]]
-const result = spawnSync('npx', args, { cwd: '[[.Build]]', stdio: 'inherit', shell })
-process.exitCode = result.status ?? 1
 '''
 
 "src/functions/greeting.handler.ts" = '''

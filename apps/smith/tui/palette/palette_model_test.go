@@ -195,3 +195,23 @@ func TestTheInputHasOnePointerAndACutRowHasOneEllipsis(t *testing.T) {
 		}
 	}
 }
+
+func TestTheSelectedCommandHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T) {
+	lines := New(ui).Lines(theme.Default(), 70, 12)
+	marked := 0
+	for _, l := range lines[1:] {
+		plain := pane.Strip(l)
+		if strings.HasPrefix(plain, "› ") {
+			marked++
+			if !strings.Contains(plain, "Build web") {
+				t.Fatalf("the mark is on another row: %q", plain)
+			}
+		}
+		if pane.Width(l) > 70 {
+			t.Fatalf("row wider than the palette: %q", plain)
+		}
+	}
+	if marked != 1 {
+		t.Fatalf("%d rows carry the cursor mark, want 1:\n%s", marked, strings.Join(lines, "\n"))
+	}
+}

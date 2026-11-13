@@ -7,19 +7,17 @@
   },
   "smith": { "kind": "package" },
   "scripts": {
-    "lint": "node -e \"for (const f of ['base', 'node', 'react']) JSON.parse(require('fs').readFileSync(f + '.json', 'utf8'))\"",
-    "test": "node -e \"for (const f of ['base', 'node', 'react']) JSON.parse(require('fs').readFileSync(f + '.json', 'utf8'))\""
+    "lint": "node -e \"for (const f of ['base', 'node']) JSON.parse(require('fs').readFileSync(f + '.json', 'utf8'))\"",
+    "test": "node -e \"for (const f of ['base', 'node']) JSON.parse(require('fs').readFileSync(f + '.json', 'utf8'))\""
 
   },
   "files": [
     "base.json",
-    "node.json",
-    "react.json"
+    "node.json"
   ],
   "exports": {
     "./base.json": "./base.json",
     "./node.json": "./node.json",
-    "./react.json": "./react.json",
     "./package.json": "./package.json"
   },
   "keywords": [

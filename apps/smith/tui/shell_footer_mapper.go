@@ -6,7 +6,14 @@ import (
 )
 
 // footerHints are the key hints of the open view, placed in the screen's width.
+//
+// While a dialog is open the footer is empty: the dialog takes every key and
+// click, so a hint of the view behind it would promise a key that does nothing.
+// The dialog shows its own keys, on its buttons and in its key line.
 func (s Shell) footerHints() []footer.Placed {
+	if s.modalOpen() {
+		return nil
+	}
 	view, tail := s.page().Footer()
 	return footer.Place(s.th, view, tail, s.w)
 }

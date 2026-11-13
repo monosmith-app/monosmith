@@ -297,6 +297,19 @@ func (m Model) current() *Step {
 	return s
 }
 
+// SingleChoice is true while the screen asks for one entry of a list: the list
+// of actions, or a step whose options take one answer. A click on a row then
+// picks it, as Enter does.
+//
+// Returns: true for a single-choice list, false for tick boxes, text and paths.
+func (m Model) SingleChoice() bool {
+	s := m.current()
+	if s == nil {
+		return m.action == nil
+	}
+	return s.Options != nil && !s.Multi
+}
+
 // options are the answers on offer: all of them, or for a Filter step those
 // that match what was typed.
 func (m Model) options() []Option {

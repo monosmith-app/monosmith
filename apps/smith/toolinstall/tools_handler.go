@@ -13,6 +13,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/libs/words/words"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -45,7 +47,13 @@ rust-toolchain.toml.
 
   smith tools                    the list and the state of each
   smith tools install            offers the ways to get what is missing
-  smith tools install python     only Python`,
+  smith tools install python     only Python
+  smith tools use dart           use a tool from the folder winget put it in
+
+On Windows, winget unpacks some packages (the Dart SDK) into a folder under
+%LOCALAPPDATA%\Microsoft\WinGet\Packages and does not put it on PATH. smith
+finds the program there and offers to use it from that folder, to add the
+folder to your user PATH, or to show the folder and change nothing.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
@@ -64,7 +72,7 @@ rust-toolchain.toml.
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the tools and their state as JSON")
-	cmd.AddCommand(installCommand(version))
+	cmd.AddCommand(installCommand(version), useCommand())
 	return cmd
 }
 
@@ -93,7 +101,8 @@ to let smith run it (the system asks for its own permission), or to skip it.
 administrator rights; --with-admin names that choice for a script. Without a
 terminal smith refuses unless a flag answers. --dry-run prints the plan only.
 After an install smith detects the tool again and says when a new terminal is
-needed for the PATH to update.`,
+needed for the PATH to update. When winget says the package is already
+installed, smith says so and looks for the folder winget put it in.`,
 		Example: `  smith tools install               every missing tool, one question each
   smith tools install python        only Python
   smith tools install --dry-run     what smith would offer
@@ -131,6 +140,7 @@ needed for the PATH to update.`,
 			f := Flow{
 				In: bufio.NewReader(cmd.InOrStdin()), Out: out, Interactive: Interactive(),
 				Yes: yes, WithAdmin: withAdmin, Manager: manager, Runner: ExecRunner{}, Detector: ExecDetector{},
+				ToolFolders: ToolFoldersFile(), LocalAppData: os.Getenv("LOCALAPPDATA"),
 			}
 			outcomes, err := f.Run(cmd.Context(), plans)
 			if err != nil {
@@ -139,7 +149,7 @@ needed for the PATH to update.`,
 			return Verdict(outcomes)
 		},
 	}
-	cmd.Flags().StringVar(&manager, "manager", "", "install every tool with this package manager (winget, brew, apt, dnf, pacman, uv, fnm, rustup, npm)")
+	cmd.Flags().StringVar(&manager, "manager", "", "install every tool with this package manager (winget, brew, apt, dnf, pacman, uv, fnm, rustup, npm), or smith-path or user-path for a tool found off PATH")
 	commandflags.AddYesFlag(cmd, &yes, "take the marked default of each choice (never for commands that need administrator rights)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the plan and install nothing")
 	cmd.Flags().BoolVar(&withAdmin, "with-admin", false, "let smith run commands that need administrator rights (the system still asks for its own permission)")
@@ -152,7 +162,7 @@ needed for the PATH to update.`,
 // manager from asking questions.
 func PlansFor(list []Status, nonInteractive bool) []ToolPlan {
 	managers := DetectManagers(runtime.GOOS, exec.LookPath)
-	env := Env{OS: runtime.GOOS, Root: RunningAsRoot(), NonInteractive: nonInteractive}
+	env := Env{OS: runtime.GOOS, Root: RunningAsRoot(), NonInteractive: nonInteractive, ToolFolders: ToolFoldersFile()}
 	var plans []ToolPlan
 	for _, st := range list {
 		if st.Lacking() {
@@ -171,4 +181,27 @@ func Verdict(outcomes []Outcome) error {
 		}
 	}
 	return nil
+}
+
+// useCommand is `smith tools use <tool>`: the "let smith use it from that
+// folder" answer, as a command a fix step and a person can run.
+func useCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:     "use <tool>",
+		Short:   words.Say("toolfolder.use.short"),
+		Args:    cobra.ExactArgs(1),
+		Example: "  smith tools use dart",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			entry, ok := toolcatalog.Find(args[0])
+			if !ok {
+				return problem.New(words.Say("toolfolder.use.unknown", "tool", args[0]), words.Say("toolfolder.use.unknown.remedy"))
+			}
+			dir, err := UseFolder(Need{ToolNeed: entry}, os.Getenv("LOCALAPPDATA"), ToolFoldersFile())
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), words.Say("toolfolder.used", "title", entry.Title, "folder", dir))
+			return nil
+		},
+	}
 }

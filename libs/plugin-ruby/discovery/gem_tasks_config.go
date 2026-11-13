@@ -12,7 +12,9 @@ var inputs = []string{"**/*", "{workspaceRoot}/Gemfile", "{workspaceRoot}/Gemfil
 // runs, relative to the project's folder; none when it has none.
 func Tasks(kind protocol.ProjectKind, start string, specs bool) map[string]protocol.Task {
 	tasks := map[string]protocol.Task{
-		"lint": {Command: []string{"bundle", "exec", "rubocop"}, Inputs: inputs, Cache: true, Description: "RuboCop (the workspace's .rubocop.yml)"},
+		"lint": {Command: []string{"bundle", "exec", "rubocop"}, Inputs: inputs, Cache: true, Description: "RuboCop (the workspace's .rubocop.yml)",
+			// -a is RuboCop's safe autocorrect.
+			Fix: &protocol.TaskFix{Command: []string{"bundle", "exec", "rubocop", "-a"}}},
 	}
 	if specs {
 		tasks["test"] = protocol.Task{Command: []string{"bundle", "exec", "rspec"}, Inputs: inputs, Cache: true, Description: "RSpec"}

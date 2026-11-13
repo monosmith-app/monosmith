@@ -135,9 +135,7 @@ func AddTauri(s *session.Session, name, identifier string) (res Result, err erro
 	if tauri == nil || !tauri.Supports(protocol.MethodGenerate) {
 		return res, problem.New("the tauri plugin is not loaded", "enable it: smith config set plugins.enabled with tauri in the list")
 	}
-	params := protocol.GenerateParams{Kind: p.Kind, Name: name, Directory: p.Root, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
-		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: s.Config.Workspace.ModulePrefix,
-	}}
+	params := protocol.GenerateParams{Kind: p.Kind, Name: name, Directory: p.Root, Stack: st.Name, Workspace: s.Config.Workspace.Info(s.Config.Workspace.ModulePrefix)}
 	if params.Facts, err = projectgraph.ConfigFacts(s.Config, name); err != nil {
 		return res, err
 	}

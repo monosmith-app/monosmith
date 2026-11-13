@@ -72,7 +72,7 @@ func TestEnterAndAClickDoTheSuggestedAction(t *testing.T) {
 	if l.sh().fix == nil || l.sh().tab != commands.TabHome || len(l.started) != 0 {
 		t.Fatalf("Enter did the next action: wizard %v, tab %q, started %v", l.sh().fix != nil, l.sh().tab, l.started)
 	}
-	l.has("Fix · review", "Apply (enter)")
+	l.has("Fix · review", "Apply (Enter)")
 	l = newHomeLab(t, 140, 34)
 	l.clickText("[Fix (Enter)]")
 	if l.sh().fix == nil {

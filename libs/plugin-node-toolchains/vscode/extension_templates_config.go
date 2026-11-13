@@ -4,6 +4,7 @@ import (
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 )
 
 // engine is the oldest VS Code the extension supports; @types/vscode
@@ -12,10 +13,11 @@ const engine = "1.96.0"
 
 // devDependencies are the root tooling; bump them deliberately.
 var devDependencies = map[string]string{
-	"@types/vscode": "~" + engine,
-	"@vscode/vsce":  "^4.0.0",
-	"esbuild":       "^0.28.2",
-	"typescript":    "~6.0.3",
+	"@types/vscode":       "~" + engine,
+	"@vscode/vsce":        "^4.0.0",
+	"esbuild":             toolchainversions.Esbuild,
+	"typescript":          toolchainversions.TypeScript,
+	"@monosmith/tsconfig": "^0.1.0",
 }
 
 // publisherToken and kindToken stand for the Marketplace publisher and the
@@ -51,18 +53,9 @@ var templates = withGreetingSlice(map[string]string{
 }
 `,
 	"[[.Dir]]/tsconfig.json": `{
+  "extends": "[[.Up]]tsconfig.browser.json",
   "compilerOptions": {
-    "target": "es2023",
     "lib": ["es2023"],
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "forceConsistentCasingInFileNames": true,
     "types": ["vscode"]
   },
   "include": ["src"]

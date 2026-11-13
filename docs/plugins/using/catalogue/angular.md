@@ -19,6 +19,9 @@ Angular CLI serves and builds. It is the scaffold and the `build` and `typecheck
 
 ## What it does
 
+The app's `tsconfig.json` extends the workspace's `tsconfig.browser.json`, which extends `tsconfig.base.json`; it sets
+`module: preserve` and the Angular compiler options. See [the tsconfig chain](typescript.md#the-tsconfig-chain).
+
 The scripts it writes become tasks through the [node plugin](node.md#tasks):
 
 | Script | Command | Note |

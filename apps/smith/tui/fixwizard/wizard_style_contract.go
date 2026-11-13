@@ -26,6 +26,10 @@ type Style struct {
 	Back bool
 	// NoRetry leaves Retry out of a failure: what failed cannot be run again.
 	NoRetry bool
+	// Alone leaves the review with its Apply button only: a screen that can
+	// only be closed shows one way to close it (Apply labelled "Close"). Esc
+	// still closes it, as in every dialog.
+	Alone bool
 	// NoSuggestion leaves "(suggested)" off the first option: the choice is
 	// one smith never makes for the person.
 	NoSuggestion bool

@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -19,24 +18,30 @@ const maxNotes = 200
 // (see Screen) and turns keys and clicks into answers (Outcome); it runs
 // nothing and holds no secret: the key lives in the engine's session only.
 type Model struct {
-	rect   layout.Rect
-	scr    Screen
-	notes  []string
-	cursor int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
+	// rect is the room Place gave the dialog; the frame is drawn in box.
+	rect layout.Rect
+	// sw and sh are the screen's size, kept to centre the box.
+	sw, sh int
+	scr     Screen
+	notes   []string
+	cursor  int
 	// over is 1 + the index of the option under the pointer, 0 for none;
 	// overToggle is true while the pointer is over the commit box.
 	over       int
 	overToggle bool
-	// list keeps where the window of a long list starts.
-	list  *pane.Scroll
-	input []rune
+	// overButton is the button under the pointer: 1 + its body line and its
+	// first column, the zero value for none.
+	overButton [2]int
+	input      []rune
 	// focus is the button of a Confirm screen: 0 yes, 1 no.
 	focus int
 	// ticked is the commit box of a Confirm screen that offers it.
 	ticked bool
-	// scroll is the first line of a Page.
-	scroll int
-	since  time.Time
+	// top is the first body line shown when the body is taller than the dialog.
+	top   int
+	since time.Time
 	// typed is what the person has typed to jump in a list, and typedAt when
 	// the last letter came: a pause starts a new word.
 	typed   string
@@ -44,18 +49,36 @@ type Model struct {
 }
 
 // New is the wizard before the engine has said anything: a spinner.
-func New(now time.Time) Model { return Model{since: now, list: &pane.Scroll{}} }
+func New(now time.Time) Model { return Model{since: now} }
 
-// Place sizes the dialog for a screen.
-func (m Model) Place(sw, sh int) Model {
-	w := min(max(sw-6, 40), 100)
-	h := min(max(sh-2, 12), 22)
-	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
 	return m
 }
 
-// Rect is where the dialog sits after Place.
-func (m Model) Rect() layout.Rect { return m.rect }
+// Place sizes the dialog for a screen: 22 rows, or the rows between the
+// margins when there are fewer. A body taller than that scrolls above the
+// buttons, and the window follows the cursor.
+func (m Model) Place(sw, sh int) Model {
+	w := min(max(sw-6, 40), 100)
+	m.sw, m.sh = sw, sh
+	m.rect = m.margins.Centre(sw, sh, w, 22)
+	return m.follow()
+}
+
+// Rect is where the dialog is drawn: as tall as the screen's content, up to
+// the room Place gave it, centred between the margins as every dialog is.
+func (m Model) Rect() layout.Rect {
+	rows, _ := m.layout(theme.Default(), 0, time.Time{})
+	h := min(max(len(rows)+2, 8), m.rect.H)
+	return m.margins.Centre(m.sw, m.sh, m.rect.W, h)
+}
 
 // Kind is the kind of the screen now.
 func (m Model) Kind() Kind { return m.scr.Kind }
@@ -79,7 +102,7 @@ func (m Model) Handle(ev Event, now time.Time) Model {
 		m.scr, m.since = Screen{Kind: Idle}, now
 	case AskEvent:
 		m.scr, m.since = ev.Screen, now
-		m.cursor, m.list, m.input, m.focus, m.scroll, m.ticked = 0, &pane.Scroll{}, nil, 0, 0, false
+		m.cursor, m.input, m.focus, m.top, m.ticked = 0, nil, 0, 0, false
 		for i, o := range ev.Screen.Options {
 			if o.Value == ev.Screen.Default {
 				m.cursor = i
@@ -96,6 +119,7 @@ func (m Model) Handle(ev Event, now time.Time) Model {
 		if ev.Screen.Kind == Secret {
 			m.notes = nil
 		}
+		return m.follow()
 	}
 	return m
 }
@@ -110,6 +134,15 @@ func (m Model) answered(r Reply) (Model, Outcome) {
 //
 // Returns: the model and what the host must do.
 func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
+	m, out := m.key(msg)
+	if m.scr.Kind == Page {
+		return m, out
+	}
+	return m.follow(), out
+}
+
+// key is Key before the body follows the cursor.
+func (m Model) key(msg tea.KeyMsg) (Model, Outcome) {
 	name := msg.String()
 	switch m.scr.Kind {
 	case Choose:
@@ -247,13 +280,13 @@ func (m Model) confirmKey(name string) (Model, Outcome) {
 		return m.escape()
 	case "ctrl+c":
 		return m, Outcome{Cancel: true}
-	case "b", "B", "left":
+	case "b", "B", "left": // words:literal
 		return m.back()
-	case "c", "C":
+	case "c", "C": // words:literal
 		m.ticked = m.ticked != m.scr.Confirmation.OfferCommit
-	case "y", "Y":
+	case "y", "Y": // words:literal
 		return m.answered(Reply{Yes: true, Commit: m.ticked})
-	case "n", "N":
+	case "n", "N": // words:literal
 		return m.answered(Reply{})
 	case "tab", "right", "h", "l":
 		m.focus = 1 - m.focus
@@ -276,28 +309,20 @@ func (m Model) pageKey(name string) (Model, Outcome) {
 	case commands.NavConfirm:
 		return m.answered(Reply{})
 	case commands.NavUp:
-		m.scroll = max(m.scroll-1, 0)
+		return m.scrollBy(-1), Outcome{}
 	case commands.NavDown:
-		m.scroll++
+		return m.scrollBy(1), Outcome{}
 	case commands.NavPageUp:
-		m.scroll = max(m.scroll-8, 0)
+		return m.scrollBy(-8), Outcome{}
 	case commands.NavPageDown:
-		m.scroll += 8
+		return m.scrollBy(8), Outcome{}
 	}
 	return m, Outcome{}
 }
 
-// Wheel scrolls a page, or the window of a list: the wheel never moves the
-// selection of a list, only the keys and a click do.
-func (m Model) Wheel(delta int) Model {
-	switch m.scr.Kind {
-	case Page:
-		m.scroll = max(m.scroll+delta, 0)
-	case Choose:
-		m.list.By(delta)
-	}
-	return m
-}
+// Wheel scrolls the body of the screen: the wheel never moves the selection
+// of a list, only the keys and a click do.
+func (m Model) Wheel(delta int) Model { return m.scrollBy(delta) }
 
 // typeAheadWindow is how long a pause ends the word being typed.
 const typeAheadWindow = time.Second
@@ -344,39 +369,43 @@ func (m Model) jumpTo(r rune, now time.Time) (Model, bool) {
 	return m, false
 }
 
-// Hover notes the option or the commit box under the pointer at (x, y), drawn
-// in the row hover look.
+// Hover notes the option, the commit box or the button under the pointer at
+// (x, y): an option and the box take the row hover look, a button the button
+// hover look.
 //
 // Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
 // Returns: the dialog with the hover set.
 func (m Model) Hover(th theme.Theme, x, y int) Model {
-	m.over, m.overToggle = 0, false
-	if !m.rect.Contains(x, y) {
+	m.over, m.overToggle, m.overButton = 0, false, [2]int{}
+	r := m.Rect()
+	if !r.Contains(x, y) {
 		return m
 	}
-	row, col := y-m.rect.Y-1, x-m.rect.X-2
-	_, hits := m.body(th, 0, time.Time{})
+	row, col := y-r.Y-1, x-r.X-2
+	_, hits := m.layout(th, 0, time.Time{})
 	for _, h := range hits {
 		if h.row == row && col >= h.x0 && col < h.x1 {
 			m.over, m.overToggle = h.option+1, h.toggle
+			if h.option < 0 && !h.toggle {
+				m.overButton = [2]int{h.line + 1, h.x0}
+			}
 		}
 	}
 	return m
 }
 
-// Click handles a left press: a press on an option moves the cursor to it and
-// a second press (double is true) answers; a press on the commit box ticks or
-// unticks it; a press on a button does what the button says. A press elsewhere
-// does nothing.
+// Click handles a left press: a press on an option picks it, like a click in
+// every single-choice list; a press on the commit box ticks or unticks it; a
+// press on a button does what the button says. A press elsewhere does nothing.
 //
-// Parameters: th is the theme the dialog is drawn with; x and y are screen
-// cells; double says the press is the second of a double click.
-func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
-	if !m.rect.Contains(x, y) {
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
+func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
+	r := m.Rect()
+	if !r.Contains(x, y) {
 		return m, Outcome{}
 	}
-	row, col := y-m.rect.Y-1, x-m.rect.X-2
-	_, hits := m.body(th, 0, time.Time{})
+	row, col := y-r.Y-1, x-r.X-2
+	_, hits := m.layout(th, 0, time.Time{})
 	for _, h := range hits {
 		if h.row != row || col < h.x0 || col >= h.x1 {
 			continue
@@ -384,10 +413,7 @@ func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 		switch {
 		case h.option >= 0:
 			m.cursor = h.option
-			if double {
-				return m.pick(h.option)
-			}
-			return m, Outcome{}
+			return m.pick(h.option)
 		case h.yes != nil:
 			return m.answered(Reply{Yes: *h.yes, Commit: m.ticked && *h.yes})
 		case h.toggle:

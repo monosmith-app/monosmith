@@ -31,7 +31,7 @@ func TestDiscover(t *testing.T) {
 		t.Fatalf("the root pom is not a project: %+v", res.Projects)
 	}
 	api, core := res.Projects[0], res.Projects[1]
-	if api.Kind != protocol.ProjectApp || api.Version != "1.2.0" || api.Exports[0] != "dev.acme:acme-api" || api.Imports[0] != "dev.acme:acme-core" || api.Tasks["start"].Command[5] != "exec:java" {
+	if api.Kind != protocol.ProjectApp || api.Version != "1.2.0" || api.Exports[0] != "dev.acme:acme-api" || api.PackageName != "acme-api" || api.Imports[0] != "dev.acme:acme-core" || api.Tasks["start"].Command[5] != "exec:java" {
 		t.Errorf("api %+v", api)
 	}
 	if build := api.Tasks["build"]; build.Cwd != "." || build.Command[4] != "dev.acme:acme-api" || build.Outputs[0] != "../../dist/apps/api" || build.Ship[0] != "../../dist/maven/acme-api/*.jar" || build.DependsOn[0] != "^build" {

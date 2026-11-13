@@ -47,7 +47,7 @@ Usage: `smith kind <project> <kind> [flags]`
 | `--dry-run` | boolean | off | list every file edit and the move; change nothing |
 | `--force` | boolean | off | go ahead although other projects import it or it was already released |
 | `--json` | boolean | off | print the plan and what was done as JSON |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `-y, --yes` | boolean | off | do not ask for confirmation; without a terminal the change is made only with --yes |
 
 <!-- smith:end kind -->
 

@@ -44,7 +44,7 @@ func TestDiscover(t *testing.T) {
 		t.Fatalf("%v %+v", err, res.Projects)
 	}
 	cli, core := res.Projects[0], res.Projects[1]
-	if cli.Kind != protocol.ProjectApp || cli.Exports[0] != "acme_cli" || cli.Imports[0] != "acme_core" || cli.Tasks["start"].Command[3] != "exe/acme_cli" {
+	if cli.Kind != protocol.ProjectApp || cli.Exports[0] != "acme_cli" || cli.PackageName != "acme_cli" || cli.Imports[0] != "acme_core" || cli.Tasks["start"].Command[3] != "exe/acme_cli" {
 		t.Errorf("cli %+v", cli)
 	}
 	if _, ok := cli.Tasks["test"]; ok {

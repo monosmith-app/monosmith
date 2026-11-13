@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -60,7 +61,7 @@ func (p *TypeScript) Generate(params protocol.GenerateParams) (protocol.Generate
 	if params.Shape[discovery.ShapeBuildTool] == "esbuild" {
 		// A project that builds with esbuild needs it in the workspace.
 		set.DevDependencies = maps.Clone(set.DevDependencies)
-		set.DevDependencies["esbuild"] = esbuildVersion
+		set.DevDependencies["esbuild"] = toolchainversions.Esbuild
 	}
 	return scaffolding.GenerateFrom(p.root, params, set)
 }

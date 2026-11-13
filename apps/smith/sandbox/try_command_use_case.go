@@ -6,6 +6,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 )
@@ -69,7 +70,7 @@ func Try(o Options) (Result, error) {
 	} else {
 		defer func() {
 			_, _ = git.Run("worktree", "remove", "--force", dir)
-			_ = os.RemoveAll(dir)
+			_ = removeCopy(dir, os.RemoveAll, time.Sleep)
 			_, _ = git.Run("worktree", "prune")
 		}()
 	}
@@ -100,6 +101,21 @@ func Try(o Options) (Result, error) {
 		res.Checks = append(res.Checks, c)
 	}
 	return res, nil
+}
+
+// removeCopy deletes the copy. On Windows a folder that a process still has
+// open, or uses as its working folder, cannot be deleted until that process
+// ends: a tool the command started can outlive it by a moment. So removal is
+// tried again, every 200ms for up to 5s, before it gives up.
+func removeCopy(dir string, remove func(string) error, sleep func(time.Duration)) error {
+	var err error
+	for range 25 {
+		if err = remove(dir); err == nil {
+			return nil
+		}
+		sleep(200 * time.Millisecond)
+	}
+	return err
 }
 
 // newLines are the lines of after that before does not have.
