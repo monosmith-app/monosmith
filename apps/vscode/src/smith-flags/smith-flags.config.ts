@@ -11,6 +11,7 @@ export const flag = {
   json:      '--json',
   commit:    '--commit',
   release:   '--release',
+  fix:       '--fix',
 } as const
 
 /** The long form of each shared flag. */
@@ -24,4 +25,5 @@ export const longFlag = {
   json:      '--json',
   commit:    '--commit',
   release:   '--release',
+  fix:       '--fix',
 } as const

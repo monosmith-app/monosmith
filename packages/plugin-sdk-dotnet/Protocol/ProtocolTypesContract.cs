@@ -4704,6 +4704,9 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     /// <summary>Release is the task as <c>smith run --release</c> runs it: the command of the optimised profile ("cargo build --release") and what that profile ships. Nil means the task has one profile and runs the same way with the flag. The cache key holds the command, so each profile has its own cache entry.</summary>
     public TaskProfile? Release { get; init; }
 
+    /// <summary>Fix is how <c>smith lint --fix</c> fixes what the tool can. Only a lint task sets it. Nil means the tool has no fix mode: smith says so and runs the plain lint.</summary>
+    public TaskFix? Fix { get; init; }
+
     /// <summary>DependsOn lists task names: "build" runs this project's build first, "^build" runs the build of every project this one imports first.</summary>
     public IReadOnlyList<string> DependsOn { get; init; } = [];
 
@@ -4738,6 +4741,7 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             Outputs = ListOf(Member(map, "outputs"), Join(path, "outputs"), StringValue),
             Ship = ListOf(Member(map, "ship"), Join(path, "ship"), StringValue),
             Release = OptionalStruct<TaskProfile>(Member(map, "release"), Join(path, "release")),
+            Fix = OptionalStruct<TaskFix>(Member(map, "fix"), Join(path, "fix")),
             DependsOn = ListOf(Member(map, "dependsOn"), Join(path, "dependsOn"), StringValue),
             Cache = BooleanValue(Member(map, "cache"), Join(path, "cache")),
             Description = StringValue(Member(map, "description"), Join(path, "description")),
@@ -4784,6 +4788,11 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
             writer.Property("release");
             Release.Write(writer);
         }
+        if (Fix is not null)
+        {
+            writer.Property("fix");
+            Fix.Write(writer);
+        }
         if (DependsOn is { Count: > 0 })
         {
             writer.Property("dependsOn");
@@ -4818,6 +4827,50 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
         {
             writer.Property("serveTimeout");
             writer.String(ServeTimeout);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how smith learns what is left. <c>smith lint --fix</c> runs it in place of the task's own command, and never caches it.</summary>
+public sealed record TaskFix : IProtocolValue<TaskFix>
+{
+    /// <summary>Command is an argv array that fixes the problems the tool can fix; it is never passed through a shell. Its exit code alone does not say whether problems remain, unless Count is set.</summary>
+    public IReadOnlyList<string> Command { get; init; } = [];
+
+    /// <summary>Probe is an argv array that only reports, as Command does when Count is set, without changing a file. Smith runs it before Command, and the difference of the two counts is the number of problems fixed. Empty means smith does not know that number.</summary>
+    public IReadOnlyList<string> Probe { get; init; } = [];
+
+    /// <summary>Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON. Empty means smith runs the task's own command after Command, and its exit code says whether problems remain.</summary>
+    public string Count { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static TaskFix Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new TaskFix
+        {
+            Command = ListOf(Member(map, "command"), Join(path, "command"), StringValue),
+            Probe = ListOf(Member(map, "probe"), Join(path, "probe"), StringValue),
+            Count = StringValue(Member(map, "count"), Join(path, "count")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("command");
+        MessageWritingAlgorithm.List(writer, Command, (builder1, item1) => builder1.String(item1));
+        if (Probe is { Count: > 0 })
+        {
+            writer.Property("probe");
+            MessageWritingAlgorithm.List(writer, Probe, (builder1, item1) => builder1.String(item1));
+        }
+        if (Count.Length > 0)
+        {
+            writer.Property("count");
+            writer.String(Count);
         }
         writer.EndObject();
     }

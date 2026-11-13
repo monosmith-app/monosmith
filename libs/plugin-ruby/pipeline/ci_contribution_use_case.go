@@ -1,27 +1,17 @@
 package pipeline
 
 import (
-	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// RubyVersion is installed when .ruby-version does not pin one; bump it
-// deliberately.
-const RubyVersion = "3.4"
-
-// Version is the Ruby .ruby-version pins, else RubyVersion.
+// Version is the Ruby the workspace uses, as toolpin decides it.
 func Version(workspaceRoot string) string {
-	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, ".ruby-version")); err == nil {
-		if v := strings.TrimPrefix(strings.TrimSpace(string(raw)), "ruby-"); v != "" {
-			return v
-		}
-	}
-	return RubyVersion
+	return toolpin.Version(workspaceRoot, "ruby")
 }
 
 // auditScript runs bundler-audit against Gemfile.lock, updating its advisory

@@ -39,6 +39,7 @@
   "palette.keywords.run.test-all": "tests, spec, unit tests, test everything",
   "palette.keywords.run.lint": "style, eslint, format, lint, code style, lint",
   "palette.keywords.run.lint-all": "style, eslint, format, lint all, lint everything, lint all",
+  "palette.keywords.run.lint-fix": "fix, autofix, lint fix, eslint fix, ruff fix, format, rewrite, clean up style",
   "palette.keywords.run.typecheck": "types, tsc, typescript, typecheck, typecheck",
   "palette.keywords.run.typecheck-all": "types, tsc, typescript, typecheck all, typecheck all",
   "palette.keywords.run.verify": "check all, ci, everything, verify, before commit, verify all",

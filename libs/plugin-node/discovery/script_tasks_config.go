@@ -30,6 +30,15 @@ var scriptTasks = map[string]protocol.Task{
 	"dev":       {Description: "Run the app in watch mode"},
 }
 
+// eslintFix is the fix of a lint script that runs ESLint: the workspace's
+// ESLint with --fix, printing its JSON report so smith counts what is left;
+// the probe is the same run without --fix, to count what was fixed.
+var eslintFix = &protocol.TaskFix{
+	Command: []string{"node", "{workspaceRoot}/node_modules/eslint/bin/eslint.js", ".", "--fix", "--format", "json"},
+	Probe:   []string{"node", "{workspaceRoot}/node_modules/eslint/bin/eslint.js", ".", "--format", "json"},
+	Count:   protocol.FixCountESLintJSON,
+}
+
 // TaskFor builds the task that runs one package.json script through npm, so
 // node_modules/.bin is on PATH exactly as when a developer runs it. A
 // dependency on another script of the same project (start on build) is kept
@@ -57,6 +66,9 @@ func TaskFor(script, root string, scripts map[string]string) protocol.Task {
 	}
 	t.DependsOn = deps
 	t.Command = []string{"npm", "run", script, "--silent"}
+	if script == "lint" && strings.Contains(scripts[script], "eslint") {
+		t.Fix = eslintFix
+	}
 	if known && t.Cache {
 		t.Inputs = workspaceInputs
 	}

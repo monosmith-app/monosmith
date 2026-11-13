@@ -1,8 +1,5 @@
 package venv
 
-// PythonVersion is the interpreter version generated pipelines install.
-const PythonVersion = "3.12"
-
 // RequirementsFile is the workspace's development toolchain, nothing else.
 // Runtime dependencies belong to each project's pyproject.toml.
 const RequirementsFile = "requirements-dev.txt"

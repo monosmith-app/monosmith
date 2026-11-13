@@ -92,6 +92,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		if f, ok := CheckEntryFiles(workspaceRoot, p); ok {
 			findings = append(findings, f)
 		}
+		if f, ok := CheckTsconfigChain(workspaceRoot, p); ok {
+			findings = append(findings, f)
+		}
 	}
 	return protocol.DoctorResult{Findings: findings}
 }

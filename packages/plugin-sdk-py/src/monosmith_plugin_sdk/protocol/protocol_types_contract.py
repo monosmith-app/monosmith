@@ -105,6 +105,7 @@ __all__ = [
     "Step",
     "TagMove",
     "Task",
+    "TaskFix",
     "TaskProfile",
     "ToolInstall",
     "ToolNeed",
@@ -2012,6 +2013,11 @@ class Task(_TaskRequired, total=False):
     runs the same way with the flag. The cache key holds the command, so each profile has its own
     cache entry.
     """
+    fix: TaskFix
+    """
+    Fix is how `smith lint --fix` fixes what the tool can. Only a lint task sets it. Nil means
+    the tool has no fix mode: smith says so and runs the plain lint.
+    """
     dependsOn: list[str]
     """
     DependsOn lists task names: "build" runs this project's build first, "^build" runs the build
@@ -2040,6 +2046,35 @@ class Task(_TaskRequired, total=False):
     """
     serveTimeout: str
     """ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s."""
+
+
+class _TaskFixRequired(TypedDict):
+    command: list[str]
+    """
+    Command is an argv array that fixes the problems the tool can fix; it is never passed through
+    a shell. Its exit code alone does not say whether problems remain, unless Count is set.
+    """
+
+
+class TaskFix(_TaskFixRequired, total=False):
+    """
+    TaskFix is how a lint task fixes what it can: the command that rewrites the files, and how
+    smith learns what is left. `smith lint --fix` runs it in place of the task's own command, and
+    never caches it.
+    """
+
+    probe: list[str]
+    """
+    Probe is an argv array that only reports, as Command does when Count is set, without changing
+    a file. Smith runs it before Command, and the difference of the two counts is the number of
+    problems fixed. Empty means smith does not know that number.
+    """
+    count: str
+    """
+    Count names the report Command prints, so smith counts the problems left: FixCountESLintJSON.
+    Empty means smith runs the task's own command after Command, and its exit code says whether
+    problems remain.
+    """
 
 
 class _TaskProfileRequired(TypedDict):

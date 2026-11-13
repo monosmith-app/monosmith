@@ -76,7 +76,7 @@ func (p *Python) Published(params protocol.PublishedParams) (protocol.PublishedR
 
 // CI implements serve.CIContributor.
 func (p *Python) CI(params protocol.CIParams) (protocol.CIResult, error) {
-	return pipeline.CI(params), nil
+	return pipeline.CI(p.root, params), nil
 }
 
 // Doctor implements serve.DoctorContributor.

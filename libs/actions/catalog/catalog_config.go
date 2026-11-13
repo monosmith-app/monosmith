@@ -40,11 +40,11 @@ var catalog = []Action{
 	{Command: []string{"architecture"}, Safety: Changes, NotInTUI: "the Settings tab has an Architecture section that chooses it", NotInMCP: settingsEdit, NotInServe: "an editor changes smith.toml through config.set; the architecture is a table of it"},
 
 	// Work
-	{Command: []string{"run"}, Safety: Reads},
+	{Command: []string{"run"}, Safety: Reads, Variants: []Variant{{When: []string{"--fix"}, Safety: Changes}}},
 	{Command: []string{"build"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"verify"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"test"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
-	{Command: []string{"lint"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
+	{Command: []string{"lint"}, Safety: Reads, Variants: []Variant{{When: []string{"--fix"}, Safety: Changes}}, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"typecheck"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"dev"}, Safety: NeedsTerminal, Terminal: "it runs dev servers until stopped and draws their output on the whole screen", NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
 	{Command: []string{"kind"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},

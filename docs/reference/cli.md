@@ -352,6 +352,7 @@ Usage: `smith run <task>... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -391,6 +392,7 @@ Usage: `smith build [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -415,6 +417,7 @@ Usage: `smith test [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -439,6 +442,7 @@ Usage: `smith lint [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
@@ -463,6 +467,7 @@ Usage: `smith typecheck [project]... [flags]`
 | `--affected` | only projects affected by changes since --base | off |
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--fix` | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint | off |
 | `--json` | print the summary as JSON | off |
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |

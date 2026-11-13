@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
+	"github.com/monosmith-app/monosmith/apps/smith/lintfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/shiplink"
@@ -43,6 +44,9 @@ type Options struct {
 	Bail bool
 	// NoCache runs every task, still saving results.
 	NoCache bool
+	// Fix says the graph went through Graph.UseFix: Summary.Fixes reports the
+	// lint tasks.
+	Fix bool
 	// Quiet holds a task output and shows it only if the task fails.
 	Quiet bool
 	Out   io.Writer
@@ -76,7 +80,7 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 		opts.Out = os.Stdout
 	}
 	r := &runner{opts: opts, g: g, keyer: newKeyer(opts), sem: make(chan struct{}, opts.Parallel),
-		done: map[string]chan struct{}{}, results: map[string]Result{}, keys: map[string]string{}}
+		done: map[string]chan struct{}{}, results: map[string]Result{}, keys: map[string]string{}, fixes: map[string]lintfix.Outcome{}}
 	for _, id := range g.Order {
 		r.done[id] = make(chan struct{})
 	}
@@ -106,6 +110,9 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 	for _, id := range g.Order {
 		s.Results = append(s.Results, r.results[id])
 	}
+	if opts.Fix {
+		s.Fixes = r.fixOutcomes()
+	}
 	ok := s.OK()
 	summary := runevents.Summarize(s.Count(Succeeded), s.Count(Failed), s.Count(Cached), s.Count(Skipped), s.Duration)
 	summary.CachedRemote = s.CountRemote()
@@ -123,6 +130,7 @@ type runner struct {
 	outMu   sync.Mutex
 	results map[string]Result
 	keys    map[string]string
+	fixes   map[string]lintfix.Outcome
 	failed  bool
 	cancel  context.CancelFunc
 	// after are, per task, the tasks of the run that write the same folder
@@ -205,6 +213,9 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		}
 	}
 
+	if t.Fixing {
+		return r.runFix(ctx, t, key)
+	}
 	r.say("%s ▶ %s\n", t.ID, strings.Join(t.Def.Command, " "))
 	for _, o := range t.Def.Outputs {
 		dir := filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o)))
