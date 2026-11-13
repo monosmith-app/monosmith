@@ -17,6 +17,9 @@ type Probe struct {
 	Program string
 	// Version is the version it printed; empty when it printed none.
 	Version string
+	// Folder, when Program is empty, is a folder off PATH that holds the
+	// program: where winget unpacked a portable package.
+	Folder string
 }
 
 // Detector asks the machine whether a tool is there. The real one runs the
@@ -58,7 +61,7 @@ func detectOne(ctx context.Context, d Detector, n Need) Status {
 	probe := d.Detect(ctx, n)
 	switch {
 	case probe.Program == "":
-		st.State = Missing
+		st.State, st.OffPath, st.Version = Missing, probe.Folder, probe.Version
 	case !want.Satisfied(probe.Version):
 		st.State, st.Program, st.Version = Outdated, probe.Program, probe.Version
 	default:

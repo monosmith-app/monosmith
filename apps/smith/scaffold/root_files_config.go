@@ -30,9 +30,7 @@ name = %q
 # The defaults vintage this workspace was made with; a newer smith keeps it
 # until smith upgrade --defaults adopts a newer one.
 defaults = "` + workspace.LatestDefaults + `"
-# npm scope for Node packages
-scope = %q
-# Go module path prefix for Go projects
+%s# Go module path prefix for Go projects
 module_prefix = %q
 
 [ci]

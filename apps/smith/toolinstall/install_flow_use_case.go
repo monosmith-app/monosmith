@@ -3,14 +3,18 @@ package toolinstall
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/libs/words/words"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Runner runs an install command. The real one starts the program with the
@@ -75,6 +79,12 @@ type Flow struct {
 	Runner  Runner
 	// Detector re-detects a tool after its install.
 	Detector Detector
+	// ToolFolders is the file where the "let smith use it from that folder"
+	// answer records the folder (ToolFoldersFile); tests give a temporary one.
+	ToolFolders string
+	// LocalAppData is the value of LOCALAPPDATA, where winget unpacks a
+	// portable package; tests give a temporary folder.
+	LocalAppData string
 }
 
 // NoTerminalProblem is the refusal when nobody can answer and no flag does.
@@ -124,6 +134,10 @@ func (f Flow) one(ctx context.Context, plan ToolPlan) (Outcome, error) {
 	case OptionPage:
 		fmt.Fprintf(f.Out, "Go to %s, install %s, then open a new terminal and run: smith tools\n", plan.Download, plan.Title)
 	case OptionMyself:
+		if plan.OffPath != "" {
+			fmt.Fprint(f.Out, RenderFolder(plan))
+			break
+		}
 		fmt.Fprint(f.Out, RenderWays(plan))
 	case OptionSkip:
 		fmt.Fprintf(f.Out, "Skipped. %s: %s.\n", plan.Title, plan.Consequence)
@@ -171,6 +185,12 @@ func waysOf(plan ToolPlan) []string {
 
 // install runs one install option after the administrator question.
 func (f Flow) install(ctx context.Context, plan ToolPlan, opt Option, o Outcome) Outcome {
+	switch opt.Manager {
+	case SmithPathManager:
+		return f.useFolder(plan, o)
+	case UserPathManager:
+		return f.userPath(ctx, plan, opt, o)
+	}
 	command := strings.Join(opt.Command, " ")
 	if opt.Note != "" {
 		fmt.Fprintln(f.Out, "Note: "+opt.Note+".")
@@ -207,11 +227,26 @@ func (f Flow) install(ctx context.Context, plan ToolPlan, opt Option, o Outcome)
 		run = func() error { return er.RunEnv(ctx, opt.Command, opt.Env, f.Out) }
 	}
 	if err := run(); err != nil {
-		fmt.Fprintf(f.Out, "The install did not finish: %v\nTry the official page, %s, or install it yourself.\n", err, plan.Download)
-		return o
+		var exit interface{ ExitCode() int } // *exec.ExitError
+		if !errors.As(err, &exit) || !toolrun.WingetAlreadyInstalled(opt.Command, exit.ExitCode()) {
+			fmt.Fprintf(f.Out, "The install did not finish: %v\nTry the official page, %s, or install it yourself.\n", err, plan.Download)
+			return o
+		}
+		fmt.Fprintln(f.Out, words.Say("toolfolder.already", "title", plan.Title))
 	}
 	after := DetectAll(ctx, f.Detector, []Need{plan.Need})[0]
 	o.State = after.State
+	if after.State == Missing && after.OffPath != "" {
+		// winget unpacked a portable package and put nothing on PATH: offer the
+		// folder choice now, so the person does not have to find it.
+		fmt.Fprintln(f.Out, words.Say("toolfolder.found.after", "title", plan.Title, "folder", after.OffPath))
+		next, err := f.one(ctx, BuildPlan(after, nil, Env{OS: runtime.GOOS, ToolFolders: f.ToolFolders}))
+		next.Ran = true
+		if err != nil {
+			return o
+		}
+		return next
+	}
 	switch after.State {
 	case Found:
 		fmt.Fprintf(f.Out, "%s is installed (%s).\n", plan.Title, strings.TrimSpace(after.Program+" "+after.Version))
@@ -220,5 +255,43 @@ func (f Flow) install(ctx context.Context, plan ToolPlan, opt Option, o Outcome)
 	default:
 		fmt.Fprintf(f.Out, "The install finished, but %s is not found in this terminal yet. Open a new terminal (the PATH updates there), then run: smith tools\n", plan.Title)
 	}
+	return o
+}
+
+// useFolder records the folder of a tool that is off PATH, so smith's tasks,
+// checks and plugins find it there. The person's PATH does not change.
+func (f Flow) useFolder(plan ToolPlan, o Outcome) Outcome {
+	dir, err := UseFolder(plan.Need, f.LocalAppData, f.ToolFolders)
+	if err != nil {
+		fmt.Fprintln(f.Out, err.Error())
+		return o
+	}
+	o.State = Found
+	fmt.Fprintln(f.Out, words.Say("toolfolder.used", "title", plan.Title, "folder", dir))
+	return o
+}
+
+// userPath adds the folder of a tool that is off PATH to the user PATH. A
+// person who picked it from the list confirms first; --yes and --manager are
+// the confirmation of a script.
+func (f Flow) userPath(ctx context.Context, plan ToolPlan, opt Option, o Outcome) Outcome {
+	script := UserPathScript(plan.OffPath)
+	if f.Interactive && !f.Yes && f.Manager == "" {
+		answer := choiceprompt.Ask(words.Say("toolfolder.userpath.question", "folder", plan.OffPath), []choiceprompt.Option{
+			{Label: words.Say("toolfolder.userpath.yes"), Value: "run", Hint: words.Say("toolfolder.userpath.yes.hint")},
+			{Label: words.Say("toolfolder.userpath.no"), Value: "no", Hint: words.Say("toolfolder.userpath.no.hint")},
+		}, "run", f.In, f.Out)
+		if answer != "run" {
+			fmt.Fprint(f.Out, RenderFolder(plan))
+			return o
+		}
+	}
+	o.Ran = true
+	if err := f.Runner.Run(ctx, opt.Command, f.Out); err != nil {
+		fmt.Fprintln(f.Out, words.Say("toolfolder.userpath.failed", "reason", err.Error(), "command", script))
+		return o
+	}
+	o.State = Found
+	fmt.Fprintln(f.Out, words.Say("toolfolder.userpath.done", "folder", plan.OffPath))
 	return o
 }

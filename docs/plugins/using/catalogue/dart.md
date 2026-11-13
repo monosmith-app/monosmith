@@ -194,8 +194,8 @@ What is written:
   `name: <workspace>_workspace`, `publish_to: none`, `sdk: ^3.7.0`, and
   `workspace:` listing the member. Later projects add themselves to the list.
   `.dart_tool/` is added to `.gitignore`.
-- **A package** (`libs/core/pubspec.yaml`): name `<workspace>_<project>` (lower
-  case, underscores), `version: 0.0.0`, `publish_to: none` unless the kind is
+- **A package** (`libs/core/pubspec.yaml`): name `<namespace>_<project>` (`[workspace] namespace`,
+  else the workspace name; lower case, underscores; not prefixed twice), `version: 0.0.0`, `publish_to: none` unless the kind is
   `package`, `resolution: workspace`, `lints ^6.0.0` and `test ^1.25.0` as dev
   dependencies, a `smith:` block with `kind` (and `stack`), and
   `analysis_options.yaml` including `package:lints/recommended.yaml`.

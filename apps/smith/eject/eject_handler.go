@@ -2,6 +2,7 @@ package eject
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"io"
 	"strings"
 
@@ -89,7 +90,7 @@ tools to eject, or pass --all. A file that exists already is left alone unless
 	cmd.Flags().BoolVar(&all, "all", false, "eject every default that applies")
 	cmd.Flags().BoolVar(&force, "force", false, "replace a file that exists already (the diff of what is lost is printed first)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be copied and what would be replaced; change nothing")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are copied only with --yes")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask; without a terminal the files are copied only with --yes")
 	return cmd
 }
 

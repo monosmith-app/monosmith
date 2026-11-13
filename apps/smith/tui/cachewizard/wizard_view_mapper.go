@@ -1,7 +1,6 @@
 package cachewizard
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -16,13 +15,11 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// Title is the frame title of the dialog.
-const Title = "Set up the remote cache"
-
-// hit is a clickable span of the body: row is the body line, x0 and x1 the
-// columns (from the start of the inner text).
+// hit is a clickable span of the body: row is the row it is drawn on inside
+// the frame (the body line until layout places it), line the body line, x0 and
+// x1 the columns (from the start of the inner text).
 type hit struct {
-	row, x0, x1 int
+	row, line, x0, x1 int
 	// option is the index of an option, or -1.
 	option int
 	// yes is set for a button of a Confirm screen.
@@ -41,21 +38,77 @@ type hit struct {
 //
 // Parameters: th is the theme; tick moves the spinner; now is the clock.
 func (m Model) Lines(th theme.Theme, tick int, now time.Time) []string {
-	r := m.rect
-	if r.W < 24 || r.H < 8 {
+	if m.rect.W < 24 || m.rect.H < 4 {
 		return nil
 	}
-	body, _ := m.body(th, tick, now)
-	inner, height := r.W-4, r.H-2
-	rows := make([]string, 0, height)
-	for _, l := range body {
-		if len(rows) >= height {
-			break
-		}
-		rows = append(rows, " "+pane.Fit(l, inner))
+	r := m.Rect()
+	rows, _ := m.layout(th, tick, now)
+	for i, l := range rows {
+		rows[i] = " " + pane.Fit(l, pane.DialogRowWidth(r.W))
 	}
-	// The box is as tall as its content, up to the room Place gave it.
-	return pane.Frame(th, Title, rows, r.W, min(max(len(rows)+2, 8), r.H), true)
+	return pane.Frame(th, words.Say("cachewizard.title"), rows, r.W, r.H, true)
+}
+
+// screen is the body of a screen as body builds it: lines[foot:] are the
+// buttons that stay under the part that scrolls, and focus is the lines that
+// must stay in view (the option under the cursor, the answer buttons, the
+// typed line), from first to last excluded, or {-1, -1}.
+type screen struct {
+	lines []string
+	hits  []hit
+	foot  int
+	focus [2]int
+}
+
+// layout is the rows drawn inside the frame and the hits keyed by those rows.
+// A body that fits is drawn as it is; a longer one scrolls from m.top under
+// the shared scrollbar (pane.DialogBody), and its buttons stay at the bottom.
+func (m Model) layout(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
+	sc := m.body(th, tick, now)
+	height := m.rect.H - 2
+	if len(sc.lines) <= height {
+		for i := range sc.hits {
+			sc.hits[i].line = sc.hits[i].row
+		}
+		return sc.lines, sc.hits
+	}
+	body, foot := sc.lines[:sc.foot], sc.lines[sc.foot:]
+	room := pane.BodyRoom(height, len(foot))
+	rows := pane.DialogBody(th, body, foot, pane.DialogRowWidth(m.rect.W), height, m.top)
+	var hits []hit
+	for _, h := range sc.hits {
+		h.line = h.row
+		if h.row >= sc.foot {
+			h.row = room + h.row - sc.foot
+		} else {
+			y := h.row - pane.ClampTop(m.top, len(body), room)
+			if pane.BodyLine(y, m.top, len(body), room) != h.line {
+				continue
+			}
+			h.row = y
+		}
+		hits = append(hits, h)
+	}
+	return rows, hits
+}
+
+// follow scrolls the body so the lines in focus show.
+func (m Model) follow() Model {
+	sc := m.body(theme.Default(), 0, time.Time{})
+	if sc.focus[0] < 0 || len(sc.lines) <= m.rect.H-2 {
+		return m
+	}
+	room := pane.BodyRoom(m.rect.H-2, len(sc.lines)-sc.foot)
+	m.top = pane.FollowLines(m.top, sc.focus[0], sc.focus[1], sc.foot, room)
+	return m
+}
+
+// scrollBy moves the body by delta lines, never past its ends.
+func (m Model) scrollBy(delta int) Model {
+	sc := m.body(theme.Default(), 0, time.Time{})
+	room := pane.BodyRoom(m.rect.H-2, len(sc.lines)-sc.foot)
+	m.top = pane.ClampTop(m.top+delta, sc.foot, room)
+	return m
 }
 
 // noteLines are the last lines the engine said, wrapped, at most max.
@@ -70,44 +123,47 @@ func (m Model) noteLines(th theme.Theme, inner, max int) []string {
 	return lines
 }
 
-// body is the lines of the screen and where a click lands.
-func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
-	inner, height := m.rect.W-4, m.rect.H-2
+// body is the lines of the screen, where a click lands, the buttons that stay
+// at the bottom and the lines that must stay in view.
+func (m Model) body(th theme.Theme, tick int, now time.Time) screen {
+	// One cell less than the inside: the last cell is the scrollbar's when the
+	// body scrolls, so no wrapped line loses its last letter under it.
+	inner, height := m.rect.W-5, m.rect.H-2
 	var lines []string
 	var hits []hit
+	foot, focus := -1, [2]int{-1, -1}
 	add := func(l ...string) { lines = append(lines, l...) }
+	pin := func() { foot = len(lines) }
 	spin := func(text string) string {
 		return th.Accent(th.Spin(tick)) + " " + progress.Waiting(text, now.Sub(m.since))
 	}
 	switch m.scr.Kind {
 	case Choose:
-		head := append(m.noteLines(th, inner, max(height/4, 2)), "")
-		head = append(head, pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
-		add(head...)
-		foot := []string{"", th.Muted(words.Say("cachewizard.hint.choose", "escape", m.escapeHint())), th.Muted(words.Say("cachewizard.hint.choose.click"))}
-		hint := m.scr.Options[m.cursor].Hint
-		if hint != "" {
-			foot = append([]string{""}, append(pane.Wrap(th.Muted(hint), inner, 2), foot[1:]...)...)
-		}
-		room := max(height-len(lines)-len(foot)-2, 3)
-		top := m.list.Show(m.cursor, room, len(m.scr.Options))
-		for i := top; i < min(top+room, len(m.scr.Options)); i++ {
-			r := choicerow.Row{Label: fmt.Sprintf("%d. %s", i+1, m.scr.Options[i].Label), Selected: i == m.cursor, Hovered: i == m.over-1 && i != m.cursor}
+		add(m.noteLines(th, inner, max(height/4, 2))...)
+		add("")
+		add(pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
+		for i, o := range m.scr.Options {
+			r := choicerow.Row{Label: words.Say("cachewizard.option", "number", i+1, "label", o.Label), Selected: i == m.cursor, Hovered: i == m.over-1 && i != m.cursor}
+			if i == m.cursor {
+				focus = [2]int{len(lines), len(lines) + 1}
+			}
 			hits = append(hits, hit{row: len(lines), x0: 0, x1: inner, option: i})
 			add(choicerow.Line(th, r, inner))
 		}
-		if n := len(m.scr.Options); n > room {
-			add(th.Muted(fmt.Sprintf("  %d of %d", m.cursor+1, n)))
+		if m.cursor < len(m.scr.Options) && m.scr.Options[m.cursor].Hint != "" {
+			add("")
+			add(pane.Wrap(th.Muted(m.scr.Options[m.cursor].Hint), inner, 2)...)
 		}
-		add(foot...)
-		add("")
-		hits = append(hits, m.navHits(th, len(lines))...)
-		add(m.navRow(th))
+		add("", th.Muted(words.Say("cachewizard.hint.choose", "escape", m.escapeHint())), "")
+		pin()
+		add(m.buttonRow(th, len(lines), m.navButtons(), &hits))
 	case Text:
 		add(m.noteLines(th, inner, max(height/3, 2))...)
 		add("")
 		add(pane.Wrap(th.Bold(m.scr.Prompt), inner, 0)...)
-		add("", th.Accent(choicerow.Cursor(th, true))+string(m.input)+th.Accent("▌"), "", th.Muted(words.Say("cachewizard.hint.text", "escape", m.escapeHint())))
+		add("")
+		focus = [2]int{len(lines), len(lines) + 1}
+		add(th.Accent(choicerow.Cursor(th, true))+string(m.input)+th.Accent("▌"), "", th.Muted(words.Say("cachewizard.hint.text", "escape", m.escapeHint())))
 	case Confirm:
 		c := m.scr.Confirmation
 		add(m.noteLines(th, inner, max(height/5, 1))...)
@@ -124,31 +180,20 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 			}
 		}
 		add("", th.Bold(strings.TrimSpace(c.Prompt)), "")
+		focus[0] = len(lines)
 		if c.OfferCommit {
-			line := choicerow.Toggle(th, dialog.CommitLabel+"  (C)", m.ticked, m.overToggle)
+			line := choicerow.Toggle(th, words.Say("cachewizard.commit", "label", dialog.CommitLabel), m.ticked, m.overToggle)
 			hits = append(hits, hit{row: len(lines), x0: 0, x1: ansi.StringWidth(line), option: -1, toggle: true})
 			add(line, "")
 		}
 		yes, no := true, false
-		labels, keys := []string{c.Yes, c.No}, []string{"y", "n"}
-		x := 0
-		var row string
-		for i, label := range labels {
-			state := button.Rest
-			if i == m.focus {
-				state = button.Active
-			}
-			styled := button.Render(th, label, keys[i], state)
-			w := button.Width(th, label, keys[i])
-			h := hit{row: len(lines), x0: x, x1: x + w, option: -1, yes: &yes}
-			if i == 1 {
-				h.yes = &no
-			}
-			hits = append(hits, h)
-			row += styled + "  "
-			x += w + 2
+		answers := []cell{
+			{label: c.Yes, key: "y", hit: hit{option: -1, yes: &yes}, active: m.focus == 0},
+			{label: c.No, key: "n", hit: hit{option: -1, yes: &no}, active: m.focus == 1},
 		}
-		add(row, "")
+		add(m.buttonRow(th, len(lines), answers, &hits))
+		focus[1] = len(lines)
+		add("")
 		hint := c.YesHint
 		if m.focus == 1 {
 			hint = c.NoHint
@@ -156,67 +201,101 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 		if hint != "" {
 			add(pane.Wrap(th.Muted(hint), inner, 2)...)
 		}
-		hits = append(hits, m.navHits(th, len(lines))...)
-		add(m.navRow(th), "")
-		add(th.Muted(words.Say("cachewizard.hint.confirm", "escape", m.escapeHint())))
+		add(th.Muted(words.Say("cachewizard.hint.confirm", "escape", m.escapeHint())), "")
+		pin()
+		add(m.buttonRow(th, len(lines), m.navButtons(), &hits))
 	case Page:
-		var all []string
-		for _, l := range m.scr.Lines {
-			all = append(all, pane.Wrap(l, inner, 3)...)
-		}
-		notes := m.noteLines(th, inner, 2)
-		room := max(height-4-len(notes), 3)
-		top := min(m.scroll, max(len(all)-room, 0))
-		add(notes...)
+		add(m.noteLines(th, inner, 2)...)
 		add(th.Bold(m.scr.Prompt), "")
-		add(all[top:min(top+room, len(all))]...)
-		if len(all) > room {
-			for len(lines) < height-3 {
-				add("")
-			}
-		} else {
-			add("")
+		for _, l := range m.scr.Lines {
+			add(pane.Wrap(l, inner, 3)...)
 		}
-		more := ""
-		if len(all) > room {
-			more = fmt.Sprintf("up/down scroll (%d of %d) · ", min(top+room, len(all)), len(all))
+		add("")
+		hint := words.Say("cachewizard.hint.page", "escape", m.escapeHint())
+		if room := pane.BodyRoom(height, 2); len(lines) > room {
+			top := pane.ClampTop(m.top, len(lines), room)
+			hint = words.Say("cachewizard.hint.scroll", "shown", min(top+room, len(lines)), "total", len(lines), "escape", m.escapeHint())
 		}
-		next := words.Say("cachewizard.button.next")
-		hits = append(hits, hit{row: len(lines), x0: 0, x1: button.Width(th, next, "Enter"), option: -1, page: true})
-		hits = append(hits, m.navHits(th, len(lines), button.Width(th, next, "Enter")+2)...)
-		add(button.Render(th, next, "Enter", stateOf(true)) + "  " + m.navRow(th))
-		add(th.Muted(more + words.Say("cachewizard.hint.page", "escape", m.escapeHint())))
+		pin()
+		next := cell{label: words.Say("cachewizard.button.next"), key: "enter", hit: hit{option: -1, page: true}, active: true}
+		add(m.buttonRow(th, len(lines), append([]cell{next}, m.navButtons()...), &hits))
+		add(th.Muted(hint))
 	case Secret:
 		noun := m.scr.Noun
 		if len(m.notes) == 0 {
-			add(spin("Making the " + cachekey.InSentence(noun)))
+			add(spin(words.Say("cachewizard.secret.making", "noun", cachekey.InSentence(noun))))
 			break
 		}
-		add(th.Bold(noun+" ready"), "")
+		add(th.Bold(words.Say("cachewizard.secret.ready", "noun", noun)), "")
 		add(m.noteLines(th, inner, max(height-8, 3))...)
 		add("")
-		x := 0
-		var row string
+		pin()
+		// The buttons go on as many centred rows as they need.
+		var row []cell
+		width := 0
 		for _, b := range m.scr.Buttons {
-			w := button.Width(th, b.Label, keyName(b.Key))
-			if x > 0 && x+w > inner {
-				add(row)
-				row, x = "", 0
+			c := cell{label: b.Label, key: keyName(b.Key), hit: hit{option: -1, press: b.Key}}
+			w := button.Width(th, c.label, c.key)
+			if len(row) > 0 && width+w > inner {
+				add(m.buttonRow(th, len(lines), row, &hits))
+				row, width = nil, 0
 			}
-			hits = append(hits, hit{row: len(lines), x0: x, x1: x + w, option: -1, press: b.Key})
-			row += button.Render(th, b.Label, keyName(b.Key), stateOf(false)) + "  "
-			x += w + 2
+			row, width = append(row, c), width+w+1
 		}
-		add(row, "")
-		add(pane.Wrap(th.Muted("The "+cachekey.InSentence(noun)+" is on the clipboard and is not shown here. smith keeps it in memory only while this screen is open, and clears the clipboard if it still holds it."), inner, 0)...)
+		add(m.buttonRow(th, len(lines), row, &hits), "")
+		add(pane.Wrap(th.Muted(words.Say("cachewizard.secret.clipboard", "noun", cachekey.InSentence(noun))), inner, 0)...)
 	case Working:
 		add(m.noteLines(th, inner, max(height-6, 2))...)
-		add("", spin(m.scr.Prompt), "", th.Muted("smith waits for the program to answer. esc closes"))
+		add("", spin(m.scr.Prompt), "", th.Muted(words.Say("cachewizard.hint.working")))
 	default:
 		add(m.noteLines(th, inner, max(height-4, 2))...)
-		add("", spin("One moment"), "", th.Muted("esc closes"))
+		add("", spin(words.Say("cachewizard.idle")), "", th.Muted(words.Say("cachewizard.escape.close")))
 	}
-	return lines, hits
+	if foot < 0 {
+		foot = len(lines)
+	}
+	return screen{lines: lines, hits: hits, foot: foot, focus: focus}
+}
+
+// cell is one button of a row: what it shows, what a click on it does, and
+// whether it is the one Enter takes (drawn active).
+type cell struct {
+	label, key string
+	hit        hit
+	active     bool
+}
+
+// buttonRow draws a row of buttons centred in the dialog, as every other dialog
+// places them, and adds their click spans for body line row to hits. The button
+// under the pointer has the hover look; the one Enter takes, the active look.
+func (m Model) buttonRow(th theme.Theme, row int, cells []cell, hits *[]hit) string {
+	if len(cells) == 0 {
+		return ""
+	}
+	labels, keys := make([]string, len(cells)), make([]string, len(cells))
+	for i, c := range cells {
+		labels[i], keys[i] = c.label, c.key
+	}
+	// RowSpans counts from the dialog's edge; the body starts two cells in.
+	spans := button.RowSpans(th, labels, keys, m.rect.W-4)
+	var line string
+	col := 0
+	for i, c := range cells {
+		from, to := spans[i][0]-2, spans[i][1]-2
+		h := c.hit
+		h.row, h.x0, h.x1 = row, from, to
+		*hits = append(*hits, h)
+		state := button.Rest
+		switch {
+		case m.overButton == [2]int{row + 1, from}:
+			state = button.Hover
+		case c.active:
+			state = button.Active
+		}
+		line += strings.Repeat(" ", max(from-col, 0)) + button.Render(th, c.label, c.key, state)
+		col = to
+	}
+	return line
 }
 
 // escapeHint says what Esc does on this screen: back, or close on the first question.
@@ -230,54 +309,20 @@ func (m Model) escapeHint() string {
 // navButtons are the Back and Cancel buttons of a screen: Back only when a
 // question before this one exists. Cancel closes the wizard; its key is Esc on
 // the first question and Ctrl+C after, where Esc goes back.
-func (m Model) navButtons() (labels, keys []string) {
+func (m Model) navButtons() []cell {
 	cancelKey := "esc"
+	var cells []cell
 	if m.scr.CanBack {
-		labels, keys = append(labels, words.Say("cachewizard.button.back")), append(keys, "b")
+		cells = append(cells, cell{label: words.Say("cachewizard.button.back"), key: "b", hit: hit{option: -1, back: true}})
 		cancelKey = "ctrl+c"
 	}
-	return append(labels, words.Say("cachewizard.button.cancel")), append(keys, cancelKey)
-}
-
-// navRow draws the Back and Cancel buttons on one line.
-func (m Model) navRow(th theme.Theme) string {
-	labels, keys := m.navButtons()
-	var row string
-	for i := range labels {
-		row += button.Render(th, labels[i], keys[i], stateOf(false)) + "  "
-	}
-	return row
-}
-
-// navHits are the clickable spans of navRow on body line row, from column x0.
-func (m Model) navHits(th theme.Theme, row int, x0 ...int) []hit {
-	x := 0
-	if len(x0) > 0 {
-		x = x0[0]
-	}
-	labels, keys := m.navButtons()
-	var hits []hit
-	for i := range labels {
-		w := button.Width(th, labels[i], keys[i])
-		hits = append(hits, hit{row: row, x0: x, x1: x + w, option: -1, back: i < len(labels)-1, cancel: i == len(labels)-1})
-		x += w + 2
-	}
-	return hits
+	return append(cells, cell{label: words.Say("cachewizard.button.cancel"), key: cancelKey, hit: hit{option: -1, cancel: true}})
 }
 
 // keyName is the key of a button as the person presses it.
 func keyName(r rune) string {
 	if r == 27 {
-		return "Esc"
+		return "esc"
 	}
 	return string(r)
-}
-
-// stateOf is the state of a button: Active while it is the one Enter takes,
-// Rest otherwise.
-func stateOf(takesEnter bool) button.State {
-	if takesEnter {
-		return button.Active
-	}
-	return button.Rest
 }

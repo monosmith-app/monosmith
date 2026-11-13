@@ -3,6 +3,7 @@ package packageprompt
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 
@@ -23,6 +24,8 @@ import (
 // another project; Tab and Shift+Tab move between the project, the packages, the development box and the buttons; Space or a click flips the
 // box; Enter on the packages or on Install goes ahead; Esc cancels.
 type Prompt struct {
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 	project string
 	// projects are the projects to choose from (project is one of them).
 	projects []string
@@ -47,6 +50,11 @@ type Prompt struct {
 	fromWorkspace bool
 	// libAt and rangeAt are the library and the version range picked.
 	libAt, rangeAt int
+	// top is the first body line shown when the body is taller than the dialog.
+	top int
+	// sw and sh are the screen Place sized the dialog for, so it can size
+	// itself again when its body grows or shrinks.
+	sw, sh int
 }
 
 const (
@@ -253,13 +261,92 @@ func rowFocus(l string) int {
 	return -1
 }
 
-// Place centres the dialog on a screen of sw by sh cells.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (p Prompt) Within(top, bottom int) Prompt {
+	p.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return p
+}
+
+// Place centres the dialog on a screen of sw by sh cells: as tall as its
+// body and buttons, at most the rows between the margins. A body taller than
+// that scrolls above the buttons, and the window follows the focus.
 func (p Prompt) Place(sw, sh int) Prompt {
+	p.sw, p.sh = sw, sh
 	w := min(max(sw-8, minWidth), min(max(sw-2, 10), 76))
 	p.input.Width = max(w-8, 8)
-	h := min(len(p.body(w-4))+4, max(sh, 3))
-	p.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	p.rect = p.margins.Centre(sw, sh, w, len(p.body(textW(w-4)))+4)
+	return p.follow()
+}
+
+// room is the rows the scrolling body gets: the inside less the blank row and
+// the buttons.
+func (p Prompt) room() int { return pane.BodyRoom(p.rect.H-2, 2) }
+
+// focusLine is the body line of the control with the focus, or -1 for the
+// buttons, which never scroll.
+func (p Prompt) focusLine(inner int) int {
+	switch p.focus {
+	case focusProject:
+		return 0
+	case focusPackages:
+		if row := p.rowOf(words.Say("packageprompt.packages.label"), inner); row >= 0 {
+			return row + 1
+		}
+	case focusDev:
+		return p.rowOf("[", inner)
+	}
+	for _, c := range choiceRows() {
+		if c.id == p.focus {
+			return p.rowOf(c.prefix, inner)
+		}
+	}
+	return -1
+}
+
+// follow scrolls the body so the control with the focus shows; an error,
+// which says why the dialog did not go ahead, wins when both do not fit.
+func (p Prompt) follow() Prompt {
+	inner := textW(p.rect.W - 4)
+	total := len(p.body(inner))
+	if line := p.focusLine(inner); line >= 0 {
+		p.top = pane.KeepVisible(p.top, line, total, p.room())
+	}
+	if p.err != "" {
+		if row := p.rowOf(p.err, inner); row >= 0 {
+			p.top = pane.KeepVisible(p.top, row, total, p.room())
+		}
+	}
+	p.top = pane.ClampTop(p.top, total, p.room())
 	return p
+}
+
+// Wheel scrolls the body by delta lines; the focus stays where it is.
+//
+// Parameters: delta is the lines to move, negative for up.
+// Returns: the dialog with the body scrolled.
+func (p Prompt) Wheel(delta int) Prompt {
+	p.top = pane.ClampTop(p.top+delta, len(p.body(textW(p.rect.W-4))), p.room())
+	return p
+}
+
+// refit sizes the dialog again for the screen Place last saw, so a body that
+// grew (an error, a longer command, the library rows) or shrank keeps the
+// dialog as tall as it needs, between the margins.
+func (p Prompt) refit() Prompt {
+	if p.sw == 0 && p.sh == 0 {
+		return p
+	}
+	return p.Place(p.sw, p.sh)
+}
+
+// bodyRow is the body line drawn on screen row y, through the scroll, or -1.
+func (p Prompt) bodyRow(y int) int {
+	return pane.BodyLine(y-p.rect.Y-1, p.top, len(p.body(textW(p.rect.W-4))), p.room())
 }
 
 // Rect is where the dialog sits after Place.
@@ -296,16 +383,20 @@ func (p Prompt) controlAt(x, y int) int {
 		}
 		return -1
 	}
-	if y-r.Y-1 == 0 && p.choosable() && x > r.X && x < r.X+r.W-1 {
+	line := p.bodyRow(y)
+	inside := x > r.X && x < r.X+r.W-1
+	if line < 0 || !inside {
+		return -1
+	}
+	if line == 0 && p.choosable() {
 		return focusProject
 	}
-	inside := x > r.X && x < r.X+r.W-1
 	for _, c := range choiceRows() {
-		if row := p.rowOf(c.prefix, inner); row >= 0 && y-r.Y-1 == row && inside {
+		if row := p.rowOf(c.prefix, textW(inner)); row >= 0 && line == row {
 			return c.id
 		}
 	}
-	if !p.remove && !p.linking() && y-r.Y-1 == p.rowOf("[", inner) && inside {
+	if !p.remove && !p.linking() && line == p.rowOf("[", textW(inner)) {
 		return focusDev
 	}
 	return -1
@@ -315,8 +406,14 @@ func (p Prompt) controlAt(x, y int) int {
 func (p Prompt) Hover(x, y int) Prompt { p.hover = p.controlAt(x, y); return p }
 
 // Click handles a left press: the box flips, Install goes ahead, Cancel and a
-// press outside the dialog cancel.
+// press outside the dialog cancel. The dialog sizes itself again after it.
 func (p Prompt) Click(x, y int) (Prompt, dialog.Outcome) {
+	p, out := p.click(x, y)
+	return p.refit(), out
+}
+
+// click is Click before the dialog sizes itself again.
+func (p Prompt) click(x, y int) (Prompt, dialog.Outcome) {
 	switch p.controlAt(x, y) {
 	case focusProject:
 		p.focus = focusProject
@@ -339,8 +436,21 @@ func (p Prompt) Click(x, y int) (Prompt, dialog.Outcome) {
 	return p, dialog.Outcome{}
 }
 
-// Key handles a key.
+// Key handles a key. The dialog sizes itself again after it, so a body that
+// grew or shrank keeps it as tall as it needs, and the focus stays in view.
 func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
+	switch {
+	case msg.String() == "ctrl+u" || commands.NavNamed(msg.String()) == commands.NavPageUp:
+		return p.Wheel(-pane.PageStep(p.room())), dialog.Outcome{}
+	case msg.String() == "ctrl+d" || commands.NavNamed(msg.String()) == commands.NavPageDown:
+		return p.Wheel(pane.PageStep(p.room())), dialog.Outcome{}
+	}
+	p, out := p.key(msg)
+	return p.refit(), out
+}
+
+// key is Key before the dialog sizes itself again.
+func (p Prompt) key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
 	switch commands.NavNamed(msg.String()) {
 	case commands.NavCancel:
 		return p, dialog.Outcome{Done: true}

@@ -35,6 +35,7 @@ Usage: `smith typecheck [project]... [flags]`
 | `--affected` | boolean | off | only projects affected by changes since --base |
 | `--bail` | boolean | off | stop starting tasks after the first failure |
 | `--base <base>` | string | the pull request target, else the release branch | base branch for --affected (default: the PR target, else the release branch) |
+| `--fix` | boolean | off | fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint |
 | `--json` | boolean | off | print the summary as JSON |
 | `--json-events` | boolean | off | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else |
 | `--no-cache` | boolean | off | run every task even if a cached result exists |

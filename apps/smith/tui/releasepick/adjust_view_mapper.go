@@ -70,7 +70,7 @@ func (m Model) Lines(th theme.Theme) []string {
 		return nil
 	}
 	inner := r.W - 4
-	row := func(s string) string { return " " + pane.Fit(s, inner) }
+	row := func(s string) string { return " " + pane.Fit(s, pane.DialogRowWidth(r.W)) }
 	var rows []string
 	for _, l := range intro(inner) {
 		rows = append(rows, row(l))
@@ -82,11 +82,16 @@ func (m Model) Lines(th theme.Theme) []string {
 	}
 	now := m.adjusted()
 	end := min(m.top+m.room, len(m.plan.Items))
+	var list []string
 	for i := m.top; i < end; i++ {
 		it := m.plan.Items[i]
 		selected := i == m.cursor && m.focus < 0
 		r := choicerow.Row{Label: m.rowText(it, now, nameW), Selected: selected, Hovered: i == m.overRow-1 && !selected}
-		rows = append(rows, row(choicerow.Line(th, r, inner)))
+		list = append(list, choicerow.Line(th, r, inner-1))
+	}
+	// A list longer than the dialog has the shared scrollbar in its last cell.
+	for _, l := range pane.Scrollbar(th, list, pane.DialogRowWidth(r.W), m.top, len(m.plan.Items)) {
+		rows = append(rows, row(l))
 	}
 	for len(rows) < m.head+m.room {
 		rows = append(rows, row(""))

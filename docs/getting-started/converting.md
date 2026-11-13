@@ -244,7 +244,7 @@ prints the plan and stops with a non-zero exit, naming the flags that apply it.
 
 | Flag | Values | What it decides |
 |---|---|---|
-| `--lint` | `smith`, `keep` | `smith`: the root ESLint config uses `@monosmith/eslint-config` (with the vertical-slice rules) and the old lint packages and config files go. If the config imported `@mnci/eslint-config`, only the import and the call change and the rules you wrote beside it stay; a config written by hand is replaced by smith's two lines (the diff shows what is lost). Default: `smith` when the config imports a shared config smith replaces, else `keep`. |
+| `--lint` | `smith`, `keep` | `smith`: the root ESLint config uses `@monosmith/eslint-config` (with the vertical-slice rules) and the old lint packages and config files go. If the config imported `@mnci/eslint-config`, only the import and the call change and the rules you wrote beside it stay; a config written by hand is replaced by smith's two lines (the diff shows what is lost). `@monosmith/eslint-config` needs ESLint 10 (`^10.8.1`), so the lint group also raises `eslint` in every `package.json` that names an older one (an `overrides` entry `"eslint": "$eslint"` follows it); an `eslint` it cannot raise (a tag such as `latest`, a path, a `peerDependencies` range) is a note in the plan, before anything changes. Default: `smith` when the config imports a shared config smith replaces, else `keep`. |
 | `--test` | `jest`, `vitest`, `keep` | The configs and packages of the runner **not** chosen go. A runner is never rewritten to another: if the other one's tests exist, its files stay and the report says why. Default: the runner the workspace uses. |
 | `--build` | `smith`, `keep` | The configs and packages of the old build (Rollup, Webpack, SWC and Babel config files, their loaders and CLIs) go; the build is the one convert wrote, esbuild and `tsc`. Default: `smith`. |
 | `--ci` | `smith`, `keep` | `keep` leaves your pipelines as they are instead of generating smith's; they keep calling the old tool, and `smith doctor` reports the pipelines as not matching until you run `smith ci generate`. Default: `smith`. |
@@ -273,8 +273,47 @@ sure, it keeps.
 
 Afterwards one `npm install` refreshes `package-lock.json` for everything taken
 out and put in, and the workspace is checked the way a teammate would: it builds,
-tests and lints, and `smith doctor` finds nothing wrong. The step that fails is
-named, with the end of its output.
+tests and lints, and `smith doctor` finds nothing wrong. When a build or test
+step fails, the conversion stops there: the step is named, with the end of its
+output. A build or test that fails after the install means the conversion broke
+something, so smith does not go on as if it worked.
+
+The lint and doctor never stop it. What they find are findings: the conversion
+finishes, keeps its changes, and its last lines list each check that found
+something, with each failure and its remedy, and the command that checks
+again. The closing line says `▲ The conversion finished with findings`, and
+the exit code is 2 (a warning, not a failure). The end of a real run:
+
+```text
+▲ check the workspace with doctor
+  × app:build writes apps/app/dist-dev (from smith.toml [projects.app.tasks.build]), not dist/apps/app/ (and 2 more)
+    → build each project into dist/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); ...
+  × api:build writes dist/apps/api but its task caches apps/api/dist: a cache hit would leave ../../dist/apps/api empty
+    → declare outputs = ["../../dist/apps/api", "dist"] under [projects.api.tasks.build] in smith.toml
+  → check again: smith doctor
+
+▲ The conversion finished with findings: the changes stay, and 2 checks found something to fix (listed above).
+```
+
+The `outputs` of a converted task are the ones Nx declared for it. When Nx's
+`outputs` did not match where the tool writes, doctor reports it, as above. With `--lint smith`, ESLint first fixes
+what it can, in each Node project that has a lint task, in its own folder with
+its own `eslint.config.*`, one project after the other (a crash in one does not
+stop the others). Then a table gives each project's problems fixed and left, or,
+when ESLint could not run there, the first line of its error and the remedy:
+
+```text
+▲ fix what ESLint can, then lint every project
+Project   Fixed    Left  Result
+api         544     876  ▲ 870 errors, 6 warnings
+models      231     200  ▲ 200 errors, 0 warnings
+▲ ESLint fixed 775 problems; 1076 are left in 2 of 2 projects
+→ see them: smith run lint -p api
+→ see them: smith run lint -p models
+```
+
+With `--lint keep`, the check is the repository's own `smith run lint`, and its
+failure is shown the same way, without stopping the conversion.
 
 ## The report
 

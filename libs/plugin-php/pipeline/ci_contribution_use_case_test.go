@@ -9,12 +9,13 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 func TestCI(t *testing.T) {
 	ws := t.TempDir()
 	res := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Kind: protocol.ProjectPackage}}})
-	if res.Toolchains[0].Version != PHPVersion || res.Setup[0].Command[1] != "install" || len(res.Credentials) != 0 {
+	if res.Toolchains[0].Version != toolpin.Default("php") || res.Setup[0].Command[1] != "install" || len(res.Credentials) != 0 {
 		t.Fatalf("%+v", res)
 	}
 	_ = os.WriteFile(filepath.Join(ws, ".php-version"), []byte("8.3\n"), 0o644)

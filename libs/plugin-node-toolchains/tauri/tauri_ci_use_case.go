@@ -3,11 +3,8 @@ package tauri
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
-
-// RustVersion is what a Tauri app's pipelines install when the workspace pins no
-// Rust toolchain; bump it deliberately.
-const RustVersion = "stable"
 
 // linuxPackages are the apt packages Tauri 2 needs on a Linux runner.
 const linuxPackages = "pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev"
@@ -15,12 +12,9 @@ const linuxPackages = "pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-
 // rustToolchain is named like the rust plugin's, so the pipeline keeps the first of
 // the two (the rust plugin's, with its components and cross-compile targets) and
 // never installs a second Rust that would replace the workspace's pin as the
-// default. The version is the workspace's pin, else RustVersion.
+// default. The version is the one toolpin decides for the workspace.
 func rustToolchain(workspaceRoot string) protocol.Toolchain {
-	version := FindRustPin(workspaceRoot)
-	if version == "" {
-		version = RustVersion
-	}
+	version := toolpin.Version(workspaceRoot, "rustc")
 	return protocol.Toolchain{
 		Name: "rust", Version: version,
 		GitHub: &protocol.ActionStep{Uses: "dtolnay/rust-toolchain@master", Inputs: []protocol.Input{{Name: "toolchain", Value: version}}},

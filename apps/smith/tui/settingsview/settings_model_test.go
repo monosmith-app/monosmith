@@ -233,7 +233,7 @@ func TestTrustingAnExternalPluginShowsTheReviewFirst(t *testing.T) {
 		t.Fatal("the review is an editor: plain keys are its own")
 	}
 	out := text(m, 100, 28)
-	for _, want := range []string{"Trust widget?", `wants to run on this machine`, "command   widget --serve", "y trust", "p trust and pin"} {
+	for _, want := range []string{"Trust widget?", `wants to run on this machine`, "command   widget --serve", "y trusts", "p trusts and pins"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the review lacks %q:\n%s", want, out)
 		}
@@ -803,7 +803,7 @@ func TestASettingWithOneOfAFixedSetOfValuesIsPickedFromAListNotTyped(t *testing.
 	m := opened(t, f).Show(Workspace)
 	m, _ = press(m, "end", "enter")
 	out := text(m, 100, 28)
-	for _, want := range []string{"( ) azure", "( ) gitlab", "↑ ↓ move · Enter picks · Esc cancels"} {
+	for _, want := range []string{"( ) azure", "( ) gitlab", "↑↓ move · Enter or a click picks · Esc cancels"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("the pick list lacks %q:\n%s", want, out)
 		}

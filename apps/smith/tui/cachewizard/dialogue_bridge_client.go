@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
 	"github.com/monosmith-app/monosmith/apps/smith/cachesetup"
 	"github.com/monosmith-app/monosmith/apps/smith/shellenv"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // closed is what a bridge panics with when the person closed the wizard, to
@@ -210,14 +211,14 @@ func (b *Bridge) Secret(noun, variable string, produce func() (string, error), a
 
 // buttonsFor are the choices of the secret screen, the ones the session reads.
 func buttonsFor(hasVariable bool, actions []cachekey.KeyAction) []Button {
-	buttons := []Button{{'c', "Copy again"}, {'g', "Generate another"}}
+	buttons := []Button{{'c', words.Say("cachewizard.button.copy")}, {'g', words.Say("cachewizard.button.generate")}}
 	if hasVariable {
-		buttons = append(buttons, Button{'u', "Set as a user environment variable"})
+		buttons = append(buttons, Button{'u', words.Say("cachewizard.button.variable")})
 	}
 	for _, a := range actions {
 		buttons = append(buttons, Button{a.Key, strings.ToUpper(a.Label[:1]) + a.Label[1:]})
 	}
-	return append(buttons, Button{'q', "Done"})
+	return append(buttons, Button{'q', words.Say("cachewizard.button.done")})
 }
 
 // lineWriter turns what the session prints into lines the screen shows. The

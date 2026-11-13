@@ -143,7 +143,7 @@ func (s *Shell) openPackages(remove bool) {
 	if remove {
 		p = packageprompt.NewRemove(project, names)
 	}
-	p = p.WithLanguages(languages).WithLibraries(func(project string) []packageprompt.Library { return linkableLibraries(s.list.Projects(), project) }).Place(s.w, s.h)
+	p = p.WithLanguages(languages).WithLibraries(func(project string) []packageprompt.Library { return linkableLibraries(s.list.Projects(), project) }).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.pkg = &p
 }
 
@@ -438,6 +438,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 			// The app is a pick list of the Tauri apps, on the selected one.
 			return s.openProjectForm(c.Guide, "project", s.projectsWhere(isTauriApp))
 		}
+		if c.Guide == guide.ConvertTitle() {
+			return s.openConvertForm()
+		}
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()
 		}
@@ -513,7 +516,7 @@ func (s *Shell) openHelp() {
 	for _, r := range commands.HelpRows(s.state(), tabTitles()[s.tab]) {
 		rows = append(rows, helpdialog.HelpRow(r))
 	}
-	h := helpdialog.NewHelp(rows, mouseHelp()).Place(s.w, s.h)
+	h := helpdialog.NewHelp(rows, mouseHelp()).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.help = &h
 }
 
@@ -623,6 +626,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		if s.guide.Title() == "" && g.Title() == recipeTitle() && s.recipeLevels == nil {
 			// The recipe form lists the plugins of each level: read them first.
 			return s.openRecipeForm()
+		}
+		if s.guide.Title() == "" && g.Title() == guide.ConvertTitle() && s.convertOutputs == nil && s.sources.Capture != nil {
+			// The convert form asks which build outputs to cache: read the plan first.
+			return s.openConvertForm()
 		}
 		s.guide = g
 		if g.Done() {

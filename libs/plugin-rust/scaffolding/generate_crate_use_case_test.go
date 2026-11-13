@@ -21,10 +21,13 @@ func TestGenerateMakesAWorkspaceThenAddsToIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	root, _ := os.ReadFile(filepath.Join(ws, "Cargo.toml"))
-	if string(root) != "[workspace]\nresolver = \"2\"\nmembers = [\"apps/cli\", \"packages/core\"]\n" {
+	if string(root) != "[workspace]\nresolver = \"2\"\nmembers = [\"apps/cli\", \"packages/core\"]\n\n[workspace.package]\nedition = \"2021\"\n" {
 		t.Fatalf("root Cargo.toml:\n%s", root)
 	}
 	manifest, _ := os.ReadFile(filepath.Join(ws, "packages", "core", "Cargo.toml"))
+	if !strings.Contains(string(manifest), "edition.workspace = true") || strings.Contains(string(manifest), `edition = "`) {
+		t.Fatalf("a crate inherits the shared edition:\n%s", manifest)
+	}
 	crate, err := discovery.ParseCargo(manifest)
 	if err != nil || crate.Name != "acme-core" || crate.Kind != "package" || crate.Stack != "rust" {
 		t.Fatalf("%v %+v\n%s", err, crate, manifest)
@@ -53,6 +56,20 @@ func TestGenerateMakesAWorkspaceThenAddsToIt(t *testing.T) {
 	}
 }
 
+func TestGenerateKeepsTheEditionInAWorkspaceThatSharesNone(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.WriteFile(filepath.Join(ws, "Cargo.toml"), []byte("[workspace]\nmembers = []\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "libs/core", Workspace: protocol.WorkspaceInfo{Name: "acme"}}); err != nil {
+		t.Fatal(err)
+	}
+	manifest, _ := os.ReadFile(filepath.Join(ws, "libs", "core", "Cargo.toml"))
+	if !strings.Contains(string(manifest), `edition = "2021"`) || strings.Contains(string(manifest), "workspace = true") {
+		t.Fatalf("the crate sets its own edition:\n%s", manifest)
+	}
+}
+
 func TestMembers(t *testing.T) {
 	multi := "[workspace]\nmembers = [\n    \"a\",\n]\n\n[workspace.dependencies]\nserde = \"1\"\n"
 	got, err := AddMember(multi, "b")
@@ -69,22 +86,6 @@ func TestMembers(t *testing.T) {
 		t.Fatal("no workspace table")
 	}
 }
-func TestCrateNameIsValidForCargo(t *testing.T) {
-	for _, c := range []struct{ workspace, name, want string }{
-		{"acme", "core", "acme-core"},
-		{"jato.auto.packages", "rust-core", "jato-auto-packages-rust-core"},
-		{"My Shop!", "api", "my-shop-api"},
-		{"acme", "acme-core", "acme-core"},
-		{"jato.auto", "jato-auto-core", "jato-auto-core"},
-		{"", "core", "core"},
-		{"2024.shop", "api", "x2024-shop-api"},
-	} {
-		if got := CrateName(c.workspace, c.name); got != c.want {
-			t.Errorf("CrateName(%q, %q) = %q, want %q", c.workspace, c.name, got, c.want)
-		}
-	}
-}
-
 func TestGenerateNoteHasNoPlaceholder(t *testing.T) {
 	res, err := Generate(t.TempDir(), protocol.GenerateParams{Kind: protocol.ProjectPackage, Name: "core", Directory: "packages/core", Workspace: protocol.WorkspaceInfo{Name: "a.b"}})
 	if err != nil {

@@ -21,6 +21,9 @@ with [vitest](vitest.md).
 
 ## What it does
 
+The app's `tsconfig.json` extends the workspace's `tsconfig.browser.json` (written when absent), which extends
+`tsconfig.base.json`; it adds only `types`, `jsx`, `paths` and `include`. See [the tsconfig chain](typescript.md#the-tsconfig-chain).
+
 | Stack | Starter | Type check |
 |---|---|---|
 | `react` | a React app (`App` component, `main.tsx`) | `tsc` |

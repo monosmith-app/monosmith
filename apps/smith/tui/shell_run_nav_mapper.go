@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -98,7 +99,7 @@ func (s Shell) recentSection(w, room int) content {
 	case len(s.runs) > n:
 		note = s.th.Muted(words.Count("tui.main.recent_runs.more", len(s.runs)-n))
 	}
-	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), false), pane.Fit(" "+title+"  "+note, w))
+	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), false), pane.Fit(pane.CutEllipsis(" "+title+"  "+note, w), w))
 	rows, first := s.recentRows(w, n)
 	for i := range rows {
 		c.hits[len(c.lines)] = hit{kind: "recent", index: first + i}
@@ -127,14 +128,10 @@ func (s Shell) recentLine(i, w int) string {
 		ago = runhistory.Ago(now.Sub(r.Ended))
 	}
 	chosen := i == s.recentAt && s.recentFocus
-	pointer := " "
-	if chosen {
-		pointer = s.th.Icons.Pointer
-	}
 	return runhistory.Line(runhistory.Row{
-		Pointer: pointer, Command: r.CommandLine(), Result: s.runResult(r),
+		Pointer: choicerow.Cursor(s.th, chosen), Command: r.CommandLine(), Result: s.runResult(r),
 		Took: shortDuration(r.RunTime(now)), Ago: ago, Selected: chosen,
-	}, w, s.th.Muted, s.th.Selected)
+	}, w, s.th.Muted, s.th.Accent)
 }
 
 // runResult is how a run stands, as a mark and a word: running, passed, failed

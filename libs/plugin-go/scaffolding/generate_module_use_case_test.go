@@ -87,19 +87,6 @@ func TestWorkspaceGoVersionReadsTheGoLineOfGoWork(t *testing.T) {
 	}
 }
 
-func TestFallbackModulePrefixIsAValidPath(t *testing.T) {
-	for in, want := range map[string]string{
-		"acme":               "example.com/acme",
-		"Jato.Auto.Packages": "example.com/jato.auto.packages",
-		"My Shop!":           "example.com/my-shop",
-		"":                   "example.com/workspace",
-	} {
-		if got := fallbackModulePrefix(in); got != want {
-			t.Errorf("fallbackModulePrefix(%q) = %q, want %q", in, got, want)
-		}
-	}
-}
-
 func TestGenerateSaysWhenTheModulePathIsAPlaceholder(t *testing.T) {
 	GoRunner = func(dir string, argv []string) error {
 		if argv[1] == "mod" && argv[2] == "init" {

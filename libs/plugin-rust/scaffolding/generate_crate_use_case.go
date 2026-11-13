@@ -1,51 +1,25 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
 
 type templateData struct {
 	Dir, Name, Crate, Kind, Stack string
-}
-
-// CrateName is a project's crate name: the workspace's name first, so a
-// published crate does not clash on crates.io (acme-core).
-func CrateName(workspace, name string) string {
-	workspace = crateIdentifier(workspace)
-	if workspace == "" || strings.HasPrefix(name, workspace+"-") {
-		return name
-	}
-	return workspace + "-" + name
-}
-
-// crateIdentifier keeps what Cargo accepts in a package name (letters,
-// digits, dashes, underscores): any other run of characters, such as the dots
-// of a workspace named jato.auto.packages, becomes one dash.
-func crateIdentifier(name string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(name) {
-		switch {
-		case c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '_':
-			b.WriteRune(c)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
-			b.WriteByte('-')
-		}
-	}
-	out := strings.TrimSuffix(b.String(), "-")
-	if out != "" && out[0] >= '0' && out[0] <= '9' {
-		out = "x" + out // Cargo wants a letter first
-	}
-	return out
+	// Edition is the edition the crate sets for itself. It is empty when the
+	// root Cargo.toml shares one in [workspace.package], which the crate inherits.
+	Edition string
 }
 
 // Generate writes a crate, lists it in the root Cargo.toml's workspace
@@ -81,7 +55,10 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	} else {
 		maps.Copy(templates, libTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Crate: CrateName(params.Workspace.Name, params.Name), Kind: string(params.Kind), Stack: params.Stack}
+	data := templateData{Dir: params.Directory, Name: params.Name, Crate: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Cargo, params.Name)), Kind: string(params.Kind), Stack: params.Stack}
+	if WorkspaceEdition(string(src)) == "" {
+		data.Edition = DefaultEdition
+	}
 	written, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

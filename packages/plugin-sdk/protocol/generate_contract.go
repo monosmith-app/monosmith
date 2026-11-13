@@ -38,12 +38,26 @@ type GenerateParams struct {
 	// requires. A plugin applies the choices it owns and ignores the rest.
 	// Absent when the stack is not a selection. Set by the host; read only.
 	Choices []string `json:"choices,omitempty"`
+	// PackageName is the name the person gave the project's package (smith add
+	// --package-name): the npm package, the Cargo crate, the Python
+	// distribution, the last part of the Go module path, and so on. The host
+	// has checked it against the language's naming rules. The plugin that
+	// writes the manifest uses it as given, in place of the name it builds
+	// from the workspace and Name. Empty: the plugin builds the name.
+	PackageName string `json:"packageName,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.
 type WorkspaceInfo struct {
 	Name string `json:"name"`
-	// Scope is the npm scope for packages, with its @ (e.g. "@acme").
+	// Namespace is the word every language puts before a project's name to
+	// build its default package name (acme-core, acme_core, Acme.Core). The
+	// host sends the workspace's namespace, which is its name when none is
+	// set. Plugins build names through packages/plugin-sdk/projectnaming.
+	Namespace string `json:"namespace,omitempty"`
+	// Scope is the npm scope for packages, with its @ (e.g. "@acme"). The
+	// host sends it only when the person set it; otherwise the scope is the
+	// namespace.
 	Scope string `json:"scope,omitempty"`
 	// ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.
 	ModulePrefix string `json:"modulePrefix,omitempty"`

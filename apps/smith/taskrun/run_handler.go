@@ -111,6 +111,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 	f.IntVar(&req.Parallel, "parallel", 0, "tasks to run at once (default: CPU count)")
 	f.BoolVar(&req.Bail, "bail", false, "stop starting tasks after the first failure")
 	f.BoolVar(&req.NoCache, "no-cache", false, "run every task even if a cached result exists")
+	commandflags.AddFixFlag(cmd, &req.Fix, "fix what each linter can fix, without the cache, then report what is left (lint only); a language whose linter has no fix runs its plain lint")
 	commandflags.AddReleaseFlag(cmd, &req.Release, "build the optimised profile (cargo --release, dotnet -c Release, Android release); other tools ignore it")
 	f.BoolVar(&verbose, "verbose", false, "show the log of every project, not only the ones that fail")
 	f.BoolVar(&asJSON, "json", false, "print the summary as JSON")

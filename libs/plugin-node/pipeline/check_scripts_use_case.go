@@ -22,8 +22,10 @@ var scriptsThatMatter = map[string]bool{
 }
 
 // knownTools run without being installed in node_modules: they come with Node
-// or npm, or are smith itself.
-var knownTools = map[string]bool{"node": true, "npm": true, "npx": true, "smith": true, "corepack": true}
+// or npm, or are smith itself. func (Azure Functions Core Tools) and sam (the
+// AWS SAM CLI) are programs of the machine, not npm packages: the functions
+// plugin's doctor checks that they are installed.
+var knownTools = map[string]bool{"node": true, "npm": true, "npx": true, "smith": true, "corepack": true, "func": true, "sam": true}
 
 // shellCommands are commands the shell a script runs in provides.
 var shellCommands = map[string]bool{

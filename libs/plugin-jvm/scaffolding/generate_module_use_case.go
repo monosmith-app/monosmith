@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -9,9 +10,9 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"unicode"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/discovery"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
@@ -19,26 +20,6 @@ import (
 type templateData struct {
 	Dir, Up, Name, Workspace, Group, ArtifactID, Package, PackagePath, Kind, Stack string
 }
-
-// identifier keeps a name's letters and digits, lowercased: a Java package
-// segment (web-api → webapi), which starts with a letter (3d → x3d).
-func identifier(name string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(name) {
-		if unicode.IsLetter(c) || unicode.IsDigit(c) {
-			if b.Len() == 0 && unicode.IsDigit(c) {
-				b.WriteByte('x')
-			}
-			b.WriteRune(c)
-		}
-	}
-	return b.String()
-}
-
-// GroupID is a new workspace's Maven groupId, dev.<workspace>: a placeholder
-// for the owner's reverse domain, which a repository like Maven Central
-// verifies before it accepts a deploy.
-func GroupID(workspace string) string { return "dev." + identifier(workspace) }
 
 // Generate writes a module, lists it in the root pom, and writes the root
 // pom the first time. The kotlin and android stacks write a Gradle module
@@ -54,8 +35,8 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	workspace := params.Workspace.Name
 	data := templateData{
 		Dir: params.Directory, Up: strings.Repeat("../", strings.Count(params.Directory, "/")+1),
-		Name: params.Name, Workspace: workspace, Group: GroupID(workspace),
-		ArtifactID: workspace + "-" + params.Name, Kind: string(params.Kind), Stack: params.Stack,
+		Name: params.Name, Workspace: workspace, Group: projectnaming.GroupID(params.Workspace),
+		ArtifactID: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Maven, params.Name)), Kind: string(params.Kind), Stack: params.Stack,
 	}
 	templates := maps.Clone(sliceTemplates)
 	maps.Copy(templates, moduleTemplate)
@@ -76,7 +57,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		}
 		data.Group, data.Workspace = root.GroupID, strings.TrimSuffix(root.ArtifactID, "-parent")
 	}
-	data.Package = data.Group + "." + identifier(params.Name)
+	data.Package = data.Group + "." + projectnaming.Flat(params.Name)
 	data.PackagePath = strings.ReplaceAll(data.Package, ".", "/")
 	files, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {

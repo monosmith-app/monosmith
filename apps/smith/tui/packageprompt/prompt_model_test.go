@@ -53,6 +53,31 @@ func TestTheDevelopmentBoxAddsDAndRemoveHasNoBox(t *testing.T) {
 	}
 }
 
+func TestTheFocusedRowHasTheCursorMarkOfEveryPickListAndTheTextStaysPut(t *testing.T) {
+	p := typeText(NewInstall("api", []string{"api"}).Place(100, 30), "pytest-cov")
+	column := func(p Prompt) (int, int) {
+		marks, at := 0, -1
+		for _, l := range strings.Split(screen(p), "\n") {
+			if strings.Contains(l, "> ") && !strings.Contains(l, "$") {
+				marks++
+			}
+			if i := strings.Index(l, "[ ] a development"); i >= 0 {
+				at = i
+				if strings.Contains(l, "> [ ]") {
+					marks += 10
+				}
+			}
+		}
+		return marks, at
+	}
+	_, before := column(p)
+	p, _ = key(p, tea.KeyTab) // to the box
+	marks, after := column(p)
+	if marks != 11 || after != before {
+		t.Fatalf("the box row must carry the only cursor mark and stay in its column (%d, %d -> %d):\n%s", marks, before, after, screen(p))
+	}
+}
+
 func TestNothingTypedOrAFlagKeepsThePromptOpenAndSaysWhy(t *testing.T) {
 	p := NewInstall("web", []string{"web"}).Place(100, 30)
 	p, out := key(p, tea.KeyEnter)

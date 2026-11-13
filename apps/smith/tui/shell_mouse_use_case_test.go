@@ -124,13 +124,13 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
-	l := newLab(t, true, 260, 34)
+	l := newLab(t, true, 320, 34)
 	x, y := l.find("test orders (t)")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
-	l = newLab(t, true, 160, 34)
+	l = newLab(t, true, 320, 34)
 	x, y = l.find("help (?)")
 	l.send(click(x+1, y))
 	l.has("Keyboard shortcuts")
@@ -157,7 +157,7 @@ func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 }
 
 func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
-	l := newLab(t, true, 160, 34)
+	l := newLab(t, true, 320, 34)
 	x, y := l.find("1-6 views")
 	l.send(click(x+1, y))
 	if l.sh().tab != "projects" || len(l.started) != 0 {
@@ -283,7 +283,7 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "x", "enter")
-	x, y := l.find("Cancel (esc)")
+	x, y := l.find("Cancel (Esc)")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
 		t.Fatal("cancel must not run")
@@ -311,7 +311,7 @@ func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "x", "enter")
 	before := l.sh().View()
-	x, y := l.find("Cancel (esc)")
+	x, y := l.find("Cancel (Esc)")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("hover should change the button")
@@ -364,14 +364,12 @@ func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 	l.has("Log: all output", "main.go:12", "ok example.com/kit")
 }
 
-func TestClickingAGuideOptionSelectsAndDoubleClickingChoosesIt(t *testing.T) {
+func TestOneClickOnAGuideOptionPicksIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("a")
 	l.has("What are you building?")
 	x, y := l.find("A package")
 	l.send(click(x+2, y))
-	l.has("› A package")
-	l.doubleClick(x+2, y)
 	l.hasNot("What are you building?")
 }
 
@@ -399,7 +397,10 @@ func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 	// Every tab is a button with its key, so the strip needs more room than the names alone.
 	l := newLab(t, true, 99, 30)
-	l.hasNot("›", "‹")
+	// No scroll marker on the strip (a list row below may carry the cursor mark).
+	if strip := l.lines()[l.sh().lay().Tabs.Y]; strings.ContainsAny(strip, "›‹") {
+		t.Fatalf("the strip scrolls: %q", strip)
+	}
 	for _, name := range []string{"Home", "Proj", "Doctor", "Deps", "Rel"} {
 		l.has(name)
 	}
@@ -504,7 +505,7 @@ func TestAClickOnTheModalsOwnButtonStillWorks(t *testing.T) {
 	l := newLab(t, true, 120, 40)
 	l.openTab(commands.TabRelease)
 	l.keys("x", "enter")
-	l.has("[Cancel (esc)]")
+	l.has("[Cancel (Esc)]")
 	l.clickText("Cancel")
 	if l.sh().modalOpen() {
 		t.Fatal("Cancel closes the confirmation")

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-vba/discovery"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -24,7 +25,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return protocol.GenerateResult{}, err
 	}
-	body := source(moduleName(params.Name), params.Name, string(params.Kind), params.Stack)
+	body := source(projectnaming.Name(params.Workspace, projectnaming.VBA, params.Name), params.Name, string(params.Kind), params.Stack)
 	if err := os.WriteFile(filepath.Join(dir, discovery.MainName), []byte(body), 0o644); err != nil {
 		return protocol.GenerateResult{}, err
 	}

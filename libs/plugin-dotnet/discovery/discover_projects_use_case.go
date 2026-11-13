@@ -83,15 +83,16 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			testsFile = filepath.ToSlash(rel)
 		}
 		result.Projects = append(result.Projects, protocol.Project{
-			Name:     path.Base(root),
-			Root:     root,
-			Language: "dotnet",
-			Kind:     kind,
-			Exports:  []string{p.PackageID},
-			Imports:  importList,
-			Version:  p.Version,
-			Tasks:    tasksOf(workspaceRoot, root, path.Base(manifest), testsFile, kind),
-			Stack:    p.Stack,
+			Name:        path.Base(root),
+			Root:        root,
+			Language:    "dotnet",
+			Kind:        kind,
+			Exports:     []string{p.PackageID},
+			PackageName: p.PackageID,
+			Imports:     importList,
+			Version:     p.Version,
+			Tasks:       tasksOf(workspaceRoot, root, path.Base(manifest), testsFile, kind),
+			Stack:       p.Stack,
 		})
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("dotnet", "dotnet", "--version") })

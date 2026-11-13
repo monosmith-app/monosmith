@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/cachesetup"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/cachewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
 // cacheMsg is news from the engine of the remote cache setup.
@@ -30,7 +31,7 @@ func waitCache(b *cachewizard.Bridge) tea.Cmd {
 func (s *Shell) openCacheSetup() tea.Cmd {
 	setup := s.sources.CacheSetup
 	if setup == nil {
-		s.say("The remote cache setup is not available here: run smith cache setup in a terminal")
+		s.say(words.Say("tui.cache.not_here"))
 		return nil
 	}
 	if s.cache != nil {
@@ -41,7 +42,7 @@ func (s *Shell) openCacheSetup() tea.Cmd {
 		secrets = s.cacheSecrets()
 	}
 	b := cachewizard.NewBridge(secrets)
-	m := cachewizard.New(s.now()).Place(s.w, s.h)
+	m := cachewizard.New(s.now()).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.cache, s.cacheRun = &m, b
 	b.Start(func(d cachesetup.Dialogue) (string, error) {
 		facts, ports, err := setup()
@@ -62,8 +63,8 @@ func (s *Shell) cacheKey(msg tea.KeyMsg) tea.Cmd {
 }
 
 // cacheClick gives the setup a click.
-func (s *Shell) cacheClick(x, y int, double bool) tea.Cmd {
-	m, out := s.cache.Click(s.th, x, y, double)
+func (s *Shell) cacheClick(x, y int) tea.Cmd {
+	m, out := s.cache.Click(s.th, x, y)
 	s.cache = &m
 	return s.afterCache(out)
 }
@@ -74,7 +75,7 @@ func (s *Shell) afterCache(out cachewizard.Outcome) tea.Cmd {
 	case out.Cancel:
 		s.cacheRun.Cancel()
 		s.cache, s.cacheRun = nil, nil
-		s.notify("Remote cache setup closed. Nothing more was changed.", toast.Info)
+		s.notify(words.Say("tui.cache.closed"), toast.Info)
 	case out.Reply != nil:
 		s.cacheRun.Reply(*out.Reply)
 	case out.Press != 0:
@@ -92,11 +93,11 @@ func (s *Shell) cacheEvent(msg cacheMsg) tea.Cmd {
 		s.cache, s.cacheRun = nil, nil
 		switch {
 		case end.Err != nil:
-			s.notify("Remote cache setup stopped: "+end.Err.Error(), toast.Error)
+			s.notify(words.Say("tui.cache.stopped", "reason", end.Err.Error()), toast.Error)
 		case end.Remote != "":
-			s.notify("Remote cache setup finished for "+end.Remote, toast.Success)
+			s.notify(words.Say("tui.cache.finished.for", "remote", end.Remote), toast.Success)
 		default:
-			s.notify("Remote cache setup finished", toast.Success)
+			s.notify(words.Say("tui.cache.finished"), toast.Success)
 		}
 		var reload tea.Cmd
 		s.settings, reload = s.settings.Reload()

@@ -463,11 +463,11 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 	long := longDeps(t, 60)
 	long.has("┆")
 	thumbRow := func(l *lab) int {
-		for y, line := range l.lines() {
-			// The thumb is the solid line where the dashed track would be, in the
-			// last content column of the list, left of the detail.
-			col := long.sh().mainInner().X + long.sh().mainInner().W - 1
-			if r := []rune(line); len(r) > col && r[col] == '│' {
+		// The thumb is the solid line where the dashed track would be, in the
+		// last column of the list's content.
+		in := l.sh().mainInner()
+		for y, line := range l.sh().mainContent(in.W, in.H).lines {
+			if r := []rune(pane.Strip(line)); len(r) == in.W && r[in.W-1] == '│' {
 				return y
 			}
 		}
@@ -480,6 +480,14 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 	}
 	if after := thumbRow(long); after <= before {
 		t.Fatalf("the thumb stayed at row %d after scrolling down (now %d)", before, after)
+	}
+	// Beside a detail the scrollbar is drawn on the divider: the screen shows one
+	// line there, never two side by side.
+	col := long.sh().mainInner().X + long.sh().mainInner().W
+	for _, line := range long.lines() {
+		if r := []rune(line); len(r) > col && strings.ContainsRune("┆│", r[col-1]) && strings.ContainsRune("┆│", r[col]) {
+			t.Fatalf("a double line beside the divider: %q", line)
+		}
 	}
 }
 

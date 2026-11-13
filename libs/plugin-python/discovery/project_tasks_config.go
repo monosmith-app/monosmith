@@ -41,9 +41,12 @@ func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolA
 		"typecheck": task(slices.Concat([]string{py, "-m", "mypy"}, args.Mypy, []string{"."}), "mypy", args.Mypy),
 		"test":      task(slices.Concat([]string{py, "-m", "pytest", "-q", "-p", "no:cacheprovider"}, args.Pytest), "pytest", args.Pytest),
 	}
+	// ruff check --fix rewrites what ruff can; the plain lint says what is left.
+	lint := tasks["lint"]
+	lint.Fix = &protocol.TaskFix{Command: slices.Concat([]string{py, "-m", "ruff", "check", "--fix"}, args.Ruff, []string{"."})}
+	tasks["lint"] = lint
 	switch kind {
 	case protocol.ProjectPackage:
-		addDepsCheck(tasks, root)
 		addDepsCheck(tasks, root)
 		// Into the workspace's dist/, like every build: nothing in the source tree.
 		tasks["build"] = protocol.Task{Command: []string{py, "-m", "build", "--outdir", "{workspaceRoot}/" + protocol.ProjectBuildDir(root), "."}, Inputs: inputs, Outputs: []string{protocol.BuildDirFromProject(root)}, Cache: true, Description: "Build the wheel and sdist into " + protocol.ProjectBuildDir(root) + "/"}

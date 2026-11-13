@@ -1,6 +1,9 @@
 package toolinstall
 
-import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+import (
+	"github.com/monosmith-app/monosmith/libs/words/words"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
 
 // Need is a tool the workspace needs and who needs it.
 type Need struct {
@@ -38,14 +41,19 @@ type Status struct {
 	Wanted Requirement `json:"wanted"`
 	// WantedFrom names the file that gave Wanted.
 	WantedFrom string `json:"wantedFrom,omitempty"`
+	// OffPath, for a missing tool, is the folder that holds its program but is
+	// not on PATH (a winget portable package); empty when none was found.
+	OffPath string `json:"offPath,omitempty"`
 }
 
 // Problem says in plain words what is wrong with the tool, to follow its title:
-// "is not installed", "is too old (1.2 is installed, 1.4 or newer is wanted)",
+// "is not installed", "is installed in <folder>, but that folder is not on PATH", "is too old (1.2 is installed, 1.4 or newer is wanted)",
 // or, for a tool with one wanted version, "is 2.13.0, not the 2.15.0 that CI
 // pins". It is empty when the tool is found.
 func (s Status) Problem() string {
 	switch {
+	case s.State == Missing && s.OffPath != "":
+		return words.Say("toolfolder.problem", "folder", s.OffPath)
 	case s.State == Missing:
 		return "is not installed"
 	case s.State == Outdated && s.Exact:

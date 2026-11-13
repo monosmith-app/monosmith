@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
@@ -69,9 +68,6 @@ func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 	if !slices.Contains(releasetable.CommandPlatforms, platform) {
 		return Result{}, problem.New(fmt.Sprintf("%q is not a platform smith builds release files for", platform),
 			"smith release assets --platform "+strings.Join(releasetable.CommandPlatforms, " | "))
-	}
-	for _, w := range buildoutputs.OverlapWarningsFor(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs) {
-		fmt.Fprintln(req.Out, w)
 	}
 	if req.Source == SourceUndecided {
 		req.Source = ""

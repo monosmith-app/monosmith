@@ -165,10 +165,11 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 }
 
 // dialogMargins are the rows a confirmation keeps clear: the header and the tab
-// bar above the framed area, the status bar below it.
+// bar and the rule under it above the content, the footer and the status bar
+// below it. The palette starts on the same first row of the content.
 func (s Shell) dialogMargins() (top, bottom int) {
 	l := s.lay()
-	return l.Main.Y, max(s.h-l.Footer.Y, 0)
+	return s.mainInner().Y, max(s.h-l.Footer.Y, 0)
 }
 
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
@@ -191,28 +192,36 @@ func (s *Shell) resize(w, h int) {
 		s.confirm = &placed
 	}
 	if s.fix != nil {
-		placed := s.fix.Place(w, h)
+		placed := s.fix.Within(s.dialogMargins()).Place(w, h)
 		s.fix = &placed
 	}
 	if s.adopt != nil {
-		placed := s.adopt.Place(w, h)
+		placed := s.adopt.Within(s.dialogMargins()).Place(w, h)
 		s.adopt = &placed
 	}
 	if s.tools != nil {
-		placed := s.tools.Place(w, h)
+		placed := s.tools.Within(s.dialogMargins()).Place(w, h)
 		s.tools = &placed
 	}
 	if s.cache != nil {
-		placed := s.cache.Place(w, h)
+		placed := s.cache.Within(s.dialogMargins()).Place(w, h)
 		s.cache = &placed
 	}
 	if s.compose != nil {
-		placed := s.compose.Place(w, h)
+		placed := s.compose.Within(s.dialogMargins()).Place(w, h)
 		s.compose = &placed
 	}
 	if s.result != nil {
-		placed := s.result.Place(w, h)
+		placed := s.result.Within(s.dialogMargins()).Place(w, h)
 		s.result = &placed
+	}
+	if s.help != nil {
+		placed := s.help.Within(s.dialogMargins()).Place(w, h)
+		s.help = &placed
+	}
+	if s.pkg != nil {
+		placed := s.pkg.Within(s.dialogMargins()).Place(w, h)
+		s.pkg = &placed
 	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {

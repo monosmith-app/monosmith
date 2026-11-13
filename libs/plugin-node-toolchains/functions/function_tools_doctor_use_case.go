@@ -30,14 +30,18 @@ func hostOf(workspaceRoot, root string) string {
 	return ""
 }
 
-// Doctor checks, for each host the workspace's function apps use, that the tool
-// that runs them locally is installed. A missing tool is a warning: the build and
+// Doctor checks that no function app holds a copy of a smith script, and, for
+// each host the workspace's function apps use, that the tool that runs them
+// locally is installed. A missing tool is a warning: the build and
 // the tests need no cloud tool.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	seen := map[string]bool{}
 	findings := []protocol.Finding{}
 	for _, p := range params.Projects {
 		host := hostOf(workspaceRoot, p.Root)
+		if f, found := functionhost.CopiedScriptsFinding(workspaceRoot, p, host); found && host != "" {
+			findings = append(findings, f)
+		}
 		tool, ok := functionhost.ToolOf(host)
 		if host == "" || seen[host] || !ok {
 			continue

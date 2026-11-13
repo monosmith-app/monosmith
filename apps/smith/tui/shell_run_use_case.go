@@ -56,13 +56,13 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		if !confirmed {
 			if resultdialog.ChoosesCacheTier(argv, s.remote.set) && !s.cacheTierChosen {
 				// Which cache goes, the local or the shared one, is the person's choice.
-				m := resultdialog.NewWhichCache(argv).Place(s.w, s.h)
+				m := resultdialog.NewWhichCache(argv).Within(s.dialogMargins()).Place(s.w, s.h)
 				s.result = &m
 				return nil
 			}
 			if resultdialog.ChoosesVersion(argv) {
 				// Which version wins is the person's choice: ask before the plan.
-				m := resultdialog.NewWhichVersion(argv).Place(s.w, s.h)
+				m := resultdialog.NewWhichVersion(argv).Within(s.dialogMargins()).Place(s.w, s.h)
 				s.result = &m
 				return nil
 			}

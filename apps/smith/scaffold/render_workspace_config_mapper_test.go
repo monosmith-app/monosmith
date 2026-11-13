@@ -24,7 +24,7 @@ func render(t *testing.T, opts NewOptions) (string, workspace.Config) {
 
 func TestNoAnswersWriteTheTemplateAsItWas(t *testing.T) {
 	text, _ := render(t, NewOptions{})
-	if want := fmt.Sprintf(configTemplate, "acme", "@acme", "github.com/acme/acme", `"github"`); text != want {
+	if want := fmt.Sprintf(configTemplate, "acme", namespaceLines(NewOptions{Name: "acme", Scope: "@acme"}), "github.com/acme/acme", `"github"`); text != want {
 		t.Fatalf("defaults changed the file:\n%s", text)
 	}
 }
@@ -72,5 +72,22 @@ func TestAnAnswerSmithCannotWriteIsRefused(t *testing.T) {
 		if _, err := renderWorkspaceConfig(opts, `"github"`); err == nil {
 			t.Errorf("%s: accepted", name)
 		}
+	}
+}
+
+func TestNamespaceLinesAreCommentedUntilGiven(t *testing.T) {
+	if got := namespaceLines(NewOptions{Name: "My Shop"}); !strings.Contains(got, `# namespace = "My Shop"`) || !strings.Contains(got, `# scope = "@my-shop"`) {
+		t.Errorf("defaults stay comments:\n%s", got)
+	}
+	got := namespaceLines(NewOptions{Name: "shop", Namespace: "acme", Scope: "@acme-npm"})
+	if !strings.Contains(got, "\nnamespace = \"acme\"\n") || !strings.Contains(got, "\nscope = \"@acme-npm\"\n") {
+		t.Errorf("given values are written:\n%s", got)
+	}
+}
+
+func TestANamespaceGivenReachesTheConfig(t *testing.T) {
+	_, cfg := render(t, NewOptions{Namespace: "pargic"})
+	if cfg.Workspace.Namespace != "pargic" {
+		t.Errorf("namespace %q", cfg.Workspace.Namespace)
 	}
 }

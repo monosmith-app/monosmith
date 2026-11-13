@@ -39,7 +39,7 @@ func TestDiscover(t *testing.T) {
 	if api.Kind != protocol.ProjectApp || api.Version != "1.2.0" || !reflect.DeepEqual(api.Imports, []string{"Acme.Core"}) || api.Tasks["start"].Command[1] != "run" {
 		t.Errorf("api %+v", api)
 	}
-	if fixtures.Kind != protocol.ProjectLib || fixtures.Exports[0] != "Acme.Fixtures" {
+	if fixtures.Kind != protocol.ProjectLib || fixtures.Exports[0] != "Acme.Fixtures" || fixtures.PackageName != "Acme.Fixtures" {
 		t.Errorf("fixtures %+v", fixtures)
 	}
 	if core.Kind != protocol.ProjectPackage || core.Stack != "dotnet" || core.Tasks["test"].Command[2] != "tests/Acme.Core.Tests.csproj" || !reflect.DeepEqual(core.Imports, []string{"Acme.Fixtures"}) {

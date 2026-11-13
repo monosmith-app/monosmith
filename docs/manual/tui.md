@@ -57,7 +57,9 @@ From top to bottom:
    There is no left, right or bottom edge. The rule has no title: the lit tab says where
    you are, and a fact shows once. A form on the Start tab names itself on its first line.
 4. **Footer**: key hints for the open view, then the ones every view ends with
-   (`views`, `palette`, `help`, `quit`, `mouse`). Each hint can be clicked.
+   (`views`, `palette`, `help`, `quit`, `mouse`). Each hint can be clicked. When the line is
+   too narrow, these global hints go first, so the view keeps its own keys (Home keeps
+   `next (Enter)`); then the view's last hints go.
 5. **Status bar**: the exact command line running or last run, its result, the git branch
    and the smith version.
 
@@ -304,6 +306,10 @@ of each update in [`smith up --json`](up.md).
 ### The footer follows the mode
 
 - While a text box is open, the footer shows only `Enter confirm` and `Esc back`.
+- While a dialog is open (the palette, the help, a confirmation, a wizard, Compose a stack, the
+  result, tools and cache dialogs), the footer is empty: the dialog takes every key and click, and
+  shows its own keys on its buttons and in its key line. Every dialog sits between the tab strip
+  and the footer, so the tabs and the status bar stay in view.
 - When the run shown has a failed task, `r run again` and `Y copy log` lead the footer.
 - The `Esc` label says what Esc does: in the run panel, `all output` while one task's log is
   shown, then `back`; it leaves the footer while a run shows all output.
@@ -326,8 +332,20 @@ Health section also holds the 2.0 commands, described in
 [Undo, report, why and derived files](#undo-report-why-and-derived-files): Undo the last
 change, Open the report, Write the agent file, Check the derived files, Update the derived
 files and Why is this here?
-The palette and every box drawn over the screen stay inside the content area; behind a box the
-view is emptied so no text shows at its edges, and a toast sits inside the content area.
+The palette and every box drawn over the screen sit in the middle of the content area, between
+the tab strip and the footer. Behind a box the view is emptied so no text shows at its edges. A toast sits
+inside the content area and never covers the border of a box: it goes under or over the box, or
+inside its border when the box takes the whole height.
+A box never grows past those rows. On a short terminal (80x24, or 100x16) a box whose text is
+taller than the free rows keeps its title, its key line and its buttons, and the text above them
+scrolls: `↑ more` and `↓ more` mark the hidden lines and the shared scrollbar shows where you are.
+The arrows move the cursor and the text follows it; the wheel, `PgUp`, `PgDn`, `Ctrl+U` and
+`Ctrl+D` scroll it; a click on a choice that scrolled into view picks it. This holds for every box:
+Compose a stack (its question, name and plan screens), Install packages (which also grows when an
+error or a longer command appears), the help, a confirmation (its spinner stays in view while smith
+reads the plan), the fix and repair dialogs, the result, tools and cache dialogs and the release
+picker. On a short screen the Compose a stack list keeps its rows: the summary of what is ticked
+moves into the title (`Compose a stack · nothing ticked yet`) and the key line gets shorter.
 
 While a box is open (the palette, help, a confirmation, a picker, the fix, adopt and compose
 screens, the tools and result dialogs) it blocks the screen. The whole screen behind it, from the
@@ -417,8 +435,8 @@ consequence. The first line is always the one that does nothing, because smith n
   **Check again** (runs the first check of the project again, not the add) and **Continue without checking**
   (Doctor keeps reminding you). Esc closes the dialog and changes nothing.
 
-The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): click an entry
-to put the cursor on it, double-click to select it like `Enter`. The last line of the dialog says so.
+The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): one click
+on an entry picks it, as `Enter` does. The last line of the dialog says so.
 The dialog covers the content of the open view, but the rule under the tabs and the divider
 between the panes stay. Glyphs the log drew itself (a rule, a scrollbar thumb) are cleared with the rest, so no
 stray line shows around the dialog.
@@ -512,6 +530,14 @@ end up with and the name of each answer, and writes a `--chosen` flag (see
 **Release without a releasing commit** does not list a package that was never released: smith has
 no version to bump. A line names it and gives the commit that sets its first version, `git commit
 --allow-empty -m "version(<name>)[1.0.0]"`.
+
+**Convert an Nx or Turborepo workspace** reads the plan first (`smith convert --dry-run --json`,
+which changes nothing; a box says so while it reads). For each build task whose outputs, as Nx or
+Turborepo declared them, differ from what its build writes, the form asks which outputs to cache:
+what the build writes (suggested, first) or what the old tool declared. One click picks. The answer
+reaches the command as `--outputs <project>:<task>=detected|declared`. When the plan cannot be
+read (for example, the packages are not installed yet, and a plan never installs), a toast says
+why and the form asks the other questions; convert then takes the suggested outputs.
 
 While smith convert or smith new runs from the form (before a workspace exists), the box is titled with what it does (Converting this workspace to smith…, Creating a new workspace…). A spinner line says what it is doing, with the time once it passes 2 seconds, above the last lines it printed.
 
@@ -645,7 +671,7 @@ The detail of the selected check has four parts, always in this order, and each 
 1. **State**, under the check's name: the icon and the word only (`× failed`, `▲ warning`, `✓ passed`).
 2. **Actions**, as an [action panel](#action-panels): `[ Fix  f ]` (only when the check has a fix), **Run this check now** (only for a check that a command runs on its own: the boundary checks run `smith boundaries`), `[ Check again  r ]` and **Why is <file> here?** (only for a check about a file: the file its fix writes, or a path its problem names). Why opens the **Why is this here?** form with the file filled in, so `Enter` runs `smith why <file>`. Each button shows its key. A click on a button chooses it. Under the rule, a plain line says what the chosen action does (for a fix, what it will change), and the run button under that line runs it. The key of an action runs it at once.
 3. **What is wrong**: the problem the check found. A long problem shows its first three items; `e` shows all.
-4. **How to fix**: the remedy, then what the fix will do (the projects it covers, the files it writes, the commands it runs, the questions it asks), and last the same fix in a terminal (`or in a terminal: smith doctor --fix --only '<check>'`). A check without a fix has no Fix button; its remedy says what to do.
+4. **How to fix**: the remedy, then what the fix will do (the projects it covers, the files it writes, the commands it runs, and each question it asks first with every answer numbered on a line of its own, the suggested one first and an answer that cannot be picked now with its reason; a fix that asks is never folded), and last the same fix in a terminal (`or in a terminal: smith doctor --fix --only '<check>'`). A check without a fix has no Fix button; its remedy says what to do.
 
 `PgUp` and `PgDn` scroll the detail (`↑ more` and `↓ more` tell when there is more). Under 100 columns, `z` shows the detail alone.
 
@@ -706,7 +732,8 @@ wizard's keys and drawing. The stages:
 1. **Reading** the repository.
 2. **What was found**: the kind of repository (Nx, Turborepo, or plain), the projects
    (the first twelve, with their language in words), the tools in use today, and blockers
-   (`×`) and warnings (`!`). Nothing has changed yet. When the packages are not installed, or
+   (`×`) and warnings (`!`). Nothing has changed yet. With a blocker, the screen has one button,
+   **Close** (`Enter`); `Esc` closes it too. When the packages are not installed, or
    are not the ones the repository lists, the button is **Install the packages and
    continue**: smith runs `npm ci` (or `npm install` without a lockfile), reads the
    repository again and goes on. git cannot take an install back, and the screen says so.
@@ -737,7 +764,10 @@ wizard's keys and drawing. The stages:
 8. **Done**, in three parts: what is done and what was proven (`It works: everything builds
    (9.8s), every test passes (31s), doctor finds nothing wrong (4s)`, then how many things
    need you), **Needs you** (what the conversion could not decide for you, each with its
-   reason) and **Behaves differently now** (the first five, the rest in
+   reason), **Found by the closing checks** (when the lint or doctor found something: the
+   conversion finished and kept its changes; each check with every failure, its remedy and
+   the command that checks again, and these count among the things that need you, so the box
+   never says `Nothing needs you` then) and **Behaves differently now** (the first five, the rest in
    `.smith/convert-report.txt`), then the files that look like old tooling but stay.
    **Open the workspace** (`Enter`) reopens the interface inside the new workspace; **Read
    the report** (`s`) shows `.smith/convert-report.txt` inside the wizard. When no check
@@ -837,10 +867,14 @@ Doctor (Fix, Run this check now, Check again, Why).
 2. **The bottom part**, under a thin rule, says what the chosen action does: what runs, what runs
    first, whether smith remembers the result, and the `smith run …` line. Under the description is
    the one button that runs it. That button has the label and the key of the chosen action.
+   When the pane is too short for the whole panel, this part stays at the bottom of the pane and
+   the buttons above it scroll, so the description and the run button are always in view. A
+   description too long for half of the pane is cut and ends with `…`.
 
 With the keyboard (after `Tab`, or in the opened detail), `Up` and `Down` choose an action. `Down`
 after the last action moves to the run button, and `Up` goes back. `Enter` on an action moves to the
-run button, and `Enter` on the run button runs the action. The shortcut letters (`b`, `t`, `l`, `c`,
+run button, and `Enter` on the run button runs the action. The footer says which: `go to run (Enter)`
+on an action, `run (Enter)` on the run button. The shortcut letters (`b`, `t`, `l`, `c`,
 `p` and the others the buttons show) do not choose: they run the action at once. They are the fast
 path that the footer and the help promise.
 
@@ -863,8 +897,8 @@ narrow screen the row at the keyboard cursor carries the cursor mark, and `Enter
 action panel, `Enter` first moves to the run button).
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
-button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
-a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
+button; click an answer of a single-choice list to pick it; double-click a project or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
+a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme; beside a detail, the list's scrollbar is drawn on the divider, so one line shows there) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
 (the choices of Add a project, the languages, the plugin lists of a recipe) and in the Compose a
 stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
 selection and keep it in view; a scrollbar and a line "↑ 3 more · ↓ 12 more" say what is hidden.
@@ -883,24 +917,36 @@ component, so it looks and acts the same everywhere: Compose a stack, the guided
 project and the others), the doctor fix wizard and the dependency repair, the result dialog after a
 change (with the cache clear choice), the missing tools dialog, the remote cache wizard, the
 release adjust list, the Settings editors and the commit box of a confirmation. The row at the
-keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. A box reads
+keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. Every
+other list marks its selected row the same way, with no background: the list of projects, the
+sections and rows of Settings, the command palette, the Deps rows, the task rows of the run panel,
+the recent runs (under the projects and on Home, where the mark sits in the gap before the run) and
+the rows of the Install packages box; a status mark keeps its colour. A Settings list that does not have the keyboard keeps the mark in bold. A box reads
 `[ ]`, `[x]` or `[-]` (part ticked, or cannot be ticked), and a one-of-several choice reads `( )`
 or `(●)`. A row that cannot be chosen now is muted. The row under the pointer takes the row hover
 look. With the mouse:
 
 - A click on a tick box row ticks or unticks it (Compose a stack, a form with several answers,
   a list setting in Settings, the box of a Deps row, the commit box). In Compose a stack and the Settings
-  list editor, a click is the same as the key that ticks (`Enter` and `Space`).
-- A click on a row of a list with one answer moves the cursor to it; a double click, or `Enter`,
-  picks it. In the doctor fix wizard and the dependency repair, a click on an option picks it at
-  once.
-- A click on an answer of the open question of Compose a stack picks it.
+  list editor, a click is the same as the key that ticks (`Space`).
+- One click on a row of a list with one answer picks it, as `Enter` does: the guided forms, the
+  doctor fix wizard and the dependency repair, the result dialog, the missing tools dialog, the
+  remote cache wizard, a pick-list setting in Settings and the open question of Compose a stack.
+  There is no "click moves, double click picks" anywhere. The path finder is a browser, not a
+  choice: there a click selects a folder and a double click goes into it.
+- `Space` ticks a tick box in every list. In Compose a stack the search box takes the typed
+  letters: `Down` puts the keyboard on the list, where `Space` ticks the row under the cursor, and
+  a letter puts it back in the search box. `Enter` goes on to the next step there, as `Ctrl+N` does.
+
+**Key hints.** The line of keys under a list or a question names each key the way the buttons and
+the footer do (`Enter`, `Esc`, `Space`, `Tab`, `↑↓`), then what it does, with ` · ` between:
+`↑↓ move · Enter or a click picks · Esc goes back`.
 
 **Hover.** Everything you can click shows a hover look while the pointer is over it. A button,
 a tab and a footer hint take the button hover colour, which is between the resting colour and the
 pressed (or selected) colour. A row that a click selects or ticks (a project, a check, a
 dependency, an option of a form, a run) takes the row hover background, which is between the
-terminal's own background and the background of the selected row. The selected row keeps its own
+terminal's own background and the highlight colour of the theme. The selected row keeps its own
 look. Nothing behind a dialog shows a hover. Without colour (`NO_COLOR` or the plain theme) a
 hovered button is in reverse video and a hovered row is underlined. smith draws the hover at
 most about 40 times a second, so a fast pointer does not slow the screen.

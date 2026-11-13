@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 func TestCI(t *testing.T) {
 	ws := t.TempDir()
 	core := protocol.Project{Name: "core", Root: "packages/core", Kind: protocol.ProjectPackage, Tasks: map[string]protocol.Task{"test": {Command: []string{"dotnet", "test", "tests/Acme.Core.Tests.csproj"}}}}
 	res := CI(ws, protocol.CIParams{Projects: []protocol.Project{core}})
-	if res.Toolchains[0].Version != SDKVersion || len(res.Setup) != 2 || res.Setup[1].Command[2] != "tests/Acme.Core.Tests.csproj" || res.Credentials[0].Env != "NUGET_API_KEY" {
+	if res.Toolchains[0].Version != toolpin.Default("dotnet") || len(res.Setup) != 2 || res.Setup[1].Command[2] != "tests/Acme.Core.Tests.csproj" || res.Credentials[0].Env != "NUGET_API_KEY" {
 		t.Fatalf("%+v", res)
 	}
 	_ = os.WriteFile(filepath.Join(ws, "global.json"), []byte(`{"sdk": {"version": "9.0.300"}}`), 0o644)

@@ -1,6 +1,7 @@
 package convertplan
 
 import (
+	"slices"
 	"sort"
 
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -112,12 +113,56 @@ type Plan struct {
 	Keep map[string]string `json:"keep,omitempty"`
 	// WriteFiles lists the keys of Write, for the report.
 	WriteFiles []string `json:"write,omitempty"`
+	// OutputChoices are the build tasks whose outputs, as the old tool
+	// declared them, differ from what the build writes. The plan holds the
+	// detected outputs; KeepDeclaredOutputs takes a choice back.
+	OutputChoices []OutputChoice `json:"outputChoices,omitempty"`
 	// names maps each Nx project name to its smith name, so a target's
 	// dependency on another project's target can name it.
 	names map[string]string
 	// tagChoices are the release tag prefixes planned for the projects smith
 	// prefixes with their name; applyTagFormat looks for a format they share.
 	tagChoices []tagChoice
+}
+
+// OutputChoice is one build task whose declared outputs differ from the
+// folders its build script writes: the user keeps the declared ones or takes
+// the detected ones (the suggestion).
+type OutputChoice struct {
+	// Project is the smith project name; Task the task.
+	Project string `json:"project"`
+	Task    string `json:"task"`
+	// Declared are the outputs the old tool declared; Detected those the
+	// build writes. Both are relative to the project.
+	Declared []string `json:"declared"`
+	Detected []string `json:"detected"`
+	// Kept is true once the user chose the declared outputs.
+	Kept bool `json:"kept,omitempty"`
+}
+
+// ToolName is the name of the tool the plan converts from, as a reader knows
+// it: Nx or Turborepo.
+func (p *Plan) ToolName() string {
+	if p.Source == SourceTurborepo {
+		return "Turborepo"
+	}
+	return "Nx"
+}
+
+// KeepDeclaredOutputs sets the task of choice i back to the outputs the old
+// tool declared.
+//
+// Parameters: i is the index in OutputChoices; an index out of range does
+// nothing.
+func (p *Plan) KeepDeclaredOutputs(i int) {
+	if i < 0 || i >= len(p.OutputChoices) {
+		return
+	}
+	c := &p.OutputChoices[i]
+	task := p.Override(c.Project).Tasks[c.Task]
+	task.Outputs = slices.Clone(c.Declared)
+	p.SetTask(c.Project, c.Task, task)
+	c.Kept = true
 }
 
 // Add records a finding.

@@ -15,10 +15,11 @@ A task is a command a plugin infers for a project: `build`, `test`, `lint`,
 | `outputs` | directories restored on a cache hit (`dist`) |
 | `ship` | files a tool writes into its own work folder that smith links into the shipped folder `dist/<project dir>` after the task ([below](#the-shipped-folder-and-the-work-folder)); set by a plugin |
 | `release` | the `command` and `ship` of the optimised profile, which `--release` runs ([below](#the-release-profile)); set by a plugin |
+| `fix` | a lint task's fix, which `smith lint --fix` runs in place of the lint, never from or into the cache; set by a plugin ([Fixing lint problems](../manual/lint.md#fixing-problems)) |
 | `cache` | whether results are cached |
 
 ```sh
-smith run <task>... [-p <projects>] [--affected] [--parallel N] [--bail] [--no-cache] [--release] [--json]
+smith run <task>... [-p <projects>] [--affected] [--parallel N] [--bail] [--no-cache] [--release] [--fix] [--json]
 smith build | test | lint | typecheck [project...]
 ```
 

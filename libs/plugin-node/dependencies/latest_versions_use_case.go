@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
-	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 // Lookup asks the registry for a package's latest version; tests replace it.
@@ -46,13 +46,13 @@ func Latest(workspaceRoot string, params protocol.LatestParams) (protocol.Latest
 	}
 	wg.Wait()
 	if params.Tools {
-		res.Tools = append(res.Tools, nodeLTS())
+		res.Tools = append(res.Tools, nodeLTS(workspaceRoot))
 	}
 	return res, nil
 }
 
-func nodeLTS() protocol.ToolPin {
-	pin := protocol.ToolPin{Name: "Node.js (LTS)", Pinned: scaffolding.NodeVersion}
+func nodeLTS(workspaceRoot string) protocol.ToolPin {
+	pin := protocol.ToolPin{Name: "Node.js (LTS)", Pinned: toolpin.Version(workspaceRoot, "node")}
 	var releases []struct {
 		Version string          `json:"version"`
 		LTS     json.RawMessage `json:"lts"`

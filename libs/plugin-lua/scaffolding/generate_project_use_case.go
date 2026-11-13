@@ -1,18 +1,20 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 )
 
 type templateData struct {
-	Dir, Name, Kind, Stack, Workspace string
+	Dir, Name, Package, Kind, Stack, Workspace string
 }
 
 // Generate writes a Lua project. An app also gets a script its rockspec
@@ -29,7 +31,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if params.Kind == protocol.ProjectApp {
 		maps.Copy(files, appTemplates)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Kind: string(params.Kind), Stack: params.Stack, Workspace: params.Workspace.Name}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Lua, params.Name)), Kind: string(params.Kind), Stack: params.Stack, Workspace: params.Workspace.Name}
 	written, err := templating.Write(workspaceRoot, files, data)
 	if err != nil {
 		return protocol.GenerateResult{}, err

@@ -51,7 +51,7 @@ func (s *Shell) openDepsRepair() tea.Cmd {
 		return nil
 	}
 	reading := words.Say("tui.deps_repair.reading")
-	w := fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: reading}}, nil).Styled(depsRepairStyle(true)).Place(s.w, s.h).Start(reading, 0)
+	w := fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: reading}}, nil).Styled(depsRepairStyle(true)).Within(s.dialogMargins()).Place(s.w, s.h).Start(reading, 0)
 	s.fix = &w
 	_, cancel := context.WithCancel(context.Background())
 	run := &fixRun{ch: make(chan tea.Msg, 32), cancel: cancel}
@@ -160,7 +160,7 @@ func (s *Shell) depsRepairDone(msg fixDoneMsg) tea.Cmd {
 			return nil
 		}
 		walk.offer = offer
-		w := depsRepairWizard(offer, s.w, s.h)
+		w := depsRepairWizard(offer, s.w, s.h).Within(s.dialogMargins()).Place(s.w, s.h)
 		s.fix = &w
 		return nil
 	}

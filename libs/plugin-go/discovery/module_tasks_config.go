@@ -19,6 +19,15 @@ var lintInputs = append(append([]string{}, inputs...), "{workspaceRoot}/.golangc
 // to smith ci native, which runs on every runner.
 const NativeTag = "native"
 
+// fixOf is the lint task's fix: golangci-lint's --fix, whose exit code says
+// whether problems remain. Nil when the lint has no fix command.
+func fixOf(command []string) *protocol.TaskFix {
+	if len(command) == 0 {
+		return nil
+	}
+	return &protocol.TaskFix{Command: command}
+}
+
 // Tasks returns the tasks of a Go module. Go builds its dependencies itself,
 // so no task depends on another project's build; the cache key still follows
 // every dependency's sources. A native module builds with cgo. Lint is
@@ -27,7 +36,7 @@ const NativeTag = "native"
 func Tasks(name, root string, kind protocol.ProjectKind, native bool, lint linting.Lint) map[string]protocol.Task {
 	tasks := map[string]protocol.Task{
 		"test": {Command: []string{"go", "test", "./..."}, Inputs: inputs, Cache: true, Description: "go test ./..."},
-		"lint": {Command: lint.Command, Inputs: tooldefaults.WithDefaultInputs(lintInputs, lint.Command), Cache: true, Description: lint.Description},
+		"lint": {Command: lint.Command, Inputs: tooldefaults.WithDefaultInputs(lintInputs, lint.Command), Cache: true, Description: lint.Description, Fix: fixOf(lint.Fix)},
 	}
 	if kind == protocol.ProjectApp {
 		binary := name

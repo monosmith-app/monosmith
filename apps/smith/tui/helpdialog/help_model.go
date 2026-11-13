@@ -26,6 +26,8 @@ type Help struct {
 	extra []string
 	top   int
 	rect  layout.Rect
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 }
 
 // NewHelp builds the overlay from the shortcuts and some free-text lines
@@ -66,11 +68,22 @@ func (h Help) content(th theme.Theme, w int) []string {
 	return out
 }
 
-// Place centres the overlay on a screen of the given size.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (h Help) Within(top, bottom int) Help {
+	h.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return h
+}
+
+// Place centres the overlay on a screen of the given size, between the margins
+// Within set: 28 rows, or the rows between the margins when there are fewer.
 func (h Help) Place(sw, sh int) Help {
 	w := min(max(sw-6, 10), 92)
-	hh := min(max(sh-2, 3), 28)
-	h.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-hh)/2, 0), W: w, H: hh}
+	h.rect = h.margins.Centre(sw, sh, w, 28)
 	return h
 }
 
@@ -87,13 +100,11 @@ func (h Help) Lines(th theme.Theme) []string {
 	}
 	content := h.content(th, r.W-4)
 	top := min(max(h.top, 0), h.maxTop(len(content)))
-	rows := make([]string, 0, r.H-2)
-	for i := 0; i < r.H-2; i++ {
-		line := ""
-		if top+i < len(content) {
-			line = content[top+i]
-		}
-		rows = append(rows, " "+line)
+	// The shared scrollbar takes the cell next to the border, and the "more"
+	// rows say what is hidden, as in every dialog.
+	rows := pane.DialogBody(th, content, nil, pane.DialogRowWidth(r.W), r.H-2, top)
+	for i, l := range rows {
+		rows[i] = " " + l
 	}
 	return pane.Frame(th, words.Say("dialog.help.title"), rows, r.W, r.H, true)
 }

@@ -53,7 +53,7 @@ type Fix struct {
 	// Files are written first, as whole new contents.
 	Files []FileEdit `json:"files,omitempty"`
 	// Steps run after the files, in order, from the workspace root; the first
-	// one that fails stops the rest.
+	// one that fails stops the rest, unless it is advisory.
 	Steps []FixStep `json:"steps,omitempty"`
 	// Choices are questions the user answers before the fix applies, in order.
 	// The answer's Fix is added to this one: its files and steps come after
@@ -78,6 +78,9 @@ type FixStep struct {
 	// Env are KEY=VALUE entries added to the environment of the command
 	// (GOBIN=<folder> makes go install write there). Absent adds none.
 	Env []string `json:"env,omitempty"`
+	// Advisory marks a check whose failure is a finding, not a stop: what it
+	// printed is shown, and the steps after it still run.
+	Advisory bool `json:"advisory,omitempty"`
 }
 
 // FixChoice is a question with options, one wizard step.

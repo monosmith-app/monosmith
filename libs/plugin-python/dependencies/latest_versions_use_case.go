@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/releasing"
-	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/registry"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 // Newest asks a simple index for a distribution's newest release; tests
@@ -30,7 +30,7 @@ func index() string {
 // Latest asks the index pip uses for each distribution's newest release, a
 // few at a time, and compares the Python smith pins with the newest release
 // series.
-func Latest(_ string, params protocol.LatestParams) (protocol.LatestResult, error) {
+func Latest(workspaceRoot string, params protocol.LatestParams) (protocol.LatestResult, error) {
 	res := protocol.LatestResult{Latest: map[string]string{}, Unreachable: map[string]string{}}
 	idx := index()
 	var mu sync.Mutex
@@ -54,13 +54,13 @@ func Latest(_ string, params protocol.LatestParams) (protocol.LatestResult, erro
 	}
 	wg.Wait()
 	if params.Tools {
-		res.Tools = append(res.Tools, pythonRelease())
+		res.Tools = append(res.Tools, pythonRelease(workspaceRoot))
 	}
 	return res, nil
 }
 
-func pythonRelease() protocol.ToolPin {
-	pin := protocol.ToolPin{Name: "Python", Pinned: venv.PythonVersion}
+func pythonRelease(workspaceRoot string) protocol.ToolPin {
+	pin := protocol.ToolPin{Name: "Python", Pinned: toolpin.Version(workspaceRoot, "python")}
 	var cycles []struct {
 		Cycle string `json:"cycle"`
 	}

@@ -109,7 +109,8 @@ func describeDeclared(workspaceRoot string, d protocol.DeclaredProject) (protoco
 func declaredTasks(root string, kind protocol.ProjectKind, tests bool) map[string]protocol.Task {
 	sources := []string{"**/*", "!.dart_tool/**", "!build/**", "{workspaceRoot}/pubspec.lock"}
 	tasks := map[string]protocol.Task{
-		"lint":   {Command: []string{"dart", "analyze", "--fatal-infos"}, Inputs: sources, Cache: true, Description: "dart analyze --fatal-infos"},
+		"lint":   {Command: []string{"dart", "analyze", "--fatal-infos"}, Inputs: sources, Cache: true, Description: "dart analyze --fatal-infos",
+			Fix: &protocol.TaskFix{Command: []string{"dart", "fix", "--apply"}}},
 		"format": {Command: []string{"dart", "format", "--output=none", "--set-exit-if-changed", "."}, Inputs: sources, Cache: true, Description: "dart format, failing on unformatted files"},
 	}
 	if tests {

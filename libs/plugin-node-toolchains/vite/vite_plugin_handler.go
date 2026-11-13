@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -80,7 +81,7 @@ func templateSet(plan choicedata.Plan) scaffolding.TemplateSet {
 		files["[[.Dir]]/"+path] = body
 	}
 	return scaffolding.TemplateSet{
-		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
+		Slice: files, Root: tsconfigchain.BrowserRoot(), DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
 		Slots: plan.Slots, Scripts: plan.Tasks, Dependencies: plan.Dependencies,
 	}
 }
@@ -89,7 +90,7 @@ func templateSet(plan choicedata.Plan) scaffolding.TemplateSet {
 // plugin made from choices, rendered from the same choices (ADR 0049).
 func (p *Vite) Derive(params protocol.DeriveParams) (protocol.DeriveResult, error) {
 	return scaffolding.FileRenderer{
-		ID: "vite.tsconfig", Version: 1, File: "tsconfig.json",
+		ID: "vite.tsconfig", Version: 2, File: "tsconfig.json",
 		Templates: func(gp protocol.GenerateParams) (scaffolding.TemplateSet, bool) {
 			choices := scaffolding.StackChoices(p.root, gp.Stack)
 			for _, st := range webChoices.Stacks() {

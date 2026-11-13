@@ -1,15 +1,18 @@
 package scaffolding
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectnaming"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -35,39 +38,19 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if err == nil {
 		res.Notes = append(res.Notes, "Import it from another Go project as "+modulePath(params)+"/<slice>.")
 		if params.Workspace.ModulePrefix == "" {
-			res.Notes = append(res.Notes, "The module path uses the placeholder host "+fallbackModulePrefix(params.Workspace.Name)+": the workspace has no module_prefix and the repository has no git remote. Set module_prefix under [workspace] in smith.toml (for example github.com/<owner>/<repo>) before adding more modules.")
+			res.Notes = append(res.Notes, "The module path uses the placeholder host "+projectnaming.GoModulePrefix(params.Workspace)+": the workspace has no module_prefix and the repository has no git remote. Set module_prefix under [workspace] in smith.toml (for example github.com/<owner>/<repo>) before adding more modules.")
 		}
 	}
 	return res, err
 }
 
 func modulePath(params protocol.GenerateParams) string {
-	prefix := params.Workspace.ModulePrefix
-	if prefix == "" {
-		prefix = fallbackModulePrefix(params.Workspace.Name)
+	prefix := projectnaming.GoModulePrefix(params.Workspace)
+	if params.PackageName != "" {
+		// --package-name names the last part of the module path; the folder stays.
+		return prefix + "/" + path.Join(path.Dir(params.Directory), params.PackageName)
 	}
 	return prefix + "/" + params.Directory
-}
-
-// fallbackModulePrefix is the placeholder module prefix of a workspace with no
-// module_prefix and no git remote: example.com/<name>, the name reduced to
-// what a Go module path element allows (lowercase letters, digits, dots,
-// dashes, underscores; a run of anything else, such as spaces, is one dash).
-func fallbackModulePrefix(workspace string) string {
-	var b strings.Builder
-	for _, c := range strings.ToLower(strings.TrimSpace(workspace)) {
-		switch {
-		case c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '.', c == '_', c == '-':
-			b.WriteRune(c)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
-			b.WriteByte('-')
-		}
-	}
-	name := strings.Trim(b.String(), "-.")
-	if name == "" {
-		name = "workspace"
-	}
-	return "example.com/" + name
 }
 
 // GenerateFrom scaffolds one Go module from templates (paths and contents use
@@ -78,7 +61,7 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, template
 	if _, err := os.Stat(dir); err == nil {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
-	data := templateData{Dir: params.Directory, Name: params.Name, Module: modulePath(params), Package: PackageName(params.Name)}
+	data := templateData{Dir: params.Directory, Name: params.Name, Module: modulePath(params), Package: PackageName(cmp.Or(params.PackageName, params.Name))}
 
 	var files []string
 	// A module added to an existing workspace declares the Go version the

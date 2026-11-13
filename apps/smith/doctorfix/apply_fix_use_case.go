@@ -11,8 +11,10 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
+	"github.com/monosmith-app/monosmith/libs/words/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // shownOutput is how many trailing lines of a failed step's output are shown.
@@ -67,26 +69,51 @@ func (w *noteWriter) Write(p []byte) (int, error) {
 // first that fails. A fix that still has Choices must be resolved first.
 // Progress goes to out; a failed step's output is in the returned StepError.
 func Apply(ctx context.Context, root string, fix protocol.Fix, out io.Writer) error {
+	_, err := ApplyWithFindings(ctx, root, fix, out)
+	return err
+}
+
+// Finding is an advisory step that failed: the fix went on after it.
+type Finding struct {
+	Step protocol.FixStep
+	// Output is everything the step printed.
+	Output string
+}
+
+// ApplyWithFindings is Apply, and it also returns the advisory steps that
+// failed, in the order they ran.
+//
+// Parameters: root is the workspace, fix the resolved fix, out the progress.
+// Returns the findings, and a *StepError for a step that stopped the fix.
+func ApplyWithFindings(ctx context.Context, root string, fix protocol.Fix, out io.Writer) ([]Finding, error) {
 	if len(fix.Choices) > 0 {
-		return fmt.Errorf("%q has questions to answer first", fix.Description)
+		return nil, fmt.Errorf("%q has questions to answer first", fix.Description)
 	}
 	if n, ok := out.(Noter); ok && len(fix.Files) > 0 {
 		n.Note(filesNote(fix.Files))
 	}
 	if err := ApplyFiles(root, fix); err != nil {
-		return err
+		return nil, err
 	}
-	return RunSteps(ctx, root, fix.Steps, out)
+	return runSteps(ctx, root, fix.Steps, out)
 }
 
 // RunSteps runs commands from the workspace root (or the step's own Dir),
-// capturing what each prints, and stops at the first failure.
+// capturing what each prints, and stops at the first failure. An advisory
+// step that fails does not stop it: its mark is a warning, what it printed
+// follows, and the next step runs.
 func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io.Writer) error {
+	_, err := runSteps(ctx, root, steps, out)
+	return err
+}
+
+func runSteps(ctx context.Context, root string, steps []protocol.FixStep, out io.Writer) ([]Finding, error) {
 	noter, _ := out.(Noter)
+	var findings []Finding
 	for i, step := range steps {
 		dir, err := inside(root, orRoot(step.Dir))
 		if err != nil {
-			return &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err}
+			return findings, &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err}
 		}
 		fmt.Fprintf(out, "… %s\n", stepName(step))
 		var captured bytes.Buffer
@@ -95,15 +122,29 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 			sink = io.MultiWriter(&captured, &noteWriter{to: noter})
 		}
 		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(stepEnv(step)), Out: sink})
+		if err == nil && toolrun.WingetAlreadyInstalled(step.Argv, code) {
+			// winget found the package installed and nothing newer: the step
+			// reached its goal, so it is not a failure.
+			fmt.Fprintf(out, marks.Passed+" %s\n", words.Say("toolfolder.step.already", "step", stepName(step)))
+			continue
+		}
 		if err == nil && code != 0 {
 			err = fmt.Errorf("exited with code %d", code)
 		}
+		if err != nil && step.Advisory {
+			fmt.Fprintf(out, marks.Warning+" %s\n", stepName(step))
+			if text := strings.TrimRight(captured.String(), "\r\n"); strings.TrimSpace(text) != "" {
+				fmt.Fprintln(out, tail(text, shownOutput))
+			}
+			findings = append(findings, Finding{Step: step, Output: captured.String()})
+			continue
+		}
 		if err != nil {
-			return &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err, Output: tail(captured.String(), shownOutput)}
+			return findings, &StepError{Number: i + 1, Total: len(steps), Step: step, Err: err, Output: tail(captured.String(), shownOutput)}
 		}
 		fmt.Fprintf(out, marks.Passed+" %s\n", stepName(step))
 	}
-	return nil
+	return findings, nil
 }
 
 func orRoot(dir string) string {
@@ -148,6 +189,8 @@ func ApplyFiles(root string, fix protocol.Fix) error {
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 				return err
 			}
+			// The folder the file leaves empty goes too; a folder with files stays.
+			_ = os.Remove(filepath.Dir(path))
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

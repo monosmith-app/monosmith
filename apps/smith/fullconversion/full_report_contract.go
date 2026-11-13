@@ -33,7 +33,7 @@ func MakeReport(t *legacyinventory.Tree, c convertchoices.Choices, verify bool) 
 		Usage: usage, Choices: c,
 		Questions: convertchoices.Questions(usage, convertchoices.Defaults(usage)),
 		Groups:    plan.Groups, Kept: plan.Kept, Notes: plan.Notes,
-		Finish:  removalplan.Finish("smith", verify),
+		Finish:  removalplan.Finish("smith", verify, c.Lint == convertchoices.Smith),
 		Command: "smith convert " + convertchoices.Flags(c) + " --yes",
 	}
 }

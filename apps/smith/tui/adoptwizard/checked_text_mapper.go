@@ -14,10 +14,11 @@ import (
 // check (the installs) are left out; it is "" when no check ran.
 func checkedText(steps []checkedStep) string {
 	names := map[string]string{
-		removalplan.StepBuild:  words.Say("adopt.checked.build"),
-		removalplan.StepTest:   words.Say("adopt.checked.test"),
-		removalplan.StepLint:   words.Say("adopt.checked.lint"),
-		removalplan.StepDoctor: words.Say("adopt.checked.doctor"),
+		removalplan.StepBuild:   words.Say("adopt.checked.build"),
+		removalplan.StepTest:    words.Say("adopt.checked.test"),
+		removalplan.StepLint:    words.Say("adopt.checked.lint"),
+		removalplan.StepFixLint: words.Say("adopt.checked.lint"),
+		removalplan.StepDoctor:  words.Say("adopt.checked.doctor"),
 	}
 	var parts []string
 	for _, s := range steps {

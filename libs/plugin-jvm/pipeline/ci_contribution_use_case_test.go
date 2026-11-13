@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
 )
 
 // module writes a module's manifest under ws and returns the project.
@@ -26,7 +27,7 @@ func module(t *testing.T, ws, root, manifest string, kind protocol.ProjectKind) 
 func TestCI(t *testing.T) {
 	ws := t.TempDir()
 	res := CI(ws, protocol.CIParams{Projects: []protocol.Project{module(t, ws, "core", "pom.xml", protocol.ProjectPackage)}})
-	if len(res.Toolchains) != 1 || res.Toolchains[0].Version != JavaVersion || res.Setup[0].Command[3] != "dependency:go-offline" || len(res.Credentials) != 3 {
+	if len(res.Toolchains) != 1 || res.Toolchains[0].Version != toolpin.Default("java") || res.Setup[0].Command[3] != "dependency:go-offline" || len(res.Credentials) != 3 {
 		t.Fatalf("%+v", res)
 	}
 	_ = os.WriteFile(filepath.Join(ws, "pom.xml"), []byte("<properties><maven.compiler.release>17</maven.compiler.release></properties>"), 0o644)

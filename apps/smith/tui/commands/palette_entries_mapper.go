@@ -47,7 +47,7 @@ var paletteSections = map[string]string{
 
 	"run.build": SectionBuild, "run.build-all": SectionBuild, "run.build-release": SectionBuild, "run.build-release-all": SectionBuild,
 	"run.test": SectionBuild, "run.test-all": SectionBuild,
-	"run.lint": SectionBuild, "run.lint-all": SectionBuild,
+	"run.lint": SectionBuild, "run.lint-all": SectionBuild, "run.lint-fix": SectionBuild,
 	"run.typecheck": SectionBuild, "run.typecheck-all": SectionBuild, "run.verify": SectionBuild, "run.affected": SectionBuild, "run.stop": SectionBuild,
 
 	"file.add": SectionProjects, "proj.swap": SectionProjects, "proj.remove": SectionProjects, "proj.affected": SectionProjects, "proj.graph": SectionProjects,

@@ -94,6 +94,10 @@ func (f *adoptFake) ShowFix(p doctorfix.Planned) (string, error) {
 	return "● " + p.Description + "\n", nil
 }
 
+func (f *adoptFake) ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error) {
+	return nil, f.ApplyFix(ctx, fix, out)
+}
+
 func (f *adoptFake) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer) error {
 	f.note("apply " + fix.Description)
 	f.mu.Lock()
@@ -193,7 +197,7 @@ func TestAFolderThatIsNotAWorkspaceLeadsWithAdoptionAndEnterStartsIt(t *testing.
 	l := newAdoptLab(t, f, false, 110, 34)
 	l.has("Not a smith workspace yet: Enter brings it in", "Bring this repository into MonoSmith", "Not a smith workspace yet. Press a to bring this folder in")
 	l.keys("enter")
-	l.has("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "Continue (enter)")
+	l.has("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "Continue (Enter)")
 	if l.sh().adopt == nil {
 		t.Fatal("the wizard is not open")
 	}
@@ -233,7 +237,7 @@ func TestTheFullAdoptionRunsOffTheUIGoroutineAndLeavesWithTheNextStep(t *testing
 	l.keys("a", "enter", "2")                      // continue, then the full level
 	l.has("Bring in · your choices", "Lint with:") // the choices
 	l.keys("enter")                                // smith's ESLint, the suggested one
-	l.has("Nothing has changed yet", "Convert (enter)")
+	l.has("Nothing has changed yet", "Convert (Enter)")
 	l.keys("enter") // convert, then the group is asked
 	l.has("We are going to delete 4 packages and 3 files", "ok?")
 	l.keys("y") // delete it, then the closing steps run and the summary shows

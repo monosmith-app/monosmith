@@ -21,32 +21,76 @@ func (m Model) Title() string {
 	return words.Say("toolsdialog.title.asking", "current", m.at+1, "total", len(m.plans))
 }
 
-// Lines draws the dialog, framed, at the size Place set.
+// Lines draws the dialog, framed, at the size Place set. A body taller than
+// the dialog scrolls under the shared scrollbar; the keys stay on the last row.
 func (m Model) Lines(th theme.Theme) []string {
 	r := m.rect
-	if r.W < 24 || r.H < 8 {
+	if r.W < 24 || r.H < 4 {
 		return nil
 	}
-	inner, height := r.W-4, r.H-2
-	var body []string
-	switch m.ph {
-	case phasePick:
-		body, _ = m.pickBody(th, inner)
-	case phaseAdmin:
-		body, _ = m.adminBody(th, inner)
-	case phaseRun:
-		body = m.runBody(th, inner, height)
-	default:
-		body = m.doneBody(th, inner)
-	}
-	rows := make([]string, 0, height)
-	for _, l := range body {
-		if len(rows) >= height {
-			break
-		}
-		rows = append(rows, " "+pane.Fit(l, inner))
+	w := pane.DialogRowWidth(r.W)
+	body, _ := m.body(th, m.textWidth())
+	rows := pane.DialogBody(th, body, []string{th.Muted(m.keys())}, w, r.H-2, m.top)
+	for i, l := range rows {
+		rows[i] = " " + pane.Fit(l, w)
 	}
 	return pane.Frame(th, m.Title(), rows, r.W, r.H, true)
+}
+
+// body is the part of the phase that scrolls and the line of its first option
+// (-1 when the phase has no options).
+func (m Model) body(th theme.Theme, inner int) (lines []string, first int) {
+	switch m.ph {
+	case phasePick:
+		return m.pickBody(th, inner)
+	case phaseAdmin:
+		return m.adminBody(th, inner)
+	case phaseRun:
+		return m.runBody(th, m.room()), -1
+	}
+	return m.doneBody(th, inner), -1
+}
+
+// keys is the line under the body that says which keys work in the phase.
+func (m Model) keys() string {
+	switch m.ph {
+	case phasePick:
+		return words.Say("toolsdialog.pick.keys")
+	case phaseAdmin:
+		return words.Say("toolsdialog.admin.keys")
+	case phaseRun:
+		return words.Say("toolsdialog.run.keys")
+	}
+	if len(m.results) == 0 {
+		return words.Say("toolsdialog.done.close")
+	}
+	return words.Say("toolsdialog.done.keys")
+}
+
+// textWidth is the width the body is wrapped to: one cell less than the
+// inside, which is the scrollbar's when the body scrolls.
+func (m Model) textWidth() int { return m.rect.W - 5 }
+
+// room is the rows the scrolling body gets: the inside less the keys row.
+func (m Model) room() int { return pane.BodyRoom(m.rect.H-2, 1) }
+
+// follow scrolls the body so the option under the cursor shows.
+func (m Model) follow() Model {
+	body, first := m.body(theme.Default(), m.textWidth())
+	if first >= 0 {
+		m.top = pane.KeepVisible(m.top, first+m.cursor, len(body), m.room())
+	}
+	return m
+}
+
+// Wheel scrolls the body by delta lines; the cursor stays where it is.
+//
+// Parameters: delta is the lines to move, negative for up.
+// Returns: the dialog with the body scrolled.
+func (m Model) Wheel(delta int) Model {
+	body, _ := m.body(theme.Default(), m.textWidth())
+	m.top = pane.ClampTop(m.top+delta, len(body), m.room())
+	return m
 }
 
 // headLines say what the tool is and what stops working without it.
@@ -91,8 +135,7 @@ func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 	if o.Note != "" {
 		lines = append(lines, pane.Wrap(th.Muted(words.Say("toolsdialog.note", "note", o.Note)), inner, 2)...)
 	}
-	lines = append(lines, "")
-	return append(lines, th.Muted(words.Say("toolsdialog.pick.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
+	return append(lines, ""), first
 }
 
 // adminBody is the second question: who runs a command that needs
@@ -115,31 +158,27 @@ func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) 
 		}
 		lines = append(lines, choicerow.Line(th, m.optionRow(i, label), inner))
 	}
-	lines = append(lines, "")
-	return append(lines, th.Muted(words.Say("toolsdialog.admin.keys")), th.Muted(words.Say("toolsdialog.click.hint"))), first
+	return append(lines, ""), first
 }
 
-// runBody is the command and the end of its output, as it streams.
-func (m Model) runBody(th theme.Theme, inner, height int) []string {
+// runBody is the command and the end of its output, as it streams, in the
+// room rows the body gets.
+func (m Model) runBody(th theme.Theme, room int) []string {
 	lines := []string{th.Bold(words.Say("toolsdialog.run.label")) + strings.Join(m.opt.Command, " "), ""}
-	room := max(height-len(lines)-2, 3)
 	out := m.out
-	if len(out) > room {
-		out = out[len(out)-room:]
+	if keep := max(room-len(lines), 1); len(out) > keep {
+		out = out[len(out)-keep:]
 	}
 	for _, l := range out {
 		lines = append(lines, th.Muted(l))
 	}
-	for len(lines) < height-1 {
-		lines = append(lines, "")
-	}
-	return append(lines, th.Muted(words.Say("toolsdialog.run.keys")))
+	return lines
 }
 
 // doneBody is one line per tool, and the way on.
 func (m Model) doneBody(th theme.Theme, inner int) []string {
 	if len(m.results) == 0 {
-		return []string{words.Say("toolsdialog.done.none"), "", th.Muted(words.Say("toolsdialog.done.close"))}
+		return []string{words.Say("toolsdialog.done.none")}
 	}
 	var lines []string
 	for _, r := range m.results {
@@ -153,27 +192,22 @@ func (m Model) doneBody(th theme.Theme, inner int) []string {
 			lines = append(lines, th.Muted("  | "+o))
 		}
 	}
-	return append(lines, "", th.Muted(words.Say("toolsdialog.done.keys")))
+	return lines
 }
 
-// Click handles a left press on the list of options or answers: one press moves
-// the cursor to the entry, a second press on the same cell (double is true)
-// answers like Enter. A press elsewhere, or while an install runs, changes
-// nothing.
+// Click handles a left press on the list of options or answers: a press on an
+// entry picks it, as Enter does on it, like a click in every single-choice
+// list. A press elsewhere, or while an install runs, changes nothing.
 //
-// Parameters: th is the theme the dialog is drawn with; x and y are screen
-// cells; double says the press is the second of a double click.
+// Parameters: th is the theme the dialog is drawn with; x and y are screen cells.
 // Returns: the new dialog and what the host must do.
-func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
+func (m Model) Click(th theme.Theme, x, y int) (Model, Outcome) {
 	i := m.optionAt(th, x, y)
 	if i < 0 {
 		return m, Outcome{}
 	}
 	m.cursor = i
-	if double {
-		return m.Key("enter")
-	}
-	return m, Outcome{}
+	return m.Key("enter")
 }
 
 // Hover notes the option under the pointer at (x, y), drawn in the row hover look.
@@ -192,23 +226,16 @@ func (m Model) optionRow(i int, label string) choicerow.Row {
 
 // optionAt is the option of the open question drawn at the screen cell (x, y), or -1.
 func (m Model) optionAt(th theme.Theme, x, y int) int {
-	if !m.rect.Contains(x, y) {
+	if !m.rect.Contains(x, y) || (m.ph != phasePick && m.ph != phaseAdmin) {
 		return -1
 	}
-	inner := m.rect.W - 4
-	var first, n int
-	switch m.ph {
-	case phasePick:
-		_, first = m.pickBody(th, inner)
+	body, first := m.body(th, m.textWidth())
+	n := len(adminAnswers())
+	if m.ph == phasePick {
 		n = len(m.current().Options)
-	case phaseAdmin:
-		_, first = m.adminBody(th, inner)
-		n = len(adminAnswers())
-	default:
-		return -1
 	}
-	i := y - m.rect.Y - 1 - first
-	if i < 0 || i >= n || y-m.rect.Y-1 >= m.rect.H-2 {
+	i := pane.BodyLine(y-m.rect.Y-1, m.top, len(body), m.room()) - first
+	if i < 0 || i >= n {
 		return -1
 	}
 	return i

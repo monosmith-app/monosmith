@@ -128,7 +128,7 @@ Without `--stack`, the workspace's default for node is used (`node-jest`, writte
 
 - writes the root `package.json` the first time (`name` = `<workspace>-workspace`, `private`, `workspaces` `["apps/*", "libs/*", "packages/*"]`) or, if one exists, adds only the `workspaces` and `devDependencies` that are missing, keeping key order and formatting;
 - writes `.npmrc` once (`//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`);
-- names the package `[workspace] scope` + `/` + project name (`@js-demo/util`);
+- names the package scope + `/` + project name (`@js-demo/util`): the scope is `[workspace] scope` when it is set, else `@` and the namespace (`[workspace] namespace`, else the workspace name);
 - names test files after what the workspace already uses (`*.spec.*` or `*.test.*`, the commoner one; `spec` for a new workspace);
 - runs `npm install --no-audit --no-fund` at the root so the new package is linked into `node_modules`.
 
@@ -267,7 +267,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 | `package.json` | `main`, `module`, `types`, `typings`, `exports` | what doctor checks a built package has produced | `pipeline/check_entry_files_use_case.go` |
 | root `package.json` | `workspaces` | which directories npm links; doctor checks every project is covered | `pipeline/check_workspace_use_case.go` |
 | `package.json` build script / `tsconfig.build.json` / `tsconfig.json` | `--outDir` (wins) or `compilerOptions.outDir` | doctor checks it is inside `dist/` | `pipeline/check_build_dir_use_case.go` |
-| `smith.toml` | `[workspace] scope` | npm scope of new packages | host, `scaffolding/generate_project_use_case.go` |
+| `smith.toml` | `[workspace] scope`, `[workspace] namespace` | npm scope of new packages (default `@` and the namespace) | host, `scaffolding/generate_project_use_case.go` |
 | `smith.toml` | `[toolchains] node = "24"` | version pin checked by doctor | host |
 | `smith.toml` | `[ci] audit_policies = ["node"]`, `audit_warn`, `audit_allow_install_scripts` | lockfile policy in the audit | `pipeline/ci_contribution_use_case.go` |
 | `smith.toml` | `[registries.<n>] npm`, `auth`, `token_env`; `[workspace] registry`; `[release] registry`; `[projects.<p>] registry` | private npm registry | `registries/`, `releasing/` |
@@ -403,6 +403,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 | `<dir> declares the packages it imports` | a package (`kind = package`) fails `deps-check`; the fix declares the imports in `package.json` |
 | `internal dependencies use "*"` | warning. A package.json (a project's, or the root one) lists a package of the same workspace in `dependencies`, `devDependencies` or `optionalDependencies` with a range other than `*` (`workspace:`, `file:`, `link:`, git and URL specs are skipped; `peerDependencies` are never read). A pinned range goes stale when the sibling's version moves, and npm may then fetch the registry copy instead of the workspace one. The fix, offered with the diff, rewrites only those range values to `*` (the range smith writes when it installs an internal dependency) and regenerates `package-lock.json` with `npm install --package-lock-only` |
 | `<project> builds every file its package.json names` | only after a build: `main`, `module`, `types`, `exports` entries inside `dist/` that the build did not produce. A `.d.ts` entry that nothing writes (a bundler such as esbuild emits none) gets a remedy that names the `tsc --emitDeclarationOnly` step to append to the `build` script, and a fix that appends it (`tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <the types entry's directory>`; asked about, never `--yes` alone). A build script that already runs `tsc` or a dts option is told its declarations land elsewhere than `package.json` says. |
+| `<project> tsconfig.json reaches tsconfig.base.json` | a warning when the root has a `tsconfig.base.json` and the project's `tsconfig.json` does not extend it, directly or through another file (a solution file with `"files": []` and references is not judged). The fix asks, then shows the edit and never runs under `--yes` alone: extend the base (a project with no `extends`, or only an `@monosmith/tsconfig` preset, gets the base alone; one that extends another preset gets `["<base>", "<its own>"]`, so that preset still wins), or leave the file. `--only "extend tsconfig.base.json in tsconfig.json" --yes --choose 1` applies it. See [the tsconfig chain](typescript.md#the-tsconfig-chain). |
 
 27 checks passed on the default-stack workspace. Findings in the plain-JavaScript workspace that come from the host and the vertical-slices convention rather than from the node plugin:
 

@@ -3,6 +3,7 @@ package tui
 import (
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
@@ -157,7 +158,13 @@ func (s Shell) body() []string {
 		y := in.Y + i
 		row := s.marginCell(spots, l.Main.X, y) + list[i]
 		if l.HasDetail() {
-			row += s.th.Border("│", false) + side[i] + s.marginCell(spots, din.X+din.W, y)
+			// A scrollbar in the list's last column moves onto the divider, so the
+			// screen shows one line there, not two side by side.
+			divider := s.th.Border("│", false)
+			if glyph, ok := s.scrollbarCell(list[i], in.W); ok {
+				row, divider = s.marginCell(spots, l.Main.X, y)+pane.Splice(list[i], in.W-1, 1, " "), glyph
+			}
+			row += divider + side[i] + s.marginCell(spots, din.X+din.W, y)
 		} else {
 			row += s.marginCell(spots, in.X+in.W, y)
 		}
@@ -169,6 +176,17 @@ func (s Shell) body() []string {
 		}
 	}
 	return rows
+}
+
+// scrollbarCell is the last cell of a list line w cells wide, with its style,
+// when that cell is a scrollbar glyph (the track or the thumb).
+func (s Shell) scrollbarCell(line string, w int) (string, bool) {
+	if w < 2 {
+		return "", false
+	}
+	cell := ansi.Cut(line, w-1, w)
+	glyph := pane.Strip(cell)
+	return cell, glyph == s.th.Icons.Track || glyph == s.th.Icons.Thumb
 }
 
 // marginCell is the cell of a margin at (x, y): blank, or part of the rule when a
@@ -258,11 +276,34 @@ func (s Shell) overlays(rows []string) []string {
 	}
 	// The result dialog says the same in its own words: a toast over its bottom
 	// edge would cut the frame.
-	if lines := s.toast.Lines(s.th, s.w-4); lines != nil && s.result == nil {
-		// The content ends on the row above the footer: the toast sits on its
-		// last rows, one cell clear of the right edge.
-		y := max(l.Footer.Y-len(lines), l.Main.Y+1)
-		rows = pane.Overlay(rows, lines, max(s.w-2-pane.Width(lines[0]), 1), y)
+	if s.result == nil {
+		if lines, x, y, ok := s.toastSpot(); ok {
+			rows = pane.Overlay(rows, lines, x, y)
+		}
 	}
 	return rows
+}
+
+// toastSpot is the toast as drawn and where it sits. The content ends on the
+// row above the footer: the toast sits on its last rows, one cell clear of the
+// right edge. An open dialog keeps its border whole: the toast goes under the
+// dialog or over it when the rows there are free, and inside its border, over
+// its first rows, when the dialog takes the whole height.
+func (s Shell) toastSpot() (lines []string, x, y int, ok bool) {
+	if lines = s.toast.Lines(s.th, s.w-4); lines == nil {
+		return nil, 0, 0, false
+	}
+	l, h := s.lay(), len(lines)
+	right := func(lines []string, edge int) int { return max(edge-pane.Width(lines[0]), 1) }
+	r, open := s.modalRect()
+	switch {
+	case !open || l.Footer.Y-(r.Y+r.H) >= h:
+		return lines, right(lines, s.w-2), max(l.Footer.Y-h, l.Main.Y+1), true
+	case r.Y-s.mainInner().Y >= h:
+		return lines, right(lines, s.w-2), s.mainInner().Y, true
+	}
+	if lines = s.toast.Lines(s.th, r.W-2); lines == nil || r.H < len(lines)+2 {
+		return nil, 0, 0, false
+	}
+	return lines, right(lines, r.X+r.W-1), r.Y + 1, true
 }

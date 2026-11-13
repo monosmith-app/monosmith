@@ -62,9 +62,15 @@ func (p ToolPlan) Find(value string) (Option, bool) {
 // rights, else the first install option; with no install option it is "I will
 // install it myself". Nothing here runs.
 //
+// A tool that is installed in a folder off PATH gets the folder choice instead
+// (folderPlan).
+//
 // Parameters: st is a tool that is missing or outdated; managers are the
 // managers on the machine; env is the system.
 func BuildPlan(st Status, managers []Manager, env Env) ToolPlan {
+	if st.State == Missing && st.OffPath != "" {
+		return folderPlan(st, env)
+	}
 	plan := ToolPlan{Status: st}
 	version := st.Wanted.Version(st.Suggested)
 	for _, in := range st.Install {

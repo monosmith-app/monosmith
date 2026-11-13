@@ -23,7 +23,8 @@ func Tasks(root, file, tests string, kind protocol.ProjectKind) map[string]proto
 	}
 	tasks := map[string]protocol.Task{
 		"build": withReleaseConfiguration(protocol.Task{Command: []string{"dotnet", "build", target, "--nologo"}, Inputs: inputs, DependsOn: []string{"^build"}, Description: "dotnet build (the project and its tests)"}),
-		"lint":  {Command: []string{"dotnet", "format", file, "--verify-no-changes", "--no-restore"}, Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "dotnet format --verify-no-changes (style and analyzers)"},
+		"lint":  {Command: []string{"dotnet", "format", file, "--verify-no-changes", "--no-restore"}, Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "dotnet format --verify-no-changes (style and analyzers)",
+			Fix: &protocol.TaskFix{Command: []string{"dotnet", "format", file, "--no-restore"}}},
 	}
 	if tests != "" {
 		tasks["test"] = withReleaseConfiguration(protocol.Task{Command: []string{"dotnet", "test", tests, "--nologo", "--no-build"}, Inputs: inputs, DependsOn: []string{"build"}, Cache: true, Description: "dotnet test"})

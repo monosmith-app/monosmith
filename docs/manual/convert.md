@@ -31,7 +31,7 @@ already has a `smith.toml` (use [`smith upgrade`](upgrade.md)).
 ## Synopsis
 
 ```sh
-smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--commit] [--skip-install] [--skip-verify] [--json] [--verbose]
+smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--commit] [--outputs <project>:<task>=detected|declared]... [--skip-install] [--skip-verify] [--json] [--verbose]
 ```
 
 ## Arguments and flags
@@ -52,6 +52,7 @@ Usage: `smith convert [flags]`
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) |
 | `--lint <lint>` | `smith` or `keep` | `smith` when the ESLint config imports a shared config smith replaces, else `keep` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) |
 | `--no-install` | boolean | off | do not run npm install afterwards (also --skip-install) |
+| `--outputs <outputs>` | string, repeatable |  | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given |
 | `--questions` | boolean | off | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--skip-verify` | boolean | off | full level: install, but do not build, test, lint and run doctor afterwards |
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
@@ -96,8 +97,30 @@ Interactions:
   workspace; the plan of `--level full --dry-run` shows what the workspace's own tooling suggests.
 - `--build smith` (the default) also moves every project that compiles with `tsc` to the
   workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
-  passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own
-  group (nothing is deleted, files are edited) and is skipped with `--build keep`.
+  passes `--outDir`, and `main`, `types` and the `start` script follow. When the build task in
+  `smith.toml` declares the old folder as an output, the output follows too
+  (`outputs = ["../../dist/apps/api"]`). It is asked as its own group (nothing is deleted,
+  files are edited) and is skipped with `--build keep`.
+- Convert checks the build outputs that Nx (`outputs`) or Turborepo (`outputs`) declare against
+  what the build script writes, with the same reading as `smith doctor`: output flags
+  (`--outDir`, `--outdir`, `--outfile`, `-o`), the `npm run` steps the script calls, and Vite's
+  default `dist` for a `vite build` whose `vite.config` names no `outDir`. When the two differ,
+  for example a build that writes `dist` while Nx declared `dist`, `dist-dev`, `dist-preprod` and
+  `dist-prod`, the plan shows a decision, and convert asks before it applies:
+
+  ```
+  app:build writes dist, but Nx declared dist, dist-dev, dist-preprod, dist-prod as its outputs. Cache:
+    1) dist, what the build writes (suggested)
+    2) dist, dist-dev, dist-preprod, dist-prod, as Nx declared them
+  Choose [1]:
+  ```
+
+  `--outputs app:build=declared` (or `=detected`) gives the answer without a terminal, and the
+  terminal then does not ask it; the TUI's convert form asks it as a choice and passes it this way.
+  `--yes` takes the suggestion for a task not given. When a step of the script takes its folder from a config file
+  (`tsc` without `--outDir`, `rollup -c`, a Vite config with an `outDir`), convert cannot see
+  everything the build writes: it keeps every declared output and adds only the missing ones.
+  `--json` lists each case under `outputChoices` (`project`, `task`, `declared`, `detected`).
 - `--level full` moves a tsc project only when doctor would: a package that another project imports by
   name, whose `main`, `types` or `exports` lead into the old folder, stays where it is, and the plan
   says why (a note of the review); so does a published package that needs a file outside the build
@@ -124,7 +147,8 @@ Interactions:
 | Code | Meaning |
 |---|---|
 | 0 | The plan was printed (`--dry-run`) or the conversion and its checks succeeded. |
-| 1 | The folder is already a smith workspace, the tree is dirty, `--strict` found a blocker, a flag value is invalid, or a step of the full conversion failed. |
+| 1 | The folder is already a smith workspace, the tree is dirty, `--strict` found a blocker, a flag value is invalid, or a step of the full conversion failed (the install, the build or the tests). |
+| 2 | The full conversion finished and kept its changes, but the lint or doctor found something. The last lines list each finding with its remedy. |
 
 ## Files and environment
 
@@ -247,7 +271,9 @@ smith: the conversion is blocked; see the report
 | `the working tree has uncommitted changes, so the conversion would not be one reviewable change` | Commit or stash, or pass `--allow-dirty` (not with `--level full`, whose message says the tree must be clean). |
 | `convert cancelled: nothing changed` | You answered anything but `y` to the confirmation prompt. |
 | `--test "mocha" is not one of jest, vitest, keep` | `--test` takes `jest`, `vitest` or `keep`. |
-| `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | A check after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
+| `▲ lint every project` or `▲ fix what ESLint can, then lint every project` (a finding, not an error) | The lint found problems, or ESLint could not run. The conversion still finishes and keeps its changes; the table under the line names each project's problems fixed and left, or the first line of ESLint's error and the remedy. `smith run lint -p <project>` shows them. |
+| `▲ check the workspace with doctor` (a finding, not an error) | Doctor found something. The conversion still finishes and keeps its changes. Its last lines repeat each doctor failure with its remedy, then `→ check again: smith doctor`, and close with `▲ The conversion finished with findings`; the exit code is 2. |
+| `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | The install, a build or a test after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
 | `the build writes to dist inside the package ...` (a finding, not an error) | Run `smith doctor --fix`: it offers to move each project's build into `dist/<project dir>` (scripts, tsconfig, `main`, `types`, `exports`, and the `outputs` in `smith.toml`) and shows every changed line first. Or do it by hand. |
 
 ## Related

@@ -3,6 +3,7 @@ package operation
 import (
 	"bufio"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
@@ -34,7 +35,7 @@ type Spec struct {
 // Returns: cmd, for chaining.
 func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 	if spec.AddYes && cmd.Flags().Lookup("yes") == nil {
-		cmd.Flags().BoolP("yes", "y", false, "do not ask for confirmation")
+		commandflags.AddYesFlag(cmd, new(bool), "do not ask for confirmation; without a terminal the change is made only with --yes")
 	}
 	if spec.AddDryRun && cmd.Flags().Lookup("dry-run") == nil {
 		cmd.Flags().Bool("dry-run", false, "show the plan and change nothing")

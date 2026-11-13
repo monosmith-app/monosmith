@@ -133,7 +133,7 @@ must be a Node app with an index.html.`,
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print what was done as JSON")
 	cmd.Flags().StringVar(&identifier, "identifier", "", "the bundle identifier of the app, like com.yourcompany.yourapp (smith asks when you leave it out)")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "write without asking; the bundle identifier is com.<workspace>.<project> unless --identifier says otherwise")
+	commandflags.AddYesFlag(cmd, &yes, "write without asking; the bundle identifier is com.<workspace>.<project> unless --identifier says otherwise")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be written and change nothing")
 	return operation.Wrap(cmd, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "add tauri to " + args[0] }})
 }
@@ -207,7 +207,7 @@ or the one named with -p.`,
 		},
 	}
 	commandflags.AddOneProjectFlag(cmd, &project, "the app, when more than one project has a src-tauri")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the icons are made only with --yes")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask; without a terminal the icons are made only with --yes")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be overwritten and change nothing")
 	return cmd
 }

@@ -37,6 +37,8 @@ type Model struct {
 	fw    fixwizard.Wizard
 	sw    int
 	sh    int
+	// margins are the rows above and below the dialog that stay free.
+	margins layout.Margins
 	// retry runs the job again after a failure.
 	retry *Job
 
@@ -58,6 +60,9 @@ type Model struct {
 	notes []string
 	// checked are the closing checks that passed, with their times.
 	checked []checkedStep
+	// findings are the closing checks that found something (the lint,
+	// doctor): the conversion finished, and they need the person.
+	findings []doctorfix.Finding
 	// changes are the files the conversion writes, once they were worked out;
 	// changesDiff shows them as diffs, the way the Doctor fix dialog does.
 	changes     adoptflow.Changes
@@ -126,9 +131,22 @@ func (m Model) Dispose() {
 }
 
 // Place tells the wizard the screen size.
+// Within keeps the dialog off the top rows (the header and the tab strip) and
+// the bottom rows (the footer and the status bar) of the screen, as every
+// dialog does: Place centres it in the rows between.
+//
+// Parameters: top and bottom are the rows to leave free.
+// Returns: the dialog with the margins set.
+func (m Model) Within(top, bottom int) Model {
+	m.margins = layout.Margins{Top: max(top, 0), Bottom: max(bottom, 0)}
+	return m
+}
+
+// Place sizes the dialog for a screen of w by h cells, between the margins
+// Within set.
 func (m Model) Place(w, h int) Model {
 	m.sw, m.sh = w, h
-	m.fw = m.fw.Place(w, h)
+	m.fw = m.fw.Within(m.margins.Top, m.margins.Bottom).Place(w, h)
 	return m
 }
 
@@ -362,7 +380,7 @@ func (m Model) running(stage Stage, headline string, job Job, style fixwizard.St
 	p := doctorfix.Planned{Fix: protocol.Fix{Description: headline, Steps: steps}}
 	m.stage = stage
 	m.retry = &job
-	m.fw = fixwizard.New(p, nil).Styled(style).Place(m.sw, m.sh).Start(headline, job.Steps)
+	m.fw = fixwizard.New(p, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh).Start(headline, job.Steps)
 	return m
 }
 
@@ -370,7 +388,7 @@ func (m Model) running(stage Stage, headline string, job Job, style fixwizard.St
 func (m Model) runFix(stage Stage, p doctorfix.Planned, job Job, style fixwizard.Style) Model {
 	m.stage = stage
 	m.retry = &job
-	m.fw = fixwizard.New(p, nil).Styled(style).Place(m.sw, m.sh).Start(p.Description, len(p.Steps))
+	m.fw = fixwizard.New(p, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh).Start(p.Description, len(p.Steps))
 	return m
 }
 
@@ -381,7 +399,7 @@ func (m Model) reviewOf(stage Stage, title, text string, style fixwizard.Style) 
 	m.stage = stage
 	m.retry = nil
 	p := doctorfix.Planned{Fix: protocol.Fix{Description: title}}
-	m.fw = fixwizard.New(p, func(doctorfix.Planned) (string, error) { return text, nil }).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(p, func(doctorfix.Planned) (string, error) { return text, nil }).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -391,9 +409,11 @@ func (m Model) showFound() Model {
 	style.Review = words.Say("adopt.found.review")
 	style.Apply = words.Say("adopt.found.continue")
 	if len(m.found.Blockers) > 0 {
-		style.Apply = words.Say("adopt.found.close")
+		// Nothing can go on: Close is the one button, and Esc closes too.
+		style.Apply, style.Alone = words.Say("adopt.found.close"), true
 	}
 	if m.found.NeedsInstall {
+		style.Alone = false
 		style.Apply = words.Say("adopt.found.install.apply")
 	}
 	return m.reviewOf(StageFound, "found", foundText(m.found), style)
@@ -416,7 +436,7 @@ func (m Model) askLevel() Model {
 	}}}
 	style := adoptStyle
 	style.Back, style.Ask = true, words.Say("adopt.level.ask")
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -436,7 +456,7 @@ func (m Model) askChoices() Model {
 	desc := words.Say("adopt.choices.desc")
 	style := adoptStyle
 	style.Back, style.Ask = true, words.Say("adopt.choices.ask")
-	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -571,7 +591,7 @@ func (m Model) askGroup(g removalplan.Group) Model {
 		text, err := flow.ShowFix(p)
 		return groupText(g, text), err
 	}
-	m.fw = fixwizard.New(g.Fix, show).Styled(style).Place(m.sw, m.sh)
+	m.fw = fixwizard.New(g.Fix, show).Styled(style).Within(m.margins.Top, m.margins.Bottom).Place(m.sw, m.sh)
 	return m
 }
 
@@ -587,13 +607,14 @@ func (m Model) finish() (Model, Outcome) {
 	commit := m.commit
 	job := Job{Name: words.Say("adopt.job.finish"), Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 		timer := newStepTimer(out)
-		if err := flow.ApplyFix(ctx, fix.Fix, timer); err != nil {
+		findings, err := flow.ApplyChecks(ctx, fix.Fix, timer)
+		if err != nil {
 			return nil, err
 		}
 		if commit {
 			*note = flow.CommitConversion()
 		}
-		return timer.Steps(), nil
+		return finished{steps: timer.Steps(), findings: findings}, nil
 	}}
 	style := adoptStyle
 	style.Verb = words.Say("adopt.finish.verb")
@@ -630,7 +651,7 @@ func (m Model) done() Model {
 	if m.found.Kind.Convertible() {
 		style.Skip = words.Say("adopt.done.report")
 	}
-	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes, m.committed())
+	text := doneText(m.found, m.flow.Result(), checked, m.findings, m.applied, m.declinedN, m.kept, m.notes, m.committed())
 	if m.commit && m.commitNote != nil && !m.committed() && *m.commitNote != "" {
 		text += "\n  " + strings.TrimSpace(*m.commitNote) + "\n"
 	}

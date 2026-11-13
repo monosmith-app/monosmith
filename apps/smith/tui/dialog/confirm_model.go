@@ -284,6 +284,9 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		}
 		return c, Outcome{}
 	}
+	if scrolled, ok := c.scrollKey(name); ok {
+		return scrolled, Outcome{}
+	}
 	if c.Working() {
 		// The plan is not ready: only the way out works, so a hurried Enter
 		// cannot run what the person has not seen.
@@ -293,33 +296,46 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		}
 		return c, Outcome{}
 	}
-	switch commands.Nav(name) {
-	case commands.NavUp:
-		c.scroll = max(c.scroll-1, 0)
-	case commands.NavDown:
-		c.scroll++
-	case commands.NavPageUp:
-		c.scroll = max(c.scroll-max(c.headRoom()-1, 1), 0)
-	case commands.NavPageDown:
-		c.scroll += max(c.headRoom()-1, 1)
-	default:
-		switch name {
-		case "c", "C": // words:literal
-			if c.Offer {
-				return c.toggleCommit(), Outcome{}
-			}
-		case "y", "Y": // words:literal
-			return c, Outcome{Done: true, Confirmed: true}
-		case "n", "N", "esc", "ctrl+c", "q": // words:literal
-			return c, Outcome{Done: true}
-		case "enter", " ":
-			return c, Outcome{Done: true, Confirmed: c.focus == 0}
-		case "tab", "right", "left", "shift+tab":
-			c.focus = 1 - c.focus
+	switch name {
+	case "c", "C": // words:literal
+		if c.Offer {
+			return c.toggleCommit(), Outcome{}
 		}
-	}
-	if head := len(c.headLines(max(c.rect.W-4, 1))); c.scroll > head {
-		c.scroll = head
+	case "y", "Y": // words:literal
+		return c, Outcome{Done: true, Confirmed: true}
+	case "n", "N", "esc", "ctrl+c", "q": // words:literal
+		return c, Outcome{Done: true}
+	case "enter", " ":
+		return c, Outcome{Done: true, Confirmed: c.focus == 0}
+	case "tab", "right", "left", "shift+tab":
+		c.focus = 1 - c.focus
 	}
 	return c, Outcome{}
+}
+
+// scrollKey scrolls the head for the arrows, PgUp, PgDn, Ctrl+U and Ctrl+D,
+// also while the plan is read; ok is false for any other key.
+func (c Confirm) scrollKey(name string) (Confirm, bool) {
+	page := pane.PageStep(c.headRoom())
+	switch {
+	case commands.Nav(name) == commands.NavUp:
+		return c.Wheel(-1), true
+	case commands.Nav(name) == commands.NavDown:
+		return c.Wheel(1), true
+	case commands.Nav(name) == commands.NavPageUp, name == "ctrl+u":
+		return c.Wheel(-page), true
+	case commands.Nav(name) == commands.NavPageDown, name == "ctrl+d":
+		return c.Wheel(page), true
+	}
+	return c, false
+}
+
+// Wheel scrolls the head (the sentence and the details) by delta lines, never
+// past its ends; the commit box, the command and the buttons stay.
+//
+// Parameters: delta is the lines to move, negative for up.
+// Returns: the dialog with the head scrolled.
+func (c Confirm) Wheel(delta int) Confirm {
+	c.scroll = pane.ClampTop(c.scroll+delta, len(c.headLines(max(c.rect.W-4, 1))), c.headRoom())
+	return c
 }

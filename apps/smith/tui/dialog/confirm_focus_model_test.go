@@ -29,7 +29,7 @@ func TestACancelFocusedDialogCancelsOnEnterAndConfirmsOnY(t *testing.T) {
 
 func TestTheRunButtonCarriesTheLabelAndTheKeyThatConfirms(t *testing.T) {
 	out := strings.Join(releaseDialog().Lines(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode})), "\n")
-	if !strings.Contains(out, "Release anyway (y)") || !strings.Contains(out, "Cancel (esc)") {
+	if !strings.Contains(out, "Release anyway (y)") || !strings.Contains(out, "Cancel (Esc)") {
 		t.Fatalf("buttons:\n%s", out)
 	}
 }

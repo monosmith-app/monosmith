@@ -15,7 +15,7 @@ var templates = map[string]string{
 import PackageDescription
 
 let package = Package(
-    name: "[[.Module]]",
+    name: "[[.Package]]",
 [[- if ne .Kind "app"]]
     products: [
         .library(name: "[[.Module]]", targets: ["[[.Module]]"])
