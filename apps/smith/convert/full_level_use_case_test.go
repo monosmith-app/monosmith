@@ -11,7 +11,7 @@ import (
 
 func TestFindingsTextListsEachCheckThenSaysTheConversionFinishedWithFindings(t *testing.T) {
 	got := findingsText([]doctorfix.Finding{
-		{Step: protocol.FixStep{Description: "fix what ESLint can, then lint every project", Argv: []string{"smith", "eslint-fix"}}, Output: "▲ ESLint fixed 3 problems; 2 are left in 1 of 1 project\n"},
+		{Step: protocol.FixStep{Description: "fix what ESLint can, then lint every project", Argv: []string{"smith", "lint", "--fix", "-p", "lang:node"}}, Output: "▲ ESLint fixed 3 problems; 2 are left in 1 of 1 project\n"},
 		{Step: protocol.FixStep{Description: "check the workspace with doctor", Argv: []string{"smith", "doctor"}}, Output: "× app:build writes apps/app/dist-dev\n    → build each project into dist/<project dir>/\n"},
 	})
 	for _, want := range []string{

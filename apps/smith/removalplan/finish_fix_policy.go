@@ -2,6 +2,7 @@ package removalplan
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -54,7 +55,7 @@ func finish(smith string, verify, lint, fixLint bool) doctorfix.Planned {
 		if lint {
 			step := protocol.FixStep{Description: StepLint, Argv: []string{smith, "run", "lint"}, Advisory: true}
 			if fixLint {
-				step = protocol.FixStep{Description: StepFixLint, Argv: []string{smith, "eslint-fix"}, Advisory: true}
+				step = protocol.FixStep{Description: StepFixLint, Argv: []string{smith, "lint", "--fix", flagvocabulary.Arg("project"), "lang:node"}, Advisory: true}
 			}
 			steps = append(steps, step)
 		}

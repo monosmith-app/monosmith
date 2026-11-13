@@ -2,6 +2,7 @@ package lintfix
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -11,18 +12,26 @@ type fileResult struct {
 	WarningCount int `json:"warningCount"`
 }
 
-// countProblems reads ESLint's JSON report (--format json) and returns the
-// errors and warnings it lists. ok is false when the text is not that report.
-func countProblems(stdout string) (errors, warnings int, ok bool) {
+// ReadESLint reads what an ESLint run printed (--format json) and returns the
+// errors and warnings its report lists. A run that exits above 1, or prints
+// no report, crashed: crash is then the line that says why. Exit 1 means the
+// report lists problems.
+//
+// Parameters: stdout and stderr are the run's two outputs, code its exit code.
+func ReadESLint(stdout, stderr string, code int) (errors, warnings int, crash string) {
 	var files []fileResult
-	if err := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &files); err != nil {
-		return 0, 0, false
+	parsed := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &files) == nil
+	if code > 1 || !parsed {
+		if crash = firstErrorLine(stderr + "\n" + stdout); crash == "" {
+			crash = fmt.Sprintf("ESLint exited with code %d", code)
+		}
+		return 0, 0, crash
 	}
 	for _, f := range files {
 		errors += f.ErrorCount
 		warnings += f.WarningCount
 	}
-	return errors, warnings, true
+	return errors, warnings, ""
 }
 
 // firstErrorLine is the line of a crashed ESLint's output that says what went

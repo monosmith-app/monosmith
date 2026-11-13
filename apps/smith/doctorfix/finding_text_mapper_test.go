@@ -26,14 +26,14 @@ func TestFindingTextListsEachFailureWithItsRemedy(t *testing.T) {
 	}
 
 	lint := Finding{
-		Step: protocol.FixStep{Description: "fix what ESLint can, then lint every project", Argv: []string{"smith", "eslint-fix"}},
+		Step: protocol.FixStep{Description: "fix what ESLint can, then lint every project", Argv: []string{"smith", "lint", "--fix", "-p", "lang:node"}},
 		Output: "Project   Fixed    Left  Result\napi         550     871  ▲ 871 errors, 0 warnings\n" +
 			"▲ ESLint fixed 10696 problems; 1742 are left in 3 of 3 projects\n→ see them: smith run lint -p api\n",
 	}
 	want = "▲ fix what ESLint can, then lint every project\n" +
 		"  ▲ ESLint fixed 10696 problems; 1742 are left in 3 of 3 projects\n" +
 		"    → see them: smith run lint -p api\n" +
-		"  → check again: smith eslint-fix\n"
+		"  → check again: smith lint --fix -p lang:node\n"
 	if got := FindingText(lint); got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}

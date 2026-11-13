@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/marks"
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
@@ -20,24 +21,31 @@ func LintCommand(project string) string {
 	return "smith run lint " + flagvocabulary.Arg("project") + " " + project
 }
 
-// Report writes what ESLint did: a row per project (crashes first, then the
-// projects with problems left, then the clean ones, each alphabetically) with
-// the problems fixed and left, then closing lines with the totals and the
-// remedy.
-//
-// Parameters: outcomes are Fix's results. Returns the text, and failed: true
-// when ESLint crashed somewhere or left a problem.
-func Report(outcomes []Outcome) (text string, failed bool) {
-	rows := append([]Outcome(nil), outcomes...)
-	rank := func(o Outcome) int {
-		switch {
-		case o.Crash != "":
-			return 0
-		case o.Problems() > 0:
-			return 1
-		}
+// rank orders the rows: a tool that could not run, then problems left, then
+// the projects not reached, then the clean ones.
+func rank(o Outcome) int {
+	switch {
+	case o.Crash != "":
+		return 0
+	case o.Problems() > 0:
+		return 1
+	case o.Skipped:
 		return 2
 	}
+	return 3
+}
+
+// Report writes what `smith lint --fix` did: one table with a row per project
+// (failures first, then the rest alphabetically) with the problems fixed and
+// left, the cause and remedy of each tool that could not run, one line naming
+// the projects whose tool has no fix mode, and a closing line with the totals
+// and the time.
+//
+// Parameters: outcomes are the projects' results; took is the run's duration.
+// Returns the text, and failed: true when a tool could not run or a problem is
+// left.
+func Report(outcomes []Outcome, took time.Duration) (text string, failed bool) {
+	rows := append([]Outcome(nil), outcomes...)
 	sort.SliceStable(rows, func(i, j int) bool {
 		if rank(rows[i]) != rank(rows[j]) {
 			return rank(rows[i]) < rank(rows[j])
@@ -54,54 +62,75 @@ func Report(outcomes []Outcome) (text string, failed bool) {
 	}
 	line("Project", "Fixed", "Left", "Result")
 	var crashed, left []Outcome
-	fixed, total := 0, 0
+	var noFix []string
+	fixed, total, skipped := 0, 0, 0
 	for _, o := range rows {
+		if o.NoFix {
+			noFix = append(noFix, o.Project)
+		}
+		fixedCell := "-"
+		if o.Fixed >= 0 && !o.NoFix {
+			fixedCell = strconv.Itoa(o.Fixed)
+		}
 		switch rank(o) {
 		case 0:
 			crashed = append(crashed, o)
-			line(o.Project, "-", "-", marks.Failed+" ESLint could not run: "+o.Crash)
+			line(o.Project, "-", "-", marks.Failed+" could not run: "+o.Crash)
 			continue
 		case 1:
 			left = append(left, o)
-			line(o.Project, strconv.Itoa(o.Fixed), strconv.Itoa(o.Problems()), fmt.Sprintf("%s %s, %s", marks.Warning, count(o.Errors, "error"), count(o.Warnings, "warning")))
+			leftCell, result := "some", marks.Warning+" problems left"
+			if o.Counted {
+				leftCell = strconv.Itoa(o.Problems())
+				result = fmt.Sprintf("%s %s, %s", marks.Warning, count(o.Errors, "error"), count(o.Warnings, "warning"))
+			}
+			line(o.Project, fixedCell, leftCell, result)
+		case 2:
+			skipped++
+			line(o.Project, "-", "-", marks.Skipped+" not run: a task it needs failed")
+			continue
 		default:
-			line(o.Project, strconv.Itoa(o.Fixed), "0", marks.Passed+" no problems left")
+			line(o.Project, fixedCell, "0", marks.Passed+" no problems left")
 		}
-		fixed += o.Fixed
+		fixed += max(o.Fixed, 0)
 		total += o.Problems()
 	}
 	for _, o := range crashed {
-		fmt.Fprintf(&b, "%s %s: ESLint could not run: %s\n→ %s\n", marks.Failed, o.Project, o.Crash, o.Remedy)
+		fmt.Fprintf(&b, "%s %s: could not run: %s\n→ %s\n", marks.Failed, o.Project, o.Crash, o.Remedy)
 	}
-	ran := len(rows) - len(crashed)
+	if len(noFix) > 0 {
+		fmt.Fprintf(&b, "%s No fix mode for %s: the plain lint ran, nothing was changed\n", marks.Warning, strings.Join(noFix, ", "))
+	}
+	failed = len(crashed) > 0 || len(left) > 0 || skipped > 0
+	mark := marks.Passed
 	switch {
-	case ran == 0:
-	case len(left) > 0:
-		fmt.Fprintf(&b, "%s ESLint fixed %s; %d %s left in %d of %s\n", marks.Warning, count(fixed, "problem"), total, isAre(total), len(left), count(ran, "project"))
-		for i, o := range left {
-			if i == shownRemedies {
-				fmt.Fprintf(&b, "→ and %d more projects\n", len(left)-shownRemedies)
-				break
-			}
-			fmt.Fprintf(&b, "→ see them: %s\n", LintCommand(o.Project))
-		}
-	default:
-		fmt.Fprintf(&b, "%s ESLint fixed %s; none are left in %s\n", marks.Passed, count(fixed, "problem"), count(ran, "project"))
+	case len(crashed) > 0:
+		mark = marks.Failed
+	case failed:
+		mark = marks.Warning
 	}
-	return b.String(), len(crashed) > 0 || len(left) > 0
+	verdict := "passed"
+	if failed {
+		verdict = "found problems"
+	}
+	leftText := "none left"
+	if total > 0 {
+		leftText = fmt.Sprintf("%d left in %s", total, count(len(left), "project"))
+	}
+	fmt.Fprintf(&b, "%s Lint fix %s in %s: %s, %s fixed, %s\n", mark, verdict, took.Round(time.Second), count(len(rows), "project"), count(fixed, "problem"), leftText)
+	for i, o := range left {
+		if i == shownRemedies {
+			fmt.Fprintf(&b, "→ and %d more projects\n", len(left)-shownRemedies)
+			break
+		}
+		fmt.Fprintf(&b, "→ see them: %s\n", LintCommand(o.Project))
+	}
+	return b.String(), failed
 }
 
-// count spells a number with its noun: "1 problem", "12 problems".
 func count(n int, noun string) string {
 	if n == 1 {
 		return "1 " + noun
 	}
 	return fmt.Sprintf("%d %ss", n, noun)
-}
-
-func isAre(n int) string {
-	if n == 1 {
-		return "is"
-	}
-	return "are"
 }

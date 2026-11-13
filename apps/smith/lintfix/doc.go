@@ -1,6 +1,6 @@
-// Package lintfix is the lint check that closes a full conversion when smith
-// owns the lint: in each Node project that has a lint task, ESLint fixes what
-// it can, and the problems it cannot fix are counted per project. A project
-// where ESLint cannot run at all is reported with the first line of its error
-// and the remedy. The hidden `smith eslint-fix` runs it.
+// Package lintfix is what `smith lint --fix` reports: for each project, the
+// problems its linter fixed and the problems left, as one table with a closing
+// line. It judges ESLint's JSON report (the Node path of the fix) and names the
+// remedy of a linter that could not run. The task runner runs the fixes the
+// plugins declare (protocol.TaskFix); this package only reads and reports them.
 package lintfix

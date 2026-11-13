@@ -219,7 +219,8 @@ All payload types live in `packages/plugin-sdk/protocol`.
 A `Task` (`project_contract.go`) is a command plus what the cache needs: `command` (argv, no shell),
 `cwd`, `env`, `inputs`, `outputs`, `ship` (files in a tool's work folder that the host links into
 the project's shipped folder after the task, ADR 0092), `release` (the `command` and `ship` that
-`--release` runs instead, ADR 0092), `dependsOn`, `cache`, `description`, and two flags for the
+`--release` runs instead, ADR 0092), `fix` (a lint task's fix: the `command` that `smith lint --fix`
+runs in place of the lint, an optional `probe` and a `count` format; nil when the tool has no fix mode), `dependsOn`, `cache`, `description`, and two flags for the
 runner: `verify` (run it in `smith ci verify` besides lint, typecheck, test and build) and `serve`,
 `serveUrl`, `serveTimeout` (start an app for an end-to-end task). Plugins never talk to the cache;
 they have to be honest and deterministic in what they put in a task. The key is described in

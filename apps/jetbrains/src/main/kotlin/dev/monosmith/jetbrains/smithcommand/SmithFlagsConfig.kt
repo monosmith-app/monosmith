@@ -57,4 +57,10 @@ object SmithFlagsConfig {
 
     /** The long form of [RELEASE]. */
     const val RELEASE_LONG = "--release"
+
+    /** Fix what can be fixed on its own: lint rewrites the files its tool can fix, doctor applies its safe fixes. */
+    const val FIX = "--fix"
+
+    /** The long form of [FIX]. */
+    const val FIX_LONG = "--fix"
 }

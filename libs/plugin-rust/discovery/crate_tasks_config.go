@@ -46,7 +46,9 @@ func Tasks(root, name string, kind protocol.ProjectKind, fmtArgs []string, bins 
 	tasks := map[string]protocol.Task{
 		"build":     withReleaseProfile(protocol.Task{Command: cargo("build", "-p", name), Inputs: inputs, Description: "cargo build"}),
 		"test":      withReleaseProfile(protocol.Task{Command: cargo("test", "-p", name), Inputs: inputs, Cache: true, Description: "cargo test"}),
-		"lint":      {Command: cargo("clippy", "-p", name, "--all-targets", "--", "-D", "warnings"), Inputs: inputs, Cache: true, Description: "cargo clippy, warnings are errors"},
+		"lint":      {Command: cargo("clippy", "-p", name, "--all-targets", "--", "-D", "warnings"), Inputs: inputs, Cache: true, Description: "cargo clippy, warnings are errors",
+			// A fix rewrites the working tree, which is usually unstaged and often dirty.
+			Fix: &protocol.TaskFix{Command: cargo("clippy", "--fix", "--allow-dirty", "--allow-staged", "-p", name, "--all-targets", "--", "-D", "warnings")}},
 		"typecheck": {Command: cargo("check", "-p", name, "--all-targets"), Inputs: inputs, Cache: true, Description: "cargo check"},
 		"format":    formatTask(cargo, name, fmtArgs),
 	}

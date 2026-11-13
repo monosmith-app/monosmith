@@ -13,7 +13,6 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
-	"github.com/monosmith-app/monosmith/apps/smith/lintfix"
 	"github.com/monosmith-app/monosmith/apps/smith/godepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/languageserver"
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
@@ -136,7 +135,7 @@ already have), then build and doctor.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), removeproject.RemoveCommand(version), swapchoice.Command(version), environments.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
 	add("work", toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
-	root.AddCommand(apptasks.FuncCommand(), apptasks.ElectronCommand(), declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), lintfix.Command(eslintTargets(version)), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command(), completioncommand.Command(plugintrust.Home()))
+	root.AddCommand(apptasks.FuncCommand(), apptasks.ElectronCommand(), declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command(), completioncommand.Command(plugintrust.Home()))
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version, cipipeline.AssetsPrepare))
@@ -262,7 +261,7 @@ func runCommand(version string, args []string) (int, string) {
 			return 1, "smith: " + message
 		case errors.As(err, &p):
 			return 1, p.Error()
-		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, lintfix.ErrProblemsLeft) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported) && !errors.Is(err, toolinstall.ErrMissing):
+		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported) && !errors.Is(err, toolinstall.ErrMissing):
 			return 1, "smith: " + err.Error()
 		}
 		return 1, ""
