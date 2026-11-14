@@ -1,6 +1,7 @@
 package cipipeline
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/verifyfacts"
 	"strings"
 	"sync"
 
@@ -24,6 +25,9 @@ type taskOutputs struct {
 type taskOutput struct {
 	tail  []string
 	tests testCounter
+	// facts and lint keep what the runner and the linter said, for the details of verify.
+	facts verifyfacts.TestCounter
+	lint  verifyfacts.LintCounter
 }
 
 func newTaskOutputs() *taskOutputs { return &taskOutputs{tasks: map[string]*taskOutput{}} }
@@ -61,6 +65,8 @@ func (o *taskOutputs) read(line string) {
 		t.tail = t.tail[1:]
 	}
 	t.tests.add(text)
+	t.facts.Add(text)
+	t.lint.Add(text)
 }
 
 // Tail is the last lines of a task's output, or "".
@@ -81,4 +87,25 @@ func (o *taskOutputs) Tests(id string) (summary string, passed int) {
 		return t.tests.summary(), t.tests.passed
 	}
 	return "", 0
+}
+
+// TestFacts is what the task's test runner counted: passed and failed, what they
+// count ("tests" or "packages"), and whether the runner said anything readable.
+func (o *taskOutputs) TestFacts(id string) (passed, failed int, unit string, known bool) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if t := o.tasks[id]; t != nil {
+		return t.facts.Result()
+	}
+	return 0, 0, "", false
+}
+
+// LintIssues is the number of issues the task's linter reported, and whether it said.
+func (o *taskOutputs) LintIssues(id string) (issues int, known bool) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if t := o.tasks[id]; t != nil {
+		return t.lint.Issues()
+	}
+	return 0, false
 }
