@@ -20,13 +20,14 @@ const (
 	Assistants
 	CI
 	Forms
+	Update
 )
 
 // sectionCount is the number of sections, the size of the per-section state.
-const sectionCount = Forms + 1
+const sectionCount = Update + 1
 
 // Sections lists them in order.
-var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Assistants, CI, Forms}
+var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Assistants, CI, Forms, Update}
 
 // sectionForms are the actions (by catalogue id, see guide.Action.Presents)
 // whose guided forms a section lists besides its own rows. The Forms section
@@ -39,7 +40,7 @@ var sectionForms = map[Section][]string{
 
 // Title is the name in the list.
 func (s Section) Title() string {
-	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.assistants"), words.Say("settingsview.section.ci"), words.Say("settingsview.section.forms")}[s]
+	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.assistants"), words.Say("settingsview.section.ci"), words.Say("settingsview.section.forms"), words.Say("settingsview.section.update")}[s]
 }
 
 // About is the line under the heading of the open section.
@@ -53,6 +54,7 @@ func (s Section) About() string {
 		words.Say("settingsview.about.assistants"),
 		words.Say("settingsview.about.ci"),
 		words.Say("settingsview.about.forms"),
+		words.Say("settingsview.about.update"),
 	}[s]
 }
 
@@ -89,6 +91,8 @@ const (
 	kindSetting
 	kindRecipe
 	kindForm
+	kindUpdate
+	kindUpdateMute
 )
 
 // item is one selectable row of a section; group is the heading it sits under.
@@ -137,6 +141,9 @@ func (m Model) items(s Section) []item {
 		for i, r := range m.snap.Recipes {
 			add(kindRecipe, words.Say("settingsview.group.recipes"), r.Path, i)
 		}
+	case Update:
+		add(kindUpdate, words.Say("settingsview.group.update"), "update", 0)
+		add(kindUpdateMute, words.Say("settingsview.group.update"), "mute", 0)
 	case Forms:
 		for i, f := range m.forms {
 			add(kindForm, words.Say("settingsview.group.forms"), f.Title, i)
@@ -151,7 +158,7 @@ func (m Model) items(s Section) []item {
 // readsWorkspace is false for a section whose rows need no snapshot: the
 // style, which is the person's, and the sections that only list forms.
 func (s Section) readsWorkspace() bool {
-	return s != Style && s != Forms && s != Assistants && s != CI
+	return s != Style && s != Forms && s != Assistants && s != CI && s != Update
 }
 
 // tableOf is the smith.toml table a setting path belongs to.

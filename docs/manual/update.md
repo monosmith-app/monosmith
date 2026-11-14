@@ -16,6 +16,16 @@ tool, pip, uv, pipx or the install script. It then asks what to do. `--check` on
 changes nothing. Without a terminal it needs `--yes`. When smith cannot tell how it was
 installed, it names the releases page instead of guessing.
 
+## In the interface
+
+When smith knows a newer release, the interface offers it once per version in a dialog with the
+command shown, an **Update now** button and a **Don't remind me about updates** box. Cancel keeps the
+update one click away: a red "update available" in the bottom bar, which opens the same dialog. The
+**Settings > Update** section shows the same facts, asks the registry on Enter, and has the same box
+to bring the reminder back or switch it off. The box keeps only the reminder away: smith still
+checks, and `smith update` still works. **Update now** closes the interface and runs
+`smith update --yes`, so the running smith can be replaced.
+
 ## On Windows
 
 A running smith cannot be replaced. The update opens its own window, waits for `smith update`

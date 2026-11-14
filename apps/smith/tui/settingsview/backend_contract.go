@@ -26,6 +26,8 @@ type Backend struct {
 	UnsetSetting func(path string) (string, error)
 	// Style is the person's saved choice of theme and symbols.
 	Style StylePrefs
+	// Update is what the Update section shows and changes.
+	Update UpdatePrefs
 	// TipSeen and MarkTipSeen keep whether Home still points at this tab.
 	TipSeen     bool
 	MarkTipSeen func()
@@ -51,4 +53,26 @@ type StylePrefs struct {
 	Getenv func(string) string
 	// Dark is whether the terminal's background is dark.
 	Dark bool
+}
+
+// UpdateInfo is what smith knows about a newer smith.
+type UpdateInfo struct {
+	// Current is the running version; Latest the newest on the channel ("" when
+	// the registry has not been asked); Command is what installs it.
+	Current, Latest, Command string
+	// Available is true when Latest is newer; Runnable when smith can run Command
+	// (it knows how it was installed).
+	Available, Runnable bool
+	// Muted is true when the person asked not to be reminded in the interface.
+	Muted bool
+}
+
+// UpdatePrefs is the Update section's access to smith update.
+type UpdatePrefs struct {
+	// Info is what smith knows now, without a request.
+	Info UpdateInfo
+	// Check asks the registry now and returns what it found.
+	Check func() (UpdateInfo, error)
+	// SetMuted keeps whether the interface leaves the person alone about updates.
+	SetMuted func(muted bool) error
 }

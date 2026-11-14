@@ -106,6 +106,15 @@ func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
 	if res.Theme != nil {
 		s.th = theme.New(*res.Theme)
 	}
+	if res.Checked != nil {
+		s.upd = *res.Checked
+	}
+	if res.MutedChanged {
+		s.upd.Muted = res.Muted
+	}
+	if res.Update {
+		return s.openUpdate()
+	}
 	if res.Run != nil {
 		return s.execute(res.Run, false)
 	}

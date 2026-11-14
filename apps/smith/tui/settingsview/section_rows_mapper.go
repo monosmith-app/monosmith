@@ -82,6 +82,10 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 	case kindForm:
 		f := m.forms[it.idx]
 		return "   " + pane.Cell(f.Title, 28) + th.Muted(f.Hint)
+	case kindUpdate:
+		return "   " + pane.Cell(words.Say("settingsview.update.row", "version", m.upd.Current), 22) + m.updateState(th)
+	case kindUpdateMute:
+		return "   " + choicerow.Box(m.upd.Muted, false) + " " + words.Say("settingsview.update.mute")
 	}
 	return ""
 }
@@ -106,6 +110,8 @@ func (m Model) summary(it item) string {
 		return oneLine(m.snap.Settings[it.idx].Explanation)
 	case kindTheme, kindIcons:
 		return words.Say("settingsview.summary.style")
+	case kindUpdate, kindUpdateMute:
+		return words.Say("settingsview.summary.update")
 	case kindArchitecture:
 		return words.Say("settingsview.summary.architecture")
 	}
@@ -184,6 +190,24 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 			add(th.Failure(a.Warning))
 		}
 		add(th.Muted(words.Say("settingsview.architecture.same", "name", a.Name)))
+	case kindUpdate:
+		add(th.Bold(words.Say("settingsview.update.title")), words.Say("settingsview.update.about"))
+		switch {
+		case m.upd.Available:
+			add(th.Failure(words.Say("settingsview.update.available", "latest", m.upd.Latest, "current", m.upd.Current)))
+			if m.upd.Runnable {
+				add(th.Muted(words.Say("settingsview.update.runs"))+m.upd.Command, th.Muted(words.Say("settingsview.update.enter_update")))
+			} else {
+				add(words.Say("settingsview.update.unknown", "latest", m.upd.Latest))
+			}
+		case m.upd.Latest != "":
+			add(th.Success(words.Say("settingsview.update.current", "version", m.upd.Current)))
+			add(th.Muted(words.Say("settingsview.update.enter_check")))
+		default:
+			add(th.Muted(words.Say("settingsview.update.notchecked")), th.Muted(words.Say("settingsview.update.enter_check")))
+		}
+	case kindUpdateMute:
+		add(th.Bold(words.Say("settingsview.update.mute")), words.Say("settingsview.update.mute_about"), th.Muted(words.Say("settingsview.update.mute_enter")))
 	case kindTheme:
 		add(m.previewLines(th, it, w)...)
 	case kindIcons:
@@ -349,4 +373,16 @@ func shownValue(th theme.Theme, st Setting) string {
 		return th.Muted(st.Default)
 	}
 	return th.Muted(words.Say("settingsview.value.default"))
+}
+
+// updateState is the state of the update row: a newer smith in red, the newest
+// one that is installed in green, or that nothing was checked yet.
+func (m Model) updateState(th theme.Theme) string {
+	switch {
+	case m.upd.Available:
+		return th.Failure(words.Say("settingsview.update.state_available", "latest", m.upd.Latest))
+	case m.upd.Latest != "":
+		return th.Success(words.Say("settingsview.update.state_current"))
+	}
+	return th.Muted(words.Say("settingsview.update.state_unknown"))
 }

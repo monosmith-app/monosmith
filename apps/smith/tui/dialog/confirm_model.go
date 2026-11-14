@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
@@ -37,6 +38,9 @@ type Confirm struct {
 	// Offer shows the box "Commit this change so it can be undone"; Commit is
 	// true once it is ticked. It starts unticked: smith commits only when asked.
 	Offer, Commit bool
+	// boxLabel and boxKey replace the commit box of a dialog that offers another
+	// choice (see WithBox); "" is the commit box.
+	boxLabel, boxKey string
 	// scroll is how many lines of the head (the sentence and the details) are
 	// scrolled off: a long plan never pushes the commit box and the command
 	// out of the dialog.
@@ -134,7 +138,39 @@ func (c Confirm) Pulse(tick int, elapsed time.Duration) Confirm {
 
 // Final is the command line that runs on confirmation: Argv, with --commit
 // when the box is ticked.
-func (c Confirm) Final() []string { return WithCommit(c.Argv, c.Offer && c.Commit) }
+func (c Confirm) Final() []string {
+	return WithCommit(c.Argv, c.Offer && c.Commit && c.boxLabel == "")
+}
+
+// WithBox replaces the commit box with another box the person can tick, for a
+// dialog whose command has no commit ("Don't remind me"). It starts unticked.
+//
+// Parameters: label is the text of the box; key is the single key that ticks it.
+// Returns: the dialog with the box.
+func (c Confirm) WithBox(label, key string) Confirm {
+	c.Offer, c.boxLabel, c.boxKey = true, label+"  ("+strings.ToUpper(key)+")", strings.ToLower(key)
+	return c
+}
+
+// BoxTicked is true when the person ticked the box of WithBox.
+func (c Confirm) BoxTicked() bool { return c.Offer && c.Commit && c.boxLabel != "" }
+
+// boxText is the text of the box line: the commit box unless WithBox changed it.
+func (c Confirm) boxText() string {
+	if c.boxLabel != "" {
+		return c.boxLabel
+	}
+	return CommitLabel + words.Say("dialog.commit.key")
+}
+
+// ticksWith is the key that ticks the box.
+func (c Confirm) ticksWith(name string) bool {
+	key := "c" // words:literal
+	if c.boxKey != "" {
+		key = c.boxKey
+	}
+	return strings.EqualFold(name, key)
+}
 
 // toggleCommit ticks or unticks the box and redraws the command line.
 func (c Confirm) toggleCommit() Confirm {
@@ -194,7 +230,7 @@ func (c Confirm) Place(sw, sh int) Confirm {
 	w := min(max(ansi.StringWidth(c.Command)+8, minWidth), max(sw-2, 10))
 	if c.Offer {
 		// Wide enough for the box line, which is not cut.
-		w = min(max(w, ansi.StringWidth(CommitLabel)+14), max(sw-2, 10))
+		w = min(max(w, ansi.StringWidth(c.boxText())+10), max(sw-2, 10))
 	}
 	if len(c.Details) > 0 {
 		// Lines of paths need room: a short command must not make a narrow dialog
@@ -296,11 +332,10 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		}
 		return c, Outcome{}
 	}
+	if c.Offer && c.ticksWith(name) {
+		return c.toggleCommit(), Outcome{}
+	}
 	switch name {
-	case "c", "C": // words:literal
-		if c.Offer {
-			return c.toggleCommit(), Outcome{}
-		}
 	case "y", "Y": // words:literal
 		return c, Outcome{Done: true, Confirmed: true}
 	case "n", "N", "esc", "ctrl+c", "q": // words:literal

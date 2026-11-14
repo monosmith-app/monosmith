@@ -123,6 +123,7 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			}
 			return words.Say("settingssource.setting.unset", "path", path), nil
 		},
+		Update: updatePrefs(version),
 		Style: settingsview.StylePrefs{
 			Theme: prefs.Theme, Icons: prefs.Icons, Path: userprefs.Path(home), Getenv: getenv, Dark: theme.DarkBackground(getenv),
 			Save: func(themeName, icons string) error {

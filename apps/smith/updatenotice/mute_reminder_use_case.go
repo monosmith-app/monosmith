@@ -8,3 +8,11 @@ package updatenotice
 func SetMuted(home string, muted bool) {
 	update(home, func(m *memory) { m.Muted = muted })
 }
+
+// MarkAlerted remembers that the interface offered a version in its alert, so
+// the alert shows once per version.
+//
+// Parameters: home is the smith home; version is the Latest that was offered.
+func MarkAlerted(home, version string) {
+	update(home, func(m *memory) { m.AlertedFor = version })
+}

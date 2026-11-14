@@ -80,6 +80,14 @@ type Config struct {
 	Resume *Resume
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
 	Clipboard io.Writer
+	// Update is what smith knows about a newer smith; UpdateAlert opens the
+	// dialog that offers it as soon as the screen has a size; SetUpdateMuted keeps
+	// the person's wish to be left alone about it and MarkUpdateAlerted that a
+	// version was offered.
+	Update            settingsview.UpdateInfo
+	UpdateAlert       bool
+	SetUpdateMuted    func(muted bool) error
+	MarkUpdateAlerted func(version string)
 	// Notice is a quiet line shown once as a toast: smith was updated, or a
 	// newer one exists.
 	Notice string
@@ -112,9 +120,15 @@ type Config struct {
 type Shell struct {
 	th      theme.Theme
 	version string
-	header  string
-	branch  string
-	w, h    int
+	// upd is what smith knows about a newer smith; updMute and updAlerted keep the
+	// person's choices; alertPending opens the first-run alert once the screen has a size.
+	upd          settingsview.UpdateInfo
+	updMute      func(muted bool) error
+	updAlerted   func(version string)
+	alertPending bool
+	header       string
+	branch       string
+	w, h         int
 
 	inWorkspace bool
 	emptyFolder bool
@@ -390,6 +404,7 @@ type Shell struct {
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
+		upd: cfg.Update, updMute: cfg.SetUpdateMuted, updAlerted: cfg.MarkUpdateAlerted, alertPending: cfg.UpdateAlert,
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 		frame: &lastFrame{},

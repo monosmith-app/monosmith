@@ -160,6 +160,10 @@ func (m Model) activate() (Model, Result) {
 		return m.editSetting(m.snap.Settings[it.idx])
 	case kindForm:
 		return m, Result{Form: it.key}
+	case kindUpdate:
+		return m.activateUpdate()
+	case kindUpdateMute:
+		return m.toggleMuted()
 	case kindInstalled:
 		m.note = words.Say("settingsview.note.installed")
 	case kindRecipe:
@@ -352,4 +356,55 @@ func (m Model) saveStyle(themeName, icons string) tea.Cmd {
 		}
 		return StyleSaved{Theme: themeName, Icons: icons, Choice: theme.ChooseWith(getenv, st.Dark, themeName, icons)}
 	}
+}
+
+// activateUpdate is Enter on the update row: with a newer smith known it asks the
+// shell to offer the update; otherwise it asks the registry.
+func (m Model) activateUpdate() (Model, Result) {
+	if m.upd.Available {
+		if !m.upd.Runnable {
+			m.note = words.Say("settingsview.update.unknown", "latest", m.upd.Latest)
+			return m, Result{}
+		}
+		return m, Result{Update: true}
+	}
+	check := m.b.Update.Check
+	if check == nil {
+		return m, Result{Note: words.Say("settingsview.update.unavailable"), Failed: true}
+	}
+	m = m.begin(words.Say("settingsview.busy.update"), false)
+	return m, Result{Cmd: func() tea.Msg {
+		info, err := check()
+		return UpdateChecked{Info: info, Err: err}
+	}}
+}
+
+// toggleMuted switches the reminder: the status bar and the first alert stay
+// quiet, while the check, this section and smith update go on.
+func (m Model) toggleMuted() (Model, Result) {
+	set := m.b.Update.SetMuted
+	if set == nil {
+		return m, Result{Note: words.Say("settingsview.update.unavailable"), Failed: true}
+	}
+	muted := !m.upd.Muted
+	if err := set(muted); err != nil {
+		m.note, m.failed = words.Say("settingsview.update.failed", "reason", err.Error()), true
+		return m, Result{Note: m.note, Failed: true}
+	}
+	m.upd.Muted = muted
+	note := words.Say("settingsview.update.reminders_on")
+	if muted {
+		note = words.Say("settingsview.update.reminders_off")
+	}
+	return m, Result{Note: note, MutedChanged: true, Muted: muted}
+}
+
+// WithUpdate replaces what the Update section shows, when the shell learned it
+// elsewhere (the first-run alert ticked the reminder box).
+//
+// Parameters: info is what smith knows now.
+// Returns: the tab with it.
+func (m Model) WithUpdate(info UpdateInfo) Model {
+	m.upd = info
+	return m
 }

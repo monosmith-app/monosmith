@@ -21,6 +21,9 @@ type Info struct {
 	Result string
 	// Version is smith's version.
 	Version string
+	// Update is the newest smith when a newer one exists and the person did not
+	// ask to be left alone about it; the bar then says so, in red, before the version.
+	Update string
 	// Hint replaces the command while it is set: the reason a key is
 	// unavailable, a refused key, a toast-sized message.
 	Hint string
