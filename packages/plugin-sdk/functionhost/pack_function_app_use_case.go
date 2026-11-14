@@ -24,7 +24,8 @@ type PackOptions struct {
 
 // PackFunctionApp builds a function app, then zips it: the compiled code, the
 // manifest and, when the host does not install them, the production
-// dependencies. A library of this workspace is not on the registry: it is
+// dependencies (installed with the workspace's .npmrc, so a private feed works; the
+// file never reaches the zip). A library of this workspace is not on the registry: it is
 // built and copied under vendor/, and the manifest of the stage points at the
 // copy, so that npm installs it from there.
 //
@@ -74,7 +75,14 @@ func PackFunctionApp(o PackOptions) (string, error) {
 	}
 	if deps := stringMap(staged["dependencies"]); o.WithDependencies && len(deps) > 0 {
 		argv := []string{"npm", "install", "--omit=dev", "--ignore-scripts", "--no-audit", "--no-fund", "--workspaces=false"}
-		if err := tools.Run(stage, argv); err != nil {
+		// The stage is outside the workspace: give npm the .npmrc that maps a scope to a private feed.
+		removeNpmrc, err := stageNpmrc(o.ProjectDir, stage)
+		if err != nil {
+			return "", err
+		}
+		err = tools.Run(stage, argv)
+		removeNpmrc()
+		if err != nil {
 			return "", err
 		}
 		// The platform that runs the zip has node_modules; the copies of the libraries are not needed.
