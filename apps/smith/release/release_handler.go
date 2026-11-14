@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"io"
 	"os"
 	"os/signal"
@@ -272,7 +273,7 @@ func printsTextPlan(asJSON bool, format string) bool {
 }
 
 func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
-	out := cmd.OutOrStdout()
+	out := statuspaint.Writer(cmd.OutOrStdout())
 	if dryRun {
 		fmt.Fprintln(out, "Dry run: nothing is published or tagged.")
 	}

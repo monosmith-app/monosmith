@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"io"
 	"strings"
 
@@ -184,7 +185,7 @@ non-zero while something blocks.`,
 					return err
 				}
 			} else {
-				printReport(out, report)
+				printReport(statuspaint.Writer(out), report)
 				if initialise && dryRun && report.Adoptable() {
 					// A dry run settles the open choices with their safe defaults, asks nothing, and shows the plan.
 					decided.CIGiven = cmd.Flags().Changed("ci")
@@ -193,7 +194,7 @@ non-zero while something blocks.`,
 						return err
 					}
 					fmt.Fprintln(out)
-					operationplan.Render(out, PlanInit(report, choices, install))
+					operationplan.Render(statuspaint.Writer(out), PlanInit(report, choices, install))
 					fmt.Fprintln(out, "Dry run: nothing was changed.")
 				}
 				if !tags && !initialise && report.Adoptable() {

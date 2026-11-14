@@ -2,6 +2,7 @@ package cachecommand
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
@@ -38,7 +39,7 @@ Exits non-zero while problems remain.`,
 				if err := encode(out, report); err != nil {
 					return err
 				}
-			} else if _, err := fmt.Fprint(out, verifyText(report)); err != nil {
+			} else if _, err := fmt.Fprint(statuspaint.Writer(out), verifyText(report)); err != nil {
 				return err
 			}
 			if remaining := report.Remaining(); remaining > 0 {
