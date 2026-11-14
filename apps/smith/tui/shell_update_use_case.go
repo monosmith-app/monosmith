@@ -179,6 +179,9 @@ func (s *Shell) resize(w, h int) {
 	if s.alertPending {
 		s.openFirstUpdateAlert()
 	}
+	if s.linkPending {
+		s.openLinkOffer()
+	}
 	if s.runWanted() {
 		// A run open keeps the screen when it gets narrow: the panel replaces the
 		// list, as a detail does. When the screen widens, it sits beside the list.

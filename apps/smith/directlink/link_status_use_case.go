@@ -25,6 +25,10 @@ func Check(o Options) Status {
 		s.Linked = state.Version
 	}
 	s.Entries = FindEntries(s.Installed, o.GOOS, RunDir(o.Home), expectedTarget(o))
+	if len(s.Entries) == 0 && isNativeEntry(s.Installed) {
+		s.Direct = true
+		s.Entries = []Entry{{Path: s.Installed, Kind: Direct}}
+	}
 	return s
 }
 

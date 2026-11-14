@@ -28,6 +28,12 @@ func ownedDirs(exe string) []string {
 		prefix := filepath.FromSlash(p[:i])
 		dirs = append(dirs, prefix, filepath.Join(filepath.Dir(prefix), "bin"))
 	}
+	// pnpm keeps the program in its store and the entries in its home: <home>/bin
+	// (pnpm 11 and later) or <home> itself.
+	if i := strings.Index(lower, "/store/v"); i >= 0 && strings.Contains(lower, "/links/@monosmith/") {
+		home := filepath.FromSlash(p[:i])
+		dirs = append(dirs, filepath.Join(home, "bin"), home)
+	}
 	if i := strings.Index(lower, "/site-packages/"); i >= 0 {
 		root := filepath.FromSlash(p[:i])
 		for range 4 {
@@ -62,4 +68,12 @@ func FindEntries(exe, goos, runDir, target string) []Entry {
 		}
 	}
 	return found
+}
+
+// isNativeEntry is true when the installed program is the entry itself: pip puts
+// the whole program in Scripts, and the install script puts it in ~/.local/bin. No
+// launcher stands in front of it, so there is nothing to change.
+func isNativeEntry(exe string) bool {
+	name := strings.ToLower(filepath.Base(exe))
+	return (name == "smith" || name == "smith.exe") && len(ownedDirs(exe)) == 0
 }

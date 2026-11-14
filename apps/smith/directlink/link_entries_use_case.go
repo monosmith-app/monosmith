@@ -30,6 +30,10 @@ func Link(o Options) (Report, error) {
 	if o.Home == "" {
 		return Report{}, ErrNoHome
 	}
+	if isNativeEntry(o.installed()) {
+		// The program is its own entry (pip, the install script): nothing stands in front of it.
+		return Report{Target: o.installed(), Already: []Entry{{Path: o.installed(), Kind: Direct}}}, nil
+	}
 	if RunningFromLink(o.Home, o.Exe) && !sameFile(o.installed(), o.Exe) {
 		return Report{}, ErrReplaced
 	}

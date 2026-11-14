@@ -1,8 +1,10 @@
 package commandline
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 
@@ -24,22 +26,23 @@ var noLinkCommands = []string{"serve", "mcp", "lsp", "prompt", "link", "update",
 // already starts directly and when the version was linked before.
 //
 // Parameters: args are the command line; version is the running smith.
-// Returns: what to call when the command is done: it prints the line, if any.
-func linkFirstRun(args []string, version string) func() {
+// Returns: what to call when the command is done (it prints the line, if any), and
+// whether smith was linked by this run: the interface then offers to restart.
+func linkFirstRun(args []string, version string) (done func(), linked bool) {
 	none := func() {}
 	if directlink.FirstRunOff(os.Getenv) || !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stderr.Fd())) {
-		return none
+		return none, false
 	}
 	if len(args) > 0 && slices.Contains(noLinkCommands, args[0]) {
-		return none
+		return none, false
 	}
 	o := directlink.ForThisProcess(version)
 	if !directlink.Needed(o) {
-		return none
+		return none, false
 	}
 	report, err := directlink.Link(o)
 	if err != nil || len(report.Changed) == 0 {
-		return none
+		return none, false
 	}
 	return func() {
 		names := make([]string, 0, len(report.Changed))
@@ -48,5 +51,26 @@ func linkFirstRun(args []string, version string) func() {
 		}
 		fmt.Fprintf(os.Stderr, "smith now starts directly, with no launcher in front: about 110 ms faster and 40 MB less memory per run (%s).\n"+
 			"It takes effect from the next command. smith link --status shows how smith starts, smith link --undo gives the entries back.\n", strings.Join(names, ", "))
+	}, true
+}
+
+// restartInterface opens the interface again in a new process: the first run made
+// the smith command start the program directly, and only a new start uses it. It
+// returns the exit code of the new interface.
+func restartInterface() int {
+	program, err := exec.LookPath("smith")
+	if err != nil {
+		program = os.Args[0]
 	}
+	cmd := exec.Command(program)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return exit.ExitCode()
+		}
+		fmt.Fprintln(os.Stderr, "smith: could not open the interface again: "+err.Error())
+		return 1
+	}
+	return 0
 }

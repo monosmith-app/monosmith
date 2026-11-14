@@ -84,7 +84,10 @@ type Config struct {
 	// dialog that offers it as soon as the screen has a size; SetUpdateMuted keeps
 	// the person's wish to be left alone about it and MarkUpdateAlerted that a
 	// version was offered.
-	Update            settingsview.UpdateInfo
+	Update settingsview.UpdateInfo
+	// LinkOffer is true when the first run of this version made smith start directly: the
+	// interface says so and offers to open again, since only a new start uses it.
+	LinkOffer         bool
 	UpdateAlert       bool
 	SetUpdateMuted    func(muted bool) error
 	MarkUpdateAlerted func(version string)
@@ -126,9 +129,13 @@ type Shell struct {
 	updMute      func(muted bool) error
 	updAlerted   func(version string)
 	alertPending bool
-	header       string
-	branch       string
-	w, h         int
+	// linkPending offers the restart once the screen has a size; Restart is set when the
+	// person accepts: the shell closes and smith opens it again.
+	linkPending bool
+	Restart     bool
+	header      string
+	branch      string
+	w, h        int
 
 	inWorkspace bool
 	emptyFolder bool
@@ -406,7 +413,7 @@ type Shell struct {
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
-		upd: cfg.Update, updMute: cfg.SetUpdateMuted, updAlerted: cfg.MarkUpdateAlerted, alertPending: cfg.UpdateAlert,
+		upd: cfg.Update, updMute: cfg.SetUpdateMuted, updAlerted: cfg.MarkUpdateAlerted, alertPending: cfg.UpdateAlert, linkPending: cfg.LinkOffer,
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 		frame: &lastFrame{},

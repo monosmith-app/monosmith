@@ -64,3 +64,17 @@ func TestATaskThatPrintsALookAlikeIsStillOutput(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+func TestTheTablesOfSmithVerifyReachTheRunLogAsPlainLines(t *testing.T) {
+	for _, line := range []string{
+		"Project  Tests               Lint      Build         Coverage",
+		"core     ✓ 1 package passed  ✓ passed      -  100.0% (1m old)",
+		"Project  Build path  Test results  Coverage report",
+		"core     -           -             libs/core/coverage.out",
+		"Coverage: not collected. smith shows it when a report is already in place.",
+	} {
+		if ev := ParseLine(line); ev.Kind != Plain || ev.Text != line {
+			t.Errorf("%q became %+v, not a plain log line", line, ev)
+		}
+	}
+}

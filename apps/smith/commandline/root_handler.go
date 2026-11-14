@@ -185,32 +185,37 @@ func Execute(version string, args []string) int {
 	// The colour smith and its tools print renders in a classic Windows console too.
 	consolecolour.Enable()
 	// The first run of a version points the smith command at the program itself, and says so at the end.
-	defer linkFirstRun(args, version)()
+	done, linked := linkFirstRun(args, version)
 	if len(args) > 0 || !tui.Interactive() {
+		defer done()
 		code := run(version, args)
 		if offersCompletionAfter(args) {
 			offerCompletion(version)
 		}
 		return code
 	}
-	code := openInterface(version)
+	// The interface says it itself and offers to restart: the line at its end would repeat it.
+	code := openInterface(version, linked)
 	offerCompletion(version)
 	return code
 }
 
 // openInterface runs the interactive shell and the commands it hands back.
-func openInterface(version string) int {
+func openInterface(version string, linked bool) int {
 	// A bare smith at a terminal opens the interface. A command it hands back
 	// runs here, and when that command made a workspace the interface opens
 	// again inside it: nobody should have to cd and start smith a second time.
 	var resume *tui.Resume
 	for {
-		chosen, err := tui.Choose(version, os.Stdout, clicontract.DescribeCommands(Root(version)), resume)
+		chosen, err := tui.Choose(version, os.Stdout, clicontract.DescribeCommands(Root(version)), resume, linked)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
 			return 1
 		}
-		resume = nil
+		resume, linked = nil, false
+		if chosen.Restart {
+			return restartInterface()
+		}
 		argv := chosen.Argv
 		if len(argv) == 0 {
 			return 0

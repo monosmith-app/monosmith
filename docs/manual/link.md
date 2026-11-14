@@ -29,6 +29,17 @@ updates smith, so the first run of the next version links again.
 It does not link in CI, without a terminal, for `serve`, `mcp`, `lsp`, `prompt`, `link`, `update` or
 completion, or when `SMITH_NO_LINK=1` is set.
 
+## Package managers
+
+smith finds its own entries from the layout of the package manager that installed it: npm (the
+prefix, and the `bin` folder beside a Unix `lib` folder), pnpm (`<home>/bin` or `<home>`, with the
+program in the store) and Python (the `Scripts` or `bin` folder next to `site-packages`). pip and the
+install script put the whole program where the entry is, so nothing stands in front of it:
+`smith link --status` says smith already starts directly and `smith link` changes nothing.
+
+In the interface, the first run that linked tells so in a dialog and offers **Restart now**, because
+only a new start uses the link. **Later** keeps the interface as it is.
+
 ## Synopsis
 
 ```sh

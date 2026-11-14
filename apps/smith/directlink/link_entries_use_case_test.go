@@ -265,3 +265,38 @@ func TestOwnedDirsFollowTheLayoutOfThePackageManager(t *testing.T) {
 		t.Errorf("a program outside a package manager owns entries: %v", got)
 	}
 }
+
+func TestOwnedDirsKnowThePnpmLayoutAndANativeEntryNeedsNoLink(t *testing.T) {
+	pnpm := filepath.FromSlash("C:/Users/a/AppData/Local/pnpm/store/v11/links/@monosmith/cli-win32-x64/2.45.0/abc/node_modules/@monosmith/cli-win32-x64/bin/smith.exe")
+	got := ownedDirs(pnpm)
+	home := filepath.FromSlash("C:/Users/a/AppData/Local/pnpm")
+	want := []string{filepath.Join(home, "bin"), home}
+	for _, w := range want {
+		found := false
+		for _, g := range got {
+			found = found || g == w
+		}
+		if !found {
+			t.Errorf("ownedDirs(pnpm) lacks %q: %v", w, got)
+		}
+	}
+	if !isNativeEntry(filepath.FromSlash("C:/Python/Scripts/smith.exe")) || !isNativeEntry(filepath.FromSlash("/home/a/.local/bin/smith")) {
+		t.Error("a program in a Scripts or bin folder is its own entry")
+	}
+	if isNativeEntry(filepath.FromSlash("/home/a/.npm-global/lib/node_modules/monosmith/node_modules/@monosmith/cli-linux-x64/bin/smith")) {
+		t.Error("an npm install has a launcher in front")
+	}
+	l := newLab(t)
+	native := filepath.Join(l.bin, "Scripts", "smith.exe")
+	put(t, native, "the whole program")
+	o := Options{Home: l.home, Exe: native, Version: "2.41.0", GOOS: "windows"}
+	if report, err := Link(o); err != nil || len(report.Changed) != 0 || len(report.Already) != 1 {
+		t.Fatalf("Link of a native entry = %+v, %v", report, err)
+	}
+	if st := Check(o); !st.Direct || len(st.Entries) != 1 || st.Entries[0].Kind != Direct {
+		t.Errorf("Check of a native entry = %+v", st)
+	}
+	if Needed(o) {
+		t.Error("a native entry wants a link")
+	}
+}
