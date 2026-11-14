@@ -6,7 +6,8 @@ import (
 )
 
 func TestAStringThatTakesAFewWordsIsEditedWithItsChoices(t *testing.T) {
-	for _, path := range []string{"ci.attest", "release.api_check"} {
+	// workspace.update_check and workspace.confirm also say "type": "string".
+	for _, path := range []string{"ci.attest", "release.api_check", "workspace.update_check", "workspace.confirm"} {
 		f, err := Find(path)
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
