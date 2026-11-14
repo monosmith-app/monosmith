@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"io"
 	"os"
 	"path"
@@ -68,6 +69,11 @@ type Options struct {
 	// pass and smith paint applies. Off (the default), tools are asked for
 	// plain text and every escape code is removed. It never joins a cache key.
 	Colour bool
+	// StatusColour says the run's own lines (the start, the end and the failure of a
+	// task, the totals) go to a person who sees colour: their glyphs are painted.
+	// It follows termcolour.Wanted and never the tool colour a host hands on, so a
+	// program that reads these lines (the interface) gets them plain.
+	StatusColour bool
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -392,5 +398,9 @@ func hitLabel(source taskcache.Source) string {
 func (r *runner) say(format string, args ...any) {
 	r.outMu.Lock()
 	defer r.outMu.Unlock()
-	fmt.Fprintf(r.opts.Out, format, args...)
+	text := fmt.Sprintf(format, args...)
+	if r.opts.StatusColour {
+		text = statuspaint.Paint(text)
+	}
+	_, _ = io.WriteString(r.opts.Out, text)
 }

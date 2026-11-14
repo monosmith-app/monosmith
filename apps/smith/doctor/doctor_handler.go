@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 	"os"
 	"slices"
@@ -82,6 +83,8 @@ option number. Steps run in the workspace root and stop at the first that fails.
 				enc.SetIndent("", "  ")
 				_ = enc.Encode(report)
 			} else {
+				// The glyphs of the checks are painted when a person reads them on a terminal.
+				out := statuspaint.Writer(out)
 				// Without a terminal the reader is a script or an agent: the count of
 				// fixes comes first, and a long list of passed checks is folded.
 				scripted := fix && !term.IsTerminal(int(os.Stdin.Fd()))

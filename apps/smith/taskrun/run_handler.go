@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"io"
 	"os"
 	"os/signal"
@@ -67,6 +68,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			req.Quiet = !verbose && len(fixed) == 1 && fixed[0] == "build"
 			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
 			req.Colour = runColour(os.Getenv, asJSON, jsonEvents, req.Out, term.IsTerminal)
+			req.StatusColour = statusColour(os.Getenv, asJSON, jsonEvents, req.Out, term.IsTerminal)
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
 				// output arrives as task.output events.
@@ -93,7 +95,11 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				_ = enc.Encode(summary)
 			} else {
-				fmt.Fprintln(cmd.OutOrStdout(), summary.String())
+				text := summary.String()
+				if req.StatusColour {
+					text = statuspaint.Paint(text)
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), text)
 			}
 			if !summary.OK() {
 				return ErrTasksFailed

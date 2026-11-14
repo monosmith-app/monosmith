@@ -335,6 +335,11 @@ MCP server and the editor engine are always plain.
   harness, MSBuild and `tsc` errors) has its result lines painted: pass green, fail and error
   red, warning yellow, skipped dim. smith paints a line only when it has no colour already, and
   only wraps it in colour codes: the characters stay the same.
+- **smith's own lines.** The glyph of a line smith prints itself is painted: the start `▶` and the
+  arrow `→` dim, `✓` green, `×` red, `!` and `▲` yellow, `»` dim; `smith doctor` does the same. Only the
+  glyph, never the words. It follows the one colour decision of smith (a terminal, or a CI that renders
+  colour; never `NO_COLOR` or `TERM=dumb`) and ignores the tool colour a host hands on, so the
+  interface and `--json` read these lines plain.
 - **Only colour passes.** Every other escape code (cursor movement, line erasing, progress
   bars, window titles, links) is removed, and a coloured line ends with a reset.
 - **What smith reads stays plain.** The failure hint, the CI failure tail, the test counts, the

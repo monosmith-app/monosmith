@@ -1,6 +1,7 @@
 package taskrun
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"io"
 	"os"
 
@@ -34,4 +35,14 @@ func runColour(getenv func(string) string, asJSON, jsonEvents bool, out io.Write
 		return getenv(termcolour.ToolColourEnv) == "1" && termcolour.ToolWanted(getenv, false)
 	}
 	return termcolour.ToolWantedFor(getenv, out, isTerminal)
+}
+
+// statusColour is the colour decision for the run's own lines (statuspaint.Wanted),
+// and never for a program that reads them (--json, --json-events).
+//
+// Parameters: getenv reads the environment; asJSON and jsonEvents are the output
+// flags; out is where the text goes; isTerminal checks a descriptor.
+// Returns: the value for Request.StatusColour.
+func statusColour(getenv func(string) string, asJSON, jsonEvents bool, out io.Writer, isTerminal func(int) bool) bool {
+	return !asJSON && !jsonEvents && statuspaint.Wanted(getenv, out, isTerminal)
 }
