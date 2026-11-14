@@ -189,6 +189,9 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 	if isUpdateDialog(c) {
 		return s.afterUpdate(c, out)
 	}
+	if isLinkDialog(c) {
+		return s.afterLink(out)
+	}
 	if c.Info {
 		return s.leaveForm()
 	}
