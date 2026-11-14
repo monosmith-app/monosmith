@@ -213,6 +213,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 	case "verify":
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
+		began := time.Now()
 		log.banner(verifyIntro(s, base)...)
 		if err := verifyDerived(s, out); err != nil {
 			return err
@@ -255,10 +256,30 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 			if slices.ContainsFunc(results, func(r taskrun.Result) bool { return r.Status == taskrun.Cached }) {
 				log.say("%s = replayed from the cache", log.icons.Cached)
 			}
+			log.markdown = report.Table.Markdown()
+			details := reportDetails(results, outputs, s.Graph.Projects, s.Root, began, log.icons)
+			if !details.empty() {
+				log.say("")
+				for _, line := range details.Facts.Text("more") {
+					log.say("%s", line)
+				}
+				log.markdown = append(append(log.markdown, ""), details.Facts.Markdown()...)
+				if len(details.Paths.Rows) > 0 {
+					log.say("")
+					for _, line := range details.Paths.Text("more") {
+						log.say("%s", line)
+					}
+					log.markdown = append(append(log.markdown, ""), details.Paths.Markdown()...)
+				}
+				if details.CoverageNote != "" {
+					log.say("")
+					log.say("%s", details.CoverageNote)
+				}
+			}
+			// The way forward after a failure comes last, under the details.
 			for _, line := range failureLines(report.Failed, outputs) {
 				log.say("%s", line)
 			}
-			log.markdown = report.Table.Markdown()
 			log.conclusion = report.Conclusion
 		}
 		if failed {
