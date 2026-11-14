@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
 )
 
@@ -230,6 +231,11 @@ func (s *Shell) click(x, y int) tea.Cmd {
 	case layout.Footer:
 		if h, ok := footer.At(s.footerHints(), x); ok && h.Key != "" {
 			return s.key(pressedKey(h.Key))
+		}
+		return nil
+	case layout.StatusBar:
+		if first, end, ok := statusbar.UpdateSpan(s.th, s.statusInfo(), s.w); ok && x >= first && x < end {
+			return s.openUpdate()
 		}
 		return nil
 	case layout.Tabs:

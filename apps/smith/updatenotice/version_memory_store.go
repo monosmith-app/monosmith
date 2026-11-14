@@ -24,6 +24,9 @@ type memory struct {
 	AnnouncedAt time.Time `json:"announcedAt,omitzero"`
 	// NoticeAt is when a newer version was last pointed out.
 	NoticeAt time.Time `json:"noticeAt,omitzero"`
+	// AlertedFor is the version the interface already offered in its alert: the
+	// alert shows once per version, then only the status bar remembers.
+	AlertedFor string `json:"alertedFor,omitempty"`
 	// Muted is true when the person asked not to be reminded in the interface.
 	Muted bool `json:"muted,omitempty"`
 }

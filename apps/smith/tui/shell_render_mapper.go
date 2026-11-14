@@ -114,6 +114,9 @@ func (s Shell) baseRows() []string {
 // run, its result, the branch and the version.
 func (s Shell) statusInfo() statusbar.Info {
 	info := statusbar.Info{Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
+	if s.updateOffered() {
+		info.Update = s.upd.Latest
+	}
 	if s.run == nil {
 		return info
 	}

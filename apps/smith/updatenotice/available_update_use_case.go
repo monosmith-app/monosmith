@@ -18,7 +18,7 @@ func Available(o Options) (Update, bool) {
 		return u, false
 	}
 	m := load(o.Home)
-	u.Muted = m.Muted
+	u.Muted, u.Alerted = m.Muted, m.AlertedFor != "" && m.AlertedFor == m.Latest
 	if m.Channel != "" && m.Channel != u.Channel {
 		return u, false
 	}

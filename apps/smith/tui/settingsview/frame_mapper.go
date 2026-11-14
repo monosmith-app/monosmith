@@ -213,7 +213,7 @@ const (
 )
 
 // detailWant is how many rows the detail of each section would like.
-var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Assistants: 3, CI: 3, Forms: 3}
+var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Assistants: 3, CI: 3, Forms: 3, Update: 6}
 
 // listLines draws every row of the list with its group headings; lineOf is the
 // line of each item. The row at the cursor is highlighted while the keyboard

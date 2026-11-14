@@ -26,6 +26,11 @@ type (
 		Review TrustReview
 		Err    error
 	}
+	// UpdateChecked carries what the registry said when the person asked.
+	UpdateChecked struct {
+		Info UpdateInfo
+		Err  error
+	}
 	// StyleSaved says the choice of theme and symbols was kept (or why not);
 	// Choice is what the interface should draw with now.
 	StyleSaved struct {
@@ -39,6 +44,8 @@ func (Loaded) settingsMsg()     {}
 func (Applied) settingsMsg()    {}
 func (Reviewed) settingsMsg()   {}
 func (StyleSaved) settingsMsg() {}
+
+func (UpdateChecked) settingsMsg() {}
 
 // PluginToggle is a switch of a built-in plugin that just ended: the plugin
 // and the state it was switched to. The shell offers to switch it back.
@@ -71,4 +78,10 @@ type Result struct {
 	Term   string
 	// CacheSetup asks the shell to open the remote cache setup.
 	CacheSetup bool
+	// Update asks the shell to offer the update (the same dialog as the status bar).
+	Update bool
+	// Checked is set when the registry was asked: what it found, for the status bar.
+	Checked *UpdateInfo
+	// MutedChanged is true when the reminder was switched; Muted is its new state.
+	MutedChanged, Muted bool
 }

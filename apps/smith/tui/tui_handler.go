@@ -168,6 +168,14 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		CommitOperationsSet: commitSet, CommitChoice: prefs.CommitChoices[workspaceRoot], SaveCommitChoice: commitChoiceSaver(workspaceRoot),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
+	// A newer smith that is already known: the status bar says it, the first time the
+	// interface offers it, and Settings > Update brings the reminder back after "don't remind me".
+	updateOptions := updatenotice.ForThisProcess(version, 0)
+	known, found := updatenotice.Available(updateOptions)
+	cfg.Update = settingssource.UpdateInfoOf(known)
+	cfg.UpdateAlert = found && !known.Muted && !known.Alerted && known.Runnable()
+	cfg.SetUpdateMuted = func(muted bool) error { updatenotice.SetMuted(updateOptions.Home, muted); return nil }
+	cfg.MarkUpdateAlerted = func(latest string) { updatenotice.MarkAlerted(updateOptions.Home, latest) }
 	if note != "" {
 		cfg.Notice = note
 	}

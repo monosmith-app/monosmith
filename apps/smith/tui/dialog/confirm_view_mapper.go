@@ -40,7 +40,7 @@ func (c Confirm) tailLinesIn(th theme.Theme) []string {
 	}
 	var tail []string
 	if c.Offer {
-		tail = append(tail, "", choicerow.Toggle(th, CommitLabel+words.Say("dialog.commit.key"), c.Commit, c.overCommit))
+		tail = append(tail, "", choicerow.Toggle(th, c.boxText(), c.Commit, c.overCommit))
 	}
 	caption := words.Say("dialog.command.will")
 	if c.reading {

@@ -357,5 +357,12 @@
   "tui.cache.stopped": "Remote cache setup stopped: {reason}",
   "tui.cache.finished.for": "Remote cache setup finished for {remote}",
   "tui.cache.finished": "Remote cache setup finished",
-  "tui.cache.not_here": "The remote cache setup is not available here: run smith cache setup in a terminal"
+  "tui.cache.not_here": "The remote cache setup is not available here: run smith cache setup in a terminal",
+  "tui.update.title": "smith {latest} is out",
+  "tui.update.why": "You have smith {current}. Update now? The interface closes, smith updates itself the way it was installed, and you open it again afterwards. Cancel keeps the update one click away: the red message at the bottom.",
+  "tui.update.run": "Update now",
+  "tui.update.mute": "Don't remind me about updates",
+  "tui.update.later": "update later: click \"update available\" at the bottom, or open Settings > Update",
+  "tui.update.muted": "update reminders are off; Settings > Update brings them back",
+  "tui.update.unknown": "smith {latest} is out, but smith cannot tell how it was installed, so it cannot update itself. Download it from {url}"
 }

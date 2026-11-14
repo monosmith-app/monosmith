@@ -75,3 +75,19 @@ func TestUpdateCommandFollowsTheChannelAndRunnableTellsAGuessFromAnAnswer(t *tes
 		t.Error("an npm install is not runnable")
 	}
 }
+
+func TestTheAlertIsOfferedOncePerVersion(t *testing.T) {
+	home := t.TempDir()
+	update(home, func(m *memory) { m.Latest, m.Channel = "1.75.0", "latest" })
+	if u, _ := Available(opts(home, "1.70.0", t0, "", nil)); u.Alerted {
+		t.Fatal("alerted before the alert")
+	}
+	MarkAlerted(home, "1.75.0")
+	if u, _ := Available(opts(home, "1.70.0", t0, "", nil)); !u.Alerted {
+		t.Error("not remembered")
+	}
+	update(home, func(m *memory) { m.Latest = "1.76.0" })
+	if u, _ := Available(opts(home, "1.70.0", t0, "", nil)); u.Alerted {
+		t.Error("a newer version was taken for the alerted one")
+	}
+}

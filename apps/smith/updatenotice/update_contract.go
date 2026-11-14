@@ -15,6 +15,8 @@ type Update struct {
 	Command string
 	// Available is true when Latest is newer than Current.
 	Available bool
+	// Alerted is true when the interface already offered Latest in its alert.
+	Alerted bool
 	// Muted is true when the person asked not to be reminded: the interface
 	// keeps the update out of the status bar. The check itself goes on.
 	Muted bool

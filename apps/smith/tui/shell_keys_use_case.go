@@ -182,6 +182,9 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return nil
 	}
 	s.confirm = nil
+	if isUpdateDialog(c) {
+		return s.afterUpdate(c, out)
+	}
 	if c.Info {
 		return s.leaveForm()
 	}

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
@@ -71,5 +72,28 @@ func TestTheBarLeavesTheKeysToTheFooterAndTheWorkspaceToTheHeader(t *testing.T) 
 func TestTheBarShowsWhenTheMouseIsOff(t *testing.T) {
 	if got := Render(theme.Default(), Info{MouseOff: true}, 140); !strings.Contains(got, "mouse off") {
 		t.Fatal(got)
+	}
+}
+
+func TestAnUpdateShowsInTheBarAndItsSpanIsWhereTheWordsAre(t *testing.T) {
+	th := theme.Default()
+	in := Info{Version: "1.2.3", Update: "1.3.0"}
+	got := Render(th, in, 100)
+	if !strings.Contains(got, "update available") || !strings.Contains(got, "smith 1.2.3") {
+		t.Fatalf("bar = %q", got)
+	}
+	first, end, ok := UpdateSpan(th, in, 100)
+	if !ok || end-first != len("update available") {
+		t.Fatalf("span = %d..%d, %v", first, end, ok)
+	}
+	plain := ansi.Strip(got)
+	if col := strings.Index(plain, "update available"); len([]rune(plain[:col])) != first {
+		t.Errorf("span starts at %d, the words at %d in %q", first, len([]rune(plain[:col])), plain)
+	}
+	if _, _, ok := UpdateSpan(th, Info{Version: "1.2.3"}, 100); ok {
+		t.Error("a span with no update")
+	}
+	if _, _, ok := UpdateSpan(th, in, 30); ok {
+		t.Error("a span with no room for the right side")
 	}
 }

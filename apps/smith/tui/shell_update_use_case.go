@@ -176,6 +176,9 @@ func (s Shell) dialogMargins() (top, bottom int) {
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
 	s.selection = s.selection.Clear()
+	if s.alertPending {
+		s.openFirstUpdateAlert()
+	}
 	if s.runWanted() {
 		// A run open keeps the screen when it gets narrow: the panel replaces the
 		// list, as a detail does. When the screen widens, it sits beside the list.

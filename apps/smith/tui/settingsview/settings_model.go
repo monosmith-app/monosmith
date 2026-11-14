@@ -42,7 +42,9 @@ type Model struct {
 	confirm string
 	// savedTheme and savedIcons are the saved choice of the Style section.
 	savedTheme, savedIcons string
-	tipSeen                bool
+	// upd is what the Update section shows.
+	upd     UpdateInfo
+	tipSeen bool
 	// busy says what a change in the background is doing ("" when none); stoppable
 	// is true when Esc may drop its result; ticket tells the answer of the work
 	// that is wanted from one the person stopped.
@@ -60,7 +62,7 @@ type Model struct {
 func New(b Backend, forms []Form) Model {
 	m := Model{
 		b: b, forms: forms, onItems: true,
-		savedTheme: normalise(b.Style.Theme), savedIcons: normalise(b.Style.Icons), tipSeen: b.TipSeen,
+		savedTheme: normalise(b.Style.Theme), savedIcons: normalise(b.Style.Icons), tipSeen: b.TipSeen, upd: b.Update.Info,
 	}
 	for i := range m.scroll {
 		m.scroll[i] = &pane.Scroll{}
@@ -165,6 +167,19 @@ func (m Model) Handle(msg Msg) (Model, Result) {
 			return m, Result{Note: m.note, Failed: true}
 		}
 		m.ed = newReview(msg.Name, msg.Review)
+	case UpdateChecked:
+		m.busy = ""
+		if msg.Err != nil {
+			m.note, m.failed = words.Say("settingsview.update.failed", "reason", msg.Err.Error()), true
+			return m, Result{Note: m.note, Failed: true}
+		}
+		m.upd = msg.Info
+		m.note, m.failed = "", false
+		checked := msg.Info
+		if msg.Info.Available {
+			return m, Result{Note: words.Say("settingsview.update.found", "latest", msg.Info.Latest), Checked: &checked}
+		}
+		return m, Result{Note: words.Say("settingsview.update.current", "version", msg.Info.Current), Checked: &checked}
 	case StyleSaved:
 		m.busy = ""
 		if msg.Err != nil {
