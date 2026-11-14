@@ -45,7 +45,7 @@ workspace's `tsconfig.base.json` (written when it is absent), like every TypeScr
 | `typecheck` | `tsc -p tsconfig.json --noEmit` |
 | `lint`, `test` | `eslint .`, `vitest run` |
 | `start` | builds, then runs the tool of the host (see above): no script |
-| `package` | `smith func package` (Azure: `--with-dependencies`) builds, then zips `dist/apps/<name>/<name>.zip`; Azure's zip holds the production dependencies, Google's does not (the platform installs them). A library of the workspace (smith install -p <app> workspace:<lib>) is built and shipped too: Node packs it into a tarball under the stage and points the manifest at it, Python copies its packages into the zip, .NET publishes the project reference. A Node library must have a build that writes to the workspace's dist/ |
+| `package` | `smith func package` (Azure: `--with-dependencies`) builds, then zips `dist/apps/<name>/<name>.zip`; Azure's zip holds the production dependencies, Google's does not (the platform installs them). A library of the workspace (smith install -p <app> workspace:<lib>) is built and shipped too: Node packs it into a tarball under the stage and points the manifest at it, Python copies its packages into the zip, .NET publishes the project reference. A Node library must have a build that writes to the workspace's dist/. The install of Azure's dependencies runs outside the workspace, so smith copies the nearest `.npmrc` (project folder up to the workspace root) into the stage for the install and removes it before the zip: a scope mapped to a private feed keeps working, and a token line never ships |
 
 ## Doctor
 

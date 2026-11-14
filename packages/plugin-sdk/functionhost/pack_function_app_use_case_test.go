@@ -126,3 +126,52 @@ func TestPackFunctionAppVendorsALibraryOfTheWorkspace(t *testing.T) {
 		t.Errorf("the library is packed as a tarball: %v", packed)
 	}
 }
+
+func TestPackFunctionAppInstallsWithTheWorkspaceNpmrcAndNeverZipsIt(t *testing.T) {
+	ws := t.TempDir()
+	write(t, filepath.Join(ws, "smith.toml"), "")
+	write(t, filepath.Join(ws, ".npmrc"), "@acme:registry=https://feed.example/npm/\n//feed.example/npm/:_authToken=${FEED_TOKEN}\n")
+	project := filepath.Join(ws, "apps", "api")
+	write(t, filepath.Join(project, "package.json"), `{"name":"api"}`)
+	build := filepath.Join(ws, "dist", "apps", "api")
+	write(t, filepath.Join(build, "package.json"), `{"name":"api","dependencies":{"@acme/core":"1"}}`)
+	var seen string
+	tools := Tools{Run: func(dir string, argv []string) error {
+		if argv[1] == "install" {
+			raw, err := os.ReadFile(filepath.Join(dir, ".npmrc"))
+			if err != nil {
+				t.Errorf("the install ran without the workspace .npmrc: %v", err)
+			}
+			seen = string(raw)
+		}
+		return nil
+	}}
+	zipPath, err := PackFunctionApp(PackOptions{ProjectDir: project, BuildDir: build, Name: "api", WithDependencies: true, Tools: tools})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(seen, "@acme:registry=https://feed.example/npm/") {
+		t.Errorf("npm saw %q", seen)
+	}
+	for _, name := range zipNames(t, zipPath) {
+		if strings.HasSuffix(name, ".npmrc") {
+			t.Errorf("%s is in the zip: a token line must never ship", name)
+		}
+	}
+}
+
+func TestNearestNpmrcStopsAtTheWorkspaceRoot(t *testing.T) {
+	outer := t.TempDir()
+	write(t, filepath.Join(outer, ".npmrc"), "outside the workspace\n")
+	ws := filepath.Join(outer, "ws")
+	write(t, filepath.Join(ws, "smith.toml"), "")
+	project := filepath.Join(ws, "apps", "api")
+	write(t, filepath.Join(project, "package.json"), "{}")
+	if got := nearestNpmrc(project); got != "" {
+		t.Errorf("found %s above the workspace root", got)
+	}
+	write(t, filepath.Join(project, ".npmrc"), "own\n")
+	if got := nearestNpmrc(project); got != filepath.Join(project, ".npmrc") {
+		t.Errorf("the project's own .npmrc was not first: %q", got)
+	}
+}
