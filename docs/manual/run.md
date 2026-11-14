@@ -146,8 +146,8 @@ smith test
 ```text
 api:test ▶ go test ./...
 tools:test ▶ {workspaceRoot}/.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider
-ui:test ▶ npm run test --silent
-web:test ▶ npm run test --silent
+ui:test ▶ npm run test
+web:test ▶ npm run test
 api:test │ ?   	github.com/acme/acme/apps/api	[no test files]
 tools:test │ .                                                                        [100%]
 tools:test │ 1 passed in 0.01s
@@ -180,8 +180,8 @@ smith run lint test --affected
 
 ```text
 affected: changes since main → 1 project(s)
-web:lint ▶ npm run lint --silent
-web:test ▶ npm run test --silent
+web:lint ▶ npm run lint
+web:test ▶ npm run test
 web:test │ Test Suites: 1 passed, 1 total
 web:test │ Tests:       1 passed, 1 total
 web:test │ Snapshots:   0 total

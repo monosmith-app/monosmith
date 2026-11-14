@@ -36,7 +36,7 @@ The contribution uses `replace`, so these tasks win over a script of the same na
 
 ```text
 a-pw:e2e — Run the end-to-end tests (Playwright runner, chromium)
-  command    npm run e2e --silent
+  command    npm run e2e
   cwd        apps/a-pw
   dependsOn  e2e-browsers (this project's e2e-browsers, first), ^build (build of the projects it imports, first), build (this project's build, first)
   inputs     **/*, {workspaceRoot}/package-lock.json
@@ -50,7 +50,7 @@ a-pw:e2e-browsers — Install the browsers the e2e task needs (chromium)
   cache      false
 ```
 
-(The `e2e` command printed here is `npm run e2e --silent` because the stack's scaffold wrote an
+(The `e2e` command printed here is `npm run e2e` because the stack's scaffold wrote an
 `e2e` script, `playwright test`, and the plugin keeps a project's own script.) Reports and traces
 go to `dist/e2e/<project dir>`, beside the build and not in `dist/<project dir>`, which is replaced
 whenever a build is restored from the cache.

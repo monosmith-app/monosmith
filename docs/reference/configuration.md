@@ -623,7 +623,7 @@ smith explain web:build
 
 ```
 web:build — Compile to dist/
-  command    npm run build --silent
+  command    npm run build
                from plugin node
   dependsOn  ^build, codegen
                from smith.toml [projects.web.tasks.build]

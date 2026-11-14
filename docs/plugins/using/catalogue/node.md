@@ -45,7 +45,7 @@ web  app · node · apps/web
 
 ## Tasks
 
-Tasks come from the project's `package.json`. This is the central rule: every key of `scripts` becomes a task named like the script, whose command is `npm run <script> --silent`, run in the project directory. Well-known names get caching and ordering; any other name is an uncached task with no dependencies.
+Tasks come from the project's `package.json`. This is the central rule: every key of `scripts` becomes a task named like the script, whose command is `npm run <script>`, run in the project directory. Well-known names get caching and ordering; any other name is an uncached task with no dependencies.
 
 | Script | Task description | dependsOn | Cached | Outputs |
 |---|---|---|---|---|
@@ -82,17 +82,17 @@ Real output:
 ```
 $ smith explain web
 web has 7 tasks:
-  build      npm run build --silent  (cached, after ^build)
-  lint       npm run lint --silent  (cached, after ^build)
+  build      npm run build  (cached, after ^build)
+  lint       npm run lint  (cached, after ^build)
   package    smith npm-pack apps/web  (after build)
   prune      smith npm-prune apps/web  (after build, ^build)
-  start      npm run start --silent  (after build)
-  test       npm run test --silent  (cached, after ^build)
-  typecheck  npm run typecheck --silent  (cached, after ^build)
+  start      npm run start  (after build)
+  test       npm run test  (cached, after ^build)
+  typecheck  npm run typecheck  (cached, after ^build)
 
 $ smith explain web:build
 web:build — Compile into the workspace's dist/<project dir>
-  command    npm run build --silent
+  command    npm run build
   cwd        apps/web
   dependsOn  ^build (build of the projects it imports, first)
   inputs     **/*, {workspaceRoot}/package-lock.json, {workspaceRoot}/tsconfig.base.json, {workspaceRoot}/eslint.config.mjs
@@ -102,7 +102,7 @@ web:build — Compile into the workspace's dist/<project dir>
 
 $ smith explain kit:lint
 kit:lint — Lint and check formatting
-  command    npm run lint --silent
+  command    npm run lint
   cwd        packages/kit
   dependsOn  ^build (build of the projects it imports, first), deps-check (this project's deps-check, first)
   ...

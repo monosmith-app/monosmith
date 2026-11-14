@@ -67,8 +67,8 @@ smith typecheck
 ```
 
 ```text
-web:typecheck ▶ npm run typecheck --silent
-ui:typecheck ▶ npm run typecheck --silent
+web:typecheck ▶ npm run typecheck
+ui:typecheck ▶ npm run typecheck
 ui:typecheck ✓ 1.058s
 web:typecheck ✓ 1.058s
 ✓ 2/2 tasks succeeded (0 from cache) in 1.063s

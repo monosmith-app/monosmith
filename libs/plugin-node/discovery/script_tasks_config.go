@@ -65,7 +65,7 @@ func TaskFor(script, root string, scripts map[string]string) protocol.Task {
 		}
 	}
 	t.DependsOn = deps
-	t.Command = []string{"npm", "run", script, "--silent"}
+	t.Command = []string{"npm", "run", script}
 	if script == "lint" && strings.Contains(scripts[script], "eslint") {
 		t.Fix = eslintFix
 	}

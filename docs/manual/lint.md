@@ -99,7 +99,7 @@ smith lint -p ui
 ```
 
 ```text
-ui:lint ▶ npm run lint --silent
+ui:lint ▶ npm run lint
 ui:lint ✓ 9.376s
 ✓ 1/1 tasks succeeded (0 from cache) in 9.382s
 ```
