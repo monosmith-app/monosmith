@@ -88,7 +88,7 @@ smith explain web:test
 
 ```text
 web:test — Run unit tests
-  command    npm run test --silent
+  command    npm run test
   cwd        apps/web
   dependsOn  ^build (build of the projects it imports, first)
   inputs     **/*, {workspaceRoot}/package-lock.json, {workspaceRoot}/tsconfig.base.json, {workspaceRoot}/eslint.config.mjs
@@ -107,16 +107,16 @@ smith explain web
 
 ```text
 web has 7 tasks:
-  build      npm run build --silent  (cached, after ^build)
-  lint       npm run lint --silent  (cached, after ^build)
+  build      npm run build  (cached, after ^build)
+  lint       npm run lint  (cached, after ^build)
   package    smith npm-pack apps/web  (after build)
   prune      smith npm-prune apps/web  (after build, ^build)
-  start      npm run start --silent  (after build)
-  test       npm run test --silent  (cached, after ^build)
-  typecheck  npm run typecheck --silent  (cached, after ^build)
+  start      npm run start  (after build)
+  test       npm run test  (cached, after ^build)
+  typecheck  npm run typecheck  (cached, after ^build)
 
 web:build — Compile into the workspace's dist/<project dir>
-  command    npm run build --silent
+  command    npm run build
 ...
 ```
 

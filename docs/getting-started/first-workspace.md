@@ -435,8 +435,8 @@ Run `smith test` the first time:
 api:test ▶ go test ./...
 core:test ▶ go test ./...
 sdk:test ▶ {workspaceRoot}/.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider
-web:test ▶ npm run test --silent
-ui:test ▶ npm run test --silent
+web:test ▶ npm run test
+ui:test ▶ npm run test
 ...
 ✓ 5/5 tasks succeeded (0 from cache) in 1.409s
 ```

@@ -80,7 +80,7 @@ smith test -p ui
 ```
 
 ```text
-ui:test ▶ npm run test --silent
+ui:test ▶ npm run test
 ui:test │ FAIL src/failing.spec.ts
 ui:test │   ● fails
 ui:test │ 

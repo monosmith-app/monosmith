@@ -76,7 +76,7 @@ smith build -p web
 ```
 
 ```text
-web:build ▶ npm run build --silent
+web:build ▶ npm run build
 web:build ✓ 935ms
 ✓ 1/1 tasks succeeded (0 from cache) in 959ms
 ```

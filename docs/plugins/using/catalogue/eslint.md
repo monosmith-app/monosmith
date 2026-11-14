@@ -34,7 +34,7 @@ The `lint` task then comes from the script, through the [node plugin](node.md#ta
 
 ```text
 a-vit:lint — Lint and check formatting
-  command    npm run lint --silent
+  command    npm run lint
   cwd        libs/a-vit
   dependsOn  ^build (build of the projects it imports, first)
   inputs     **/*, {workspaceRoot}/package-lock.json, {workspaceRoot}/tsconfig.base.json, {workspaceRoot}/eslint.config.mjs

@@ -133,7 +133,7 @@ sequenceDiagram
   P-->>S: roles, capabilities, manifests
   S->>P: discover (package.json files)
   P-->>S: projects
-  S->>T: npm run test --silent (argv, no shell)
+  S->>T: npm run test (argv, no shell)
   T-->>S: output lines
   S-->>U: web:test ✓
   S->>P: shutdown
