@@ -1239,6 +1239,22 @@ Usage: `smith bootstrap [flags]`
 
 <!-- smith:end bootstrap -->
 
+### smith update
+
+[Manual page](../manual/update.md)
+
+<!-- smith:begin update -->
+Update smith itself to the newest release, the way it was installed
+
+Usage: `smith update [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--check` | only say whether a newer smith exists and what would run; change nothing | off |
+| `-y, --yes` | update without asking | off |
+
+<!-- smith:end update -->
+
 ### smith copies
 
 [Manual page](../manual/copies.md)

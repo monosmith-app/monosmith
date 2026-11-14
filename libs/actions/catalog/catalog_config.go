@@ -30,6 +30,7 @@ var catalog = []Action{
 	{Command: []string{"environments", "list"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"environments", "add"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"environments", "remove"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"update"}, Asks: true, Safety: Changes, NotInTUI: "the Settings tab has an Update section: the interface must exit before a running smith can be replaced", NotInMCP: "the person's step: an update replaces the smith that serves the assistant", NotInServe: "an update replaces the smith that serves the editor"},
 	{Command: []string{"bootstrap"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: "the person's step: the launcher is what starts smith, so an assistant already has it", NotInServe: noMethodYet},
 	{Command: []string{"divergences"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"copies"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},

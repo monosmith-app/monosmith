@@ -26,3 +26,21 @@ func InstallCommand(exe, goos string) string {
 	}
 	return "see " + ReleasesURL
 }
+
+// UpdateCommand is InstallCommand for a channel: on next, an npm command
+// installs the next tag instead of latest.
+//
+// Parameters: exe is the running binary, goos is runtime.GOOS, channel is
+// "latest" or "next".
+// Returns: the command, or "see <releases page>" for an unknown install.
+func UpdateCommand(exe, goos, channel string) string {
+	command := InstallCommand(exe, goos)
+	if channel == "next" {
+		command = strings.Replace(command, "@latest", "@next", 1)
+	}
+	return command
+}
+
+// isReleasePage is true for the answer of InstallCommand when it cannot tell
+// how smith was installed.
+func isReleasePage(command string) bool { return strings.HasPrefix(command, "see ") }
