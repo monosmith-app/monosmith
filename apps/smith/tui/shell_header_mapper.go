@@ -28,9 +28,10 @@ func (s Shell) inlineHeader() bool {
 	return used+pane.Width(s.headerText())+2 <= s.w
 }
 
-// headerText is the header cut to inlineHeaderMax columns, for the tab row.
+// headerText is the header cut to inlineHeaderMax columns, for the tab row. It
+// is not padded: a short header ends at the right edge, as on its own row.
 func (s Shell) headerText() string {
-	return pane.Fit(strings.TrimLeft(strings.Join(s.headerParts(), "  "), " "), inlineHeaderMax)
+	return pane.CutEllipsis(strings.TrimLeft(strings.Join(s.headerParts(), "  "), " "), inlineHeaderMax)
 }
 
 // headerRight is the header as it sits at the right end of the tab row; ""

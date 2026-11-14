@@ -379,7 +379,7 @@ func TestBehindAModalTheWholeScreenIsDimmedAndWithoutOneItIsNot(t *testing.T) {
 			t.Errorf("row %d is dimmed without a modal: %q", y, raw)
 		}
 	}
-	if raw := l.rawRow(1); !strings.Contains(raw, ";48;") {
+	if raw := l.rawRow(lay.Tabs.Y); !strings.Contains(raw, ";48;") {
 		t.Fatalf("the tab buttons have a background colour: %q", raw)
 	}
 	l.keys("f1")
@@ -390,7 +390,7 @@ func TestBehindAModalTheWholeScreenIsDimmedAndWithoutOneItIsNot(t *testing.T) {
 		}
 	}
 	l.keys("esc")
-	if raw := l.rawRow(1); !strings.Contains(raw, "48;") {
+	if raw := l.rawRow(lay.Tabs.Y); !strings.Contains(raw, "48;") {
 		t.Fatalf("the screen is bright again once the modal closes: %q", raw)
 	}
 }

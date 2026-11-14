@@ -72,8 +72,8 @@ func Fields() ([]Field, error) {
 			if p.Items != nil {
 				f.Enum = p.Items.Enum
 			}
-			if p.Type == "" && len(p.Enum) > 0 {
-				// A string that takes one of a few words: the schema gives only the choices.
+			if len(p.Enum) > 0 {
+				// A string that takes one of a few words, with or without "type": "string".
 				f.Type, f.Enum = "string", p.Enum
 			}
 			out = append(out, f)

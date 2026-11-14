@@ -23,6 +23,14 @@ func TestOnAWideScreenTheWorkspaceAndBranchSitAtTheRightEndOfTheTabRow(t *testin
 	}
 }
 
+func TestOnTheTabRowAShortHeaderEndsAtTheRightEdge(t *testing.T) {
+	l := newLab(t, true, 160, 30)
+	first := pane.Strip(l.lines()[0])
+	if !strings.HasSuffix(first, "×2 ") {
+		t.Fatalf("the header must end one column before the right edge, with no padding: %q", first)
+	}
+}
+
 func TestBelowTheInlineWidthTheHeaderKeepsItsOwnRow(t *testing.T) {
 	l := newLab(t, true, 110, 30)
 	lines := l.lines()
