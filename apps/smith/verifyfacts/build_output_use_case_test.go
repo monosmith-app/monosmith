@@ -30,3 +30,16 @@ func TestFindResultsAndFindBuildMeasureWhatIsOnDisk(t *testing.T) {
 		}
 	}
 }
+
+func TestFindBuildOutputsAddsEveryDeclaredOutputAndSkipsWhatIsMissing(t *testing.T) {
+	ws := t.TempDir()
+	put(t, filepath.Join(ws, "dist", "a", "x.js"), strings.Repeat("x", 1000))
+	put(t, filepath.Join(ws, "dist", "b", "y.js"), strings.Repeat("y", 500))
+	got, ok := FindBuildOutputs(ws, []string{"dist/a/**", "dist/missing", "dist/b", "dist/*.map"})
+	if !ok || got.Bytes != 1500 || got.Path != "dist/a (+1 more)" {
+		t.Errorf("FindBuildOutputs = %+v, %v", got, ok)
+	}
+	if _, ok := FindBuildOutputs(ws, []string{"dist/none"}); ok {
+		t.Error("an output that was not written has a size")
+	}
+}
