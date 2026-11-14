@@ -15,20 +15,21 @@ import (
 var ErrNotRunnable = errors.New("smith cannot tell how it was installed")
 
 // Run installs the new smith by running the command that matches how smith was
-// installed. On Windows the binary of the running smith cannot be replaced, so
-// the command runs in a new console window that first waits for this process to
-// exit: the caller must exit right after Run returns detached = true. Other
-// systems run the command here, with the terminal of the caller.
+// installed. When detach is true the command runs in a new console window that
+// first waits for this process to exit, because the binary of the running smith
+// cannot be replaced on Windows: the caller must exit right after Run returns
+// detached = true. Otherwise the command runs here, with the terminal of the caller.
 //
-// Parameters: command is Update.Command; goos is runtime.GOOS; pid is this
-// process id; out and errOut are where the command writes when it runs here.
+// Parameters: command is Update.Command; detach is true on Windows when smith
+// runs from its installed file and not from a link (see package directlink); pid is
+// this process id; out and errOut are where the command writes when it runs here.
 // Returns: detached, true when the command continues in a new window after this
 // process exits; an error when the command is not runnable or fails.
-func Run(ctx context.Context, command, goos string, pid int, out, errOut io.Writer) (detached bool, err error) {
+func Run(ctx context.Context, command string, detach bool, pid int, out, errOut io.Writer) (detached bool, err error) {
 	if command == "" || isReleasePage(command) {
 		return false, ErrNotRunnable
 	}
-	if goos == "windows" {
+	if detach {
 		script := "Wait-Process -Id " + strconv.Itoa(pid) + " -ErrorAction SilentlyContinue; " + command +
 			"; Write-Host ''; Write-Host 'smith update finished. Press Enter to close this window.'; [void](Read-Host)"
 		if err := exec.Command("cmd", "/c", "start", "smith update", "powershell", "-NoProfile", "-Command", script).Start(); err != nil {

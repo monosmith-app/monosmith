@@ -1239,6 +1239,22 @@ Usage: `smith bootstrap [flags]`
 
 <!-- smith:end bootstrap -->
 
+### smith link
+
+[Manual page](../manual/link.md)
+
+<!-- smith:begin link -->
+Make the smith command start the program directly: faster to start, less memory
+
+Usage: `smith link [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--status` | show how smith starts now and change nothing | off |
+| `--undo` | give the entries back as the package manager wrote them | off |
+
+<!-- smith:end link -->
+
 ### smith update
 
 [Manual page](../manual/update.md)

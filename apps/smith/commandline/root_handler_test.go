@@ -98,6 +98,7 @@ var answersWithoutAsking = map[string]string{
 	"cache prune":        "deletes only cache entries smith can rebuild, within the limit, prints what it freed; --dry-run shows it first",
 	"cache push":         "only adds signed entries the remote cache lacks, as every run does; it changes no workspace file and deletes nothing; --dry-run shows it first",
 	"ci":                 "with no phase it runs the setup phase: it installs the dependencies the lockfiles name, the same as the pipelines run it without a terminal, and changes no file git tracks",
+	"link":               "changes only the smith entries the package manager put on PATH, never a workspace file: it keeps the original of each, names what it changed, and --undo gives them back; the owner decided it needs no consent because nothing is lost (the first run of a version does the same)",
 	"docker description": "sets a remote description from the release pipeline, idempotent, with --dry-run; it changes no workspace file",
 }
 

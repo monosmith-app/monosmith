@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
+	"github.com/monosmith-app/monosmith/apps/smith/directlink"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
@@ -22,6 +23,8 @@ func ForThisProcess(version string, wait time.Duration) Options {
 	if real, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = real
 	}
+	// Behind a link of the run folder, how smith was installed is read from the program the link was made from.
+	exe = directlink.InstalledExe(plugintrust.Home(), exe)
 	setting := SettingFrom(os.Getenv("SMITH_UPDATE_CHECK"), workspaceSetting())
 	return Options{
 		Home: plugintrust.Home(), Version: version, Exe: exe, GOOS: runtime.GOOS,

@@ -74,6 +74,7 @@ Python package). Paths in output are shortened.
 | [`smith copies`](copies.md) | Count the files that projects keep as exact copies of each other, and the lines they cost. |
 | [`smith try`](try.md) | Try a command that changes files in a temporary copy, check the result, then offer to run it for real. |
 | [`smith bootstrap`](bootstrap.md) | Write the launcher that runs the smith version the workspace pins. |
+| [`smith link`](link.md) | Make the smith command start the program directly: faster to start, less memory. |
 | [`smith update`](update.md) | Update smith itself to the newest release, the way it was installed. |
 
 ## Work
