@@ -29,7 +29,9 @@ checks, and `smith update` still works. **Update now** closes the interface and 
 ## On Windows
 
 A running smith cannot be replaced. The update opens its own window, waits for `smith update`
-to exit, and runs the command there. Other smith programs of the same install (an editor's
+to exit, and runs the command there. When smith starts directly (see [`smith link`](link.md), which
+the first run of a version does by itself), smith runs from a link and does not hold the installed file,
+so the update runs in place and other terminals need not be closed. Other smith programs of the same install (an editor's
 `smith mcp`, `smith serve`) block the replacement, so `smith update` names them and stops until
 they are closed.
 

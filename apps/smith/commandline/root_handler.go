@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/consolecolour"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
+	"github.com/monosmith-app/monosmith/apps/smith/directlink"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
 	"github.com/monosmith-app/monosmith/apps/smith/godepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/languageserver"
@@ -135,7 +136,7 @@ already have), then build and doctor.`,
 	}
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), removeproject.RemoveCommand(version), swapchoice.Command(version), environments.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
-	add("work", selfupdate.Command(version), toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
+	add("work", selfupdate.Command(version), directlink.Command(version), toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(apptasks.FuncCommand(), apptasks.ElectronCommand(), declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command(), completioncommand.Command(plugintrust.Home()))
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
@@ -183,6 +184,8 @@ func canAsk(root *cobra.Command, args []string) bool {
 func Execute(version string, args []string) int {
 	// The colour smith and its tools print renders in a classic Windows console too.
 	consolecolour.Enable()
+	// The first run of a version points the smith command at the program itself, and says so at the end.
+	defer linkFirstRun(args, version)()
 	if len(args) > 0 || !tui.Interactive() {
 		code := run(version, args)
 		if offersCompletionAfter(args) {

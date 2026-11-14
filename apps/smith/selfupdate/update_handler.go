@@ -15,6 +15,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
+	"github.com/monosmith-app/monosmith/apps/smith/directlink"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/updatenotice"
 )
@@ -86,7 +87,9 @@ func run(ctx context.Context, version string, check, yes bool, in *os.File, out,
 			return nil
 		}
 	}
-	detached, err := updatenotice.Run(ctx, u.Command, runtime.GOOS, os.Getpid(), out, errOut)
+	// A smith that runs from its link does not hold the installed file, so the update can run here.
+	detach := runtime.GOOS == "windows" && !directlink.RunningFromLink(o.Home, directlink.ForThisProcess(version).Exe)
+	detached, err := updatenotice.Run(ctx, u.Command, detach, os.Getpid(), out, errOut)
 	switch {
 	case errors.Is(err, updatenotice.ErrNotRunnable):
 		return problem.New("smith cannot tell how it was installed", "download "+u.Latest+" from "+updatenotice.ReleasesURL)
