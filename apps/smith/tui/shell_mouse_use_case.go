@@ -227,6 +227,18 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		}
 		return nil
 	}
+	if s.fullRun() && y == 0 {
+		// The top bar of the full-screen run: its button gives the screen back.
+		if first, end := s.fullBarSpan(); x >= first && x < end {
+			s.toggleFullRun()
+		}
+		return nil
+	}
+	if double && s.inRunPanel(x, y) && s.actionAt(x, y) == "" {
+		// A double click on the output goes full screen, and back, as the buttons do.
+		s.toggleFullRun()
+		return nil
+	}
 	switch s.lay().AreaAt(x, y) {
 	case layout.Footer:
 		if h, ok := footer.At(s.footerHints(), x); ok && h.Key != "" {

@@ -83,6 +83,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		s.pal = p
 		return s.afterPalette(res)
 	}
+	if s.fullRun() && (name == "esc" || name == "Z") { // words:literal
+		s.toggleFullRun()
+		return nil
+	}
 	if s.splitKey(name) {
 		return nil
 	}
@@ -312,6 +316,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		s.stepRun(map[string]int{"run-older": -1, "run-newer": 1}[action])
 	case "run-back":
 		s.closeRun()
+	case "run-fullscreen":
+		s.toggleFullRun()
 	case "why-failed":
 		// The log of the task that failed, whatever the run panel had selected.
 		if s.run == nil {
@@ -537,7 +543,7 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		// A form opened from a tab gives the person back to it when it ends or is cancelled.
 		s.formOrigin = s.tab
 	}
-	s.tab, s.detailOpen, s.zoom = id, false, false
+	s.tab, s.detailOpen, s.zoom, s.runFull = id, false, false, false
 	s.selection = s.selection.Clear()
 	switch id {
 	case commands.TabDoctor:

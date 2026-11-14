@@ -43,7 +43,7 @@ func (s Shell) zoomed() bool {
 
 // detailFull is true while the detail fills the pane instead of the list:
 // opened on a narrow screen, or zoomed on a wide one.
-func (s Shell) detailFull() bool { return s.detailOpen || s.zoomed() }
+func (s Shell) detailFull() bool { return s.detailOpen || s.zoomed() || s.fullRun() }
 
 // detailVisible is true when the detail is on screen, beside the list or alone.
 func (s Shell) detailVisible() bool { return s.detailFull() || s.lay().HasDetail() }

@@ -359,6 +359,8 @@ type Shell struct {
 	detailOnRun  bool
 	// zoom is set while the detail fills the pane on a wide screen (z).
 	zoom bool
+	// runFull is set while the run output fills the whole terminal under a top bar (Z).
+	runFull bool
 	// split is what the person did to the dividers between panels (see the splitter
 	// package); saveSplits keeps the sizes for the next start, nil to keep none.
 	split      splitter.State
@@ -677,6 +679,9 @@ type (
 
 // lay is where each area of the screen is drawn, for the size and the open view.
 func (s Shell) lay() layout.Layout {
+	if s.fullRun() {
+		return layout.DivideFull(s.w, s.h)
+	}
 	return layout.DivideShared(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth(), s.inlineHeader())
 }
 
