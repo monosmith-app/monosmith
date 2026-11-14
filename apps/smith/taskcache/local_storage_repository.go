@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -64,9 +65,10 @@ func (s *LocalStorage) Get(kind Kind, key string) (io.ReadCloser, error) {
 		return nil, err
 	}
 	f, err := os.Open(p)
-	if errors.Is(err, fs.ErrPermission) && runtime.GOOS == "windows" {
-		// A file another smith is pruning answers "Access is denied" until
-		// the delete finishes: wait for it, and call what is left a miss.
+	if refusedWhileInUse(err) && runtime.GOOS == "windows" {
+		// A file another smith is pruning answers "Access is denied" or "being used
+		// by another process" until the delete finishes: wait for it, and call what
+		// is left a miss.
 		f, err = openWhileBeingDeleted(p)
 	}
 	if errors.Is(err, fs.ErrNotExist) {
@@ -85,10 +87,21 @@ func openWhileBeingDeleted(p string) (*os.File, error) {
 		f, openErr = os.Open(p)
 		return openErr
 	})
-	if errors.Is(err, fs.ErrPermission) {
+	if refusedWhileInUse(err) {
 		return nil, fs.ErrNotExist
 	}
 	return f, err
+}
+
+// errSharingViolation is the Windows error "The process cannot access the file
+// because it is being used by another process" (ERROR_SHARING_VIOLATION).
+const errSharingViolation = syscall.Errno(32)
+
+// refusedWhileInUse is true for the two ways Windows refuses to open a file that
+// another process is deleting or holds: "Access is denied" and a sharing violation.
+// It is only asked on Windows: the same number means something else elsewhere.
+func refusedWhileInUse(err error) bool {
+	return errors.Is(err, fs.ErrPermission) || errors.Is(err, errSharingViolation)
 }
 
 // Put implements Storage: it writes to tmp/, verifies a CAS digest, then

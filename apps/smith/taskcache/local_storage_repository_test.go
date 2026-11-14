@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"io/fs"
 	"testing"
 	"time"
 )
@@ -81,4 +82,16 @@ func TestLocalStorageConformance(t *testing.T) {
 		t.Fatal(err)
 	}
 	storageConformance(t, s)
+}
+
+func TestWindowsRefusalsOfAFileInUseAreRecognised(t *testing.T) {
+	denied := &fs.PathError{Op: "open", Path: "x", Err: fs.ErrPermission}
+	sharing := &fs.PathError{Op: "open", Path: "x", Err: errSharingViolation}
+	missing := &fs.PathError{Op: "open", Path: "x", Err: fs.ErrNotExist}
+	if !refusedWhileInUse(denied) || !refusedWhileInUse(sharing) {
+		t.Error("a file another process is deleting or holds was not recognised")
+	}
+	if refusedWhileInUse(missing) || refusedWhileInUse(nil) {
+		t.Error("an absent file or no error was taken for a refusal")
+	}
 }
