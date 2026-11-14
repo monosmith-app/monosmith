@@ -67,7 +67,7 @@ func (s *Shell) revealRun() tea.Cmd {
 // closeRun gives the right panel back to the detail of the project. The run
 // goes on, and the list of recent runs opens it again.
 func (s *Shell) closeRun() {
-	s.runOpen, s.detailOpen, s.zoom, s.detailTop, s.sideFocus = false, false, false, 0, false
+	s.runOpen, s.detailOpen, s.zoom, s.runFull, s.detailTop, s.sideFocus = false, false, false, false, 0, false
 }
 
 // recentCollapsed is how many runs the block of recent runs shows until it is

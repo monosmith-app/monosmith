@@ -96,6 +96,10 @@ func (s Shell) screen() []string {
 // baseRows are the screen rows before the selection and the overlays are drawn
 // over them: the text a drag selects.
 func (s Shell) baseRows() []string {
+	if s.fullRun() {
+		// Only the top bar and the run: nothing else shares the terminal.
+		return s.paintSplits(append([]string{s.fullBar()}, s.body()...))
+	}
 	rows := make([]string, 0, s.h)
 	strip := s.tabStrip()
 	if s.inlineHeader() {

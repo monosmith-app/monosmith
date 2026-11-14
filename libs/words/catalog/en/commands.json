@@ -384,5 +384,7 @@
   "commands.side.focus.shortcut": "Tab Right",
   "commands.side.focus.glyph": "Tab",
   "commands.side.back.shortcut": "Tab Left",
-  "commands.side.back.glyph": "Tab"
+  "commands.side.back.glyph": "Tab",
+  "commands.run.fullscreen.title": "Show the run output on the whole terminal (or go back)",
+  "commands.run.fullscreen.hint": "the output fills the terminal under a top bar; Esc, the top bar button or a double click on the output go back"
 }

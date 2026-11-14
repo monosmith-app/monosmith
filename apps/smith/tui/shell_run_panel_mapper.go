@@ -204,7 +204,11 @@ func (s Shell) runPanelContent(w, h int) content {
 	case s.run.Finished:
 		state = s.th.Failure(words.Say("tui.main.failed", "failed", s.th.Icons.Failed))
 	}
-	c.lines = append(c.lines, s.runHeader(w, counts))
+	head, headHit := s.runHeaderRow(w, counts)
+	if len(headHit.spans) > 0 {
+		c.hits[len(c.lines)] = headHit
+	}
+	c.lines = append(c.lines, head)
 	ctl, ctlHits := s.runControls(w)
 	for i, line := range ctl {
 		c.hits[len(c.lines)] = ctlHits[i]
@@ -364,3 +368,18 @@ func (s Shell) taskFacts(t *runview.Task, now time.Time) (state, took, reason st
 // slowLintAfter is how long a lint task runs before the list says why it takes
 // time.
 const slowLintAfter = 5 * time.Second
+
+// runHeaderRow is the header of the run panel with the button that makes the
+// output fill the terminal at its right end. In the full-screen view the top bar
+// has the button that goes back, so the row has none.
+func (s Shell) runHeaderRow(w int, c runview.Counts) (string, hit) {
+	if s.fullRun() {
+		return s.runHeader(w, c), hit{}
+	}
+	label := words.Say("tui.run_full.enlarge")
+	bw := button.Width(s.th, label, "")
+	state := s.buttonState("x:run-fullscreen", s.actionAt(s.mouseX, s.mouseY))
+	left := s.runHeader(max(w-bw-1, 1), c)
+	row := pane.Fit(left, max(w-bw-1, 1)) + " " + button.Render(s.th, label, "", state)
+	return row, hit{kind: "action", spans: []hitSpan{{from: max(w-bw, 0), to: w, id: "x:run-fullscreen"}}}
+}

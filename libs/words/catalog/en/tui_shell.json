@@ -364,5 +364,8 @@
   "tui.update.mute": "Don't remind me about updates",
   "tui.update.later": "update later: click \"update available\" at the bottom, or open Settings > Update",
   "tui.update.muted": "update reminders are off; Settings > Update brings them back",
-  "tui.update.unknown": "smith {latest} is out, but smith cannot tell how it was installed, so it cannot update itself. Download it from {url}"
+  "tui.update.unknown": "smith {latest} is out, but smith cannot tell how it was installed, so it cannot update itself. Download it from {url}",
+  "tui.run_full.enlarge": "+",
+  "tui.run_full.shrink": "-",
+  "tui.run_full.hint": "run output · Esc or - goes back · double click goes back"
 }
