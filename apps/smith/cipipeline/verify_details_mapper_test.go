@@ -103,3 +103,19 @@ func TestACoverageReportOlderThanTheRunShowsItsAge(t *testing.T) {
 		t.Errorf("an old report is passed off as new:\n%s", text)
 	}
 }
+
+func TestTheBuildSizeUsesTheOutputsTheBuildTaskDeclares(t *testing.T) {
+	ws := t.TempDir()
+	writeFile(t, filepath.Join(ws, "dist", "web", "index.js"), strings.Repeat("x", 2048))
+	writeFile(t, filepath.Join(ws, "dist", "docs", "index.html"), strings.Repeat("y", 2048))
+	p := detailProject("web", "apps/web")
+	p.Tasks = map[string]protocol.Task{"build": {Outputs: []string{"../../dist/web", "../../dist/docs"}}}
+	results := []taskrun.Result{{Task: "web:build", Status: taskrun.Succeeded}}
+	d := reportDetails(results, newTaskOutputs(), []*projectgraph.Project{p}, ws, time.Now(), theme.Unicode)
+	if text := strings.Join(d.Facts.Text("more"), "\n"); !strings.Contains(text, "4.0 KB") {
+		t.Errorf("the declared outputs were not added up:\n%s", text)
+	}
+	if paths := strings.Join(d.Paths.Text("more"), "\n"); !strings.Contains(paths, "dist/web (+1 more)") {
+		t.Errorf("the build path lacks the declared output:\n%s", paths)
+	}
+}

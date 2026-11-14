@@ -2,6 +2,7 @@ package cipipeline
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -83,7 +84,7 @@ func reportDetails(results []taskrun.Result, outputs *taskOutputs, projects []*p
 		buildCell, coverageCell := "-", "-"
 		if p != nil {
 			if r, ok := status[name+":build"]; ok && (r.Status == taskrun.Succeeded || r.Status == taskrun.Cached) {
-				if b, found := verifyfacts.FindBuild(root, protocol.BuildOutputDir(p.Project)); found {
+				if b, found := verifyfacts.FindBuildOutputs(root, buildOutputs(p)); found {
 					buildCell, pathRow.Cells[1] = verifyfacts.FormatSize(b.Bytes), b.Path
 				}
 			}
@@ -183,4 +184,17 @@ func ageText(d time.Duration) string {
 		return fmt.Sprintf("%dh", int(d.Hours()))
 	}
 	return fmt.Sprintf("%dm", max(int(d.Minutes()), 1))
+}
+
+// buildOutputs are the workspace-relative outputs of a project's build task:
+// what it declares, or the default build folder of the project when it declares none.
+func buildOutputs(p *projectgraph.Project) []string {
+	if t, ok := p.Tasks["build"]; ok && len(t.Outputs) > 0 {
+		out := make([]string, 0, len(t.Outputs))
+		for _, o := range t.Outputs {
+			out = append(out, path.Clean(path.Join(p.Root, o)))
+		}
+		return out
+	}
+	return []string{protocol.BuildOutputDir(p.Project)}
 }
