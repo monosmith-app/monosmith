@@ -6,8 +6,10 @@ import (
 )
 
 var (
-	// eslintTotal reads "✖ 3 problems (2 errors, 1 warning)".
-	eslintTotal = regexp.MustCompile(`[✖x×]\s+(\d+) problems?\b`)
+	// eslintTotal reads the line eslint ends with: a heavy cross, then "3 problems (2
+	// errors, 1 warning)". The cross is written as its code point, because the
+	// glyphs of smith come from the marks package.
+	eslintTotal = regexp.MustCompile(`[\x{2716}x\x{00D7}]\s+(\d+) problems?\b`)
 	// golangciTotal reads "5 issues:" and "0 issues.".
 	golangciTotal = regexp.MustCompile(`^(\d+) issues?[:.]`)
 	// ruffTotal reads "Found 3 errors." and "Found 1 error.".
