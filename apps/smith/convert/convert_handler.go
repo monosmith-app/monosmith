@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/statuspaint"
 	"os"
 	"path/filepath"
 	"strings"
@@ -178,9 +179,9 @@ git undoes everything.`,
 			options := ReportOptions{DryRun: dryRun, Strict: strict, Verbose: verbose}
 			switch {
 			case full && !blocked && !asJSON && !dryRun:
-				fmt.Fprintf(out, "Converting %s %q, full level\n\n%s", sourceLabel(plan), plan.Config.Workspace.Name, Verdict(plan, strict))
+				fmt.Fprintf(statuspaint.Writer(out), "Converting %s %q, full level\n\n%s", sourceLabel(plan), plan.Config.Workspace.Name, Verdict(plan, strict))
 			case full && !asJSON:
-				fmt.Fprint(out, Report(plan, options))
+				fmt.Fprint(statuspaint.Writer(out), Report(plan, options))
 			case full:
 				// The JSON holds both plans; runFull prints it.
 			case asJSON:
@@ -190,7 +191,7 @@ git undoes everything.`,
 					return err
 				}
 			case dryRun || blocked:
-				fmt.Fprint(out, Report(plan, options))
+				fmt.Fprint(statuspaint.Writer(out), Report(plan, options))
 			default:
 				// Applying: the short verdict, not the whole plan. The full
 				// report is saved afterwards, and --dry-run prints it.
@@ -228,7 +229,7 @@ git undoes everything.`,
 				switch strings.ToLower(strings.TrimSpace(answer)) {
 				case "1", "apply", "y", "yes":
 				case "2":
-					fmt.Fprint(out, Report(plan, ReportOptions{DryRun: true, Strict: strict, Verbose: verbose}))
+					fmt.Fprint(statuspaint.Writer(out), Report(plan, ReportOptions{DryRun: true, Strict: strict, Verbose: verbose}))
 					return errors.New("convert stopped after the report: nothing changed")
 				default:
 					return errors.New("convert cancelled: nothing changed")
@@ -243,7 +244,7 @@ git undoes everything.`,
 				fmt.Fprintf(log, "! could not save the report: %v\n", err)
 			}
 			staged := stageNewFiles(git, plan, res)
-			fmt.Fprint(log, Summary(plan, res.LostSlots, staged))
+			fmt.Fprint(statuspaint.Writer(log), Summary(plan, res.LostSlots, staged))
 			if !skipInstall {
 				CheckConverted(root, version, log)
 				OfferConvertedTools(cmd.Context(), root, version, log, cmd.InOrStdin(), !yes && interactive())
