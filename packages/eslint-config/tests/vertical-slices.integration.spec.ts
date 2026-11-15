@@ -49,11 +49,15 @@ const FIXTURES: Record<string, string> = {
   'packages/app/src/invoicing/total.use-case.ts':
     "import { fee } from '../billing'\nimport type { Invoice } from './invoice.contract'\n\nexport function total (invoice: Invoice): number {\n  return invoice.amount + fee(invoice)\n}\n",
   // A JSX file takes the front-end roles with no option; the same name on a `.ts` file does not.
-  'packages/app/src/ui/index.ts':               "export { Greeting } from './greeting.component'\n",
-  'packages/app/src/ui/greeting.component.tsx': "export function Greeting (): string {\n  return 'hi'\n}\n",
-  'packages/app/src/ui/farewell.component.ts':  "export function Farewell (): string {\n  return 'bye'\n}\n",
-  'packages/app/src/ui/untyped.tsx':            'export const Untyped = 1\n',
-  'packages/app/src/reports/index.ts':          "export { report } from './report.use-case'\n",
+  'packages/app/src/ui/index.ts':                  "export { Greeting } from './greeting.component'\n",
+  'packages/app/src/ui/greeting.component.tsx':    "export function Greeting (): string {\n  return 'hi'\n}\n",
+  'packages/app/src/ui/farewell.component.ts':     "export function Farewell (): string {\n  return 'bye'\n}\n",
+  'packages/app/src/ui/untyped.tsx':               'export const Untyped = 1\n',
+  // A Chakra recipe needs no option; stories are a JSX role, also in a nested stories/ slice reaching its parent through '..'.
+  'packages/app/src/ui/button.recipe.ts':          'export const buttonRecipe = { base: {} }\n',
+  'packages/app/src/ui/greeting.stories.tsx':      "import { Greeting } from './greeting.component'\n\nexport default { component: Greeting }\n",
+  'packages/app/src/ui/stories/forms.stories.tsx': "import { Greeting } from '..'\n\nexport default { component: Greeting }\n",
+  'packages/app/src/reports/index.ts':             "export { report } from './report.use-case'\n",
   'packages/app/src/reports/report.use-case.ts':
     "import { add } from '../arithmetic/add.algorithm'\n\nexport function report (): number {\n  return add(1, 2)\n}\n",
   // Under nodenext a slice's index is named as a file: the same door.
@@ -276,6 +280,12 @@ describe('monosmith({ verticalSlices })', () => {
     expect(slicesFor('packages/app/src/ui/greeting.component.tsx')).toEqual([])
     expect(slicesFor('packages/app/src/ui/farewell.component.ts')).toEqual(['vertical-slices/file-role'])
     expect(slicesFor('packages/app/src/ui/untyped.tsx')).toEqual(['vertical-slices/file-role'])
+  })
+
+  it('accepts a recipe on any file, and stories on a .tsx file, in a nested stories/ slice too', () => {
+    expect(slicesFor('packages/app/src/ui/button.recipe.ts')).toEqual([])
+    expect(slicesFor('packages/app/src/ui/greeting.stories.tsx')).toEqual([])
+    expect(slicesFor('packages/app/src/ui/stories/forms.stories.tsx')).toEqual([])
   })
 
   it('accepts the front-end roles on a .ts file that imports Angular', () => {

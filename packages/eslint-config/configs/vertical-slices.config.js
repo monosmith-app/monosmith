@@ -3,8 +3,12 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 
 import { createPathsMatcher, getTsconfig } from 'get-tsconfig'
 
-/** The roles a production file may play, as its last suffix before the extension says. */
-export const ROLES = ['handler', 'use-case', 'algorithm', 'policy', 'model', 'contract', 'mapper', 'validator', 'repository', 'client', 'store', 'middleware', 'error', 'config', 'enum']
+/**
+ * The roles a production file may play, as its last suffix before the extension says. `.recipe`
+ * is a UI library's style recipe (a Chakra recipe or slot recipe: the variants and sizes of one
+ * component); it lives in a plain `.ts` file and means nothing else, so it needs no option.
+ */
+export const ROLES = ['handler', 'use-case', 'algorithm', 'policy', 'model', 'contract', 'mapper', 'validator', 'repository', 'client', 'store', 'middleware', 'error', 'config', 'enum', 'recipe']
 
 /**
  * The front-end roles a `.tsx` file may play without any option: a file that holds JSX
@@ -12,7 +16,7 @@ export const ROLES = ['handler', 'use-case', 'algorithm', 'policy', 'model', 'co
  * The non-JSX front-end roles (`.style`, `.mock`, `.fixture`, a `.hook.ts`) stay opt-in
  * through `roles`, because a `.ts` file says nothing about being UI.
  */
-export const TSX_ROLES = ['route', 'component', 'section', 'hook', 'content']
+export const TSX_ROLES = ['route', 'component', 'section', 'hook', 'content', 'stories']
 
 const EXTENSION = String.raw`\.(?:ts|tsx|mts|cts)`
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -365,7 +369,7 @@ export const plugin = {
         type:     'problem',
         messages: {
           case:   'Name files and folders in kebab-case: "{{name}}".',
-          role:   'A production file ends in its role - .{{roles}} - so "{{name}}" says what it is. If this is a front-end file (a .ts file under a UI project), the front-end roles .route, .component, .section, .hook, .style, .content, .mock and .fixture exist too: allow them with the verticalSlices.roles option.',
+          role:   'A production file ends in its role - .{{roles}} - so "{{name}}" says what it is. If this is a front-end file (a .ts file under a UI project), the front-end roles .route, .component, .section, .hook, .style, .content, .stories, .mock and .fixture exist too (.recipe is always accepted): allow them with the verticalSlices.roles option.',
           banned: '"{{name}}" has the word "{{word}}" in its name, and that names no outcome. Name the file for what it does.',
           root:   'Only index and main live at the root of src; "{{name}}" belongs in a subfeature.',
           group:  '"{{group}}" is a group: it holds slice folders, and at most an index barrel. "{{name}}" belongs in a slice inside it.',
