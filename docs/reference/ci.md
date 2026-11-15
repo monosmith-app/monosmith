@@ -476,8 +476,8 @@ you regenerate it with a newer smith. Each release of smith therefore makes
 A workspace that does not need that sets the version itself:
 
 ```toml
-[ci]
-smith_version = "latest"    # or an exact version such as "1.70.0"
+[workspace]
+smith = "latest"    # or an exact version such as "1.70.0"
 ```
 
 smith's own repository does: its pipelines run the smith built from the commit,

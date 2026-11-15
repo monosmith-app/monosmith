@@ -11,14 +11,14 @@ const (
 // the committed installer (tools/smith/install.sh, written by smith ci
 // generate); npx. A smith on PATH that is this launcher is skipped.
 const shellShim = `#!/bin/sh
-# Runs the smith version this workspace pins in smith.toml ([ci] smith_version),
+# Runs the smith version this workspace pins in smith.toml ([workspace] smith),
 # so a laptop and CI use the same smith. Written by smith bootstrap; the pin is
 # read each run, so changing it needs no regeneration. Without a pin, or with
 # "latest", it runs the smith on PATH.
 set -eu
 here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 root=$(CDPATH='' cd -- "$here/../.." && pwd)
-pin=$(sed -n 's/^[[:space:]]*smith_version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$root/smith.toml" 2>/dev/null | head -n 1)
+pin=$(sed -n 's/^[[:space:]]*smith[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$root/smith.toml" 2>/dev/null | head -n 1)
 
 # on_path prints the first smith on PATH that is not this launcher.
 on_path() {
@@ -59,13 +59,13 @@ exit 127
 // cmdShim is the Windows launcher, with the same order as shellShim except
 // that it has no installer step: the installer is a shell script.
 const cmdShim = `@echo off
-rem Runs the smith version this workspace pins in smith.toml ([ci] smith_version),
+rem Runs the smith version this workspace pins in smith.toml ([workspace] smith),
 rem so a laptop and CI use the same smith. Written by smith bootstrap; the pin is
 rem read each run. Without a pin, or with "latest", it runs the smith on PATH.
 setlocal EnableDelayedExpansion
 set "ROOT=%~dp0..\.."
 set "PIN="
-if exist "%ROOT%\smith.toml" for /f "tokens=2 delims==" %%a in ('findstr /b /c:"smith_version" "%ROOT%\smith.toml"') do (
+if exist "%ROOT%\smith.toml" for /f "tokens=2 delims==" %%a in ('findstr /r /b /c:"smith *=" "%ROOT%\smith.toml"') do (
   set "RAW=%%a"
   for %%b in (!RAW!) do if not defined PIN set "PIN=%%~b"
 )

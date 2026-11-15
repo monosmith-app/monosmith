@@ -46,6 +46,7 @@ schema = 1
 [workspace]
 name = "acme"                         # required
 namespace = "acme"                    # the word before every new project's name: @acme/core, acme-core, acme_core, Acme.Core (default: the name)
+smith = "2.49.0"                      # the smith this workspace runs: "latest" or an exact version; the launchers, smith bootstrap and the pipelines run it (ADR 0101)
 scope = "@acme"                       # npm scope for Node projects (default: @ and the namespace)
 module_prefix = "github.com/acme/acme"  # Go module path prefix (default: the origin remote, else example.com/ and the namespace)
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
@@ -79,7 +80,6 @@ audit = "always"                       # when smith ci audit runs: always (defau
 audit_cron = "0 6 * * 1"               # the schedule of audit = "schedule"; default: Mondays 06:00 UTC
 publish_on = "release"                 # where pack, attest and the assets job run: release (default) or channels
 native_linux_packages = []            # apt packages the native job installs on Linux
-smith_version = "latest"              # the smith the pipelines install: "latest" or an exact version; default: the version that generates them (docs/reference/ci.md)
 audit_policies = []                    # "node", "go", "python", "rust": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)
 audit_warn = []                        # audit policies that only report
 audit_allow_install_scripts = []       # npm packages the node policy lets run install scripts
