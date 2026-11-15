@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** Says updating a dependency needs a trusted workspace. */
 export function tellUpdateNeedsTrust (): void {

@@ -1,4 +1,4 @@
-import type { FolderRef } from '../workspace-folders/index.ts'
+import type { FolderRef } from '../../shared/workspace-folders/index.ts'
 import type { BlankFolder } from './blank-folder.contract.ts'
 import { classifyFolder } from './classify-folder.policy.ts'
 

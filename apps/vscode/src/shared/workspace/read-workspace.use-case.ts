@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { WorkspaceProject, WorkspaceSnapshot } from './workspace-snapshot.contract.ts'
 
 interface ProjectsAnswer {

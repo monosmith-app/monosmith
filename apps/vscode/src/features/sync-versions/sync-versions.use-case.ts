@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 
 /** Which version wins when projects declare a dependency at different versions: one of `smith sync --prefer`. */
 export type SyncRule = 'installed' | 'highest' | 'lowest'

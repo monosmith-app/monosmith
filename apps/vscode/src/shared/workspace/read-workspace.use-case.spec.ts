@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import { readWorkspace } from './read-workspace.use-case.ts'
 
 const stopListening = (): void => {}

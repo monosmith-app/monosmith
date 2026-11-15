@@ -1,6 +1,6 @@
-import type { ListNode, ListResult } from '../list-view/index.ts'
+import type { ListNode, ListResult } from '../../shared/list-view/index.ts'
 import type { DependencyUpdate, UpdatesReport } from './updates-report.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const LEVELS: Array<{ level: string, label: string, color: string }> = [
   { level: 'patch', label: say('vscode.dependencies.patch'), color: 'charts.green' },

@@ -1,6 +1,6 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { InstallOutcome, InstallPreview } from './install-run.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const NO_TERMINAL = say('vscode.agent-install.there-is-no-terminal-to-ask')
 

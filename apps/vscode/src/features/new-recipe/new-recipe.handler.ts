@@ -1,7 +1,7 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { newRecipe } from './new-recipe.use-case.ts'
 import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, pickLevel, tellRecipeOutcome } from './recipe-prompts.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks the name, then a pick list or tick boxes for each level, shows the `smith recipe new` command and the file, and writes on a yes.

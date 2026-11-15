@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { DoctorReport } from './doctor-report.contract.ts'
 import { parseFixPreview, type FixPreview } from './fix-preview.mapper.ts'
 import { runDoctor } from './run-doctor.use-case.ts'

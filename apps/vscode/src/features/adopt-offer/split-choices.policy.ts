@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the person decided about the split of workspace and project. */
 export interface SplitAnswer {

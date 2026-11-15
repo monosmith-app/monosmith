@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { writeLauncher } from './write-launcher.use-case.ts'
 
 function fake (run: SmithRun, answer: boolean) {

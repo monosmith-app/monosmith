@@ -1,5 +1,5 @@
 import type { DoctorReport } from '../health/index.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The check of `smith doctor` about the agent files. */
 export const AGENT_FILES_CHECK = say('vscode.agent-install.the-monosmith-agent-files-are-installed')

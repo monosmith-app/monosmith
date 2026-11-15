@@ -1,5 +1,5 @@
-import type { CommandHost } from '../command-host/index.ts'
-import { openSmithTerminal } from '../smith-terminal/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
+import { openSmithTerminal } from '../../shared/smith-terminal/index.ts'
 
 /**
  * Opens the remote cache setup (`smith cache setup`) in a MonoSmith terminal. The setup asks

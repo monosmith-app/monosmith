@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 
 /** A `.cmd` file only runs through a shell on Windows; its path is then quoted. */
 function launch (executable: string): { file: string, shell: boolean } {

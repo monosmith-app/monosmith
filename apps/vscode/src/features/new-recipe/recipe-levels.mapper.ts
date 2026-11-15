@@ -1,5 +1,5 @@
 import type { LevelQuestion, RecipeLevel, RecipeLevels, RecipePlugin, RecipeRequest } from './new-recipe.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 type Json = Record<string, unknown>
 

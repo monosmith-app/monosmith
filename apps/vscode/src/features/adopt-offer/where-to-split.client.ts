@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { runSmith } from '../agent-install/index.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 import { dependencyQuestion, lintQuestion, toSplitAnswer, type SplitAnswer, type SplitQuestion } from './split-choices.policy.ts'
 import { parseSplitPlan } from './split-plan.mapper.ts'
 

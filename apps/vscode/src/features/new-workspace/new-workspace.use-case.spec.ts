@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
 import { createWorkspace, type NewWorkspaceDeps, type SetupWay } from './new-workspace.use-case.ts'
 

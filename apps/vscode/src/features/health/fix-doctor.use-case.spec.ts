@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import { fixDoctor } from './fix-doctor.use-case.ts'
 
 const PROPOSED = 'smith doctor --fix exited with code 1 and printed no JSON: x\n\n● ignore the cache directory\n+.smith/\n\nPass --yes to apply these fixes.'

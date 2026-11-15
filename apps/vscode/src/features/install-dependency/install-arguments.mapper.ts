@@ -1,5 +1,5 @@
 import type { InstallRequest } from './install-request.contract.ts'
-import { flag } from '../smith-flags/index.ts'
+import { flag } from '../../shared/smith-flags/index.ts'
 
 /**
  * The `smith install` arguments for a request. A library is named with `workspace:`, so smith never asks which

@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { DoctorReport } from './doctor-report.contract.ts'
 
 /** Asks smith to check the workspace's health. */

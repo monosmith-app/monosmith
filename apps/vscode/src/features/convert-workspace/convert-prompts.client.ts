@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { ConvertOutcome } from './convert-workspace.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.convert-workspace.monosmith-convert-this-workspace')
 

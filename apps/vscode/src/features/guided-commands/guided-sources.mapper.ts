@@ -1,6 +1,6 @@
 import type { GuidedOption } from './guided-command.contract.ts'
-import { longFlag } from '../smith-flags/index.ts'
-import { say } from '../words/index.ts'
+import { longFlag } from '../../shared/smith-flags/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** A web app built once per environment, as `smith environments list --json` prints it. */
 export interface WebApp {

@@ -1,6 +1,6 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { ToolOption, ToolPlan } from './tool-plan.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The answer to the administrator question. */
 export type AdminAnswer = 'myself' | 'run' | 'skip'

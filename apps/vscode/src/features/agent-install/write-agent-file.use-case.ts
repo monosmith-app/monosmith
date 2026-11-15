@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 
 /** What writing the agent file needs from the editor. */
 export interface AgentFileDeps {

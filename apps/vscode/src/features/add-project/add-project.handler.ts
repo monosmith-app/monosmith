@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 import { commitAfterTheFact } from '../commit-changes/index.ts'
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { parseWorkspaceEnvironments } from '../guided-commands/index.ts'
-import { openSmithTerminal } from '../smith-terminal/index.ts'
+import { openSmithTerminal } from '../../shared/smith-terminal/index.ts'
 import { addProject } from './add-project.use-case.ts'
 import { askAddRequest, confirmAddPlan, tellAddOutcome } from './add-prompts.client.ts'
 import { checkPicks } from './check-picks.use-case.ts'
 import { outcomeWords } from './outcome-words.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks what to add, shows the plan of `smith add --dry-run`, and adds on a yes.

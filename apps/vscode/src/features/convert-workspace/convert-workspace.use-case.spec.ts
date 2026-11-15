@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { toConvertArguments } from './convert-arguments.mapper.ts'
 import { convertWorkspace, type ConvertDeps } from './convert-workspace.use-case.ts'
 

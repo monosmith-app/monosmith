@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import type { ProjectActionOutcome, ProjectKind } from './project-action.contract.ts'
 import { otherKinds } from './project-action-arguments.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** A project, as far as these questions read it. */
 export interface ProjectChoice {

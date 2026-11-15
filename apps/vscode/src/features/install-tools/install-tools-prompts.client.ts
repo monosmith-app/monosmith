@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import type { AdminAnswer, InstallToolsOutcome } from './install-tools.use-case.ts'
 import type { ToolOption, ToolPlan } from './tool-plan.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks how to get a tool. Each way shows what it does and its command; the

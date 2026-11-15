@@ -1,10 +1,10 @@
 import * as vscode from 'vscode'
-import { chooseFolder, type CommandHost } from '../command-host/index.ts'
+import { chooseFolder, type CommandHost } from '../../shared/command-host/index.ts'
 import { toNewArguments, type BlankFolder } from '../empty-folder/index.ts'
-import { openSmithTerminal, smithForTerminal } from '../smith-terminal/index.ts'
+import { openSmithTerminal, smithForTerminal } from '../../shared/smith-terminal/index.ts'
 import { askCustomChoices, askSetupWay, askWorkspaceName, confirmNewWorkspace, tellNewWorkspaceOutcome } from './new-workspace-prompts.client.ts'
 import { createWorkspace } from './new-workspace.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Creates a workspace in an empty folder with the same two-way start as the TUI

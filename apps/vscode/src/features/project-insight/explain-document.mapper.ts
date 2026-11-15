@@ -1,5 +1,5 @@
 import type { ExplainedTask } from './insight-answer.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Writes how a project's tasks resolved as a Markdown page: one section per

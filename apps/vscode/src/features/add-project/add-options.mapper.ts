@@ -1,5 +1,5 @@
 import type { ChoiceOption, KindOption, StackOption } from './add-options.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 function records (json: string): Array<Record<string, unknown>> {
   const value: unknown = JSON.parse(json)

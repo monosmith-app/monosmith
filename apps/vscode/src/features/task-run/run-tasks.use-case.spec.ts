@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { RunEvent } from './run-event.contract.ts'
 import { cancelRun, runTasks } from './run-tasks.use-case.ts'
 

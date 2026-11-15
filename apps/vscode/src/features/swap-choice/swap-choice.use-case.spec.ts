@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { swapArguments } from './swap-arguments.mapper.ts'
 import type { SwapAnswer, SwapRequest } from './swap-choice.contract.ts'
 import { swapChoice } from './swap-choice.use-case.ts'

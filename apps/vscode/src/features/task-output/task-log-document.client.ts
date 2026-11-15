@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { TaskLogStore } from './task-log.store.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The scheme the logs of tasks are opened under. */
 export const LOG_SCHEME = 'monosmith-log'

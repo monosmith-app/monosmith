@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { FixPreview } from './fix-preview.mapper.ts'
 import { readFixPreview } from './read-health.use-case.ts'
 

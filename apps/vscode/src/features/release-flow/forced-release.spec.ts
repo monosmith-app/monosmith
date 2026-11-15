@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { firstVersionCommand, forcedConsequences, parseNeverReleasedPackages, parseUnchangedPackages } from './forced-release.mapper.ts'
 import { releaseArguments } from './release-arguments.mapper.ts'
 import { releaseWorkspace } from './release-workspace.use-case.ts'

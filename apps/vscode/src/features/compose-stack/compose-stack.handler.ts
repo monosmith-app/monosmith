@@ -1,10 +1,10 @@
 import * as vscode from 'vscode'
 import { outcomeWords } from '../add-project/index.ts'
 import { commitAfterTheFact } from '../commit-changes/index.ts'
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { answerQuestion, askProjectName, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-prompts.client.ts'
 import { composeStack } from './compose-stack.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Searches the catalogue, composes the stack, shows the plan of `smith add`, and adds on a yes.

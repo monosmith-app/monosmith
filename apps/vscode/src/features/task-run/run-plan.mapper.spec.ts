@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { WorkspaceProject } from '../workspace/index.ts'
+import type { WorkspaceProject } from '../../shared/workspace/index.ts'
 import { describePlan, toRunPlan } from './run-plan.mapper.ts'
 
 const project = (name: string, tasks: string[]): WorkspaceProject => ({ name, dir: name, kind: 'app', language: 'ts', tasks, deps: [] })

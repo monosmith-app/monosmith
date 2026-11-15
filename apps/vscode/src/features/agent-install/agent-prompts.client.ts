@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { mcpConfigText } from './mcp-config.mapper.ts'
 import type { InstallOutcome, InstallPreview, InstallScope } from './install-run.contract.ts'
 import type { AgentFileOutcome } from './write-agent-file.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const DOCS = 'https://github.com/monosmith-app/monosmith/blob/main/docs/guides/agent.md'
 const CLAUDE_CODE = 'https://claude.com/claude-code'

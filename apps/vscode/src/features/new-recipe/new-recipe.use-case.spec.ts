@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import type { LevelDecider, LevelQuestion, RecipeChoice } from './new-recipe.contract.ts'
 import { newRecipe, type NewRecipeDeps } from './new-recipe.use-case.ts'
 import { checkChoiceAnswer, checkChoiceQuestion, checkRecipeName, checkRecipeVersion, parseRecipeLevels, questionFor, recipeArguments } from './recipe-levels.mapper.ts'

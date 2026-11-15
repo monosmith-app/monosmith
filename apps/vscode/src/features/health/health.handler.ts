@@ -1,5 +1,5 @@
-import type { CommandHost } from '../command-host/index.ts'
-import { readFolderData, type ListNode } from '../list-view/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
+import { readFolderData, type ListNode } from '../../shared/list-view/index.ts'
 import { sayDoctor, summarizeDoctor } from './doctor-report.mapper.ts'
 import { fixDoctor } from './fix-doctor.use-case.ts'
 import { confirmFix, pickFixAnswer, tellFixOutcome } from './fix-finding-prompts.client.ts'

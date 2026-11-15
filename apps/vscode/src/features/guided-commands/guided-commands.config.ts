@@ -1,6 +1,6 @@
 import type { GuidedAnswers, GuidedCommand } from './guided-command.contract.ts'
-import { flag, longFlag } from '../smith-flags/index.ts'
-import { say } from '../words/index.ts'
+import { flag, longFlag } from '../../shared/smith-flags/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const text = (answers: GuidedAnswers, key: string): string => {
   const value = answers[key]

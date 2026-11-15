@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { parsePlannedPackages, releaseArguments } from './release-arguments.mapper.ts'
 import type { PlannedPackage } from './release-flow.contract.ts'
 import { releaseWorkspace } from './release-workspace.use-case.ts'

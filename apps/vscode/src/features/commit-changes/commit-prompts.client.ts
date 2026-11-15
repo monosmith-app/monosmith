@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { CommitChangesOutcome, CommitPlan, CommitScope } from './commit-changes.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Shows the files of the plan and asks which ones go into the commit. With other

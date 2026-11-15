@@ -1,5 +1,5 @@
 import type { SmithLocation, SmithSource } from '../smith-client/index.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** Names where a smith came from, as a phrase that follows "from". */
 export function sourceName (source: SmithSource): string {

@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { chooseForced } from './forced-release.client.ts'
 import { chooseBump, chooseHold, confirmRelease, tellReleaseOutcome } from './release-prompts.client.ts'
 import { releaseWorkspace } from './release-workspace.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Releases the workspace: the plan, the packages to hold back, the bumps to change, then the last question.

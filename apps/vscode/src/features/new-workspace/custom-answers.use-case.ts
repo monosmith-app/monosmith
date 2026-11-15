@@ -1,4 +1,4 @@
-import { appliesWhen, askableQuestions, type PickAnswer, type SmithQuestion } from '../smith-questions/index.ts'
+import { appliesWhen, askableQuestions, type PickAnswer, type SmithQuestion } from '../../shared/smith-questions/index.ts'
 import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
 
 /**

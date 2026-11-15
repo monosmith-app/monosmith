@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { PickAnswer, SmithQuestion } from '../smith-questions/index.ts'
+import type { PickAnswer, SmithQuestion } from '../../shared/smith-questions/index.ts'
 import { askCustomAnswers } from './custom-answers.use-case.ts'
 import { DEFAULT_CHOICES } from './new-workspace-arguments.mapper.ts'
 

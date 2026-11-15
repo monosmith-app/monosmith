@@ -1,4 +1,4 @@
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { parseCompletionStatus } from './completion-status.mapper.ts'
 import { shouldOfferTabCompletion, type TabCompletionMemory } from './tab-completion-offer.policy.ts'
 

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { destinationFor, LEAVE, MOVE_QUESTION, moveChoices, type MoveChoice } from './move-choices.policy.ts'
 import type { RootProject } from './repository-offer.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.adopt-offer.monosmith-bring-in')
 

@@ -1,5 +1,5 @@
-import type { ViewState } from '../folder-session/index.ts'
-import { say } from '../words/index.ts'
+import type { ViewState } from '../../shared/folder-session/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the status bar item shows and says. */
 export interface StatusText {

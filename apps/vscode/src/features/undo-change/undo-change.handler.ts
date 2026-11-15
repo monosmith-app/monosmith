@@ -1,7 +1,7 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { undoLastChange } from './undo-change.use-case.ts'
 import { confirmUndo, tellUndoOutcome } from './undo-prompts.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Shows what the last change smith committed did, and reverts it on a yes.

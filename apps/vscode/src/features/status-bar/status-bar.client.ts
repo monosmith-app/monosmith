@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { describeStatus, type StatusInput } from './status-text.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The status bar item that shows smith's state. */
 export interface SmithStatusBar extends vscode.Disposable {

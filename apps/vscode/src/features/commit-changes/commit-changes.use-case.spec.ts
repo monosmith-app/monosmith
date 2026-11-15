@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { commitChanges, readCommitPlan, type CommitPlan, type CommitScope } from './commit-changes.use-case.ts'
 
 const PLAN: SmithRun = { code: 0, stdout: 'Plan: commit add app web\n  Goes into one commit (chore: add app web)\n    create  apps/web/package.json\nDry run: nothing was changed.\n', stderr: '' }

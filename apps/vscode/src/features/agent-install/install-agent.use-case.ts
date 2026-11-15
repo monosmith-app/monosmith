@@ -1,6 +1,6 @@
 import { installArguments } from './install-arguments.mapper.ts'
 import { isPreview, readPreview, readWrite } from './install-outcome.mapper.ts'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import type { InstallOutcome, InstallPreview, InstallScope } from './install-run.contract.ts'
 
 /** What installing needs from the editor. */

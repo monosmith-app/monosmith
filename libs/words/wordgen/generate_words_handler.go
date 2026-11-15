@@ -24,7 +24,7 @@ func main() {
 	root := flag.String("root", "../..", "the repository root, relative to the directory the command runs in")
 	wordsDir := flag.String("words", "libs/words", "the library folder with catalog/<locale>/ and surface/, relative to -root")
 	surfaces := flag.String("surface", "vscode,jetbrains", "the surfaces to write, separated by commas")
-	vscodeModule := flag.String("vscode-module", "apps/vscode/src/words", "folder of the TypeScript module, relative to -root")
+	vscodeModule := flag.String("vscode-module", "apps/vscode/src/shared/words", "folder of the TypeScript module, relative to -root")
 	vscodeNls := flag.String("vscode-nls", "apps/vscode", "folder that gets package.nls*.json, relative to -root")
 	jbResources := flag.String("jetbrains-resources", "apps/jetbrains/src/main/resources", "folder that gets messages*.properties, relative to -root")
 	jbKotlin := flag.String("jetbrains-kotlin", "apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/words", "folder of the Kotlin object, relative to -root")

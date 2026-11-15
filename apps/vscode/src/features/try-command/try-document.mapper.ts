@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 interface TryCheck { name: string, ok: boolean, tail?: string }
 
 interface TryResult {

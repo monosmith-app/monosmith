@@ -1,12 +1,12 @@
 import { basename } from 'node:path'
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import type { InsightDocuments } from '../project-insight/index.ts'
 import { applyActionFor } from './derive-arguments.mapper.ts'
 import { toExplainDocument, toTextDocument } from './derive-explain.mapper.ts'
 import { confirmDeriveChange, tellChooseDerivedFile, tellDeriveChange, tellNothingToWrite } from './derive-prompts.client.ts'
 import type { DeriveAction, DeriveReport } from './derive-report.contract.ts'
 import { changeDerivedFile, explainDerivedFile, previewDerive } from './derive-files.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the Health view lets the derive commands do. */
 export interface DeriveView {

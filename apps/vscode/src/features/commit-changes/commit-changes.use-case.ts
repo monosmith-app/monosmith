@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 
 /** What the plan of `smith commit --dry-run` says, for the question of which files go in. */
 export interface CommitPlan {

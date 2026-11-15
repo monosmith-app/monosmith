@@ -1,6 +1,6 @@
-import type { WorkspaceProject } from '../workspace/index.ts'
+import type { WorkspaceProject } from '../../shared/workspace/index.ts'
 import type { RunOptions, RunPlan, RunTarget } from './run-plan.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Turns what the person asked to run into the plan smith is given.

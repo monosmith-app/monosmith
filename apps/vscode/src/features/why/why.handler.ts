@@ -1,10 +1,10 @@
 import { basename } from 'node:path'
 import * as vscode from 'vscode'
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { showInsight, type InsightDocuments, type InsightRow } from '../project-insight/index.ts'
 import { pickTask } from '../quick-pick/index.ts'
 import { readFileWhy, readSettingWhy, readTaskWhy } from './read-why.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The parts of a row of the Projects view that a why command reads. */
 interface WhyRow extends InsightRow {

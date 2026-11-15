@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 /** The language most projects of the workspace use, and the words that say why it comes first. */
 export interface MainLanguage {
   language: string

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
-import { parseQuestions } from '../smith-questions/index.ts'
+import { parseQuestions } from '../../shared/smith-questions/index.ts'
 
 describe('toCreateArguments', () => {
   it('gives every question a flag, so smith asks nothing and decides nothing in silence', () => {

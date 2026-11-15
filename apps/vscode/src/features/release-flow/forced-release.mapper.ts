@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 /**
  * Reads the packages that no commit releases from `smith release --dry-run --json`.
  * @param json - what smith printed

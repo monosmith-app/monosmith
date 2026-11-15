@@ -1,5 +1,5 @@
 import type { RootProject } from './repository-offer.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The `--move` value that keeps the project where it is. */
 export const LEAVE = 'none'

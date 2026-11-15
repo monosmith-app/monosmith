@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { writeAgentFile } from './write-agent-file.use-case.ts'
 
 const CURRENT: SmithRun = { code: 0, stdout: 'AGENTS.md is current\n', stderr: '' }

@@ -1,10 +1,10 @@
 import * as vscode from 'vscode'
-import { chooseFolder, type CommandHost } from '../command-host/index.ts'
+import { chooseFolder, type CommandHost } from '../../shared/command-host/index.ts'
 import { pickNewQuestion } from '../new-workspace/index.ts'
-import { smithForTerminal } from '../smith-terminal/index.ts'
+import { smithForTerminal } from '../../shared/smith-terminal/index.ts'
 import { askConvertCommit, confirmConvert, tellConvertOutcome, tellNoConvertible } from './convert-prompts.client.ts'
 import { convertWorkspace } from './convert-workspace.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** A folder that looks like a repository smith can bring in. */
 export interface ConvertOffer {

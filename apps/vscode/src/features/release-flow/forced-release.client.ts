@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { firstVersionCommand } from './forced-release.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.release-flow.monosmith-release')
 

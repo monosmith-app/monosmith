@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 
 /** What undoing needs from the editor. */
 export interface UndoDeps {

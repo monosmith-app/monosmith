@@ -1,8 +1,8 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { parseNeverReleasedPackages, parseUnchangedPackages } from './forced-release.mapper.ts'
 import { parsePlannedPackages, releaseArguments } from './release-arguments.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What releasing needs from the editor. */
 export interface ReleaseDeps {

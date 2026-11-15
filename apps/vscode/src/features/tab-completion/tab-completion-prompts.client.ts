@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 import type { TabCompletionAnswer } from './offer-tab-completion.use-case.ts'
 
 /** The one-time offer to set up tab completion. It writes nothing: the terminal asks before it does. */

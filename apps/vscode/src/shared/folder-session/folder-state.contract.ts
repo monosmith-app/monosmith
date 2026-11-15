@@ -1,4 +1,4 @@
-import type { SmithLocation, SmithSession } from '../smith-client/index.ts'
+import type { SmithLocation, SmithSession } from '../../integrations/smith-client/index.ts'
 import type { WorkspaceSnapshot } from '../workspace/index.ts'
 
 /** Where a folder's smith is. */

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { DeriveAction } from './derive-report.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const WORDS: Record<'apply' | 'replace' | 'adopt' | 'eject', { button: string, effect: string }> = {
   apply:   { button: say('vscode.derive-files.apply'), effect: say('vscode.derive-files.smith-writes-every-derived-file-that') },

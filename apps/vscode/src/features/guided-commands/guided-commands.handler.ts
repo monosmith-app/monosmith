@@ -1,15 +1,15 @@
 import type { WebAppEnvironments } from '../workspace-view/index.ts'
-import type { FolderState } from '../folder-session/index.ts'
-import { askCommitBox } from '../commit-box/index.ts'
-import type { CommandHost } from '../command-host/index.ts'
+import type { FolderState } from '../../shared/folder-session/index.ts'
+import { askCommitBox } from '../../shared/commit-box/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { toTextDocument } from '../derive-files/index.ts'
-import { describeFailure } from '../smith-run/index.ts'
+import { describeFailure } from '../../shared/smith-run/index.ts'
 import { environmentAnswers } from './environment-answers.mapper.ts'
 import type { GuidedCommand } from './guided-command.contract.ts'
 import { askGuidedStep, confirmGuided, tellDivergencesFailure, tellGuidedOutcome } from './guided-prompts.client.ts'
 import { parseWebApps } from './guided-sources.mapper.ts'
 import { runGuidedCommand } from './run-guided-command.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Runs a command of smith that has a screen of its own (environments, cache, pipeline...): asks, shows the output or the plan, and changes nothing before a yes.

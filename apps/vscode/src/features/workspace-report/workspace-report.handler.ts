@@ -1,8 +1,8 @@
 import { tmpdir } from 'node:os'
 import * as vscode from 'vscode'
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { reportFile, writeReport } from './write-report.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Writes the HTML report of the workspace to a temp file and opens it in the browser.

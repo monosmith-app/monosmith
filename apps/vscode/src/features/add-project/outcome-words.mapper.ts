@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 const WORDS: Record<string, string> = {
   added:     'added',
   unchecked: say('vscode.add-project.added-but-a-tool-is-missing'),

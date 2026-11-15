@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { DoctorFinding } from './doctor-report.contract.ts'
 
 /** What fixing one check needs from the editor. */

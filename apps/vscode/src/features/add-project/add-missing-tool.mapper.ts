@@ -1,5 +1,5 @@
 import type { MissingTool } from './add-options.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What a person calls the programs smith checks for. */
 const TITLES: Record<string, string> = {

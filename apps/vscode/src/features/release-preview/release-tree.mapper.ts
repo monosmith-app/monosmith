@@ -1,6 +1,6 @@
-import type { ListNode, ListResult } from '../list-view/index.ts'
+import type { ListNode, ListResult } from '../../shared/list-view/index.ts'
 import type { ReleasePreview, ReleaseResult } from './release-report.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const LEVEL_COLORS: Record<string, string> = {
   major: 'charts.red',

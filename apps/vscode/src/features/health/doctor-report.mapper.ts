@@ -1,5 +1,5 @@
 import type { DoctorReport } from './doctor-report.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What a doctor report comes to. */
 export interface DoctorSummary {

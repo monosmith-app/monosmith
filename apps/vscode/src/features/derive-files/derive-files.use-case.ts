@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { deriveArguments } from './derive-arguments.mapper.ts'
 import type { DeriveAction, DeriveReport } from './derive-report.contract.ts'
 import { readDeriveReport } from './derive-report.mapper.ts'

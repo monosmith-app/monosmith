@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
-import { chooseFolder, type CommandHost } from '../command-host/index.ts'
+import { chooseFolder, type CommandHost } from '../../shared/command-host/index.ts'
 import type { BlankFolder } from '../empty-folder/index.ts'
-import { openSmithTerminal, smithForTerminal } from '../smith-terminal/index.ts'
+import { openSmithTerminal, smithForTerminal } from '../../shared/smith-terminal/index.ts'
 import { toAdoptArguments, toMoveArguments, type AdoptAction } from './adopt-arguments.mapper.ts'
 import type { RepositoryOffer } from './repository-offer.contract.ts'
 import { LEAVE } from './move-choices.policy.ts'
 import { askWhatToSplit } from './where-to-split.client.ts'
 import { askWhereToMove } from './where-to-move.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The folders without a smith.toml that smith can bring in. */
 export interface AdoptCandidates {

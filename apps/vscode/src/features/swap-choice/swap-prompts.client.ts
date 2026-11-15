@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { choicesByAxis, type ChoiceOption } from '../add-project/index.ts'
 import type { SwapAnswer, SwapOutcome, SwapRequest } from './swap-choice.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.swap-choice.monosmith-swap-a-choice')
 

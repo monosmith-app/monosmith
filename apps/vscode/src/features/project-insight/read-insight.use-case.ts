@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import { toExplainDocument } from './explain-document.mapper.ts'
 import { toGraphDocument } from './graph-document.mapper.ts'
 import type { ExplainedTask, GraphAnswer } from './insight-answer.contract.ts'

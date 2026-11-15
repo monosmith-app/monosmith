@@ -1,4 +1,4 @@
-import type { DoctorFailure } from '../smith-run/index.ts'
+import type { DoctorFailure } from '../../shared/smith-run/index.ts'
 
 /** One thing the catalogue of `smith compose --json` lists. */
 export interface ComposeItem {

@@ -7,11 +7,11 @@ import { choicesByAxis, roleOf } from './add-options.mapper.ts'
 import { typedItem } from './add-choice-rows.mapper.ts'
 import { pickChoices, type ChoicePrompts, type PicksCheck } from './pick-choices.use-case.ts'
 import type { PicksAsked } from './check-picks.use-case.ts'
-import { showNotice } from '../notice-buttons/index.ts'
+import { showNotice } from '../../shared/notice-buttons/index.ts'
 import { askWebEnvironments, isWebApp } from '../web-environments/index.ts'
 import { mainLanguage, startOnMainLanguage } from './main-language.mapper.ts'
 import { canStartWithDefaults, defaultsRequest } from './defaults-request.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const ROLES: Record<string, string> = {
   app:     say('vscode.add-project.something-you-run-or-deploy-a'),

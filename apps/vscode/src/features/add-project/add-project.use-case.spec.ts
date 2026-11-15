@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { addProject, type AddDeps } from './add-project.use-case.ts'
 import type { AddOptions, AddRequest, PlanAnswer } from './add-options.contract.ts'
 

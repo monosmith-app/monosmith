@@ -1,6 +1,6 @@
 import type { Readable, Writable } from 'node:stream'
 import type { SmithConnection } from './smith-connection.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 interface Message {
   id?:     number

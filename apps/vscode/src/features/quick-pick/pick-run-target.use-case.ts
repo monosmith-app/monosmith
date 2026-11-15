@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
 import type { RunTarget } from '../task-run/index.ts'
-import type { FolderWorkspace } from '../workspace/index.ts'
+import type { FolderWorkspace } from '../../shared/workspace/index.ts'
 import { everyProjectChoice, folderChoices, projectChoices, taskChoices, taskNameChoices } from './task-choices.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the person chose to run, and in which folder. */
 export interface PickedTarget {

@@ -1,7 +1,7 @@
-import type { CommandHost } from '../command-host/index.ts'
-import { readFolderData, type ListNode } from '../list-view/index.ts'
-import { openSmithTerminal } from '../smith-terminal/index.ts'
-import { isWorkspaceTrusted } from '../workspace-trust/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
+import { readFolderData, type ListNode } from '../../shared/list-view/index.ts'
+import { openSmithTerminal } from '../../shared/smith-terminal/index.ts'
+import { isWorkspaceTrusted } from '../../shared/workspace-trust/index.ts'
 import { confirmUpdate, tellUpdateNeedsTrust } from './dependency-prompts.client.ts'
 import { pickArguments, updateArguments } from './update-arguments.policy.ts'
 

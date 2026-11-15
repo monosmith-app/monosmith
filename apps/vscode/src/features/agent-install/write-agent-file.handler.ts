@@ -1,4 +1,4 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { confirmAgentFile, tellAgentFileOutcome } from './agent-prompts.client.ts'
 import { writeAgentFile } from './write-agent-file.use-case.ts'
 

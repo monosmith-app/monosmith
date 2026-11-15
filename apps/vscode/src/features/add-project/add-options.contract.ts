@@ -1,5 +1,5 @@
 import type { LanguageInfo, OutcomeOption } from './add-outcomes.mapper.ts'
-import type { DoctorFailure } from '../smith-run/index.ts'
+import type { DoctorFailure } from '../../shared/smith-run/index.ts'
 import type { WebEnvironments } from '../web-environments/index.ts'
 
 /** One thing `smith add <kind>` accepts, as `smith kinds --json` lists it. */

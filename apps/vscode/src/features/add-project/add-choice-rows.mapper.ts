@@ -1,7 +1,7 @@
 import type { AddOptions, AddRequest, ChoiceOption } from './add-options.contract.ts'
 import { askedAxes, choicesByAxis } from './add-options.mapper.ts'
 import { wordsOf, type OutcomeItem } from './add-outcomes.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** One line of a single-choice list. An empty `name` is the line that leaves the axis out. */
 export interface ChoiceRow {

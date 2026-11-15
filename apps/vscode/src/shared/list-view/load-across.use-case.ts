@@ -1,5 +1,5 @@
 import type { FolderState } from '../folder-session/index.ts'
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import { groupByFolder, tagWithFolder } from './folder-sections.mapper.ts'
 import type { ListResult } from './list-node.contract.ts'
 

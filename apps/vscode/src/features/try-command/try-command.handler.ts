@@ -1,7 +1,7 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { tryCommand } from './try-command.use-case.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome } from './try-prompts.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Runs a smith command in a temporary copy (`smith try`), shows what it did, and runs it for real on a yes.

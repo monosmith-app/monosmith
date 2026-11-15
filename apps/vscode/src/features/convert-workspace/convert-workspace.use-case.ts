@@ -1,8 +1,8 @@
-import { appliesWhen, askableQuestions, parseQuestions, type PickAnswer } from '../smith-questions/index.ts'
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { appliesWhen, askableQuestions, parseQuestions, type PickAnswer } from '../../shared/smith-questions/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { toConvertArguments } from './convert-arguments.mapper.ts'
 import type { ConvertOutcome } from './convert-workspace.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What converting a workspace needs from the editor. */
 export interface ConvertDeps {

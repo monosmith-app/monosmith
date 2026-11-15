@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 interface MenuItem { command: string, when?: string, group?: string }
-const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+const manifest = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as {
   contributes: { menus: Record<string, MenuItem[]>, commands: Array<{ command: string, icon?: string }> }
 }
 

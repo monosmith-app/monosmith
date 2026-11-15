@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { GUIDED_COMMANDS } from './guided-commands.config.ts'
 import { runGuidedCommand, type GuidedDeps } from './run-guided-command.use-case.ts'
 

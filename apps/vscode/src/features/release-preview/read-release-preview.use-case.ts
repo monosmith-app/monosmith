@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { ReleasePreview } from './release-report.contract.ts'
 
 /** Asks smith what a release would do now (`smith release --dry-run`). It publishes nothing. */

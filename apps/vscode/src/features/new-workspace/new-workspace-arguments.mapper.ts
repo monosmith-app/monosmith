@@ -1,7 +1,7 @@
-import type { SmithQuestion } from '../smith-questions/index.ts'
+import type { SmithQuestion } from '../../shared/smith-questions/index.ts'
 import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
-import { longFlag } from '../smith-flags/index.ts'
-import { say } from '../words/index.ts'
+import { longFlag } from '../../shared/smith-flags/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What "Start with the defaults" chooses: the same defaults as `smith new --yes` and the TUI. */
 export const DEFAULT_CHOICES: Omit<NewWorkspaceChoices, 'name'> = {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { FixPreview } from './fix-preview.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** Says smith is not running, so the doctor has nothing to check. */
 export function tellNothingToCheck (): void {

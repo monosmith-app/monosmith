@@ -1,6 +1,6 @@
 import type { KindOption } from './add-options.contract.ts'
 import { roleOf } from './add-options.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the words of a layer mean, the same sentences `smith compose` shows. */
 const LAYER_ABOUT: Record<string, string> = {

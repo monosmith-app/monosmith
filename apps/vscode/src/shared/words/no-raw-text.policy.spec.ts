@@ -15,9 +15,9 @@ import { describe, expect, it } from 'vitest'
 const ALLOWED_RAW_TEXT_FILES = new Set<string>()
 const ALLOWED_RAW_MANIFEST_PATHS = new Set<string>()
 
-const SRC = fileURLToPath(new URL('..', import.meta.url))
-const PACKAGE_JSON = fileURLToPath(new URL('../../package.json', import.meta.url))
-const NLS_JSON = fileURLToPath(new URL('../../package.nls.json', import.meta.url))
+const SRC = fileURLToPath(new URL('../..', import.meta.url))
+const PACKAGE_JSON = fileURLToPath(new URL('../../../package.json', import.meta.url))
+const NLS_JSON = fileURLToPath(new URL('../../../package.nls.json', import.meta.url))
 
 const PROMPTS = new Set(['showInformationMessage', 'showErrorMessage', 'showWarningMessage', 'showQuickPick', 'showInputBox'])
 const RAW_WORDING = /^[A-Z].{11}/

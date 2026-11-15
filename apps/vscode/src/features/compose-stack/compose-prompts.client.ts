@@ -3,7 +3,7 @@ import { checkProjectName } from '../add-project/index.ts'
 import { tellDoctorFailure, type DoctorFailureFollowUp } from '../doctor-failure/index.ts'
 import { pickLabels, settleRivals, tickedTitles } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion } from './compose-stack.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.compose-stack.monosmith-compose-a-stack')
 

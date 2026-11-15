@@ -1,7 +1,7 @@
-import type { ListNode, ListResult } from '../list-view/index.ts'
+import type { ListNode, ListResult } from '../../shared/list-view/index.ts'
 import type { DoctorFinding, DoctorReport } from './doctor-report.contract.ts'
 import type { FixPreview } from './fix-preview.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Lays a doctor report out as rows: the failed checks first, then the

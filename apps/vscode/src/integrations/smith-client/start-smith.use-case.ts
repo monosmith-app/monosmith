@@ -3,7 +3,7 @@ import { openSession } from './json-rpc-session.client.ts'
 import { judgeProtocol } from './protocol-range.policy.ts'
 import { lastLines } from './stderr-tail.algorithm.ts'
 import type { SmithExit, SmithInitialized, SmithSession } from './smith-connection.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the caller wants to hear from the process while it lives. */
 export interface SmithHooks {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
-import { describeDoctorFailure, type DoctorFailure } from '../smith-run/index.ts'
-import { showNotice } from '../notice-buttons/index.ts'
-import { say } from '../words/index.ts'
+import { describeDoctorFailure, type DoctorFailure } from '../../shared/smith-run/index.ts'
+import { showNotice } from '../../shared/notice-buttons/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the notice of a project that fails its checks can do beyond showing text: the editor carries these out. */
 export interface DoctorFailureFollowUp {

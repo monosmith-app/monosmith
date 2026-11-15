@@ -1,9 +1,9 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import { parseQuestions } from '../smith-questions/index.ts'
-import type { SmithQuestion } from '../smith-questions/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
+import { parseQuestions } from '../../shared/smith-questions/index.ts'
+import type { SmithQuestion } from '../../shared/smith-questions/index.ts'
 import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** How the person wants to set the workspace up. */
 export type SetupWay = 'defaults' | 'customise' | 'terminal'

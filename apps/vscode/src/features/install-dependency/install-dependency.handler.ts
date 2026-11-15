@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
-import { askCommitBox } from '../commit-box/index.ts'
-import { projectGiven, type CommandHost } from '../command-host/index.ts'
+import { askCommitBox } from '../../shared/commit-box/index.ts'
+import { projectGiven, type CommandHost } from '../../shared/command-host/index.ts'
 import { installDependency } from './install-dependency.use-case.ts'
 import { askInstallRequest, tellDependencyOutcome } from './install-prompts.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks library or registry first, then what to add, and runs `smith install`.

@@ -1,4 +1,4 @@
-import type { FolderRef } from '../workspace-folders/index.ts'
+import type { FolderRef } from '../../shared/workspace-folders/index.ts'
 import { detectRootProject } from './detect-root-project.policy.ts'
 import { detectRepository, type RepositoryProbe } from './detect-repository.policy.ts'
 import type { RepositoryOffer } from './repository-offer.contract.ts'

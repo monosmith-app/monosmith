@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import type { ComposeAnswer } from './compose-stack.contract.ts'
 import { composeStack, type ComposeDeps } from './compose-stack.use-case.ts'
 

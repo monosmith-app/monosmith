@@ -1,8 +1,8 @@
-import type { SmithRun } from '../smith-run/index.ts'
-import { longFlag } from '../smith-flags/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
+import { longFlag } from '../../shared/smith-flags/index.ts'
 import type { AddOptions } from './add-options.contract.ts'
 import { fitsKind } from './add-options.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What a layer holds, for the sentence that asks for one (the words of the terminal). */
 const LAYER_WORDS: Record<string, string> = { framework: 'a framework', shell: say('guide.add_project_picks.layer.shell'), host: say('guide.add_project_picks.layer.host') }

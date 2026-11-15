@@ -3,7 +3,7 @@ import {
   countProjects, describeAffected, describeFilter, toTree,
   type TaskFacts, type TreeFolder, type TreeNode, type ViewFilter,
 } from './workspace-tree.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const VIEW_ID = 'monosmith.projects'
 const DOT_SCHEME = 'monosmith-project'

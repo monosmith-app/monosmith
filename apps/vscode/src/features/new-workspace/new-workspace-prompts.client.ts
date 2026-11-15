@@ -1,10 +1,10 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from '../add-project/index.ts'
 import { askCustomAnswers } from './custom-answers.use-case.ts'
-import type { SmithQuestion } from '../smith-questions/index.ts'
+import type { SmithQuestion } from '../../shared/smith-questions/index.ts'
 import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import type { SetupWay } from './new-workspace.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.new-workspace.monosmith-new-workspace')
 

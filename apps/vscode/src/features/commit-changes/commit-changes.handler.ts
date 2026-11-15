@@ -1,5 +1,5 @@
-import type { CommandHost } from '../command-host/index.ts'
-import type { FolderState } from '../folder-session/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
+import type { FolderState } from '../../shared/folder-session/index.ts'
 import { commitChanges } from './commit-changes.use-case.ts'
 import { chooseCommitScope, tellCommitOutcome } from './commit-prompts.client.ts'
 

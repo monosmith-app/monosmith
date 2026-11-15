@@ -1,4 +1,4 @@
-import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, parseDoctorFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { addArguments, followsSiblings } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
 import { parseMissingTool } from './add-missing-tool.mapper.ts'
@@ -6,7 +6,7 @@ import { parseNeededTools } from './add-needed-tools.mapper.ts'
 import { parseChoices, parseKinds, parseStacks } from './add-options.mapper.ts'
 import { fitOutcomes, parseOutcomes } from './add-outcomes.mapper.ts'
 import { choicesInWords } from './add-choice-rows.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What adding a project needs from the editor. */
 export interface AddDeps {

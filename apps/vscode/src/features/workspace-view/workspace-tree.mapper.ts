@@ -1,6 +1,6 @@
 import type { TaskResult } from '../task-run/index.ts'
-import type { WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
-import { say } from '../words/index.ts'
+import type { WorkspaceProject, WorkspaceSnapshot } from '../../shared/workspace/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** One row of the MonoSmith view. */
 export interface TreeNode {

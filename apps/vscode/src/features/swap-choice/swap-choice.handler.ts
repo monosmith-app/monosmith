@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 import { parseChoices } from '../add-project/index.ts'
-import { projectGiven, type CommandHost } from '../command-host/index.ts'
+import { projectGiven, type CommandHost } from '../../shared/command-host/index.ts'
 import { swapChoice } from './swap-choice.use-case.ts'
 import { askSwapRequest, confirmSwapPlan, tellSwapOutcome } from './swap-prompts.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks which choice of which project to swap, shows the plan of `smith swap --dry-run`, and swaps on a yes.

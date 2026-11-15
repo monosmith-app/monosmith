@@ -1,5 +1,5 @@
 import type { WebAppChoice, WebEnvironments } from './web-environments.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The environments a web app starts from: lcl is the developer's machine. */
 export const DEFAULT_ENVIRONMENTS = ['lcl', 'dev', 'uat', 'prd']

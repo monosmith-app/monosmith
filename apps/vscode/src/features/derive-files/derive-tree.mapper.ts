@@ -1,7 +1,7 @@
-import type { ListNode, ListResult } from '../list-view/index.ts'
+import type { ListNode, ListResult } from '../../shared/list-view/index.ts'
 import { isHeldBack } from './derive-arguments.mapper.ts'
 import type { DeriveReport, DerivedFile, DeriveStatus } from './derive-report.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const FIXES: Record<DeriveStatus, string> = {
   stale:      say('vscode.derive-files.the-inputs-changed-and-nobody-edited'),

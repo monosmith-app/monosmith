@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { ProjectActionOutcome } from './project-action.contract.ts'
 
 /** What an action with a plan needs from the editor. */

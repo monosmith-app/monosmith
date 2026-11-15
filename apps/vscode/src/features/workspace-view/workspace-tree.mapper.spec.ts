@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { WorkspaceSnapshot } from '../workspace/index.ts'
+import type { WorkspaceSnapshot } from '../../shared/workspace/index.ts'
 import { countProjects, describeAffected, describeFilter, formatDuration, toTree, type TaskFacts, type TreeFolder } from './workspace-tree.mapper.ts'
 
 const snapshot: WorkspaceSnapshot = {

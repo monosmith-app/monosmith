@@ -1,7 +1,7 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { LevelDecider, LevelQuestion, RecipeBasics, RecipeChoice, RecipeOutcome, RecipeRequest } from './new-recipe.contract.ts'
 import { parseRecipeLevels, questionFor, recipeArguments, recipeFile } from './recipe-levels.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What writing a recipe needs from the editor. */
 export interface NewRecipeDeps {

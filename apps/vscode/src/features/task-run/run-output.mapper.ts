@@ -1,5 +1,5 @@
 import type { RunEvent } from './run-event.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * The line an event adds to the output panel, or undefined for an event that

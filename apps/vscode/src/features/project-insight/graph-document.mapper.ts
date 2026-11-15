@@ -1,5 +1,5 @@
 import type { GraphAnswer, GraphProject } from './insight-answer.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Writes the neighbourhood of a project as a Markdown page with two trees in

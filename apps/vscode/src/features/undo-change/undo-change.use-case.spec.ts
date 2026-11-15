@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { undoLastChange } from './undo-change.use-case.ts'
 
 const PLAN: SmithRun = { code: 0, stdout: 'Plan: undo add lib core (commit 6b0d49f4)\n  remove libs/core/go.mod\nDry run: nothing was changed.\n', stderr: '' }

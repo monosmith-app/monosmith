@@ -1,7 +1,7 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { confirmLauncher, tellLauncherOutcome } from './launcher-prompts.client.ts'
 import { writeLauncher } from './write-launcher.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Writes the launcher (`smith bootstrap`) that makes a laptop and CI run the same smith.

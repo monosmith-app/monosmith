@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { findPathReferences } from './find-path-reference.algorithm.ts'
 import type { PathReference } from './parsed-diagnostic.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What the links need to know about the documents they are made in. */
 export interface OutputLinkSource {

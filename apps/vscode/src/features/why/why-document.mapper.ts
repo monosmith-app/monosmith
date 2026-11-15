@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 type Answer = Record<string, unknown>
 
 const FILE_ORDER = ['owner', 'kind', 'project', 'rule', 'renderer', 'plugin', 'source', 'state']

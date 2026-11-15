@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 interface Pattern { regexp: string, file?: number, line?: number, column?: number, severity?: number, code?: number, message?: number, loop?: boolean }
 interface Matcher { name: string, pattern: Pattern | Pattern[] }
-const manifest = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+const manifest = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as {
   contributes: { problemMatchers: Matcher[], taskDefinitions: Array<{ type: string, required: string[] }> }
 }
 

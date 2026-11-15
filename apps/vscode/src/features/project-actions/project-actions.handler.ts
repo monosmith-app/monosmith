@@ -1,10 +1,10 @@
 import * as vscode from 'vscode'
-import { askCommitBox } from '../commit-box/index.ts'
-import { projectGiven, type CommandHost } from '../command-host/index.ts'
+import { askCommitBox } from '../../shared/commit-box/index.ts'
+import { projectGiven, type CommandHost } from '../../shared/command-host/index.ts'
 import { planThenApply } from './plan-then-apply.use-case.ts'
 import { kindArguments, kindPlanArguments, removeArguments, removePlanArguments, unlinkArguments } from './project-action-arguments.mapper.ts'
 import { askKind, askLinkedLibrary, askRemoveChoice, confirmKind, confirmUnlink, pickProjectFor, tellActionOutcome } from './project-action-prompts.client.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Runs an action on a project from its menu or the palette: the project is the row or a pick,

@@ -1,5 +1,5 @@
-import type { FolderWorkspace, WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
-import { say } from '../words/index.ts'
+import type { FolderWorkspace, WorkspaceProject, WorkspaceSnapshot } from '../../shared/workspace/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** One line of a quick pick, carrying what it stands for. */
 export interface Choice<T> {

@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { toTryDocument } from './try-document.mapper.ts'
 
 /** What trying a command needs from the editor. */

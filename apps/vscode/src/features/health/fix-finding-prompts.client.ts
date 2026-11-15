@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { FixFindingOutcome } from './fix-finding.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks one question of a fix. The first answer is marked as the suggested one.

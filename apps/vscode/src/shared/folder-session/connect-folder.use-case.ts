@@ -1,4 +1,4 @@
-import type { SmithLocation, SmithLookup, SmithSession } from '../smith-client/index.ts'
+import type { SmithLocation, SmithLookup, SmithSession } from '../../integrations/smith-client/index.ts'
 import type { FolderPhase } from './folder-state.contract.ts'
 import { say } from '../words/index.ts'
 

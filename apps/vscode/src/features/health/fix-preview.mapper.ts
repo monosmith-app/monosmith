@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 /** What `smith doctor --fix` proposes, before anything is written. */
 export interface FixPreview {
   /** One line per fix, such as `ignore the cache directory`. */

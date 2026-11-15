@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import type { LevelDecider, LevelQuestion, RecipeBasics, RecipeChoice, RecipeOutcome, RecipeRequest } from './new-recipe.contract.ts'
 import { checkChoiceAnswer, checkChoiceQuestion, checkRecipeName, checkRecipeVersion } from './recipe-levels.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.new-recipe.monosmith-new-recipe')
 const UNSET = say('guide.new_recipe_levels.leave_unset_default')

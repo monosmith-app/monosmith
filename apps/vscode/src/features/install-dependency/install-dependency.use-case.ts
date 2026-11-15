@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { installArguments } from './install-arguments.mapper.ts'
 import type { InstallOutcome, InstallRequest } from './install-request.contract.ts'
 

@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { DeriveReport, DerivedFile, DeriveStatus } from './derive-report.contract.ts'
 
 const STATUSES = new Set<string>(['stale', 'missing', 'unrecorded', 'drift', 'diverged', 'broken'])

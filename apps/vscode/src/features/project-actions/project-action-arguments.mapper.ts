@@ -1,5 +1,5 @@
 import type { ProjectKind } from './project-action.contract.ts'
-import { flag } from '../smith-flags/index.ts'
+import { flag } from '../../shared/smith-flags/index.ts'
 
 /**
  * The plan of removing a project: `smith remove <project> --dry-run`.

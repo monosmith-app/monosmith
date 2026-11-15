@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
-import { showNotice } from '../notice-buttons/index.ts'
+import { showNotice } from '../../shared/notice-buttons/index.ts'
 import { forcedConsequences } from './forced-release.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.release-flow.monosmith-release')
 

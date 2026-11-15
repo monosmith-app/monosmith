@@ -1,5 +1,5 @@
 import type { SmithTaskDefinition } from './smith-task-definition.contract.ts'
-import { flag } from '../smith-flags/index.ts'
+import { flag } from '../../shared/smith-flags/index.ts'
 
 const WORD = /^[^\s-]\S*$/
 

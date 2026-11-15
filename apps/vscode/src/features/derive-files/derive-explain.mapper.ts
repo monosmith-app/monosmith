@@ -1,4 +1,4 @@
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 /**
  * Lays any text smith printed out as a Markdown page with a title, for a plan or a list the person reads once.
  * @param title - the heading

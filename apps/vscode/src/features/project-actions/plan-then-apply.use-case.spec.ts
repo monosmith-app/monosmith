@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { kindArguments, kindPlanArguments, otherKinds, removeArguments, removePlanArguments, unlinkArguments } from './project-action-arguments.mapper.ts'
 import { planThenApply } from './plan-then-apply.use-case.ts'
 

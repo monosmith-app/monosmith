@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithRun } from '../smith-run/index.ts'
+import type { SmithRun } from '../../shared/smith-run/index.ts'
 import { syncVersions, type SyncDeps, type SyncRule } from './sync-versions.use-case.ts'
 
 function setup (rule: SyncRule | undefined, answer: boolean, fail = false): { deps: SyncDeps, calls: string[][], shown: string[] } {

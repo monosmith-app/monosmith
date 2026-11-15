@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SmithLookup, SmithSession } from '../smith-client/index.ts'
+import type { SmithLookup, SmithSession } from '../../integrations/smith-client/index.ts'
 import { connectFolder } from './connect-folder.use-case.ts'
 
 const session = { version: '1.56.0' } as unknown as SmithSession

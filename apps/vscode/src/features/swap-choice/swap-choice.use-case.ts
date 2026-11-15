@@ -1,8 +1,8 @@
 import type { ChoiceOption } from '../add-project/index.ts'
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { swapArguments } from './swap-arguments.mapper.ts'
 import type { SwapAnswer, SwapOutcome, SwapRequest } from './swap-choice.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What swapping a choice needs from the editor. */
 export interface SwapDeps {

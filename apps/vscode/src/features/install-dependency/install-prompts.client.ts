@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { parsePackages } from './install-arguments.mapper.ts'
 import type { InstallOutcome, InstallRequest, LinkNode } from './install-request.contract.ts'
 import { linkableLibraries } from './linkable-libraries.policy.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.install-dependency.monosmith-add-a-dependency')
 

@@ -1,7 +1,7 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { chooseSyncRule, confirmSync, tellSyncOutcome } from './sync-prompts.client.ts'
 import { syncVersions } from './sync-versions.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks which version wins, shows smith's sync plan, and writes it on a yes.

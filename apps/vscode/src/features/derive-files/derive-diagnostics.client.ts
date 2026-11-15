@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { isHeldBack } from './derive-arguments.mapper.ts'
 import type { DeriveReport } from './derive-report.contract.ts'
 import { fixFor } from './derive-tree.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The Problems panel entries for derived files that need action. */
 export interface DeriveDiagnostics extends vscode.Disposable {

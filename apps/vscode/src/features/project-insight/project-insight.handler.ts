@@ -1,8 +1,8 @@
-import type { CommandHost } from '../command-host/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
 import { pickProject } from '../quick-pick/index.ts'
 import type { InsightDocuments } from './insight-documents.client.ts'
 import { readExplain, readGraph } from './read-insight.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The parts of a row of the Projects view that tell which project a command started on. */
 export interface InsightRow {

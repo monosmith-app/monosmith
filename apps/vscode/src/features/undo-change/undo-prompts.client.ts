@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { UndoOutcome } from './undo-change.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Shows what undoing would revert and asks.

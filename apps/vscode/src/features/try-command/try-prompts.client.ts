@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { TryOutcome } from './try-command.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks which smith command to try.

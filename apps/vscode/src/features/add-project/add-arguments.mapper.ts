@@ -1,7 +1,7 @@
 import type { AddRequest } from './add-options.contract.ts'
 import { environmentArguments } from '../web-environments/index.ts'
-import { longFlag } from '../smith-flags/index.ts'
-import { say } from '../words/index.ts'
+import { longFlag } from '../../shared/smith-flags/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * The arguments of `smith add` for a request.

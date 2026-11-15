@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { GuidedOutcome, ResolvedStep } from './guided-command.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks one step with the editor's own controls: an input box (starting on the value smith or the

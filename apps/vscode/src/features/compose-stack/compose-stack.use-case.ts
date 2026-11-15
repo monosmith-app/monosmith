@@ -1,7 +1,7 @@
-import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, parseDoctorFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import { composeArguments, describePlan, parseReport, settleRivals, stackSummary, toolsToInstall } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposePlan, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What composing a stack needs from the editor. */
 export interface ComposeDeps {

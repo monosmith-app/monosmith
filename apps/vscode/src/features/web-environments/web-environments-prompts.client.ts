@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import type { WebEnvironments } from './web-environments.contract.ts'
 import { checkEnvironmentNames, defaultEnvironment, defaultFirst, describeEnvironments, parseEnvironmentNames, startingEnvironments } from './web-environments.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 const TITLE = say('vscode.add-project.monosmith-add-project')
 

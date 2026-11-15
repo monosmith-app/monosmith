@@ -1,4 +1,4 @@
-import type { SmithConnection } from '../smith-client/index.ts'
+import type { SmithConnection } from '../../integrations/smith-client/index.ts'
 import type { RunPlan } from './run-plan.contract.ts'
 import type { RunEvent, RunResult } from './run-event.contract.ts'
 

@@ -2,7 +2,7 @@ import type { AddOptions, ChoiceOption } from './add-options.contract.ts'
 import { askedAxes, choicesByAxis } from './add-options.mapper.ts'
 import { askedRows, singleChoiceRows, type ChoiceRow } from './add-choice-rows.mapper.ts'
 import { whatIs } from './add-outcomes.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** What a question about one axis says about itself. */
 export interface AxisQuestion {

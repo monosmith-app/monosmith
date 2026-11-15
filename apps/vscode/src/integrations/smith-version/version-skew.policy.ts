@@ -1,6 +1,6 @@
 import type { SmithSource } from '../smith-client/index.ts'
 import { sourceName } from './smith-origin.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** The smith the editor runs and the one a terminal would run. */
 export interface SkewCheck {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { statusMenuEntries, type MenuState } from './status-menu.mapper.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /** Shows the menu of the status bar item and runs the command that was picked. */
 export async function showStatusMenu (state: MenuState): Promise<void> {

@@ -1,6 +1,6 @@
 import type { ComposeCheck, ComposeItem, ComposeLayer, ComposePlan, ComposeQuestion, ComposeReport, ComposeTool } from './compose-stack.contract.ts'
-import { longFlag } from '../smith-flags/index.ts'
-import { say } from '../words/index.ts'
+import { longFlag } from '../../shared/smith-flags/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 type Json = Record<string, unknown>
 

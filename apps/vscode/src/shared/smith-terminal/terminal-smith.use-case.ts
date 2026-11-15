@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import * as vscode from 'vscode'
-import { locateSmith } from '../smith-client/index.ts'
+import { locateSmith } from '../../integrations/smith-client/index.ts'
 import { isWorkspaceTrusted } from '../workspace-trust/index.ts'
 import { tellSmithNotInstalled } from './terminal-prompts.client.ts'
 

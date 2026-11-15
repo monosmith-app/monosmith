@@ -1,6 +1,6 @@
 import { join } from 'node:path'
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import { flag } from '../smith-flags/index.ts'
+import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
+import { flag } from '../../shared/smith-flags/index.ts'
 
 /** How writing the report ended: the file it is in, or smith's words and fix. */
 export type ReportOutcome = { ok: true, file: string } | { ok: false, message: string }

@@ -1,5 +1,5 @@
-import type { CommandHost } from '../command-host/index.ts'
-import { openSmithTerminal } from '../smith-terminal/index.ts'
+import type { CommandHost } from '../../shared/command-host/index.ts'
+import { openSmithTerminal } from '../../shared/smith-terminal/index.ts'
 import { chooseToolAdmin, chooseToolWay, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools-prompts.client.ts'
 import { installTools } from './install-tools.use-case.ts'
 

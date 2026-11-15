@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks for the text that narrows the view, and narrows it while it is typed.

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import type { LauncherOutcome } from './write-launcher.use-case.ts'
-import { say } from '../words/index.ts'
+import { say } from '../../shared/words/index.ts'
 
 /**
  * Asks whether to write the launcher files.
