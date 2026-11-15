@@ -59,3 +59,18 @@ func TestParseSaysOneSentenceForARemovedKey(t *testing.T) {
 		t.Fatalf("message = %q", removed.Error())
 	}
 }
+
+func TestTheSmithPinMovedFromCIToWorkspace(t *testing.T) {
+	raw := []byte("[workspace]\nname = \"acme\"\n\n[ci]\nsmith_version = \"2.49.0\"\nproviders = [\"github\"]\n")
+	if _, err := Parse(raw); err == nil || !strings.Contains(err.Error(), "[ci] smith_version, which is now [workspace] smith: run smith doctor --fix") {
+		t.Fatalf("an old pin must name its new place and the fix, got %v", err)
+	}
+	fixed, ok := RenameRemovedKeys(raw)
+	if !ok {
+		t.Fatal("the pin must move")
+	}
+	cfg, err := Parse(fixed)
+	if err != nil || cfg.Workspace.Smith != "2.49.0" || len(cfg.CI.Providers) != 1 {
+		t.Fatalf("the moved pin reads as [workspace] smith: %v %+v\n%s", err, cfg.Workspace, fixed)
+	}
+}

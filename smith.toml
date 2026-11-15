@@ -10,6 +10,9 @@ module_prefix = "github.com/monosmith-app/monosmith"
 # Example plugins in the documentation are standalone modules, not projects.
 exclude = ["docs/examples/**", "apps/smith/features/goldenpath/testdata/**", "apps/smith/features/adoption/testdata/**"]
 defaults = "2026.11"
+# Every step of this repository's pipelines runs the smith built from the commit:
+# the installed one only bootstraps, so it need not change with every release.
+smith = "latest"
 
 [ci]
 providers = ["github"]
@@ -20,9 +23,6 @@ native_on = "release"
 # The release signs checksums.txt with this minisign key, so the launchers on npm,
 # PyPI and NuGet trust what they download (ADR 0101).
 secrets = ["SMITH_SIGNING_KEY"]
-# Every step of this repository's pipelines runs the smith built from the commit:
-# the installed one only bootstraps, so it need not change with every release.
-smith_version = "latest"
 
 # Every Go project gets a slice-check task, run before lint: role-named files,
 # no junk-drawer folders (see docs/reference/conventions.md).

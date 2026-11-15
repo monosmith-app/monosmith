@@ -24,8 +24,10 @@ func TestCompleteKeysOfTheCurrentTable(t *testing.T) {
 	text := "[workspace]\nname = \"a\"\ns"
 	got := labels(Complete(text, Position{2, 1}))
 	scope, ok := got["scope"]
-	// "s" also matches shared_outputs, a [workspace] key since the outputs rules.
-	if _, shared := got["shared_outputs"]; !ok || !shared || len(got) != 2 {
+	// "s" also matches shared_outputs (the outputs rules) and smith (the pin, ADR 0101).
+	_, shared := got["shared_outputs"]
+	_, pin := got["smith"]
+	if !ok || !shared || !pin || len(got) != 3 {
 		t.Fatalf("got %v", got)
 	}
 	if scope.InsertText != "scope = " || scope.Documentation == "" || scope.Kind != CompletionKindProperty {

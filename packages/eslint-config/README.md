@@ -251,9 +251,10 @@ amendment adds `.route`, `.component`, `.hook`, `.section`, `.style`,
 the list was fixed — every component it has would report.
 
 **A `.tsx` file needs no option for the JSX roles.** A file that holds JSX is a UI
-file by construction, so `.route`, `.component`, `.section`, `.hook` and `.content`
-are accepted on `.tsx` files out of the box (the `monosmith/vertical-slices-tsx`
-block). The non-JSX front-end roles (`.style`, `.mock`, `.fixture`, a `.hook.ts`)
+file by construction, so `.route`, `.component`, `.section`, `.hook`, `.content`
+and `.stories` (Storybook stories) are accepted on `.tsx` files out of the box (the
+`monosmith/vertical-slices-tsx` block). `.recipe`, a UI library's style recipe (a Chakra recipe or
+slot recipe), is accepted on any file: the suffix means nothing else. The non-JSX front-end roles (`.style`, `.mock`, `.fixture`, a `.hook.ts`)
 stay opt-in through `roles`, because a `.ts` file says nothing about being UI.
 
 `roles` **appends** to the defaults rather than replacing them: a workspace
@@ -279,7 +280,7 @@ or into a slice nested in another slice. Static assets (`.svg`, `.css`...) are n
 
 | Rule | Reports |
 |---|---|
-| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.middleware`, `.error`, `.config`, `.enum`, `.handler`; the message adds that a front-end file, a `.ts` file under a UI project, also has `.route`, `.component`, `.section`, `.hook`, `.style`, `.content`, `.mock` and `.fixture`, opt-in through the `verticalSlices.roles` option); a file name with a banned word (`util`, `utils`, `helper`, `helpers`, `common`, `shared`, `processor`, `misc`) in any of its parts, or named `data` or `manager` as a whole (`user-data.contract.ts` and `account-manager.policy.ts` are honest), tests included, except in a `fixtures` or `testing` folder (a `testing` folder is also exempt from the role suffix); a production file other than `index` directly in a group folder; anything but `index`/`main` at the root of `src`. Folders nested inside a slice are slices, not reported |
+| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.middleware`, `.error`, `.config`, `.enum`, `.handler`, `.recipe`; the message adds that a front-end file, a `.ts` file under a UI project, also has `.route`, `.component`, `.section`, `.hook`, `.style`, `.content`, `.mock` and `.fixture`, opt-in through the `verticalSlices.roles` option); a file name with a banned word (`util`, `utils`, `helper`, `helpers`, `common`, `shared`, `processor`, `misc`) in any of its parts, or named `data` or `manager` as a whole (`user-data.contract.ts` and `account-manager.policy.ts` are honest), tests included, except in a `fixtures` or `testing` folder (a `testing` folder is also exempt from the role suffix); a production file other than `index` directly in a group folder; anything but `index`/`main` at the root of `src`. Folders nested inside a slice are slices, not reported |
 | `vertical-slices/no-deep-import` | Another slice reached past its index (`'../billing/fee.policy'` instead of `'../billing'`, or `'../billing/index.ts'` under `nodenext`), a slice nested in another slice (`'./child/grandchild'`, `'../other/child'`), and a slice importing its own index |
 | `vertical-slices/no-slice-cycle` | Two slices importing each other — a node per slice folder at any depth, an edge per import of its barrel, so a parent and its child importing each other count — **type-only imports included** |
 | `vertical-slices/zone-import` | Imports resolved by relative path and by the tsconfig `paths` aliases: `shared/` or `integrations/` importing `features/` (tests included); a package listed in the `vendors` option (`'pg'`, `'@scanmate/*'`) imported outside `integrations/` (tests and `testing` folders exempt); a `.model`, `.policy`, `.validator`, `.error` or `.enum` importing an integration, even its types, or a `.client`, `.repository` or `.store`; a `.handler`, `.mapper`, `.algorithm` or `.contract` importing an integration's code (its types are fine: `import type`) |

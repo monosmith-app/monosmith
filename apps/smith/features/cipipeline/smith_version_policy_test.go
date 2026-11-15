@@ -12,7 +12,7 @@ func TestThePipelinesInstallTheVersionTheWorkspaceNamesOrElseTheRunningOne(t *te
 	if got := SmithVersionFor(cfg, "1.70.0"); got != "1.70.0" {
 		t.Fatalf("without a setting: %q", got)
 	}
-	cfg.CI.SmithVersion = "latest"
+	cfg.Workspace.Smith = "latest"
 	cfg.CI.Providers = []string{"github"}
 	if got := SmithVersionFor(cfg, "1.70.0"); got != "latest" {
 		t.Fatalf("with latest: %q", got)

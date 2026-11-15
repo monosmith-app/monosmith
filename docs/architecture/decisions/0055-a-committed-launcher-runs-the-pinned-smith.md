@@ -1,6 +1,7 @@
 # ADR 0055: A committed launcher runs the pinned smith
 
 - Status: accepted
+- Amended by: [ADR 0101](0101-the-registry-packages-are-launchers-not-releases.md) (the pin is `[workspace] smith`)
 - Date: 2026-11-01
 
 ## Context
