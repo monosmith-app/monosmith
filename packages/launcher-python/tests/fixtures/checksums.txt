@@ -1,0 +1,1 @@
+df740f5dea45243e2e7d48bb388b2ade930f4ccdac5eca693dcde1b5209d46d6  monosmith_1.2.3_linux_amd64.zip
