@@ -1,4 +1,4 @@
-#:schema https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json
+#:schema https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/features/workspace/smith.schema.json
 # smith workspace configuration. Written by `smith convert`; edit it freely or with the TUI.
 # Every setting is optional except [workspace] name; see https://github.com/monosmith-app/monosmith/blob/main/docs/reference/configuration.md.
 schema = 1

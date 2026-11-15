@@ -9,4 +9,4 @@ import _ "embed"
 var Schema []byte
 
 // SchemaURL is where the schema is served; it is the file in this repository.
-const SchemaURL = "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json"
+const SchemaURL = "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/features/workspace/smith.schema.json"

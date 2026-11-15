@@ -37,3 +37,18 @@ func TestMigrateTo(t *testing.T) {
 		t.Fatal("today's schema needs nothing")
 	}
 }
+
+func TestMigrateTextPointsTheSchemaLineAtTheMovedSchema(t *testing.T) {
+	text := "#:schema " + movedSchemaURL + "\nschema = 1\n"
+	got, changes, err := MigrateText(text)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "#:schema "+SchemaURL+"\nschema = 1\n" || len(changes) != 1 {
+		t.Fatalf("got %q, changes %v", got, changes)
+	}
+	again, changes, _ := MigrateText(got)
+	if again != got || len(changes) != 0 {
+		t.Fatalf("a second run changes nothing: %q, %v", again, changes)
+	}
+}

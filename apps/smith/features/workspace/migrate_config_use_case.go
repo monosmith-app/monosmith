@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // Migration rewrites smith.toml text from schema From to From+1. It edits the
@@ -24,10 +25,20 @@ var Migrations []Migration
 
 var schemaLine = regexp.MustCompile(`(?m)^schema\s*=\s*(\d+)[ \t]*(#.*)?$`)
 
-// MigrateText brings smith.toml text to SchemaVersion and lists what changed.
-// The same text always gives the same result.
+// movedSchemaURL is where the schema was served before smith's packages moved
+// into zones (ADR 0100); a #:schema line that names it is pointed at SchemaURL.
+const movedSchemaURL = "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json"
+
+// MigrateText brings smith.toml text to SchemaVersion, points a #:schema line
+// at the schema's current address, and lists what changed. The same text
+// always gives the same result.
 func MigrateText(text string) (string, []string, error) {
-	return migrateTo(text, SchemaVersion, Migrations)
+	text, changes, err := migrateTo(text, SchemaVersion, Migrations)
+	if err == nil && strings.Contains(text, movedSchemaURL) {
+		text = strings.ReplaceAll(text, movedSchemaURL, SchemaURL)
+		changes = append(changes, "the #:schema line points at the schema's new address, so editors validate smith.toml again")
+	}
+	return text, changes, err
 }
 
 // MigrateFile migrates the workspace's smith.toml in place, unless dryRun.

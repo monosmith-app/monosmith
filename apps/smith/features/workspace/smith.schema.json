@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json",
+  "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/features/workspace/smith.schema.json",
   "title": "smith.toml",
   "description": "The configuration of a smith workspace (schema 1). Every setting has a default; a key smith does not know is an error.",
   "type": "object",
