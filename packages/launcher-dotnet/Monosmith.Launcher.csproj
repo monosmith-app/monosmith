@@ -3,7 +3,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- net8.0 is the oldest long-term-support release; RollForward lets a later runtime run the tool. -->
-    <TargetFramework>net8.0</TargetFramework>
     <RollForward>Major</RollForward>
     <RootNamespace>Monosmith.Launcher</RootNamespace>
     <AssemblyName>Monosmith.Launcher</AssemblyName>

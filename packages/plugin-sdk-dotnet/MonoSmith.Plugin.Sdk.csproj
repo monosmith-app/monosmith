@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <!-- net8.0 is the oldest long-term-support release; it runs on every later runtime too. -->
-    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>MonoSmith.Plugin.Sdk</RootNamespace>
     <AssemblyName>MonoSmith.Plugin.Sdk</AssemblyName>
     <PackageId>MonoSmith.Plugin.Sdk</PackageId>
