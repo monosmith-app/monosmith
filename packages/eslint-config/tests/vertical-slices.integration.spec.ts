@@ -411,14 +411,17 @@ describe('monosmith({ verticalSlices: { vendors } }) in an app with zones', () =
       // A use case calls an integration and its own repository.
       'apps/api/src/features/orders/place-order.use-case.ts':
         "import { sendTicket } from '@integrations/crm'\nimport { save } from './order.repository'\n\nexport const placeOrder = (): unknown => [sendTicket, save]\n",
-      'apps/api/src/features/orders/order.repository.ts':    'export const save = 1\n',
+      'apps/api/src/features/orders/order.repository.ts':      'export const save = 1\n',
       // A feature never imports a vendor package itself.
-      'apps/api/src/features/orders/order-scan.client.ts':   "import { scan } from '@scanmate/scan'\n\nexport const check = scan\n",
+      'apps/api/src/features/orders/order-scan.client.ts':     "import { scan } from '@scanmate/scan'\n\nexport const check = scan\n",
       // Pure roles: no integration at all, not even its types, and no I/O role.
-      'apps/api/src/features/orders/order.policy.ts':        `${crmType}\nexport const allowed = (ticket: CrmTicket): boolean => ticket.id !== ''\n`,
-      'apps/api/src/features/orders/order.model.ts':         "import { save } from './order.repository'\n\nexport const model = save\n",
+      'apps/api/src/features/orders/order.policy.ts':          `${crmType}\nexport const allowed = (ticket: CrmTicket): boolean => ticket.id !== ''\n`,
+      'apps/api/src/features/orders/order.model.ts':           "import { save } from './order.repository'\n\nexport const model = save\n",
       // A mapper and a handler use an integration's types, never its code.
-      'apps/api/src/features/orders/order-ticket.mapper.ts': `${crmType}\nexport const toTicket = (id: string): CrmTicket => ({ id })\n`,
+      'apps/api/src/features/orders/order-ticket.mapper.ts':   `${crmType}\nexport const toTicket = (id: string): CrmTicket => ({ id })\n`,
+      'apps/api/src/features/orders/order-ticket.contract.ts': `${crmType}\nexport interface OrderTicket {
+  ticket: CrmTicket
+}\n`,
       'apps/api/src/features/orders/order-send.mapper.ts':   "import { sendTicket } from '@integrations/crm'\n\nexport const send = sendTicket\n",
       'apps/api/src/features/orders/place-order.handler.ts': "import { sendTicket } from '@integrations/crm'\n\nexport const handle = sendTicket\n",
       // A test may reach integrations and vendors.
@@ -484,8 +487,9 @@ describe('monosmith({ verticalSlices: { vendors } }) in an app with zones', () =
     expect(slicesIn('features/orders/order.model.ts')).toEqual(['vertical-slices/zone-import'])
   })
 
-  it('lets a mapper and a handler use the types of an integration, never its code', () => {
+  it('lets a mapper, a contract and a handler use the types of an integration, never its code', () => {
     expect(slicesIn('features/orders/order-ticket.mapper.ts')).toEqual([])
+    expect(slicesIn('features/orders/order-ticket.contract.ts')).toEqual([])
     expect(slicesIn('features/orders/order-send.mapper.ts')).toEqual(['vertical-slices/zone-import'])
     expect(slicesIn('features/orders/place-order.handler.ts')).toEqual(['vertical-slices/zone-import'])
   })

@@ -55,9 +55,9 @@ const FEATURES = 'features'
 const INTEGRATIONS = 'integrations'
 const SHARED = 'shared'
 /** Roles that hold no I/O: they import no integration, and no client, repository or store. */
-const PURE_ROLES = new Set(['model', 'policy', 'validator', 'contract', 'error', 'enum'])
-/** Roles that may use an integration's types, never its code. */
-const TYPE_ONLY_ROLES = new Set(['handler', 'mapper', 'algorithm'])
+const PURE_ROLES = new Set(['model', 'policy', 'validator', 'error', 'enum'])
+/** Roles that may use an integration's types, never its code: a contract describes data, and that data may hold an integration's type. */
+const TYPE_ONLY_ROLES = new Set(['handler', 'mapper', 'algorithm', 'contract'])
 /** Roles that do I/O. */
 const IO_ROLES = new Set(['client', 'repository', 'store'])
 
@@ -577,8 +577,8 @@ export const plugin = {
  *   (`features`, `integrations`, `shared`), `shared` and `integrations` never
  *   import `features`; a package listed in `vendors` is imported only in
  *   `integrations`; and a file's role limits what it imports: a `.model`,
- *   `.policy`, `.validator`, `.contract`, `.error` or `.enum` imports no
- *   integration and no `.client`, `.repository` or `.store`, and a `.handler`,
+ *   `.policy`, `.validator`, `.error` or `.enum` imports no
+ *   integration and no `.client`, `.repository` or `.store`, and a `.handler`, `.contract`,
  *   `.mapper` or `.algorithm` imports an integration's types only. Imports are
  *   resolved by relative path and by the tsconfig `paths` aliases.
  *
