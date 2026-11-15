@@ -79,3 +79,41 @@ source = "t.toml"
 		t.Fatal(err)
 	}
 }
+
+func TestRemoveProjectTablesKeepsTheNextTablesCommentAndClearsExcludes(t *testing.T) {
+	src := `[workspace]
+name = "acme"
+
+# The game engine: built for the desktop only.
+[projects.engine]
+tag_prefix = "v"
+
+# A note set apart from the engine's tables stays.
+
+# The editor, which the team ships every week.
+[projects.editor]
+tag_prefix = "v"
+
+[conventions.playwright]
+exclude = ["engine", "editor"]
+`
+	want := `[workspace]
+name = "acme"
+
+# A note set apart from the engine's tables stays.
+
+# The editor, which the team ships every week.
+[projects.editor]
+tag_prefix = "v"
+
+[conventions.playwright]
+exclude = ["editor"]
+`
+	got, removed := RemoveProjectTables(src, "engine")
+	if !removed || got != want {
+		t.Fatalf("removed=%v\n%s", removed, got)
+	}
+	if _, err := Parse([]byte(got)); err != nil {
+		t.Fatal(err)
+	}
+}

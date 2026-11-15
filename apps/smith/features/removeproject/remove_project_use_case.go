@@ -154,7 +154,14 @@ func (r *Removal) findMentions(root string, opts RemoveOptions) {
 	if opts.SkipMentions {
 		return
 	}
-	skip := append([]string(nil), r.Files...)
+	// smith.toml is scanned even though smith edited it: a mention its edit
+	// could not clear (a list it does not know) must still be reported.
+	var skip []string
+	for _, f := range r.Files {
+		if f != workspace.FileName {
+			skip = append(skip, f)
+		}
+	}
 	if rec, err := derivelock.Read(root); err == nil {
 		for _, f := range rec.Files {
 			if f.Owner == derivelock.OwnerSmith {
