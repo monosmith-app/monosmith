@@ -1,0 +1,27 @@
+{
+  "name": "monosmith",
+  "version": "0.0.0",
+  "description": "The smith command: downloads and runs the smith your workspace pins (smith.toml [workspace] smith), checked against signed checksums.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "smith": "src/main.mjs"
+  },
+  "files": [
+    "src/**/*.mjs",
+    "!src/**/*.test.mjs"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monosmith-app/monosmith.git",
+    "directory": "packages/launcher-node"
+  },
+  "homepage": "https://github.com/monosmith-app/monosmith#readme",
+  "scripts": {
+    "lint": "eslint src",
+    "test": "node --test \"src/**/*.test.mjs\""
+  }
+}
