@@ -24,6 +24,7 @@ var (
 // <name>_test.cpp (or <Name>Test.cpp), test doubles in a testing/ folder.
 var cppRules = Rules{
 	Name:   "cpp",
+	Roots:  []string{"src", ""},
 	Inputs: []string{"src/**", "include/**", "tests/**", "test/**"},
 	Skip: func(name string, in Dir) bool {
 		return in.Rel == "" && name != "src" && name != "include" && name != "tests" && name != "test"

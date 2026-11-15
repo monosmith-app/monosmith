@@ -21,6 +21,7 @@ var (
 // Testing/ folder.
 var phpRules = Rules{
 	Name:   "php",
+	Roots:  []string{"src", ""},
 	Inputs: []string{"src/**/*.php", "tests/**/*.php"},
 	Skip:   func(name string, in Dir) bool { return in.Rel == "" && name != "src" && name != "tests" },
 	Folder: func(name string, in Dir) string {

@@ -11,18 +11,25 @@ import (
 )
 
 // Check walks a project and reports what breaks the vertical-slice rules of
-// its language; dir is the project root (where its manifest is).
-func Check(dir, language string) (Report, error) {
+// its language, the zones of an app included.
+//
+// Parameters: dir is the project root (where its manifest is); language is
+// its language; vendors are the packages only integrations/ may import.
+// Returns the report, or an error for an unknown language or an unreadable
+// folder.
+func Check(dir, language string, vendors []string) (Report, error) {
 	var r Report
 	rules, ok := languages.For(language)
 	if !ok {
 		return r, fmt.Errorf("the vertical-slices check knows %s, not %q", strings.Join(languages.Names(), ", "), language)
 	}
-	err := walk(&r, dir, rules, "", nil)
-	return r, err
+	if err := walk(&r, dir, rules, "", nil, sourceRoot(dir, rules)); err != nil {
+		return r, err
+	}
+	return r, checkZones(&r, dir, rules, vendors)
 }
 
-func walk(r *Report, root string, rules languages.Rules, rel string, parent *languages.Dir) error {
+func walk(r *Report, root string, rules languages.Rules, rel string, parent *languages.Dir, zoneRoot string) error {
 	entries, err := os.ReadDir(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
 		return err
@@ -43,7 +50,8 @@ func walk(r *Report, root string, rules languages.Rules, rel string, parent *lan
 			if strings.HasPrefix(name, ".") || skippedFolders[name] || (rules.Skip != nil && rules.Skip(name, here)) {
 				continue
 			}
-			if languages.ForbiddenFolders[strings.ToLower(name)] {
+			// shared is a zone directly in the source root, a junk drawer anywhere else.
+			if languages.ForbiddenFolders[strings.ToLower(name)] && (name != "shared" || rel != zoneRoot) {
 				r.problem(shown(name)+"/", fmt.Sprintf("%q is a junk drawer; name the folder for the outcome it serves", name))
 				continue
 			}
@@ -52,7 +60,7 @@ func walk(r *Report, root string, rules languages.Rules, rel string, parent *lan
 					r.problem(shown(name)+"/", why)
 				}
 			}
-			if err := walk(r, root, rules, shown(name), &here); err != nil {
+			if err := walk(r, root, rules, shown(name), &here, zoneRoot); err != nil {
 				return err
 			}
 			continue

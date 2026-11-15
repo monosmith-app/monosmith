@@ -246,6 +246,7 @@
         "properties": {
           "languages": { "type": "array", "items": { "type": "string" }, "description": "Narrow the convention to some of the languages it supports." },
           "exclude": { "type": "array", "items": { "type": "string" }, "description": "Projects it leaves alone." },
+          "vendors": { "type": "array", "items": { "type": "string" }, "description": "vertical-slices only: vendor packages that only a slice in integrations/ may import (pg, github.com/aws/aws-sdk-go-v2/*, Azure.Storage.*). A name matches itself and what is under it; a trailing * matches any name that starts with the rest. Node projects list theirs in the ESLint verticalSlices.vendors option." },
           "registry": { "type": "string", "description": "Docker only: where release pushes the apps' images (ghcr.io/acme). Unset: images are built, never pushed. ghcr.io logs in with GITHUB_TOKEN, docker.io with DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, another registry with CONTAINER_USERNAME and CONTAINER_PASSWORD. For several registries use registries." },
           "registries": { "$ref": "#/definitions/dockerRegistries" },
           "description_from": { "type": "string", "description": "Docker only: a workspace-relative file (README.md) whose text becomes the repository description on Docker Hub after a release." },

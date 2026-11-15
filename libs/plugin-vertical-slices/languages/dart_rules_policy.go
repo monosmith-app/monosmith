@@ -27,6 +27,7 @@ var dartFolders = map[string]bool{"lib": true, "bin": true, "test": true, "integ
 // in a testing/ folder; bin/ holds entry points.
 var dartRules = Rules{
 	Name:   "dart",
+	Roots:  []string{"lib"},
 	Inputs: []string{"lib/**/*.dart", "bin/**/*.dart", "test/**/*.dart", "integration_test/**/*.dart"},
 	Skip:   func(name string, in Dir) bool { return in.Rel == "" && !dartFolders[name] },
 	Folder: func(name string, _ Dir) string {

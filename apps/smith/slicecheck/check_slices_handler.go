@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	archcheck "github.com/monosmith-app/monosmith/libs/plugin-architectures/check"
 	"github.com/monosmith-app/monosmith/libs/plugin-architectures/imports"
 	"github.com/monosmith-app/monosmith/libs/plugin-architectures/rules"
@@ -24,8 +25,15 @@ func Command() *cobra.Command {
 <name>_<role> (roles: ` + fmt.Sprint(languages.Roles) + `),
 a module's or package's root holds only its entry files, and no folder is
 named util, helper, common, shared, manager, processor, data or misc, and no
-file name has one of those words as a part. A slice
-with more than ` + fmt.Sprint(layout.SliceSize) + ` production files is reported for review.
+file name has one of those words as a part (data and manager only as the whole
+name). A slice with more than ` + fmt.Sprint(layout.SliceSize) + ` production files is reported for review.
+
+An app (a project under apps/), and a project whose source root holds a zone
+folder, keeps every slice in features/, integrations/ or shared/ (shared is
+allowed only there). shared/ and integrations/ import no feature; a model,
+policy, validator, error or enum imports no integration and no client,
+repository or store; and a package listed in [conventions.vertical-slices]
+vendors is imported only in integrations/.
 
 The vertical-slices convention ([conventions.vertical-slices] in smith.toml)
 runs this as each project's slice-check task.
@@ -41,7 +49,7 @@ forbids. The convention of that architecture (for example
 			}
 			problems := 0
 			for _, dir := range dirs {
-				r, err := layout.Check(dir, lang)
+				r, err := layout.Check(dir, lang, vendorsFor(dir))
 				if err != nil {
 					return err
 				}
@@ -95,4 +103,19 @@ func checkArchitecture(cmd *cobra.Command, name, lang string, dirs []string) err
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "%s architecture OK\n", name)
 	return nil
+}
+
+// vendorsFor reads the vendor packages of the workspace a project is in, from
+// [conventions.vertical-slices] vendors in its smith.toml; none when there is
+// no readable smith.toml.
+func vendorsFor(dir string) []string {
+	root, err := workspace.FindRoot(dir)
+	if err != nil {
+		return nil
+	}
+	cfg, err := workspace.Load(root)
+	if err != nil {
+		return nil
+	}
+	return cfg.Conventions["vertical-slices"].Vendors
 }

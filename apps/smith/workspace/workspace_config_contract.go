@@ -502,6 +502,11 @@ type ConventionConfig struct {
 	Languages []string `toml:"languages"`
 	// Exclude lists projects the convention leaves alone.
 	Exclude []string `toml:"exclude"`
+	// Vendors are the vendor packages only a slice in integrations/ may
+	// import, as the language spells them (pg, github.com/aws/*). A name
+	// matches itself and what is under it; a trailing * matches any name
+	// that starts with the rest. vertical-slices only.
+	Vendors []string `toml:"vendors"`
 	// Registry is where the docker convention's release pushes images
 	// (ghcr.io/acme). Unset: images are built, never pushed. Docker only.
 	Registry string `toml:"registry"`
