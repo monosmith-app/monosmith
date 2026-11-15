@@ -72,7 +72,7 @@ binary:
 ```sh
 npm install --global monosmith
 pipx install monosmith                  # or: uv tool install monosmith, pip install monosmith
-dotnet tool install --global monosmith  # .NET 10 SDK
+dotnet tool install --global monosmith  # .NET 8 or later
 gem install monosmith
 dart pub global activate monosmith
 ```

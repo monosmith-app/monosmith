@@ -79,12 +79,12 @@ func azureInstallSmith(m Model, indent string) string {
 	return fmt.Sprintf("%s- bash: sh %s \"%s\"\n%s  displayName: Install smith\n", indent, InstallScriptPath, m.SmithVersion, indent)
 }
 
-// githubLauncherCache keeps the smith the npm launcher downloads for a pinned
-// version (~/.smith/versions, ADR 0101) between runs, so a run does not fetch
-// the same archive again. Nothing is cached for an unpinned install, whose
-// newest smith changes, nor for the other installs, which download nothing.
+// githubLauncherCache keeps the smith a registry launcher downloads for a
+// pinned version (~/.smith/versions, ADR 0101) between runs, so a run does not
+// fetch the same archive again. Nothing is cached for an unpinned install,
+// whose newest smith changes, nor for the install script.
 func githubLauncherCache(i SmithInstall) string {
-	if i.tool != "node" || i.pin == "" {
+	if i.Script || i.pin == "" {
 		return ""
 	}
 	return "      - name: Cache the smith the launcher downloads\n" +

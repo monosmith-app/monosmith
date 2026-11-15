@@ -41,14 +41,9 @@ product = "monosmith"
 package_managers = ["homebrew", "scoop", "winget"]
 # Also attached: sudo apt install ./monosmith_<v>_amd64.deb, or dnf with the .rpm.
 linux_packages = ["deb", "rpm"]
-# Published from the same archives, each installing the smith command:
-# pipx install monosmith / uvx --from monosmith smith, dotnet tool install -g
-# monosmith and gem install monosmith. npm carries the launcher instead
-# (packages/launcher-node, ADR 0101), which downloads the release archives.
-pypi = "monosmith"
-# PyPI limits a project's total size and every pre-release uploads a wheel per platform: it gets stable versions only (pre-releases reach the launcher through smith update on the next channel).
-stable_only = ["pypi"]
-nuget = "monosmith"
+# Published from the same archives: gem install monosmith. npm, PyPI and NuGet
+# carry the launcher instead (packages/launcher-node, launcher-python and
+# launcher-dotnet, ADR 0101), which downloads the release archives.
 rubygems = "monosmith"
 # dart pub global activate monosmith: the release tags smith-v<version> and
 # starts .github/workflows/pub.yml on it, which pub.dev's automated

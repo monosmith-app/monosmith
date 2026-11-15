@@ -25,8 +25,8 @@ func TestSmithInstallPicksNodeThenPythonThenDotnetElseTheScript(t *testing.T) {
 		hosted string
 	}{
 		{[]string{"go", "node", "python"}, false, "npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.5.0 smith --version"},
-		{[]string{"python", "dotnet"}, false, "python -m pip install --disable-pip-version-check --index-url https://pypi.org/simple/ monosmith==1.5.0"},
-		{[]string{"dotnet", "rust"}, false, "dotnet tool update --global monosmith --version 1.5.0"},
+		{[]string{"python", "dotnet"}, false, `python -m pip install --disable-pip-version-check --index-url https://pypi.org/simple/ "monosmith>=3,<4" && SMITH_VERSION=1.5.0 smith --version`},
+		{[]string{"dotnet", "rust"}, false, `dotnet tool update --global monosmith --version "3.*" && SMITH_VERSION=1.5.0 "${USERPROFILE:-$HOME}/.dotnet/tools/smith" --version`},
 		{[]string{"go", "rust", "java"}, true, ""},
 		{nil, true, ""},
 	} {
@@ -57,14 +57,14 @@ func TestPipDoesNotInstallPerUserOnHostedAgents(t *testing.T) {
 func TestEveryProviderPutsTheDotnetToolOnPath(t *testing.T) {
 	m := installModel("1.5.0", "dotnet")
 	gh := RenderGitHub(m)
-	if !strings.Contains(gh, "dotnet tool update --global monosmith --version 1.5.0\n          echo \"${USERPROFILE:-$HOME}/.dotnet/tools\" >> \"$GITHUB_PATH\"") {
+	if !strings.Contains(gh, "dotnet tool update --global monosmith --version \"3.*\" && SMITH_VERSION=1.5.0 \"${USERPROFILE:-$HOME}/.dotnet/tools/smith\" --version\n          echo \"${USERPROFILE:-$HOME}/.dotnet/tools\" >> \"$GITHUB_PATH\"") {
 		t.Errorf("github:\n%s", gh)
 	}
 	az := RenderAzure(m)
 	if !strings.Contains(az, "echo \"##vso[task.prependpath]${USERPROFILE:-$HOME}/.dotnet/tools\"") {
 		t.Errorf("azure:\n%s", az)
 	}
-	if gl := RenderGitLab(m); !strings.Contains(gl, "    - 'dotnet tool update --global monosmith --version 1.5.0'\n    - 'export PATH=\"$HOME/.dotnet/tools:$PATH\"'\n") {
+	if gl := RenderGitLab(m); !strings.Contains(gl, "    - 'dotnet tool update --global monosmith --version \"3.*\" && SMITH_VERSION=1.5.0 \"${USERPROFILE:-$HOME}/.dotnet/tools/smith\" --version'\n    - 'export PATH=\"$HOME/.dotnet/tools:$PATH\"'\n") {
 		t.Errorf("gitlab:\n%s", gl)
 	}
 	if cc := RenderCircleCI(m); !strings.Contains(cc, "echo 'export PATH=\"$HOME/.dotnet/tools:$PATH\"' >> \"$BASH_ENV\"") {
