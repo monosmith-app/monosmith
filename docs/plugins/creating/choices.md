@@ -124,7 +124,7 @@ Run `smith choices` to see what the host sees, and what is wrong with a choice t
 1. `smith plugin check <plugin>` validates the choices that the plugin publishes.
 2. Write a golden path: a workspace, `smith add app web --with <your choices>`, and then
    `smith run lint typecheck test build`. The repository's example is
-   `apps/smith/goldenpath/web_choices_use_case_test.go`; it reads its selections from
+   `apps/smith/features/goldenpath/web_choices_use_case_test.go`; it reads its selections from
    `testdata/web-selections.txt`, so a new choice adds one line there.
 3. A choice with no golden path is marked unsupported in its `description`.
 

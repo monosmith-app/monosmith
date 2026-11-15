@@ -24,6 +24,7 @@ var (
 // are build output.
 var dotnetRules = Rules{
 	Name:   "dotnet",
+	Roots:  []string{""},
 	Inputs: []string{"**/*.cs", "**/*.fs"},
 	Skip: func(name string, _ Dir) bool {
 		return name == "bin" || name == "obj" || name == "Properties" || name == "TestResults"

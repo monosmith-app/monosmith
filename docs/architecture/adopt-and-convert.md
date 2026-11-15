@@ -25,14 +25,14 @@ flowchart TD
 ```
 
 The same decision is made in two places that must agree. `adoptflow.Open` (the wizard's side,
-`apps/smith/adoptflow/open_repository_use_case.go`) classifies the folder as already a smith
+`apps/smith/features/adoptflow/open_repository_use_case.go`) classifies the folder as already a smith
 workspace, not a repository, Nx or Turborepo, or plain. `convert.readPlan` (`convert/convert_handler.go`)
 picks the reader: `turbo.json` or `turbo.jsonc` gives Turborepo, `nx.json` gives Nx, both is an
 error ("convert one tool at a time"), neither is an error.
 
 | Command | Is for | Reads with | Plans with | Package |
 |---|---|---|---|---|
-| `smith adopt` | a repository with no monorepo tool | `adoption.Inspect` | the report itself; `Init` applies it | `apps/smith/adoption` |
+| `smith adopt` | a repository with no monorepo tool | `adoption.Inspect` | the report itself; `Init` applies it | `apps/smith/features/adoption` |
 | `smith convert` (Nx, old mnci) | an Nx workspace | `nxworkspace.Read` (runs the workspace's own Nx) | `convertplan.MakePlan` | `nxworkspace`, `convertplan`, `convert` |
 | `smith convert` (Turborepo) | a Turborepo workspace | `turboworkspace.Read` (files only) | `turboplan.MakePlan` | `turboworkspace`, `turboplan`, `convert` |
 
@@ -174,7 +174,7 @@ sequenceDiagram
   W->>U: what was converted [Done]
 ```
 
-The wizard (`apps/smith/tui/adoptwizard`) is a state machine whose stages are `Reading`, `Found`,
+The wizard (`apps/smith/features/tui/adoptwizard`) is a state machine whose stages are `Reading`, `Found`,
 `Level`, `Preparing`, `Choices`, `Planning`, `Review`, `Converting`, `Checking`, `Group`, `Removing`,
 `Finishing` and `Done` (`wizard_contract.go`). Every screen is a `fixwizard.Wizard`, so keys, mouse
 and drawing match the Doctor fix dialog. It touches nothing: a step that takes time comes out as a
@@ -191,17 +191,17 @@ missing (`NoFullForPlain`, `IssueFullForPlain`).
 
 | Concern | Path |
 |---|---|
-| `smith adopt` | `apps/smith/adoption` |
-| `smith convert` command and full level | `apps/smith/convert` (`convert_handler.go`, `full_level_use_case.go`) |
-| Nx model and plan | `apps/smith/nxworkspace`, `apps/smith/convertplan` |
-| Turborepo model and plan | `apps/smith/turboworkspace`, `apps/smith/turboplan` |
-| Choices | `apps/smith/convertchoices` |
-| Inventory of old tooling | `apps/smith/legacyinventory` |
-| Removal groups | `apps/smith/removalplan` |
-| Scratch copy, the removal loop, report | `apps/smith/fullconversion` |
-| Fix questions, review, apply | `apps/smith/doctorfix` |
-| Wizard data and calls | `apps/smith/adoptflow` |
-| Wizard screens | `apps/smith/tui/adoptwizard`, `apps/smith/tui/fixwizard` |
+| `smith adopt` | `apps/smith/features/adoption` |
+| `smith convert` command and full level | `apps/smith/features/convert` (`convert_handler.go`, `full_level_use_case.go`) |
+| Nx model and plan | `apps/smith/features/nxworkspace`, `apps/smith/features/convertplan` |
+| Turborepo model and plan | `apps/smith/features/turboworkspace`, `apps/smith/features/turboplan` |
+| Choices | `apps/smith/features/convertchoices` |
+| Inventory of old tooling | `apps/smith/features/legacyinventory` |
+| Removal groups | `apps/smith/features/removalplan` |
+| Scratch copy, the removal loop, report | `apps/smith/features/fullconversion` |
+| Fix questions, review, apply | `apps/smith/features/doctorfix` |
+| Wizard data and calls | `apps/smith/features/adoptflow` |
+| Wizard screens | `apps/smith/features/tui/adoptwizard`, `apps/smith/features/tui/fixwizard` |
 
 ## Decisions
 

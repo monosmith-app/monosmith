@@ -47,9 +47,9 @@ What each arrow stands for, and where it is decided:
 | editor to smith | JSON-RPC 2.0 on the stdin and stdout of a `smith serve` child process; no port | [ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md) |
 | assistant to smith | the Model Context Protocol on stdio (`smith mcp`); each tool runs one smith command line | [ADR 0022](decisions/0022-mcp-server-runs-smith-commands.md) |
 | CI to smith | the generated YAML calls `smith ci <phase>`; the pipeline stays thin | [ADR 0005](decisions/0005-generated-ci-pipelines.md) |
-| smith to the repository | git is the source of truth for the file list, history and tags; smith shells out to the `git` binary through one slice (`apps/smith/gitclient`) | [Technology](technology.md) |
+| smith to the repository | git is the source of truth for the file list, history and tags; smith shells out to the `git` binary through one slice (`apps/smith/integrations/gitclient`) | [Technology](technology.md) |
 | smith to toolchains | child processes started from an argv array, never through a shell | [Execution and cache](execution-and-cache.md) |
-| smith to GitHub | REST, through one slice (`apps/smith/githubrelease`) | [ADR 0006](decisions/0006-conventional-commits-tag-only-releases.md) |
+| smith to GitHub | REST, through one slice (`apps/smith/integrations/githubrelease`) | [ADR 0006](decisions/0006-conventional-commits-tag-only-releases.md) |
 | smith to registries | each language plugin publishes; the core re-packs one binary for several package managers | [ADR 0010](decisions/0010-one-binary-for-every-package-manager.md), [ADR 0031](decisions/0031-marketplace-publishing-with-entra-id.md) |
 | smith to the remote cache | HMAC-signed objects; a bad or missing object is a miss | [ADR 0003](decisions/0003-content-addressed-cache.md), [The cache key, hits and misses](cache.md) |
 
@@ -97,16 +97,16 @@ flowchart TB
 
 | Container | Code | What it is for | How it is reached |
 |---|---|---|---|
-| CLI | `apps/smith/commandline` assembles the cobra command tree; each slice supplies its own `*_handler.go` | every command in the [manual](../manual/README.md) | argv |
-| Terminal shell | `apps/smith/tui` | the full-screen view a bare `smith` opens in a terminal; it reads the workspace in-process (`tui/sources`) and runs every action as a child `smith` process (`tui/runner`) | a bare `smith` on a terminal, `CI` unset |
-| Engine server | `apps/smith/engineserver` | the engine as JSON-RPC: queries answer with the `--json` output, runs stream `event` notifications | `smith serve` |
-| MCP server | `apps/smith/mcpserver` | the same actions for an assistant, each tool one command line | `smith mcp` |
+| CLI | `apps/smith/features/commandline` assembles the cobra command tree; each slice supplies its own `*_handler.go` | every command in the [manual](../manual/README.md) | argv |
+| Terminal shell | `apps/smith/features/tui` | the full-screen view a bare `smith` opens in a terminal; it reads the workspace in-process (`tui/sources`) and runs every action as a child `smith` process (`tui/runner`) | a bare `smith` on a terminal, `CI` unset |
+| Engine server | `apps/smith/features/engineserver` | the engine as JSON-RPC: queries answer with the `--json` output, runs stream `event` notifications | `smith serve` |
+| MCP server | `apps/smith/features/mcpserver` | the same actions for an assistant, each tool one command line | `smith mcp` |
 | Core | the slices listed in [Architecture](architecture.md) | session, graphs, scheduling, cache, release, CI generation | in-process |
 | Built-in plugins | `libs/plugin-*`, constructed by `pluginhost.Builtins` and `pluginhost.BuiltinAddons` | everything language-specific: discovery, tasks, scaffolding, versioning, publishing, CI needs, health checks | the host starts `smith plugin serve <name>` as a child process |
 | External plugins | declared under `[plugins.external.<name>]` or found on `.smith/plugins`, `SMITH_PLUGIN_PATH`, `$SMITH_HOME/plugins` | languages and rules smith lacks | any executable; see [The plugin system](plugin-system.md) |
 | Plugin SDK | `packages/plugin-sdk`: `protocol`, `serve`, `host`, `transport`, `conformance`, `templating`, `toolrun`, `jsondoc`, `tomltext`, `xmltext`, `fileedits`, `projectkind` | the protocol types, a server loop for plugins, the client smith uses, and the conformance suite | a Go module, released as `packages/plugin-sdk/v<version>` |
-| Local cache | `apps/smith/taskcache` | task results by key | files under `.smith/cache/v1` |
-| Remote cache | `apps/smith/remotecache` | results shared between machines | HTTPS, `s3://` or `azblob://` |
+| Local cache | `apps/smith/features/taskcache` | task results by key | files under `.smith/cache/v1` |
+| Remote cache | `apps/smith/features/remotecache` | results shared between machines | HTTPS, `s3://` or `azblob://` |
 | VS Code extension | `apps/vscode` (`smith-client`, `workspace-view`, `task-run` and others) | the editor front end | spawns `smith serve` in each workspace folder |
 | Actions catalogue | `libs/actions/catalog` | the one list of actions the CLI, shell, MCP and engine server present | imported as Go code |
 
@@ -173,14 +173,14 @@ The full index is in [Decision records](decisions/README.md).
 
 | Concern | Path |
 |---|---|
-| command tree | `apps/smith/commandline/root_handler.go` (`Root`) |
-| starting plugins | `apps/smith/pluginhost/start_plugins_use_case.go` (`Start`) |
+| command tree | `apps/smith/features/commandline/root_handler.go` (`Root`) |
+| starting plugins | `apps/smith/features/pluginhost/start_plugins_use_case.go` (`Start`) |
 | plugin client and handshake | `packages/plugin-sdk/host/plugin_client.go` |
-| opening a workspace | `apps/smith/session/open_session_use_case.go` (`Open`) |
-| the engine server | `apps/smith/engineserver` |
-| the MCP server | `apps/smith/mcpserver` |
-| the shell | `apps/smith/tui` |
-| the cache tiers | `apps/smith/session/open_session_use_case.go` (`Session.Storage`), `apps/smith/remotecache` |
+| opening a workspace | `apps/smith/features/session/open_session_use_case.go` (`Open`) |
+| the engine server | `apps/smith/features/engineserver` |
+| the MCP server | `apps/smith/features/mcpserver` |
+| the shell | `apps/smith/features/tui` |
+| the cache tiers | `apps/smith/features/session/open_session_use_case.go` (`Session.Storage`), `apps/smith/features/remotecache` |
 | the extension | `apps/vscode/src` |
 
 The plugin protocol is documented in [Plugins](../reference/plugins.md); the shell and

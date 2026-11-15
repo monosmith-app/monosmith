@@ -125,7 +125,7 @@ func TestTheRepositoryFilesAreUpToDate(t *testing.T) {
 		VSCodeModule:       under("apps/vscode/src/shared/words"),
 		VSCodeNls:          under("apps/vscode"),
 		JetBrainsResources: under("apps/jetbrains/src/main/resources"),
-		JetBrainsKotlin:    under("apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/words"),
+		JetBrainsKotlin:    under("apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/shared/words"),
 		Surfaces:           []string{"vscode", "jetbrains"},
 		Check:              true,
 	})

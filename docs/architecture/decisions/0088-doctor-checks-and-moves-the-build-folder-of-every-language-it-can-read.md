@@ -59,5 +59,5 @@ An adopted, converted or hand-made project keeps the folder its tool picks: `tar
 `libs/plugin-{rust,dotnet,jvm,cpp}/pipeline/check_build_dir_use_case.go`,
 `libs/plugin-{go,python,dart}/pipeline/check_build_dir_use_case.go`,
 `packages/plugin-sdk/{buildrefs,taskoutput}`, `packages/plugin-sdk/xmltext/edit_path_mapper.go`,
-`apps/smith/doctorfix/walk_plan_use_case.go`, `apps/smith/removalplan/build_output_group_use_case.go`,
+`apps/smith/features/doctorfix/walk_plan_use_case.go`, `apps/smith/features/removalplan/build_output_group_use_case.go`,
 `docs/manual/doctor.md`.

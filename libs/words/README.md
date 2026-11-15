@@ -33,7 +33,7 @@ two keys, `key.one` and `key.other`. A locale that lacks a key shows the English
 - `prefixes`: a prefix claims every catalogue key that starts with it.
 
 A key is valid when at least one surface claims it. A key that no surface claims fails the guard
-(`apps/smith/tui/wordsguard`). The `tui` manifest stays empty: the TUI claims a key by asking for it in
+(`apps/smith/features/tui/wordsguard`). The `tui` manifest stays empty: the TUI claims a key by asking for it in
 code, which the guard scans. `vscode` claims `vscode.` and `jetbrains` claims `jetbrains.`.
 To use a shared key in an editor, add it to that editor's `keys`.
 
@@ -54,7 +54,7 @@ go run ./wordgen -surface vscode
 | `-vscode-module` | `apps/vscode/src/shared/words` (`smith-words.config.ts`) |
 | `-vscode-nls` | `apps/vscode` (`package.nls.json`, `package.nls.<locale>.json`) |
 | `-jetbrains-resources` | `apps/jetbrains/src/main/resources` (`messages.properties`, `messages_<locale>.properties`) |
-| `-jetbrains-kotlin` | `apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/words` (`SmithWordsConfig.kt`) |
+| `-jetbrains-kotlin` | `apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/shared/words` (`SmithWordsConfig.kt`) |
 
 Rules the generator follows:
 
@@ -73,7 +73,7 @@ Rules the generator follows:
 
 ## Guards
 
-- `apps/smith/tui/wordsguard`: key exists, placeholders filled, key claimed by a surface, no raw
+- `apps/smith/features/tui/wordsguard`: key exists, placeholders filled, key claimed by a surface, no raw
   wording in a migrated TUI package.
 - `words/surface_claims_validator_test.go`: an exact key in a manifest exists in the catalogue.
 - `wordgen`: the generated files of the repository are up to date.

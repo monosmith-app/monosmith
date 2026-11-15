@@ -12,7 +12,7 @@ and [`smith affected`](../manual/affected.md).
 
 ## The model
 
-`projectgraph.Graph` (`apps/smith/projectgraph/project_graph_model.go`) holds
+`projectgraph.Graph` (`apps/smith/features/projectgraph/project_graph_model.go`) holds
 `[]*Project`, indexed by unique name. A `Project` is the plugin's `protocol.Project` plus
 what smith adds:
 
@@ -138,7 +138,7 @@ dependencies itself.
 
 ## Views of the graph
 
-`smith graph` (`apps/smith/graphview`) renders the same `Node` list five ways:
+`smith graph` (`apps/smith/features/graphview`) renders the same `Node` list five ways:
 
 | Format | Renderer | Notes |
 |---|---|---|
@@ -176,10 +176,10 @@ Options that narrow the graph before rendering:
 
 | Concern | Path |
 |---|---|
-| graph model and queries | `apps/smith/projectgraph/project_graph_model.go` |
-| import edges | `apps/smith/projectgraph/resolve_edges_algorithm.go` |
+| graph model and queries | `apps/smith/features/projectgraph/project_graph_model.go` |
+| import edges | `apps/smith/features/projectgraph/resolve_edges_algorithm.go` |
 | schema edges | `resolve_schema_edges_algorithm.go`, `schema_kind_policy.go` |
 | cycles | `find_cycles_algorithm.go`, `Graph.Order` |
 | selection | `select_projects_algorithm.go` |
-| rendering, focus, diff, blast radius | `apps/smith/graphview` |
+| rendering, focus, diff, blast radius | `apps/smith/features/graphview` |
 | scanning imports | `libs/plugin-<name>/discovery/import_scan_algorithm.go` |

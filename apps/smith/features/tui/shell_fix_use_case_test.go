@@ -1,0 +1,255 @@
+package tui
+
+import (
+	"bytes"
+	"errors"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/features/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/features/smithfix"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/doctorview"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/fixwizard"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
+
+// withInstallFix replaces the lab's doctor report with one whose check has a
+// fix that asks which package manager to use and installs with it.
+func withInstallFix(l *lab) *lab {
+	opt := func(name string) protocol.FixChoiceOption {
+		return protocol.FixChoiceOption{Label: name, Fix: protocol.Fix{Steps: []protocol.FixStep{{Description: "install with " + name, Argv: []string{name, "install"}}}}}
+	}
+	report := doctor.Report{Failed: 2, Findings: []doctor.Finding{
+		{Finding: protocol.Finding{Check: "dependencies are installed", Detail: "node_modules is missing", Remedy: "install them", Fix: &protocol.Fix{
+			Description: "install the dependencies", Choices: []protocol.FixChoice{{Question: "Which package manager?", Options: []protocol.FixChoiceOption{opt("npm"), opt("pnpm")}}}}}},
+		{Finding: protocol.Finding{Check: "git hooks are set", Detail: "none", Remedy: "run the hook installer"}},
+	}}
+	sh := l.sh()
+	// Once a fix was applied the check passes, as it does after a fix that works.
+	sh.sources.Doctor = func() doctorview.Result {
+		if len(l.appliedFixes()) > 0 && !l.fixStaysBroken {
+			fixed := report
+			fixed.Findings = append([]doctor.Finding{{Finding: protocol.Finding{Check: "dependencies are installed", OK: true}}}, report.Findings[1:]...)
+			return doctorview.Result{Report: fixed}
+		}
+		return doctorview.Result{Report: report}
+	}
+	l.m = sh
+	return l.keys("3", "r")
+}
+
+func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.fixStaysBroken = true
+	l = withInstallFix(l)
+	l.keys("f", "enter", "enter")
+	l.has("The fix ran, but this check still fails")
+	l.has("dependencies are installed")
+	l.has("node_modules is missing")
+}
+
+func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {
+	l := withInstallFix(newLab(t, true, 140, 34))
+	l.has("[Fix (f)]", "install the dependencies", "asks first: Which package manager?")
+	l.keys("f")
+	l.has("Fix · question 1 of 1", "Which package manager?", "1) npm  (suggested)", "2) pnpm")
+	l.keys("down", "enter")
+	l.has("Fix · review", "$ pnpm install", "Apply (Enter)")
+	if len(l.appliedFixes()) != 0 {
+		t.Fatal("applied before the confirmation")
+	}
+	l.keys("enter")
+	applied := l.appliedFixes()
+	if len(applied) != 1 || len(applied[0].Steps) != 1 || applied[0].Steps[0].Argv[0] != "pnpm" || len(applied[0].Choices) != 0 {
+		t.Fatalf("applied %+v", applied)
+	}
+	if l.sh().fix != nil || l.sh().fixApplying() {
+		t.Fatal("the wizard stays open after a success")
+	}
+	l.has("Fixed: install the dependencies")
+}
+
+func TestFixWizardShowsProgressWhileAStepRunsAndCtrlCStopsIt(t *testing.T) {
+	l := withInstallFix(newLab(t, true, 140, 34))
+	l.applyHold = make(chan struct{})
+	l.keys("f", "enter", "enter") // npm, then apply
+	l.has("Fixing…", "step 1 of 1: npm install", "Ctrl+C or Esc stops")
+	if !l.sh().fixApplying() || l.sh().fix.Phase() != fixwizard.Applying {
+		t.Fatal("the fix is not applying")
+	}
+	l.keys("q", "esc") // esc stops, q is ignored: only the first press of a stop key matters
+	cancelled := false
+	for i := 0; i < 200 && !cancelled; i++ { // the step's goroutine notices a moment later
+		l.fixMu.Lock()
+		cancelled = l.applyCancel
+		l.fixMu.Unlock()
+		if !cancelled {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	if !cancelled {
+		t.Fatal("the step's context was not cancelled")
+	}
+	run := l.sh().fixing
+	l.send(fixDoneMsg{run: run, err: &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("context canceled")}})
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "Retry (r)")
+	close(l.applyHold)
+}
+
+func TestFixWizardShowsTheFailingStepsOutputAndRetryRunsTheFixAgain(t *testing.T) {
+	l := withInstallFix(newLab(t, true, 140, 34))
+	sh := l.sh()
+	sh.clip = &bytes.Buffer{}
+	l.m = sh
+	l.applyErr = &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("exited with code 1"), Output: "npm ERR! 404 not found"}
+	l.keys("f", "enter", "enter")
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "Retry (r)", "Close (Esc)")
+	if len(l.appliedFixes()) != 1 {
+		t.Fatalf("applied %d times", len(l.appliedFixes()))
+	}
+	l.keys("y")
+	l.has("copied: Step 1 of 1 failed")
+	l.applyErr = nil
+	l.keys("r")
+	if len(l.appliedFixes()) != 2 || l.sh().fix != nil {
+		t.Fatalf("retry applied %d times, wizard open %v", len(l.appliedFixes()), l.sh().fix != nil)
+	}
+	l.has("Fixed: install the dependencies")
+}
+
+func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *testing.T) {
+	l := withInstallFix(newLab(t, true, 140, 34))
+	l.keys("f", "esc")
+	l.hasNot("Fix · question")
+	l.has("nothing was changed")
+	l.keys("f", "1", "esc") // Esc in the review goes back to the question
+	l.has("Fix · question 1 of 1")
+	l.keys("ctrl+c")
+	if l.sh().fix != nil || len(l.appliedFixes()) != 0 {
+		t.Fatal("cancelling applied something")
+	}
+	l.keys("f", "1", "b")
+	l.has("Fix · question 1 of 1")
+}
+
+func TestFixWizardFixAllReviewsTheSafeFixesOnceAndAppliesThemOnConfirm(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("3", "F")
+	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "Apply (Enter)")
+	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
+		t.Fatal("x applied before the review was confirmed")
+	}
+	l.keys("esc")
+	l.has("nothing was changed")
+	l.keys("F", "enter")
+	if got := l.appliedFixes(); len(got) != 1 || got[0].Description != "write web's registry" {
+		t.Fatalf("applied %+v", got)
+	}
+	if len(l.started) != 0 {
+		t.Fatalf("the fix ran as a command: %v", l.started)
+	}
+}
+
+func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("ctrl+p").typeText("Fix with doctor").keys("enter")
+	l.has("Fix · review")
+	l = newLab(t, true, 140, 34)
+	sh := l.sh()
+	sh.sources.Doctor = func() doctorview.Result {
+		return doctorview.Result{Report: doctor.Report{Passed: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{Check: "git", OK: true}}}}}
+	}
+	l.m = sh
+	l.keys("3", "r", "F")
+	if l.sh().fix != nil {
+		t.Fatal("a wizard opened with nothing to fix")
+	}
+	l.has("nothing it can fix")
+}
+
+func TestFixWizardWorksWithTheMouse(t *testing.T) {
+	l := withInstallFix(newLab(t, true, 140, 34))
+	l.runDetailAction("[Fix (f)]")
+	l.has("Which package manager?")
+	l.clickText("2) pnpm")
+	l.has("Fix · review", "$ pnpm install")
+	l.clickText("Apply (Enter)")
+	if got := l.appliedFixes(); len(got) != 1 || got[0].Steps[0].Argv[0] != "pnpm" {
+		t.Fatalf("applied %+v", got)
+	}
+	// A click outside the dialog cancels it.
+	l.keys("f")
+	l.send(click(0, 0))
+	if l.sh().fix != nil {
+		t.Fatal("a click outside kept the wizard open")
+	}
+}
+
+func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	loads := 0
+	sh := l.sh()
+	sh.sources.Doctor = func() doctorview.Result {
+		loads++
+		return doctorview.Result{Report: doctor.Report{Warnings: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{
+			Check: "the workspace uses the latest defaults", Warning: true, Detail: "this workspace uses the defaults of 2000.01",
+			Remedy: "`smith upgrade --defaults` shows the plan and moves the workspace",
+			Fix: smithfix.Fix("Move the workspace to the latest defaults",
+				smithfix.Step("Move the workspace; the plan lists each change", "upgrade", "--defaults")),
+		}}}}}
+	}
+	l.m = sh
+	l.keys("3", "r")
+	first := loads
+	l.has("[Fix (f)]", "Move the workspace to the latest defaults")
+	l.keys("f")
+	l.has("Fix · review", "$ smith upgrade --defaults --yes", "Apply (Enter)")
+	if len(l.appliedFixes()) != 0 {
+		t.Fatal("applied before the person agreed")
+	}
+	l.keys("enter")
+	applied := l.appliedFixes()
+	if len(applied) != 1 || strings.Join(applied[0].Steps[0].Argv, " ") != "smith upgrade --defaults --yes" {
+		t.Fatalf("applied %+v", applied)
+	}
+	if loads <= first {
+		t.Fatal("doctor did not check again after the fix")
+	}
+}
+
+func TestFixWizardReviewScrollsWithTheWheel(t *testing.T) {
+	l := newLab(t, true, 100, 24)
+	var content strings.Builder
+	for i := 0; i < 60; i++ {
+		content.WriteString("line " + strings.Repeat("x", i%7) + "\n")
+	}
+	sh := l.sh()
+	sh.sources.Doctor = func() doctorview.Result {
+		return doctorview.Result{Report: doctor.Report{Failed: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{Check: "big file", Fix: &protocol.Fix{
+			Description: "write a big file", Safe: true, Files: []protocol.FileEdit{{Path: "big.txt", Content: content.String()}}}}}}}}
+	}
+	l.m = sh
+	l.keys("3", "r", "f")
+	// The review opens on one line per file; d shows the whole diff, which scrolls.
+	l.has("Fix · review", "big.txt  new file  +60 -0", "Show changes")
+	l.hasNot("↓ more")
+	l.keys("d")
+	l.has("Fix · review", "↓ more")
+	l.hasNot("↑ more")
+	l.send(wheel(50, 10, 1))
+	l.has("↑ more")
+	l.keys("pgdown", "end")
+	l.hasNot("↓ more")
+}
+
+func TestFixWizardDoctorKeepsItsPlaceAfterTheRecheck(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("3", "down")
+	before := l.sh().doctor.Cursor
+	l.keys("f", "enter")
+	if l.sh().doctor.Cursor != before || l.sh().doctor.Report == nil {
+		t.Fatalf("cursor %d, was %d", l.sh().doctor.Cursor, before)
+	}
+}

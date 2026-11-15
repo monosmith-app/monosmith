@@ -18,6 +18,7 @@ var (
 // is <snake>_<role>.go.
 var goRules = Rules{
 	Name:   "go",
+	Roots:  []string{""},
 	Inputs: []string{"**/*.go"},
 	Source: func(name string, _ Dir) bool { return strings.HasSuffix(name, ".go") },
 	File:   func(name string, in Dir) string { return GoFile(name, in.Rel == "") },

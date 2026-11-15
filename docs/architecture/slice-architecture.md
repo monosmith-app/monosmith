@@ -33,8 +33,12 @@ monosmith/
   go.work                  ties 18 Go modules together
   smith.toml               the repository is a smith workspace; [conventions.vertical-slices] is on
   apps/
-    smith/                 the command: 79 top-level slice packages, one Go module
-    vscode/                the VS Code extension (TypeScript, one folder per slice under src/)
+    smith/                 the command, one Go module: features/ (145 packages), integrations/ (10:
+                           git, GitHub, NuGet, PyPI, RubyGems, registries, CI annotations, the
+                           console, the shell) and shared/ (11 building blocks)
+    vscode/                the VS Code extension: src/features, src/integrations (the smith
+                           process), src/shared
+    jetbrains/             the IntelliJ plugin: the same zones under its Kotlin package
   libs/
     actions/               the action catalogue shared by CLI, shell, MCP and engine server
     plugin-<language>/     one Go module per built-in language plugin: discovery, scaffolding,
@@ -48,7 +52,11 @@ monosmith/
   docs/
 ```
 
-`apps/smith` is organised as a flat list of slices because most commands are one outcome.
+Each app keeps its slices in three zones ([ADR 0100](decisions/0100-apps-keep-their-slices-in-features-integrations-and-shared.md)):
+`features/` for business outcomes, `integrations/` for one external system each, `shared/` for
+building blocks with no business knowledge. `shared` and `integrations` never import a feature.
+Inside `features/`, `apps/smith` is still a flat list of packages because most commands are one
+outcome; grouping them into capabilities is left for later.
 There are 516 production Go files in it, 334 test files and 101 `doc.go` files; in `libs/`,
 268 production files and 109 `doc.go`; in `packages/plugin-sdk`, 29 and 10 (counted by walking
 the tree for this page; they change with every commit).
@@ -56,7 +64,7 @@ the tree for this page; they change with every commit).
 ### A slice in `apps/smith`
 
 ```text
-apps/smith/taskcache/
+apps/smith/features/taskcache/
   doc.go                          the package comment: what the slice is for
   cache_key_algorithm.go          pure: KeyInputs -> key
   cache_key_algorithm_test.go     tests sit beside what they test
@@ -102,8 +110,8 @@ production file's name plus `_test.go`.
 
 | Layer | Tool | What it checks | Where it runs |
 |---|---|---|---|
-| Go, all `go.work` modules | `smith slices check --lang go` (`apps/smith/slicecheck`, rules in `libs/plugin-vertical-slices/languages/go_rules_policy.go`) | every file is `<snake>_<role>.go`; only `doc.go` and `main.go` at a module's root; no folder named `util`, `helper`, `common`, `shared`, `manager`, `processor`, `data`, `misc` (or `Helpers`); a package with more than 12 production files is reported for review | the `slice-check` task of every Go project, which `[conventions.vertical-slices]` makes a dependency of `lint`, so `smith ci verify` runs it |
-| TypeScript, `apps/vscode` and `packages/eslint-config` consumers | `@monosmith/eslint-config`, `configs/vertical-slices.config.js` | `file-role` (a kebab-case name ending in a role), `no-deep-import` (a sibling is reached only through its `index.ts`), `no-slice-cycle` (the subfeature import graph has no cycle, type imports included) | `eslint`, as the project's `lint` task |
+| Go, all `go.work` modules | `smith slices check --lang go` (`apps/smith/features/slicecheck`, rules in `libs/plugin-vertical-slices/languages/go_rules_policy.go`) | every file is `<snake>_<role>.go`; only `doc.go` and `main.go` at a module's root; no folder named `util`, `helper`, `common`, `manager`, `processor`, `data`, `misc` (or `Helpers`), nor `shared` outside the zones; a package with more than 12 production files is reported for review; in an app, every slice in a zone, no feature imported from `shared` or `integrations`, no integration imported from a model, policy, validator, error or enum, and the `vendors` of `[conventions.vertical-slices]` imported only in `integrations` | the `slice-check` task of every Go project, which `[conventions.vertical-slices]` makes a dependency of `lint`, so `smith ci verify` runs it |
+| TypeScript, `apps/vscode` and `packages/eslint-config` consumers | `@monosmith/eslint-config`, `configs/vertical-slices.config.js` | `file-role` (a kebab-case name ending in a role, every slice of an app in a zone), `no-deep-import` (a sibling is reached only through its `index.ts`), `no-slice-cycle` (the subfeature import graph has no cycle, type imports included), `zone-import` (zone direction, vendor packages, role import limits) | `eslint`, as the project's `lint` task |
 | Go imports | the Go compiler | a package cycle does not compile | `go build` |
 
 What nothing checks for Go: that one slice does not reach for an internal helper of another.
@@ -196,11 +204,11 @@ These are what `smith slices check` reports today, and what the code shows.
 
 | Where | Departure | Written down? |
 |---|---|---|
-| `apps/smith/tui` | 31 production files in the package root (limit 12): the methods of the one Bubble Tea model `Shell` | yes, as a temporary exception with a removal condition in `apps/smith/tui/README.md` |
-| `apps/smith/convertplan` (29), `release` (21), `cipipeline` (17), `projectgraph` (15), `workspace` (14), `doctor` (13) | over the size limit; reported as `review:` | no |
+| `apps/smith/features/tui` | 31 production files in the package root (limit 12): the methods of the one Bubble Tea model `Shell` | yes, as a temporary exception with a removal condition in `apps/smith/features/tui/README.md` |
+| `apps/smith/features/convertplan` (29), `release` (21), `cipipeline` (17), `projectgraph` (15), `workspace` (14), `doctor` (13) | over the size limit; reported as `review:` | no |
 | `packages/plugin-sdk/protocol` | 17 files: the protocol types, by nature one slice | no |
 | `libs/plugin-node-toolchains` | imports `libs/plugin-node/scaffolding` | no |
-| `apps/smith/tui` nested packages | a subfeature is meant to be flat; `tui` has 27 nested packages (`commands`, `theme`, `pane` ...) | partly: the README lists them as subfeatures with their own `doc.go` |
+| `apps/smith/features/tui` nested packages | a subfeature is meant to be flat; `tui` has 27 nested packages (`commands`, `theme`, `pane` ...) | partly: the README lists them as subfeatures with their own `doc.go` |
 
 The convention asks for an exception to be written where the next reader will find it, stating
 the path, the rule waived, the constraint that forces it and whether it is temporary. Only
@@ -221,7 +229,7 @@ the `tui` entry does. The others are open items, not decisions.
 |---|---|
 | the rules for nine languages | `libs/plugin-vertical-slices/languages` |
 | the walk and the size limit | `libs/plugin-vertical-slices/layout/check_layout_use_case.go` (`SliceSize = 12`) |
-| the command | `apps/smith/slicecheck`, `smith slices check` |
+| the command | `apps/smith/features/slicecheck`, `smith slices check` |
 | the `slice-check` task and its dependency on `lint` | `libs/plugin-vertical-slices/plugin/slice_tasks_config.go` |
 | TypeScript rules | `packages/eslint-config/configs/vertical-slices.config.js` |
-| command assembly | `apps/smith/commandline/root_handler.go` |
+| command assembly | `apps/smith/features/commandline/root_handler.go` |

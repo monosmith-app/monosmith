@@ -34,4 +34,4 @@ One more setting. A package that is in `presets` but is not in any project shows
 
 ## Sources
 
-- `apps/smith/dependencies/find_updates_algorithm.go`, `docs/guides/shared-presets.md`
+- `apps/smith/features/dependencies/find_updates_algorithm.go`, `docs/guides/shared-presets.md`

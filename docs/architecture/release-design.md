@@ -3,7 +3,7 @@
 smith releases from the commit history. It reads conventional commits since each project's last
 tag, decides which projects release and at which version, then stamps, builds, publishes and tags
 each one in dependency order. Nothing is committed back: the tag is the record. This page follows
-that path through `apps/smith/release` and its neighbours, and says where each decision is
+that path through `apps/smith/features/release` and its neighbours, and says where each decision is
 recorded.
 
 Audience: contributors changing the release, and anyone debugging why smith proposed (or refused)
@@ -130,7 +130,7 @@ names the project had. It reports a version published without a tag, or tags beh
 `checkRegistries` then asks the registries whether they would accept the versions, before the first
 publish (`registry_probe_client.go`). `smith release --rehearse` runs that kind of check on its own,
 for every registry any package publishes to, with read-only requests and no plan
-(`apps/smith/releaserehearsal`; [ADR 0043](decisions/0043-a-release-is-rehearsed-against-its-registries-with-read-only-requests.md)).
+(`apps/smith/features/releaserehearsal`; [ADR 0043](decisions/0043-a-release-is-rehearsed-against-its-registries-with-read-only-requests.md)).
 
 ## Releasing one project
 
@@ -191,7 +191,7 @@ The re-packaging of one binary into every package manager is a core feature, not
 
 smith does not sign binaries with a paid certificate
 ([ADR 0011](decisions/0011-no-paid-code-signing.md)). It attaches `checksums.txt`, a CycloneDX SBOM per
-released app (`apps/smith/sbom` renders it from the components the project's plugin lists with `sbom/components`), npm provenance through the job's OIDC
+released app (`apps/smith/features/sbom` renders it from the components the project's plugin lists with `sbom/components`), npm provenance through the job's OIDC
 token, and, on GitHub, an SLSA build-provenance attestation of the archives in `dist/release`
 (a pipeline step, see [CI generation](ci-generation.md#supply-chain-steps)).
 
@@ -199,16 +199,16 @@ token, and, on GitHub, an SLSA build-provenance attestation of the archives in `
 
 | Concern | Path |
 |---|---|
-| Plan, tags, bump | `apps/smith/release/plan_release_use_case.go`, `bump_policy.go`, `semver_model.go`, `conventional_commit_mapper.go` |
-| Preflight, lineage | `preflight_policy.go`, `check_lineage_use_case.go`, `apps/smith/releaselineage` |
+| Plan, tags, bump | `apps/smith/features/release/plan_release_use_case.go`, `bump_policy.go`, `semver_model.go`, `conventional_commit_mapper.go` |
+| Preflight, lineage | `preflight_policy.go`, `check_lineage_use_case.go`, `apps/smith/features/releaselineage` |
 | Execute and one project | `run_release_use_case.go` |
 | Journal and report | `release_journal_store.go`, `release_report_contract.go`, `render_report_text_mapper.go` |
-| Notes, GitHub Release | `render_release_notes_mapper.go`, `apps/smith/githubrelease` |
+| Notes, GitHub Release | `render_release_notes_mapper.go`, `apps/smith/integrations/githubrelease` |
 | Re-packing | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems`, `pubpackage`, `linuxpackages`, `packagemanifests` |
-| SBOM | `apps/smith/sbom` |
+| SBOM | `apps/smith/features/sbom` |
 | Channels, API check | `release_channel_model.go`, `check_api_use_case.go`, `api_bump_policy.go` |
-| Registry rehearsal | `apps/smith/releaserehearsal` |
-| Pull request preview | `apps/smith/releasepreview` |
+| Registry rehearsal | `apps/smith/features/releaserehearsal` |
+| Pull request preview | `apps/smith/features/releasepreview` |
 | Protocol methods | `version/write`, `publish`, `published`, `ci` in `packages/plugin-sdk/protocol` |
 
 ## Decisions

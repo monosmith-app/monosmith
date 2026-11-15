@@ -16,6 +16,7 @@ var (
 // (setup.py, scripts) are not checked.
 var pythonRules = Rules{
 	Name:   "python",
+	Roots:  []string{"src", ""},
 	Inputs: []string{"**/*.py"},
 	Skip:   func(name string, _ Dir) bool { return strings.HasSuffix(name, ".egg-info") },
 	Folder: func(name string, in Dir) string {

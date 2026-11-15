@@ -42,4 +42,4 @@ cache, verify, serve settings). Not done: settings of plugins (`[projects.<name>
 
 ## Sources
 
-- `apps/smith/overridelearn/`, `apps/smith/doctor/override_suggestions_finding_mapper.go`
+- `apps/smith/features/overridelearn/`, `apps/smith/features/doctor/override_suggestions_finding_mapper.go`

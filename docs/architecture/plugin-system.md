@@ -84,7 +84,7 @@ program with the user's privileges, so `pluginhost.Start` treats it differently
 Trust does not make a plugin safe. The plugin still runs with the user's privileges, and there is
 no sandbox.
 
-Almost every command begins with `session.Open` (`apps/smith/session`):
+Almost every command begins with `session.Open` (`apps/smith/features/session`):
 
 1. **Find and load** the workspace: walk up from the current directory (or
    `SMITH_WORKSPACE_ROOT`) to the directory with `smith.toml`, parse it, and
@@ -102,7 +102,7 @@ Almost every command begins with `session.Open` (`apps/smith/session`):
    - the built-in *conventions* (docker, playwright, …), unless an external
      plugin of the same name replaced them.
    Before any child starts, every external plugin the workspace declares is
-   **admitted** (`apps/smith/pluginadmit`): it must be trusted, or smith asks
+   **admitted** (`apps/smith/features/pluginadmit`): it must be trusted, or smith asks
    (in a terminal) or refuses with a remedy (everywhere else; in CI a pin in
    `smith.toml` is required). See [External plugins: trust and
    environment](#external-plugins-trust-and-environment).
@@ -171,7 +171,7 @@ A project is made from plugins at **levels**:
 
 Exactly one language plugin and at most one scaffold per project; every other
 level can have several plugins. The rest of the make-up is checked by
-`ValidateMembers` (`apps/smith/pluginhost/stack_validator.go`) whenever a stack
+`ValidateMembers` (`apps/smith/features/pluginhost/stack_validator.go`) whenever a stack
 or a recipe is built:
 
 - every plugin plays only a level it declared in `roles`, and applies to the

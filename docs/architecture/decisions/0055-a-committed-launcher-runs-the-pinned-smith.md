@@ -43,4 +43,4 @@ note when the launcher is missing but a pin is set.
 
 ## Sources
 
-- `apps/smith/bootstrap/`, `apps/smith/cipipeline/smith_install_policy.go`
+- `apps/smith/features/bootstrap/`, `apps/smith/features/cipipeline/smith_install_policy.go`

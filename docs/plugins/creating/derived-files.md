@@ -56,4 +56,4 @@ version when the template changes ([ADR 0049](../../architecture/decisions/0049-
 
 `smith plugin check` calls `derive` on a plugin that advertises it. Unit-test the renderer with a
 temporary directory: write the files, call the function, compare the `DerivedFile` values. Run the
-host side with an end-to-end test of `smith derive`, as `apps/smith/goldenpath` does.
+host side with an end-to-end test of `smith derive`, as `apps/smith/features/goldenpath` does.

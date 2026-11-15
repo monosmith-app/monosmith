@@ -55,4 +55,4 @@ derive exists to solve.
 - Issue [#848](https://github.com/monosmith-app/monosmith/issues/848), issue
   [#847](https://github.com/monosmith-app/monosmith/issues/847)
 - [ADR 0046](0046-derived-files-have-an-owner-and-a-record.md)
-- `libs/plugin-node/siblingfiles`, `apps/smith/derive`
+- `libs/plugin-node/siblingfiles`, `apps/smith/features/derive`

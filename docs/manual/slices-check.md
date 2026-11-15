@@ -11,10 +11,25 @@ JVM or PHP projects against the vertical-slice rules:
   `validator`, `repository`, `client`, `store`, `middleware`, `error`, `config`, `enum`;
 - a module's or package's root holds only its entry files;
 - no folder is named `util`, `helper`, `common`, `shared`, `manager`, `processor`, `data` or
-  `misc`, and no file name has one of those words as a part (split on `_`, `.` and `-`), tests
-  included; `testdata` and `fixtures` folders and the setup files a test tool loads by name
+  `misc` (`shared` is allowed as a zone, below), and no file name has one of those words as a
+  part (split on `_`, `.` and `-`), tests included; `data` and `manager` count only as the whole
+  name before the role (`user_data_contract.go` and `account_manager_policy.py` are honest);
+  `testdata` and `fixtures` folders and the setup files a test tool loads by name
   (`spec_helper.rb`, `rails_helper.rb`, `test_helper.rb`) are not checked;
 - a slice with more than 12 production files is reported for review.
+
+An app (a project under `apps/`), and a project whose source root holds a zone folder, keeps
+every slice in a zone ([ADR 0100](../architecture/decisions/0100-apps-keep-their-slices-in-features-integrations-and-shared.md)):
+
+- the source root (Go: the module root; JVM: `src/main/<language>` down its package path;
+  Python, PHP and C++: `src` or the root; Rust: `src`; Dart and Ruby: `lib`) holds
+  `features/`, `integrations/` (one external system each) and `shared/` (no business
+  knowledge), and every other folder with sources there is reported;
+- `shared/` and `integrations/` import no feature, tests included;
+- a `model`, `policy`, `validator`, `error` or `enum` imports no integration and no `client`,
+  `repository` or `store`;
+- a package listed in `[conventions.vertical-slices] vendors` is imported only in
+  `integrations/` (tests exempt).
 
 The vertical-slices convention (`[conventions.vertical-slices]` in `smith.toml`) runs this
 as each project's `slice-check` task, so [`smith ci verify`](ci.md#verify) catches a violation.
@@ -108,6 +123,10 @@ The exit code is 1.
 | `<file> - a <language> file is <name>_<role>...` | Rename the file for its role, or move its code. |
 | `"util" is a junk drawer; name the folder for the outcome it serves` | Rename the folder after what it does. |
 | `"helper" is in the name of this file and names no outcome; name the file for what it does` | Rename the file after what it does. The word can be any part of the name, such as `parse_helper_mapper.go`. |
+| `reports/ - an app keeps its slices in features/, integrations/ or shared/` | Move the slice into the zone it belongs to: features for a business outcome, integrations for an external system, shared for a building block. |
+| `shared/ holds no business code, so it never imports a feature` | Move what both need into `shared/` or `integrations/`, or move the importing slice into `features/`. |
+| `a policy holds no I/O, so it imports no integration` | The file does I/O: give it the role it plays (`_use_case`, `_repository`), or move the call into a use case. |
+| `"github.com/lib/pq" is a vendor package: only a slice in integrations/ imports it` | Call the integration that wraps it, or move the code into that integration. |
 
 ## Related
 

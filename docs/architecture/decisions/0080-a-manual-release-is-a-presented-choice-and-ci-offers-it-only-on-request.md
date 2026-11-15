@@ -46,5 +46,5 @@ release therefore must be a choice that is presented with its consequences, neve
 
 ## Where to check
 
-`apps/smith/release/force_release_use_case.go` and its tests, `apps/smith/cipipeline/manual_release_*`
+`apps/smith/features/release/force_release_use_case.go` and its tests, `apps/smith/features/cipipeline/manual_release_*`
 and the golden file `testdata/github_manual_release.golden.yml`.

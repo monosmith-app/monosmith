@@ -42,5 +42,5 @@ real use is the first default change after 2.0.
 
 ## Sources
 
-- `apps/smith/workspace/defaults_vintage_policy.go`, `apps/smith/upgrade/adopt_defaults_use_case.go`,
-  `apps/smith/doctor/defaults_vintage_finding_mapper.go`
+- `apps/smith/features/workspace/defaults_vintage_policy.go`, `apps/smith/features/upgrade/adopt_defaults_use_case.go`,
+  `apps/smith/features/doctor/defaults_vintage_finding_mapper.go`

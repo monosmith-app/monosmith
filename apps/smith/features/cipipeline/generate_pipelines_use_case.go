@@ -1,0 +1,319 @@
+package cipipeline
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/cachecredentials"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/features/release"
+	"github.com/monosmith-app/monosmith/apps/smith/features/releasetable"
+	"github.com/monosmith-app/monosmith/apps/smith/features/session"
+	"github.com/monosmith-app/monosmith/apps/smith/features/splitrepo"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
+
+// Collect asks every plugin what CI needs for its projects.
+func Collect(s *session.Session) (Contributions, error) {
+	return collect(s, false)
+}
+
+// CollectForAssets is Collect for the assets job's setup: the plugins hear
+// of every project except those whose [release] install is false, because
+// their build command needs none of the project's dependencies.
+func CollectForAssets(s *session.Session) (Contributions, error) {
+	return collect(s, true)
+}
+
+// servedProjects are the projects a plugin is asked about. For the assets job
+// it leaves out those whose [release] install is false.
+func servedProjects(all []*projectgraph.Project, plugin string, assets bool) []protocol.Project {
+	var projects []protocol.Project
+	for _, p := range all {
+		if assets && release.SkipsAssetsInstall(p) {
+			continue
+		}
+		if p.ServedBy(plugin) {
+			projects = append(projects, p.Project)
+		}
+	}
+	return projects
+}
+
+func collect(s *session.Session, assets bool) (Contributions, error) {
+	var c Contributions
+	for _, client := range s.Plugins.Clients {
+		if !client.Info.Capabilities.CI {
+			continue
+		}
+		projects := servedProjects(s.Graph.Projects, client.Info.Plugin.Name, assets)
+		if len(projects) == 0 {
+			continue
+		}
+		var r protocol.CIResult
+		if err := client.Call(protocol.MethodCI, protocol.CIParams{Projects: projects, Audit: auditSettings(s.Config.CI)}, &r, time.Minute); err != nil {
+			return c, fmt.Errorf("plugin %s: %w", client.Info.Plugin.Name, err)
+		}
+		c.Add(r)
+		if len(r.Setup) > 0 {
+			c.SetupSections = append(c.SetupSections, SetupSection{Plugin: client.Info.Plugin.Name, Projects: len(projects), Steps: len(r.Setup)})
+		}
+	}
+	for _, p := range s.Graph.Projects {
+		if _, ok := p.Tasks[PackTask]; ok {
+			c.Pack = true
+		}
+		if release.BuildsAssetsFromCommand(p) {
+			for _, platform := range releasetable.CommandPlatforms {
+				if slices.Contains(p.Release.Platforms, platform) && !slices.Contains(c.AssetPlatforms, platform) {
+					c.AssetPlatforms = append(c.AssetPlatforms, platform)
+				}
+			}
+		}
+		if release.Native(p) {
+			c.Native = true
+			c.NativePublish = c.NativePublish || p.Kind == protocol.ProjectPackage || (p.Kind == protocol.ProjectApp && len(p.Deployers) > 0)
+			continue
+		}
+		// registry = "none" or "github-release": no registry credential and no
+		// pub.dev workflow. The GitHub token below is all such a project needs.
+		if !release.PublishesToNoRegistry(p) {
+			c.Add(protocol.CIResult{Credentials: release.DistributionCredentials(p.Release, "")})
+		}
+		if p.SplitRepo != "" {
+			c.Add(protocol.CIResult{Credentials: []protocol.Credential{splitrepo.Credential(p.SplitRepo)}})
+		}
+		if p.Release != nil && len(p.Release.NPM) > 0 && !release.PublishesToNoRegistry(p) {
+			c.Provenance = true
+		}
+		if p.Release != nil && s.Config.Release.GitHubReleases {
+			c.Attest = true
+		}
+		if s.Config.Release.DeploymentsOn() && release.PublishesToRegistry(p) {
+			c.Deployments = true
+		}
+		if release.PubPackage(p) != "" && !release.PublishesToNoRegistry(p) {
+			c.Pub = true
+		}
+	}
+	if s.Config.Release.RubyGemsTrustedPublishing {
+		c.UseRubyGemsTrustedPublishing()
+	}
+	if s.Config.Release.VSCEEntra {
+		c.UseVSCEEntra()
+	}
+	// A remote cache is read by every step that runs tasks.
+	c.Add(protocol.CIResult{Credentials: cachecredentials.For(s.Config.Cache.Remote)})
+	c.Add(protocol.CIResult{Credentials: SecretCredentials(s.Config.CI.Secrets)})
+	c.NativeRunners, c.NativeLinuxPackages = s.Config.CI.NativeRunners, s.Config.CI.NativeLinuxPackages
+	if s.Config.Release.GitHubReleases {
+		c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "GITHUB_TOKEN", Description: "creates GitHub Releases and uploads their assets", Required: true}}})
+	}
+	return c, nil
+}
+
+// Rendered maps each configured provider's file to its content.
+func Rendered(cfg workspace.Config, m Model) map[string]string {
+	m.Branches = cfg.CI.Branches
+	m.Attest = m.Attest && cfg.CI.Attest != "off"
+	m.AttestOptional = cfg.CI.Attest == "optional"
+	m.ArtifactsOptional, m.ArtifactRetentionDays = cfg.CI.Artifacts == "optional", cfg.CI.ArtifactRetentionDays
+	m.ManualRelease = cfg.CI.ManualRelease
+	m.NativeOn, m.Triggers, m.Audit, m.AuditCron, m.PublishOn = cfg.CI.NativeOn, cfg.CI.Triggers, cfg.CI.Audit, cfg.CI.AuditCron, cfg.CI.PublishOn
+	m.ChannelBranches = nil
+	for _, c := range cfg.Release.Channels {
+		m.ChannelBranches = append(m.ChannelBranches, c.Branch)
+	}
+	m.SiblingRepos = cfg.CI.SiblingRepos
+	out := map[string]string{}
+	for _, p := range cfg.CI.Providers {
+		switch p {
+		case "github":
+			out[GitHubPath] = RenderGitHub(m)
+			if m.Pub {
+				out[GitHubPubPath] = RenderGitHubPub(m)
+			}
+		case "azure":
+			m.AzurePool, m.AzureVariableGroups = cfg.CI.AzurePool, cfg.CI.AzureVariableGroups
+			out[AzurePath] = RenderAzure(m)
+		case "gitlab":
+			out[GitLabPath] = RenderGitLab(m)
+		case "circleci":
+			out[CircleCIPath] = RenderCircleCI(m)
+		case "bitbucket":
+			out[BitbucketPath] = RenderBitbucket(m)
+		}
+	}
+	if cfg.CI.Devcontainer {
+		out[DevcontainerPath] = RenderDevcontainer(cfg.Workspace.Name, m)
+	}
+	if len(out) > 0 && SmithInstallFor(m).Script {
+		// Pipelines that install smith with the script run this file instead
+		// of fetching one from a mutable branch, so it is committed with them.
+		out[InstallScriptPath] = InstallScript()
+	}
+	return out
+}
+
+// Write renders and writes every pipeline, keeping slot contents. It returns
+// the files that changed and any slot that could not be kept.
+func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, err error) {
+	rendered := Rendered(cfg, m)
+	for _, path := range Stale(root, rendered) {
+		if err := os.Remove(filepath.Join(root, filepath.FromSlash(path))); err != nil {
+			return changed, lost, err
+		}
+		removeEmptyParents(root, path)
+		changed = append(changed, path)
+	}
+	for path, content := range rendered {
+		full := filepath.Join(root, filepath.FromSlash(path))
+		old, readErr := os.ReadFile(full)
+		if readErr != nil && !errors.Is(readErr, fs.ErrNotExist) {
+			return changed, lost, readErr
+		}
+		content, missing := preserveFile(root, path, string(old), content)
+		for _, slot := range missing {
+			lost = append(lost, path+": "+slot)
+		}
+		if string(old) == content {
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			return changed, lost, err
+		}
+		if err := os.WriteFile(full, []byte(content), fileMode(path)); err != nil {
+			return changed, lost, err
+		}
+		changed = append(changed, path)
+	}
+	return changed, lost, nil
+}
+
+// removeEmptyParents removes the folders a removed file leaves empty, from its
+// own folder up to (not including) the workspace root. A folder that still
+// holds a file stays.
+func removeEmptyParents(root, path string) {
+	for dir := filepath.Dir(filepath.FromSlash(path)); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		if os.Remove(filepath.Join(root, dir)) != nil {
+			return
+		}
+	}
+}
+
+// PackageManagerInstallsSmith reports whether a project written in the named
+// language makes the pipelines install smith with a package manager (npm, pip or
+// dotnet), so the committed install script is no longer used.
+func PackageManagerInstallsSmith(language string) bool {
+	return !SmithInstallFor(Model{Toolchains: []protocol.Toolchain{{Name: language}}}).Script
+}
+
+// fileMode is 0755 for the installer (where the OS has modes) and 0644 for
+// the rest.
+func fileMode(path string) os.FileMode {
+	if path == InstallScriptPath {
+		return 0o755
+	}
+	return 0o644
+}
+
+// OwnedPaths are the files smith generates and may rewrite or delete. A file
+// at one of them belongs to smith only while it starts with smith's header.
+var OwnedPaths = []string{GitHubPath, GitHubPubPath, AzurePath, GitLabPath, CircleCIPath, BitbucketPath, DevcontainerPath, InstallScriptPath}
+
+// Stale lists the files smith generated that the workspace no longer asks for
+// (a provider dropped from [ci] providers): they carry smith's header and are
+// not rendered any more. A file without the header is the team's, and kept.
+func Stale(root string, rendered map[string]string) []string {
+	var out []string
+	for _, path := range OwnedPaths {
+		if _, wanted := rendered[path]; wanted {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err == nil && generated(string(raw)) {
+			out = append(out, path)
+		}
+	}
+	return out
+}
+
+// GeneratedFiles lists the pipeline and dev container files that exist in the
+// workspace and that smith generated, so smith may rewrite them. A file
+// without smith's header is the team's and is not listed.
+func GeneratedFiles(root string) []string {
+	var out []string
+	for _, path := range OwnedPaths {
+		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err == nil && generated(string(raw)) {
+			out = append(out, path)
+		}
+	}
+	return out
+}
+
+// IsGenerated reports whether a pipeline file's text is smith's own, so a
+// change to the workspace regenerates it instead of leaving it to the team.
+func IsGenerated(text string) bool { return generated(text) }
+
+func generated(text string) bool {
+	// The install script carries the header on its second line, after the shebang.
+	_, afterShebang, _ := strings.Cut(text, "\n")
+	return strings.HasPrefix(text, "# Generated by smith") || strings.HasPrefix(text, "// Generated by smith") ||
+		strings.HasPrefix(text, "#!") && strings.HasPrefix(afterShebang, "# Generated by smith")
+}
+
+// Planned is what Write would change: each differing pipeline's new content,
+// slot contents kept, and the slots that could not be kept.
+func Planned(root string, cfg workspace.Config, m Model) (files map[string]string, lost []string) {
+	files = map[string]string{}
+	for path, content := range Rendered(cfg, m) {
+		old, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		content, missing := preserveFile(root, path, string(old), content)
+		for _, slot := range missing {
+			lost = append(lost, path+": "+slot)
+		}
+		if string(old) != content {
+			files[path] = content
+		}
+	}
+	return files, lost
+}
+
+// Drift lists pipelines whose committed content differs from what the
+// workspace would generate now.
+func Drift(root string, cfg workspace.Config, m Model) []string {
+	var drift []string
+	rendered := Rendered(cfg, m)
+	for _, path := range Stale(root, rendered) {
+		drift = append(drift, path+" is no longer configured")
+	}
+	for path, content := range rendered {
+		old, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err != nil {
+			drift = append(drift, path+" is missing")
+			continue
+		}
+		if kept, _ := preserveFile(root, path, string(old), content); kept != string(old) {
+			drift = append(drift, path+" is out of date")
+		}
+	}
+	return drift
+}
+
+// Regenerate collects contributions and rewrites the pipelines of an open
+// workspace.
+func Regenerate(s *session.Session) (changed, lost []string, err error) {
+	c, err := Collect(s)
+	if err != nil {
+		return nil, nil, err
+	}
+	return Write(s.Root, s.Config, NewModel(c, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch))
+}

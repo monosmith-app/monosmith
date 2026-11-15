@@ -282,7 +282,7 @@ flowchart TB
 
 ## Explaining a miss: `smith why-miss`
 
-`whymiss.ExplainMiss` (`apps/smith/whymiss/explain_miss_use_case.go`) takes `project:task` and:
+`whymiss.ExplainMiss` (`apps/smith/features/whymiss/explain_miss_use_case.go`) takes `project:task` and:
 
 1. refuses a task that is not cacheable (`not-cached`);
 2. builds the task graph for that task and computes its key with `KeyOf`;
@@ -327,14 +327,14 @@ and where each value came from.
 
 | Concern | Path |
 |---|---|
-| key encoding | `apps/smith/taskcache/cache_key_algorithm.go` |
+| key encoding | `apps/smith/features/taskcache/cache_key_algorithm.go` |
 | input selection and digests | `select_inputs_algorithm.go`, `file_digest_store.go` |
-| computing a task's key | `apps/smith/taskrun/task_key_use_case.go` |
-| lookup, store, restore | `apps/smith/taskcache/store_result_use_case.go` |
+| computing a task's key | `apps/smith/features/taskrun/task_key_use_case.go` |
+| lookup, store, restore | `apps/smith/features/taskcache/store_result_use_case.go` |
 | local store | `local_storage_repository.go`, `storage_contract.go` |
 | last run and diff | `last_run_repository.go`, `diff_key_inputs_algorithm.go` |
-| pruning | `prune_cache_use_case.go`; wired by `apps/smith/cachemaintenance` (`prune_local_cache_use_case.go`, `prune_throttle_policy.go`, `prune_state_store.go`, `write_meter_store.go`) |
-| `smith cache` | `apps/smith/cachecommand` over `cachemaintenance` (`inspect_`, `verify_`, `clear_local_cache_use_case.go`) |
-| remote tier | `apps/smith/remotecache` |
-| choosing local or tiered storage | `apps/smith/session/open_session_use_case.go` |
-| the explanation | `apps/smith/whymiss` |
+| pruning | `prune_cache_use_case.go`; wired by `apps/smith/features/cachemaintenance` (`prune_local_cache_use_case.go`, `prune_throttle_policy.go`, `prune_state_store.go`, `write_meter_store.go`) |
+| `smith cache` | `apps/smith/features/cachecommand` over `cachemaintenance` (`inspect_`, `verify_`, `clear_local_cache_use_case.go`) |
+| remote tier | `apps/smith/features/remotecache` |
+| choosing local or tiered storage | `apps/smith/features/session/open_session_use_case.go` |
+| the explanation | `apps/smith/features/whymiss` |

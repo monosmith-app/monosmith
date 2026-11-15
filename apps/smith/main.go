@@ -7,7 +7,7 @@ package main
 import (
 	"os"
 
-	"github.com/monosmith-app/monosmith/apps/smith/commandline"
+	"github.com/monosmith-app/monosmith/apps/smith/features/commandline"
 )
 
 // version is stamped at build time with -ldflags "-X main.version=1.2.3".

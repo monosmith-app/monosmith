@@ -24,7 +24,7 @@ by hand first. A tool that moves a whole repository must not guess where, so smi
 - The move is `git mv` of every top-level entry except a fixed list that belongs to the repository:
   version control, CI, editor and agent settings, smith's files, repository documents (README,
   LICENSE, CHANGELOG, `docs`), compose files, and for Node the lockfiles. The list is in
-  `apps/smith/adoptmove`, not in the language plugins, because the protocol has no method that
+  `apps/smith/features/adoptmove`, not in the language plugins, because the protocol has no method that
   answers it and the list is the same for every ecosystem except the Node lockfiles. Leading-slash
   lines of `.gitignore` that name a moved entry are rewritten. Go module paths and file contents are
   not changed.

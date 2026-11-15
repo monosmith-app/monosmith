@@ -122,7 +122,7 @@ is never started and needs no trust. What smith protects against, and what it do
 ### How smith finds a plugin
 
 For every name it must start, smith resolves a command in this order (`LaunchCommand` in
-`apps/smith/pluginhost/find_plugins_use_case.go`):
+`apps/smith/features/pluginhost/find_plugins_use_case.go`):
 
 1. the `command` of `[plugins.external.<name>]` in `smith.toml`;
 2. a built-in plugin of that name, unless `smith.toml` has a `[plugins.external.<name>]` entry
@@ -210,7 +210,7 @@ is met and no two plugins conflict. The errors name both sides:
 
 The first three were produced by real runs, and are on the
 [troubleshooting page](troubleshooting-plugins.md#stacks-and-conventions); the last four are
-the code's messages (`apps/smith/pluginhost/stack_validator.go`).
+the code's messages (`apps/smith/features/pluginhost/stack_validator.go`).
 
 A stack declared in `smith.toml` that fails these checks is an error as soon as smith loads it. A
 stack a plugin publishes is kept with its problem, which is reported when a project uses it.

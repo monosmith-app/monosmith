@@ -1,6 +1,7 @@
 package languages
 
 import (
+	"path"
 	"regexp"
 	"sort"
 	"strings"
@@ -14,6 +15,15 @@ var Roles = []string{"handler", "use_case", "algorithm", "policy", "model", "con
 // folder is named for the outcome it serves.
 var ForbiddenFolders = map[string]bool{"util": true, "utils": true, "helper": true, "helpers": true, "common": true, "shared": true, "manager": true, "processor": true, "data": true, "misc": true}
 
+// WholeNameOnly are banned words that are honest inside a compound
+// (user_data_contract.go, account_manager_policy.py): only a file whose name,
+// before its role, is the word is reported.
+var WholeNameOnly = map[string]bool{"data": true, "manager": true}
+
+// Zones are the folders an app's source root holds; every slice is in one.
+// shared is a junk drawer anywhere else.
+var Zones = []string{"features", "integrations", "shared"}
+
 // ToolMandatedNames are file names a test tool loads by name, so a banned word
 // in them is not the project's choice: RSpec's and Minitest's setup files. The
 // file-name check skips them.
@@ -26,12 +36,66 @@ func BannedWordIn(name string) string {
 	if ToolMandatedNames[name] {
 		return ""
 	}
+	if stem := strings.ToLower(nameBeforeRole(name)); WholeNameOnly[stem] {
+		return stem
+	}
 	for _, part := range strings.FieldsFunc(strings.ToLower(name), func(r rune) bool { return r == '_' || r == '.' || r == '-' }) {
-		if ForbiddenFolders[part] {
+		if ForbiddenFolders[part] && !WholeNameOnly[part] {
 			return part
 		}
 	}
 	return ""
+}
+
+// RoleOf is the role a file's name ends in, in snake_case (use_case), or ""
+// when it ends in none: place_order_use_case.go, PlaceOrderUseCase.kt. A
+// test's marker (_test, test_, Test, Tests, _spec, Spec) is not part of it.
+func RoleOf(name string) string {
+	stem := withoutTestMarker(strings.TrimSuffix(name, path.Ext(name)))
+	for _, role := range rolesLongestFirst {
+		if strings.HasSuffix(stem, "_"+role) || strings.HasSuffix(stem, pascal(role)) && stem != pascal(role) {
+			return role
+		}
+	}
+	return ""
+}
+
+// withoutTestMarker takes a test's marker off a file stem.
+func withoutTestMarker(stem string) string {
+	for _, suffix := range []string{"_test", "_spec", "Tests", "Test", "Spec"} {
+		if cut, ok := strings.CutSuffix(stem, suffix); ok && cut != "" {
+			return cut
+		}
+	}
+	if cut, ok := strings.CutPrefix(stem, "test_"); ok && cut != "" {
+		return cut
+	}
+	return stem
+}
+
+// nameBeforeRole is a file's name without its extension, test marker and role.
+func nameBeforeRole(name string) string {
+	stem := withoutTestMarker(strings.TrimSuffix(name, path.Ext(name)))
+	if role := RoleOf(name); role != "" {
+		stem = strings.TrimSuffix(strings.TrimSuffix(stem, "_"+role), pascal(role))
+	}
+	return stem
+}
+
+// rolesLongestFirst lets use_case win over case-like shorter endings.
+var rolesLongestFirst = func() []string {
+	out := append([]string(nil), Roles...)
+	sort.Slice(out, func(i, j int) bool { return len(out[i]) > len(out[j]) })
+	return out
+}()
+
+// pascal spells one role in PascalCase: use_case -> UseCase.
+func pascal(role string) string {
+	var b strings.Builder
+	for _, word := range strings.Split(role, "_") {
+		b.WriteString(strings.ToUpper(word[:1]) + word[1:])
+	}
+	return b.String()
 }
 
 // Dir is a folder being checked.
@@ -50,6 +114,11 @@ type Dir struct {
 type Rules struct {
 	// Name is the language as its plugin names it (go, python, dart).
 	Name string
+	// Roots are where the project's sources start, tried in order, relative
+	// to the project root ("" is the root itself). From the first that
+	// exists, a chain of single folders is followed down (a JVM package
+	// path, lib/<gem>): the zones of an app sit there.
+	Roots []string
 	// Inputs are the globs the check reads, which key its cache.
 	Inputs []string
 	// Skip reports whether a folder holds nothing the rules check.

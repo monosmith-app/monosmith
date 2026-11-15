@@ -217,7 +217,7 @@ command = ["smith-plugin-azure-function"]
 ```
 
 A new language is a language plugin like any other.
-`apps/smith/goldenpath/testdata/kiwiplugin` is a complete one, for a made-up
+`apps/smith/features/goldenpath/testdata/kiwiplugin` is a complete one, for a made-up
 language, in about 200 lines: discovery and imports, generation, a published
 stack whose toolchain replaces a task, CI setup, doctor, versions and
 publishing. The end-to-end tests run it through all of smith. Installing

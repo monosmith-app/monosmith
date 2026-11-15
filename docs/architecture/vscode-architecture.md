@@ -190,7 +190,7 @@ also says the package goes to Open VSX; that path was not checked for this page.
 | Contributions (commands, views, settings, matchers) | `apps/vscode/package.json` (every shown text is a `%key%`) |
 | Texts people read | catalogue `libs/words/catalog/en/vscode_*.json` (keys `vscode.…`), shared keys listed in `libs/words/surface/vscode.json`; generated `apps/vscode/package.nls*.json` and `apps/vscode/src/shared/words/smith-words.config.ts` ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)) |
 | Integration tests | `apps/vscode/integration` |
-| Server side | `apps/smith/engineserver` |
+| Server side | `apps/smith/features/engineserver` |
 
 ## Decisions
 

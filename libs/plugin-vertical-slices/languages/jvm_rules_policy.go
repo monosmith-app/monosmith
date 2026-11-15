@@ -24,6 +24,7 @@ var (
 // src/test/ are <Name>Test, with test doubles in a testing package.
 var jvmRules = Rules{
 	Name:   "jvm",
+	Roots:  []string{"src/main/kotlin", "src/main/java", "src/main/scala", "src"},
 	Inputs: []string{"src/**/*.kt", "src/**/*.java"},
 	Skip: func(name string, in Dir) bool {
 		return (in.Rel == "" && name != "src") || jvmResources[name]

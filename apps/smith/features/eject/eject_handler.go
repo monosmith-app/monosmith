@@ -1,0 +1,146 @@
+package eject
+
+import (
+	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/shared/commandflags"
+	"io"
+	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/session"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tooldefaults"
+	"github.com/spf13/cobra"
+)
+
+// Command is `smith eject`.
+func Command(version string) *cobra.Command {
+	var all, force, dryRun, yes bool
+	cmd := &cobra.Command{
+		Use:   "eject [tool...]",
+		Short: "Copy smith's default configuration of a tool into the repository, to own and edit it",
+		Long: `Copy smith's default configuration of a tool into the repository.
+
+smith runs lint, type checks and tests with defaults it ships, so a repository
+needs no configuration of its own. When you want to change one, eject it: the
+default is copied to the file the tool reads (ruff.toml, .golangci.yml, ...) in
+the workspace root, and from then on that file replaces the default whole and
+smith passes no configuration of its own.
+
+Without arguments it lists the defaults that apply to this workspace. Name the
+tools to eject, or pass --all. A file that exists already is left alone unless
+--force replaces it.`,
+		Example: "  smith eject\n  smith eject ruff\n  smith eject mypy pytest\n  smith eject --all",
+		Args:    cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root, err := workspace.FindRoot(".")
+			if err != nil {
+				return err
+			}
+			if err := ResetDefaults(root); err != nil {
+				return err
+			}
+			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			out := cmd.OutOrStdout()
+			available := Available(s.Root)
+			if len(args) == 0 && !all {
+				return list(out, available)
+			}
+			tools, err := choose(args, all, available)
+			if err != nil {
+				return err
+			}
+			for _, t := range tools {
+				replaced := Replacements(s.Root, t, projectsUsing(s.Graph, t))
+				if force || dryRun {
+					for _, r := range replaced {
+						fmt.Fprintf(out, "%s is replaced by smith's default; the lines marked - are lost:\n%s\n", r.Path, r.Diff)
+					}
+				}
+				if dryRun {
+					fmt.Fprintf(out, "Dry run: the default of %s would be copied to its place. Nothing was changed.\n", t.Name)
+					continue
+				}
+				action := operationplan.Create
+				if len(replaced) > 0 {
+					action = operationplan.Change
+				}
+				target := t.Target
+				if t.PerProject {
+					target += " in each project"
+				}
+				goOn, err := operationplan.Gate(out, cmd.InOrStdin(), "eject "+t.Name, "Configuration you will own", []operationplan.Line{{Action: action, Path: target, Note: "smith's default of " + t.Name}}, yes, false)
+				if err != nil || !goOn {
+					return err
+				}
+				targets, err := Eject(s.Root, t, force, projectsUsing(s.Graph, t))
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(out, "Copied the default of %s to %s: it is yours now, and smith passes no configuration to %s.\n", t.Name, strings.Join(targets, ", "), t.Name)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&all, "all", false, "eject every default that applies")
+	cmd.Flags().BoolVar(&force, "force", false, "replace a file that exists already (the diff of what is lost is printed first)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be copied and what would be replaced; change nothing")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask; without a terminal the files are copied only with --yes")
+	return cmd
+}
+
+// choose resolves the names on the command line, or all of them, to tools whose
+// default applies.
+func choose(names []string, all bool, available []Candidate) ([]tooldefaults.Tool, error) {
+	var tools []tooldefaults.Tool
+	if all {
+		for _, c := range available {
+			tools = append(tools, c.Tool)
+		}
+		if len(tools) == 0 {
+			return nil, problem.New("no default applies to this workspace", "the repository configures its tools itself, or no project uses one")
+		}
+		return tools, nil
+	}
+	for _, n := range names {
+		t, ok := tooldefaults.Lookup(n)
+		if !ok {
+			return nil, problem.New("smith has no default for "+n, "the tools with a default: "+strings.Join(toolNames(), ", "))
+		}
+		tools = append(tools, t)
+	}
+	return tools, nil
+}
+
+func toolNames() []string {
+	var out []string
+	for _, t := range tooldefaults.Tools {
+		out = append(out, t.Name)
+	}
+	return out
+}
+
+func list(out io.Writer, available []Candidate) error {
+	if len(available) == 0 {
+		_, err := fmt.Fprintln(out, "No default applies to this workspace: the repository configures its tools, or no project uses one.")
+		return err
+	}
+	fmt.Fprintln(out, "Defaults smith passes to tools in this workspace (smith eject <tool> copies one to the repository):")
+	for _, c := range available {
+		note := ""
+		if c.Exists {
+			note = "  (" + c.Tool.Target + " exists already)"
+		}
+		target := c.Tool.Target
+		if c.Tool.PerProject {
+			target += " in each project"
+		}
+		fmt.Fprintf(out, "  %-14s %-7s -> %s%s\n", c.Tool.Name, c.Tool.Language, target, note)
+	}
+	return nil
+}

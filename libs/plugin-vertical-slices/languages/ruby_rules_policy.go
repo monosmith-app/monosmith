@@ -23,6 +23,7 @@ var (
 // with shared setup in support/ or testing/.
 var rubyRules = Rules{
 	Name:   "ruby",
+	Roots:  []string{"lib"},
 	Inputs: []string{"lib/**/*.rb", "spec/**/*.rb", "test/**/*.rb"},
 	Skip: func(name string, in Dir) bool {
 		return in.Rel == "" && name != "lib" && name != "spec" && name != "test"

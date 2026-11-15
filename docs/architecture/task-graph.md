@@ -40,7 +40,7 @@ override replaces the whole list, with one exception made on purpose: a dependen
 that the same plugin contributed alongside (an `e2e-browsers` task that exists only for
 `e2e`) is kept, because dropping it would break the task. Any other dependency the override
 leaves out is recorded in `Project.Dropped`, which `smith doctor` names. The code is
-`apps/smith/projectgraph/apply_stacks_use_case.go`, `apply_conventions_use_case.go` (the
+`apps/smith/features/projectgraph/apply_stacks_use_case.go`, `apply_conventions_use_case.go` (the
 `merge` function) and `task_overrides_mapper.go`.
 
 The shape of a task is `protocol.Task` (`packages/plugin-sdk/protocol/project_contract.go`):
@@ -60,7 +60,7 @@ The shape of a task is `protocol.Task` (`packages/plugin-sdk/protocol/project_co
 ## From a request to a graph
 
 `smith run build test -p web --affected` becomes a `taskrun.Request`. `RunInWorkspace`
-(`apps/smith/taskrun/run_in_workspace_use_case.go`) does this, in order:
+(`apps/smith/features/taskrun/run_in_workspace_use_case.go`) does this, in order:
 
 1. `Graph.Select(req.Projects)` turns the `-p` patterns into project names
    ([The project graph](project-graph.md#selecting-projects)).
@@ -211,10 +211,10 @@ for `--json-events` and `smith serve` ([ADR 0026](decisions/0026-event-stream-an
 
 | Concern | Path |
 |---|---|
-| layering tasks and sources | `apps/smith/projectgraph/task_overrides_mapper.go`, `apply_conventions_use_case.go`, `apply_stacks_use_case.go` |
-| the graph | `apps/smith/taskgraph/build_task_graph_use_case.go`, `serve_target_policy.go`, `task_graph_model.go` |
-| a run, from request to summary | `apps/smith/taskrun/run_in_workspace_use_case.go`, `run_tasks_use_case.go` |
-| starting and killing processes | `apps/smith/taskrun/run_process_use_case.go`, `process_tree_client.go`, `process_tree_client_windows.go` |
-| serving an app | `apps/smith/taskrun/serve_task_use_case.go` |
-| events | `apps/smith/runevents` |
-| `smith explain` | `apps/smith/explain` |
+| layering tasks and sources | `apps/smith/features/projectgraph/task_overrides_mapper.go`, `apply_conventions_use_case.go`, `apply_stacks_use_case.go` |
+| the graph | `apps/smith/features/taskgraph/build_task_graph_use_case.go`, `serve_target_policy.go`, `task_graph_model.go` |
+| a run, from request to summary | `apps/smith/features/taskrun/run_in_workspace_use_case.go`, `run_tasks_use_case.go` |
+| starting and killing processes | `apps/smith/features/taskrun/run_process_use_case.go`, `process_tree_client.go`, `process_tree_client_windows.go` |
+| serving an app | `apps/smith/features/taskrun/serve_task_use_case.go` |
+| events | `apps/smith/features/runevents` |
+| `smith explain` | `apps/smith/features/explain` |

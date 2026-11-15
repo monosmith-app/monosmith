@@ -8,97 +8,97 @@
     <depends>org.jetbrains.plugins.terminal</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="MonoSmith" anchor="right" factoryClass="dev.monosmith.jetbrains.toolwindow.ProjectsToolWindowHandler"/>
+        <toolWindow id="MonoSmith" anchor="right" factoryClass="dev.monosmith.jetbrains.features.toolwindow.ProjectsToolWindowHandler"/>
         <notificationGroup id="MonoSmith" displayType="BALLOON"/>
-        <postStartupActivity implementation="dev.monosmith.jetbrains.tabcompletion.TabCompletionStartupHandler"/>
+        <postStartupActivity implementation="dev.monosmith.jetbrains.features.tabcompletion.TabCompletionStartupHandler"/>
     </extensions>
 
     <actions>
         <group id="MonoSmith.Menu" popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
 
-            <action id="MonoSmith.AddProject" class="dev.monosmith.jetbrains.smithaction.AddProjectActionHandler"/>
-            <action id="MonoSmith.ComposeStack" class="dev.monosmith.jetbrains.smithaction.ComposeStackActionHandler"/>
-            <action id="MonoSmith.AddLibrary" class="dev.monosmith.jetbrains.smithaction.AddLibraryActionHandler"/>
-            <action id="MonoSmith.InstallPackage" class="dev.monosmith.jetbrains.smithaction.InstallPackageActionHandler"/>
+            <action id="MonoSmith.AddProject" class="dev.monosmith.jetbrains.features.smithaction.AddProjectActionHandler"/>
+            <action id="MonoSmith.ComposeStack" class="dev.monosmith.jetbrains.features.smithaction.ComposeStackActionHandler"/>
+            <action id="MonoSmith.AddLibrary" class="dev.monosmith.jetbrains.features.smithaction.AddLibraryActionHandler"/>
+            <action id="MonoSmith.InstallPackage" class="dev.monosmith.jetbrains.features.smithaction.InstallPackageActionHandler"/>
             <separator/>
-            <action id="MonoSmith.NewWorkspace" class="dev.monosmith.jetbrains.smithaction.NewWorkspaceActionHandler"/>
-            <action id="MonoSmith.NewRecipe" class="dev.monosmith.jetbrains.smithaction.NewRecipeActionHandler"/>
-            <action id="MonoSmith.InstallTools" class="dev.monosmith.jetbrains.smithaction.InstallToolsActionHandler"/>
-            <action id="MonoSmith.AdoptFolder" class="dev.monosmith.jetbrains.smithaction.AdoptFolderActionHandler"/>
-            <action id="MonoSmith.ConvertFolder" class="dev.monosmith.jetbrains.smithaction.ConvertFolderActionHandler"/>
+            <action id="MonoSmith.NewWorkspace" class="dev.monosmith.jetbrains.features.smithaction.NewWorkspaceActionHandler"/>
+            <action id="MonoSmith.NewRecipe" class="dev.monosmith.jetbrains.features.smithaction.NewRecipeActionHandler"/>
+            <action id="MonoSmith.InstallTools" class="dev.monosmith.jetbrains.features.smithaction.InstallToolsActionHandler"/>
+            <action id="MonoSmith.AdoptFolder" class="dev.monosmith.jetbrains.features.smithaction.AdoptFolderActionHandler"/>
+            <action id="MonoSmith.ConvertFolder" class="dev.monosmith.jetbrains.features.smithaction.ConvertFolderActionHandler"/>
             <separator/>
-            <action id="MonoSmith.RunAll" class="dev.monosmith.jetbrains.smithaction.RunAllActionHandler"/>
-            <action id="MonoSmith.RunAffected" class="dev.monosmith.jetbrains.smithaction.RunAffectedActionHandler"/>
-            <action id="MonoSmith.DevServers" class="dev.monosmith.jetbrains.smithaction.DevServersActionHandler"/>
+            <action id="MonoSmith.RunAll" class="dev.monosmith.jetbrains.features.smithaction.RunAllActionHandler"/>
+            <action id="MonoSmith.RunAffected" class="dev.monosmith.jetbrains.features.smithaction.RunAffectedActionHandler"/>
+            <action id="MonoSmith.DevServers" class="dev.monosmith.jetbrains.features.smithaction.DevServersActionHandler"/>
             <separator/>
             <group id="MonoSmith.Project" popup="true">
-                <action id="MonoSmith.RemoveProject" class="dev.monosmith.jetbrains.smithaction.RemoveProjectActionHandler"/>
-                <action id="MonoSmith.ChangeKind" class="dev.monosmith.jetbrains.smithaction.ChangeKindActionHandler"/>
-                <action id="MonoSmith.UnlinkLibrary" class="dev.monosmith.jetbrains.smithaction.UnlinkLibraryActionHandler"/>
-                <action id="MonoSmith.SwapChoice" class="dev.monosmith.jetbrains.smithaction.SwapChoiceActionHandler"/>
-                <action id="MonoSmith.UpdateDependencies" class="dev.monosmith.jetbrains.smithaction.UpdateDependenciesActionHandler"/>
-                <action id="MonoSmith.AlignDependencies" class="dev.monosmith.jetbrains.smithaction.AlignDependenciesActionHandler"/>
-                <action id="MonoSmith.SyncVersions" class="dev.monosmith.jetbrains.smithaction.SyncVersionsActionHandler"/>
+                <action id="MonoSmith.RemoveProject" class="dev.monosmith.jetbrains.features.smithaction.RemoveProjectActionHandler"/>
+                <action id="MonoSmith.ChangeKind" class="dev.monosmith.jetbrains.features.smithaction.ChangeKindActionHandler"/>
+                <action id="MonoSmith.UnlinkLibrary" class="dev.monosmith.jetbrains.features.smithaction.UnlinkLibraryActionHandler"/>
+                <action id="MonoSmith.SwapChoice" class="dev.monosmith.jetbrains.features.smithaction.SwapChoiceActionHandler"/>
+                <action id="MonoSmith.UpdateDependencies" class="dev.monosmith.jetbrains.features.smithaction.UpdateDependenciesActionHandler"/>
+                <action id="MonoSmith.AlignDependencies" class="dev.monosmith.jetbrains.features.smithaction.AlignDependenciesActionHandler"/>
+                <action id="MonoSmith.SyncVersions" class="dev.monosmith.jetbrains.features.smithaction.SyncVersionsActionHandler"/>
             </group>
             <group id="MonoSmith.Environments" popup="true">
-                <action id="MonoSmith.EnvironmentsList" class="dev.monosmith.jetbrains.smithaction.EnvironmentsListActionHandler"/>
-                <action id="MonoSmith.EnvironmentsAdd" class="dev.monosmith.jetbrains.smithaction.EnvironmentsAddActionHandler"/>
-                <action id="MonoSmith.EnvironmentsRemove" class="dev.monosmith.jetbrains.smithaction.EnvironmentsRemoveActionHandler"/>
+                <action id="MonoSmith.EnvironmentsList" class="dev.monosmith.jetbrains.features.smithaction.EnvironmentsListActionHandler"/>
+                <action id="MonoSmith.EnvironmentsAdd" class="dev.monosmith.jetbrains.features.smithaction.EnvironmentsAddActionHandler"/>
+                <action id="MonoSmith.EnvironmentsRemove" class="dev.monosmith.jetbrains.features.smithaction.EnvironmentsRemoveActionHandler"/>
             </group>
             <group id="MonoSmith.Derive" popup="true">
-                <action id="MonoSmith.DeriveFiles" class="dev.monosmith.jetbrains.smithaction.DeriveFilesActionHandler"/>
-                <action id="MonoSmith.DeriveCheck" class="dev.monosmith.jetbrains.smithaction.DeriveCheckActionHandler"/>
-                <action id="MonoSmith.DerivePreview" class="dev.monosmith.jetbrains.smithaction.DerivePreviewActionHandler"/>
+                <action id="MonoSmith.DeriveFiles" class="dev.monosmith.jetbrains.features.smithaction.DeriveFilesActionHandler"/>
+                <action id="MonoSmith.DeriveCheck" class="dev.monosmith.jetbrains.features.smithaction.DeriveCheckActionHandler"/>
+                <action id="MonoSmith.DerivePreview" class="dev.monosmith.jetbrains.features.smithaction.DerivePreviewActionHandler"/>
             </group>
             <group id="MonoSmith.Cache" popup="true">
-                <action id="MonoSmith.CacheStatus" class="dev.monosmith.jetbrains.smithaction.CacheStatusActionHandler"/>
-                <action id="MonoSmith.CacheVerify" class="dev.monosmith.jetbrains.smithaction.CacheVerifyActionHandler"/>
-                <action id="MonoSmith.CacheRepair" class="dev.monosmith.jetbrains.smithaction.CacheRepairActionHandler"/>
-                <action id="MonoSmith.CachePrune" class="dev.monosmith.jetbrains.smithaction.CachePruneActionHandler"/>
-                <action id="MonoSmith.CacheClear" class="dev.monosmith.jetbrains.smithaction.CacheClearActionHandler"/>
+                <action id="MonoSmith.CacheStatus" class="dev.monosmith.jetbrains.features.smithaction.CacheStatusActionHandler"/>
+                <action id="MonoSmith.CacheVerify" class="dev.monosmith.jetbrains.features.smithaction.CacheVerifyActionHandler"/>
+                <action id="MonoSmith.CacheRepair" class="dev.monosmith.jetbrains.features.smithaction.CacheRepairActionHandler"/>
+                <action id="MonoSmith.CachePrune" class="dev.monosmith.jetbrains.features.smithaction.CachePruneActionHandler"/>
+                <action id="MonoSmith.CacheClear" class="dev.monosmith.jetbrains.features.smithaction.CacheClearActionHandler"/>
             </group>
             <group id="MonoSmith.Pipelines" popup="true">
-                <action id="MonoSmith.AddPipeline" class="dev.monosmith.jetbrains.smithaction.AddPipelineActionHandler"/>
-                <action id="MonoSmith.RegenerateCi" class="dev.monosmith.jetbrains.smithaction.RegenerateCiActionHandler"/>
-                <action id="MonoSmith.TauriAdd" class="dev.monosmith.jetbrains.smithaction.TauriAddActionHandler"/>
-                <action id="MonoSmith.TauriIcons" class="dev.monosmith.jetbrains.smithaction.TauriIconsActionHandler"/>
-                <action id="MonoSmith.DockerDescription" class="dev.monosmith.jetbrains.smithaction.DockerDescriptionActionHandler"/>
+                <action id="MonoSmith.AddPipeline" class="dev.monosmith.jetbrains.features.smithaction.AddPipelineActionHandler"/>
+                <action id="MonoSmith.RegenerateCi" class="dev.monosmith.jetbrains.features.smithaction.RegenerateCiActionHandler"/>
+                <action id="MonoSmith.TauriAdd" class="dev.monosmith.jetbrains.features.smithaction.TauriAddActionHandler"/>
+                <action id="MonoSmith.TauriIcons" class="dev.monosmith.jetbrains.features.smithaction.TauriIconsActionHandler"/>
+                <action id="MonoSmith.DockerDescription" class="dev.monosmith.jetbrains.features.smithaction.DockerDescriptionActionHandler"/>
             </group>
             <group id="MonoSmith.Plugins" popup="true">
-                <action id="MonoSmith.PluginEnable" class="dev.monosmith.jetbrains.smithaction.PluginEnableActionHandler"/>
-                <action id="MonoSmith.PluginDisable" class="dev.monosmith.jetbrains.smithaction.PluginDisableActionHandler"/>
+                <action id="MonoSmith.PluginEnable" class="dev.monosmith.jetbrains.features.smithaction.PluginEnableActionHandler"/>
+                <action id="MonoSmith.PluginDisable" class="dev.monosmith.jetbrains.features.smithaction.PluginDisableActionHandler"/>
             </group>
             <group id="MonoSmith.Read" popup="true">
-                <action id="MonoSmith.WhyMiss" class="dev.monosmith.jetbrains.smithaction.WhyMissActionHandler"/>
-                <action id="MonoSmith.ToolsList" class="dev.monosmith.jetbrains.smithaction.ToolsListActionHandler"/>
-                <action id="MonoSmith.Info" class="dev.monosmith.jetbrains.smithaction.InfoActionHandler"/>
-                <action id="MonoSmith.Copies" class="dev.monosmith.jetbrains.smithaction.CopiesActionHandler"/>
+                <action id="MonoSmith.WhyMiss" class="dev.monosmith.jetbrains.features.smithaction.WhyMissActionHandler"/>
+                <action id="MonoSmith.ToolsList" class="dev.monosmith.jetbrains.features.smithaction.ToolsListActionHandler"/>
+                <action id="MonoSmith.Info" class="dev.monosmith.jetbrains.features.smithaction.InfoActionHandler"/>
+                <action id="MonoSmith.Copies" class="dev.monosmith.jetbrains.features.smithaction.CopiesActionHandler"/>
             </group>
-            <action id="MonoSmith.OneVersion" class="dev.monosmith.jetbrains.smithaction.OneVersionActionHandler"/>
-            <action id="MonoSmith.AgentFile" class="dev.monosmith.jetbrains.smithaction.AgentFileActionHandler"/>
-            <action id="MonoSmith.McpInstall" class="dev.monosmith.jetbrains.smithaction.McpInstallActionHandler"/>
+            <action id="MonoSmith.OneVersion" class="dev.monosmith.jetbrains.features.smithaction.OneVersionActionHandler"/>
+            <action id="MonoSmith.AgentFile" class="dev.monosmith.jetbrains.features.smithaction.AgentFileActionHandler"/>
+            <action id="MonoSmith.McpInstall" class="dev.monosmith.jetbrains.features.smithaction.McpInstallActionHandler"/>
             <separator/>
-            <action id="MonoSmith.Commit" class="dev.monosmith.jetbrains.smithaction.CommitChangesActionHandler"/>
-            <action id="MonoSmith.Undo" class="dev.monosmith.jetbrains.smithaction.UndoActionHandler"/>
-            <action id="MonoSmith.Release" class="dev.monosmith.jetbrains.smithaction.ReleaseActionHandler"/>
-            <action id="MonoSmith.ReleasePreview" class="dev.monosmith.jetbrains.smithaction.ReleasePreviewActionHandler"/>
+            <action id="MonoSmith.Commit" class="dev.monosmith.jetbrains.features.smithaction.CommitChangesActionHandler"/>
+            <action id="MonoSmith.Undo" class="dev.monosmith.jetbrains.features.smithaction.UndoActionHandler"/>
+            <action id="MonoSmith.Release" class="dev.monosmith.jetbrains.features.smithaction.ReleaseActionHandler"/>
+            <action id="MonoSmith.ReleasePreview" class="dev.monosmith.jetbrains.features.smithaction.ReleasePreviewActionHandler"/>
             <separator/>
-            <action id="MonoSmith.Doctor" class="dev.monosmith.jetbrains.smithaction.DoctorActionHandler"/>
-            <action id="MonoSmith.DoctorFix" class="dev.monosmith.jetbrains.smithaction.DoctorFixActionHandler"/>
-            <action id="MonoSmith.Divergences" class="dev.monosmith.jetbrains.smithaction.DivergencesActionHandler"/>
+            <action id="MonoSmith.Doctor" class="dev.monosmith.jetbrains.features.smithaction.DoctorActionHandler"/>
+            <action id="MonoSmith.DoctorFix" class="dev.monosmith.jetbrains.features.smithaction.DoctorFixActionHandler"/>
+            <action id="MonoSmith.Divergences" class="dev.monosmith.jetbrains.features.smithaction.DivergencesActionHandler"/>
             <separator/>
-            <action id="MonoSmith.OpenReport" class="dev.monosmith.jetbrains.smithaction.OpenReportActionHandler"/>
-            <action id="MonoSmith.InstallPlugin" class="dev.monosmith.jetbrains.smithaction.InstallPluginActionHandler"/>
-            <action id="MonoSmith.EditSettings" class="dev.monosmith.jetbrains.smithaction.EditSettingsActionHandler"/>
-            <action id="MonoSmith.TryCommand" class="dev.monosmith.jetbrains.smithaction.TryCommandActionHandler"/>
-            <action id="MonoSmith.Bootstrap" class="dev.monosmith.jetbrains.smithaction.BootstrapLauncherActionHandler"/>
-            <action id="MonoSmith.TabCompletion" class="dev.monosmith.jetbrains.smithaction.TabCompletionActionHandler"/>
-            <action id="MonoSmith.InstallAgent" class="dev.monosmith.jetbrains.smithaction.InstallAgentActionHandler"/>
-            <action id="MonoSmith.ExplainProject" class="dev.monosmith.jetbrains.smithaction.ExplainProjectActionHandler"/>
-            <action id="MonoSmith.WhyAnything" class="dev.monosmith.jetbrains.smithaction.WhyAnythingActionHandler"/>
+            <action id="MonoSmith.OpenReport" class="dev.monosmith.jetbrains.features.smithaction.OpenReportActionHandler"/>
+            <action id="MonoSmith.InstallPlugin" class="dev.monosmith.jetbrains.features.smithaction.InstallPluginActionHandler"/>
+            <action id="MonoSmith.EditSettings" class="dev.monosmith.jetbrains.features.smithaction.EditSettingsActionHandler"/>
+            <action id="MonoSmith.TryCommand" class="dev.monosmith.jetbrains.features.smithaction.TryCommandActionHandler"/>
+            <action id="MonoSmith.Bootstrap" class="dev.monosmith.jetbrains.features.smithaction.BootstrapLauncherActionHandler"/>
+            <action id="MonoSmith.TabCompletion" class="dev.monosmith.jetbrains.features.smithaction.TabCompletionActionHandler"/>
+            <action id="MonoSmith.InstallAgent" class="dev.monosmith.jetbrains.features.smithaction.InstallAgentActionHandler"/>
+            <action id="MonoSmith.ExplainProject" class="dev.monosmith.jetbrains.features.smithaction.ExplainProjectActionHandler"/>
+            <action id="MonoSmith.WhyAnything" class="dev.monosmith.jetbrains.features.smithaction.WhyAnythingActionHandler"/>
             <action id="MonoSmith.Why"
-                    class="dev.monosmith.jetbrains.smithaction.WhyActionHandler">
+                    class="dev.monosmith.jetbrains.features.smithaction.WhyActionHandler">
                 <add-to-group group-id="EditorPopupMenu" anchor="last"/>
                 <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             </action>

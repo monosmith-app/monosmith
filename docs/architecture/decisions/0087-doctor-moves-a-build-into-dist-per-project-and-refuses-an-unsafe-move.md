@@ -53,4 +53,4 @@ on a converted workspace showed two further facts:
 ## Where to check
 
 `libs/plugin-node/manifestfixes/migrate_build_fix_mapper.go`, `libs/plugin-node/pipeline/check_build_dir_use_case.go`,
-`apps/smith/configedit/set_config_value_use_case.go`, `docs/manual/doctor.md`.
+`apps/smith/features/configedit/set_config_value_use_case.go`, `docs/manual/doctor.md`.

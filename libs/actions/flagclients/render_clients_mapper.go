@@ -37,7 +37,7 @@ func TypeScript(concepts []flagvocabulary.Concept) string {
 // text of SmithFlagsConfig.kt in the smithcommand package.
 func Kotlin(concepts []flagvocabulary.Concept) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "package dev.monosmith.jetbrains.smithcommand\n\n/**\n * %s\n */\nobject SmithFlagsConfig {\n", header)
+	fmt.Fprintf(&b, "package dev.monosmith.jetbrains.integrations.smithcommand\n\n/**\n * %s\n */\nobject SmithFlagsConfig {\n", header)
 	for _, c := range concepts {
 		name := strings.ToUpper(strings.ReplaceAll(c.ID, "-", "_"))
 		fmt.Fprintf(&b, "    /** %s. */\n    const val %s = \"%s\"\n\n", capitalise(c.Meaning), name, spelling(c))

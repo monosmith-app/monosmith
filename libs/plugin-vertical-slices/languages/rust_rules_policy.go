@@ -19,6 +19,7 @@ var (
 // doubles in a testing/ folder; unit tests stay inside the file they test.
 var rustRules = Rules{
 	Name:   "rust",
+	Roots:  []string{"src"},
 	Inputs: []string{"src/**/*.rs", "tests/**/*.rs"},
 	Skip:   func(name string, in Dir) bool { return in.Rel == "" && name != "src" && name != "tests" },
 	Folder: func(name string, _ Dir) string {

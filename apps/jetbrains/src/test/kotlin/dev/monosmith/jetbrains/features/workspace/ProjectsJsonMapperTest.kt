@@ -1,0 +1,29 @@
+package dev.monosmith.jetbrains.features.workspace
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class ProjectsJsonMapperTest {
+    @Test
+    fun readsProjectsAndTheirTasks() {
+        val json = """[{"name":"api","dir":"apps/api","kind":"app","language":"go","deps":[],"tasks":["build","test"]}]"""
+        assertEquals(
+            listOf(SmithProjectContract("api", "apps/api", "app", "go", listOf("build", "test"))),
+            ProjectsJsonMapper.toProjects(json),
+        )
+    }
+
+    @Test
+    fun readsTheProjectsADependsOn() {
+        val json = """[{"name":"web","dir":"apps/web","kind":"app","language":"node","deps":["ui","core"],"tasks":[]}]"""
+        assertEquals(listOf("ui", "core"), ProjectsJsonMapper.toProjects(json).single().deps)
+    }
+
+    @Test
+    fun toleratesMissingOptionalFields() {
+        assertEquals(
+            listOf(SmithProjectContract("x", "x", "", "", emptyList())),
+            ProjectsJsonMapper.toProjects("""[{"name":"x","dir":"x"}]"""),
+        )
+    }
+}

@@ -31,7 +31,7 @@ func TestCheckGo(t *testing.T) {
 		"utils/x_mapper.go",
 		"testdata/whatever.go", ".hidden/bad.go", "vendor/bad.go",
 	)
-	r, err := Check(root, "go")
+	r, err := Check(root, "go", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestCheckPython(t *testing.T) {
 		"tests/conftest.py", "tests/test_greet_use_case.py", "tests/fixtures/sample.py",
 		".venv/lib/x.py", "src/kit.egg-info/x.py",
 	)
-	r, err := Check(root, "python")
+	r, err := Check(root, "python", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestCheckDart(t *testing.T) {
 		"integration_test/app_test.dart",
 		"android/app/src/main/kotlin/Main.dart", "example/lib/whatever.dart", ".dart_tool/x.dart", "build/x.dart",
 	)
-	r, err := Check(root, "dart")
+	r, err := Check(root, "dart", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestCheckRust(t *testing.T) {
 		"tests/greet_test.rs", "tests/testing/fake_clock.rs", "tests/smoke.rs",
 		"benches/x.rs", "target/debug/x.rs",
 	)
-	r, err := Check(root, "rust")
+	r, err := Check(root, "rust", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestCheckRuby(t *testing.T) {
 		"spec/spec_helper.rb", "spec/kit/greeting/greet_use_case_spec.rb", "spec/support/fake_clock.rb", "spec/sample.rb",
 		"test/test_helper.rb", "test/kit/greet_use_case_test.rb",
 	)
-	r, err := Check(root, "ruby")
+	r, err := Check(root, "ruby", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestCheckCpp(t *testing.T) {
 		"include/kit/greeting.hpp", "include/kit/greeting/greet_use_case.hpp", "include/kit/extra.hpp",
 		"tests/greeting/greet_use_case_test.cpp", "tests/orders/PlaceOrderUseCaseTest.cpp", "tests/testing/fake_clock.hpp", "tests/sample.cpp",
 	)
-	r, err := Check(root, "cpp")
+	r, err := Check(root, "cpp", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestCheckDotnet(t *testing.T) {
 		"tests/Kit.Tests.csproj", "tests/Greeting/GreetUseCaseTests.cs", "tests/Testing/FakeClock.cs", "tests/Sample.cs",
 		"bin/Debug/x.cs", "obj/x.cs", "Properties/AssemblyInfo.cs",
 	)
-	r, err := Check(root, "dotnet")
+	r, err := Check(root, "dotnet", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +238,7 @@ func TestCheckJvm(t *testing.T) {
 		"src/test/kotlin/com/acme/kit/greeting/GreetUseCaseTest.kt", "src/test/kotlin/com/acme/kit/testing/FakeClock.kt",
 		"src/test/kotlin/com/acme/kit/Sample.kt", "src/androidTest/kotlin/com/acme/kit/GreetIT.kt",
 	)
-	r, err := Check(root, "jvm")
+	r, err := Check(root, "jvm", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +265,7 @@ func TestCheckPhp(t *testing.T) {
 		"src/Greeting/GreetUseCase.php", "src/Greeting/Stuff.php", "src/orders/PlaceOrderUseCase.php", "src/Helpers/FormatMapper.php",
 		"tests/bootstrap.php", "tests/Greeting/GreetUseCaseTest.php", "tests/Testing/FakeClock.php", "tests/Sample.php",
 	)
-	r, err := Check(root, "php")
+	r, err := Check(root, "php", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestCheckWarnsAboutLargeSlices(t *testing.T) {
 	for i := range SliceSize + 1 {
 		files = append(files, fmt.Sprintf("big/step%c_use_case.go", 'a'+i), fmt.Sprintf("big/step%c_use_case_test.go", 'a'+i))
 	}
-	r, err := Check(tree(t, append(files, "big/doc.go", "small/one_model.go")...), "go")
+	r, err := Check(tree(t, append(files, "big/doc.go", "small/one_model.go")...), "go", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestCheckWarnsAboutLargeSlices(t *testing.T) {
 }
 
 func TestCheckRejectsOtherLanguages(t *testing.T) {
-	if _, err := Check(t.TempDir(), "node"); err == nil {
+	if _, err := Check(t.TempDir(), "node", nil); err == nil {
 		t.Fatal("node is checked by @monosmith/eslint-config, not here")
 	}
 }
@@ -320,7 +320,7 @@ func TestCheckRejectsABannedWordInAFileName(t *testing.T) {
 			[]string{`lib/kit/orders/misc_policy.rb - "misc" is in the name`}},
 	} {
 		t.Run(c.language, func(t *testing.T) {
-			r, err := Check(tree(t, c.files...), c.language)
+			r, err := Check(tree(t, c.files...), c.language, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -25,7 +25,7 @@ libs/plugin-rust/, plugin-dotnet/, plugin-ruby/, plugin-php/, plugin-cpp/,
 libs/plugin-docker/             the docker deploy plugin and convention
 libs/plugin-vertical-slices/    the vertical-slices structure plugin
 libs/plugin-architectures/      the other architectures (hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer), one plugin each
-install.sh, install.ps1         installers for people; install.sh is also embedded (apps/smith/cipipeline/smith_installer.sh, a test keeps the copies equal) and vendored as tools/smith/install.sh into projects with no Node, Python or .NET toolchain (the others install the monosmith package; see smith_install_policy.go)
+install.sh, install.ps1         installers for people; install.sh is also embedded (apps/smith/features/cipipeline/smith_installer.sh, a test keeps the copies equal) and vendored as tools/smith/install.sh into projects with no Node, Python or .NET toolchain (the others install the monosmith package; see smith_install_policy.go)
 docs/                           documentation, decisions and research
 ```
 

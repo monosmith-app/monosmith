@@ -84,7 +84,7 @@ The recurring problems and their answers:
 
 - `smith.toml`: TOML, every setting optional, unknown keys rejected with a
   message naming the key. A JSON Schema ships for editors
-  (`apps/smith/workspace/smith.schema.json`).
+  (`apps/smith/features/workspace/smith.schema.json`).
 - Recipes: TOML, extendable, resolved with provenance — each value remembers the
   file and line it came from, and `smith explain` shows it.
 - Machine output: `--json` on every reporting command, with a stable
@@ -123,7 +123,7 @@ The recurring problems and their answers:
 |---|---|---|
 | Unit | pure policies, algorithms, mappers, use cases with fakes | next to the code (`*_test.go`), run on three OSes on every pull request |
 | Plugin conformance | a plugin obeys the protocol | `packages/plugin-sdk/conformance`, `smith plugin check` |
-| Golden path | the real thing: a new workspace, every project kind in every language, build, test, release | `apps/smith/goldenpath`, daily and on demand |
+| Golden path | the real thing: a new workspace, every project kind in every language, build, test, release | `apps/smith/features/goldenpath`, daily and on demand |
 | Convert | Nx and old-mnci workspaces convert and still build | the `golden-path` workflow, on demand only ([ADR 0014](decisions/0014-convert-end-to-end-test-on-demand.md)) |
 | Self-hosting | smith builds, lints, tests and releases itself | this repository's CI |
 
