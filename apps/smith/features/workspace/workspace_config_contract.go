@@ -108,6 +108,13 @@ type WorkspaceSection struct {
 	// acme gives @acme/core, acme-core, acme_core and Acme.Core. It defaults to
 	// the workspace name. scope and module_prefix derive from it unless set.
 	Namespace string `toml:"namespace"`
+	// Smith is the smith this workspace runs: "latest" or an exact version
+	// (ADR 0101). The launchers (npm, pip and .NET), the committed launcher
+	// of smith bootstrap and the generated pipelines run this version.
+	// Default: the newest release for the launchers, and the smith that
+	// generates them for the pipelines, so a workspace whose pipelines build
+	// smith from source (smith itself) sets "latest".
+	Smith string `toml:"smith"`
 	// Scope is the npm scope for packages, e.g. "@acme". Unset: @<namespace>.
 	Scope string `toml:"scope"`
 	// ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo.
@@ -219,11 +226,6 @@ type CISection struct {
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
-	// SmithVersion is the smith the generated pipelines install: "latest" or
-	// an exact version. Default: the version of the smith that generates them,
-	// so a workspace whose pipelines build smith from source (smith itself)
-	// sets "latest" and does not change with every release.
-	SmithVersion string `toml:"smith_version"`
 	// Branches are the branches the generated GitHub and Azure pipelines run
 	// on, for pushes and pull requests. The release branch is always one of
 	// them, and the only one a release runs from. Default: the release branch.

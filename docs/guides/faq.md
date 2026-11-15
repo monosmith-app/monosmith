@@ -199,7 +199,7 @@ A Node, Python or .NET workspace installs the `monosmith` package with npm, pip 
 `dotnet tool`. Any other workspace runs `tools/smith/install.sh`,
 a copy of the installer that `smith ci generate` commits into your project (never edit
 it; `smith doctor --fix` refreshes it). Both are pinned to the version that generated the pipeline (a development build
-installs the latest). Change `[ci] smith_version` to pin another version. See
+installs the latest). Change `[workspace] smith` to pin another version. See
 [installing](../getting-started/installing.md).
 
 ### How does CI cache package downloads?

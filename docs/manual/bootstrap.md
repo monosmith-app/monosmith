@@ -2,7 +2,7 @@
 
 `smith bootstrap` writes a small launcher you commit: `tools/smith/smith` (sh) and
 `tools/smith/smith.cmd` (Windows). Run `tools/smith/smith build` instead of `smith build` and a
-laptop and CI use the same smith, the one the workspace pins in `[ci] smith_version`.
+laptop and CI use the same smith, the one the workspace pins in `[workspace] smith`.
 
 ## When to use it
 
@@ -40,7 +40,7 @@ Usage: `smith bootstrap [flags]`
 
 ## What the launcher does
 
-It reads `smith_version` from `smith.toml` each time it runs, so changing the pin needs no new
+It reads `[workspace] smith` from `smith.toml` each time it runs, so changing the pin needs no new
 file. Then:
 
 1. No pin, or `latest`: it runs the smith on `PATH`.

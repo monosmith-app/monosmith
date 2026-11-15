@@ -138,7 +138,7 @@ edges and writes versions. A project has exactly one. See [Roles](#role).
 ## launcher
 
 The two static files `tools/smith/smith` and `tools/smith/smith.cmd`, written by `smith bootstrap`.
-They run the smith version the workspace pins in `[ci] smith_version`, so a clone needs no install.
+They run the smith version the workspace pins in `[workspace] smith`, so a clone needs no install.
 See [`smith bootstrap`](../manual/bootstrap.md).
 
 ## lib

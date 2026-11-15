@@ -18,7 +18,7 @@ func Command() *cobra.Command {
 		Use:   "bootstrap",
 		Short: "Write the launcher that runs the smith version the workspace pins",
 		Long: `Write tools/smith/smith (sh) and tools/smith/smith.cmd (Windows): a launcher
-you commit, so a laptop and CI run the same smith. It reads [ci] smith_version
+you commit, so a laptop and CI run the same smith. It reads [workspace] smith
 from smith.toml each time it runs. With a pin it runs that version: the smith on
 PATH when it matches, else a copy under .smith/bin/<version>, installed with
 tools/smith/install.sh when the workspace has one, or with npx. Without a pin,

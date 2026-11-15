@@ -13,7 +13,7 @@ import "strings"
 // downloads the release binary and verifies its checksum.
 //
 // The registry install is pinned to the same version as the script ([ci]
-// smith_version, else the running smith); "latest" (a dev build) is unpinned.
+// [workspace] smith, else the running smith); "latest" (a dev build) is unpinned.
 // npm and pip name the public registry, so a private feed that
 // npmAuthenticate or PipAuthenticate points the agent at cannot hide it.
 type SmithInstall struct {
