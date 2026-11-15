@@ -6,7 +6,7 @@
     "declarationMap": false,
     "sourceMap": false,
     "rootDir": "src",
-    "outDir": "../../dist/packages/plugin-sdk-ts"
+    "outDir": "./dist"
   },
   "include": ["src"],
   "exclude": ["src/**/*.spec.ts"]
