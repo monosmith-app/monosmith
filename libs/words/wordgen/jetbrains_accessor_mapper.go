@@ -50,7 +50,7 @@ func ConstantName(key string) string {
 // Errors: two keys that give the same constant name.
 func Kotlin(r Resolved) (string, error) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "package dev.monosmith.jetbrains.words\n\nimport java.text.MessageFormat\nimport java.util.ResourceBundle\n\n/**\n * %s\n */\nobject SmithWordsConfig {\n", generatedHeader)
+	fmt.Fprintf(&b, "package dev.monosmith.jetbrains.shared.words\n\nimport java.text.MessageFormat\nimport java.util.ResourceBundle\n\n/**\n * %s\n */\nobject SmithWordsConfig {\n", generatedHeader)
 	b.WriteString("    /** The base name of the resource bundle (messages.properties). */\n    const val BUNDLE = \"messages\"\n\n")
 	seen := map[string]string{}
 	for _, key := range r.Keys {

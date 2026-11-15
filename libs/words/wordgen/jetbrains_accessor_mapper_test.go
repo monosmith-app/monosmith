@@ -11,7 +11,7 @@ func TestKotlinHasATypedConstantPerKeyAndTheSayHelper(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"package dev.monosmith.jetbrains.words",
+		"package dev.monosmith.jetbrains.shared.words",
 		"object SmithWordsConfig {",
 		"/** The key cmd.remove.title. Values: {0} is name, {1} is project. */\n    const val CMD_REMOVE_TITLE = \"cmd.remove.title\"",
 		"const val CMD_ITEMS_ONE = \"cmd.items.one\"",

@@ -20,7 +20,7 @@ var parsingContext = regexp.MustCompile(`Regex\(|startsWith\(|endsWith\(|\.conta
 // jetbrainsLiteralAllowList names the raw literals that stay in the Kotlin code, with the reason.
 // An entry is a path below the Kotlin root and the start of the literal.
 var jetbrainsLiteralAllowList = []struct{ file, literal, reason string }{
-	{"dev/monosmith/jetbrains/composestack/ComposePickDialogHandler.kt", "Tick what the project is made of", "default text inside a multi-line HTML template; migrate with the dialog"},
+	{"dev/monosmith/jetbrains/features/composestack/ComposePickDialogHandler.kt", "Tick what the project is made of", "default text inside a multi-line HTML template; migrate with the dialog"},
 }
 
 // The JetBrains plugin shows wording from the catalogue only: a new sentence in a handler or a
@@ -36,7 +36,7 @@ func TestNoRawSentenceInTheJetBrainsKotlinCode(t *testing.T) {
 		}
 		rel, _ := filepath.Rel(root, path)
 		rel = filepath.ToSlash(rel)
-		if strings.HasPrefix(rel, "dev/monosmith/jetbrains/words/") {
+		if strings.HasPrefix(rel, "dev/monosmith/jetbrains/shared/words/") {
 			return nil // generated accessor
 		}
 		body, err := os.ReadFile(path)

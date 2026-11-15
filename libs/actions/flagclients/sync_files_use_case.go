@@ -11,7 +11,7 @@ import (
 // Outputs are the generated files, relative to the repository root.
 var Outputs = []string{
 	"apps/vscode/src/shared/smith-flags/smith-flags.config.ts",
-	"apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/smithcommand/SmithFlagsConfig.kt",
+	"apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/integrations/smithcommand/SmithFlagsConfig.kt",
 	"docs/reference/flag-vocabulary.md",
 }
 

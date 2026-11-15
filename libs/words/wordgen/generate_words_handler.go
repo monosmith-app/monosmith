@@ -27,7 +27,7 @@ func main() {
 	vscodeModule := flag.String("vscode-module", "apps/vscode/src/shared/words", "folder of the TypeScript module, relative to -root")
 	vscodeNls := flag.String("vscode-nls", "apps/vscode", "folder that gets package.nls*.json, relative to -root")
 	jbResources := flag.String("jetbrains-resources", "apps/jetbrains/src/main/resources", "folder that gets messages*.properties, relative to -root")
-	jbKotlin := flag.String("jetbrains-kotlin", "apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/words", "folder of the Kotlin object, relative to -root")
+	jbKotlin := flag.String("jetbrains-kotlin", "apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/shared/words", "folder of the Kotlin object, relative to -root")
 	flag.Parse()
 	under := func(p string) string {
 		if filepath.IsAbs(p) {
