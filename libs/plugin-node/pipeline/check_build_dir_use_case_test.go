@@ -83,3 +83,25 @@ func TestTheBuildScriptsOutDirFlagIsTheOutputFolder(t *testing.T) {
 		t.Fatalf("a flag inside the source tree is flagged: %+v %v", f, ok)
 	}
 }
+
+func TestALibraryBuildingInItsOwnFolderWarnsWhetherOrNotItIsImported(t *testing.T) {
+	ws := t.TempDir()
+	write := func(rel, body string) {
+		p := filepath.Join(ws, filepath.FromSlash(rel))
+		_ = os.MkdirAll(filepath.Dir(p), 0o755)
+		_ = os.WriteFile(p, []byte(body), 0o644)
+	}
+	builds := map[string]protocol.Task{"build": {}}
+	for _, root := range []string{"packages/kit", "apps/tool"} {
+		write(root+"/tsconfig.json", `{"compilerOptions": {"outDir": "dist"}}`)
+		write(root+"/package.json", `{"name": "x", "scripts": {"build": "tsc"}}`)
+	}
+	lib, _ := CheckBuildDir(ws, protocol.Project{Name: "kit", Root: "packages/kit", Kind: protocol.ProjectLib, Tasks: builds})
+	if lib.OK || !lib.Warning {
+		t.Errorf("a library whose build works where it is warns, imported or not: %+v", lib)
+	}
+	app, _ := CheckBuildDir(ws, protocol.Project{Name: "tool", Root: "apps/tool", Kind: protocol.ProjectApp, Tasks: builds})
+	if app.OK || app.Warning {
+		t.Errorf("an app whose build smith can move is a failure: %+v", app)
+	}
+}

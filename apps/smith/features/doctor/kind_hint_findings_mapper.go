@@ -21,7 +21,8 @@ func kindHintChecks(s *session.Session) []protocol.Finding {
 		switch p.Kind {
 		case protocol.ProjectLib:
 			dependents := len(s.Graph.Dependents(p.Name))
-			if dependents > 0 || len(s.Graph.Projects) < 2 {
+			// A Dockerfile that copies the lib uses it, though no project imports it.
+			if dependents > 0 || len(s.Graph.Projects) < 2 || namedByDockerfile(s, p.Root) {
 				continue
 			}
 			if f, ok := UnusedLibHint(p.Name, dependents, len(s.Graph.Projects)-1, addedAt(s, p.Root), now); ok {
@@ -57,4 +58,11 @@ func addedAt(s *session.Session, root string) time.Time {
 		return time.Time{}
 	}
 	return time.Unix(seconds, 0)
+}
+
+// namedByDockerfile reports whether a tracked Dockerfile names the folder of a
+// project: an image that copies it uses it outside the import graph.
+func namedByDockerfile(s *session.Session, root string) bool {
+	out, err := s.Git.Run("grep", "-l", "-F", "-e", root, "--", "*Dockerfile*", "*.dockerfile")
+	return err == nil && strings.TrimSpace(out) != ""
 }

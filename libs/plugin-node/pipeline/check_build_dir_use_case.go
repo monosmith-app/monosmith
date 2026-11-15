@@ -54,10 +54,12 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 		finding.Fix = fix
 		if refusal != "" {
 			finding.Remedy = "smith does not move this build for you, because " + refusal + ". To move it by hand: " + remedy
-			// A refused move leaves a build that works, so it is a warning;
-			// only a cache that restores nothing is a failure.
-			finding.Warning = !broken
 		}
+		// A build that works where it is is a warning, so a library is judged the
+		// same whether or not a project imports it (the move of an imported one
+		// is refused); only a cache that restores nothing, or an app that can be
+		// moved, is a failure.
+		finding.Warning = !broken && (refusal != "" || p.Kind != protocol.ProjectApp)
 	}
 	return finding, true
 }
