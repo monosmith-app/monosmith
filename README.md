@@ -66,15 +66,13 @@ curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/instal
 irm https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.ps1 | iex           # Windows PowerShell
 ```
 
-Or with the package manager of your language; each installs the same `smith`
-binary:
+Or with the package manager of your language; each installs a launcher that
+downloads the same `smith` binary and checks its signature:
 
 ```sh
 npm install --global monosmith
 pipx install monosmith                  # or: uv tool install monosmith, pip install monosmith
 dotnet tool install --global monosmith  # .NET 8 or later
-gem install monosmith
-dart pub global activate monosmith
 ```
 
 Or download a zip from the [releases](https://github.com/monosmith-app/monosmith/releases).

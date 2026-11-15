@@ -22,8 +22,6 @@ None of them needs the language it comes through at run time.
 | uv (the launcher) | `uv tool install monosmith` | `smith update` | `uv tool uninstall monosmith`, then delete `~/.smith/versions` |
 | pip (the launcher) | `pip install monosmith` | `smith update` | `pip uninstall monosmith`, then delete `~/.smith/versions` |
 | .NET tool (the launcher, .NET 8 or later) | `dotnet tool install --global monosmith` | `smith update` | `dotnet tool uninstall --global monosmith`, then delete `~/.smith/versions` |
-| RubyGems | `gem install monosmith` | `gem update monosmith` | `gem uninstall monosmith` |
-| pub.dev | `dart pub global activate monosmith` | run it again | `dart pub global deactivate monosmith` |
 | GitHub Releases | download `monosmith_<version>_<os>_<arch>.zip` from [releases](https://github.com/monosmith-app/monosmith/releases) and put `smith` on your PATH | download the newer zip | delete the binary |
 
 To run smith once without installing it: `uvx --from monosmith smith --version`
@@ -55,8 +53,9 @@ Behind a firewall that reaches only your package registry, mirror the release fi
 `checksums.txt` and `checksums.txt.minisig`, and `<url>/latest.txt` and `<url>/next.txt` with the
 newest version of each channel. The old `@monosmith/cli` package stays at 2.50.0.
 
-The pub.dev package is published by hand for now, so it can lag behind the
-others.
+RubyGems and pub.dev get no new smith: 2.53.0 is the last version there. If you installed it with
+`gem install monosmith` or `dart pub global activate monosmith`, uninstall it and use one of the
+channels above.
 
 ### The install scripts
 
@@ -111,7 +110,7 @@ offer it on Home and in their command lists. See [`smith completion`](../manual/
 
 | Channel | How completion comes |
 |---|---|
-| Install scripts, npm, pipx, uv, pip, .NET tool, RubyGems, pub.dev, GitHub Releases | `smith completion install` (the package carries no completion file) |
+| Install scripts, npm, pipx, uv, pip, .NET tool, GitHub Releases | `smith completion install` (the package carries no completion file) |
 | `.deb` and `.rpm` | `smith completion install`: the packages carry no completion file today. When one ships it in a system folder, `install` says so and writes nothing |
 | Homebrew, Scoop, winget (manifests in each release, no tap or bucket yet) | `smith completion install`. A Homebrew formula that ships the file would be found and respected the same way |
 
