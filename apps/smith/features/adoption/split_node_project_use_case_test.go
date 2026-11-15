@@ -15,7 +15,15 @@ func runIn(t *testing.T, dir string, env []string, name string, args ...string) 
 	t.Helper()
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), env...)
+	// The tasks of smith run carry SMITH_WORKSPACE_ROOT and SMITH_TASK*: inherited, they
+	// point the smith under test at the outer workspace instead of this repository.
+	var inherited []string
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "SMITH_WORKSPACE_ROOT=") && !strings.HasPrefix(kv, "SMITH_TASK") {
+			inherited = append(inherited, kv)
+		}
+	}
+	cmd.Env = append(inherited, env...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("%s %s: %v\n%s", name, strings.Join(args, " "), err, out)
