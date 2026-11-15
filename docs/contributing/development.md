@@ -160,9 +160,11 @@ smith releases itself. The generated pipeline builds smith from the commit (the
 `main`. A conventional commit touching `apps/smith` (or a lib it bundles) tags
 `smith@<version>` and attaches `monosmith_<version>_<os>_<arch>.zip` for six
 platforms, `checksums.txt` and the Homebrew, Scoop and winget manifests to its
-GitHub Release, which is what `install.sh` downloads. The same archives are
-published to npm (`monosmith`, `@monosmith/cli`), PyPI, NuGet and RubyGems
-(all `monosmith`); the secrets are organisation secrets of `monosmith-app`.
+GitHub Release, which is what `install.sh` downloads, with `checksums.txt.minisig`
+(signed with the repository secret `SMITH_SIGNING_KEY`, ADR 0101). The same archives are
+published to PyPI, NuGet and RubyGems (all `monosmith`). npm gets the launcher instead,
+`packages/launcher-node` (`monosmith` from 3.0.0), which releases on its own commits and downloads
+the archives on its first run; the secrets are organisation secrets of `monosmith-app`.
 pub.dev is published by hand for now. `packages/plugin-sdk` releases as the Go
 module tag `packages/plugin-sdk/v<version>`.
 

@@ -322,10 +322,26 @@ Replace `smith` with the project and the version with the one after the stuck on
 that follows publishes new packages with new attestations. smith prints this advice when it sees the
 error.
 
-## smith says a platform package is not installed
+## The smith launcher cannot install smith
 
-`smith` is an npm launcher. It runs the binary of the package for your system, for example
-`@monosmith/cli-win32-x64`, which npm installs as an optional dependency. If that package is missing,
+`smith` from npm is a launcher: on the first run of a version it downloads that version into
+`~/.smith/versions` ([installing](../getting-started/installing.md#the-npm-launcher)). Each
+message starts with `smith launcher:` and names the cause:
+
+| Message | Cause and remedy |
+|---|---|
+| `cannot reach github.com (…)` | No network, or a firewall that reaches only your package registry. Set `SMITH_DOWNLOAD_URL` to a mirror of smith's release files. |
+| `… answered 404` | The version does not exist (check `[workspace] smith` or `SMITH_VERSION`), or the mirror lacks it. |
+| `smith <version> was not installed: the signature of checksums.txt does not match smith's release key` | The file is not the one smith released, or the mirror changed it. Nothing was written. Download again from GitHub or fix the mirror. |
+| `… does not match its checksum` | The archive was cut short or changed on the way. Nothing was written; run the command again. |
+| `smith is not built for <system> on <processor>` | smith ships for macOS, Linux and Windows on x64 and arm64. |
+| `GitHub lists no smith release` | GitHub's rate limit for anonymous requests; set `GITHUB_TOKEN`, or pin a version so no list is needed. |
+
+## An app installed from npm says a platform package is not installed
+
+An app that smith releases to npm as binaries (`[projects.<app>.release] npm`) installs through an
+npm launcher. It runs the binary of the package for your system, for example `@acme/cli-win32-x64`,
+which npm installs as an optional dependency. If that package is missing,
 npm gives no error at install time, and the first run says "`<package>` is not installed". The
 launcher then asks npm, with a 5 second limit, whether that package exists at the same version, and
 tells you which of three situations you are in. It changes nothing without your yes.
@@ -342,7 +358,7 @@ tells you which of three situations you are in. It changes nothing without your 
    network. Run `npm install -g <package>@<version>` when you are online. Do not install with
    `--omit=optional`, which leaves out all platform packages.
 
-For a CI job that installs `monosmith@next` right after a release, wait a few minutes or install the
+For a CI job that installs `@acme/cli@next` right after a release, wait a few minutes or install the
 exact version. The release itself does not move `next` before every platform package can be fetched
 (`[release] propagation_wait`, see [releasing](../reference/releasing.md)).
 

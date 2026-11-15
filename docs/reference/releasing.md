@@ -669,8 +669,8 @@ first. It reads each one back from the registry right after `npm publish` return
 checks; a package that is not there yet is not an error, because npm takes minutes to serve it. It
 then probes once, without waiting. If
 every platform package is fetchable the way a person fetches it (`npm view <pkg>@<version>` finds
-it, and a HEAD request of its tarball URL answers), the wrapper packages (`monosmith`,
-`@monosmith/cli`) are published under `next`, or `latest` for a stable version. If not, they are
+it, and a HEAD request of its tarball URL answers), the wrapper packages (`acme`,
+`@acme/cli`) are published under `next`, or `latest` for a stable version. If not, they are
 published under the dist-tag `pending`, and the release goes on with the next project: a publish
 never waits, so a sign-in that expires in 15 minutes (Azure, PyPI or NuGet trusted publishing) is
 still valid for the projects after it.
@@ -703,9 +703,9 @@ and Azure Pipelines, and `smith release` and `smith ci release` exit with code 2
 Run the printed command when `npm view` shows the platform packages from another machine, or run
 the release again: a re-run finds the wrapper under `pending`, publishes only the packages the
 registry lacks, waits again and moves the tag. If a later project fails, the last phase does not
-run, and the re-run does it. Without the wait, a person who runs `npm i -g monosmith@next` in those
+run, and the re-run does it. Without the wait, a person who runs `npm i -g @acme/cli@next` in those
 minutes would get a launcher with no binary. The launcher also helps in that case: see
-[the troubleshooting guide](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed).
+[the troubleshooting guide](../guides/troubleshooting.md#an-app-installed-from-npm-says-a-platform-package-is-not-installed).
 The last phase costs at least one minute for each such release (three probes); set
 `propagation_wait` to `"0"` to skip it. A Node package (not an app) with same-release
 `optionalDependencies` is moved the same way in the same run, but a re-run does not find its
@@ -1243,7 +1243,7 @@ Registry targets are grouped by registry, and the platforms are read from the fi
 ```
 ══ Released ════════════════════════════════════════════════
 smith 1.128.0 › 1.129.0 (minor)
-  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+  npm        @acme/cli + acme + 6 platform packages    registry.npmjs.org
                darwin x64 arm64 · linux x64 arm64 · win32 x64 arm64
   PyPI       6 wheels (macOS, Linux, Windows x x64, arm64)    pypi.org
   NuGet      monosmith + 6 platform packages    nuget.org

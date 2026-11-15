@@ -10,9 +10,14 @@
 
 ## What smith shows before it runs
 
-`smith update` asks the npm registry for the newest smith on your channel (stable, or next when
-you run a prerelease) and prints the command that matches how smith was installed: npm, dotnet
-tool, pip, uv, pipx or the install script. It then asks what to do. `--check` only looks and
+`smith update` asks smith's releases for the newest smith on your channel (stable, or next when
+you run a prerelease; GitHub, or the mirror in `SMITH_DOWNLOAD_URL`). A smith the npm launcher
+started lives in `~/.smith/versions/<version>/`: `smith update` downloads the new version next to
+it, checks it against the signed `checksums.txt`, and the launcher runs it from then on. A
+workspace that pins `[workspace] smith` keeps its version. For any other install it prints the
+command that matches how smith was installed (dotnet tool, pip, uv, pipx or the install script; an
+npm install from before the launcher gets `npm i -g monosmith@latest`, which installs the
+launcher). It then asks what to do. `--check` only looks and
 changes nothing. Without a terminal it needs `--yes`. When smith cannot tell how it was
 installed, it names the releases page instead of guessing.
 
@@ -28,7 +33,8 @@ checks, and `smith update` still works. **Update now** closes the interface and 
 
 ## On Windows
 
-A running smith cannot be replaced. The update opens its own window, waits for `smith update`
+An update through the launcher writes a new folder, so nothing has to be closed. For the other
+installs, a running smith cannot be replaced. The update opens its own window, waits for `smith update`
 to exit, and runs the command there. When smith starts directly (see [`smith link`](link.md), which
 the first run of a version does by itself), smith runs from a link and does not hold the installed file,
 so the update runs in place and other terminals need not be closed. Other smith programs of the same install (an editor's
