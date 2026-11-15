@@ -184,11 +184,11 @@ also says the package goes to Open VSX; that path was not checked for this page.
 | Concern | Path |
 |---|---|
 | Activation and wiring | `apps/vscode/src/main.ts` |
-| Finding and starting smith | `apps/vscode/src/smith-client` |
-| Folder state | `apps/vscode/src/folder-session`, `workspace-folders`, `workspace-trust` |
-| Running and output | `apps/vscode/src/task-run`, `task-output`, `task-provider` |
+| Finding and starting smith | `apps/vscode/src/integrations/smith-client` |
+| Folder state | `apps/vscode/src/shared/folder-session`, `workspace-folders`, `workspace-trust` |
+| Running and output | `apps/vscode/src/features/task-run`, `task-output`, `task-provider` |
 | Contributions (commands, views, settings, matchers) | `apps/vscode/package.json` (every shown text is a `%key%`) |
-| Texts people read | catalogue `libs/words/catalog/en/vscode_*.json` (keys `vscode.…`), shared keys listed in `libs/words/surface/vscode.json`; generated `apps/vscode/package.nls*.json` and `apps/vscode/src/words/smith-words.config.ts` ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)) |
+| Texts people read | catalogue `libs/words/catalog/en/vscode_*.json` (keys `vscode.…`), shared keys listed in `libs/words/surface/vscode.json`; generated `apps/vscode/package.nls*.json` and `apps/vscode/src/shared/words/smith-words.config.ts` ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)) |
 | Integration tests | `apps/vscode/integration` |
 | Server side | `apps/smith/engineserver` |
 

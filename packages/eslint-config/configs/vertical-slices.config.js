@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 
+import { createPathsMatcher, getTsconfig } from 'get-tsconfig'
+
 /** The roles a production file may play, as its last suffix before the extension says. */
 export const ROLES = ['handler', 'use-case', 'algorithm', 'policy', 'model', 'contract', 'mapper', 'validator', 'repository', 'client', 'store', 'middleware', 'error', 'config', 'enum']
 
@@ -30,6 +32,8 @@ function productionPattern (roles) {
 const TEST = new RegExp(String.raw`\.(?:spec|test)${EXTENSION}$`)
 /** The words that name no outcome, as parts of a file name (split on `-`, `.` and `_`). */
 export const BANNED_WORDS = ['util', 'utils', 'helper', 'helpers', 'common', 'shared', 'manager', 'processor', 'data', 'misc']
+/** Banned words that are honest inside a compound (`user-data.contract.ts`, `account-manager.policy.ts`): only a name that IS the word is reported. */
+const WHOLE_NAME_ONLY = new Set(['data', 'manager'])
 const SOURCE = new RegExp(`${EXTENSION}$`)
 // `content.config` is Astro's: a framework-mandated name that must sit at the root of src, so it is an entry like main.
 const ENTRY = new RegExp(String.raw`^(?:index|main|content\.config)${EXTENSION}$`)
@@ -46,6 +50,17 @@ const RELATIVE_IMPORT = /(?:from|import\()\s*['"](\.[^'"]*)['"]/g
 export const GROUPS = ['features', 'integrations', 'shared']
 
 /** Folders that hold support files (fixtures, mocks, test data): never a slice. `testing` is also exempt from the role rule. */
+/** The zones of an app's `src`: a feature may import the other two, they never import a feature. */
+const FEATURES = 'features'
+const INTEGRATIONS = 'integrations'
+const SHARED = 'shared'
+/** Roles that hold no I/O: they import no integration, and no client, repository or store. */
+const PURE_ROLES = new Set(['model', 'policy', 'validator', 'error', 'enum'])
+/** Roles that may use an integration's types, never its code: a contract describes data, and that data may hold an integration's type. */
+const TYPE_ONLY_ROLES = new Set(['handler', 'mapper', 'algorithm', 'contract'])
+/** Roles that do I/O. */
+const IO_ROLES = new Set(['client', 'repository', 'store'])
+
 const FIXTURES = 'fixtures'
 const TESTING = 'testing'
 const SUPPORT = new Set([FIXTURES, TESTING])
@@ -235,6 +250,92 @@ function outermostSlice (src, directory, owner, groups) {
   return null
 }
 
+/**
+ * Whether a project keeps its slices in zones: an app always does (its `src` sits under an `apps` folder,
+ * `apps/api/src`), and a library does once one zone folder exists under its `src`. A library without one is
+ * its own capability, so its slices sit directly under `src`.
+ *
+ * @param src - A project's `src` directory.
+ * @param groups - The group names.
+ * @returns True when every slice belongs in a zone.
+ */
+function isZoned (src, groups) {
+  return src.split(sep).slice(-4, -1).includes('apps') || groups.some(group => exists(join(src, group))?.isDirectory())
+}
+
+/**
+ * The zone a path is in: the group folder directly under `src` that holds it.
+ *
+ * @param src - A project's `src` directory.
+ * @param path - A file or folder.
+ * @param groups - The group names.
+ * @returns The group name, or `null` outside every group.
+ */
+function zoneOf (src, path, groups) {
+  const [first] = relative(src, path).split(sep)
+
+  return groups.includes(first) ? first : null
+}
+
+/**
+ * The role a file plays: the last suffix of its name before the extension.
+ *
+ * @param name - A file name, with or without its extension (`fee.policy.ts`, `fee.policy`).
+ * @returns The role, or `null` for a name without one (`index`, `fee`).
+ */
+function roleOf (name) {
+  const stem = name.replace(/\.[mc]?[tj]sx?$/, '')
+  const at = stem.lastIndexOf('.')
+
+  return at === -1 ? null : stem.slice(at + 1)
+}
+
+/** Each directory's tsconfig `paths` matcher, or `null` when it has none. */
+const matchers = new Map()
+
+/**
+ * Where an import of the project's own code points, by relative path or tsconfig alias.
+ *
+ * @param filename - The importing file.
+ * @param specifier - The module specifier.
+ * @returns The absolute path it names, or `null` for a package.
+ */
+function resolveImport (filename, specifier) {
+  const from = dirname(filename)
+  if (specifier.startsWith('.')) return resolve(from, specifier)
+  if (!matchers.has(from)) {
+    const found = getTsconfig(from)
+    matchers.set(from, found === null ? null : createPathsMatcher(found))
+  }
+  const [first] = matchers.get(from)?.(specifier) ?? []
+
+  return first === undefined ? null : resolve(first)
+}
+
+/**
+ * Whether a module specifier names one of the listed vendor packages.
+ *
+ * @param specifier - A package import (`@scanmate/scan`, `jira.js/out/x`).
+ * @param vendors - Package names, or `@scope/*` for every package of a scope.
+ * @returns True when it names a vendor package.
+ */
+function isVendor (specifier, vendors) {
+  return vendors.some(vendor => (vendor.endsWith('/*') ? specifier.startsWith(vendor.slice(0, -1)) : specifier === vendor || specifier.startsWith(`${vendor}/`)))
+}
+
+/**
+ * Whether an import or re-export brings in types only, which are erased at run time.
+ *
+ * @param node - The import or export declaration.
+ * @returns True for `import type`, `export type`, or an import whose every name is a type.
+ */
+function isTypeOnly (node) {
+  if (node?.importKind === 'type' || node?.exportKind === 'type') return true
+  const names = node?.specifiers ?? []
+
+  return names.length > 0 && names.every(name => name.importKind === 'type' || name.exportKind === 'type')
+}
+
 const SOURCES = {
   ImportDeclaration:      node => node.source,
   ExportNamedDeclaration: node => node.source,
@@ -268,6 +369,7 @@ export const plugin = {
           banned: '"{{name}}" has the word "{{word}}" in its name, and that names no outcome. Name the file for what it does.',
           root:   'Only index and main live at the root of src; "{{name}}" belongs in a subfeature.',
           group:  '"{{group}}" is a group: it holds slice folders, and at most an index barrel. "{{name}}" belongs in a slice inside it.',
+          zone:   'An app keeps its slices in {{groups}}: move "{{folder}}" into one of them - features for a business outcome, integrations for an external system, shared for a building block with no business knowledge.',
         },
         schema: [
           {
@@ -301,12 +403,17 @@ export const plugin = {
             // A name that already lacks its role gets that message alone; the banned word comes once the name is otherwise right.
             const banned = () => {
               if (ENTRY.test(name) || folders.some(folder => SUPPORT.has(folder))) return
-              const word = name.toLowerCase().split(/[-._]/).find(part => BANNED_WORDS.includes(part))
+              const lower = name.toLowerCase()
+              const whole = lower.split('.', 1)[0]
+              const word = WHOLE_NAME_ONLY.has(whole) ? whole : lower.split(/[-._]/).find(part => BANNED_WORDS.includes(part) && !WHOLE_NAME_ONLY.has(part))
               if (word !== undefined) context.report({ node, messageId: 'banned', data: { name, word } })
             }
             if (TEST.test(name)) return banned()
             // Mocks, fixtures and test data take any role: they are support, not production.
             if (folders.includes(TESTING)) return
+            if (folders.length > 0 && !groups.includes(folders[0]) && isZoned(place.src, groups)) {
+              context.report({ node, messageId: 'zone', data: { folder: folders[0], groups: groups.join(', ') } })
+            }
             if (folders.length === 0) {
               if (!ENTRY.test(name)) context.report({ node, messageId: 'root', data: { name } })
             } else if (folders.length === 1 && groups.includes(folders[0])) {
@@ -383,6 +490,57 @@ export const plugin = {
         })
       },
     },
+
+    'zone-import': {
+      meta: {
+        type:     'problem',
+        messages: {
+          direction: '{{zone}}/ holds no business code, so it never imports a feature ("{{specifier}}"). Move what both need into shared/ or integrations/.',
+          vendor:    '"{{specifier}}" is a vendor package: only a slice in integrations/ imports it. Call that integration from here.',
+          pure:      'A .{{role}} holds no I/O, so it imports no {{what}} ("{{specifier}}"). Move the call into a use case.',
+          typeOnly:  'A .{{role}} may use an integration\'s types, not its code ("{{specifier}}"): write "import type", or move the call into a use case.',
+        },
+        schema: [
+          {
+            type:                 'object',
+            properties:           { groups: { type: 'array', items: { type: 'string' } }, vendors: { type: 'array', items: { type: 'string' } } },
+            additionalProperties: false,
+          },
+        ],
+      },
+      create (context) {
+        const place = locate(context.filename)
+        if (place === null) return {}
+        const groups = context.options[0]?.groups ?? GROUPS
+        const vendors = context.options[0]?.vendors ?? []
+        const zone = zoneOf(place.src, context.filename, groups)
+        // Tests and support files are held only to the zone direction: a test may mock a vendor or reach an integration.
+        const support = TEST.test(context.filename) || place.dirs.some(folder => SUPPORT.has(folder))
+        const role = roleOf(basename(context.filename))
+
+        return onSpecifiers((specifier, node) => {
+          if (ASSET.test(specifier)) return
+          const target = resolveImport(context.filename, specifier)
+          if (target === null) {
+            if (!support && zone !== INTEGRATIONS && isVendor(specifier, vendors)) context.report({ node, messageId: 'vendor', data: { specifier } })
+
+            return
+          }
+          const targetZone = zoneOf(place.src, target, groups)
+          if (targetZone === FEATURES && (zone === INTEGRATIONS || zone === SHARED)) {
+            return void context.report({ node, messageId: 'direction', data: { zone, specifier } })
+          }
+          if (support || role === null) return
+          const typeOnly = isTypeOnly(node.parent)
+          if (targetZone === INTEGRATIONS && zone !== INTEGRATIONS) {
+            if (PURE_ROLES.has(role)) return void context.report({ node, messageId: 'pure', data: { role, what: 'integration', specifier } })
+            if (!typeOnly && TYPE_ONLY_ROLES.has(role)) return void context.report({ node, messageId: 'typeOnly', data: { role, specifier } })
+          }
+          const targetRole = roleOf(basename(target))
+          if (!typeOnly && PURE_ROLES.has(role) && IO_ROLES.has(targetRole)) context.report({ node, messageId: 'pure', data: { role, what: `.${targetRole}`, specifier } })
+        })
+      },
+    },
   },
 }
 
@@ -397,7 +555,7 @@ export const plugin = {
  * not organised this way opts out with `monosmith({ verticalSlices: false })`, or
  * passes the globs of the projects that follow it.
  *
- * Three rules:
+ * Four rules:
  *
  * - `vertical-slices/file-role` - kebab-case names; a production file ends in
  *   its role (`.use-case.ts`, `.policy.ts`, `.algorithm.ts`... see `ROLES`); a
@@ -414,6 +572,24 @@ export const plugin = {
  *   other - so no file-level cycle exists to report. Type imports count because
  *   they tie the slices together as surely as values do, even though they are
  *   erased at run time.
+ *
+ * - `vertical-slices/zone-import` - in a project whose slices sit in zones
+ *   (`features`, `integrations`, `shared`), `shared` and `integrations` never
+ *   import `features`; a package listed in `vendors` is imported only in
+ *   `integrations`; and a file's role limits what it imports: a `.model`,
+ *   `.policy`, `.validator`, `.error` or `.enum` imports no
+ *   integration and no `.client`, `.repository` or `.store`, and a `.handler`, `.contract`,
+ *   `.mapper` or `.algorithm` imports an integration's types only. Imports are
+ *   resolved by relative path and by the tsconfig `paths` aliases.
+ *
+ * An app (a project under `apps/`) keeps every slice in a zone: `file-role`
+ * reports a slice folder directly under its `src`. So does a library once it has
+ * one zone folder; a library without one is its own capability, and its slices
+ * sit directly under `src`.
+ *
+ * `data` and `manager` are banned only as a whole name (`data.contract.ts`); inside a compound
+ * (`user-data.contract.ts`, `account-manager.policy.ts`) they are honest. The other banned words are reported in
+ * any part of a name.
  *
  * Tests (`.spec` or `.test`) are exempt from TWO of the three rules, and the
  * split is deliberate rather than an oversight:
@@ -466,12 +642,13 @@ export const plugin = {
  * slice graph has one node per slice folder, an edge per import of its barrel,
  * so a parent and its child importing each other is a cycle.
  *
- * @param options - Globs, or `{ files, roles, groups }`. An array (or nothing) is
+ * @param options - Globs, or `{ files, roles, groups, vendors }`. An array (or nothing) is
  * treated as `files`, so both earlier forms keep working.
  * @param options.files - Globs of the source this applies to. Default: every
  * project's `src` under `apps/`, `libs/` and `packages/`.
  * @param options.roles - Extra role suffixes, APPENDED to {@link ROLES} (and {@link TSX_ROLES}).
  * @param options.groups - Group folder names under `src`, REPLACING {@link GROUPS}.
+ * @param options.vendors - Vendor packages only `integrations` may import: names, or `@scope/*`.
  * @returns The flat config blocks.
  */
 export default function verticalSlices (options = {}) {
@@ -486,6 +663,7 @@ export default function verticalSlices (options = {}) {
   ]
   const roles = settings.roles ?? []
   const grouped = settings.groups === undefined ? {} : { groups: settings.groups }
+  const zoned = settings.vendors === undefined ? grouped : { ...grouped, vendors: settings.vendors }
   const rolesOption = roles.length > 0 ? { roles, ...grouped } : grouped
 
   return [
@@ -499,6 +677,7 @@ export default function verticalSlices (options = {}) {
         'vertical-slices/file-role':      Object.keys(rolesOption).length > 0 ? ['error', rolesOption] : 'error',
         'vertical-slices/no-deep-import': Object.keys(grouped).length > 0 ? ['error', grouped] : 'error',
         'vertical-slices/no-slice-cycle': Object.keys(grouped).length > 0 ? ['error', grouped] : 'error',
+        'vertical-slices/zone-import':    Object.keys(zoned).length > 0 ? ['error', zoned] : 'error',
       },
     },
     {

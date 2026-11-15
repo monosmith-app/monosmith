@@ -11,5 +11,5 @@ export default [
   // A typical single-project repository that the adopt tests split: its code is not ours to lint.
   { ignores: ['apps/smith/adoption/testdata/**'] },
   // Written by `go run ./wordgen` in libs/words: the generator owns its format.
-  { ignores: ['apps/vscode/src/words/smith-words.config.ts'] },
+  { ignores: ['apps/vscode/src/shared/words/smith-words.config.ts'] },
 ]

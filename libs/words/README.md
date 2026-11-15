@@ -51,7 +51,7 @@ go run ./wordgen -surface vscode
 |---|---|
 | `-words` | `libs/words` |
 | `-surface` | `vscode,jetbrains` |
-| `-vscode-module` | `apps/vscode/src/words` (`smith-words.config.ts`) |
+| `-vscode-module` | `apps/vscode/src/shared/words` (`smith-words.config.ts`) |
 | `-vscode-nls` | `apps/vscode` (`package.nls.json`, `package.nls.<locale>.json`) |
 | `-jetbrains-resources` | `apps/jetbrains/src/main/resources` (`messages.properties`, `messages_<locale>.properties`) |
 | `-jetbrains-kotlin` | `apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/words` (`SmithWordsConfig.kt`) |

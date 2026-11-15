@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import type { ExtensionStateApi } from '../../src/extension-api/index.ts'
+import type { ExtensionStateApi } from '../../src/features/extension-api/index.ts'
 
 /** The id the extension has: publisher and name of package.json. */
 export const EXTENSION_ID = 'monosmith.monosmith-vscode'

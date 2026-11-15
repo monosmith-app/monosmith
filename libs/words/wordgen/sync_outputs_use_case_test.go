@@ -122,7 +122,7 @@ func TestTheRepositoryFilesAreUpToDate(t *testing.T) {
 	under := func(p string) string { return filepath.Join(root, filepath.FromSlash(p)) }
 	stale, err := Sync(Options{
 		Words:              under("libs/words"),
-		VSCodeModule:       under("apps/vscode/src/words"),
+		VSCodeModule:       under("apps/vscode/src/shared/words"),
 		VSCodeNls:          under("apps/vscode"),
 		JetBrainsResources: under("apps/jetbrains/src/main/resources"),
 		JetBrainsKotlin:    under("apps/jetbrains/src/main/kotlin/dev/monosmith/jetbrains/words"),

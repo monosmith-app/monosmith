@@ -13,7 +13,7 @@ const header = "Generated from libs/actions/flagvocabulary/flag_vocabulary.json 
 // TypeScript renders the flag constants of the VS Code extension: for each
 // concept the spelling a command line should use (`flag.project` is "-p") and the
 // long form (`longFlag.project` is "--project"). The result is the text of
-// apps/vscode/src/smith-flags/smith-flags.config.ts.
+// apps/vscode/src/shared/smith-flags/smith-flags.config.ts.
 func TypeScript(concepts []flagvocabulary.Concept) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "// %s\n\n", header)
