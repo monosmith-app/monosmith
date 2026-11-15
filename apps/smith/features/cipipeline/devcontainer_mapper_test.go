@@ -37,7 +37,7 @@ func TestDevcontainerInstallsWhatCIInstalls(t *testing.T) {
 	if doc.Features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"] != "2.15.0" || doc.Features["ghcr.io/devcontainers/features/node:1"]["version"] != "24" {
 		t.Fatalf("features %v", doc.Features)
 	}
-	if doc.Post != `npm install --global --registry https://registry.npmjs.org/ monosmith@0.9.0 && PATH="$HOME/.local/bin":"$PATH" smith ci setup` {
+	if doc.Post != `npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=0.9.0 smith --version && PATH="$HOME/.local/bin":"$PATH" smith ci setup` {
 		t.Fatalf("post-create %q", doc.Post)
 	}
 	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github"}}}

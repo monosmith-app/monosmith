@@ -25,7 +25,9 @@ Owner decisions of 2026-11-15:
    launcher of `smith bootstrap` and the generated pipelines run it. `[ci] smith_version` is a
    removed key: smith names its new place, and `smith doctor --fix` moves it.
 2. **The launchers.** `monosmith` on npm, PyPI and NuGet holds a launcher with its own version line
-   (1.x), published only when the launcher changes. Each run it picks a version: `SMITH_VERSION`,
+   starting at 3.0.0, published only when the launcher changes. It starts above every smith release on
+   the registries, because pip and NuGet install the highest version: the first npm launcher continues
+   npm's line from a baseline tag `launcher-node@2.50.0` and releases as a breaking change. Each run it picks a version: `SMITH_VERSION`,
    then the pin of the workspace it runs in, then the newest release. It runs
    `~/.smith/versions/<version>/smith`, and downloads that version first when it is missing: the
    download happens on the first run, never in an install script (pnpm 10 and `--ignore-scripts`

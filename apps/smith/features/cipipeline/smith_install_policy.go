@@ -5,15 +5,16 @@ import "strings"
 // SmithInstall is how a generated pipeline gets smith onto the agent. This is
 // the one place that rule lives.
 //
-// monosmith is published at the same version on npm, PyPI and NuGet, so a
+// monosmith is on npm (the launcher of ADR 0101), PyPI and NuGet, so a
 // workspace whose toolchains include one of those runtimes installs smith with
 // that runtime's package manager and writes no script into the repository:
 // Node first (npm), then Python (pip), then .NET (dotnet tool). Every other
 // workspace (Go, Rust, JVM, ...) keeps the committed InstallScriptPath, which
 // downloads the release binary and verifies its checksum.
 //
-// The registry install is pinned to the same version as the script ([ci]
-// [workspace] smith, else the running smith); "latest" (a dev build) is unpinned.
+// The registry install is pinned to the same version as the script
+// ([workspace] smith, else the running smith); "latest" (a dev build) is
+// unpinned. On npm the pin goes to the launcher as SMITH_VERSION.
 // npm and pip name the public registry, so a private feed that
 // npmAuthenticate or PipAuthenticate points the agent at cannot hide it.
 type SmithInstall struct {
@@ -70,9 +71,13 @@ func (i SmithInstall) command(container bool) string {
 	var b strings.Builder
 	switch i.tool {
 	case "node":
+		// npm holds the launcher, with a version line of its own (ADR 0101): it
+		// installs the launcher, and a pin downloads that smith once, so every
+		// later step runs it as the only smith installed on the agent.
+		// Unpinned (a dev build) it takes npm's latest tag, whichever package that is.
 		b.WriteString("npm install --global --registry https://registry.npmjs.org/ monosmith")
 		if i.pin != "" {
-			b.WriteString("@" + shellWord(i.pin))
+			b.WriteString("@^3 && SMITH_VERSION=" + shellWord(i.pin) + " smith --version")
 		}
 	case "python":
 		// Windows runners have python, not python3; the containers python3.

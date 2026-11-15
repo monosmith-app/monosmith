@@ -91,7 +91,7 @@ func TestNextChannelHearsAboutNextOnly(t *testing.T) {
 	o := opts(home, "2.0.0-beta.22", t0, "2.0.0-beta.23", nil)
 	o.Fetch = func(context.Context) (string, error) { asked = "called"; return "2.0.0-beta.23", nil }
 	lines := Start(o).Lines()
-	if asked == "" || len(lines) != 1 || !strings.Contains(lines[0], "smith 2.0.0-beta.23 is out on the next channel, you have 2.0.0-beta.22: update with npm i -g monosmith@next") {
+	if asked == "" || len(lines) != 1 || !strings.Contains(lines[0], "smith 2.0.0-beta.23 is out on the next channel, you have 2.0.0-beta.22: update with npm i -g monosmith@latest") {
 		t.Fatalf("lines = %v", lines)
 	}
 	if m := load(home); m.Channel != "next" {

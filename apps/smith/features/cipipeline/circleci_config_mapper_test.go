@@ -88,7 +88,7 @@ func TestCircleCICarriesTheSamePhasesAsGitHub(t *testing.T) {
 		t.Fatalf("providers drifted:\n%s\n%s", got, want)
 	}
 	for _, want := range []string{
-		"image: debian:bookworm", "npm install --global --registry https://registry.npmjs.org/ monosmith@1.4.0", "smith release --dry-run --comment",
+		"image: debian:bookworm", "npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.4.0 smith --version", "smith release --dry-run --comment",
 		"equal: [ main, << pipeline.git.branch >> ]", "path: dist/drop\n                destination: drop",
 		"#   NODE_AUTH_TOKEN: publishes npm packages", "# smith: no plugin says how to install rust 1.90",
 		"smith-npm-v1-{{ arch }}-{{ checksum \"/tmp/smith-npm.lock\" }}",

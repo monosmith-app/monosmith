@@ -317,7 +317,7 @@ Project  Was      Now        Bump   Why             Published                   
 smith    1.128.0  › 1.129.0  minor  feat: add ...   6 targets: npm, PyPI, NuGet, RubyGems, GitHub ...   smith@1.129.0 (pushed)
 ══ Released ════════════════════════════════════════════════
 smith 1.128.0 › 1.129.0 (minor)
-  npm        @monosmith/cli + monosmith + 6 platform packages    registry.npmjs.org
+  npm        @acme/cli + acme + 6 platform packages    registry.npmjs.org
   ...
 ✓ Release passed in 3m 8s: 1 released (smith 1.129.0), 0 unchanged, 0 failed
 ```

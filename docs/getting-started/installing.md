@@ -1,8 +1,9 @@
 # Installing smith
 
-smith is one static binary per platform. Every channel below installs that
-same binary as the `smith` command; none of them needs the language it comes
-through at run time, and nothing is downloaded after install.
+smith is one static binary per platform. npm installs a small launcher that downloads that
+binary on its first run and checks it against the signed checksums
+([the npm launcher](#the-npm-launcher)); every other channel below installs the binary itself.
+None of them needs the language it comes through at run time.
 
 | Platform | Architectures | Minimum |
 |---|---|---|
@@ -16,7 +17,7 @@ through at run time, and nothing is downloaded after install.
 |---|---|---|---|
 | Install script (Linux, macOS, Git Bash) | `curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh \| sh` | run it again | delete `~/.local/bin/smith` |
 | Install script (Windows PowerShell) | `irm https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.ps1 \| iex` | run it again | delete `%USERPROFILE%\.local\bin\smith.exe` (and the directory from your user PATH) |
-| npm | `npm install --global monosmith` | `npm install --global monosmith@latest` | `npm uninstall --global monosmith` |
+| npm (the launcher) | `npm install --global monosmith` | `smith update` | `npm uninstall --global monosmith`, then delete `~/.smith/versions` |
 | pipx | `pipx install monosmith` | `pipx upgrade monosmith` | `pipx uninstall monosmith` |
 | uv | `uv tool install monosmith` | `uv tool upgrade monosmith` | `uv tool uninstall monosmith` |
 | pip | `pip install monosmith` | `pip install --upgrade monosmith` | `pip uninstall monosmith` |
@@ -28,11 +29,30 @@ through at run time, and nothing is downloaded after install.
 To run smith once without installing it: `uvx --from monosmith smith --version`
 or `npx monosmith --version`.
 
-`@monosmith/cli` is the same npm package under the scope; `monosmith` is the
-short name. Both install the binary through per-platform packages
-(`@monosmith/cli-linux-x64`, …) that npm picks by `os` and `cpu`. If one is missing right
-after a release, the launcher says why and offers the fix
-([troubleshooting](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed)).
+### The npm launcher
+
+From version 3, the `monosmith` npm package is a launcher, not smith itself
+([ADR 0101](../architecture/decisions/0101-the-registry-packages-are-launchers-not-releases.md)).
+It has a version line of its own and changes rarely; smith's versions come from its GitHub
+Releases. Each time you run `smith`, the launcher picks the version:
+
+1. `SMITH_VERSION`, when it is set (`latest` means the newest);
+2. else the pin of the workspace you are in: `smith = "<version>"` under `[workspace]` in the
+   nearest `smith.toml`;
+3. else the newest smith already installed, or, on a machine with none, the newest release.
+
+It runs `~/.smith/versions/<version>/smith` (`$SMITH_HOME/versions` when `SMITH_HOME` is set). A
+version that is missing is downloaded first: the archive for your system, `checksums.txt` and
+`checksums.txt.minisig`. The launcher runs nothing unless the minisign signature matches smith's
+release key (built into the launcher) and the archive's SHA-256 is in the signed list. The
+download happens on the first run, never in an install script, so `npm install --ignore-scripts`
+and pnpm work too. Once smith runs, `smith update` downloads the next version into the same folder;
+npm is not involved.
+
+Behind a firewall that reaches only your package registry, mirror the release files and set
+`SMITH_DOWNLOAD_URL` to the mirror. It must serve `<url>/smith@<version>/<file>` for the archives,
+`checksums.txt` and `checksums.txt.minisig`, and `<url>/latest.txt` and `<url>/next.txt` with the
+newest version of each channel. The old `@monosmith/cli` package stays at 2.50.0.
 
 The pub.dev package is published by hand for now, so it can lag behind the
 others.
@@ -54,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/instal
 `SMITH_VERSION` does the same. With no version they install the newest
 `smith@` release. On GitHub Actions and Azure Pipelines `install.sh` also
 adds its directory to `PATH` for the following steps; generated pipelines
-install smith with the package manager of the workspace's main toolchain, pinned to the version that generated them: `npm install --global monosmith@<version>` when the workspace has Node (first choice), else `pip install monosmith==<version>` when it has Python, else `dotnet tool update --global monosmith --version <version>` when it has .NET. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. The .NET package can lag a release behind npm and PyPI. Set
+install smith with the package manager of the workspace's main toolchain, pinned to the version that generated them: `npm install --global monosmith@^3` (the launcher), then `SMITH_VERSION=<version> smith --version` to download that smith, when the workspace has Node (first choice), else `pip install monosmith==<version>` when it has Python, else `dotnet tool update --global monosmith --version <version>` when it has .NET. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. The .NET package can lag a release behind PyPI. Set
 `GITHUB_TOKEN` to avoid GitHub's API rate limit on shared runners.
 
 ### Linux packages
@@ -102,18 +122,20 @@ The first command you run after smith was updated ends with one line on stderr:
 smith updated 1.70.0 → 1.73.0. What's new: https://github.com/monosmith-app/monosmith/releases/tag/smith@1.73.0
 ```
 
-It shows once; the terminal interface shows it as a toast. At most once a day smith also asks the
-registry whether a newer one exists on the channel you installed and prints the update command
-that fits how you installed it:
+It shows once; the terminal interface shows it as a toast. At most once a day smith also asks its
+releases whether a newer one exists on the channel you run and prints the update command that
+fits how you installed it (`smith update` for the npm launcher):
 
 ```
-smith 1.75.0 is out, you have 1.73.0: update with npm i -g monosmith@latest (turn this off: update_check = "off" under [workspace], or SMITH_UPDATE_CHECK=off)
+smith 1.75.0 is out, you have 1.73.0: update with smith update (turn this off: update_check = "off" under [workspace], or SMITH_UPDATE_CHECK=off)
 ```
 
-If you installed the next channel (a version such as `2.0.0-beta.22`), smith checks the `next`
-tag and says `smith 2.0.0-beta.23 is out on the next channel`, with `npm i -g monosmith@next`.
+If you run the next channel (a version such as `2.0.0-beta.22`), smith looks at prereleases too
+and says `smith 2.0.0-beta.23 is out on the next channel`.
 
-The check is one request, announced here: `GET https://registry.npmjs.org/-/package/monosmith/dist-tags`.
+The check is one request, announced here: GitHub's list of smith releases,
+`GET https://api.github.com/repos/monosmith-app/monosmith/releases?per_page=100` (or `latest.txt` and
+`next.txt` of the mirror in `SMITH_DOWNLOAD_URL`).
 Nothing about you or your workspace is sent. It has a one second timeout, never holds a command
 up, says nothing when you are offline, and its answer is cached for 24 hours in the smith home.
 The choice is yours:
@@ -145,9 +167,17 @@ shasum -a 256 --check --ignore-missing checksums.txt # macOS
 ```
 
 The install scripts check the archive against `checksums.txt` before
-installing. The npm packages carry
+installing. `checksums.txt` is signed with minisign (`checksums.txt.minisig`, key ID
+6B2CE84DD9F901), and the npm launcher and `smith update` check that signature before they run a
+download:
+
+```sh
+minisign -Vm checksums.txt -P RWQB+dlN6CxrAMNDX47n/BQK3mOTgrJ4yVIasbrbP6xRRZTQeB5yncav
+```
+
+The npm launcher carries
 [provenance](https://docs.npmjs.com/generating-provenance-statements): npm
-shows, and `npm audit signatures` checks, that they were built by this
+shows, and `npm audit signatures` checks, that it was built by this
 repository's CI.
 
 Archives, Linux packages and SBOMs are also attested with SLSA build

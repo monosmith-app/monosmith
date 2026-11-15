@@ -62,8 +62,8 @@ the cache are how smith reduces the CI minutes.
 Not that was found. The documentation describes no telemetry setting, and a search
 of the Go sources found no telemetry code. This is a search, not an audit. Two
 network calls are documented: `smith info` asks GitHub for the newest release, and a terminal run
-asks the npm registry once a day for the newest smith on your channel (one request for the dist-tags,
-nothing about you is sent; announced the first time, cached 24 hours). `SMITH_NO_UPDATE_CHECK=1`
+asks smith's GitHub releases once a day for the newest smith on your channel (one request for the
+release list, nothing about you is sent; announced the first time, cached 24 hours). `SMITH_NO_UPDATE_CHECK=1`
 stops both, and `update_check = "off"` stops the second. Commands that talk to a registry (`smith up`,
 releasing) need the network by their nature.
 

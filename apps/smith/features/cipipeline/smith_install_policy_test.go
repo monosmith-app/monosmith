@@ -24,7 +24,7 @@ func TestSmithInstallPicksNodeThenPythonThenDotnetElseTheScript(t *testing.T) {
 		script bool
 		hosted string
 	}{
-		{[]string{"go", "node", "python"}, false, "npm install --global --registry https://registry.npmjs.org/ monosmith@1.5.0"},
+		{[]string{"go", "node", "python"}, false, "npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.5.0 smith --version"},
 		{[]string{"python", "dotnet"}, false, "python -m pip install --disable-pip-version-check --index-url https://pypi.org/simple/ monosmith==1.5.0"},
 		{[]string{"dotnet", "rust"}, false, "dotnet tool update --global monosmith --version 1.5.0"},
 		{[]string{"go", "rust", "java"}, true, ""},
@@ -38,6 +38,7 @@ func TestSmithInstallPicksNodeThenPythonThenDotnetElseTheScript(t *testing.T) {
 }
 
 func TestSmithInstallFromARegistryIsUnpinnedForADevBuild(t *testing.T) {
+	// Unpinned, npm takes its latest tag: smith before the launcher's first release, the launcher after.
 	for tool, want := range map[string]string{"node": "monosmith\n", "python": "monosmith\n", "dotnet": "monosmith\n"} {
 		got := SmithInstallFor(installModel("latest", tool)).HostedCommand() + "\n"
 		if !strings.HasSuffix(got, want) || strings.ContainsAny(got, "@=") || strings.Contains(got, "--version") {

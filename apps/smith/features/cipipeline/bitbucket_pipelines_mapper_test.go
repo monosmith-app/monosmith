@@ -73,7 +73,7 @@ func TestBitbucketCarriesTheSamePhasesAsGitHub(t *testing.T) {
 		t.Fatalf("providers drifted:\n%s\n%s", got, want)
 	}
 	for _, want := range []string{
-		"image: debian:bookworm", "npm install --global --registry https://registry.npmjs.org/ monosmith@1.4.0",
+		"image: debian:bookworm", "npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.4.0 smith --version",
 		`if [ -n "$BITBUCKET_PR_ID" ]; then smith release --dry-run --comment; fi`,
 		`[ "$BITBUCKET_BRANCH" = "main" ]`, "x-token-auth:${BITBUCKET_TOKEN}", "- dist/drop/**",
 		"#   NODE_AUTH_TOKEN: publishes npm packages", "# smith: no plugin says how to install rust 1.90",
