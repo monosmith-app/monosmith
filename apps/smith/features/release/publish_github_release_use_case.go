@@ -3,11 +3,13 @@ package release
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/features/releasesign"
 	"github.com/monosmith-app/monosmith/apps/smith/features/sbom"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/githubrelease"
@@ -67,6 +69,10 @@ func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgra
 		if bom != "" {
 			assets = append(slices.Clone(assets), bom)
 		}
+	}
+	// The launchers trust an archive only through a signed checksums.txt (ADR 0101).
+	if assets, err = releasesign.Sign(s.Root, assets, os.Getenv(releasesign.KeyEnv), item.Tag); err != nil {
+		return fmt.Errorf("signing the checksums of %s: %w (re-run the release to finish it)", item.Tag, err)
 	}
 	files := make([]string, len(assets))
 	for i, a := range assets {

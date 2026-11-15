@@ -17,6 +17,9 @@ providers = ["github"]
 branches = ["main"]
 # The native job runs only when a release happened (the default).
 native_on = "release"
+# The release signs checksums.txt with this minisign key, so the launchers on npm,
+# PyPI and NuGet trust what they download (ADR 0101).
+secrets = ["SMITH_SIGNING_KEY"]
 # Every step of this repository's pipelines runs the smith built from the commit:
 # the installed one only bootstraps, so it need not change with every release.
 smith_version = "latest"
