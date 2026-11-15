@@ -1,6 +1,6 @@
 # ADR 0091: Doctor moves imported libraries into dist/ the Nx way
 
-- Status: accepted
+- Status: superseded by [ADR 0102](0102-node-libraries-build-inside-their-own-folder.md)
 - Date: 2026-11-10
 
 ## Context

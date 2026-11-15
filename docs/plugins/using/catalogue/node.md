@@ -49,7 +49,7 @@ Tasks come from the project's `package.json`. This is the central rule: every ke
 
 | Script | Task description | dependsOn | Cached | Outputs |
 |---|---|---|---|---|
-| `build` | Compile into the workspace's `dist/<project dir>` | `^build` | yes | `dist/<project dir>` |
+| `build` | Compile: an app into the workspace's `dist/<project dir>`, a library or package into its own `dist` (ADR 0102) | `^build` | yes | `dist/<project dir>` for an app; the library's own `dist` (or the folder its tsconfig names) |
 | `typecheck` | Type-check without emitting | `^build` | yes | none |
 | `test` | Run unit tests | `^build` | yes | none |
 | `lint` | Lint and check formatting | `^build` | yes | none |
@@ -289,7 +289,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 ```
 
 - The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it (`Node.js is 24, as in CI`: another major, newer or older, is a warning, with a fix that asks: keep it or run `smith tools install node`; Node missing from the PATH fails); it does not read `.nvmrc` or `engines.node`.
-- Output: `build` writes `dist/<project dir>` (set by each project's `outDir`, which doctor checks: `kit compiles into dist/packages/kit`); `package` writes `dist/drop/<name>-<version>.tgz` (a VS Code extension: `.vsix`); `prune` writes into `dist/<app dir>`; a release asset goes to `dist/release/<app>/`.
+- Output: `build` writes `dist/<project dir>` for an app and the project's own `dist` for a library or package (set by each project's `outDir`, which doctor checks: `web compiles into dist/apps/web`, `kit builds inside its own folder`); `package` writes `dist/drop/<name>-<version>.tgz` (a VS Code extension: `.vsix`); `prune` writes into `dist/<app dir>`; a release asset goes to `dist/release/<app>/`.
 
 ## Derived files
 

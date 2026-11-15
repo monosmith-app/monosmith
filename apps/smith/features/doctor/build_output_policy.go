@@ -31,7 +31,7 @@ func OutsideBuildDir(projects []*projectgraph.Project, allowed ...string) []stri
 				// A package whose smith.toml declares the dist/ beside its
 				// package.json (main and types point there) has chosen it.
 				ownDist := resolved == path.Join(p.Root, "dist") || strings.HasPrefix(resolved, path.Join(p.Root, "dist")+"/")
-				if buildoutputs.InsideAny(resolved, allowed) || protocol.InBuildDir(resolved) || (ownDist && (strings.HasPrefix(from, "smith.toml") || keepsBuildsInProject(p))) {
+				if buildoutputs.InsideAny(resolved, allowed) || protocol.InBuildDir(resolved) || (ownDist && (strings.HasPrefix(from, "smith.toml") || keepsBuildsInProject(p))) || buildsInPlace(p, n, resolved) {
 					continue
 				}
 				if from == "" {
@@ -100,6 +100,12 @@ func shipFolder(root, glob string) string {
 
 // keepsBuildsInProject reports whether a web app built per environment was
 // given dist/<env> inside its own folder when it was added (ADR 0081).
+// buildsInPlace reports whether an output is the build of a Node library or
+// package inside its own folder, where it builds (ADR 0102).
+func buildsInPlace(p *projectgraph.Project, task, resolved string) bool {
+	return task == "build" && p.Plugin == "node" && p.Kind != protocol.ProjectApp && p.Root != "." && strings.HasPrefix(resolved, p.Root+"/")
+}
+
 func keepsBuildsInProject(p *projectgraph.Project) bool {
 	v, _ := p.Settings["vite"]["output"].(string)
 	return v == "project"

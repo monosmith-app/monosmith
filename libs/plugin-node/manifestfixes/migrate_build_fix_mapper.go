@@ -36,7 +36,7 @@ func MigrateBuildFix(workspaceRoot string, p protocol.Project, configName, oldOu
 		return nil, ""
 	}
 	move.AppliesTo = nil
-	if step, ok := dropDeclaredOutputs(workspaceRoot, p, cleanDir(oldOutDir)); ok {
+	if step, ok := dropDeclaredOutputs(workspaceRoot, p, cleanDir(oldOutDir), protocol.ProjectBuildDir(p.Root)); ok {
 		move.Steps = append(move.Steps, step)
 	}
 	files := make([]string, len(move.Files))
@@ -137,7 +137,7 @@ func MigrationRefusal(workspaceRoot string, p protocol.Project, configName, oldO
 // the build task when they are the old build folder: the plugin's own outputs
 // (dist/<project dir>) apply again. It is a smith command, not a rewrite of
 // smith.toml, so the steps of several projects never undo each other.
-func dropDeclaredOutputs(workspaceRoot string, p protocol.Project, old string) (protocol.FixStep, bool) {
+func dropDeclaredOutputs(workspaceRoot string, p protocol.Project, old, target string) (protocol.FixStep, bool) {
 	declared := p.Tasks["build"].Outputs
 	if len(declared) == 0 {
 		return protocol.FixStep{}, false
@@ -157,7 +157,7 @@ func dropDeclaredOutputs(workspaceRoot string, p protocol.Project, old string) (
 		key = `"` + key + `"`
 	}
 	return protocol.FixStep{
-		Description: "remove outputs = [" + `"` + strings.Join(declared, `", "`) + `"` + "] from [projects." + key + ".tasks.build] in smith.toml, so the build caches " + protocol.ProjectBuildDir(p.Root) + " again",
+		Description: "remove outputs = [" + `"` + strings.Join(declared, `", "`) + `"` + "] from [projects." + key + ".tasks.build] in smith.toml, so the build caches " + target + " again",
 		Argv:        []string{"smith", "config", "unset", "projects." + key + ".tasks.build.outputs"},
 	}, true
 }

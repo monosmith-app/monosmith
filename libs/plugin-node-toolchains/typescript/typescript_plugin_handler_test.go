@@ -33,7 +33,7 @@ func TestTypeScriptScaffoldsAndRecordsTheStack(t *testing.T) {
 		}
 	}
 	manifest, _ := os.ReadFile(filepath.Join(ws, "packages", "sdk", "package.json"))
-	for _, want := range []string{`"stack": "node-ts"`, `"build": "tsc -p tsconfig.build.json --outDir ../../dist/packages/sdk"`, `"name": "@acme/sdk"`} {
+	for _, want := range []string{`"stack": "node-ts"`, `"build": "tsc -p tsconfig.build.json --outDir dist"`, `"name": "@acme/sdk"`} {
 		if !strings.Contains(string(manifest), want) {
 			t.Errorf("package.json lacks %s:\n%s", want, manifest)
 		}
@@ -92,7 +92,7 @@ func generated(t *testing.T, kind protocol.ProjectKind, shape map[string]string)
 
 func TestTypeScriptLibFollowsSiblingsThatBuildWithEsbuildIntoDist(t *testing.T) {
 	project, root := generated(t, protocol.ProjectLib, map[string]string{"build.tool": "esbuild", "exports.target": "dist"})
-	for _, want := range []string{`"build": "esbuild src/index.ts`, `--outdir=../../dist/packages/dep`, `"main": "../../dist/packages/dep/index.js"`, `"types": "../../dist/packages/dep/index.d.ts"`} {
+	for _, want := range []string{`"build": "esbuild src/index.ts`, `--outdir=dist`, `"main": "./dist/index.js"`, `"types": "./dist/index.d.ts"`} {
 		if !strings.Contains(project, want) {
 			t.Errorf("package.json lacks %s:\n%s", want, project)
 		}
@@ -107,7 +107,7 @@ func TestTypeScriptLibFollowsSiblingsThatBuildWithEsbuildIntoDist(t *testing.T) 
 
 func TestTypeScriptPackageAndAppFollowTheBuildTool(t *testing.T) {
 	pkg, _ := generated(t, protocol.ProjectPackage, map[string]string{"build.tool": "esbuild", "exports.target": "dist"})
-	if !strings.Contains(pkg, `esbuild src/index.ts`) || !strings.Contains(pkg, `"types": "../../dist/packages/dep/index.d.ts"`) {
+	if !strings.Contains(pkg, `esbuild src/index.ts`) || !strings.Contains(pkg, `"types": "./dist/index.d.ts"`) {
 		t.Errorf("package:\n%s", pkg)
 	}
 	app, _ := generated(t, protocol.ProjectApp, map[string]string{"build.tool": "esbuild"})

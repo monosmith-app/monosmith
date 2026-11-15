@@ -18,11 +18,16 @@ var sourceEntry = regexp.MustCompile(`^\./src/(.+)\.ts$`)
 // Stage makes a project's build directory (dist/<project dir>) a package npm
 // can pack or publish: its package.json, with the paths that pointed into the
 // build directory made relative to it, and the README and LICENSE beside it.
-// A project that does not build into dist/ (plain JavaScript) is packed from
-// its own directory, which Stage returns unchanged.
+// A package that builds inside its own folder (ADR 0102) is staged in that
+// dist/ the same way, so a dist/<project dir> left from an older layout is
+// never published. A project that builds into neither (plain JavaScript) is
+// packed from its own directory, which Stage returns unchanged.
 func Stage(workspaceRoot, root string) (string, error) {
 	project := filepath.Join(workspaceRoot, filepath.FromSlash(root))
 	built := filepath.Join(workspaceRoot, filepath.FromSlash(protocol.ProjectBuildDir(root)))
+	if info, err := os.Stat(filepath.Join(project, "dist")); err == nil && info.IsDir() {
+		built = filepath.Join(project, "dist")
+	}
 	if _, err := os.Stat(built); errors.Is(err, fs.ErrNotExist) {
 		return project, nil
 	} else if err != nil {
