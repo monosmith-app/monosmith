@@ -2,30 +2,37 @@ package doctor
 
 import (
 	"encoding/json"
-	"github.com/monosmith-app/monosmith/apps/smith/features/doctorchecks"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/doctorchecks"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tomltext"
 )
 
 const smithPackage = "monosmith"
 
+// launcherRange is the dependency on the npm launcher (ADR 0101).
+const launcherRange = "^3"
+
 var exactVersion = regexp.MustCompile(`^\d+\.\d+\.\d+([-+][0-9A-Za-z.+-]+)?$`)
 
-// smithDependencyFinding checks that the smith the pipelines install is the
-// smith the workspace's package.json depends on. The pipeline pins the smith
-// that generated it unless [workspace] smith says otherwise, so a newer local
-// smith silently changes CI while the dependency stays behind. Only a Node
-// dependency is checked; nothing is reported without one, for "latest", or
-// when the versions agree. The version compared is the locked one
+// smithDependencyFinding checks a workspace's npm dependency on monosmith.
+// From 3.0 the package is the launcher, which runs the smith smith.toml pins
+// ([workspace] smith); below 3 it is smith itself, which no longer gets new
+// versions on npm. An old dependency is moved to the launcher, and when
+// smith.toml pins nothing, the version it resolved becomes the pin, so the
+// same smith keeps running. The version compared is the locked one
 // (package-lock.json), else the declared one when it is exact.
-func smithDependencyFinding(root, pipelineVersion string) []protocol.Finding {
-	if pipelineVersion == "" || pipelineVersion == "latest" {
-		return nil
-	}
+//
+// Parameters: root is the workspace root; pin is [workspace] smith.
+// Returns: one warning with its fix, or nothing.
+func smithDependencyFinding(root, pin string) []protocol.Finding {
 	raw, err := os.ReadFile(filepath.Join(root, "package.json"))
 	if err != nil {
 		return nil
@@ -50,20 +57,28 @@ func smithDependencyFinding(root, pipelineVersion string) []protocol.Finding {
 	if have == "" && exactVersion.MatchString(declared) {
 		have = declared
 	}
-	if have == "" || have == pipelineVersion {
+	if major, err := strconv.Atoi(strings.SplitN(have, ".", 2)[0]); have == "" || err != nil || major >= 3 {
 		return nil
 	}
-	doc.Object(section, true).SetString(smithPackage, pipelineVersion)
+	doc.Object(section, true).SetString(smithPackage, launcherRange)
+	files := []protocol.FileEdit{{Path: "package.json", Content: string(doc.Bytes())}}
+	remedy := "`smith doctor --fix` sets the " + smithPackage + " dependency to " + launcherRange + " and runs npm install (it asks first)"
+	if pin == "" {
+		if text, err := os.ReadFile(filepath.Join(root, workspace.FileName)); err == nil {
+			files = append(files, protocol.FileEdit{Path: workspace.FileName, Content: tomltext.SetString(string(text), "workspace", "smith", have)})
+			remedy += ", and pins [workspace] smith = \"" + have + "\" so the same smith keeps running"
+		}
+	}
 	return []protocol.Finding{{
-		Check:   "the smith the pipelines install is the smith in your dependencies",
+		Check:   "the monosmith dependency is the launcher",
 		Warning: true,
 		Area:    doctorchecks.AreaDependencies,
-		Problem: "the pipelines install smith " + pipelineVersion + ", your dependencies resolve " + have,
-		Detail:  "the pipelines install " + smithPackage + " " + pipelineVersion + ", but package.json resolves " + have + ", so CI and local runs use different smiths",
-		Remedy:  "`smith doctor --fix` sets the " + smithPackage + " dependency to " + pipelineVersion + " and runs npm install to refresh package-lock.json (it asks first), or set [workspace] smith = \"" + have + "\" and regenerate the pipelines",
+		Problem: "package.json resolves monosmith " + have + ", which is smith itself; from 3.0 the package is the launcher that runs the smith smith.toml pins",
+		Detail:  "smith no longer publishes its versions to npm, so this dependency stays on " + have + " for good (ADR 0101)",
+		Remedy:  remedy,
 		Fix: &protocol.Fix{
-			Description: "set the " + smithPackage + " dependency to " + pipelineVersion,
-			Files:       []protocol.FileEdit{{Path: "package.json", Content: string(doc.Bytes())}},
+			Description: "depend on the monosmith launcher (" + launcherRange + ")",
+			Files:       files,
 			Steps: []protocol.FixStep{
 				{Description: "run npm install to refresh package-lock.json", Argv: []string{"npm", "install", "--no-audit", "--no-fund"}},
 			},

@@ -268,7 +268,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Problem: doctorchecks.ProblemWhen(s.Git.IsShallow(), "the clone is shallow"),
 		Detail:  "a shallow clone cannot compute versions or affected projects", Remedy: "`git fetch --unshallow` (in CI: checkout with fetch-depth 0)",
 	})
-	out = append(out, smithDependencyFinding(s.Root, cipipeline.SmithVersionFor(s.Config, s.Version))...)
+	out = append(out, smithDependencyFinding(s.Root, s.Config.Workspace.Smith)...)
 	if c, err := cipipeline.Collect(s); err == nil {
 		model := cipipeline.NewModel(c, cipipeline.SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)
 		drift := cipipeline.Drift(s.Root, s.Config, model)

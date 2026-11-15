@@ -60,7 +60,7 @@ commands:
       - run:
           name: Install smith
           command: |
-            npm install --global --registry https://registry.npmjs.org/ monosmith@1.4.0
+            npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.4.0 smith --version
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
   save-stores:
     description: Keep the package download stores for the next run

@@ -65,8 +65,15 @@ func TestMutedKeepsTheUpdateKnownAndIsReversible(t *testing.T) {
 
 func TestUpdateCommandFollowsTheChannelAndRunnableTellsAGuessFromAnAnswer(t *testing.T) {
 	npm := "/usr/lib/node_modules/monosmith/bin/smith"
-	if got := UpdateCommand(npm, "linux", "next"); got != "npm i -g monosmith@next" {
+	// npm holds the launcher (ADR 0101): every channel installs its newest version.
+	if got := UpdateCommand(npm, "linux", "next"); got != "npm i -g monosmith@latest" {
 		t.Errorf("next = %q", got)
+	}
+	if got := UpdateCommand("C:/Users/ana/.smith/versions/2.50.0/smith.exe", "windows", "next"); got != ManagedCommand || !(Update{Command: got}).Runnable() {
+		t.Errorf("a smith a launcher started updates itself: %q", got)
+	}
+	if Managed("/home/ana/.local/bin/smith") {
+		t.Error("only the versions folder is managed")
 	}
 	if (Update{Command: UpdateCommand("/opt/smith", "linux", "latest")}).Runnable() {
 		t.Error("an unknown install is runnable")

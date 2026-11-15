@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/directlink"
 	"github.com/monosmith-app/monosmith/apps/smith/features/updatenotice"
+	"github.com/monosmith-app/monosmith/apps/smith/integrations/smithreleases"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/choiceprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
 )
@@ -29,9 +31,12 @@ func Command(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update smith itself to the newest release, the way it was installed",
-		Long: `Ask the npm registry for the newest smith on your channel (stable, or next when you run a
-prerelease) and update smith the way it was installed: npm, dotnet tool, pip, uv, pipx or the
-install script. It shows the command first and runs it only after you choose.
+		Long: `Ask smith's releases for the newest smith on your channel (stable, or next when you run a
+prerelease) and update smith the way it was installed. A smith the launcher started (npm, pip or
+dotnet, ADR 0101) downloads the new version into ~/.smith/versions, checks it against the signed
+checksums and runs it from then on; a workspace that pins [workspace] smith keeps its version.
+Another install (the install script, an old npm, dotnet, pip, uv or pipx install) shows its
+update command first and runs it only after you choose.
 
 This updates the smith program. To bring a workspace up to the smith you run, use smith upgrade.
 
@@ -56,7 +61,7 @@ func run(ctx context.Context, version string, check, yes bool, in *os.File, out,
 	o := updatenotice.ForThisProcess(version, 0)
 	u, err := updatenotice.Check(ctx, o, 10*time.Second)
 	if err != nil {
-		return problem.New("could not ask the registry for the newest smith: "+err.Error(), "check the network and run smith update again", "releases: "+updatenotice.ReleasesURL)
+		return problem.New("could not ask smith's releases for the newest smith: "+err.Error(), "check the network and run smith update again", "releases: "+updatenotice.ReleasesURL)
 	}
 	if !u.Available {
 		fmt.Fprintf(out, "smith %s is the newest smith on the %s channel.\n", u.Current, u.Channel)
@@ -66,11 +71,17 @@ func run(ctx context.Context, version string, check, yes bool, in *os.File, out,
 	if !u.Runnable() {
 		return problem.New("smith cannot tell how it was installed, so it cannot update itself", "download "+u.Latest+" from "+updatenotice.ReleasesURL)
 	}
-	fmt.Fprintf(out, "It would run: %s\n", u.Command)
+	managed := u.Command == updatenotice.ManagedCommand
+	if managed {
+		fmt.Fprintf(out, "It would download smith %s into %s and check it against the signed checksums.\n", u.Latest, filepath.Dir(smithreleases.ProgramPath(o.Home, u.Latest, runtime.GOOS)))
+	} else {
+		fmt.Fprintf(out, "It would run: %s\n", u.Command)
+	}
 	if check {
 		return nil
 	}
-	if blockers := updatenotice.BlockingProcesses(ctx, o.Exe, os.Getpid(), runtime.GOOS); len(blockers) > 0 {
+	// A managed update writes a new folder, so a running smith is in nobody's way.
+	if blockers := updatenotice.BlockingProcesses(ctx, o.Exe, os.Getpid(), runtime.GOOS); !managed && len(blockers) > 0 {
 		return problem.New("other smith programs use this install and Windows cannot replace it while they run: "+describe(blockers),
 			"close them (the editor or assistant that started smith mcp, smith serve) and run smith update again")
 	}
@@ -78,14 +89,26 @@ func run(ctx context.Context, version string, check, yes bool, in *os.File, out,
 		if !term.IsTerminal(int(in.Fd())) {
 			return problem.New("smith update needs a choice and there is no terminal to ask", "run smith update --yes to update without asking", "run smith update --check to only look")
 		}
+		hint := "runs " + u.Command
+		if managed {
+			hint = "downloads and checks smith " + u.Latest
+		}
 		answer := choiceprompt.Ask("Update smith?", []choiceprompt.Option{
-			{Label: "Update now", Value: "update", Hint: "runs " + u.Command},
+			{Label: "Update now", Value: "update", Hint: hint},
 			{Label: "Not now", Value: "no", Hint: "changes nothing; smith update asks again whenever you run it"},
 		}, "update", bufio.NewReader(in), errOut)
 		if answer != "update" {
 			fmt.Fprintln(out, "Nothing changed.")
 			return nil
 		}
+	}
+	if managed {
+		program, err := smithreleases.Install(ctx, o.Home, u.Latest, runtime.GOOS, runtime.GOARCH, smithreleases.PublicKey)
+		if err != nil {
+			return problem.New(err.Error(), "run smith update again, or download "+u.Latest+" from "+updatenotice.ReleasesURL)
+		}
+		fmt.Fprintf(out, "smith %s is installed (%s). The launcher runs it from now on; a workspace that pins [workspace] smith keeps its version.\n", u.Latest, program)
+		return nil
 	}
 	// A smith that runs from its link does not hold the installed file, so the update can run here.
 	detach := runtime.GOOS == "windows" && !directlink.RunningFromLink(o.Home, directlink.ForThisProcess(version).Exe)
