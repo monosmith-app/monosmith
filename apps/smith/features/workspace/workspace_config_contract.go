@@ -620,6 +620,10 @@ type ProjectOverride struct {
 	// Facts are shared facts for this project, the narrowest scope: they win
 	// over [facts] and over the defaults plugins publish.
 	Facts map[string]any `toml:"facts"`
+	// SlotSettings names the app settings of an Azure function app that stay
+	// with a deployment slot (slotSetting true in dist/drop/<app>/env/<env>.json).
+	// Default: none, every setting moves with a slot swap.
+	SlotSettings []string `toml:"slot_settings"`
 	// Recipe records the recipe the project was created from.
 	Recipe *ProjectRecipe          `toml:"recipe"`
 	Tasks  map[string]TaskOverride `toml:"tasks"`

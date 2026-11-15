@@ -41,6 +41,12 @@ func WithFunctionTasks(tasks map[string]protocol.Task, host, root, file, dir str
 	}
 	switch host {
 	case functionhost.Azure:
+		// The app settings of each environment: never cached, so a cache hit of
+		// the publish still drops them.
+		tasks["app-settings"] = protocol.Task{Command: []string{"{smith}", "func", "settings"}, Description: "Write the app settings of each local.settings.<env>.json into dist/drop/"}
+		pack := tasks["package"]
+		pack.DependsOn = append(pack.DependsOn, "app-settings")
+		tasks["package"] = pack
 		tasks["start"] = protocol.Task{Command: []string{"func", "start"}, Cwd: shipped, DependsOn: []string{"package"}, Description: "Run the function locally with Azure Functions Core Tools"}
 	case functionhost.AWS:
 		command := []string{"sam", "local", "invoke", "GreetingFunction", "--event", "Events/greeting.json"}

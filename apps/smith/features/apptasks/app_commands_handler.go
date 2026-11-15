@@ -36,7 +36,7 @@ are installed into the zip too, for a host that does not install them itself (Az
 				return err
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), zip)
-			return nil
+			return writeAppSettings(cmd, f)
 		},
 	}
 	pack.Flags().BoolVar(&withDependencies, "with-dependencies", false, "install the production dependencies into the zip")
@@ -52,8 +52,44 @@ are installed into the zip too, for a host that does not install them itself (Az
 			return functionhost.AssembleFunctionApp(f.Project, f.Build)
 		},
 	}
-	cmd.AddCommand(assemble, pack, pythonStageCommand(), pythonZipCommand())
+	settings := &cobra.Command{
+		Use:   "settings",
+		Short: "Turn each local.settings.<env>.json of an Azure function app into the app settings of that environment",
+		Long: `Turn each local.settings.<env>.json of the Azure function app in the folder you are in
+into one line of app settings, [{"name":..,"value":..,"slotSetting":..}], in
+dist/drop/<app>/env/<env>.json. local.settings.json stays out, and so do the settings
+Azure sets itself (AzureWebJobsStorage, APPLICATIONINSIGHTS_CONNECTION_STRING). The names
+in smith.toml [projects.<app>] slot_settings stay with a deployment slot.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			f, err := foldersHere()
+			if err != nil {
+				return err
+			}
+			return writeAppSettings(cmd, f)
+		},
+	}
+	cmd.AddCommand(assemble, pack, settings, pythonStageCommand(), pythonZipCommand())
 	return cmd
+}
+
+// writeAppSettings writes the app settings of each environment of an Azure
+// function app into dist/drop (see `smith func settings`), and prints each
+// file and note. An app without local.settings.<env>.json writes nothing.
+func writeAppSettings(cmd *cobra.Command, f Folders) error {
+	root, err := workspace.FindRoot(f.Project)
+	if err != nil {
+		return err
+	}
+	var slots []string
+	if cfg, err := workspace.Load(root); err == nil {
+		slots = cfg.Projects[f.Name].SlotSettings
+	}
+	written, notes, err := functionhost.WriteAppSettings(f.Project, root, f.Name, slots)
+	for _, line := range append(written, notes...) {
+		fmt.Fprintln(cmd.OutOrStdout(), line)
+	}
+	return err
 }
 
 // pythonStageCommand is `smith func stage`, the build task of a Python
@@ -96,7 +132,7 @@ func pythonZipCommand() *cobra.Command {
 				return err
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), zip)
-			return nil
+			return writeAppSettings(cmd, f)
 		},
 	}
 }
