@@ -132,6 +132,21 @@ func (c *Client) CanPush(repo Repository) (bool, error) {
 	return r.Permissions.Push || r.Permissions.Maintain || r.Permissions.Admin, nil
 }
 
+// CacheUsage is how many bytes the repository's Actions caches hold, as
+// GitHub states it (a read-only request; the token needs actions: read).
+//
+// Parameters: repo is the repository.
+// Returns the bytes, or an error when GitHub does not answer with them.
+func (c *Client) CacheUsage(repo Repository) (int64, error) {
+	var r struct {
+		Size int64 `json:"active_caches_size_in_bytes"`
+	}
+	if _, err := c.do(http.MethodGet, c.API+"/repos/"+repo.String()+"/actions/cache/usage", "application/json", nil, &r); err != nil {
+		return 0, err
+	}
+	return r.Size, nil
+}
+
 // DownloadAsset writes a release asset's content to a file.
 func (c *Client) DownloadAsset(repo Repository, a Asset, to string) error {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/repos/%s/releases/assets/%d", c.API, repo, a.ID), nil)

@@ -186,7 +186,8 @@ func TestWriteKeepsSlotsAndReportsDrift(t *testing.T) {
 	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github", "azure"}}}
 	m := model()
 	changed, _, err := Write(root, cfg, m)
-	if err != nil || len(changed) != 2 {
+	// ci.yml, cache-hygiene.yml and azure-pipelines.yml.
+	if err != nil || len(changed) != 3 {
 		t.Fatalf("changed %v err %v", changed, err)
 	}
 	if drift := Drift(root, cfg, m); len(drift) != 0 {
@@ -449,5 +450,17 @@ func TestGitHubWorkflowGrantsDeploymentsOnlyWhenARegistryIsPublishedTo(t *testin
 	}
 	if got := NewModel(Contributions{Deployments: true}, "1.0.0", "main"); !got.Deployments {
 		t.Error("the model carries the contribution")
+	}
+}
+
+func TestGitHubGetsACacheHygieneWorkflow(t *testing.T) {
+	out := Rendered(workspace.Config{CI: workspace.CISection{Providers: []string{"github"}}}, model())[GitHubCacheHygienePath]
+	for _, want := range []string{"types: [closed]", "workflows: [ci]", "actions: write", "refs/pull/${{ github.event.pull_request.number }}/merge", `startswith("smith-")`, "map(.[1:])"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the cache hygiene workflow lacks %q:\n%s", want, out)
+		}
+	}
+	if _, ok := Rendered(workspace.Config{CI: workspace.CISection{Providers: []string{"azure"}}}, model())[GitHubCacheHygienePath]; ok {
+		t.Error("only a GitHub workspace gets the workflow")
 	}
 }

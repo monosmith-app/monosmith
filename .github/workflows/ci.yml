@@ -124,6 +124,7 @@ jobs:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
+          retention-days: 7
       - name: Sign in to Azure
         if: github.event_name == 'push' && github.ref_name == 'main'
         uses: azure/login@v3

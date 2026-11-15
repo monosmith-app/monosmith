@@ -125,6 +125,9 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Attest = m.Attest && cfg.CI.Attest != "off"
 	m.AttestOptional = cfg.CI.Attest == "optional"
 	m.ArtifactsOptional, m.ArtifactRetentionDays = cfg.CI.Artifacts == "optional", cfg.CI.ArtifactRetentionDays
+	if m.ArtifactRetentionDays == 0 {
+		m.ArtifactRetentionDays = DefaultArtifactRetentionDays
+	}
 	m.ManualRelease = cfg.CI.ManualRelease
 	m.NativeOn, m.Triggers, m.Audit, m.AuditCron, m.PublishOn = cfg.CI.NativeOn, cfg.CI.Triggers, cfg.CI.Audit, cfg.CI.AuditCron, cfg.CI.PublishOn
 	m.ChannelBranches = nil
@@ -137,6 +140,7 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 		switch p {
 		case "github":
 			out[GitHubPath] = RenderGitHub(m)
+			out[GitHubCacheHygienePath] = RenderGitHubCacheHygiene(m)
 			if m.Pub {
 				out[GitHubPubPath] = RenderGitHubPub(m)
 			}
@@ -226,7 +230,7 @@ func fileMode(path string) os.FileMode {
 
 // OwnedPaths are the files smith generates and may rewrite or delete. A file
 // at one of them belongs to smith only while it starts with smith's header.
-var OwnedPaths = []string{GitHubPath, GitHubPubPath, AzurePath, GitLabPath, CircleCIPath, BitbucketPath, DevcontainerPath, InstallScriptPath}
+var OwnedPaths = []string{GitHubPath, GitHubPubPath, GitHubCacheHygienePath, AzurePath, GitLabPath, CircleCIPath, BitbucketPath, DevcontainerPath, InstallScriptPath}
 
 // Stale lists the files smith generated that the workspace no longer asks for
 // (a provider dropped from [ci] providers): they carry smith's header and are

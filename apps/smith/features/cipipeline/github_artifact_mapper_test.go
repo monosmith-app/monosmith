@@ -19,17 +19,20 @@ func TestTheArtifactStepsKeepTheDefaultsUntilTheWorkspaceAsksOtherwise(t *testin
 	if !strings.Contains(out, "name: drop") || !strings.Contains(out, "name: native-${{ matrix.os }}") {
 		t.Fatalf("both upload steps are there:\n%s", out)
 	}
-	if strings.Contains(out, "retention-days") || strings.Contains(out, "continue-on-error") {
-		t.Errorf("by default an upload fails the job and uses the repository's retention:\n%s", out)
+	if strings.Contains(out, "continue-on-error") {
+		t.Errorf("by default an upload fails the job:\n%s", out)
+	}
+	if strings.Count(out, "          retention-days: 7\n") != 2 {
+		t.Errorf("by default GitHub keeps both uploads for 7 days, so old builds do not fill the quota:\n%s", out)
 	}
 }
 
 func TestTheArtifactStepsContinueOnErrorAndSetTheRetention(t *testing.T) {
-	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github"}, Artifacts: "optional", ArtifactRetentionDays: 7}}
+	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github"}, Artifacts: "optional", ArtifactRetentionDays: 30}}
 	out := Rendered(cfg, artifactModel())[GitHubPath]
 	for _, want := range []string{
-		"        continue-on-error: true\n        with:\n          name: drop\n          path: dist/drop\n          if-no-files-found: ignore\n          retention-days: 7\n",
-		"        continue-on-error: true\n        with:\n          name: native-${{ matrix.os }}\n          path: dist/drop\n          if-no-files-found: ignore\n          retention-days: 7\n",
+		"        continue-on-error: true\n        with:\n          name: drop\n          path: dist/drop\n          if-no-files-found: ignore\n          retention-days: 30\n",
+		"        continue-on-error: true\n        with:\n          name: native-${{ matrix.os }}\n          path: dist/drop\n          if-no-files-found: ignore\n          retention-days: 30\n",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("an upload step lacks continue-on-error and retention-days:\n%s", out)

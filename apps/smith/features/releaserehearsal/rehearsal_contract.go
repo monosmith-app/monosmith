@@ -21,6 +21,8 @@ const (
 	CheckCredential = "credential"
 	CheckAccess     = "access"
 	CheckIdentity   = "identity"
+	// CheckStorage is the room the repository's Actions cache has left.
+	CheckStorage = "storage"
 )
 
 // Target is one registry a release publishes one project to.

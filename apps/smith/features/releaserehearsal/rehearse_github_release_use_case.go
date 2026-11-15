@@ -20,6 +20,7 @@ import (
 // the token, nil when there is one.
 func CheckGitHubRelease(report *Report, projects []string, repo githubrelease.Repository, checker interface {
 	CanPush(githubrelease.Repository) (bool, error)
+	CacheUsage(githubrelease.Repository) (int64, error)
 }, tokenErr error) {
 	if len(projects) == 0 {
 		return
@@ -42,4 +43,15 @@ func CheckGitHubRelease(report *Report, projects []string, repo githubrelease.Re
 	default:
 		add(CheckAccess, Pass, fmt.Sprintf("the token may write to %s: it can create the releases and attach the package files", repo), "")
 	}
+	// A token without actions: read cannot see the cache: nothing to say then.
+	if used, err := checker.CacheUsage(repo); err == nil && used >= cacheWarnBytes {
+		add(CheckStorage, Warn, fmt.Sprintf("the Actions cache holds %.1f GB of the %d GB GitHub keeps for a repository, so it evicts the oldest entries and builds lose their caches", float64(used)/1e9, cacheLimitBytes/1_000_000_000), "the cache-hygiene workflow smith ci generate writes deletes superseded caches; to clean now, gh cache list and gh cache delete")
+	}
 }
+
+// cacheLimitBytes is the Actions cache GitHub keeps for a repository, and
+// cacheWarnBytes the use the rehearsal warns at.
+const (
+	cacheLimitBytes = 10_000_000_000
+	cacheWarnBytes  = cacheLimitBytes * 9 / 10
+)
