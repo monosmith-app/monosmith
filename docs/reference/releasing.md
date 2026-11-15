@@ -594,6 +594,24 @@ archives are attached by the per-OS jobs, get neither yet. Registry
 publishes keep their own provenance (npm provenance above, PyPI attestations
 through trusted publishing).
 
+### Signed checksums
+
+When the environment holds `SMITH_SIGNING_KEY`, the text of an unencrypted
+[minisign](https://jedisct1.github.io/minisign/) private key, the release signs every
+`checksums.txt` it attaches and attaches the signature beside it as `checksums.txt.minisig`.
+Anyone with the public key checks a download without trusting the release page:
+
+```sh
+minisign -Vm checksums.txt -P <public key>
+sha256sum -c --ignore-missing checksums.txt
+```
+
+Pass the key to the pipeline with `[ci] secrets = ["SMITH_SIGNING_KEY"]`. Without the variable
+nothing is signed. smith's own releases are signed this way, and the launchers on npm, PyPI and
+NuGet run an archive only when its checksum is in a correctly signed list
+([ADR 0101](../architecture/decisions/0101-the-registry-packages-are-launchers-not-releases.md)).
+Native apps, whose archives come from separate runners, have no combined list to sign yet.
+
 ## Package managers
 
 An app released with assets can also get the manifests package managers

@@ -20,6 +20,9 @@ providers = ["github"]
 branches = ["main"]
 # The native job runs only when a release happened (the default).
 native_on = "release"
+# The release signs checksums.txt with this minisign key, so the launchers on npm,
+# PyPI and NuGet trust what they download (ADR 0101).
+secrets = ["SMITH_SIGNING_KEY"]
 
 # Every Go project gets a slice-check task, run before lint: role-named files,
 # no junk-drawer folders (see docs/reference/conventions.md).

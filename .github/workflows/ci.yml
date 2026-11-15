@@ -97,10 +97,16 @@ jobs:
       # smith:slot-end before-setup
       - name: Setup
         run: smith ci setup
+        env:
+          SMITH_SIGNING_KEY: ${{ secrets.SMITH_SIGNING_KEY }}
       - name: Audit
         run: smith ci audit
+        env:
+          SMITH_SIGNING_KEY: ${{ secrets.SMITH_SIGNING_KEY }}
       - name: Verify
         run: smith ci verify
+        env:
+          SMITH_SIGNING_KEY: ${{ secrets.SMITH_SIGNING_KEY }}
       # smith:slot after-verify
       - name: VS Code extension integration tests
         run: xvfb-run -a npm run test:integration -w monosmith-vscode
@@ -117,6 +123,8 @@ jobs:
       - name: Pack
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: smith ci pack
+        env:
+          SMITH_SIGNING_KEY: ${{ secrets.SMITH_SIGNING_KEY }}
       - name: Keep the packed apps (dist/drop as artifact drop)
         uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref_name == 'main'
@@ -142,6 +150,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          SMITH_SIGNING_KEY: ${{ secrets.SMITH_SIGNING_KEY }}
           VSCE_AZURE_CREDENTIAL: "true"
       - name: Attest build provenance
         if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
