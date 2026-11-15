@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monosmith"
+version = "0.0.0"
+description = "The smith command: downloads and runs the smith your workspace pins (smith.toml [workspace] smith), checked against signed checksums."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Eduardo Russo" }]
+keywords = ["smith", "monosmith", "monorepo", "launcher"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = []
+
+[project.scripts]
+smith = "monosmith_launcher.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/monosmith-app/monosmith#readme"
+Repository = "https://github.com/monosmith-app/monosmith"
+Issues = "https://github.com/monosmith-app/monosmith/issues"
+
+[tool.smith]
+kind = "package"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The launcher is not installed into the workspace venv: the tests import it from src.
+pythonpath = ["src"]
+addopts = "--import-mode=importlib"
+
+[tool.ruff]
+extend = "../../ruff.toml"
+target-version = "py310"
+line-length = 120

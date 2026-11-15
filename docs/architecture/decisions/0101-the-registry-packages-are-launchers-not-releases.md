@@ -27,7 +27,10 @@ Owner decisions of 2026-11-15:
 2. **The launchers.** `monosmith` on npm, PyPI and NuGet holds a launcher with its own version line
    starting at 3.0.0, published only when the launcher changes. It starts above every smith release on
    the registries, because pip and NuGet install the highest version: the first npm launcher continues
-   npm's line from a baseline tag `launcher-node@2.50.0` and releases as a breaking change. Each run it picks a version: `SMITH_VERSION`,
+   npm's line from a baseline tag `launcher-node@2.50.0` and releases as a breaking change; the PyPI
+   and .NET launchers do the same from `launcher-python@2.53.0` and `launcher-dotnet@2.53.0` (the newest smith on PyPI and NuGet). No
+   launcher has a dependency: Python and .NET have no Ed25519 of their own, so those two check the
+   signature with the reference algorithm of RFC 8032, tested against the release key's signatures. Each run it picks a version: `SMITH_VERSION`,
    then the pin of the workspace it runs in, then the newest release. It runs
    `~/.smith/versions/<version>/smith`, and downloads that version first when it is missing: the
    download happens on the first run, never in an install script (pnpm 10 and `--ignore-scripts`

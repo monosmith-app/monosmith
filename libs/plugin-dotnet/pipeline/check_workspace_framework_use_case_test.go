@@ -37,4 +37,11 @@ func TestCheckWorkspaceFrameworkOffersToShareTheFramework(t *testing.T) {
 	if _, ok := CheckWorkspaceFramework(ws, []protocol.Project{{Name: "core", Root: "libs/core"}}); ok {
 		t.Fatal("projects that inherit need no finding")
 	}
+	// After the fix: the props holds net10.0 and a test project keeps a
+	// framework of its own that the fix leaves alone.
+	write("Directory.Build.props", f.Fix.Files[0].Content)
+	write("libs/core/tests/Acme.Core.Tests.csproj", strings.Replace(csproj, "net10.0", "net11.0", 1))
+	if f, ok := CheckWorkspaceFramework(ws, []protocol.Project{{Name: "core", Root: "libs/core"}}); ok {
+		t.Fatalf("a fix that would change no project is no finding: %+v", f)
+	}
 }

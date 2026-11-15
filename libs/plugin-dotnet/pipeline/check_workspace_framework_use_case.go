@@ -36,7 +36,8 @@ func CheckWorkspaceFramework(workspaceRoot string, projects []protocol.Project) 
 	}
 	propsRaw, _ := os.ReadFile(filepath.Join(workspaceRoot, propsFile))
 	props, changed, framework := scaffolding.ShareFramework(string(propsRaw), files)
-	if framework == "" {
+	// Directory.Build.props already holds it when the fix would change no project.
+	if framework == "" || len(changed) == 0 {
 		return protocol.Finding{}, false
 	}
 	paths := make([]string, 0, len(changed))

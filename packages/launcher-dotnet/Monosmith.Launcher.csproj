@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- net8.0 is the oldest long-term-support release; RollForward lets a later runtime run the tool. -->
+    <RollForward>Major</RollForward>
+    <RootNamespace>Monosmith.Launcher</RootNamespace>
+    <AssemblyName>Monosmith.Launcher</AssemblyName>
+    <PackageId>monosmith</PackageId>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>smith</ToolCommandName>
+    <Description>The smith command: downloads and runs the smith your workspace pins (smith.toml [workspace] smith), checked against signed checksums.</Description>
+    <Authors>Eduardo Russo</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>smith;monosmith;monorepo;launcher</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/monosmith-app/monosmith#readme</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/monosmith-app/monosmith</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Version>0.0.0</Version>
+    <SmithKind>package</SmithKind>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- The tests project lives beside the code, in its own project. -->
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+    <None Remove="tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Monosmith.Launcher.Tests" />
+  </ItemGroup>
+
+</Project>

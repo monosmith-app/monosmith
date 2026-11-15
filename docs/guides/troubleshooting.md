@@ -324,8 +324,8 @@ error.
 
 ## The smith launcher cannot install smith
 
-`smith` from npm is a launcher: on the first run of a version it downloads that version into
-`~/.smith/versions` ([installing](../getting-started/installing.md#the-npm-launcher)). Each
+`smith` from npm, PyPI or NuGet is a launcher: on the first run of a version it downloads that version into
+`~/.smith/versions` ([installing](../getting-started/installing.md#the-launchers)). Each
 message starts with `smith launcher:` and names the cause:
 
 | Message | Cause and remedy |

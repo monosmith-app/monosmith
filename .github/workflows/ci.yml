@@ -11,7 +11,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
   id-token: write
   attestations: write
   deployments: write
@@ -79,11 +78,13 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/pip
-          key: smith-pip-${{ runner.os }}-${{ hashFiles('requirements-dev.txt', 'packages/plugin-sdk-py/pyproject.toml') }}
+          key: smith-pip-${{ runner.os }}-${{ hashFiles('requirements-dev.txt', 'packages/launcher-python/pyproject.toml', 'packages/plugin-sdk-py/pyproject.toml') }}
           restore-keys: |
             smith-pip-${{ runner.os }}-
       - name: Install smith
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           npm install --global --registry https://registry.npmjs.org/ monosmith
           smith --version
@@ -144,7 +145,6 @@ jobs:
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: smith ci release
         env:
-          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

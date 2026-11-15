@@ -354,6 +354,7 @@
               "context": { "type": "string", "pattern": "^(\\.|[A-Za-z0-9_@][A-Za-z0-9_.@-]*(/[A-Za-z0-9_@][A-Za-z0-9_.@-]*)*/?)$", "description": "The build context, workspace-relative: \".\" (the workspace, the default) or a directory such as the app's own, for a Dockerfile written for it (Nx's: docker build apps/api)." }
             }
           },
+          "slot_settings": { "type": "array", "items": { "type": "string" }, "description": "The app settings of an Azure function app that stay with a deployment slot: slotSetting true in dist/drop/<app>/env/<env>.json, which smith writes from each local.settings.<env>.json." },
           "split_repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "A GitHub repository (owner/repo) each release is mirrored to: the project's directory split out, pushed to its main branch and tagged vX.Y.Z, for a registry that reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN." },
           "registry": { "type": "string", "description": "The [registries] entry this package is published to, instead of [release] registry; \"none\" releases it by its tag only; \"github-release\" packs it and attaches the package file to its GitHub Release instead of publishing (needs [release] github_releases = true)." },
           "facts": {

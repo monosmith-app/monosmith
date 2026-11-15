@@ -67,3 +67,19 @@ passed `smith run lint typecheck test build package`, and `smith doctor` passed.
 
 - [The plugin catalogue](README.md), [vite](vite.md), [eslint](eslint.md), [vitest](vitest.md)
 - [smith add: Function apps](../../../manual/add.md#function-apps)
+
+## Azure app settings per environment
+
+An Azure function app can keep one `local.settings.<env>.json` per environment (for example `local.settings.uat.json`) beside `local.settings.json`. When the app packs (`smith ci pack`, or `smith func settings` on its own), smith turns each one into the app settings of that environment, on one line, in `dist/drop/<app>/env/<env>.json`:
+
+```json
+[{"name":"ApiUrl","value":"https://api.uat","slotSetting":false}]
+```
+
+`az functionapp config appsettings set --settings @dist/drop/<app>/env/uat.json` and the portal's advanced edit read that file. `local.settings.json` and the sample stay out. So do `AzureWebJobsStorage` and `APPLICATIONINSIGHTS_CONNECTION_STRING`, which Azure sets when it creates the app. A `ConnectionStrings` section is not app settings: smith says so and leaves it out. A setting stays with a deployment slot when smith.toml names it:
+
+```toml
+[projects.orders]
+slot_settings = ["MODE"]
+```
+

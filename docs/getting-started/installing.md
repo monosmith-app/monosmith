@@ -1,8 +1,8 @@
 # Installing smith
 
-smith is one static binary per platform. npm installs a small launcher that downloads that
-binary on its first run and checks it against the signed checksums
-([the npm launcher](#the-npm-launcher)); every other channel below installs the binary itself.
+smith is one static binary per platform. npm, PyPI and NuGet install a small launcher that
+downloads that binary on its first run and checks it against the signed checksums
+([the launchers](#the-launchers)); every other channel below installs the binary itself.
 None of them needs the language it comes through at run time.
 
 | Platform | Architectures | Minimum |
@@ -18,23 +18,22 @@ None of them needs the language it comes through at run time.
 | Install script (Linux, macOS, Git Bash) | `curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh \| sh` | run it again | delete `~/.local/bin/smith` |
 | Install script (Windows PowerShell) | `irm https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.ps1 \| iex` | run it again | delete `%USERPROFILE%\.local\bin\smith.exe` (and the directory from your user PATH) |
 | npm (the launcher) | `npm install --global monosmith` | `smith update` | `npm uninstall --global monosmith`, then delete `~/.smith/versions` |
-| pipx | `pipx install monosmith` | `pipx upgrade monosmith` | `pipx uninstall monosmith` |
-| uv | `uv tool install monosmith` | `uv tool upgrade monosmith` | `uv tool uninstall monosmith` |
-| pip | `pip install monosmith` | `pip install --upgrade monosmith` | `pip uninstall monosmith` |
-| .NET tool (.NET 10 SDK) | `dotnet tool install --global monosmith` | `dotnet tool update --global monosmith` | `dotnet tool uninstall --global monosmith` |
-| RubyGems | `gem install monosmith` | `gem update monosmith` | `gem uninstall monosmith` |
-| pub.dev | `dart pub global activate monosmith` | run it again | `dart pub global deactivate monosmith` |
+| pipx (the launcher) | `pipx install monosmith` | `smith update` | `pipx uninstall monosmith`, then delete `~/.smith/versions` |
+| uv (the launcher) | `uv tool install monosmith` | `smith update` | `uv tool uninstall monosmith`, then delete `~/.smith/versions` |
+| pip (the launcher) | `pip install monosmith` | `smith update` | `pip uninstall monosmith`, then delete `~/.smith/versions` |
+| .NET tool (the launcher, .NET 8 or later) | `dotnet tool install --global monosmith` | `smith update` | `dotnet tool uninstall --global monosmith`, then delete `~/.smith/versions` |
 | GitHub Releases | download `monosmith_<version>_<os>_<arch>.zip` from [releases](https://github.com/monosmith-app/monosmith/releases) and put `smith` on your PATH | download the newer zip | delete the binary |
 
 To run smith once without installing it: `uvx --from monosmith smith --version`
 or `npx monosmith --version`.
 
-### The npm launcher
+### The launchers
 
-From version 3, the `monosmith` npm package is a launcher, not smith itself
+From version 3, the `monosmith` packages on npm, PyPI and NuGet are launchers, not smith itself
 ([ADR 0101](../architecture/decisions/0101-the-registry-packages-are-launchers-not-releases.md)).
-It has a version line of its own and changes rarely; smith's versions come from its GitHub
-Releases. Each time you run `smith`, the launcher picks the version:
+Each has a version line of its own and changes rarely; smith's versions come from its GitHub
+Releases. All three do the same, with no dependency of their own. Each time you run `smith`, the
+launcher picks the version:
 
 1. `SMITH_VERSION`, when it is set (`latest` means the newest);
 2. else the pin of the workspace you are in: `smith = "<version>"` under `[workspace]` in the
@@ -45,8 +44,8 @@ It runs `~/.smith/versions/<version>/smith` (`$SMITH_HOME/versions` when `SMITH_
 version that is missing is downloaded first: the archive for your system, `checksums.txt` and
 `checksums.txt.minisig`. The launcher runs nothing unless the minisign signature matches smith's
 release key (built into the launcher) and the archive's SHA-256 is in the signed list. The
-download happens on the first run, never in an install script, so `npm install --ignore-scripts`
-and pnpm work too. Once smith runs, `smith update` downloads the next version into the same folder;
+download happens on the first run, never in an install script, so `npm install --ignore-scripts`,
+pnpm and `pipx` work too. Once smith runs, `smith update` downloads the next version into the same folder;
 npm is not involved.
 
 Behind a firewall that reaches only your package registry, mirror the release files and set
@@ -54,8 +53,9 @@ Behind a firewall that reaches only your package registry, mirror the release fi
 `checksums.txt` and `checksums.txt.minisig`, and `<url>/latest.txt` and `<url>/next.txt` with the
 newest version of each channel. The old `@monosmith/cli` package stays at 2.50.0.
 
-The pub.dev package is published by hand for now, so it can lag behind the
-others.
+RubyGems and pub.dev get no new smith: 2.53.0 is the last version there. If you installed it with
+`gem install monosmith` or `dart pub global activate monosmith`, uninstall it and use one of the
+channels above.
 
 ### The install scripts
 
@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/instal
 `SMITH_VERSION` does the same. With no version they install the newest
 `smith@` release. On GitHub Actions and Azure Pipelines `install.sh` also
 adds its directory to `PATH` for the following steps; generated pipelines
-install smith with the package manager of the workspace's main toolchain, pinned to the version that generated them: `npm install --global monosmith@^3` (the launcher), then `SMITH_VERSION=<version> smith --version` to download that smith, when the workspace has Node (first choice), else `pip install monosmith==<version>` when it has Python, else `dotnet tool update --global monosmith --version <version>` when it has .NET. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. The .NET package can lag a release behind PyPI. Set
+install smith with the package manager of the workspace's main toolchain, pinned to the version that generated them: the launcher (`npm install --global monosmith@^3` when the workspace has Node, first choice; else `pip install "monosmith>=3,<4"` when it has Python; else `dotnet tool update --global monosmith --version "3.*"` when it has .NET), then `SMITH_VERSION=<version> smith --version` to download that smith. GitHub keeps `~/.smith/versions` in the Actions cache, keyed on the version, so later runs do not download it again. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. Set
 `GITHUB_TOKEN` to avoid GitHub's API rate limit on shared runners.
 
 ### Linux packages
@@ -110,7 +110,7 @@ offer it on Home and in their command lists. See [`smith completion`](../manual/
 
 | Channel | How completion comes |
 |---|---|
-| Install scripts, npm, pipx, uv, pip, .NET tool, RubyGems, pub.dev, GitHub Releases | `smith completion install` (the package carries no completion file) |
+| Install scripts, npm, pipx, uv, pip, .NET tool, GitHub Releases | `smith completion install` (the package carries no completion file) |
 | `.deb` and `.rpm` | `smith completion install`: the packages carry no completion file today. When one ships it in a system folder, `install` says so and writes nothing |
 | Homebrew, Scoop, winget (manifests in each release, no tap or bucket yet) | `smith completion install`. A Homebrew formula that ships the file would be found and respected the same way |
 
@@ -124,7 +124,7 @@ smith updated 1.70.0 → 1.73.0. What's new: https://github.com/monosmith-app/mo
 
 It shows once; the terminal interface shows it as a toast. At most once a day smith also asks its
 releases whether a newer one exists on the channel you run and prints the update command that
-fits how you installed it (`smith update` for the npm launcher):
+fits how you installed it (`smith update` for a launcher):
 
 ```
 smith 1.75.0 is out, you have 1.73.0: update with smith update (turn this off: update_check = "off" under [workspace], or SMITH_UPDATE_CHECK=off)
@@ -168,7 +168,7 @@ shasum -a 256 --check --ignore-missing checksums.txt # macOS
 
 The install scripts check the archive against `checksums.txt` before
 installing. `checksums.txt` is signed with minisign (`checksums.txt.minisig`, key ID
-6B2CE84DD9F901), and the npm launcher and `smith update` check that signature before they run a
+6B2CE84DD9F901), and the launchers and `smith update` check that signature before they run a
 download:
 
 ```sh

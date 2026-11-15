@@ -12,9 +12,10 @@ import "strings"
 // workspace (Go, Rust, JVM, ...) keeps the committed InstallScriptPath, which
 // downloads the release binary and verifies its checksum.
 //
-// The registry install is pinned to the same version as the script
-// ([workspace] smith, else the running smith); "latest" (a dev build) is
-// unpinned. On npm the pin goes to the launcher as SMITH_VERSION.
+// Each registry holds the launcher, with a version line of its own (ADR
+// 0101). A pin ([workspace] smith, else the running smith) installs launcher
+// 3 and downloads that smith once with SMITH_VERSION, so every later step runs
+// it as the only smith on the agent; "latest" (a dev build) is unpinned.
 // npm and pip name the public registry, so a private feed that
 // npmAuthenticate or PipAuthenticate points the agent at cannot hide it.
 type SmithInstall struct {
@@ -89,15 +90,25 @@ func (i SmithInstall) command(container bool) string {
 		if container {
 			b.WriteString("--user ")
 		}
-		b.WriteString("monosmith")
 		if i.pin != "" {
-			b.WriteString("==" + shellWord(i.pin))
+			b.WriteString(`"monosmith>=3,<4"`)
+		} else {
+			b.WriteString("monosmith")
 		}
 	case "dotnet":
 		b.WriteString("dotnet tool update --global monosmith")
 		if i.pin != "" {
-			b.WriteString(" --version " + shellWord(i.pin))
+			b.WriteString(` --version "3.*"`)
 		}
+	}
+	if i.pin != "" && i.tool != "node" {
+		// The tool's bin folder joins PATH only after this step: the launcher is
+		// run by its path there.
+		launcher := "smith"
+		if i.tool == "dotnet" {
+			launcher = `"${USERPROFILE:-$HOME}/.dotnet/tools/smith"`
+		}
+		b.WriteString(" && SMITH_VERSION=" + shellWord(i.pin) + " " + launcher + " --version")
 	}
 	return b.String()
 }

@@ -11,13 +11,13 @@
 ## What smith shows before it runs
 
 `smith update` asks smith's releases for the newest smith on your channel (stable, or next when
-you run a prerelease; GitHub, or the mirror in `SMITH_DOWNLOAD_URL`). A smith the npm launcher
-started lives in `~/.smith/versions/<version>/`: `smith update` downloads the new version next to
+you run a prerelease; GitHub, or the mirror in `SMITH_DOWNLOAD_URL`). A smith a launcher (npm,
+PyPI or NuGet) started lives in `~/.smith/versions/<version>/`: `smith update` downloads the new version next to
 it, checks it against the signed `checksums.txt`, and the launcher runs it from then on. A
 workspace that pins `[workspace] smith` keeps its version. For any other install it prints the
-command that matches how smith was installed (dotnet tool, pip, uv, pipx or the install script; an
-npm install from before the launcher gets `npm i -g monosmith@latest`, which installs the
-launcher). It then asks what to do. `--check` only looks and
+command that matches how smith was installed (the install script, or a package from before the
+launchers: npm gets `npm i -g monosmith@latest`, and pip, uv, pipx and dotnet tool their upgrade
+command, each of which installs the launcher). It then asks what to do. `--check` only looks and
 changes nothing. Without a terminal it needs `--yes`. When smith cannot tell how it was
 installed, it names the releases page instead of guessing.
 
