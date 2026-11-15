@@ -135,7 +135,7 @@ compiled against the platform.
 
 ### `smithaction` is a catalogue
 
-- Path: `src/main/kotlin/dev/monosmith/jetbrains/smithaction`.
+- Path: `src/main/kotlin/dev/monosmith/jetbrains/features/smithaction`.
 - Rule waived: the review trigger of 12 production files in one slice.
 - Constraint: the slice holds 62 handlers, one class for each menu action of `plugin.xml`. The IDE needs one
   class for each action, and the actions share no outcome. Each handler only calls one use case of another
