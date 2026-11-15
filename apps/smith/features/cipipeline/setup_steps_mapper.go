@@ -50,7 +50,7 @@ func githubInstallSmith(m Model, bash bool) string {
 			command += "\necho \"" + dir + "\" >> \"$GITHUB_PATH\"\nexport PATH=\"" + dir + ":$PATH\""
 		}
 		command += "\nsmith --version"
-		return "      - name: Install smith\n        shell: bash\n        run: " + runValue("        ", command)
+		return githubLauncherCache(i) + "      - name: Install smith\n        shell: bash\n        run: " + runValue("        ", command)
 	}
 	shell := ""
 	if bash {
@@ -77,4 +77,19 @@ func azureInstallSmith(m Model, indent string) string {
 		return indent + "- bash: " + runValue(indent+"  ", command) + indent + "  displayName: Install smith\n"
 	}
 	return fmt.Sprintf("%s- bash: sh %s \"%s\"\n%s  displayName: Install smith\n", indent, InstallScriptPath, m.SmithVersion, indent)
+}
+
+// githubLauncherCache keeps the smith the npm launcher downloads for a pinned
+// version (~/.smith/versions, ADR 0101) between runs, so a run does not fetch
+// the same archive again. Nothing is cached for an unpinned install, whose
+// newest smith changes, nor for the other installs, which download nothing.
+func githubLauncherCache(i SmithInstall) string {
+	if i.tool != "node" || i.pin == "" {
+		return ""
+	}
+	return "      - name: Cache the smith the launcher downloads\n" +
+		"        uses: actions/cache@v4\n" +
+		"        with:\n" +
+		"          path: ~/.smith/versions\n" +
+		"          key: smith-versions-${{ runner.os }}-${{ runner.arch }}-" + i.pin + "\n"
 }

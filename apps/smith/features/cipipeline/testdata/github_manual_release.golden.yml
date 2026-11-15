@@ -77,6 +77,11 @@ jobs:
           key: smith-npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             smith-npm-${{ runner.os }}-
+      - name: Cache the smith the launcher downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.smith/versions
+          key: smith-versions-${{ runner.os }}-${{ runner.arch }}-1.4.0
       - name: Install smith
         shell: bash
         run: |
@@ -149,6 +154,11 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
       # smith: no plugin says how to install rust 1.90 here; add a step in the before-setup slot
+      - name: Cache the smith the launcher downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.smith/versions
+          key: smith-versions-${{ runner.os }}-${{ runner.arch }}-1.4.0
       - name: Install smith
         shell: bash
         run: |
@@ -197,6 +207,11 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
       # smith: no plugin says how to install rust 1.90 here; add a step in the before-setup slot
+      - name: Cache the smith the launcher downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.smith/versions
+          key: smith-versions-${{ runner.os }}-${{ runner.arch }}-1.4.0
       - name: Install smith
         shell: bash
         run: |
