@@ -74,9 +74,10 @@ func (i SmithInstall) command(container bool) string {
 		// npm holds the launcher, with a version line of its own (ADR 0101): it
 		// installs the launcher, and a pin downloads that smith once, so every
 		// later step runs it as the only smith installed on the agent.
-		b.WriteString("npm install --global --registry https://registry.npmjs.org/ monosmith@^3")
+		// Unpinned (a dev build) it takes npm's latest tag, whichever package that is.
+		b.WriteString("npm install --global --registry https://registry.npmjs.org/ monosmith")
 		if i.pin != "" {
-			b.WriteString(" && SMITH_VERSION=" + shellWord(i.pin) + " smith --version")
+			b.WriteString("@^3 && SMITH_VERSION=" + shellWord(i.pin) + " smith --version")
 		}
 	case "python":
 		// Windows runners have python, not python3; the containers python3.

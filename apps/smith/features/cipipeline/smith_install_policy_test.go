@@ -38,10 +38,10 @@ func TestSmithInstallPicksNodeThenPythonThenDotnetElseTheScript(t *testing.T) {
 }
 
 func TestSmithInstallFromARegistryIsUnpinnedForADevBuild(t *testing.T) {
-	// On npm, @^3 names the launcher's version line, not a smith version (ADR 0101).
-	for tool, want := range map[string]string{"node": "monosmith@^3\n", "python": "monosmith\n", "dotnet": "monosmith\n"} {
+	// Unpinned, npm takes its latest tag: smith before the launcher's first release, the launcher after.
+	for tool, want := range map[string]string{"node": "monosmith\n", "python": "monosmith\n", "dotnet": "monosmith\n"} {
 		got := SmithInstallFor(installModel("latest", tool)).HostedCommand() + "\n"
-		if !strings.HasSuffix(got, want) || strings.Contains(strings.TrimSuffix(got, want), "@") || strings.Contains(got, "=") || strings.Contains(got, "--version") {
+		if !strings.HasSuffix(got, want) || strings.ContainsAny(got, "@=") || strings.Contains(got, "--version") {
 			t.Errorf("%s: %q", tool, got)
 		}
 	}
