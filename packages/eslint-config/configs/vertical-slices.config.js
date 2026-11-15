@@ -32,8 +32,8 @@ function productionPattern (roles) {
 const TEST = new RegExp(String.raw`\.(?:spec|test)${EXTENSION}$`)
 /** The words that name no outcome, as parts of a file name (split on `-`, `.` and `_`). */
 export const BANNED_WORDS = ['util', 'utils', 'helper', 'helpers', 'common', 'shared', 'manager', 'processor', 'data', 'misc']
-/** Banned words that are honest inside a compound (`user-data.contract.ts`): only a name that IS the word is reported. */
-const WHOLE_NAME_ONLY = new Set(['data'])
+/** Banned words that are honest inside a compound (`user-data.contract.ts`, `account-manager.policy.ts`): only a name that IS the word is reported. */
+const WHOLE_NAME_ONLY = new Set(['data', 'manager'])
 const SOURCE = new RegExp(`${EXTENSION}$`)
 // `content.config` is Astro's: a framework-mandated name that must sit at the root of src, so it is an entry like main.
 const ENTRY = new RegExp(String.raw`^(?:index|main|content\.config)${EXTENSION}$`)
@@ -284,7 +284,7 @@ function zoneOf (src, path, groups) {
  * @returns The role, or `null` for a name without one (`index`, `fee`).
  */
 function roleOf (name) {
-  const stem = name.replace(/\.(?:[mc]?[tj]sx?)$/, '')
+  const stem = name.replace(/\.[mc]?[tj]sx?$/, '')
   const at = stem.lastIndexOf('.')
 
   return at === -1 ? null : stem.slice(at + 1)
@@ -527,17 +527,17 @@ export const plugin = {
             return
           }
           const targetZone = zoneOf(place.src, target, groups)
-          if ((zone === INTEGRATIONS || zone === SHARED) && targetZone === FEATURES) {
+          if (targetZone === FEATURES && (zone === INTEGRATIONS || zone === SHARED)) {
             return void context.report({ node, messageId: 'direction', data: { zone, specifier } })
           }
           if (support || role === null) return
           const typeOnly = isTypeOnly(node.parent)
           if (targetZone === INTEGRATIONS && zone !== INTEGRATIONS) {
             if (PURE_ROLES.has(role)) return void context.report({ node, messageId: 'pure', data: { role, what: 'integration', specifier } })
-            if (TYPE_ONLY_ROLES.has(role) && !typeOnly) return void context.report({ node, messageId: 'typeOnly', data: { role, specifier } })
+            if (!typeOnly && TYPE_ONLY_ROLES.has(role)) return void context.report({ node, messageId: 'typeOnly', data: { role, specifier } })
           }
           const targetRole = roleOf(basename(target))
-          if (PURE_ROLES.has(role) && !typeOnly && IO_ROLES.has(targetRole)) context.report({ node, messageId: 'pure', data: { role, what: `.${targetRole}`, specifier } })
+          if (!typeOnly && PURE_ROLES.has(role) && IO_ROLES.has(targetRole)) context.report({ node, messageId: 'pure', data: { role, what: `.${targetRole}`, specifier } })
         })
       },
     },
@@ -587,8 +587,8 @@ export const plugin = {
  * one zone folder; a library without one is its own capability, and its slices
  * sit directly under `src`.
  *
- * `data` is banned only as a whole name (`data.contract.ts`); inside a compound
- * (`user-data.contract.ts`) it is honest. The other banned words are reported in
+ * `data` and `manager` are banned only as a whole name (`data.contract.ts`); inside a compound
+ * (`user-data.contract.ts`, `account-manager.policy.ts`) they are honest. The other banned words are reported in
  * any part of a name.
  *
  * Tests (`.spec` or `.test`) are exempt from TWO of the three rules, and the

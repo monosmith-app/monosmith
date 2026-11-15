@@ -77,9 +77,9 @@ const FIXTURES: Record<string, string> = {
   'packages/app/src/reports/testing/quote-data.ts':       'export const quote = 1\n',
   'packages/app/src/reports/testing/camelCase.ts':        'export const camel = 1\n',
   // GROUPS: `features` and `integrations` hold slices, nested to any depth.
-  'packages/grouped/src/features/index.ts':                   "export { run } from './work-items'\nexport { ledger } from './ledger'\n",
-  'packages/grouped/src/features/stray.use-case.ts':          'export const stray = 1\n',
-  'packages/grouped/src/features/work-items/index.ts':        "export { clean } from './application/cleaner'\nexport { prune } from './cleaner'\n",
+  'packages/grouped/src/features/index.ts':               "export { run } from './work-items'\nexport { ledger } from './ledger'\n",
+  'packages/grouped/src/features/stray.use-case.ts':      'export const stray = 1\n',
+  'packages/grouped/src/features/work-items/index.ts':    "export { clean } from './application/cleaner'\nexport { prune } from './cleaner'\n",
   'packages/grouped/src/features/work-items/run.use-case.ts':
     "import { clean } from './application/cleaner'\n\nexport function run (): number {\n  return clean()\n}\n",
   'packages/grouped/src/features/work-items/reach.use-case.ts':
@@ -390,13 +390,13 @@ describe('monosmith({ verticalSlices: { vendors } }) in an app with zones', () =
     )
     const crmType = "import type { CrmTicket } from '@integrations/crm'\n"
     const files: Record<string, string> = {
-      'tsconfig.json':          FIXTURES['tsconfig.json'],
+      'tsconfig.json': FIXTURES['tsconfig.json'],
       'apps/api/tsconfig.json':
         '{\n  "compilerOptions": {\n    "strict": true,\n    "noEmit": true,\n    "paths": {\n      "@features/*": ["./src/features/*/index.ts"],\n      "@integrations/*": ["./src/integrations/*/index.ts"],\n      "@shared/*": ["./src/shared/*/index.ts"]\n    }\n  },\n  "include": ["src/**/*.ts"]\n}\n',
-      'libs/money/tsconfig.json':                           FIXTURES['packages/app/tsconfig.json'],
-      'apps/api/src/main.ts':                               "export { placeOrder } from '@features/orders'\n",
-      'apps/api/src/integrations/crm/index.ts':             "export type { CrmTicket } from './crm.contract'\nexport { sendTicket } from './crm.client'\n",
-      'apps/api/src/integrations/crm/crm.contract.ts':      'export interface CrmTicket {\n  id: string\n}\n',
+      'libs/money/tsconfig.json':                      FIXTURES['packages/app/tsconfig.json'],
+      'apps/api/src/main.ts':                          "export { placeOrder } from '@features/orders'\n",
+      'apps/api/src/integrations/crm/index.ts':        "export type { CrmTicket } from './crm.contract'\nexport { sendTicket } from './crm.client'\n",
+      'apps/api/src/integrations/crm/crm.contract.ts': 'export interface CrmTicket {\n  id: string\n}\n',
       // An integration imports its vendor packages, and shared code.
       'apps/api/src/integrations/crm/crm.client.ts':
         "import { Pool } from 'pg'\nimport { scan } from '@scanmate/scan'\nimport { ok } from '@shared/http'\n\nexport const sendTicket = (): unknown => [Pool, scan, ok]\n",
@@ -411,12 +411,12 @@ describe('monosmith({ verticalSlices: { vendors } }) in an app with zones', () =
       // A use case calls an integration and its own repository.
       'apps/api/src/features/orders/place-order.use-case.ts':
         "import { sendTicket } from '@integrations/crm'\nimport { save } from './order.repository'\n\nexport const placeOrder = (): unknown => [sendTicket, save]\n",
-      'apps/api/src/features/orders/order.repository.ts':   'export const save = 1\n',
+      'apps/api/src/features/orders/order.repository.ts':    'export const save = 1\n',
       // A feature never imports a vendor package itself.
-      'apps/api/src/features/orders/order-scan.client.ts':  "import { scan } from '@scanmate/scan'\n\nexport const check = scan\n",
+      'apps/api/src/features/orders/order-scan.client.ts':   "import { scan } from '@scanmate/scan'\n\nexport const check = scan\n",
       // Pure roles: no integration at all, not even its types, and no I/O role.
-      'apps/api/src/features/orders/order.policy.ts':       `${crmType}\nexport const allowed = (ticket: CrmTicket): boolean => ticket.id !== ''\n`,
-      'apps/api/src/features/orders/order.model.ts':        "import { save } from './order.repository'\n\nexport const model = save\n",
+      'apps/api/src/features/orders/order.policy.ts':        `${crmType}\nexport const allowed = (ticket: CrmTicket): boolean => ticket.id !== ''\n`,
+      'apps/api/src/features/orders/order.model.ts':         "import { save } from './order.repository'\n\nexport const model = save\n",
       // A mapper and a handler use an integration's types, never its code.
       'apps/api/src/features/orders/order-ticket.mapper.ts': `${crmType}\nexport const toTicket = (id: string): CrmTicket => ({ id })\n`,
       'apps/api/src/features/orders/order-send.mapper.ts':   "import { sendTicket } from '@integrations/crm'\n\nexport const send = sendTicket\n",
@@ -424,23 +424,25 @@ describe('monosmith({ verticalSlices: { vendors } }) in an app with zones', () =
       // A test may reach integrations and vendors.
       'apps/api/src/features/orders/order.policy.test.ts':
         "import { sendTicket } from '@integrations/crm'\nimport { Pool } from 'pg'\n\nexport const used = [sendTicket, Pool]\n",
-      // `data` is honest inside a compound, banned as the whole name.
-      'apps/api/src/features/orders/user-data.contract.ts': 'export interface UserData {\n  id: string\n}\n',
-      'apps/api/src/features/orders/data.contract.ts':      'export interface Data {\n  id: string\n}\n',
+      // `data` and `manager` are honest inside a compound, banned as the whole name.
+      'apps/api/src/features/orders/user-data.contract.ts':     'export interface UserData {\n  id: string\n}\n',
+      'apps/api/src/features/orders/data.contract.ts':          'export interface Data {\n  id: string\n}\n',
+      'apps/api/src/features/orders/account-manager.policy.ts': 'export interface Data {\n  id: string\n}\n',
+      'apps/api/src/features/orders/manager.policy.ts':         'export interface Data {\n  id: string\n}\n',
       // An app's slice outside every zone.
-      'apps/api/src/reports/index.ts':                      "export { report } from './report.use-case'\n",
-      'apps/api/src/reports/report.use-case.ts':            'export const report = 1\n',
+      'apps/api/src/reports/index.ts':                          "export { report } from './report.use-case'\n",
+      'apps/api/src/reports/report.use-case.ts':                'export const report = 1\n',
       // A library keeps its slices directly under src.
-      'libs/money/src/index.ts':                            "export { fee } from './billing'\n",
-      'libs/money/src/billing/index.ts':                    "export { fee } from './fee.policy'\n",
-      'libs/money/src/billing/fee.policy.ts':               'export const fee = 1\n',
+      'libs/money/src/index.ts':                                "export { fee } from './billing'\n",
+      'libs/money/src/billing/index.ts':                        "export { fee } from './fee.policy'\n",
+      'libs/money/src/billing/fee.policy.ts':                   'export const fee = 1\n',
       // A library with one zone folder keeps every slice in a zone.
-      'libs/office/tsconfig.json':                          FIXTURES['packages/app/tsconfig.json'],
-      'libs/office/src/index.ts':                           "export { read } from './integrations/excel'\n",
-      'libs/office/src/integrations/excel/index.ts':        "export { read } from './excel.client'\n",
-      'libs/office/src/integrations/excel/excel.client.ts': 'export const read = 1\n',
-      'libs/office/src/sheets/index.ts':                    "export { sheet } from './sheet.model'\n",
-      'libs/office/src/sheets/sheet.model.ts':              'export const sheet = 1\n',
+      'libs/office/tsconfig.json':                              FIXTURES['packages/app/tsconfig.json'],
+      'libs/office/src/index.ts':                               "export { read } from './integrations/excel'\n",
+      'libs/office/src/integrations/excel/index.ts':            "export { read } from './excel.client'\n",
+      'libs/office/src/integrations/excel/excel.client.ts':     'export const read = 1\n',
+      'libs/office/src/sheets/index.ts':                        "export { sheet } from './sheet.model'\n",
+      'libs/office/src/sheets/sheet.model.ts':                  'export const sheet = 1\n',
     }
     for (const [filename, contents] of Object.entries(files)) {
       const target = join(directory, filename)
@@ -488,9 +490,11 @@ describe('monosmith({ verticalSlices: { vendors } }) in an app with zones', () =
     expect(slicesIn('features/orders/place-order.handler.ts')).toEqual(['vertical-slices/zone-import'])
   })
 
-  it('bans data only as the whole name', () => {
+  it('bans data and manager only as the whole name', () => {
     expect(slicesIn('features/orders/user-data.contract.ts')).toEqual([])
     expect(slicesIn('features/orders/data.contract.ts')).toEqual(['vertical-slices/file-role'])
+    expect(slicesIn('features/orders/account-manager.policy.ts')).toEqual([])
+    expect(slicesIn('features/orders/manager.policy.ts')).toEqual(['vertical-slices/file-role'])
   })
 
   it('reports an app slice outside the zones, not a slice of a library without zones', () => {
