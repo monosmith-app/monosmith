@@ -52,7 +52,7 @@ Verdicts:
 | `assets/render-terminal.mjs` | accurate | Used for the re-captures (needs `playwright` and `RENDER_CHANNEL=chrome` without a downloaded Chromium). |
 | `examples/plugins/{go,python,node}` | accurate | All three pass `smith plugin check` on 1.62.0 (6 of 6 checks). |
 | `apps/smith/README.md` | accurate | Paths and claims hold. |
-| `apps/smith/tui/README.md` | fixed | Added the `adoptwizard` subfeature; corrected the file count; the design link follows the move. |
+| `apps/smith/features/tui/README.md` | fixed | Added the `adoptwizard` subfeature; corrected the file count; the design link follows the move. |
 | `packages/plugin-sdk/README.md` | accurate | All nine packages exist; the `Describe` signature is correct. |
 | `apps/vscode/README.md` | fixed | Publishing text named only `VSCE_PAT`; it now says `vsce_entra = true` signs in as an Entra ID app and `OVSX_PAT` adds Open VSX. Added a manual link. Settings and keybindings match `package.json`. |
 | `apps/vscode/CHANGELOG.md` | accurate | Only an "Unreleased" section. |
@@ -96,7 +96,7 @@ The first table has 39 rows (a row can cover several files): 9 accurate, 25 fixe
 ## What was not verified
 
 - The terminal interface and the VS Code extension were not run: their manual pages and
-  architecture pages are written from source (`apps/smith/tui`, `apps/vscode`) and the
+  architecture pages are written from source (`apps/smith/features/tui`, `apps/vscode`) and the
   commands they stand for.
 - Publishing paths (`smith release` to real registries, `smith docker description`,
   Marketplace and Open VSX) were read in code and not exercised.

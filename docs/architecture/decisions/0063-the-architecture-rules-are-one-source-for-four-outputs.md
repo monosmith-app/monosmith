@@ -15,7 +15,7 @@ what was already true, the gaps found, and the gaps closed.
   file per language) and `layout` (the slice size).
 - Layered architectures (hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer):
   `libs/plugin-architectures/rules` (a `Ruleset` with `Layers`, `Summary`, and flags).
-- The catalog of the choices a person picks: `apps/smith/architecture` (name, one-line meaning, the
+- The catalog of the choices a person picks: `apps/smith/features/architecture` (name, one-line meaning, the
   `smith.toml` table).
 
 ## What was already true
@@ -50,4 +50,4 @@ what was already true, the gaps found, and the gaps closed.
 
 ## Sources
 
-- `apps/smith/agentdoc/`, `apps/smith/slicecheck/check_slices_handler_test.go`
+- `apps/smith/features/agentdoc/`, `apps/smith/features/slicecheck/check_slices_handler_test.go`

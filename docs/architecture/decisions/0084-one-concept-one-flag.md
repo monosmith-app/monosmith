@@ -24,7 +24,7 @@ documentation, not the flags.
 1. **The vocabulary is data.** `libs/actions/flagvocabulary/flag_vocabulary.json` declares, for each shared
    concept, the flag, its shorthand, its synonyms, its value type, its meaning and the commands that take it.
    [The reference table](../../reference/flag-vocabulary.md) is generated from it.
-2. **One concept, one flag.** A command registers a shared flag through package `apps/smith/commandflags`
+2. **One concept, one flag.** A command registers a shared flag through package `apps/smith/shared/commandflags`
    (`AddProjectFlag`, `AddLangFlag`, `AddOutputFlag`, `AddYesFlag`, `AddNoInstallFlag`). It does not choose a name.
    A new concept goes into the vocabulary first.
 3. **Project selection is `-p, --project`**: repeatable and comma separated. `-w`, `--workspace` and `--projects`

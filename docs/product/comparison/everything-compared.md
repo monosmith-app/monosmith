@@ -370,8 +370,8 @@ not searched.
 | Only smith documents | Evidence | What it is |
 |---|---|---|
 | A **drift guard on generated CI**: `smith doctor` and `smith ci generate --check` fail when the committed pipeline is out of date, and `doctor --fix` regenerates it | R: edited a generated workflow in a scratch workspace; both commands exited 1 and `doctor --fix` made `ci generate --check` pass | Nx is the only other tool that generates pipeline files, and its documentation describes a generator, not a check |
-| **CI fails when a task leaves a tracked file modified** | T: `apps/smith/cipipeline/run_phase_use_case_test.go` and the golden-path test | Catches a build that rewrites committed files before a release refuses a dirty tree |
-| A **release preview posted on the pull request**, updated by later runs | T: the `apps/smith/releasepreview` tests | moon's CI action posts `moon ci` results and Nx posts self-healing fixes; neither posts a release plan |
+| **CI fails when a task leaves a tracked file modified** | T: `apps/smith/features/cipipeline/run_phase_use_case_test.go` and the golden-path test | Catches a build that rewrites committed files before a release refuses a dirty tree |
+| A **release preview posted on the pull request**, updated by later runs | T: the `apps/smith/features/releasepreview` tests | moon's CI action posts `moon ci` results and Nx posts self-healing fixes; neither posts a release plan |
 | A **graph diff between two revisions**: projects and imports added or removed | R: `smith graph --diff HEAD` listed the two projects added | `smith graph --diff <rev>` |
 | **Existing projects checked against their recipe** and owned files upgraded | T | Recipes carry levels, slots and versions; `smith doctor` reports drift, `smith upgrade` rewrites the files smith owns |
 | **Code layout checked inside projects** (vertical slices) in nine languages | T; the rules are in [Conventions](../../reference/conventions.md) | Role-named files and no junk-drawer folders, in each language's own naming |

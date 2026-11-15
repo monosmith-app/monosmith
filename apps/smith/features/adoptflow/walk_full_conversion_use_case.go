@@ -1,0 +1,266 @@
+package adoptflow
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/adoptdecision"
+	"github.com/monosmith-app/monosmith/apps/smith/features/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/features/agentfiles"
+	"github.com/monosmith-app/monosmith/apps/smith/features/convert"
+	"github.com/monosmith-app/monosmith/apps/smith/features/convertchoices"
+	"github.com/monosmith-app/monosmith/apps/smith/features/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/features/fullconversion"
+	"github.com/monosmith-app/monosmith/apps/smith/features/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/removalplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
+
+// ErrNotConvertible is a conversion step asked of a repository smith adopts
+// instead of converting.
+var ErrNotConvertible = errors.New("this repository is not an Nx or Turborepo workspace, so there is nothing to convert")
+
+// Preview is the plan of a full conversion for a set of choices: the data,
+// and the review the wizard shows (every group as diffs, what stays and why,
+// the closing checks).
+type Preview struct {
+	Report fullconversion.Report
+	Text   string
+	// Changes are the files the conversion itself writes, for the summary above
+	// the review (Text lists them, then the removals).
+	Changes Changes
+}
+
+// Prepare converts the workspace on a scratch copy, so what the old tooling
+// would be after the conversion can be worked out without touching the real
+// files, and returns the choices the workspace's own tooling suggests with the
+// questions that ask them.
+func (s *Session) Prepare() (convertchoices.Choices, []convertchoices.Question, error) {
+	if s.analysis == nil {
+		return convertchoices.Choices{}, nil, ErrNotConvertible
+	}
+	if s.view == nil {
+		view, err := s.analysis.MakeView()
+		if err != nil {
+			return convertchoices.Choices{}, nil, fmt.Errorf("could not work out what the conversion leaves behind: %w", err)
+		}
+		s.view = view
+	}
+	usage := legacyinventory.Detect(s.view.Tree)
+	def := convertchoices.Defaults(usage)
+	return def, convertchoices.Questions(usage, def), nil
+}
+
+// PlanFull plans the removals the choices ask for on the converted scratch
+// copy. verify adds the build, test, lint and doctor checks to the closing
+// steps.
+func (s *Session) PlanFull(c convertchoices.Choices, verify bool) (Preview, error) {
+	if s.view == nil {
+		if _, _, err := s.Prepare(); err != nil {
+			return Preview{}, err
+		}
+	}
+	s.lint = c.Lint
+	report := fullconversion.MakeReport(s.view.Tree, c, verify)
+	report.Finish = removalplan.Finish(convert.SmithCommand(), verify, c.Lint == convertchoices.Smith)
+	var b strings.Builder
+	changes, err := s.Changes()
+	if err == nil {
+		// The same preview as the Doctor fix dialog: a diff of every file.
+		shown, serr := s.ShowChanges(changes)
+		if serr != nil {
+			shown = "● The files smith writes\n  could not show the changes: " + serr.Error() + "\n"
+		}
+		b.WriteString(shown)
+		b.WriteString("\n")
+	}
+	if err := fullconversion.Describe(&b, s.view.Dir, report, true); err != nil {
+		return Preview{}, err
+	}
+	return Preview{Report: report, Text: b.String(), Changes: changes}, nil
+}
+
+// Convert applies the conversion to the repository, without installing: the
+// closing steps do that. It writes "… " and a name to out as the one step
+// starts, and returns the summary of what changed.
+func (s *Session) Convert(_ context.Context, c convertchoices.Choices, out io.Writer) (string, error) {
+	if s.analysis == nil {
+		return "", ErrNotConvertible
+	}
+	s.lint = c.Lint
+	fmt.Fprintln(out, "… "+ConvertStepName)
+	log := io.Discard
+	return s.analysis.Convert(c.Level == convertchoices.LevelFull && c.CI == convertchoices.Keep, log)
+}
+
+// CommitConversion commits what the conversion changed as one operation that
+// smith undo reverts, and returns the line that says what happened (or why
+// nothing was committed). The tree was clean before the conversion, so the
+// commit holds the conversion and nothing else.
+func (s *Session) CommitConversion() string {
+	var b strings.Builder
+	convert.CommitConversion(s.Root, &b)
+	return strings.TrimSpace(b.String())
+}
+
+// Result is what the conversion found worth telling, once it was applied.
+func (s *Session) Result() convert.Highlights {
+	if s.analysis == nil {
+		return convert.Highlights{}
+	}
+	return convert.HighlightsOf(s.analysis.Plan)
+}
+
+// ConvertStepName is the one step Convert reports.
+const ConvertStepName = "convert the workspace to smith"
+
+// NextGroup plans the removals again from the files as they are now and
+// returns the plan: its first group is the next to ask about. A group in
+// declined is left out, and the groups after it are planned without it.
+func (s *Session) NextGroup(c convertchoices.Choices, declined map[string]bool) (removalplan.Plan, error) {
+	files, err := s.git.Files()
+	if err != nil {
+		return removalplan.Plan{}, err
+	}
+	return removalplan.Build(legacyinventory.NewTree(s.Root, files), c, declined), nil
+}
+
+// ShowFix writes a planned fix as the review shows it, against the
+// repository's files as they are now.
+func (s *Session) ShowFix(p doctorfix.Planned) (string, error) {
+	var b strings.Builder
+	err := doctorfix.ShowFix(&b, s.Root, p)
+	return b.String(), err
+}
+
+// ApplyFix writes a fix's files and runs its steps from the repository root,
+// stopping at the first that fails (a *doctorfix.StepError). It writes a line
+// "… name" to out as each step starts.
+func (s *Session) ApplyFix(ctx context.Context, fix protocol.Fix, out io.Writer) error {
+	return doctorfix.Apply(ctx, s.Root, fix, out)
+}
+
+// ApplyChecks is ApplyFix for the checks that close a conversion: an advisory
+// step that fails does not stop it and comes back as a finding.
+//
+// Parameters: ctx stops the steps; fix is the resolved fix; out gets the
+// progress. Returns the findings, in the order they ran, and a
+// *doctorfix.StepError for a step that stopped the fix.
+func (s *Session) ApplyChecks(ctx context.Context, fix protocol.Fix, out io.Writer) ([]doctorfix.Finding, error) {
+	return doctorfix.ApplyWithFindings(ctx, s.Root, fix, out)
+}
+
+// FinishFix is the last stage of a conversion: one install, the lockfile
+// check, then the proof that it works: the build, the tests and doctor, and
+// the lint too when withLint (the full level). When the lint is smith's,
+// ESLint fixes what it can before it lints. What the lint finds is reported
+// and does not stop the conversion.
+func (s *Session) FinishFix(withLint bool) doctorfix.Planned {
+	if withLint {
+		return removalplan.Finish(convert.SmithCommand(), true, s.lint == convertchoices.Smith)
+	}
+	return removalplan.FinishBuildAndTest(convert.SmithCommand())
+}
+
+// Report is the full report of the applied conversion, as it was saved.
+func (s *Session) Report() (string, error) {
+	raw, err := os.ReadFile(filepath.Join(s.Root, filepath.FromSlash(convert.ReportFile)))
+	return string(raw), err
+}
+
+// InitFacts are the facts of the repository that shape the questions of
+// adopt --init: whether it has a .gitattributes, the CI it uses, the
+// pipelines it has of its own.
+func (s *Session) InitFacts() adoptdecision.Facts { return adoption.InitFacts(s.report) }
+
+// InitPlan is what adopt --init does for these choices, as the text the review
+// shows: the files it creates, the files of the person it edits with a diff,
+// and the pipelines it moves aside. It reads and writes nothing.
+func (s *Session) InitPlan(c adoptdecision.Choices) string {
+	var b strings.Builder
+	operationplan.Render(&b, adoption.PlanInit(s.report, c, false))
+	return b.String()
+}
+
+// AdoptFixChosen is AdoptFix with the choices of the person: the step carries
+// each as a flag, so --yes takes these and no default of its own. split adds
+// the answers about the development dependencies and the ESLint setup.
+func (s *Session) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices, split Split) doctorfix.Planned {
+	fix := s.AdoptFix(commit, move)
+	step := &fix.Steps[0]
+	at := slices.Index(step.Argv, "--yes") + 1
+	step.Argv = slices.Insert(step.Argv, at, append(c.Argv(), split.Argv()...)...)
+	return fix
+}
+
+// AgentFix offers the MonoSmith agent files as one step that runs smith agent
+// install --yes; ok is false when the workspace has them or opted out.
+func (s *Session) AgentFix() (doctorfix.Planned, bool) {
+	cfg, err := workspace.Load(s.Root)
+	if err != nil || !cfg.AgentEnabled() || agentfiles.Finding(s.Root).OK {
+		return doctorfix.Planned{}, false
+	}
+	return doctorfix.Planned{
+		Fix: protocol.Fix{
+			Description: "Add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json",
+			Steps: []protocol.FixStep{{
+				Description: "install the agent files (smith agent install)",
+				Argv:        []string{convert.SmithCommand(), "agent", "install", "--yes"},
+			}},
+		},
+		Checks: []string{"agent"},
+	}, true
+}
+
+// AdoptFix is the conservative adoption of a plain repository as a fix: one
+// step that runs smith adopt --init, which writes smith.toml and the
+// pipelines. With commit it also passes --commit, so the change becomes one
+// commit that smith undo can revert; without it nothing is committed.
+//
+// move is the answer to "where should the project at the root go?": a folder
+// (the step runs git mv into it first, as a commit of its own with commit),
+// adoptmove.Leave to keep it where it is, or "" when the repository has no
+// project at its root. A step that runs without a terminal never asks, so a
+// repository with a root project always gets --move.
+func (s *Session) AdoptFix(commit bool, move string) doctorfix.Planned {
+	// --yes: this step runs without a terminal. Each open choice of --init takes its
+	// safe default (no .gitattributes, no agent files, the CI the repository uses) and the
+	// output says which; the wizard offers the agent files in its own step.
+	argv := []string{convert.SmithCommand(), "adopt", "--init", "--yes"}
+	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
+	step := "adopt the repository (smith.toml, the CI pipelines)"
+	switch move {
+	case "":
+	case adoptmove.Leave:
+		argv = append(argv, "--move", move)
+		what += ", leaving the project at the root"
+	default:
+		argv = append(argv, "--move", move)
+		what = "Move the project into " + move + " (git mv; the repository's own files stay), then " + strings.ToLower(what[:1]) + what[1:]
+		step = "move the project into " + move + ", then " + step
+	}
+	if commit {
+		argv = append(argv, "--commit")
+		what += ", and commit them"
+		step += ", then one commit"
+		if move != "" && move != adoptmove.Leave {
+			what += " (the move is a commit of its own)"
+		}
+	}
+	return doctorfix.Planned{
+		Fix: protocol.Fix{
+			Description: what,
+			Steps:       []protocol.FixStep{{Description: step, Argv: argv}},
+		},
+		Checks: []string{"adopt"},
+	}
+}

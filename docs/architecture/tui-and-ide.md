@@ -263,26 +263,26 @@ from the same libraries and checked against those pictures.
 
 ## Code layout of the shell
 
-The shell is one Bubble Tea model, `Shell`, in the root of `apps/smith/tui`. It is
+The shell is one Bubble Tea model, `Shell`, in the root of `apps/smith/features/tui`. It is
 split by role: `shell_model.go` (state and queries), `shell_update_use_case.go`
 (`Update`, `handle`, `resize`), the key, mouse and run use cases, the mappers that
 draw, and `splits_repository.go` (the one file write). What needs no `Shell` lives
 in slices of its own that take plain values: `splitter` (dividers, their keys and
 spots), `selection` (drag to select text: regions cut along the dividers, the text, the highlight), `runhistory` (the run panel's history: ago text, header parts, recent rows,
 the rerun-failed line) and `commandtext` (the text a captured command printed).
-`apps/smith/tui/README.md` lists what is still a method on `Shell` and the next
+`apps/smith/features/tui/README.md` lists what is still a method on `Shell` and the next
 slice to cut.
 
 The text of the shell is not in this tree. It is the catalogue in `libs/words`, which the
 editors share ([ADR 0089](decisions/0089-one-text-catalogue-for-every-interface.md)): the shell
 reads it with `words.Say`, and the generator `libs/words/wordgen` writes the VS Code and JetBrains
-text files from it. The guard tests that scan the shell source are in `apps/smith/tui/wordsguard`.
+text files from it. The guard tests that scan the shell source are in `apps/smith/features/tui/wordsguard`.
 
 ## Interaction
 
 No key needs a modifier except `Ctrl+C` (stop, then quit) and the palette's
 `Ctrl+P`; there is no menu bar, no Alt chord and no function key to learn. The
-keymap is one list (`apps/smith/tui/commands/keymap_config.go`), and the keys, the
+keymap is one list (`apps/smith/features/tui/commands/keymap_config.go`), and the keys, the
 footer hints, the help (`?`, `F1`) and the palette entries are all drawn from it.
 A key that works only in one view is listed in that view's footer; when the same
 letter is a global key, the view's own wins (Deps marks all with `a`, which adds a

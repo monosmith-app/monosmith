@@ -87,4 +87,4 @@ shows one.
 - Epic [#819](https://github.com/monosmith-app/monosmith/issues/819), issue
   [#822](https://github.com/monosmith-app/monosmith/issues/822)
 - [The plugin protocol](../plugin-protocol.md), [shared facts](../../plugins/creating/shared-facts.md)
-- `packages/plugin-sdk/protocol/fact_keys_contract.go`, `apps/smith/factmerge`
+- `packages/plugin-sdk/protocol/fact_keys_contract.go`, `apps/smith/features/factmerge`

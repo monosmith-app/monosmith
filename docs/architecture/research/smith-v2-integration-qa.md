@@ -181,7 +181,7 @@ No panic and no stack trace in any case.
 
 ### E2E tests
 
-`go test -tags e2e` in `apps/smith/goldenpath`, run in two batches:
+`go test -tags e2e` in `apps/smith/features/goldenpath`, run in two batches:
 
 | Test | Result |
 |---|---|

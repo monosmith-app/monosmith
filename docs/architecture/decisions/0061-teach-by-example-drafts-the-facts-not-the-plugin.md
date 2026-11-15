@@ -39,4 +39,4 @@ conformance suite automatically.
 
 ## Sources
 
-- `apps/smith/plugindraft/`
+- `apps/smith/features/plugindraft/`

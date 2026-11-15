@@ -40,5 +40,5 @@ Reasons for the tables outside the fixed ones (`[tasks]`, `[dependencies]`, `[co
 
 ## Sources
 
-- `apps/smith/configedit/explain_setting_use_case.go`, `apps/smith/why/explain_setting_use_case.go`,
-  `apps/smith/divergences/`
+- `apps/smith/features/configedit/explain_setting_use_case.go`, `apps/smith/features/why/explain_setting_use_case.go`,
+  `apps/smith/features/divergences/`

@@ -19,7 +19,7 @@ Not recorded beyond the issues: the redesign epic discussion is in the thread of
 
 ## Decision
 
-- One keymap file (`apps/smith/tui/commands/keymap_config.go`) drives the keys, the per-view
+- One keymap file (`apps/smith/features/tui/commands/keymap_config.go`) drives the keys, the per-view
   footer hints, the help (`?`, `F1`) and the palette entries, so a label cannot name a key
   that does nothing. `b t l c w d i y m q ? : /` are single keys, `1` to `6` open the views,
   and no plain key fires while a field or form has the keyboard
@@ -39,7 +39,7 @@ Not recorded beyond the issues: the redesign epic discussion is in the thread of
 ## Consequences
 
 `tui/` still exceeds the slice size threshold and carries a written exception in
-`apps/smith/tui/README.md`. The Plugins, Recipes, Settings and guide tabs were dropped;
+`apps/smith/features/tui/README.md`. The Plugins, Recipes, Settings and guide tabs were dropped;
 those jobs were smith commands reached from the palette. That left a first-time user with
 no way to switch a plugin or pick a style without leaving the interface, so a Settings tab
 (plugins, style, the settings of `smith.toml`, recipes, the guided forms) brought them back as

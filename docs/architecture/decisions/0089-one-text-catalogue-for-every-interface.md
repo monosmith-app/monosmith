@@ -6,7 +6,7 @@
 
 ## Context
 
-The terminal interface (TUI) keeps all its text in a catalogue: 1,900 keys in `apps/smith/tui/words/catalog/en/`, filled by name (`{name}`), with a guard test that fails an unused key, a missing key and raw wording. The two editor extensions do not read it.
+The terminal interface (TUI) keeps all its text in a catalogue: 1,900 keys in `apps/smith/features/tui/words/catalog/en/`, filled by name (`{name}`), with a guard test that fails an unused key, a missing key and raw wording. The two editor extensions do not read it.
 
 - VS Code holds 90 command titles in `package.json`, about 80 prompt and message strings in TypeScript, and 49 titles in `guided-commands.config.ts`.
 - JetBrains holds 68 `text=` entries in `plugin.xml` and several hundred literals in Kotlin handlers.
@@ -35,7 +35,7 @@ ADR 0084 solved the same problem for flags: one JSON vocabulary in `libs/actions
 
 ## Plan (each step ships on its own)
 
-1. Move the catalogue and the loader out of `apps/smith/tui/words` into the new library. The TUI reads the generated embed. No visible change.
+1. Move the catalogue and the loader out of `apps/smith/features/tui/words` into the new library. The TUI reads the generated embed. No visible change.
 2. VS Code `package.json`: 90 titles become `%key%` references with a `package.nls.json`. Mostly mechanical.
 3. VS Code prompts and `guided-commands.config.ts` become keys, with a guard.
 4. JetBrains `plugin.xml` and the Kotlin literals move to the bundle, with a guard. The Kotlin build cannot run offline here, so CI is the check.
@@ -57,4 +57,4 @@ ADR 0084 solved the same problem for flags: one JSON vocabulary in `libs/actions
 
 ## Where this can be checked
 
-Step 1 is built: the catalogue, the loader and the generator live in `libs/words` (`libs/words/words`, `libs/words/wordgen`), and the guard in `apps/smith/tui/wordsguard`. The TUI catalogue and its guards: `apps/smith/tui/words`. The flag precedent: `libs/actions/flagvocabulary` and `libs/actions/flaggen`.
+Step 1 is built: the catalogue, the loader and the generator live in `libs/words` (`libs/words/words`, `libs/words/wordgen`), and the guard in `apps/smith/features/tui/wordsguard`. The TUI catalogue and its guards: `apps/smith/features/tui/words`. The flag precedent: `libs/actions/flagvocabulary` and `libs/actions/flaggen`.

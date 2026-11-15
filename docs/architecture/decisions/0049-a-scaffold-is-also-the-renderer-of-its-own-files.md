@@ -74,4 +74,4 @@ its choices, not the file.
 - [ADR 0045](0045-frameworks-tests-and-styles-are-choices-shipped-as-data.md), [ADR
   0046](0046-derived-files-have-an-owner-and-a-record.md)
 - `libs/plugin-node/scaffolding`, `libs/plugin-node-toolchains/typescript`,
-  `libs/plugin-node-toolchains/vite`, `apps/smith/derive`
+  `libs/plugin-node-toolchains/vite`, `apps/smith/features/derive`

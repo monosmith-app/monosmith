@@ -57,4 +57,4 @@ Node, Python, Go, Rust and .NET implement `link`. The other language plugins do 
 
 ## Sources
 
-- `apps/smith/internallink`, `docs/manual/install.md`, `docs/plugins/creating/language-plugin-contract.md`
+- `apps/smith/features/internallink`, `docs/manual/install.md`, `docs/plugins/creating/language-plugin-contract.md`

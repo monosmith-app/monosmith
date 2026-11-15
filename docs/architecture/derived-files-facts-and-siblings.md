@@ -33,7 +33,7 @@ knows are validated by `packages/plugin-sdk/protocol/fact_keys_contract.go` and
 
 - A plugin publishes facts in its `contribute` answer (`Contribution.facts`). It reads the merged
   facts in the requests that carry them (`facts` in `GenerateParams` and in the contribution requests).
-- `apps/smith/factmerge` merges the layers, narrowest scope first (`[projects.<name>.facts]`, then
+- `apps/smith/features/factmerge` merges the layers, narrowest scope first (`[projects.<name>.facts]`, then
   `[facts]`, then the defaults that plugins publish; a recipe scope exists in the code but no layer uses it yet), into one value per key that remembers where it came from. The merge
   is pure. Two plugin defaults that differ are an error that names both plugins. A `smith.toml`
   fact decides a conflict, because it is narrower.
@@ -47,7 +47,7 @@ knows are validated by `packages/plugin-sdk/protocol/fact_keys_contract.go` and
 1. A language plugin reports the shape of each project it discovers (`Project.shape`, a map of
    strings such as `test.runner = "@swc/jest"`). A plugin declares the shape keys it applies when it
    generates in `InitializeResult.follows`.
-2. `apps/smith/dialect` counts the values. A value is dominant when at least three projects have it
+2. `apps/smith/features/dialect` counts the values. A value is dominant when at least three projects have it
    and at least two thirds of the projects that report the key have it. With fewer than three
    siblings nothing is inferred.
 3. The dominant values go to every plugin of the stack in `GenerateParams.shape`. A key with no
@@ -73,9 +73,9 @@ writes such files and records who owns them
 | Part | Owns | Code |
 |---|---|---|
 | Renderer | the content of one file, or of a part of one; a stable id and a version (`node.tsconfig.references`). Writes nothing | the plugin: protocol method `derive`, capability `derive`, Go SDK interface `Deriver` |
-| `derive` | what to write now: asks the plugins, compares, decides | `apps/smith/derive` |
-| `derivefile` | the three ownership modes and how to merge into a file | `apps/smith/derivefile` |
-| `derivelock` | the ownership record `smith.lock` | `apps/smith/derivelock` |
+| `derive` | what to write now: asks the plugins, compares, decides | `apps/smith/features/derive` |
+| `derivefile` | the three ownership modes and how to merge into a file | `apps/smith/features/derivefile` |
+| `derivelock` | the ownership record `smith.lock` | `apps/smith/features/derivelock` |
 
 The request (`protocol.DeriveParams`) carries the plugin's projects, the internal dependencies of
 each from the graph and the paths the record says smith owns. The answer (`DeriveResult`) lists
@@ -95,7 +95,7 @@ each from the graph and the paths the record says smith owns. The answer (`Deriv
 `smith.lock`, next to `smith.toml`, has one entry for each pair of file and renderer: `path`,
 `owner` (`smith` or `you`), `renderer`, `version`, `mode`, `hash` (of the content smith last wrote)
 and `wanted` (of what the renderer wanted then). The core compares what the renderer wants now,
-what is on disk and the record, and puts each file in one state (`apps/smith/derive/plan_item_contract.go`):
+what is on disk and the record, and puts each file in one state (`apps/smith/features/derive/plan_item_contract.go`):
 
 | Status | Meaning | `smith derive` does |
 |---|---|---|
@@ -131,11 +131,11 @@ a file and why it is in its state. A person commits `smith.lock`.
 
 Every command that writes files shows what it will do first
 ([ADR 0047](decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md)).
-`apps/smith/operationplan` holds the plan: groups of lines, each with an action (`create`, `change`,
+`apps/smith/features/operationplan` holds the plan: groups of lines, each with an action (`create`, `change`,
 `remove`), a path and the owner from `smith.lock`. A command asks to go ahead only in a terminal,
 outside CI, and without `--yes`.
 
-With `[workspace] commit_operations = true`, `apps/smith/operation` makes `add`, `remove`, `upgrade`,
+With `[workspace] commit_operations = true`, `apps/smith/features/operation` makes `add`, `remove`, `upgrade`,
 `derive` and `sync` one conventional commit each, when the work tree is clean, and records it in
 `.smith/operations.json` (local, git-ignored). `smith undo` reverts the newest recorded operation
 with `git revert`, never rewrites history, and refuses when a later commit or an uncommitted change
@@ -146,10 +146,10 @@ touches the same files.
 Two commands read the same facts, graph and record
 ([ADR 0048](decisions/0048-why-report-and-agent-file-explain-the-workspace-to-people-and-agents.md)):
 
-- `smith report` (`apps/smith/report`) writes one self-contained HTML page: the dependency graph as
+- `smith report` (`apps/smith/features/report`) writes one self-contained HTML page: the dependency graph as
   inline SVG, the doctor results, derived-file drift, the choices of each project and the release plan.
   The page makes no request and runs no script.
-- `smith agent file` (`apps/smith/agentdoc`) writes `AGENTS.md`, and a `CLAUDE.md` that points to
+- `smith agent file` (`apps/smith/features/agentdoc`) writes `AGENTS.md`, and a `CLAUDE.md` that points to
   it, from the workspace's rules. The generated text sits between region markers, so the text a person
-  writes in the same file survives. `smith agent install` (`apps/smith/agentfiles`) adds the Claude
+  writes in the same file survives. `smith agent install` (`apps/smith/features/agentfiles`) adds the Claude
   Code subagent and registers `smith mcp`.

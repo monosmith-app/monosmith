@@ -90,4 +90,4 @@ the guard without a statement of which branch releases what, and each run would 
 
 - Issue [#845](https://github.com/monosmith-app/monosmith/issues/845), epic
   [#819](https://github.com/monosmith-app/monosmith/issues/819)
-- `apps/smith/release/release_channel_model.go`, `apps/smith/workspace/release_channels_validator.go`
+- `apps/smith/features/release/release_channel_model.go`, `apps/smith/features/workspace/release_channels_validator.go`

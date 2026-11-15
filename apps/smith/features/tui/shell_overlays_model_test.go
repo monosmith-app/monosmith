@@ -1,0 +1,192 @@
+package tui
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/toast"
+)
+
+// overlayCases open each layer that is drawn over the screen, on a tab.
+var overlayCases = map[string]struct {
+	tab  string
+	open func(l *lab)
+	// before runs once the tab is open and before the screen is kept as the base.
+	before func(l *lab)
+}{
+	"palette":        {commands.TabProjects, func(l *lab) { l.keys("ctrl+p") }, nil},
+	"palette typed":  {commands.TabProjects, func(l *lab) { l.keys("ctrl+p").typeText("e") }, nil},
+	"palette home":   {commands.TabHome, func(l *lab) { l.keys("ctrl+p") }, nil},
+	"help":           {commands.TabProjects, func(l *lab) { l.keys("f1") }, nil},
+	"package form":   {commands.TabProjects, func(l *lab) { l.keys("+") }, nil},
+	"release choice": {commands.TabRelease, func(l *lab) { l.keys("x") }, nil},
+	"confirmation":   {commands.TabRelease, func(l *lab) { l.keys("x", "enter") }, nil},
+	"toast":          {commands.TabProjects, func(l *lab) { l.toast("Passed in 734ms", toast.Success) }, nil},
+	"long toast":     {commands.TabProjects, func(l *lab) { l.toast(strings.Repeat("a very long message ", 12), toast.Error) }, func(l *lab) { l.keys("b") }},
+}
+
+// toast raises a toast the way a finished run does.
+func (l *lab) toast(text string, level toast.Level) {
+	sh := l.sh()
+	sh.notify(text, level)
+	l.m = sh
+}
+
+// TestOverlaysStayInsideTheFrameAtEverySize checks, for each layer drawn over
+// the screen, that the screen keeps its size and that the margins (the left and
+// right cells) are not touched on the content rows; a toast must also leave the
+// rule under the tabs whole.
+func TestOverlaysStayInsideTheFrameAtEverySize(t *testing.T) {
+	for _, sz := range [][2]int{{80, 24}, {140, 42}} {
+		w, h := sz[0], sz[1]
+		for name, c := range overlayCases {
+			l := newLab(t, true, w, h)
+			l.openTab(c.tab)
+			if c.before != nil {
+				c.before(l)
+			}
+			base := l.lines()
+			c.open(l)
+			lines := l.lines()
+			if len(lines) != h {
+				t.Fatalf("%s at %dx%d: %d lines", name, w, h, len(lines))
+			}
+			lay := l.sh().lay()
+			for y, line := range lines {
+				if got := len([]rune(line)); got != w {
+					t.Fatalf("%s at %dx%d: line %d is %d cells wide: %q", name, w, h, y, got, line)
+				}
+				if y < lay.Main.Y || y >= lay.Footer.Y {
+					continue
+				}
+				now, was := []rune(line), []rune(base[y])
+				if now[0] != was[0] || now[w-1] != was[w-1] {
+					t.Errorf("%s at %dx%d: the frame is broken on line %d:\n%s\nwas\n%s", name, w, h, y, line, base[y])
+				}
+			}
+			if strings.HasPrefix(name, "palette") {
+				continue
+			}
+			if y := lay.Main.Y; strings.Contains(name, "toast") && lines[y] != base[y] {
+				t.Errorf("%s at %dx%d: the rule under the tabs changed:\n%s\nwas\n%s", name, w, h, lines[y], base[y])
+			}
+		}
+	}
+}
+
+// TestEveryDialogLeavesTheTabsAloneAndTheFooterIsEmpty checks that each dialog
+// sits between the tab strip and the footer, as every dialog does, and that the
+// footer shows no hint of the view behind it, whose keys the dialog takes.
+func TestEveryDialogLeavesTheTabsAloneAndTheFooterIsEmpty(t *testing.T) {
+	for _, sz := range [][2]int{{80, 24}, {140, 42}} {
+		w, h := sz[0], sz[1]
+		for name, c := range overlayCases {
+			if strings.Contains(name, "toast") {
+				continue
+			}
+			l := newLab(t, true, w, h)
+			l.openTab(c.tab)
+			base := l.lines()
+			c.open(l)
+			lines := l.lines()
+			lay := l.sh().lay()
+			if y := lay.Main.Y - 1; lines[y] != base[y] {
+				t.Errorf("%s at %dx%d: the tab strip changed:\n%s\nwas\n%s", name, w, h, lines[y], base[y])
+			}
+			if foot := strings.TrimSpace(lines[lay.Footer.Y]); foot != "" {
+				t.Errorf("%s at %dx%d: the footer shows hints behind a dialog: %q", name, w, h, foot)
+			}
+		}
+	}
+}
+
+func TestPaletteFitsInsideTheFrameAt80x24(t *testing.T) {
+	l := newLab(t, true, 80, 24)
+	l.keys("ctrl+p")
+	lay := l.sh().lay()
+	box := l.sh().paletteBox()
+	if box.X < 2 || box.X+box.W > 78 || box.Y < lay.Main.Y || box.Y+box.H > lay.Footer.Y {
+		t.Fatalf("the palette %+v is not inside the frame %+v", box, lay.Main)
+	}
+}
+
+func TestBehindAModalTheViewIsEmptiedSoNoHalfWordsShowAtItsEdges(t *testing.T) {
+	l := newLab(t, true, 140, 42)
+	l.openTab(commands.TabProjects)
+	l.has("root", "affected")
+	l.keys("f1")
+	// The list and the detail are gone; the tabs and the frame stay.
+	l.hasNot("root", "Run build")
+	l.has("Projects", "Keyboard shortcuts")
+	l.keys("esc")
+	l.has("root", "affected")
+}
+
+func TestAToastSitsInsideTheContentAreaAndNeverOnTheFrame(t *testing.T) {
+	for _, sz := range [][2]int{{80, 24}, {140, 42}} {
+		l := newLab(t, true, sz[0], sz[1])
+		l.openTab(commands.TabProjects)
+		l.toast("copied: orders", toast.Success)
+		var rows []int
+		for y, line := range l.lines() {
+			if strings.Contains(line, "copied: orders") {
+				rows = append(rows, y)
+			}
+		}
+		lay := l.sh().lay()
+		if len(rows) != 1 || rows[0] < lay.Main.Y+1 || rows[0] >= lay.Footer.Y {
+			t.Fatalf("%v: the toast is on rows %v, the content is %d..%d", sz, rows, lay.Main.Y+1, lay.Footer.Y-1)
+		}
+	}
+}
+
+// TestThePaletteIsCentredLikeEveryDialog: as many free rows above it as under
+// it, between the tab strip and the footer.
+func TestThePaletteIsCentredLikeEveryDialog(t *testing.T) {
+	for _, sz := range [][2]int{{120, 50}, {120, 30}, {100, 16}, {80, 24}} {
+		l := newLab(t, true, sz[0], sz[1])
+		l.keys("ctrl+p")
+		top, bottom := l.sh().dialogMargins()
+		box := l.sh().paletteBox()
+		above, below := box.Y-top, sz[1]-bottom-(box.Y+box.H)
+		if above < 0 || below < 0 || above-below > 1 || below-above > 1 {
+			t.Errorf("%v: the palette %+v leaves %d rows above and %d under it", sz, box, above, below)
+		}
+	}
+}
+
+// TestAToastNeverCoversTheBorderOfADialog raises a toast over the help overlay,
+// which takes the whole height on a small screen, and checks that every cell of
+// the overlay's border is drawn as it is without the toast.
+func TestAToastNeverCoversTheBorderOfADialog(t *testing.T) {
+	cell := func(lines []string, x, y int) rune {
+		if row := []rune(lines[y]); x < len(row) {
+			return row[x]
+		}
+		return ' '
+	}
+	for _, sz := range [][2]int{{100, 16}, {80, 24}, {120, 30}, {140, 42}} {
+		l := newLab(t, true, sz[0], sz[1])
+		l.openTab(commands.TabProjects)
+		l.keys("f1")
+		r, ok := l.sh().modalRect()
+		if !ok {
+			t.Fatalf("%v: the help overlay is not open", sz)
+		}
+		base := l.lines()
+		l.toast("copied: orders", toast.Success)
+		got := l.lines()
+		if !strings.Contains(strings.Join(got, "\n"), "copied: orders") {
+			t.Fatalf("%v: the toast is not drawn:\n%s", sz, strings.Join(got, "\n"))
+		}
+		for y := r.Y; y < r.Y+r.H; y++ {
+			for x := r.X; x < r.X+r.W; x++ {
+				border := y == r.Y || y == r.Y+r.H-1 || x == r.X || x == r.X+r.W-1
+				if border && cell(got, x, y) != cell(base, x, y) {
+					t.Fatalf("%v: the toast covers the border of the help at (%d, %d):\n%s", sz, x, y, strings.Join(got, "\n"))
+				}
+			}
+		}
+	}
+}

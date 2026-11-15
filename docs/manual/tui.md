@@ -8,7 +8,7 @@ could not: every action runs the equivalent `smith` command, shows it in the sta
 and can be repeated in a script or in CI.
 
 This page describes the interface as of smith 1.62.0. It was written from the source of the
-shell (`apps/smith/tui`, in particular its keymap in `commands/keymap_config.go`) and from
+shell (`apps/smith/features/tui`, in particular its keymap in `commands/keymap_config.go`) and from
 running the commands the shell stands for. The full-screen views were not captured live for
 this page, so no screenshots are included and the exact layout of a screen may differ in
 detail from the descriptions here.
@@ -810,7 +810,7 @@ A folder is shown with a closing `/`. Folders that git ignores (`dist`, `node_mo
 dot. Only the folder you are in is read, never the whole tree; a folder with many names shows the first
 rows and a line "N more: keep typing to narrow the list". The list fits 80 columns.
 
-The finder is one component (`apps/smith/tui/pathfinder`). It is used by: Why is this here? (files,
+The finder is one component (`apps/smith/features/tui/pathfinder`). It is used by: Why is this here? (files,
 folders and settings), the logo of Tauri icons, the recipe a new recipe extends, every argument or option of
 a generated form whose name says file, folder, directory, path or recipe (for example
 `recipe check <file-or-url>`, `plugin draft <sample-folder>`, `--dir`, `--cache-dir`, `--recipe-file`), and

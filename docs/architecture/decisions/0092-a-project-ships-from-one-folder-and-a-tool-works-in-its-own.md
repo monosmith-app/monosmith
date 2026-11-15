@@ -84,7 +84,7 @@ release on their own (`cargo build --release`, `dotnet publish -c Release`).
 
 ## The cache and the two folders
 
-The cache code (`apps/smith/taskcache/store_result_use_case.go`) sets three limits.
+The cache code (`apps/smith/features/taskcache/store_result_use_case.go`) sets three limits.
 
 - `Save` walks each output folder and stores every regular file by content. A hard link is a
   regular file, so it is stored like any file. Two links to one file are stored once (the store is
@@ -165,28 +165,28 @@ rules.
      `packages/plugin-sdk/protocol/build_dir_config.go` (`BuildOutputDir`), the protocol schema in
      `packages/plugin-sdk/protocolschema`.
    - The link, the relink after every build and the copy fallback: a new slice in `apps/smith`
-     (for example `apps/smith/shiplink`), called from `apps/smith/taskrun`.
+     (for example `apps/smith/features/shiplink`), called from `apps/smith/features/taskrun`.
    - Rust: `libs/plugin-rust/discovery/crate_tasks_config.go` (app crates link
      `dist/cargo/<profile>/<crate>`).
    - .NET: `libs/plugin-dotnet/discovery/project_tasks_config.go`,
      `libs/plugin-dotnet/functions/function_tasks_config.go`.
    - JVM: `libs/plugin-jvm/discovery/gradle_tasks_config.go`,
      `libs/plugin-jvm/discovery/module_tasks_config.go`.
-   - Golden paths: `apps/smith/goldenpath/{rust,dotnet,jvm,kotlin,android}_workspace_use_case_test.go`
+   - Golden paths: `apps/smith/features/goldenpath/{rust,dotnet,jvm,kotlin,android}_workspace_use_case_test.go`
      also check the shipped folder.
 2. **`--release`, in the CLI, the TUI and the pipelines.**
    - The flag, declared once (ADR 0084): `libs/actions/flagvocabulary/flag_vocabulary.json`, then
      the generated clients.
-   - The run: `apps/smith/taskrun/run_handler.go`, `run_in_workspace_use_case.go`,
-     `task_key_use_case.go`; the TUI: `apps/smith/tui/commands/parse_run_request_algorithm.go`.
+   - The run: `apps/smith/features/taskrun/run_handler.go`, `run_in_workspace_use_case.go`,
+     `task_key_use_case.go`; the TUI: `apps/smith/features/tui/commands/parse_run_request_algorithm.go`.
    - The release command of each task: the plugins of Rust, .NET, C++, Swift, Gradle (Android).
-   - `smith release` and the pipelines: `apps/smith/release`, `apps/smith/cipipeline`
+   - `smith release` and the pipelines: `apps/smith/features/release`, `apps/smith/features/cipipeline`
      (`run_phase_use_case.go` and the rendered phases).
    - CMake and Swift move their work folder: `libs/plugin-cpp/discovery/project_tasks_config.go`,
      `libs/plugin-swift/discovery/project_tasks_config.go`, `declared_projects_use_case.go`.
 3. **Doctor checks.** `libs/plugin-{rust,dotnet,jvm,cpp,go,python,dart,node}/pipeline/
    check_build_dir_use_case.go` check both folders; `packages/plugin-sdk/taskoutput/
-   check_task_output_use_case.go` and `apps/smith/doctor/build_output_policy.go` accept a work
+   check_task_output_use_case.go` and `apps/smith/features/doctor/build_output_policy.go` accept a work
    folder under `dist/<tool>` and refuse it as a task output when the tool shares it.
    Implemented: Rust, .NET and Maven require the exact work folder the build ships from
    (`dist/cargo`, `dist/dotnet`, `dist/maven/<artifactId>`); Gradle already required
@@ -203,7 +203,7 @@ rules.
    - Tauri: `libs/plugin-node-toolchains/tauri/contribute_tauri_use_case.go` (output and link of the
      bundles).
    - Adopted Electron (Forge with its Vite plugin, electron-builder): detection and the move in
-     `apps/smith/adoptmove` and the Node doctor check. This is new code: smith reads neither setup
+     `apps/smith/features/adoptmove` and the Node doctor check. This is new code: smith reads neither setup
      today.
 
    Implemented:
@@ -217,7 +217,7 @@ rules.
      `vite.config`, and `build` caches that folder when `frontendDist` names it. With sidecars or
      resources `tauri-build` is not cached, because `tauri-verify` reads the cargo target.
    - Adopted Electron: the detection, the link and the move are in `libs/plugin-node/electronapp`,
-     not in `apps/smith/adoptmove`. `adoptmove` moves a root project into a folder of its own; the
+     not in `apps/smith/features/adoptmove`. `adoptmove` moves a root project into a folder of its own; the
      node plugin already reads `package.json` and owns the doctor fixes that move a build folder
      (ADR 0088), and its discovery is where task outputs are set. The packing scripts
      (`electron-forge package`/`make`, `electron-builder`) ship into `dist/<dir>` wherever the tool
@@ -271,6 +271,6 @@ The owner settled the open questions on 2026-11-10:
 ## Where to check
 
 - `packages/plugin-sdk/protocol/build_dir_config.go` (`ProjectBuildDir`, `BuildOutputDir`)
-- `apps/smith/taskcache/store_result_use_case.go` (`Save`, `Restore`),
-  `apps/smith/taskcache/cache_key_algorithm.go` (`KeyInputs`)
+- `apps/smith/features/taskcache/store_result_use_case.go` (`Save`, `Restore`),
+  `apps/smith/features/taskcache/cache_key_algorithm.go` (`KeyInputs`)
 - The files in the inventory table.

@@ -37,4 +37,4 @@ comparison of doctor before and after.
 
 ## Sources
 
-- `apps/smith/sandbox/`
+- `apps/smith/features/sandbox/`

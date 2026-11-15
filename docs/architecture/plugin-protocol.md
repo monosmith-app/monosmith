@@ -5,7 +5,7 @@ that answers JSON-RPC requests on its standard input and output. This page is th
 that protocol: how a plugin is started and identified, what it declares in the handshake, which
 methods exist and who calls them, how several plugins are merged into one project, and what
 happens when something goes wrong. It is a map of `packages/plugin-sdk/protocol` and
-`apps/smith/pluginhost`, not a guide to writing a plugin.
+`apps/smith/features/pluginhost`, not a guide to writing a plugin.
 
 Audience: contributors to smith and authors who want to understand why the protocol looks as it
 does. To write a plugin, start with [Writing a plugin](../guides/writing-a-plugin.md); for the field
@@ -90,7 +90,7 @@ them and the host relies on them):
 
 ## Who is started, and how
 
-`pluginhost.Start` (`apps/smith/pluginhost/start_plugins_use_case.go`) builds a list of launches
+`pluginhost.Start` (`apps/smith/features/pluginhost/start_plugins_use_case.go`) builds a list of launches
 and starts them in parallel, each with `SMITH_PLUGIN=1` in its environment and the workspace root
 in `initialize`:
 
@@ -286,7 +286,7 @@ Well-known keys, whose value type the protocol checks: `module.aliases` (object 
 `source.roots`, `test.patterns`, `build.outputs` (arrays of strings), `runtime.node` (string). A
 plugin may publish any other namespaced key with any JSON value.
 
-The core merges the layers per project and key (`apps/smith/factmerge`). The narrowest scope that
+The core merges the layers per project and key (`apps/smith/features/factmerge`). The narrowest scope that
 sets a key wins: `[projects.<name>.facts]`, then `[facts]`, then a recipe, then the plugin defaults.
 Two plugin defaults that differ for one key are an error that names both plugins; a `smith.toml`
 fact decides it. A plugin never sees who set a fact; an absent key means no one set it and the
@@ -370,9 +370,9 @@ The checks and their output are shown in that page.
 | The TypeScript SDK | `packages/plugin-sdk-ts` |
 | The Python SDK | `packages/plugin-sdk-py` |
 | The C# SDK | `packages/plugin-sdk-dotnet` |
-| Starting, search path, `plugin.json`, stacks | `apps/smith/pluginhost` |
-| Built-in list | `apps/smith/pluginhost/builtin_plugins_config.go`; plugins in `libs/plugin-*` |
-| Assembling projects | `apps/smith/projectgraph` |
+| Starting, search path, `plugin.json`, stacks | `apps/smith/features/pluginhost` |
+| Built-in list | `apps/smith/features/pluginhost/builtin_plugins_config.go`; plugins in `libs/plugin-*` |
+| Assembling projects | `apps/smith/features/projectgraph` |
 
 ## Decisions
 

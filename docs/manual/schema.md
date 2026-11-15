@@ -3,7 +3,7 @@
 `smith schema` prints the JSON Schema of `smith.toml` (draft 07). Editors that read TOML
 schemas, such as Even Better TOML in VS Code, pick it up from the `#:schema` line that
 `smith new` writes at the top of `smith.toml`; the schema is also served at
-`https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json`.
+`https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/features/workspace/smith.schema.json`.
 
 The schema says `additionalProperties: false` at the top and in each table, so a key smith
 does not know is an error, and `[workspace] name` is the only required key.
@@ -50,7 +50,7 @@ The beginning of the output:
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json",
+  "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/features/workspace/smith.schema.json",
   "title": "smith.toml",
   "description": "The configuration of a smith workspace (schema 1). Every setting has a default; a key smith does not know is an error.",
   "type": "object",

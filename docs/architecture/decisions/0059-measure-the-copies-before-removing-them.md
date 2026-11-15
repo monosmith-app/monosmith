@@ -45,7 +45,7 @@ it (it does for `tsconfig.base.json` through the plugin's inputs).
 
 ## Sources
 
-- `apps/smith/copymeasure/`, `docs/architecture/derived-files-facts-and-siblings.md`
+- `apps/smith/features/copymeasure/`, `docs/architecture/derived-files-facts-and-siblings.md`
 
 ## Update 2026-11-01
 

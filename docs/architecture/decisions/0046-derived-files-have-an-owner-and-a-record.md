@@ -141,5 +141,5 @@ changed input needs a choice by hand.
   [#823](https://github.com/monosmith-app/monosmith/issues/823)
 - [ADR 0042](0042-plugins-publish-shared-facts-the-core-merges.md), [The plugin
   protocol](../plugin-protocol.md)
-- `apps/smith/derive`, `apps/smith/derivefile`, `apps/smith/derivelock`,
+- `apps/smith/features/derive`, `apps/smith/features/derivefile`, `apps/smith/features/derivelock`,
   `libs/plugin-node/deriving`, `packages/plugin-sdk/protocol/derive_contract.go`

@@ -50,4 +50,4 @@ review.
 ## Sources
 
 - Issue [#870](https://github.com/monosmith-app/monosmith/issues/870)
-- `apps/smith/projectgraph/declared_projects_mapper.go`, `libs/plugin-go/discovery/declared_projects_use_case.go`
+- `apps/smith/features/projectgraph/declared_projects_mapper.go`, `libs/plugin-go/discovery/declared_projects_use_case.go`

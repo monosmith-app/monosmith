@@ -55,7 +55,12 @@ config does not load that package.
 [conventions.vertical-slices]
 # languages = ["go"]     # default: every language the convention supports
 # exclude = ["legacy"]   # projects it leaves alone
+# vendors = ["github.com/lib/pq", "github.com/aws/*"]   # only integrations/ may import these
 ```
+
+An app keeps its slices in `features/`, `integrations/` and `shared/`, and a file's role limits
+what it imports; [`smith slices check`](../../../manual/slices-check.md) lists the rules. Node
+projects get them from `@monosmith/eslint-config` (`verticalSlices.vendors` there).
 
 A workspace can instead name the plugin in a stack: `structure = ["vertical-slices"]`, so only
 those projects are checked.

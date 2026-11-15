@@ -1,0 +1,344 @@
+package depsview
+
+import (
+	"slices"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/hyperlink"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/words/words"
+)
+
+// Model lists the dependencies that have newer releases, patch before
+// minor before major, and the one-version policy's verdict. A row of chips at
+// the top (All, Patch, Minor, Major) limits the list to one level. Space marks
+// a row; updating ends as `smith deps up <packages>`, aligning as `smith deps up --align`.
+type Model struct {
+	Loaded bool
+	// Waited is how long the load has taken so far, set by the shell for drawing.
+	Waited time.Duration
+	// Tick moves the spinner of the wait, set by the shell for drawing.
+	Tick int
+	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
+	Projects int
+	// All are every release found, patch before minor before major. Rows are the
+	// ones the chip that is on lets through: the rows the list draws and the
+	// cursor moves over.
+	All  []Row
+	Rows []Row
+	// Filter is the chip that is on; FilterNone shows every release, as All does.
+	Filter Filter
+	// Under and Pressed are the chip under the pointer and the one held down,
+	// set by the shell for drawing.
+	Under, Pressed Filter
+	// Beside is true when the shell draws the one-version policy in the detail
+	// beside the list, so the list leaves it out; set by the shell for drawing.
+	Beside bool
+	// Links is true when the terminal draws hyperlinks (see package hyperlink),
+	// set by the shell for drawing.
+	Links  bool
+	Policy []PolicyLine
+	Err    error
+	Cursor int
+	Marked map[string]bool
+	// Anchor is the row a shift-click or shift-arrow extends the marks from.
+	Anchor int
+	// scroll is where the list's window starts, apart from the cursor, so the
+	// wheel can scroll without moving it (see pane.Scroll).
+	scroll *pane.Scroll
+}
+
+// HeadingRow is the row number the table's heading stands for in the map View
+// returns: its box marks or unmarks every row.
+const HeadingRow = -1
+
+// BoxColumns is where the box of a row is, in cells from the left of the view.
+const (
+	BoxFrom = 2
+	BoxTo   = 5
+)
+
+// FromResult is the model for a loaded result.
+func FromResult(r Result) Model {
+	// Patch and minor first, majors last, whatever order they were found in.
+	rows := slices.Clone(r.Rows)
+	slices.SortStableFunc(rows, func(a, b Row) int {
+		return levelRank(a.Level) - levelRank(b.Level)
+	})
+	return Model{Loaded: true, All: rows, Rows: rows, Policy: r.Policy, Err: r.Err, scroll: &pane.Scroll{}}
+}
+
+func levelRank(level string) int {
+	switch level {
+	case "patch":
+		return 0
+	case "minor":
+		return 1
+	}
+	return 2
+}
+
+// Update handles a key; page is how many rows a page key moves.
+func (v Model) Update(key tea.KeyMsg, page int) Model {
+	if f := filterOfKey(key.String()); f != FilterNone {
+		return v.SetFilter(f)
+	}
+	switch key.String() {
+	case " ", "space":
+		return v.toggle()
+	case "shift+up":
+		return v.extend(-1)
+	case "shift+down":
+		return v.extend(1)
+	}
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), commands.Nav(key.String()), page)
+	v.Anchor = v.Cursor
+	return v
+}
+
+// SetFilter turns a chip on: the list shows the releases of that level, the
+// cursor goes to the first of them and the marks stay, hidden ones too.
+func (v Model) SetFilter(f Filter) Model {
+	v.Filter = f
+	v.Rows = rowsAt(v.All, f)
+	v.Cursor, v.Anchor = 0, 0
+	v.scroll = &pane.Scroll{}
+	return v
+}
+
+// Selected is the row under the cursor; ok is false when there is none.
+func (v Model) Selected() (row Row, ok bool) {
+	if v.Cursor < 0 || v.Cursor >= len(v.Rows) {
+		return Row{}, false
+	}
+	return v.Rows[v.Cursor], true
+}
+
+// registryLines say where the selected package is on its registry, as a
+// hyperlink where the terminal draws one, and which keys open and copy the
+// address. A package whose page cannot be known says so.
+func (v Model) registryLines(th theme.Theme, w int) []string {
+	r, ok := v.Selected()
+	if !ok {
+		return nil
+	}
+	label := words.Say("depsview.registry.label")
+	if r.URL == "" {
+		return []string{th.Muted(label + words.Say("depsview.registry.unknown", "name", r.Name))}
+	}
+	text := pane.MiddleTruncate(r.URL, max(w-pane.Width(label), 10))
+	return []string{label + hyperlink.Link(r.URL, th.Info(text), v.Links), th.Muted(words.Say("depsview.registry.keys"))}
+}
+
+// Wheel scrolls the list by delta rows; the cursor and the marks stay.
+func (v Model) Wheel(delta int) Model {
+	if v.scroll == nil {
+		v.scroll = &pane.Scroll{}
+	}
+	v.scroll.By(delta)
+	return v
+}
+
+// extend moves the cursor by delta and marks exactly the rows from the anchor
+// to it, so reversing the arrow shrinks the marks again.
+func (v Model) extend(delta int) Model {
+	if len(v.Rows) == 0 {
+		return v
+	}
+	v.Anchor = min(max(v.Anchor, 0), len(v.Rows)-1)
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), map[int]commands.NavAction{-1: commands.NavUp, 1: commands.NavDown}[delta], 1)
+	return v.markRange(v.Anchor, v.Cursor, true, false)
+}
+
+// markRange marks (or, with on false, unmarks) the rows from a to b, both
+// included; with replace the marks elsewhere are dropped first.
+func (v Model) markRange(a, b int, on, keep bool) Model {
+	if a > b {
+		a, b = b, a
+	}
+	marked := map[string]bool{}
+	if keep {
+		for k := range v.Marked {
+			marked[k] = true
+		}
+	}
+	for i := max(a, 0); i <= b && i < len(v.Rows); i++ {
+		if on {
+			marked[v.Rows[i].Name] = true
+		} else {
+			delete(marked, v.Rows[i].Name)
+		}
+	}
+	v.Marked = marked
+	return v
+}
+
+// MarkState is 0 when no row is marked, 2 when every row is, and 1 between.
+func (v Model) MarkState() int {
+	n := 0
+	for _, r := range v.Rows {
+		if v.Marked[r.Name] {
+			n++
+		}
+	}
+	switch {
+	case n == 0:
+		return 0
+	case n == len(v.Rows):
+		return 2
+	}
+	return 1
+}
+
+// TickRow is a click on the box of row i: it flips the row's mark, or, with
+// extend, marks or unmarks every row from the anchor to it as that row will be.
+func (v Model) TickRow(i int, extend bool) Model {
+	if i < 0 || i >= len(v.Rows) {
+		return v
+	}
+	on := !v.Marked[v.Rows[i].Name]
+	if extend {
+		v = v.markRange(v.Anchor, i, on, true)
+	} else {
+		v.Cursor = i
+		v.Anchor = i
+		v.Marked = withMark(v.Marked, v.Rows[i].Name, on)
+		return v
+	}
+	v.Cursor = i
+	return v
+}
+
+// ChooseRow is a click on a row away from its box: the cursor goes there and
+// nothing is marked or unmarked, or, with extend, the rows from the anchor to
+// it are marked (the anchor stays, as in a list of mail).
+func (v Model) ChooseRow(i int, extend bool) Model {
+	if i < 0 || i >= len(v.Rows) {
+		return v
+	}
+	if extend {
+		v = v.markRange(v.Anchor, i, true, true)
+	} else {
+		v.Anchor = i
+	}
+	v.Cursor = i
+	return v
+}
+
+// TickAll is a click on the box of the heading: it marks every row, or
+// unmarks them all when every row is marked.
+func (v Model) TickAll() Model { return v.markAll() }
+
+func withMark(marked map[string]bool, name string, on bool) map[string]bool {
+	out := map[string]bool{}
+	for k := range marked {
+		out[k] = true
+	}
+	if on {
+		out[name] = true
+	} else {
+		delete(out, name)
+	}
+	return out
+}
+
+// toggle marks or unmarks the row under the cursor.
+func (v Model) toggle() Model {
+	if v.Cursor < 0 || v.Cursor >= len(v.Rows) {
+		return v
+	}
+	marked := map[string]bool{}
+	for k := range v.Marked {
+		marked[k] = true
+	}
+	name := v.Rows[v.Cursor].Name
+	if marked[name] {
+		delete(marked, name)
+	} else {
+		marked[name] = true
+	}
+	v.Marked = marked
+	return v
+}
+
+// chosenMajors counts the major releases among the packages an update would move.
+func (v Model) chosenMajors() int {
+	chosen := map[string]bool{}
+	for _, n := range v.chosen() {
+		chosen[n] = true
+	}
+	n := 0
+	for _, r := range v.All {
+		if r.Level == "major" && chosen[r.Name] {
+			n++
+		}
+	}
+	return n
+}
+
+// markAll marks every row shown, or unmarks them when every row shown is
+// marked already. Marks on rows the chip hides stay as they are.
+func (v Model) markAll() Model {
+	all := v.MarkState() == 2
+	marked := map[string]bool{}
+	for k := range v.Marked {
+		marked[k] = true
+	}
+	for _, r := range v.Rows {
+		if all {
+			delete(marked, r.Name)
+		} else {
+			marked[r.Name] = true
+		}
+	}
+	v.Marked = marked
+	return v
+}
+
+// chosen are the packages an update would move: the marked rows (also the ones
+// the chip hides), or the row under the cursor when none is marked.
+func (v Model) chosen() []string {
+	var names []string
+	for _, r := range v.All {
+		if v.Marked[r.Name] {
+			names = append(names, r.Name)
+		}
+	}
+	if len(names) == 0 && v.Cursor >= 0 && v.Cursor < len(v.Rows) {
+		names = append(names, v.Rows[v.Cursor].Name)
+	}
+	return names
+}
+
+// UpArgv is the command line that updates the chosen packages; nil when none.
+func (v Model) UpArgv() []string {
+	names := v.chosen()
+	if len(names) == 0 {
+		return nil
+	}
+	argv := append([]string{"deps", "up"}, names...)
+	for _, r := range v.All {
+		if r.Level == "major" && slices.Contains(names, r.Name) {
+			// A major update was marked on purpose: the command takes it only with --major.
+			return append(argv, "--major")
+		}
+	}
+	return argv
+}
+
+// AlignArgv is the command line that brings the policy's drifting dependencies
+// to one version; nil unless the policy found some.
+func (v Model) AlignArgv() []string {
+	if v.drifting() {
+		return []string{"deps", "up", "--align"}
+	}
+	return nil
+}
+
+// drifting is true when the one-version policy found dependencies at different versions.
+func (v Model) drifting() bool {
+	return slices.ContainsFunc(v.Policy, func(p PolicyLine) bool { return !p.OK && !p.Warning })
+}

@@ -6,7 +6,7 @@ palette are all drawn from, pages that draw themselves into one pane, wizards bu
 and a runner that starts the same `smith` binary as a child. The organising rule is that the shell
 never does what a command line could not.
 
-Audience: contributors to `apps/smith/tui`. For what the screens and keys are, see
+Audience: contributors to `apps/smith/features/tui`. For what the screens and keys are, see
 [The smith terminal interface](../manual/tui.md). The design proposal that preceded the build, with
 its history, is [The TUI and the IDE plugins](tui-and-ide.md).
 
@@ -52,7 +52,7 @@ flowchart TD
 
 | Package | Responsibility |
 |---|---|
-| `tui` (root, 31 production files) | the `Shell` model: keys, mouse, runs, render, detail panel. One type's methods cannot be split across Go packages, which is the written reason the root exceeds the slice size limit (`apps/smith/tui/README.md`, temporary) |
+| `tui` (root, 31 production files) | the `Shell` model: keys, mouse, runs, render, detail panel. One type's methods cannot be split across Go packages, which is the written reason the root exceeds the slice size limit (`apps/smith/features/tui/README.md`, temporary) |
 | `tui/commands` | the keymap and everything computed from it: availability, footer hints, help rows, key labels, parsing a run request |
 | `tui/theme` | tokens (dark, light, plain), icons (Unicode, ASCII), the theme chosen from the environment |
 | `tui/layout`, `pane`, `tabs`, `footer`, `statusbar`, `toast`, `detail` | geometry and drawing of the pieces |
@@ -298,14 +298,14 @@ terminal sequence, which also works over SSH.
 
 | Concern | Path |
 |---|---|
-| Entry and mode choice | `apps/smith/tui/tui_handler.go` |
-| Shell model | `apps/smith/tui/shell_*.go` |
-| Keymap | `apps/smith/tui/commands/keymap_config.go` |
+| Entry and mode choice | `apps/smith/features/tui/tui_handler.go` |
+| Shell model | `apps/smith/features/tui/shell_*.go` |
+| Keymap | `apps/smith/features/tui/commands/keymap_config.go` |
 | Classifying actions | `libs/actions/catalog` |
-| Runner | `apps/smith/tui/runner` |
-| Output parsing | `apps/smith/tui/runview` |
-| Settings tab | `apps/smith/tui/settingsview` (the view), `settingssource` (what it reads and calls), `userprefs` (the personal preferences file), `shell_settings_use_case.go` |
-| Wizards | `apps/smith/tui/fixwizard`, `apps/smith/tui/adoptwizard`, `apps/smith/adoptflow`, `apps/smith/doctorfix` |
+| Runner | `apps/smith/features/tui/runner` |
+| Output parsing | `apps/smith/features/tui/runview` |
+| Settings tab | `apps/smith/features/tui/settingsview` (the view), `settingssource` (what it reads and calls), `userprefs` (the personal preferences file), `shell_settings_use_case.go` |
+| Wizards | `apps/smith/features/tui/fixwizard`, `apps/smith/features/tui/adoptwizard`, `apps/smith/features/adoptflow`, `apps/smith/features/doctorfix` |
 
 ## Decisions
 

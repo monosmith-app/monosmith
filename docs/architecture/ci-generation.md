@@ -6,7 +6,7 @@ almost nothing but call `smith ci <phase>`. This page explains how the pipeline 
 provider), what each phase runs, how a team's own steps survive regeneration, and the guard that
 stops a pull request from leaving tracked files dirty.
 
-Audience: contributors working on `apps/smith/cipipeline`, and operators who want to know why a
+Audience: contributors working on `apps/smith/features/cipipeline`, and operators who want to know why a
 generated file looks the way it does. For the user view see [CI pipelines](../reference/ci.md); for
 the release half see [How a release is decided and published](release-design.md).
 
@@ -41,7 +41,7 @@ flowchart LR
 
 ## Step 1: plugins say what they need
 
-`cipipeline.Collect` (`apps/smith/cipipeline/generate_pipelines_use_case.go`) walks the plugins the
+`cipipeline.Collect` (`apps/smith/features/cipipeline/generate_pipelines_use_case.go`) walks the plugins the
 session started. A plugin that advertises the `ci` capability in its `initialize` answer is asked,
 once, with the projects it serves (`p.ServedBy(plugin)`), through the protocol method `ci`
 (`protocol.MethodCI`, one minute timeout). It answers a `protocol.CIResult`:
@@ -207,8 +207,8 @@ CycloneDX file with `sbom.Write` (from the components the project's plugin lists
 
 | Concern | Path |
 |---|---|
-| Collect, Rendered, Write, Drift, Stale | `apps/smith/cipipeline/generate_pipelines_use_case.go` |
-| The model and Contributions | `apps/smith/cipipeline/pipeline_model.go` |
+| Collect, Rendered, Write, Drift, Stale | `apps/smith/features/cipipeline/generate_pipelines_use_case.go` |
+| The model and Contributions | `apps/smith/features/cipipeline/pipeline_model.go` |
 | Renderers | `github_actions_mapper.go`, `azure_pipelines_mapper.go`, `gitlab_ci_mapper.go`, `circleci_config_mapper.go`, `bitbucket_pipelines_mapper.go`, `devcontainer_mapper.go` |
 | Toolchain and setup spelling | `toolchain_setup_mapper.go`, `setup_steps_mapper.go`, `package_stores_mapper.go` |
 | Slots and pins | `slot_mapper.go`, `keep_action_pins_mapper.go` |
@@ -216,7 +216,7 @@ CycloneDX file with `sbom.Write` (from the components the project's plugin lists
 | Assets job, sibling repositories | `release_assets_job_mapper.go`, `github_sibling_repos_mapper.go` |
 | Hand-set-up instructions | `manual_steps_mapper.go` (`smith ci check`) |
 | The `smith ci` commands | `ci_handler.go` |
-| Native job | `apps/smith/nativebuild` |
+| Native job | `apps/smith/features/nativebuild` |
 
 ## Decisions
 

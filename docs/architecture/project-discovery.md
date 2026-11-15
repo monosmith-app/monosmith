@@ -40,8 +40,8 @@ sequenceDiagram
   PG-->>S: Graph
 ```
 
-The code is in `apps/smith/session/open_session_use_case.go` (`Open`) and
-`apps/smith/projectgraph/discover_projects_use_case.go` (`Discover`). The order of the
+The code is in `apps/smith/features/session/open_session_use_case.go` (`Open`) and
+`apps/smith/features/projectgraph/discover_projects_use_case.go` (`Discover`). The order of the
 steps matters: edges are resolved before stacks, and smith.toml overrides are applied last
 so they win.
 
@@ -131,7 +131,7 @@ Every language plugin resolves the kind the same way, through
 
 smith.toml has no setting for the kind. `smith kind` changes it after the project exists: the
 plugin says which files change, and smith moves the folder with git and regenerates the pipelines
-(`apps/smith/kindchange`, protocol method `project/kind`). By hand, write the marker where the
+(`apps/smith/features/kindchange`, protocol method `project/kind`). By hand, write the marker where the
 plugin looks:
 
 | Language | Kind and stack marker |
@@ -256,12 +256,12 @@ from its declared command or found on the search path. `smith plugin list` shows
 
 | Concern | Path |
 |---|---|
-| opening a workspace | `apps/smith/session/open_session_use_case.go` |
-| discovery driver | `apps/smith/projectgraph/discover_projects_use_case.go` |
-| stacks and the catalogue | `apps/smith/projectgraph/apply_stacks_use_case.go`, `apps/smith/pluginhost/stack_catalog_model.go`, `stack_validator.go` |
-| conventions | `apps/smith/projectgraph/apply_conventions_use_case.go`, `convention_targets_policy.go` |
-| overrides and sources | `apps/smith/projectgraph/task_overrides_mapper.go` |
-| exclusion | `apps/smith/workspace/excluded_paths_policy.go` |
+| opening a workspace | `apps/smith/features/session/open_session_use_case.go` |
+| discovery driver | `apps/smith/features/projectgraph/discover_projects_use_case.go` |
+| stacks and the catalogue | `apps/smith/features/projectgraph/apply_stacks_use_case.go`, `apps/smith/features/pluginhost/stack_catalog_model.go`, `stack_validator.go` |
+| conventions | `apps/smith/features/projectgraph/apply_conventions_use_case.go`, `convention_targets_policy.go` |
+| overrides and sources | `apps/smith/features/projectgraph/task_overrides_mapper.go` |
+| exclusion | `apps/smith/features/workspace/excluded_paths_policy.go` |
 | kind resolution | `packages/plugin-sdk/projectkind/kind_policy.go` |
 | per-language discovery | `libs/plugin-<name>/discovery` |
 | the contract | `packages/plugin-sdk/protocol/project_contract.go`, `initialize_contract.go` |

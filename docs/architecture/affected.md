@@ -44,8 +44,8 @@ flowchart TD
   J --> K["result = touched + transitive dependents"]
 ```
 
-The code is `apps/smith/affected/affected_projects_use_case.go` (`Compute`) and
-`apps/smith/gitclient/git_client.go` (`ChangedSince`, `MergeBase`, `RevParse`).
+The code is `apps/smith/features/affected/affected_projects_use_case.go` (`Compute`) and
+`apps/smith/integrations/gitclient/git_client.go` (`ChangedSince`, `MergeBase`, `RevParse`).
 
 ## Step 1: the base
 
@@ -179,9 +179,9 @@ The choice to fall back to "everything" has no record of its own (see above).
 
 | Concern | Path |
 |---|---|
-| the algorithm | `apps/smith/affected/affected_projects_use_case.go` |
-| watch paths | `apps/smith/affected/watch_paths_algorithm.go` |
-| git queries | `apps/smith/gitclient/git_client.go` |
-| `--affected` in runs | `apps/smith/taskrun/run_in_workspace_use_case.go` |
-| `--affected` in graphs, `smith affected` | `apps/smith/graphview/graph_handler.go` |
-| verify phase | `apps/smith/cipipeline/run_phase_use_case.go` |
+| the algorithm | `apps/smith/features/affected/affected_projects_use_case.go` |
+| watch paths | `apps/smith/features/affected/watch_paths_algorithm.go` |
+| git queries | `apps/smith/integrations/gitclient/git_client.go` |
+| `--affected` in runs | `apps/smith/features/taskrun/run_in_workspace_use_case.go` |
+| `--affected` in graphs, `smith affected` | `apps/smith/features/graphview/graph_handler.go` |
+| verify phase | `apps/smith/features/cipipeline/run_phase_use_case.go` |

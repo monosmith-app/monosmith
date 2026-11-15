@@ -3,7 +3,7 @@
 Two features that look unrelated share one idea: **smith owns the process, and
 the CI provider only starts it.** A pipeline is a few lines that call
 `smith ci <phase>`; a release is a plan that the same code produces on a laptop
-(`--dry-run`) and in CI. This page explains both. Code: `apps/smith/release`,
+(`--dry-run`) and in CI. This page explains both. Code: `apps/smith/features/release`,
 `releaselineage`, `releasepreview`, `cipipeline`, `nativebuild`.
 
 ## Part 1 — Releases

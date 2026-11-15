@@ -13,7 +13,7 @@ editor that reads TOML schemas. `smith new` and `smith convert` write its
 address as the first line,
 
 ```toml
-#:schema https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json
+#:schema https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/features/workspace/smith.schema.json
 ```
 
 which Even Better TOML (VS Code) and other Taplo-based editors pick up. Add
