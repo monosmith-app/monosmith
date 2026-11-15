@@ -50,8 +50,11 @@ func walk(r *Report, root string, rules languages.Rules, rel string, parent *lan
 			if strings.HasPrefix(name, ".") || skippedFolders[name] || (rules.Skip != nil && rules.Skip(name, here)) {
 				continue
 			}
-			// shared is a zone directly in the source root, a junk drawer anywhere else.
-			if languages.ForbiddenFolders[strings.ToLower(name)] && (name != "shared" || rel != zoneRoot) {
+			// shared is a zone in the source root, or beside features/ or
+			// integrations/ (a test tree that mirrors the zones); a junk drawer
+			// anywhere else.
+			zone := name == "shared" && (rel == zoneRoot || here.Folders["features"] || here.Folders["integrations"])
+			if languages.ForbiddenFolders[strings.ToLower(name)] && !zone {
 				r.problem(shown(name)+"/", fmt.Sprintf("%q is a junk drawer; name the folder for the outcome it serves", name))
 				continue
 			}
