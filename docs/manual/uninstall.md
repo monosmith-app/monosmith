@@ -1,11 +1,12 @@
 # smith uninstall
 
 `smith uninstall` (alias `smith un`) removes packages from one project, the counterpart of
-[`smith install`](install.md). A dependency belongs to the project that uses it, so it needs
-a target: `smith uninstall -p <project> <package>`.
+[`smith install`](install.md). A dependency belongs to the project that uses it:
+`smith uninstall <package>` in its folder, or `smith uninstall -p <project> <package>` from anywhere.
 
-The `package.json` at the top of the workspace is not a project: name it with `-p .`
-(`smith deps up` lists its packages as `(root)`). A development dependency is removed like any
+Without `-p`, the package leaves the project of the folder you are in. At the top of the
+workspace it leaves the `package.json` there, which is not a project (`-p .` names it from
+anywhere; `smith deps up` lists its packages as `(root)`). A development dependency is removed like any
 other: `smith uninstall -p . @swc/core`.
 
 A name that is a library of the workspace (a project, its folder, or the package it

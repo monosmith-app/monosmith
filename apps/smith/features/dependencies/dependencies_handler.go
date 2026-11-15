@@ -30,12 +30,13 @@ func Commands(version string) []*cobra.Command {
 	install := &cobra.Command{
 		Use:     "install [packages...]",
 		Aliases: []string{"i"},
-		Short:   "Add a package to a project (-p), or with none install everything the workspace declares (up updates, sync aligns versions)",
+		Short:   "Add a package to the project you are in (or -p), or with none install everything the workspace declares (up updates, sync aligns versions)",
 		Long: `Add packages to one project with its own toolchain: npm install --workspace,
 the project's pyproject.toml and the workspace venv, go get. Each project owns
-its dependencies, so a package needs a target: smith install -p <project>
-<package>. -p . names the workspace root: the package.json shared by every
-project (Node workspaces only). With no package, smith install installs everything a fresh clone
+its dependencies: a package goes to the project of the folder you are in, or
+to the workspace root at the top of the workspace (the package.json shared by
+every project; Node workspaces only). -p <project> names another target, and
+-p . the root from anywhere. With no package, smith install installs everything a fresh clone
 needs, for every language in the workspace.
 
 A name that is a library of this workspace (its name, its directory, or the
@@ -46,7 +47,8 @@ no terminal (or --yes) it refuses and names the fix: workspace:<name> for the
 project, --registry for the package.`,
 		Example: `  smith install                       # a fresh clone: npm install, the venv, go mod download
   smith install -p web zod
-  smith install -p . -D vitest             # the workspace root: shared by every project
+  smith install -D vitest                  # at the top: the workspace root, shared by every project
+  smith install zod                        # inside apps/web: the project web
   smith install -p apps/api -D pytest-cov
   smith install -p api github.com/pkg/errors@v0.9.1
   smith install -p web core                # a library of this workspace: linked, not downloaded
@@ -63,6 +65,9 @@ project, --registry for the package.`,
 				return err
 			}
 			defer s.Close()
+			if len(args) > 0 && len(targets) == 0 {
+				targets = []string{targetHere(s)}
+			}
 			if dryRun {
 				return PlanInstall(s, targets, args, dev, registry, cmd.OutOrStdout())
 			}
@@ -96,9 +101,9 @@ project, --registry for the package.`,
 		Aliases: []string{"un"},
 		Short:   "Remove packages from a project (the opposite of install)",
 		Long: `Remove packages from one project, the counterpart of smith install. A
-dependency belongs to the project that uses it, so it needs a target: smith
-uninstall -p <project> <package>. The package.json at the top of the workspace
-is not a project: name it with -p . (smith deps up lists it as "(root)").
+dependency belongs to the project that uses it: without -p it is removed from
+the project of the folder you are in, or from the package.json at the top of the
+workspace when you are there (-p . from anywhere; smith deps up lists it as "(root)").
 A development dependency is removed like any other.`,
 		Example: `  smith uninstall -p web zod
   smith uninstall -p . @swc/core`,
@@ -109,6 +114,9 @@ A development dependency is removed like any other.`,
 				return err
 			}
 			defer s.Close()
+			if len(from) == 0 {
+				from = []string{targetHere(s)}
+			}
 			if goOn, err := confirmPackages(cmd, s, "remove", from, args, false, uninstallYes); err != nil || !goOn {
 				return err
 			}
@@ -122,6 +130,20 @@ A development dependency is removed like any other.`,
 		return describePackages("uninstall", cmd, args)
 	}})
 	return []*cobra.Command{install, uninstall, syncCommand(version), upCommand(version), depsCommand(version)}
+}
+
+// targetHere is the target of a command run without -p: the project of the
+// current folder, else the workspace root (see DefaultTarget).
+func targetHere(s *session.Session) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return RootTarget
+	}
+	roots := map[string]string{}
+	for _, p := range s.Graph.Projects {
+		roots[p.Name] = p.Root
+	}
+	return DefaultTarget(s.Root, cwd, roots)
 }
 
 // describePackages words an install or an uninstall for the commit: "install zod in web". With no

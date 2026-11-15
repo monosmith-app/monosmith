@@ -4,8 +4,9 @@
 a fresh clone needs, for every language in the workspace: `npm install` for the Node
 projects, the Python venv and its requirements, `go mod download`. With packages it adds
 them to one project with that project's own toolchain: `npm install --workspace`, the
-project's `pyproject.toml` and the venv, `go get`. Each project owns its dependencies, so a
-package needs a target: `smith install -p <project> <package>`.
+project's `pyproject.toml` and the venv, `go get`. Each project owns its dependencies: a
+package goes to the project of the folder you are in, or to the workspace root when you are at
+the top of the workspace. `-p <project>` names another target.
 
 ## When to use it
 
@@ -56,8 +57,8 @@ confirmation. The registry description of a package is not shown: the plugins do
 
 ## The workspace root
 
-`smith install -p . [-D] <package>` adds the package to the `package.json` at the top of the workspace, shared by
-every project. It runs `npm install <package> [--save-dev]` with no `--workspace`, so only the root manifest and
+`smith install [-D] <package>`, run at the top of the workspace (or `-p .` from anywhere), adds the package to the
+`package.json` at the top of the workspace, shared by every project. It runs `npm install <package> [--save-dev]` with no `--workspace`, so only the root manifest and
 the lock file change. `.` can be combined with projects (`-p . -p web`). `smith uninstall -p .` is the reverse.
 The root takes registry packages only (a library of the workspace is linked into a project, not the root).
 In a workspace with no Node project, `-p .` is refused and names the fix. The plan (`--dry-run`) and the
@@ -75,8 +76,9 @@ confirmation list the root with the exact command.
 
 ```sh
 smith install
+smith install [-D] <package>...            # the project you are in; at the top, the workspace root
 smith install -p <project> [-D] <package>...
-smith install -p . [-D] <package>...        # the workspace root, shared by every project
+smith install -p . [-D] <package>...        # the workspace root from anywhere
 smith install -p <project> <library of this workspace>... [--range <range>]
 smith install -p <project> --registry <name>...
 ```
