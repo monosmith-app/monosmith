@@ -9,11 +9,14 @@ import (
 )
 
 type fakePush struct {
-	ok  bool
-	err error
+	ok    bool
+	err   error
+	cache int64
 }
 
 func (f fakePush) CanPush(githubrelease.Repository) (bool, error) { return f.ok, f.err }
+
+func (f fakePush) CacheUsage(githubrelease.Repository) (int64, error) { return f.cache, nil }
 
 var repo = githubrelease.Repository{Owner: "acme", Name: "app"}
 
@@ -54,5 +57,21 @@ func TestNoProjectNoCheck(t *testing.T) {
 	CheckGitHubRelease(&r, nil, repo, fakePush{}, nil)
 	if len(r.Results) != 0 {
 		t.Fatal("nothing attaches to GitHub, so nothing is asked")
+	}
+}
+
+func TestTheGitHubRehearsalWarnsWhenTheActionsCacheIsNearlyFull(t *testing.T) {
+	var r Report
+	CheckGitHubRelease(&r, []string{"core"}, repo, fakePush{ok: true, cache: 9_500_000_000}, nil)
+	last := r.Results[len(r.Results)-1]
+	if last.Check != CheckStorage || last.Status != Warn || !strings.Contains(last.Message, "9.5 GB of the 10 GB") {
+		t.Fatalf("want a storage warning, got %+v", last)
+	}
+	r = Report{}
+	CheckGitHubRelease(&r, []string{"core"}, repo, fakePush{ok: true, cache: 4_000_000_000}, nil)
+	for _, res := range r.Results {
+		if res.Check == CheckStorage {
+			t.Fatalf("a cache with room left needs no word: %+v", res)
+		}
 	}
 }

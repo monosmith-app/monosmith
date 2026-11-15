@@ -176,7 +176,8 @@ type CISection struct {
 	// so a release is not lost to a full quota.
 	Artifacts string `toml:"artifacts"`
 	// ArtifactRetentionDays is how many days GitHub keeps the artifacts the
-	// generated pipeline uploads. Default: 0, the repository's own setting.
+	// generated pipeline uploads. Default (and 0): 7, so old builds do not
+	// fill the storage quota a release needs; 90 is GitHub's longest.
 	ArtifactRetentionDays int `toml:"artifact_retention_days"`
 	// Secrets name repository secrets the generated pipelines hand to every
 	// step that runs smith, as environment variables of the same name: the ci

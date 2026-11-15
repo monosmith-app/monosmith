@@ -109,9 +109,18 @@ providers always audit.
 its artifacts (the packed apps, `drop`, and the native builds). `artifacts = "optional"` adds
 `continue-on-error: true` to the upload steps, so a full GitHub artifact storage quota does not
 fail a job that has already released; `on` (default) fails the job. `artifact_retention_days`
-(1 to 90) adds `retention-days` to the same steps; `0` (default) leaves the repository's
-setting. Without these settings, a hand edit of an upload step is lost the next time
-`smith ci generate` runs.
+(1 to 90) is the `retention-days` of the same steps; the default (and `0`) is 7 days, because
+the run that uploads a build is the one that uses it, and old builds left for 90 days fill the
+quota a release needs. Without these settings, a hand edit of an upload step is lost the next
+time `smith ci generate` runs.
+
+**Cache hygiene.** Next to `ci.yml`, a GitHub workspace gets `.github/workflows/cache-hygiene.yml`.
+GitHub keeps 10 GB of Actions cache for a repository and evicts the oldest entries beyond that,
+and every new lockfile saves a new npm or Go cache beside the old one. The workflow deletes the
+caches no build reads again: when a pull request closes, every cache of its merge ref; after
+the `ci` workflow on a branch, every `smith-` cache of that branch except the newest of each name.
+Its `after-prune` slot keeps your own steps. The release rehearsal (`smith release --dry-run`)
+warns when the cache holds 9 GB or more.
 
 **`publish_on`** says which branches pack apps, keep the packed apps, attest the release
 archives and build the release files in the assets job. `release` (default) is the release

@@ -223,8 +223,14 @@ func githubArtifactContinue(m Model) string {
 	return ""
 }
 
+// DefaultArtifactRetentionDays is how long GitHub keeps the artifacts the
+// generated pipeline uploads when [ci] artifact_retention_days is not set: the
+// run that uploads them is the one that uses them, and a full storage quota
+// stops the next release from keeping its build.
+const DefaultArtifactRetentionDays = 7
+
 // githubArtifactRetention is the retention-days line of an artifact upload
-// step when [ci] artifact_retention_days is set.
+// step: [ci] artifact_retention_days, or DefaultArtifactRetentionDays.
 func githubArtifactRetention(m Model) string {
 	if m.ArtifactRetentionDays > 0 {
 		return fmt.Sprintf("          retention-days: %d\n", m.ArtifactRetentionDays)

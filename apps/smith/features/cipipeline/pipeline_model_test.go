@@ -102,7 +102,8 @@ func TestBranchesAreTheTriggersAndTheReleaseBranchStaysTheReleaseOne(t *testing.
 	m.Pack = true
 	files := Rendered(cfg, m)
 	for path, out := range files {
-		if path == InstallScriptPath {
+		// The install script and the cache hygiene workflow run on no branch.
+		if path == InstallScriptPath || path == GitHubCacheHygienePath {
 			continue
 		}
 		if strings.Count(out, "[main, dev, next]") != 2 {
