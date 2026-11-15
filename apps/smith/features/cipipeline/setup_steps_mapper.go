@@ -50,7 +50,9 @@ func githubInstallSmith(m Model, bash bool) string {
 			command += "\necho \"" + dir + "\" >> \"$GITHUB_PATH\"\nexport PATH=\"" + dir + ":$PATH\""
 		}
 		command += "\nsmith --version"
-		return githubLauncherCache(i) + "      - name: Install smith\n        shell: bash\n        run: " + runValue("        ", command)
+		// The launcher asks GitHub's API for the newest smith when none is
+		// pinned: anonymously, shared runners hit its rate limit (403).
+		return githubLauncherCache(i) + "      - name: Install smith\n        shell: bash\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n        run: " + runValue("        ", command)
 	}
 	shell := ""
 	if bash {

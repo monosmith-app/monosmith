@@ -84,6 +84,8 @@ jobs:
           key: smith-versions-${{ runner.os }}-${{ runner.arch }}-1.4.0
       - name: Install smith
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.4.0 smith --version
           smith --version
@@ -161,6 +163,8 @@ jobs:
           key: smith-versions-${{ runner.os }}-${{ runner.arch }}-1.4.0
       - name: Install smith
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.4.0 smith --version
           smith --version
@@ -214,6 +218,8 @@ jobs:
           key: smith-versions-${{ runner.os }}-${{ runner.arch }}-1.4.0
       - name: Install smith
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           npm install --global --registry https://registry.npmjs.org/ monosmith@^3 && SMITH_VERSION=1.4.0 smith --version
           smith --version
