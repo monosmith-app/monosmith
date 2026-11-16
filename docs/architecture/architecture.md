@@ -99,11 +99,11 @@ Everything language-specific is a plugin: discovery, tasks, scaffolding,
 version writing, publishing, CI needs, health checks. The core knows no
 language.
 
-A plugin is a separate process speaking JSON-RPC 2.0 over stdio, framed like
-the Language Server Protocol. Built-in plugins ship inside the `smith` binary
-but still run out of process: smith starts itself as
-`smith plugin serve <name>`, so they speak exactly the protocol an external
-plugin does. A plugin declares its roles in `initialize`, and the host only
+A plugin speaks JSON-RPC 2.0, framed like the Language Server Protocol. An
+external plugin is a separate process talking over stdio. Built-in plugins ship
+inside the `smith` binary and run inside the smith process, over in-memory pipes
+with the same protocol (ADR 0103), so they speak exactly the protocol an
+external plugin does. A plugin declares its roles in `initialize`, and the host only
 calls the methods it advertised.
 
 ```mermaid

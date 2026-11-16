@@ -12,6 +12,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // npm is the command runner; tests replace it.
@@ -139,7 +140,7 @@ const pendingTag = "pending"
 // three probes 30 s apart. Tests replace it with a fake registry.
 var awaitPlatforms = func(workspaceRoot string, at []string, wait time.Duration, names []string, version string) npmpropagation.Outcome {
 	reg := npmpropagation.NPM{Dir: workspaceRoot, Args: at, Output: npm.output}
-	cfg := npmpropagation.Config{Max: wait, Progress: func(line string) { fmt.Fprintln(os.Stderr, line) }}
+	cfg := npmpropagation.Config{Max: wait, Progress: func(line string) { fmt.Fprintln(toolrun.Log, line) }}
 	return npmpropagation.Await(reg, npmpropagation.RealClock{}, cfg, names, version)
 }
 

@@ -24,7 +24,7 @@ flowchart LR
     cipipeline["cipipeline.Collect"] --> hostclient
     doctor["doctor"] --> hostclient
   end
-  hostclient <-->|"stdin/stdout<br/>Content-Length framing"| builtin["built-in plugin<br/>smith plugin serve NAME<br/>(a child smith process)"]
+  hostclient <-->|"stdin/stdout<br/>Content-Length framing"| builtin["built-in plugin<br/>served in the smith process<br/>(in-memory pipes)"]
   hostclient <-->|"stdin/stdout"| external["external plugin<br/>plugin.json command"]
   builtin -.->|"packages/plugin-sdk/serve"| sdk["serve.Main loop"]
   external -.->|"any language"| sdk2["its own loop"]

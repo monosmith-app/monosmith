@@ -174,7 +174,14 @@ func concurrencyOf(result any) int {
 	return 0
 }
 
-func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
+func dispatch(p Plugin, req protocol.Request) (result any, rpcErr *protocol.ResponseError) {
+	// A panic answers the request with an error instead of ending the plugin:
+	// a built-in plugin runs inside smith itself, where it would end smith.
+	defer func() {
+		if r := recover(); r != nil {
+			result, rpcErr = nil, &protocol.ResponseError{Code: protocol.CodeInternalError, Message: fmt.Sprintf("%s failed: %v", req.Method, r)}
+		}
+	}()
 	switch req.Method {
 	case protocol.MethodInitialize:
 		return call(req.Params, func(params protocol.InitializeParams) (protocol.InitializeResult, error) {

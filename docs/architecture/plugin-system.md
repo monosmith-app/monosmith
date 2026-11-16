@@ -60,8 +60,8 @@ The plugins that ship inside the `smith` binary (the language plugins `node`,
 `go`, `python`, …, and the toolchain, convention and structure plugins
 `eslint`, `jest`, `vitest`, `docker`, `vertical-slices`, …) are not a special
 case. The host
-starts **itself** as `smith plugin serve <name>` and talks to the child over
-pipes, exactly as it would to `smith-plugin-kiwi`. This keeps the protocol
+serves each one inside its own process over in-memory pipes (ADR 0103) and
+talks to it with the same protocol, exactly as it would to `smith-plugin-kiwi`. This keeps the protocol
 honest (the built-ins are its first and best-tested users) and means a
 built-in can be replaced by an external plugin of the same name in `smith.toml`
 (`[plugins.external.<name>]`) without the core noticing.

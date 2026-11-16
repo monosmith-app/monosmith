@@ -29,8 +29,9 @@ install.sh, install.ps1         installers for people; install.sh is also embedd
 docs/                           documentation, decisions and research
 ```
 
-Every plugin under `libs/` is built into the `smith` binary and served as a
-separate process (`smith plugin serve <name>`).
+Every plugin under `libs/` is built into the `smith` binary and served inside
+the smith process, over in-memory pipes with the plugin protocol (ADR 0103).
+`smith plugin serve <name>` still serves one as a separate process.
 
 Go modules are tied together by `go.work`. Code follows vertical slices: a
 package per outcome, files named `<name>_<role>.go` (`use_case`, `policy`,

@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"os/exec"
 	"path/filepath"
 	"slices"
@@ -20,7 +20,7 @@ import (
 func BuildSidecar(workspaceRoot, crate string, s Sidecar) (string, error) {
 	cmd := exec.Command("cargo", "build", "--release", "-p", crate, "--message-format=json-render-diagnostics")
 	cmd.Dir = workspaceRoot
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = toolrun.Log
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
