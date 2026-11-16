@@ -15,6 +15,11 @@ type Update struct {
 	Command string
 	// Available is true when Latest is newer than Current.
 	Available bool
+	// Installed is true when Latest is newer but already in the versions
+	// folder: the launcher runs Current because the workspace pins it
+	// ([workspace] smith) or SMITH_VERSION names it, so there is nothing to
+	// download and only the pin can change.
+	Installed bool
 	// Alerted is true when the interface already offered Latest in its alert.
 	Alerted bool
 	// Muted is true when the person asked not to be reminded: the interface

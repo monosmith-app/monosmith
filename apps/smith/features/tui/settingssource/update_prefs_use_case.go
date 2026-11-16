@@ -15,7 +15,7 @@ import (
 func UpdateInfoOf(u updatenotice.Update) settingsview.UpdateInfo {
 	return settingsview.UpdateInfo{
 		Current: u.Current, Latest: u.Latest, Command: u.Command,
-		Available: u.Available, Runnable: u.Runnable(), Muted: u.Muted,
+		Available: u.Available, Runnable: u.Runnable(), Muted: u.Muted, Installed: u.Installed,
 	}
 }
 

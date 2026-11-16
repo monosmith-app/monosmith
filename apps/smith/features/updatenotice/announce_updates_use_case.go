@@ -127,6 +127,9 @@ func (p *Pending) Lines() []string {
 	}
 	update(p.o.Home, func(m *memory) { m.NoticeAt = p.o.Now() })
 	command := UpdateCommand(p.o.Exe, p.o.GOOS, channel)
+	if u := (Update{Current: p.o.Version, Latest: m.Latest, Command: command, Available: true}); installed(p.o, u) {
+		return append(lines, PinNote(u))
+	}
 	on := ""
 	if channel == "next" {
 		on = " on the next channel"

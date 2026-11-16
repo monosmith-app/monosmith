@@ -2,7 +2,11 @@ package updatenotice
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/integrations/smithreleases"
 )
 
 // Available reads what the last registry check found, without a request and
@@ -24,6 +28,7 @@ func Available(o Options) (Update, bool) {
 	}
 	u.Latest = m.Latest
 	u.Available = Newer(m.Latest, o.Version)
+	u.Installed = installed(o, u)
 	return u, u.Available
 }
 
@@ -51,5 +56,23 @@ func Check(ctx context.Context, o Options, timeout time.Duration) (Update, error
 	update(o.Home, func(m *memory) { m.Latest, m.Channel, m.CheckedAt = latest, channel, now() })
 	u := Update{Current: o.Version, Latest: latest, Channel: channel, Command: UpdateCommand(o.Exe, o.GOOS, channel), Available: Newer(latest, o.Version)}
 	u.Muted = load(o.Home).Muted
+	u.Installed = installed(o, u)
 	return u, nil
+}
+
+// installed reports whether a newer smith that a launcher would download is in
+// the versions folder already.
+func installed(o Options, u Update) bool {
+	if !u.Available || u.Command != ManagedCommand || o.Home == "" {
+		return false
+	}
+	_, err := os.Stat(smithreleases.ProgramPath(o.Home, u.Latest, o.GOOS))
+	return err == nil
+}
+
+// PinNote is what to say when Latest is installed but the workspace runs
+// Current: the pin, not the install, decides.
+func PinNote(u Update) string {
+	return fmt.Sprintf("smith %s is installed, but this workspace runs %s: smith.toml pins it ([workspace] smith), or SMITH_VERSION names it. To use %s here, set smith = \"%s\" under [workspace] (or \"latest\")",
+		u.Latest, u.Current, u.Latest, u.Latest)
 }
