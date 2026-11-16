@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 
 	"golang.org/x/term"
@@ -15,7 +16,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/serve"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/termcolour"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Options configure Start.
@@ -28,14 +31,10 @@ type Options struct {
 	Log io.Writer
 }
 
-// Start launches every enabled plugin in parallel and initializes it.
+// Start launches every enabled plugin in parallel and initializes it. A
+// built-in plugin is served inside this process; an external one runs as its
+// own process with the minimal environment built below.
 func Start(opts Options) (*PluginSet, error) {
-	self, err := os.Executable()
-	if err != nil {
-		return nil, err
-	}
-	// Built-in plugins are this binary and keep the whole environment;
-	// external ones get the minimal one built below.
 	log := opts.Log
 	if log == nil {
 		log = os.Stderr
@@ -43,11 +42,19 @@ func Start(opts Options) (*PluginSet, error) {
 	// A plugin's stdout is the protocol pipe, so it cannot tell whether the
 	// tools it runs reach a person who sees colour: the host decides for it.
 	colour := termcolour.ToolEntry(termcolour.ToolWantedFor(os.Getenv, log, term.IsTerminal))
-	builtinEnv := append(os.Environ(), "SMITH_PLUGIN=1", colour)
+	// Built-in plugins run inside this process (one process per session, not
+	// one per plugin): the tools they start read the colour decision from the
+	// environment, and their output goes to the session's log.
+	if key, value, ok := strings.Cut(colour, "="); ok && os.Getenv(key) == "" {
+		_ = os.Setenv(key, value)
+	}
+	toolrun.Log = log
 	type launch struct {
 		name    string
 		command []string
 		env     []string
+		// builtin serves the plugin in this process; nil for an external one.
+		builtin func(version string) serve.Plugin
 	}
 	var launches []launch
 	enabled := opts.Config.Plugins.Enabled
@@ -61,7 +68,7 @@ func Start(opts Options) (*PluginSet, error) {
 		if _, replaced := opts.Config.Plugins.External[name]; replaced {
 			continue
 		}
-		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}, builtinEnv})
+		launches = append(launches, launch{name: name, builtin: Builtins[name]})
 	}
 	var approved []pluginadmit.Plugin
 	external := make([]string, 0, len(opts.Config.Plugins.External))
@@ -76,7 +83,7 @@ func Start(opts Options) (*PluginSet, error) {
 		}
 		approved = append(approved, p)
 		env := append(pluginenv.Build(os.Environ(), p.ManifestEnv, p.WorkspaceEnv, runtime.GOOS), "SMITH_PLUGIN=1", colour)
-		launches = append(launches, launch{name, p.Command, env})
+		launches = append(launches, launch{name: name, command: p.Command, env: env})
 	}
 	// No plugin starts until every external one the workspace needs is
 	// trusted.
@@ -94,7 +101,7 @@ func Start(opts Options) (*PluginSet, error) {
 		if _, ok := opts.Config.Plugins.External[name]; ok {
 			continue
 		}
-		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}, builtinEnv})
+		launches = append(launches, launch{name: name, builtin: BuiltinAddons[name]})
 	}
 
 	clients := make([]*host.Client, len(launches))
@@ -104,13 +111,18 @@ func Start(opts Options) (*PluginSet, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			clients[i], errs[i] = host.Start(host.Options{
+			hostOpts := host.Options{
 				Command:       l.command,
 				Env:           l.env,
 				WorkspaceRoot: opts.WorkspaceRoot,
 				Stderr:        log,
 				Host:          protocol.Peer{Name: "smith", Version: opts.Version},
-			})
+			}
+			if l.builtin != nil {
+				clients[i], errs[i] = startInProcess(l.builtin(opts.Version), hostOpts)
+				return
+			}
+			clients[i], errs[i] = host.Start(hostOpts)
 		}()
 	}
 	wg.Wait()
@@ -130,6 +142,19 @@ func Start(opts Options) (*PluginSet, error) {
 		}
 	}
 	return set, nil
+}
+
+// startInProcess serves a built-in plugin in this process over two pipes, with
+// the same protocol a plugin process speaks: closing the client ends it.
+func startInProcess(p serve.Plugin, opts host.Options) (*host.Client, error) {
+	fromHost, toPlugin := io.Pipe()
+	fromPlugin, toHost := io.Pipe()
+	go func() {
+		err := serve.Serve(p, fromHost, toHost)
+		_ = toHost.CloseWithError(err)
+		_ = fromHost.CloseWithError(err)
+	}()
+	return host.Connect(fromPlugin, toPlugin, opts)
 }
 
 // checkExternal checks that an external plugin answered with the name it is

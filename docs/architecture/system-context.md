@@ -70,7 +70,7 @@ flowchart TB
     eng["Engine server<br/>engineserver: smith serve"]
     mcp["MCP server<br/>mcpserver: smith mcp"]
     core["Core<br/>session, workspace, pluginhost,<br/>projectgraph, taskgraph, taskrun,<br/>taskcache, affected, release, cipipeline ..."]
-    builtin["Built-in plugins<br/>libs/plugin-*, linked in,<br/>started as: smith plugin serve NAME"]
+    builtin["Built-in plugins<br/>libs/plugin-*, linked in,<br/>served in the smith process"]
   end
   ext["External plugins<br/>any executable that speaks the protocol"]
   sdk["Plugin SDK<br/>packages/plugin-sdk (Go module)"]
@@ -126,7 +126,7 @@ interface can show the user the exact `smith ...` line that ran.
 sequenceDiagram
   participant U as Developer
   participant S as smith (host process)
-  participant P as smith plugin serve node (child)
+  participant P as node plugin (in the smith process)
   participant T as npm (child of a task)
   U->>S: smith test -p web
   S->>P: initialize (JSON-RPC, stdio)
