@@ -88,6 +88,11 @@ func Check(archive []byte, name string, checksums, signature []byte, publicKey s
 // Returns: the program's path, or an error when a file cannot be downloaded
 // or does not pass the checks.
 func Install(ctx context.Context, home, version, goos, goarch, publicKey string) (string, error) {
+	if installed := ProgramPath(home, version, goos); fileExists(installed) {
+		// Installed already, and possibly running: on Windows a running
+		// program cannot be replaced, and there is nothing to replace.
+		return installed, nil
+	}
 	name, err := ArchiveName(version, goos, goarch)
 	if err != nil {
 		return "", err
@@ -145,4 +150,10 @@ func unzipProgram(archive []byte, program string) ([]byte, error) {
 		return io.ReadAll(rc)
 	}
 	return nil, fmt.Errorf("holds no %s", program)
+}
+
+// fileExists reports whether a file is there.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

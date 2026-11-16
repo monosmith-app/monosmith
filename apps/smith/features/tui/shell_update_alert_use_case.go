@@ -15,7 +15,7 @@ var updateArgv = []string{"update"} // words:literal
 
 // updateOffered is true while the status bar says an update is available: a
 // newer smith is known and the person did not ask to be left alone about it.
-func (s Shell) updateOffered() bool { return s.upd.Available && !s.upd.Muted }
+func (s Shell) updateOffered() bool { return s.upd.Available && !s.upd.Installed && !s.upd.Muted }
 
 // openUpdate opens the dialog that offers the update: from the first-run alert,
 // a click on the status bar, or Enter on the Update section. It shows the command

@@ -71,6 +71,10 @@ func run(ctx context.Context, version string, check, yes bool, in *os.File, out,
 	if !u.Runnable() {
 		return problem.New("smith cannot tell how it was installed, so it cannot update itself", "download "+u.Latest+" from "+updatenotice.ReleasesURL)
 	}
+	if u.Installed {
+		fmt.Fprintln(out, updatenotice.PinNote(u)+".")
+		return nil
+	}
 	managed := u.Command == updatenotice.ManagedCommand
 	if managed {
 		fmt.Fprintf(out, "It would download smith %s into %s and check it against the signed checksums.\n", u.Latest, filepath.Dir(smithreleases.ProgramPath(o.Home, u.Latest, runtime.GOOS)))

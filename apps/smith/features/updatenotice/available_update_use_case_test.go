@@ -3,6 +3,9 @@ package updatenotice
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -96,5 +99,25 @@ func TestTheAlertIsOfferedOncePerVersion(t *testing.T) {
 	update(home, func(m *memory) { m.Latest = "1.76.0" })
 	if u, _ := Available(opts(home, "1.70.0", t0, "", nil)); u.Alerted {
 		t.Error("a newer version was taken for the alerted one")
+	}
+}
+
+func TestANewerSmithAlreadyInstalledIsAPinNotAnUpdate(t *testing.T) {
+	home := filepath.Join(t.TempDir(), ".smith")
+	o := opts(home, "2.53.0", t0, "2.54.0", nil)
+	o.Exe = filepath.Join(home, "versions", "2.53.0", "smith")
+	got, err := Check(context.Background(), o, time.Second)
+	if err != nil || !got.Available || got.Installed {
+		t.Fatalf("not installed yet, so an update: %+v %v", got, err)
+	}
+	if err := os.MkdirAll(filepath.Join(home, "versions", "2.54.0"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, "versions", "2.54.0", "smith"), nil, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = Check(context.Background(), o, time.Second)
+	if !got.Installed || !strings.Contains(PinNote(got), `set smith = "2.54.0" under [workspace]`) {
+		t.Fatalf("installed: the pin decides, not a download: %+v %s", got, PinNote(got))
 	}
 }

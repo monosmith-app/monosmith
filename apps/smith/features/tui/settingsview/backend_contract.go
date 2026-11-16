@@ -65,6 +65,9 @@ type UpdateInfo struct {
 	Available, Runnable bool
 	// Muted is true when the person asked not to be reminded in the interface.
 	Muted bool
+	// Installed is true when Latest is installed already and a workspace pin
+	// keeps Current running: there is nothing to update.
+	Installed bool
 }
 
 // UpdatePrefs is the Update section's access to smith update.
