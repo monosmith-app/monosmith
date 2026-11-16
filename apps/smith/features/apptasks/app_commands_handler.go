@@ -22,8 +22,8 @@ func FuncCommand() *cobra.Command {
 		Use:   "package",
 		Short: "Build the function app, then zip it into its build folder",
 		Long: `Build the function app of the folder you are in, then zip the compiled code, the manifest
-and host.json into dist/<project dir>/<name>.zip. A library of the workspace that the app
-needs is built and copied into the zip. With --with-dependencies the production dependencies
+and host.json into dist/<project dir>/<name>.zip, with a copy in dist/drop/<name>/ that
+smith ci pack keeps. A library of the workspace that the app needs is built and copied into the zip. With --with-dependencies the production dependencies
 are installed into the zip too, for a host that does not install them itself (Azure Functions).`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -35,8 +35,7 @@ are installed into the zip too, for a host that does not install them itself (Az
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), zip)
-			return writeAppSettings(cmd, f)
+			return keepPackage(cmd, f, zip)
 		},
 	}
 	pack.Flags().BoolVar(&withDependencies, "with-dependencies", false, "install the production dependencies into the zip")
@@ -71,6 +70,22 @@ in smith.toml [projects.<app>] slot_settings stay with a deployment slot.`,
 	}
 	cmd.AddCommand(assemble, pack, settings, pythonStageCommand(), pythonZipCommand())
 	return cmd
+}
+
+// keepPackage prints the zip of a function app, copies it into dist/drop
+// (see functionhost.KeepZipInDrop) and writes the app settings there.
+func keepPackage(cmd *cobra.Command, f Folders, zip string) error {
+	fmt.Fprintln(cmd.OutOrStdout(), zip)
+	root, err := workspace.FindRoot(f.Project)
+	if err != nil {
+		return err
+	}
+	kept, err := functionhost.KeepZipInDrop(root, f.Name, zip)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), kept)
+	return writeAppSettings(cmd, f)
 }
 
 // writeAppSettings writes the app settings of each environment of an Azure
@@ -120,7 +135,7 @@ func pythonStageCommand() *cobra.Command {
 func pythonZipCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "zip",
-		Short: "Zip the staged files of a Python function app into its build folder",
+		Short: "Zip the staged files of a Python function app into its build folder and dist/drop",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			f, err := foldersHere()
@@ -131,8 +146,7 @@ func pythonZipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), zip)
-			return writeAppSettings(cmd, f)
+			return keepPackage(cmd, f, zip)
 		},
 	}
 }
