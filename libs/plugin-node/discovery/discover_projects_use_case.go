@@ -74,6 +74,15 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 	for script := range pkg.Scripts {
 		project.Tasks[script] = TaskFor(script, root, pkg.Scripts)
 	}
+	// A library or package builds inside its own folder (ADR 0102): its build
+	// task caches the folder the build writes there, dist by default.
+	if build, ok := project.Tasks["build"]; ok && !BuildsLikeApp(project.Kind, pkg.Engines.VSCode != "") && root != "." {
+		build.Outputs = []string{"dist"}
+		if _, outDir, found := LocateOutDir(filepath.Join(workspaceRoot, filepath.FromSlash(root))); found && path.Clean(filepath.ToSlash(outDir)) != "." {
+			build.Outputs = []string{path.Clean(filepath.ToSlash(outDir))}
+		}
+		project.Tasks["build"] = build
+	}
 	// An Electron app packs in its work folder and ships into its shipped
 	// folder (ADR 0092).
 	if setup := electronapp.Detect(filepath.Join(workspaceRoot, filepath.FromSlash(root))); setup.Tool != electronapp.None {

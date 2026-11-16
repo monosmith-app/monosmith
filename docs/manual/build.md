@@ -1,7 +1,8 @@
 # smith build
 
-`smith build` runs the `build` task: it compiles or bundles each selected project into the
-workspace's `dist/<project dir>` folder, after building the projects it imports. It is
+`smith build` runs the `build` task: it compiles or bundles each selected project, after building
+the projects it imports. An app builds into the workspace's `dist/<project dir>` folder; a Node
+library or package into its own `dist` (ADR 0102). It is
 [`smith run build`](run.md) with the task fixed.
 
 ## When to use it

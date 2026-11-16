@@ -185,7 +185,7 @@ adds between `smith:slot` markers survive regeneration.
 
 | Path | Holds |
 |---|---|
-| `dist/<project dir>/` | every project's build; nothing is written into a source tree |
+| `dist/<project dir>/` | every app's build (a Node library or package builds into its own `dist/`, ADR 0102) |
 | `dist/drop/` | what `smith ci pack` keeps |
 | `dist/release/<app>/` | an app's release archives and the packages made from them |
 | `.smith/cache/v1/` | the local cache: `ac/`, `cas/`, `last/` |

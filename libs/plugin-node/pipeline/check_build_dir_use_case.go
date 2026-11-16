@@ -1,20 +1,24 @@
 package pipeline
 
 import (
+	"encoding/json"
+	"os"
 	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// CheckBuildDir checks that a project that builds compiles into the
-// workspace's dist/<project dir>: the --outDir of its build script, or else
-// the outDir of its tsconfig.build.json (or tsconfig.json), must be there, or
-// the build writes into the source tree while smith caches an empty
-// directory.
+// CheckBuildDir checks where a project that builds compiles (ADR 0102). An app
+// compiles into the workspace's dist/<project dir>, its deploy output; a
+// library or package compiles inside its own folder (dist), so package.json's
+// main, types and exports lead to files of the package for every tool. The
+// folder is the --outDir of the build script, or else the outDir of its
+// tsconfig.build.json (or tsconfig.json).
 func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...string) (protocol.Finding, bool) {
 	if _, builds := p.Tasks["build"]; !builds {
 		return protocol.Finding{}, false
@@ -30,13 +34,15 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 	}
 	resolved := path.Clean(path.Join(p.Root, filepath.ToSlash(outDir)))
 	source := p.Root + "/" + config
-	remedy := "set compilerOptions.outDir to \"" + protocol.BuildDirFromProject(p.Root) + "\", and point package.json's main, types and start script there"
 	if config == "" {
 		source = p.Root + "/package.json"
-		remedy = "pass --outDir \"" + protocol.BuildDirFromProject(p.Root) + "\" in the build script, and point package.json's main, types and start script there"
 	}
-	if p.Kind == protocol.ProjectPackage {
-		remedy = libraryRemedy(p)
+	if !discovery.BuildsLikeApp(p.Kind, p.Stack == discovery.VSCodeExtensionStack || isExtension(workspaceRoot, p)) {
+		return checkLibraryBuildDir(workspaceRoot, p, config, outDir, resolved, source)
+	}
+	remedy := "set compilerOptions.outDir to \"" + protocol.BuildDirFromProject(p.Root) + "\", and point package.json's main, types and start script there"
+	if config == "" {
+		remedy = "pass --outDir \"" + protocol.BuildDirFromProject(p.Root) + "\" in the build script, and point package.json's main, types and start script there"
 	}
 	finding := protocol.Finding{
 		Check: p.Name + " compiles into " + protocol.ProjectBuildDir(p.Root), Project: p.Name, OK: protocol.InBuildDir(resolved),
@@ -55,43 +61,54 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 		if refusal != "" {
 			finding.Remedy = "smith does not move this build for you, because " + refusal + ". To move it by hand: " + remedy
 		}
-		// A build that works where it is is a warning, so a library is judged the
-		// same whether or not a project imports it (the move of an imported one
-		// is refused); only a cache that restores nothing, or an app that can be
-		// moved, is a failure.
-		finding.Warning = !broken && (refusal != "" || p.Kind != protocol.ProjectApp)
+		// A build that works where it is is a warning; a cache that restores
+		// nothing, or an app smith can move, is a failure.
+		finding.Warning = !broken && refusal != ""
 	}
 	return finding, true
 }
 
-// libraryRemedy says how a library package builds into the workspace's dist
-// by hand. Its package.json keeps main, types and exports in the published
-// form (./dist/...): a path outside the package, such as ../../dist/..., is
-// not allowed in exports and cannot be packed.
-func libraryRemedy(p protocol.Project) string {
-	target := protocol.BuildDirFromProject(p.Root)
-	return "build into \"" + target + "\": the --outfile, --outDir, --declarationDir and --tsBuildInfoFile of the build script and the outDir, declarationDir and tsBuildInfoFile of its tsconfig files. " +
-		"Keep main, types and exports in package.json as they are (./dist/...): smith packs from " + protocol.ProjectBuildDir(p.Root) + " and makes them relative to it. " +
-		"Map the package name to its source in tsconfig.base.json \"paths\" (\"name\": [\"" + p.Root + "/src/index.ts\"]) and in Jest, so importers in the repository read the source, not a build"
+// checkLibraryBuildDir is the check of a library or package: its build stays
+// inside its folder. A build outside it fails, because main, types and exports
+// would have to leave the package (../../dist/...): tools read them through the
+// link node_modules/<name>, where ../.. leads elsewhere, and a scoped name adds
+// one more level.
+func checkLibraryBuildDir(workspaceRoot string, p protocol.Project, config, outDir, resolved, source string) (protocol.Finding, bool) {
+	if p.Root == "." || p.Root == "" {
+		return protocol.Finding{}, false
+	}
+	finding := protocol.Finding{
+		Check: p.Name + " builds inside its own folder", Project: p.Name, OK: manifestfixes.InsideProject(p.Root, resolved),
+		Detail: source + " compiles into " + resolved + ", outside the package. package.json main, types and exports cannot lead there: TypeScript, Jest and Vitest read them through node_modules/" + cmpName(p) + ", where ../.. reaches another folder",
+		Remedy: "build into dist inside " + p.Root + " (the outDir of its tsconfig, or the --outDir of its build script) and point main, types and exports at ./dist/...",
+	}
+	if !finding.OK {
+		finding.Problem = "compiles into " + resolved + ", outside its folder"
+		finding.Fix = manifestfixes.BuildInPlaceFix(workspaceRoot, p, config, outDir)
+	}
+	return finding, true
 }
 
-// CheckLibraryBuildDir is CheckBuildDir with the workspace's plan for library
-// packages: a package the plan moves carries its one grouped fix, and one it
-// refuses says why. A project the plan does not cover is judged as
-// CheckBuildDir does.
-func CheckLibraryBuildDir(workspaceRoot string, p protocol.Project, plan manifestfixes.LibraryPlan, dependents ...string) (protocol.Finding, bool) {
-	f, ok := CheckBuildDir(workspaceRoot, p, dependents...)
-	if !ok || f.OK {
-		return f, ok
+// isExtension reports whether a project's package.json names a VS Code engine.
+func isExtension(workspaceRoot string, p protocol.Project) bool {
+	raw, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), "package.json"))
+	if err != nil {
+		return false
 	}
-	if plan.Moves(p.Name) {
-		f.Fix = plan.Fix
-		f.Remedy = "smith doctor --fix --only \"" + manifestfixes.LibraryBuildDescription + "\" moves the build of " + p.Name + " and the other libraries into dist/<project dir> and shows every changed file first"
-	} else if reason, refused := plan.Refusals[p.Name]; refused {
-		f.Fix = nil
-		f.Remedy = "smith does not move this build for you, because " + reason + ". To move it by hand: " + libraryRemedy(p)
+	var pkg struct {
+		Engines struct {
+			VSCode string `json:"vscode"`
+		} `json:"engines"`
 	}
-	return f, ok
+	return json.Unmarshal(raw, &pkg) == nil && pkg.Engines.VSCode != ""
+}
+
+// cmpName is the package name of a project, or its name when it exports none.
+func cmpName(p protocol.Project) string {
+	if p.PackageName != "" {
+		return p.PackageName
+	}
+	return p.Name
 }
 
 // dependentsOf names the projects that import p by one of its package names.

@@ -14,15 +14,35 @@ import (
 func linkedFolder(from, name string) string {
 	for dir := from; ; dir = filepath.Dir(dir) {
 		candidate := filepath.Join(dir, "node_modules", filepath.FromSlash(name))
-		if info, err := os.Lstat(candidate); err == nil && info.Mode()&os.ModeSymlink != 0 {
-			if real, err := filepath.EvalSymlinks(candidate); err == nil {
-				return real
-			}
+		if real := linkTarget(candidate); real != "" {
+			return real
 		}
 		if filepath.Dir(dir) == dir {
 			return ""
 		}
 	}
+}
+
+// linkTarget is the folder a link points at, when it holds a package.json, or
+// "". npm links a workspace as a symbolic link, and on Windows as a junction,
+// which Go reports as ModeIrregular and filepath.EvalSymlinks leaves as it is:
+// both are read with os.Readlink.
+func linkTarget(link string) string {
+	info, err := os.Lstat(link)
+	if err != nil || info.Mode()&(os.ModeSymlink|os.ModeIrregular) == 0 {
+		return ""
+	}
+	target, err := os.Readlink(link)
+	if err != nil {
+		return ""
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(link), target)
+	}
+	if _, err := os.Stat(filepath.Join(target, "package.json")); err != nil {
+		return ""
+	}
+	return filepath.Clean(target)
 }
 
 // workspaceRootOf is the folder with node_modules above a library: the root of

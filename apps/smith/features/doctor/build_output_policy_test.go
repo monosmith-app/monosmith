@@ -9,7 +9,7 @@ import (
 )
 
 func TestOutsideBuildDir(t *testing.T) {
-	web := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "web", Root: "apps/web", Tasks: map[string]protocol.Task{
+	web := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "web", Root: "apps/web", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{
 		"build": {Outputs: []string{"../../dist/apps/web"}},
 		"test":  {Outputs: []string{"coverage"}},
 	}}, Sources: map[string]string{"test.outputs": "smith.toml [tasks.test]"}}
@@ -62,7 +62,7 @@ func TestAnAllowedOutputOutsideDistIsNotReported(t *testing.T) {
 }
 
 func TestAWebAppThatKeepsItsBuildsInTheProjectIsNotReported(t *testing.T) {
-	web := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "web", Root: "apps/web", Tasks: map[string]protocol.Task{
+	web := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "web", Root: "apps/web", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{
 		"build":     {Outputs: []string{"dist/prd"}},
 		"build:uat": {Outputs: []string{"dist/uat"}},
 	}, Settings: map[string]map[string]any{"vite": {"output": "project"}}}}
@@ -72,5 +72,18 @@ func TestAWebAppThatKeepsItsBuildsInTheProjectIsNotReported(t *testing.T) {
 	web.Settings = nil
 	if got := OutsideBuildDir([]*projectgraph.Project{web}); len(got) != 2 {
 		t.Errorf("without the choice both are reported: %v", got)
+	}
+}
+
+func TestALibraryBuildingInsideItsFolderIsNotReported(t *testing.T) {
+	lib := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "models", Root: "libs/models", Kind: protocol.ProjectLib, Tasks: map[string]protocol.Task{
+		"build": {Outputs: []string{"dist"}},
+	}}}
+	if got := OutsideBuildDir([]*projectgraph.Project{lib}); len(got) != 0 {
+		t.Errorf("a library builds in its own folder (ADR 0102): %v", got)
+	}
+	lib.Kind = protocol.ProjectApp
+	if got := OutsideBuildDir([]*projectgraph.Project{lib}); len(got) != 1 {
+		t.Errorf("an app builds into the workspace's dist: %v", got)
 	}
 }

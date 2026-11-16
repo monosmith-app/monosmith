@@ -1,13 +1,13 @@
 package manifestfixes
 
 import (
-	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -28,8 +28,6 @@ var (
 	pathFlag = regexp.MustCompile(`(--(?:out(?:Dir|dir|-dir|file|File)|declarationDir))([= ]+)"?([^"\s&;|]+)"?`)
 	// configPath is a tsconfig option that names a file or folder besides outDir.
 	configPath = regexp.MustCompile(`("(?:declarationDir|tsBuildInfoFile|outFile)"\s*:\s*)"([^"]*)"`)
-	// projectFlag names the tsconfig a tsc build reads.
-	projectFlag = regexp.MustCompile(`(?:^|\s)(?:-p|--project)[= ]+"?([^"\s&;|]+\.json)"?`)
 	// buildPathKeys are the package.json keys that lead to built files.
 	buildPathKeys = []string{"main", "types", "typings", "module", "browser", "bin", "exports"}
 )
@@ -43,8 +41,14 @@ var (
 // types, module and the start script) follow it. It returns nil when there is
 // nothing to edit.
 func BuildIntoDistFix(workspaceRoot string, p protocol.Project, configName, oldOutDir string) *protocol.Fix {
+	return moveBuildFix(workspaceRoot, p, configName, oldOutDir, protocol.BuildDirFromProject(p.Root), false)
+}
+
+// moveBuildFix moves a project's build output from oldOutDir to newDir, both
+// relative to the project. With inPlace, a tsconfig keeps naming the folder
+// (outDir) instead of the build script passing it.
+func moveBuildFix(workspaceRoot string, p protocol.Project, configName, oldOutDir, newDir string, inPlace bool) *protocol.Fix {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(p.Root))
-	newDir := protocol.BuildDirFromProject(p.Root)
 	manifest := path.Join(p.Root, "package.json")
 	raw, err := os.ReadFile(filepath.Join(dir, "package.json"))
 	if err != nil {
@@ -67,7 +71,7 @@ func BuildIntoDistFix(workspaceRoot string, p protocol.Project, configName, oldO
 			return nil
 		}
 		scripts.SetString("build", rewriteFlags(build, cleanDir(oldOutDir), newDir))
-	case scripts != nil && strings.Contains(build, "tsc"):
+	case !inPlace && scripts != nil && strings.Contains(build, "tsc"):
 		config, err := os.ReadFile(filepath.Join(dir, configName))
 		if err != nil {
 			return nil
@@ -163,47 +167,6 @@ func followOutDir(value, old, newDir string) string {
 	return value
 }
 
-// comments strips // and /* */ comments, which tsconfig allows.
-var comments = regexp.MustCompile(`(?s)/\*.*?\*/|(?m)^[ \t]*//[^\n]*`)
-
-// LocateOutDir finds where the build of the project in dir writes: the
-// --outDir flag of its build script (config is "" then), or the outDir of
-// tsconfig.build.json, then tsconfig.json (config names the file). ok is
-// false when the project sets no output folder.
-func LocateOutDir(dir string) (config, outDir string, ok bool) {
-	candidates := []string{"tsconfig.build.json", "tsconfig.json"}
-	if raw, err := os.ReadFile(filepath.Join(dir, "package.json")); err == nil {
-		var manifest struct {
-			Scripts map[string]string `json:"scripts"`
-		}
-		if json.Unmarshal(raw, &manifest) == nil {
-			build := manifest.Scripts["build"]
-			if m := outDirScript.FindStringSubmatch(build); m != nil {
-				return "", m[2], true
-			}
-			if m := outFileScript.FindStringSubmatch(build); m != nil {
-				return "", path.Dir(strings.ReplaceAll(m[2], "\\", "/")), true
-			}
-			if m := projectFlag.FindStringSubmatch(build); m != nil {
-				// tsc -p tsconfig.lib.json: the file the script names comes first.
-				candidates = append([]string{m[1]}, candidates...)
-			}
-		}
-	}
-	for _, name := range candidates {
-		raw, err := os.ReadFile(filepath.Join(dir, name))
-		if err != nil {
-			continue
-		}
-		var cfg struct {
-			CompilerOptions struct {
-				OutDir string `json:"outDir"`
-			} `json:"compilerOptions"`
-		}
-		if json.Unmarshal(comments.ReplaceAll(raw, nil), &cfg) != nil || cfg.CompilerOptions.OutDir == "" {
-			continue
-		}
-		return name, cfg.CompilerOptions.OutDir, true
-	}
-	return "", "", false
-}
+// LocateOutDir finds where the build of the project in dir writes; see
+// discovery.LocateOutDir.
+func LocateOutDir(dir string) (config, outDir string, ok bool) { return discovery.LocateOutDir(dir) }

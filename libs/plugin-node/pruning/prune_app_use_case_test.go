@@ -106,7 +106,7 @@ func TestPruneWritesIntoAnotherBuildDirectory(t *testing.T) {
 	if !strings.Contains(string(raw), `"main": "../../dist/apps/api/main.js"`) {
 		t.Errorf("a path outside smith's build directory is left as it is: %s", raw)
 	}
-	for _, f := range []string{"package-lock.json", "workspace_modules/@acme/core/package.json", "workspace_modules/@acme/util/dist/index.js"} {
+	for _, f := range []string{"package-lock.json", "workspace_modules/@acme/core/package.json", "workspace_modules/@acme/util/index.js"} {
 		if _, err := os.Stat(filepath.Join(root, "apps", "api", "dist", filepath.FromSlash(f))); err != nil {
 			t.Errorf("no %s", f)
 		}

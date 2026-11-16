@@ -106,11 +106,21 @@ lists every check with its remedy.
 
 ## A build that writes outside `dist/`
 
-smith builds every project into `dist/<project dir>` (`packages/kit` into `dist/packages/kit`).
+smith builds an app (and a VS Code extension) into `dist/<project dir>` (`apps/web` into
+`dist/apps/web`), its deploy output. A Node library or package builds inside its own folder,
+`libs/models/dist`, so its `package.json` `main`, `types` and `exports` lead to files of the
+package for every tool ([ADR 0102](../architecture/decisions/0102-node-libraries-build-inside-their-own-folder.md)).
 A workspace that smith did not create keeps its own scripts, so `smith convert` and `smith adopt`
-preserve them, and a package may build into its own `packages/kit/dist`. Doctor reports each such
-project on its own line, `kit compiles into dist/packages/kit`, with where it builds now and where
-it should.
+preserve them. Doctor reports each project that builds elsewhere on its own line, with where it
+builds now and where it should: `web compiles into dist/apps/web` for an app, `models builds
+inside its own folder` for a library.
+
+A library that builds outside its folder (`../../dist/libs/models`) is a failure: its `main` and
+`types` would have to leave the package, and tools read them through `node_modules/<name>`, where
+`../..` reaches another folder (a scoped name adds a level). Its fix moves the build back into
+`./dist`: the tsconfig `outDir` (or the script's flag), `main`, `types`, `exports` and the scripts
+that named the old folder, and an `outputs` override in `smith.toml` for the old folder. The rest of
+this section describes the move of an app.
 
 For a Node project, doctor reads the build script (`--outDir`, `--outdir`, `--out-dir`,
 `--outfile`, `--declarationDir`) and the tsconfig the script names (else `tsconfig.build.json`,

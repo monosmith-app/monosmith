@@ -65,3 +65,28 @@ func TestStage(t *testing.T) {
 		t.Fatalf("a project without a build is packed from its own directory: %s", dir)
 	}
 }
+
+func TestStagePacksAPackageThatBuildsInPlaceFromItsOwnFolder(t *testing.T) {
+	ws := t.TempDir()
+	project := filepath.Join(ws, "libs", "kit")
+	for _, dir := range []string{filepath.Join(project, "dist"), filepath.Join(ws, "dist", "libs", "kit")} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(project, "package.json"), []byte(`{
+  "name": "kit",
+  "main": "./dist/index.js"
+}
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Stage(ws, "libs/kit")
+	if err != nil || got != filepath.Join(project, "dist") {
+		t.Fatalf("staged in its own dist, a stale dist/libs/kit is never published: %q %v", got, err)
+	}
+	staged, _ := os.ReadFile(filepath.Join(got, "package.json"))
+	if !strings.Contains(string(staged), `"main": "./index.js"`) {
+		t.Errorf("main is relative to the staged folder:\n%s", staged)
+	}
+}

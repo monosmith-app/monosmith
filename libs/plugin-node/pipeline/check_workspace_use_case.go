@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -61,7 +60,6 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 	for _, p := range params.Projects {
 		dependents[p.Name] = dependentsOf(params.Projects, p)
 	}
-	libraries := manifestfixes.PlanLibraryMoves(workspaceRoot, params.Projects, dependents)
 	for _, p := range params.Projects {
 		covered := false
 		for _, pattern := range root.Workspaces {
@@ -80,7 +78,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}
-		if f, ok := CheckLibraryBuildDir(workspaceRoot, p, libraries, dependents[p.Name]...); ok {
+		if f, ok := CheckBuildDir(workspaceRoot, p, dependents[p.Name]...); ok {
 			findings = append(findings, f)
 		}
 		if f, ok := CheckElectronDir(workspaceRoot, p); ok {

@@ -103,7 +103,9 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 // newTemplateData is what the templates of a project read.
 func newTemplateData(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) templateData {
 	data := templateData{Dir: params.Directory, Name: params.Name, Package: cmp.Or(params.PackageName, projectnaming.Name(params.Workspace, projectnaming.Npm, params.Name)), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: tsconfigchain.Up(params.Directory), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
-	if params.Shape[discovery.ShapeBuildOutput] == discovery.ShapeOutputProject {
+	// A library or package builds inside its own folder (ADR 0102); an app
+	// into the workspace's dist/<project dir> unless its shape says otherwise.
+	if params.Shape[discovery.ShapeBuildOutput] == discovery.ShapeOutputProject || !discovery.BuildsLikeApp(params.Kind, params.Stack == discovery.VSCodeExtensionStack) {
 		data.Build, data.BuildLocal = "dist", true
 	}
 	data.BuildConfig, data.TsconfigSpec = TsconfigSet(params.Shape)
