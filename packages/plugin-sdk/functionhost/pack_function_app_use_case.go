@@ -70,6 +70,9 @@ func PackFunctionApp(o PackOptions) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the build left no package.json in %s: %w", o.BuildDir, err)
 	}
+	if err := CheckCompiledEntry(stage, staged, o.BuildDir); err != nil {
+		return "", err
+	}
 	if err := vendorLibraries(tools, o.ProjectDir, stage, staged); err != nil {
 		return "", err
 	}
