@@ -46,8 +46,28 @@ func TestBuildAssetsZipsTheBuildForThisPlatform(t *testing.T) {
 	}
 
 	spec.Platforms = []string{"linux/amd64", "darwin/arm64"}
-	if _, err := Publish(ws, protocol.PublishParams{Project: project, Version: "1.0.0", Assets: spec}); err == nil || !strings.Contains(err.Error(), "native") {
+	if _, err := Publish(ws, protocol.PublishParams{Project: project, Version: "1.0.0", Assets: spec}); err == nil || !strings.Contains(err.Error(), "native") || !strings.Contains(err.Error(), "Nothing was tagged") {
 		t.Errorf("another platform cannot be built here, and the error says how to build it: %v", err)
+	}
+}
+
+func TestBuildAssetsDryRunPlansAnotherPlatformWithANote(t *testing.T) {
+	real := hostPlatform
+	t.Cleanup(func() { hostPlatform = real })
+	hostPlatform = "darwin/arm64"
+	project := protocol.Project{Name: "api", Root: "apps/api", Kind: protocol.ProjectApp}
+	spec := &protocol.AssetSpec{Platforms: []string{"windows/amd64"}, OutDir: "dist/release/api"}
+
+	res, err := Publish(t.TempDir(), protocol.PublishParams{Project: project, Version: "6.2.0", Assets: spec, DryRun: true})
+	if err != nil {
+		t.Fatalf("a dry run does not fail on a platform it will not build: %v", err)
+	}
+	want := "dist/release/api/api_6.2.0_windows_amd64.zip"
+	if len(res.Assets) != 1 || res.Assets[0] != want || res.AssetPlatforms[want] != "windows/amd64" {
+		t.Errorf("the dry run names the other platform's asset: %+v", res)
+	}
+	if len(res.Notes) != 1 || !strings.Contains(res.Notes[0], "windows/amd64") || !strings.Contains(res.Notes[0], "native") {
+		t.Errorf("the dry run says this machine cannot build it, and how to fix it: %v", res.Notes)
 	}
 }
 
