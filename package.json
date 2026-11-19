@@ -20,7 +20,7 @@
     "@commitlint/config-conventional": "^21.2.4",
     "@monosmith/eslint-config": "*",
     "@types/node": "^24.0.0",
-    "@types/vscode": "~1.145.0",
+    "@types/vscode": "~1.146.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vscode/vsce": "^4.0.0",
     "adm-zip": "^0.6.1",
