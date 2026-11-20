@@ -24,7 +24,7 @@ const IssueFullForPlain = adoption.FullLevelIssue
 
 // NoFullForPlain says why the wizard has no full level for a plain repository
 // yet, and how to take smith's tooling from the command line.
-const NoFullForPlain = "This wizard offers the full level (smith becomes the only tool) for Nx and Turborepo workspaces. For a plain repository, run smith adopt --init --level full (or --tooling smith) in a terminal: it asks each project. The wizard's step is tracked in " + IssueFullForPlain + "."
+const NoFullForPlain = "The full level (smith becomes the only tool) is in this wizard for Nx and Turborepo workspaces only. For a plain repository, run smith adopt --init --level full (or --tooling smith) in a terminal: it asks each project. Tracked in " + IssueFullForPlain + "."
 
 // Session is one repository being adopted: what it is, and the steps that
 // bring it under smith. Open reads it; the other calls each do one step.
