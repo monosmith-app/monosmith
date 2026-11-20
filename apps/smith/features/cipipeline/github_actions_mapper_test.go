@@ -150,8 +150,19 @@ func TestGitHubDoesNotMentionTheCacheWithoutARemote(t *testing.T) {
 	if strings.Contains(out, "SMITH_CACHE") || strings.Contains(out, "AZURE_STORAGE") {
 		t.Errorf("a workspace without a remote cache gets cache env:\n%s", out)
 	}
-	if !strings.Contains(out, "      - name: Verify\n        run: smith ci verify\n      # smith:slot after-verify") {
-		t.Errorf("verify is unchanged:\n%s", out)
+	if !strings.Contains(out, "      - name: Verify\n        run: smith ci verify\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n      # smith:slot after-verify") {
+		t.Errorf("verify gets only the job's token:\n%s", out)
+	}
+}
+
+func TestGitHubVerifyGivesTasksTheJobsTokenOnce(t *testing.T) {
+	m := cacheModel("", false)
+	if got := githubVerifyEnv(m); got != "        env:\n          GITHUB_TOKEN: ${{ github.token }}\n" {
+		t.Errorf("a launcher a task starts needs the token for GitHub's rate limit: %q", got)
+	}
+	m.Credentials = append(m.Credentials, protocol.Credential{Env: "GITHUB_TOKEN", Tasks: true})
+	if got := githubVerifyEnv(m); strings.Count(got, "GITHUB_TOKEN") != 2 || strings.Contains(got, "github.token") {
+		t.Errorf("a task credential named GITHUB_TOKEN is kept, not doubled: %q", got)
 	}
 }
 

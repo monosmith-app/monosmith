@@ -54,6 +54,25 @@ func githubVerifyStep(m Model) string {
 	return step + "        run: smith ci verify\n"
 }
 
+// githubVerifyEnv is the verify step's env: the task credentials and the job's
+// read-only GITHUB_TOKEN. A task that starts smith through a launcher (an SDK's
+// throwaway workspace, a test of a plugin) asks GitHub's release list; without
+// a token GitHub allows a shared runner's address 60 requests an hour and
+// answers 403 after that.
+//
+// Parameters: m is the pipeline model.
+// Returns the env block of the verify step.
+func githubVerifyEnv(m Model) string {
+	env := githubEnv("        ", m.TaskCredentials())
+	if strings.Contains(env, " GITHUB_TOKEN:") {
+		return env
+	}
+	if env == "" {
+		env = "        env:\n"
+	}
+	return env + "          GITHUB_TOKEN: ${{ github.token }}\n"
+}
+
 // githubNativeCondition is the native job's `if`, from [ci] native_on. A job
 // that needs the ci job and uses always() also runs when that job failed after
 // the release step, so a release that exists still gets its builds.

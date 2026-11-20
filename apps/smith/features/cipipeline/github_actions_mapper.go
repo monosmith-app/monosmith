@@ -48,7 +48,7 @@ jobs:
 	b.WriteString(githubAuditStep(m))
 	b.WriteString(githubEnv("        ", m.TaskCredentials()))
 	b.WriteString(githubVerifyStep(m))
-	b.WriteString(githubEnv("        ", m.TaskCredentials()))
+	b.WriteString(githubVerifyEnv(m))
 	b.WriteString(slot("      ", "after-verify"))
 	b.WriteString(`      - name: Release preview
         if: github.event_name == 'pull_request'

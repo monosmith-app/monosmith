@@ -97,6 +97,8 @@ jobs:
         run: smith ci audit
       - name: Verify
         run: smith ci verify
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       # smith:slot after-verify
       # smith:slot-end after-verify
       - name: Release preview

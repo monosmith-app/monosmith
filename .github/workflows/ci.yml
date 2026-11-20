@@ -108,6 +108,7 @@ jobs:
         run: smith ci verify
         env:
           SMITH_SIGNING_KEY: ${{ secrets.SMITH_SIGNING_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
       # smith:slot after-verify
       - name: VS Code extension integration tests
         run: xvfb-run -a npm run test:integration -w monosmith-vscode
