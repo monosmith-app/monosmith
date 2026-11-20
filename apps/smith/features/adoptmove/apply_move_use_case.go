@@ -12,7 +12,7 @@ import (
 
 // Apply runs the plan in the repository at root: git mv for each step, a
 // staged copy of each of the plan's Copies, then the
-// fix-up of the root .gitignore lines that pointed at moved folders. The moves
+// fix-up of the root .gitignore lines for the project's new folder. The moves
 // stay staged and nothing is committed. The work tree must be clean (the caller
 // checks); a failing git mv stops the run and the error names the step, and
 // git restore --staged --worktree . takes back what ran.
@@ -55,7 +55,7 @@ func Apply(root string, p Plan, out io.Writer) error {
 	if err != nil {
 		return nil
 	}
-	fixed, changed := FixGitignore(string(raw), p.Dir, moved)
+	fixed, changed := FixGitignore(string(raw), p.Dir, moved, p.Stays)
 	if !changed {
 		return nil
 	}
@@ -65,7 +65,7 @@ func Apply(root string, p Plan, out io.Writer) error {
 	if _, err := git.Run("add", ".gitignore"); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "  updated the paths in .gitignore that pointed at moved folders")
+	fmt.Fprintln(out, "  updated the paths in .gitignore for the project's new folder")
 	return nil
 }
 
