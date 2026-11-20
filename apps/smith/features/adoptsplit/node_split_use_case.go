@@ -90,6 +90,13 @@ func SplitNode(req Request) (Result, error) {
 	if build != "" {
 		res.Notes = append(res.Notes, build)
 	}
+	tests, err := includeTests(dir)
+	if err != nil {
+		return res, err
+	}
+	if tests != "" {
+		res.Notes = append(res.Notes, tests)
+	}
 	lintRoot := req.Root
 	if req.InPlace {
 		lintRoot = dir

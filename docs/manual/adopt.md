@@ -217,7 +217,11 @@ Move it into a folder of its own so smith can manage it?
   default and the answer without a terminal), and `--hoist <name>` answers for it. The compiler
   options every project shares move to a root `tsconfig.base.json`, which the project's
   `tsconfig.json` extends, keeping `outDir`, `rootDir`, `paths` and `include`. The build is
-  pointed at `dist/<project>`. A project with its own ESLint setup is asked: use the
+  pointed at `dist/<project>`. When the project's `tsconfig.json` excludes its tests
+  (`*.test.ts`, `*.spec.ts`, `__tests__`, `test/`), typed ESLint cannot lint them. So that file
+  becomes `tsconfig.build.json`, a script that runs a plain `tsc` runs
+  `tsc -p tsconfig.build.json`, and a new `tsconfig.json` extends it without the test
+  exclusions. This is the layout of smith's own scaffolds. smith import does the same. A project with its own ESLint setup is asked: use the
   shared config (the old file is kept as `.pre-smith`, the root gets the shared flat config, and the
   ESLint packages leave the project because the shared config brings their own), or keep the
   setup in the project. `--eslint-setup shared|keep` answers; without a terminal or with `--yes`
