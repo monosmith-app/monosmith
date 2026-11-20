@@ -263,3 +263,33 @@ func TestSplitNodeInPlaceKeepsTheProjectsLintWhereItIs(t *testing.T) {
 		t.Errorf("the note names the kept file: %v", res.Notes)
 	}
 }
+
+// A root that has typescript ^4 must not swallow the project's typescript ^5:
+// the project keeps its own, and a note says why (#1155 lab, a Vite React app
+// imported beside an adopted TypeScript 4 package).
+func TestSplitNodeKeepsAnotherMajorInTheProject(t *testing.T) {
+	root := t.TempDir()
+	put(t, root, "package.json", `{"name":"ws","private":true,"workspaces":["apps/*"],"devDependencies":{"typescript":"^4.9.5","jest":"^29.1.0"}}`)
+	put(t, root, "apps/orders/package.json", orders)
+	res, err := SplitNode(Request{
+		Root: root, Dir: "apps/orders", Workspace: "shop", Patterns: []string{"apps/*"},
+		Hoist: []string{"jest", "typescript"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dev := readJSON(t, root, "package.json")["devDependencies"].(map[string]any)
+	if dev["typescript"] != "^4.9.5" || dev["jest"] != "^29.1.0" {
+		t.Errorf("root devDependencies = %v", dev)
+	}
+	own := readJSON(t, root, "apps/orders/package.json")["devDependencies"].(map[string]any)
+	if own["typescript"] != "^5.0.0" {
+		t.Errorf("project devDependencies = %v: typescript ^5.0.0 must stay", own)
+	}
+	if _, has := own["jest"]; has {
+		t.Errorf("jest has the same major in the root and must go: %v", own)
+	}
+	if !strings.Contains(strings.Join(res.Notes, "\n"), "typescript ^5.0.0 stays in the project") {
+		t.Errorf("notes = %v", res.Notes)
+	}
+}

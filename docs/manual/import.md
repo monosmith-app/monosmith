@@ -25,7 +25,9 @@ you say yes.
    `--name`. In a terminal smith asks for the folder and suggests the kind the project
    looks like. Without a terminal, `--as` or `--into` must say it: smith never picks it
    for you. A folder that exists is refused.
-4. **Split.** The known development tools go to the workspace manifest. smith asks about
+4. **Split.** The known development tools go to the workspace manifest. A tool that the
+   workspace has at another major version (TypeScript 5 beside the workspace's TypeScript 4)
+   stays in the project, and smith says so. smith asks about
    each development dependency it does not know (`--hoist <name>` sends one to the
    workspace without a question), and about a Node project's own ESLint setup
    (`--eslint-setup shared|keep`). Without a terminal the project keeps them, and smith
