@@ -1,9 +1,7 @@
 package pipeline
 
 import (
-	"encoding/json"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
@@ -12,9 +10,9 @@ import (
 )
 
 // Doctor checks that Node.js is the version CI installs (nodeVersion), that
-// dependencies are installed, that every Node project is covered by the
-// root package.json workspaces, and that a built package has every file
-// its package.json names.
+// dependencies are installed, and that a built package has every file its
+// package.json names. Whether the root package.json workspaces cover each
+// project is the join check the host asks for (workspacejoin).
 func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion string) protocol.DoctorResult {
 	var findings []protocol.Finding
 	if len(params.Projects) == 0 {
@@ -49,32 +47,11 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 
 	findings = append(findings, CheckInternalRangeFindings(workspaceRoot, params.Projects)...)
 
-	var root struct {
-		Workspaces []string `json:"workspaces"`
-	}
-	raw, err := os.ReadFile(filepath.Join(workspaceRoot, "package.json"))
-	if err == nil {
-		err = json.Unmarshal(raw, &root)
-	}
 	dependents := map[string][]string{}
 	for _, p := range params.Projects {
 		dependents[p.Name] = dependentsOf(params.Projects, p)
 	}
 	for _, p := range params.Projects {
-		covered := false
-		for _, pattern := range root.Workspaces {
-			if ok, _ := path.Match(pattern, p.Root); ok || pattern == p.Root {
-				covered = true
-			}
-		}
-		findings = append(findings, protocol.Finding{
-			Check:   "npm workspaces include " + p.Root,
-			Project: p.Name,
-			OK:      err == nil && covered,
-			Problem: toolrun.ProblemUnless(err == nil && covered, "is not in the root package.json \"workspaces\""),
-			Detail:  p.Root + " is not matched by the root package.json \"workspaces\"",
-			Remedy:  "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
-		})
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}

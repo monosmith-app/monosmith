@@ -120,6 +120,11 @@ internal static class PluginMethods
             plugin => plugin is IApiSurfaceReader,
             value => APISurfaceParams.Read(value, "params"),
             async (plugin, parameters, cancellation) => await ((IApiSurfaceReader)plugin).ApiSurfaceAsync((APISurfaceParams)parameters, cancellation)),
+        [ProtocolMethods.WorkspaceJoin] = new(
+            ProtocolMethods.WorkspaceJoin,
+            plugin => plugin is IWorkspaceJoiner,
+            value => JoinParams.Read(value, "params"),
+            async (plugin, parameters, cancellation) => await ((IWorkspaceJoiner)plugin).JoinAsync((JoinParams)parameters, cancellation)),
     };
 
     /// <summary>The capabilities a plugin advertises, derived from the interfaces it implements.</summary>
@@ -140,6 +145,7 @@ internal static class PluginMethods
             ApiSurface = plugin is IApiSurfaceReader,
             Link = plugin is ILinker,
             Repair = plugin is IDependencyRepairer,
+            Join = plugin is IWorkspaceJoiner,
             Dependencies = plugin is IDependencyManager,
             Declarations = plugin is IDeclarationEditor,
             Latest = plugin is ILatestReader,

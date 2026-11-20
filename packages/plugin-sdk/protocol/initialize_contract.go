@@ -179,6 +179,11 @@ type Capabilities struct {
 	// own. A plugin without it finds a project by its manifest only, and the host
 	// refuses a declaration for its language with a message that says so.
 	Declared bool `json:"declared,omitempty"`
+	// Join says whether each project is joined to the language's workspace
+	// (npm "workspaces", uv workspace members, a .NET solution) and gives the
+	// fix that joins one that is not. The plugin only describes; the host
+	// applies the fix.
+	Join bool `json:"join,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

@@ -109,6 +109,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `dependencies/link` | `link` | `Linker.Link` | `LinkParams` → `LinkResult` | `smith install -p <project> <library>`, the Install dialog | 20 min |
 | `dependencies/unlink` | `link` | `Linker.Unlink` | `UnlinkParams` → `DependencyResult` | `smith uninstall -p <project> <library>` | 20 min |
 | `dependencies/repair` | `repair` | `DependencyRepairer.Repair` | `RepairParams` → `RepairResult` | `smith deps repair`, the Deps tab | 1 min |
+| `workspace/join` | `join` | `WorkspaceJoiner.Join` | `JoinParams` → `JoinResult` | `smith doctor` (the join check and its fix), `smith import` | 1 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
 | `dependencies/rewrite` | `declarations` | `DeclarationEditor.Rewrite` | `RewriteParams` → `DependencyResult` | `smith sync`, `smith up` | 20 min |
 | `dependencies/latest` | `latest` | `LatestReader` | `LatestParams` → `LatestResult` | `smith up` | 20 min |
@@ -146,6 +147,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `link` | `dependencies/link`, `dependencies/unlink` | language |
 | `repair` | `dependencies/repair` | language |
+| `join` | `workspace/join` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
 | `latest` | `dependencies/latest` | language |
 | `cancel` | the `cancel` notification: the plugin stops the work of a request when the host cancels it | any plugin with a method that can run for long |

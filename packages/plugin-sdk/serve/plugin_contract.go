@@ -152,6 +152,14 @@ type DependencyRepairer interface {
 	Repair(params protocol.RepairParams) (protocol.RepairResult, error)
 }
 
+// WorkspaceJoiner is implemented by a language plugin that says whether each
+// of its projects is joined to the language's workspace, and how to join one
+// that is not. Serve advertises the join capability for it. Join only
+// describes: the host applies the fix.
+type WorkspaceJoiner interface {
+	Join(params protocol.JoinParams) (protocol.JoinResult, error)
+}
+
 // DeclaredDescriber is implemented by a plugin whose Discover also describes
 // the projects smith.toml declares (DiscoverParams.Declared): folders with no
 // manifest of their own. Serve advertises the declared capability for it.

@@ -15,6 +15,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/release"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspacejoin"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
 )
 
@@ -255,7 +256,7 @@ func predictedFailure(f doctor.Finding) Item {
 	switch {
 	case f.Check == "go.work exists":
 		item.Steps = []string{"--init runs go work init and go work use for you"}
-	case strings.HasPrefix(f.Check, "npm workspaces include "):
+	case workspacejoin.IsJoinCheck(f.Check) && f.Source == "node":
 		item.Steps = []string{"--init adds the \"workspaces\" to the root package.json for you"}
 	case f.Check == "Node dependencies are installed":
 		item.Steps = []string{"--init --install runs npm install for you (or run it yourself afterwards)"}

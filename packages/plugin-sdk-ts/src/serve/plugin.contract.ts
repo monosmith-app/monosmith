@@ -3,7 +3,7 @@ import type {
   APISurfaceParams, APISurfaceResult, ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
   DiscoverParams, DiscoverResult, DoctorParams, DoctorResult, GenerateParams, GenerateResult, InitializeParams,
   InitializeResult, InstallParams, LatestParams, LatestResult, LinkParams, LinkResult, PublishedParams, PublishedResult, PublishParams,
-  PublishResult, RemoveParams, RemoveResult, RepairParams, RepairResult, RewriteParams, UninstallParams, UnlinkParams, VersionParams, VersionResult,
+  PublishResult, RemoveParams, RemoveResult, JoinParams, JoinResult, RepairParams, RepairResult, RewriteParams, UninstallParams, UnlinkParams, VersionParams, VersionResult,
 } from '../protocol/index.ts'
 
 /** A result now or later: every method of a plugin may be `async`. */
@@ -98,6 +98,14 @@ export interface DependencyRepairer {
   repair: (params: RepairParams, signal: AbortSignal) => Awaitable<RepairResult>
 }
 
+/**
+ * `workspace/join`: whether each project is joined to its language's workspace,
+ * and the fix that joins one that is not. It only describes; the host applies.
+ */
+export interface WorkspaceJoiner {
+  join: (params: JoinParams, signal: AbortSignal) => Awaitable<JoinResult>
+}
+
 /** `dependencies/declared` and `dependencies/rewrite`: both, or the capability is not advertised. */
 export interface DeclarationEditor {
   declared: (params: DeclaredParams, signal: AbortSignal) => Awaitable<DeclaredResult>
@@ -136,5 +144,5 @@ export interface Cancellable {
  */
 export type SmithPlugin = Plugin & Partial<
 Discoverer & Generator & Versioner & Publisher & RegistryReader & CIContributor & DoctorContributor &
-Remover & KindChanger & ComponentLister & Deriver & APISurfaceReader & DependencyManager & Linker & DependencyRepairer & DeclarationEditor & LatestReader & Contributor & Cancellable
+Remover & KindChanger & ComponentLister & Deriver & APISurfaceReader & DependencyManager & Linker & DependencyRepairer & WorkspaceJoiner & DeclarationEditor & LatestReader & Contributor & Cancellable
 >

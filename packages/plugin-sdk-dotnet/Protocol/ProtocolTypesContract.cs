@@ -120,6 +120,9 @@ public static class ProtocolMethods
     /// <summary>Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.</summary>
     public const string ApiSurface = "api/surface";
 
+    /// <summary>Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace members, a .NET solution), and for the fix that joins one that is not. The plugin writes nothing: the host shows the fix and applies it.</summary>
+    public const string WorkspaceJoin = "workspace/join";
+
     /// <summary>For each method the capability a plugin advertises to be asked it; <c>null</c> where it is always available.</summary>
     public static IReadOnlyDictionary<string, string?> CapabilityByMethod { get; } = new Dictionary<string, string?>(StringComparer.Ordinal)
     {
@@ -147,6 +150,7 @@ public static class ProtocolMethods
         [SbomComponents] = "components",
         [Derive] = "derive",
         [ApiSurface] = "apiSurface",
+        [WorkspaceJoin] = "join",
     };
 }
 
@@ -628,6 +632,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so.</summary>
     public bool Declared { get; init; }
 
+    /// <summary>Join says whether each project is joined to the language's workspace (npm "workspaces", uv workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin only describes; the host applies the fix.</summary>
+    public bool Join { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -656,6 +663,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Channels = BooleanValue(Member(map, "channels"), Join(path, "channels")),
             Packs = BooleanValue(Member(map, "packs"), Join(path, "packs")),
             Declared = BooleanValue(Member(map, "declared"), Join(path, "declared")),
+            Join = BooleanValue(Member(map, "join"), Join(path, "join")),
         };
     }
 
@@ -773,6 +781,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("declared");
             writer.Boolean(Declared);
         }
+        if (Join)
+        {
+            writer.Property("join");
+            writer.Boolean(Join);
+        }
         writer.EndObject();
     }
 
@@ -804,6 +817,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "channels" => Channels,
             "packs" => Packs,
             "declared" => Declared,
+            "join" => Join,
             _ => false,
         };
 }
@@ -1505,6 +1519,9 @@ public sealed record DependencyResult : IProtocolValue<DependencyResult>
     /// <summary>The <c>notes</c> member of <c>DependencyResult</c>.</summary>
     public IReadOnlyList<string> Notes { get; init; } = [];
 
+    /// <summary>Unreached names the projects an install of every project did not reach, such as a Node project the root "workspaces" do not cover. The host leaves them out of its count and names them.</summary>
+    public IReadOnlyList<string> Unreached { get; init; } = [];
+
     /// <inheritdoc />
     public static DependencyResult Read(JsonAny? value, string path)
     {
@@ -1513,6 +1530,7 @@ public sealed record DependencyResult : IProtocolValue<DependencyResult>
         {
             Files = ListOf(Member(map, "files"), Join(path, "files"), StringValue),
             Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
+            Unreached = ListOf(Member(map, "unreached"), Join(path, "unreached"), StringValue),
         };
     }
 
@@ -1529,6 +1547,11 @@ public sealed record DependencyResult : IProtocolValue<DependencyResult>
         {
             writer.Property("notes");
             MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
+        }
+        if (Unreached is { Count: > 0 })
+        {
+            writer.Property("unreached");
+            MessageWritingAlgorithm.List(writer, Unreached, (builder1, item1) => builder1.String(item1));
         }
         writer.EndObject();
     }
@@ -2702,6 +2725,117 @@ public sealed record InstallParams : IProtocolValue<InstallParams>
         {
             writer.Property("quiet");
             writer.Boolean(Quiet);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>JoinParams asks a language plugin whether each of its projects is joined to the language's workspace (npm "workspaces", the members of a uv workspace, a .NET solution), and how to join the ones that are not. The plugin writes nothing: the host shows the fix and applies it (smith doctor --fix, smith import).</summary>
+public sealed record JoinParams : IProtocolValue<JoinParams>
+{
+    /// <summary>The <c>projects</c> member of <c>JoinParams</c>.</summary>
+    public IReadOnlyList<Project> Projects { get; init; } = [];
+
+    /// <inheritdoc />
+    public static JoinParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new JoinParams
+        {
+            Projects = ListOf(Member(map, "projects"), Join(path, "projects"), Project.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("projects");
+        MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>JoinResult has one state for each project the plugin was asked about. A project the plugin leaves out is joined.</summary>
+public sealed record JoinResult : IProtocolValue<JoinResult>
+{
+    /// <summary>The <c>projects</c> member of <c>JoinResult</c>.</summary>
+    public IReadOnlyList<JoinState> Projects { get; init; } = [];
+
+    /// <inheritdoc />
+    public static JoinResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new JoinResult
+        {
+            Projects = ListOf(Member(map, "projects"), Join(path, "projects"), JoinState.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("projects");
+        MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>JoinState says whether one project is joined to its language's workspace.</summary>
+public sealed record JoinState : IProtocolValue<JoinState>
+{
+    /// <summary>Project is the project's name, as JoinParams gave it.</summary>
+    public required string Project { get; init; }
+
+    /// <summary>Joined is true when the workspace covers the project, or when the language has no workspace the project must be part of.</summary>
+    public bool Joined { get; init; }
+
+    /// <summary>Workspace names what the project joins, in words, such as <c>the root package.json "workspaces"</c>.</summary>
+    public string Workspace { get; init; } = string.Empty;
+
+    /// <summary>Problem says, in one line, what is missing and what it breaks, when Joined is false.</summary>
+    public string Problem { get; init; } = string.Empty;
+
+    /// <summary>Fix joins the project, when Joined is false and the plugin can write the change: the manifest's new content, then the commands to run.</summary>
+    public Fix? Fix { get; init; }
+
+    /// <inheritdoc />
+    public static JoinState Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new JoinState
+        {
+            Project = StringValue(Member(map, "project"), Join(path, "project")),
+            Joined = BooleanValue(Member(map, "joined"), Join(path, "joined")),
+            Workspace = StringValue(Member(map, "workspace"), Join(path, "workspace")),
+            Problem = StringValue(Member(map, "problem"), Join(path, "problem")),
+            Fix = OptionalStruct<Fix>(Member(map, "fix"), Join(path, "fix")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        writer.String(Project);
+        writer.Property("joined");
+        writer.Boolean(Joined);
+        if (Workspace.Length > 0)
+        {
+            writer.Property("workspace");
+            writer.String(Workspace);
+        }
+        if (Problem.Length > 0)
+        {
+            writer.Property("problem");
+            writer.String(Problem);
+        }
+        if (Fix is not null)
+        {
+            writer.Property("fix");
+            Fix.Write(writer);
         }
         writer.EndObject();
     }

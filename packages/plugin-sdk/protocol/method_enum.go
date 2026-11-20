@@ -50,4 +50,7 @@ const (
 	// MethodAPISurface lists the public API names of a project at a git
 	// revision, so a release can compare them with the last release.
 	MethodAPISurface = "api/surface"
+	// MethodJoin asks whether each project is joined to its language's
+	// workspace, and for the fix that joins it.
+	MethodJoin = "workspace/join"
 )

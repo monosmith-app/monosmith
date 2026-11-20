@@ -33,4 +33,5 @@ export const PLUGIN_MEMBERS: Readonly<Record<string, { member: Member, requires:
   'sbom/components':        { member: 'components', requires: ['components'] },
   'derive':                 { member: 'derive', requires: ['derive'] },
   'api/surface':            { member: 'apiSurface', requires: ['apiSurface'] },
+  'workspace/join':         { member: 'join', requires: ['join'] },
 }
