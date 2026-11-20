@@ -35,13 +35,13 @@ opens the Start menu instead.
 ## smith says smith.toml needs a newer smith
 
 ```text
-smith: This smith (1.100.0) is older than smith.toml needs. Run `npm install --global monosmith`.
+smith: This smith (1.100.0) is older than smith.toml needs. Run `smith update`. If smith.toml pins [workspace] smith, raise the pin to a newer version.
 ```
 
 A teammate or CI used a newer smith that added tables or keys to `smith.toml`
 (or raised its `schema`), and this smith does not know them. Run `smith update`. When a launcher
 runs smith and the workspace pins `[workspace] smith`, raise the pin instead: the launcher runs
-the pinned version. The command in the message reinstalls the npm launcher only. `--verbose` adds the parse errors, one per unknown table or
+the pinned version. `--verbose` adds the parse errors, one per unknown table or
 key. A single unknown key is not taken for a newer smith, because it is more
 likely a typo: that error names the key.
 
