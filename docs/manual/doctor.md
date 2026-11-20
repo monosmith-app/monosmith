@@ -5,8 +5,10 @@ checks. Every problem names its remedy. With `--fix` it shows the fixes it can m
 changes as diffs, commands it would run such as `npm install` or `git rm --cached`, and
 questions it would ask) and applies the safe ones.
 
-A **safe** fix only restores what smith or a plugin owns, such as `go.work` or a generated
-pipeline with its slots kept; doctor applies those once you confirm (or with `--yes`). Any
+A **safe** fix loses nothing of yours. It restores what smith or a plugin owns, such as
+`go.work` or a generated pipeline with its slots kept, or it adds a project to its language's
+workspace in a manifest of yours (the root `package.json` `"workspaces"`, the uv members in
+the root `pyproject.toml`, a .NET solution). doctor applies those once you confirm (or with `--yes`). Any
 other fix, and any fix with a question, is asked about in a terminal. Without a terminal it
 is shown with the command that applies it. The same fix on many projects is one fix that
 says which projects it applies to.

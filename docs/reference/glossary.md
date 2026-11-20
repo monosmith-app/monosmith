@@ -112,8 +112,9 @@ and the runtime it asks for. It is a choice on the host layer of a project (see
 ## fix
 
 What `smith doctor --fix` applies for a failed check: new file contents, commands
-to run (steps) and questions to ask (choices). A **safe** fix only restores what
-smith or a plugin owns and is applied after one confirmation; any other, and any
+to run (steps) and questions to ask (choices). A **safe** fix loses nothing of
+yours: it restores what smith or a plugin owns, or adds a project to its
+language's workspace in your manifest. It is applied after one confirmation; any other, and any
 with a question, is asked about. See [`smith doctor`](../manual/doctor.md).
 
 ## kind
