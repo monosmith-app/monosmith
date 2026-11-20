@@ -10,7 +10,7 @@ import (
 
 // planForDryRun puts the move into dir in the report, for --dry-run --move.
 func planForDryRun(r *Report, dir string) error {
-	c, err := adoptmove.Detect(r.Root)
+	c, err := adoptmove.Detect(r.Root, r.Claims)
 	if errors.Is(err, adoptmove.ErrNoRootProject) {
 		return fmt.Errorf("--move has nothing to move: the repository root holds no project")
 	}

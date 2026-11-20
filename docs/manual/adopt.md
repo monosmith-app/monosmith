@@ -106,9 +106,13 @@ changes nothing.
 ## A project at the repository root
 
 smith manages one folder per project (`apps/<name>`, `libs/<name>`, `packages/<name>`). A
-repository whose one project sits at the root (a `package.json`, `go.mod`, `pyproject.toml`
-or `Cargo.toml` there) has no such folder, so `--init` asks where to move it, and never picks
-for you:
+repository whose one project sits at the root has no such folder, so `--init` asks where to move
+it, and never picks for you. A file at the root is a project's manifest when a language plugin
+discovers projects by that name (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`,
+`composer.json`, `*.csproj`, `pom.xml`, `pubspec.yaml` and the others of `smith plugin list`).
+This is the same identification the workspace uses, so adopt and the workspace know the same
+languages. The manifests of two languages at the root are two projects, and adopt refuses them. The question
+is:
 
 ```text
 Move it into a folder of its own so smith can manage it?

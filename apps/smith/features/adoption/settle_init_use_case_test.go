@@ -14,6 +14,10 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
 )
 
+// nodeClaims is what the Node plugin's handshake says: it discovers projects
+// by package.json.
+var nodeClaims = []adoptmove.Claim{{Language: "node", Manifests: []string{"package.json"}}}
+
 // rootProjectRepo makes a clean git repository with a project at its root.
 func rootProjectRepo(t *testing.T) string {
 	t.Helper()
@@ -35,7 +39,7 @@ func rootProjectRepo(t *testing.T) string {
 
 func TestSettleInitRefusesBeforeAnyChangeAndNamesEveryMissingFlag(t *testing.T) {
 	dir := rootProjectRepo(t)
-	r := Report{Root: dir, Name: "solo", Clean: true}
+	r := Report{Root: dir, Name: "solo", Clean: true, Claims: nodeClaims}
 	cases := []struct {
 		name  string
 		s     InitSettings
@@ -67,7 +71,7 @@ func TestSettleInitRefusesBeforeAnyChangeAndNamesEveryMissingFlag(t *testing.T) 
 
 func TestSettleInitWithEveryAnswerSettlesTheMove(t *testing.T) {
 	dir := rootProjectRepo(t)
-	got, err := SettleInit(Report{Root: dir, Name: "solo", Clean: true}, InitSettings{
+	got, err := SettleInit(Report{Root: dir, Name: "solo", Clean: true, Claims: nodeClaims}, InitSettings{
 		Move:  MoveOptions{Dir: "packages/solo"},
 		Flags: adoptdecision.Flags{Gitattributes: "skip", Agent: "skip", CI: []string{"none"}, CIGiven: true},
 		Yes:   true, In: bufio.NewReader(strings.NewReader("")), Out: io.Discard,
@@ -85,7 +89,7 @@ func TestSettleInitWithEveryAnswerSettlesTheMove(t *testing.T) {
 
 func TestRollbackPutsTheTreeBackAfterAMove(t *testing.T) {
 	dir := rootProjectRepo(t)
-	r := Report{Root: dir, Name: "solo", Clean: true}
+	r := Report{Root: dir, Name: "solo", Clean: true, Claims: nodeClaims}
 	c, plan, err := ChooseMove(r, MoveOptions{Dir: "packages/solo", Yes: true})
 	if err != nil {
 		t.Fatal(err)
