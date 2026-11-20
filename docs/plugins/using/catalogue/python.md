@@ -116,7 +116,7 @@ Every default is written from the smith binary into `.smith/defaults/` (ignored 
 smith add app|lib|package <name> --lang python
 ```
 
-The first `smith add` of a workspace also writes `requirements-dev.txt`, creates `.venv` with `<launcher> -m venv --upgrade-deps .venv` (the launcher is `py -3`, `python`, `python3` on Windows and `python3`, `python` elsewhere; the first that is on PATH and succeeds) and installs the pinned tools. Every `smith add` then installs the new project with `pip install -e ./<dir>`. This took 59 seconds on the first project (network) in the test run.
+The first `smith add` of a workspace also writes `requirements-dev.txt`, creates `.venv` with `<launcher> -m venv --upgrade-deps .venv` (the launcher is `py -3`, `python`, `python3` on Windows and `python3`, `python` elsewhere; the first that is on PATH and succeeds) and installs the pinned tools. Every `smith add` then installs the new project with `pip install -e ./<dir>` (with its development lists, see `smith install` below). This took 59 seconds on the first project (network) in the test run.
 
 Real output:
 
@@ -269,7 +269,7 @@ Real output of `smith ci generate` for the test workspace (GitHub):
 |---|---|
 | Toolchain | Python `3.12`: `actions/setup-python@v7` (GitHub), `UsePythonVersion@0` (Azure), `uv python install 3.12` plus symlinks for other providers, the `python` dev container feature at 3.12 |
 | Package store | `~/.cache/pip` (`PIP_CACHE_DIR`), keyed on `requirements-dev.txt` and each project's `pyproject.toml` |
-| Setup (`smith ci setup`) | `Create the Python venv` (`<launcher> -m venv --upgrade-deps .venv`), `Show the Python version` (`python --version`, non-blocking), then, if a private index is configured, `Point pip at the private index` (`pip config --site set global.index-url <index>`), `Install the Python toolchain` (`pip install -r requirements-dev.txt`), and `Install <project>` (`pip install -e ./<root>`, without `--quiet` so a resolver conflict is printed in full) per project. All blocking except the version. Real: five steps, `smith ci setup passed in 58.9s`. |
+| Setup (`smith ci setup`) | `Create the Python venv` (`<launcher> -m venv --upgrade-deps .venv`), `Show the Python version` (`python --version`, non-blocking), then, if a private index is configured, `Point pip at the private index` (`pip config --site set global.index-url <index>`), `Install the Python toolchain` (`pip install -r requirements-dev.txt`), and `Install <project>` (`pip install -e ./<root>[<dev extras>] <dev group requirements>`, without `--quiet` so a resolver conflict is printed in full) per project. All blocking except the version. Real: five steps, `smith ci setup passed in 58.9s`. |
 | Audit | `pip-audit --skip-editable`, non-blocking, cached on `requirements-dev.txt` and the `pyproject.toml` files. With `[ci] audit_policies = ["python"]` also `smith py-policy` over `requirements-dev.txt` and each project's `requirements.txt`: every requirement in a project's `requirements.txt` must have a `--hash` (the generated `requirements-dev.txt` is exempt: it lists top-level pins only, and hash-checking mode needs a hash for every transitive dependency), none may be a URL or git reference, and the only index is the workspace's. |
 | Credentials | `PYPI_TOKEN` (required; only when a `package` publishes to PyPI itself). `smith ci check` printed `GitHub: add the repository secrets PYPI_TOKEN` and the Azure equivalent. |
 | Private index (Azure Artifacts) | `PipAuthenticate@1` (`artifactFeeds: 'libs'`) for installs and `TwineAuthenticate@1` (`artifactFeed: 'libs'`) for publishing, no secret. Real, with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`; `smith ci check` then asked for the Feed Publisher role on the build service. A `token` registry adds the variable named in `token_env` as a secret (given to setup when installs need it). |
@@ -320,7 +320,7 @@ Dependencies:
 
 | Command | What it does |
 |---|---|
-| `smith install` | makes `.venv` and `requirements-dev.txt` if missing, installs the tools, installs every project editable |
+| `smith install` | makes `.venv` and `requirements-dev.txt` if missing, installs the tools, installs every project editable with its own development lists: the extras `dev`, `lint`, `test`, `testing`, `tests` and `typing` of `[project.optional-dependencies]` (`pip install -e "./<dir>[dev,test]"`) and the requirements of the `[dependency-groups]` of the same names, `include-group` entries resolved (smith reads the groups, so pip older than 25.1 installs them too) |
 | `smith install -p <project> <req>...` | adds the requirement(s) to `[project] dependencies` in that project's `pyproject.toml` (a TOML edit that keeps the rest of the file), then `pip install -e ./<dir>` |
 | `smith install -p <project> -D <req>` | adds to `[project.optional-dependencies] dev`, then `pip install <req>` by name |
 | `smith uninstall -p <project> <name>` | removes the requirement from the runtime list and the `dev` list. The package stays installed in the shared `.venv`; the note says to recreate it. Fails with `<project> does not require <name>` if neither list has it. |

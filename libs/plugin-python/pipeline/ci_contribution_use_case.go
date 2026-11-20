@@ -39,7 +39,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	// A library comes before the project that depends on it, so pip finds it in
 	// the venv and never looks its name up on PyPI.
 	for _, p := range venv.DependencyOrder(params.Projects) {
-		setup = append(setup, protocol.Step{Name: "Install " + p.Name, Command: []string{py, "-m", "pip", "install", "--disable-pip-version-check", "-e", "./" + p.Root}, Blocking: true})
+		setup = append(setup, protocol.Step{Name: "Install " + p.Name, Command: append([]string{py, "-m", "pip", "install", "--disable-pip-version-check"}, venv.EditableTarget(workspaceRoot, p.Root)...), Blocking: true})
 	}
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(toolpin.Version(workspaceRoot, "python"))},
