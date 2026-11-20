@@ -80,8 +80,10 @@ func adoptionBlocked(r Report) error {
 // adoptdecision.Resolve, and shown in the plan. Nothing is committed unless commit is true
 // (smith adopt --commit) or the workspace sets commit_operations: the changes
 // stay in the work tree, where git can take them back. It ends by saying what
-// smith doctor still reports.
-func Init(r Report, version string, install, eslint, commit bool, c adoptdecision.Choices, out io.Writer) error {
+// smith doctor still reports. Before the commit, each Node project that t
+// answers with smith's tooling gets it (ApplyTooling), and what that leaves
+// joins the "left to do" list.
+func Init(r Report, version string, install, eslint, commit bool, c adoptdecision.Choices, t ToolingRun, out io.Writer) error {
 	if !r.Adoptable() {
 		return adoptionBlocked(r)
 	}
@@ -128,24 +130,20 @@ func Init(r Report, version string, install, eslint, commit bool, c adoptdecisio
 	if err := CompleteWorkspace(r, install, eslint, out); err != nil {
 		return err
 	}
-	s, err := session.Open(session.Options{Dir: r.Root, Version: version, Log: out})
+	commitOperations, err := writePipelines(r.Root, version, out)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
-	contributions, err := cipipeline.Collect(s)
+	left, err := ApplyTooling(r, t, out)
 	if err != nil {
-		return err
-	}
-	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
 		return err
 	}
 	// Adopt keeps the repository's own setup, so what doctor reports next
 	// (install, a lint config) is a step left to do, not a bug of adopt:
 	// DescribeOutcome lists each once.
-	if !commit && !s.Config.Workspace.CommitOperations {
+	if !commit && !commitOperations {
 		fmt.Fprintf(out, "  not committed: git status lists the changes and git can take them back; commit them when you are happy, or %s next time\n", operation.CommitNextTime("run smith adopt --commit"))
-		return DescribeOutcome(r.Root, version, out)
+		return DescribeOutcome(r.Root, version, left, out)
 	}
 	if pending := operation.Always(r.Root); pending == nil {
 		fmt.Fprintln(out, "  not committed: this folder is not a git work tree")
@@ -154,5 +152,23 @@ func Init(r Report, version string, install, eslint, commit bool, c adoptdecisio
 	} else if hash != "" {
 		fmt.Fprintln(out, "  committed: chore: adopt smith (smith undo reverts it)")
 	}
-	return DescribeOutcome(r.Root, version, out)
+	return DescribeOutcome(r.Root, version, left, out)
+}
+
+// writePipelines generates the CI pipelines for the projects found, and says
+// whether the workspace commits its operations (commit_operations).
+func writePipelines(root, version string, out io.Writer) (bool, error) {
+	s, err := session.Open(session.Options{Dir: root, Version: version, Log: out})
+	if err != nil {
+		return false, err
+	}
+	defer s.Close()
+	contributions, err := cipipeline.Collect(s)
+	if err != nil {
+		return false, err
+	}
+	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
+		return false, err
+	}
+	return s.Config.Workspace.CommitOperations, nil
 }

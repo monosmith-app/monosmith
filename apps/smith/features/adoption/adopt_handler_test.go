@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projecttooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -46,24 +47,28 @@ func TestPredictedFailureNamesTheStepThatClearsIt(t *testing.T) {
 	}
 }
 
-func TestLevelFullSaysItIsConvertsAndNamesTheIssueWithoutTouchingTheRepository(t *testing.T) {
-	cmd := Command("test")
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	cmd.SilenceUsage, cmd.SilenceErrors = true, true
-	cmd.SetArgs([]string{"--level", "full", "--init"})
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("--level full succeeded")
+func TestLevelFullIsSmithsToolingForEveryProjectWithoutAnAnswer(t *testing.T) {
+	got, err := ToolingAnswers([]string{"web=keep"}, LevelFull)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, want := range []string{"--level full", "smith convert --level full --dry-run", "conservative level", FullLevelIssue} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("the problem lacks %q:\n%s", want, err)
-		}
+	if got.All != projecttooling.Smith || got.Per["web"] != projecttooling.Keep {
+		t.Errorf("answers %+v", got)
 	}
-	if out.Len() != 0 {
-		t.Errorf("nothing is printed before the refusal, got %q", out.String())
+	got, err = ToolingAnswers([]string{"keep"}, LevelFull)
+	if err != nil || got.All != projecttooling.Keep {
+		t.Errorf("an explicit --tooling keep wins over --level full: %+v %v", got, err)
+	}
+	got, err = ToolingAnswers(nil, LevelConservative)
+	if err != nil || got.All != "" {
+		t.Errorf("the conservative level answers nothing: %+v %v", got, err)
+	}
+}
+
+func TestToolingRefusesAnUnknownAnswerBeforeItReadsTheRepository(t *testing.T) {
+	_, err := ToolingAnswers([]string{"maybe"}, LevelConservative)
+	if err == nil || !strings.Contains(err.Error(), "maybe") || !strings.Contains(err.Error(), "--tooling smith|keep") {
+		t.Fatalf("err = %v", err)
 	}
 }
 
@@ -85,7 +90,7 @@ func TestInitOnAnAdoptedWorkspaceSaysWhyNotThatSomethingBlocks(t *testing.T) {
 		{Message: "this is already a smith workspace", Step: "nothing to adopt: smith doctor checks it", Blocks: BlocksAdoption},
 		{Message: "web has no release tag", Blocks: BlocksRelease},
 	}}
-	err := Init(r, "1.0.0", false, false, false, adoptdecision.Choices{CI: []string{"github"}, Gitattributes: adoptdecision.GitattributesSkip, Agent: adoptdecision.AgentSkip}, &bytes.Buffer{})
+	err := Init(r, "1.0.0", false, false, false, adoptdecision.Choices{CI: []string{"github"}, Gitattributes: adoptdecision.GitattributesSkip, Agent: adoptdecision.AgentSkip}, ToolingRun{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "already a smith workspace") || !strings.Contains(err.Error(), "nothing to adopt") {
 		t.Fatalf("err = %v", err)
 	}

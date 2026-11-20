@@ -27,6 +27,23 @@ func (manifestLanguage) Discover(p protocol.DiscoverParams) (protocol.DiscoverRe
 	return res, nil
 }
 
+func TestDiscoverLeavesOutInstalledPackagesThatNoIgnoreRuleHides(t *testing.T) {
+	set := &pluginhost.PluginSet{Clients: []*host.Client{connect(t, manifestLanguage{})}}
+	cfg := workspace.Config{Workspace: workspace.WorkspaceSection{Name: "w"}}
+	catalog, err := pluginhost.NewCatalog(set, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []string{"apps/web/x.json", "apps/web/node_modules/typescript/x.json", "node_modules/a/x.json"}
+	g, err := Discover(files, set, catalog, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(g.Projects) != 1 || g.Projects[0].Name != "web" {
+		t.Errorf("projects %v", g.Projects)
+	}
+}
+
 func TestDiscoverLeavesOutTheExcludedDirectories(t *testing.T) {
 	set := &pluginhost.PluginSet{Clients: []*host.Client{connect(t, manifestLanguage{})}}
 	cfg := workspace.Config{Workspace: workspace.WorkspaceSection{Name: "w", Exclude: []string{"examples/*"}}}

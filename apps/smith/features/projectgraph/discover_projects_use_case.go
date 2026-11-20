@@ -44,7 +44,7 @@ func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catal
 		}
 		var manifests []string
 		for _, f := range files {
-			if protocol.IsManifest(c.Info.Manifests, path.Base(f)) && !cfg.Excluded(f) {
+			if protocol.IsManifest(c.Info.Manifests, path.Base(f)) && !cfg.Excluded(f) && !InDependencyFolder(f) {
 				manifests = append(manifests, f)
 			}
 		}

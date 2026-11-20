@@ -1,5 +1,5 @@
 // Package manifestoffer handles a source whose manifest is not at its top,
-// for smith import and smith adopt (ADR 0107). It finds the source files the
+// for smith import and smith adopt (ADR 0108). It finds the source files the
 // language plugins recognise in a folder without a manifest (Sources), asks
 // whether to write the manifest of the language's default stack (Settle,
 // --manifest answers), and has the plugin write it from its scaffold

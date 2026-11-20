@@ -1,4 +1,4 @@
-# ADR 0107: smith offers a manifest for a source without one
+# ADR 0108: smith offers a manifest for a source without one
 
 - Status: accepted
 - Date: 2026-11-20

@@ -24,7 +24,7 @@ adopt wizard, which does the same in screens; see
 ## Synopsis
 
 ```sh
-smith adopt [--dry-run] [--json] [--tags] [--init [--install] [--eslint] [--move <folder>|none] [--manifest <language>|none] [--yes]] [--level conservative|full]
+smith adopt [--dry-run] [--json] [--tags] [--init [--install] [--eslint] [--move <folder>|none] [--tooling smith|keep|<project>=smith|keep] [--manifest <language>|none] [--yes]] [--level conservative|full]
 ```
 
 ## Arguments and flags
@@ -48,10 +48,11 @@ Usage: `smith adopt [flags]`
 | `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
 | `--install` | boolean | off | with --init, also run npm install for the Node projects and create the Python .venv |
 | `--json` | boolean | off | print the report as JSON |
-| `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
+| `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith's tooling for every project; smith convert's for Nx and Turborepo workspaces) |
 | `--manifest <manifest>` | string |  | with --init, a root of sources without a manifest: the language whose default manifest smith writes before the move (node, python, dotnet), or none; asked in a terminal |
 | `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
 | `--tags` | boolean | off | create the baseline release tags the report asks for, locally |
+| `--tooling <tooling>` | string, repeatable |  | with --init, the build and lint tools of the Node projects: smith (smith's build and ESLint config, then the old tools go) or keep, for all, or <project>=smith\|keep for one |
 | `-y, --yes` | boolean | off | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it |
 
 <!-- smith:end adopt -->
@@ -85,10 +86,10 @@ Interactions:
   a tool that packs inside the project and offers to move it to `dist/electron/<project dir>`
   after you confirm.
 - `--level conservative` (the default) keeps the repository's own build and lint
-  setup. `--level full` makes smith the only tool; it exists for Nx and Turborepo
-  workspaces, where it is `smith convert --level full`. For a plain repository
-  `adopt --level full` says so and stops (the work is tracked in issue 553 of the
-  project's repository).
+  setup, unless `--tooling` says otherwise for a project. `--level full` makes smith
+  the only tool. For a plain repository it is `--tooling smith` for every Node project
+  without an answer of its own (see [Keep the project's tools, or use smith's](#keep-the-projects-tools-or-use-smiths)).
+  For Nx and Turborepo workspaces it is `smith convert --level full`.
 - A pipeline of yours at a path smith owns is kept beside the new one as
   `<file>.pre-smith`. A `.gitignore` of yours is kept and gets `.smith/` added.
 
@@ -107,6 +108,55 @@ the plan with a diff of every file of yours it edits, and asks `Go ahead? [y/N]`
 Without a terminal and without `--yes` it refuses and names these flags. With `--yes` each open
 question takes its safe default and a line says which. `--init --dry-run` prints the same plan and
 changes nothing.
+
+## Keep the project's tools, or use smith's
+
+For each Node (JavaScript or TypeScript) project, `--init` also asks whether the project keeps its
+own build and lint tools or uses smith's. smith recommends its own tooling when a tool of the
+project is legacy:
+
+- an ESLint 8 configuration (`.eslintrc*`, or `eslintConfig` in `package.json`), or ESLint older than 9
+- create-react-app (`react-scripts`)
+- a `tsc` build into `lib/` (or another folder than `dist`)
+- a rollup, webpack or other bundler build
+
+When the tools are current, smith recommends keeping them. Enter takes the recommendation.
+
+| Answer | Flag | What happens |
+|---|---|---|
+| Use smith's | `--tooling smith` or `--tooling <project>=smith` | smith's tools go in first, then the old tools go |
+| Keep its own | `--tooling keep` or `--tooling <project>=keep` | nothing of the build or the lint changes |
+
+Without a terminal and without `--yes` or `--tooling`, `--init` refuses and names the flag. With
+`--yes`, an open project keeps its own tools, and a line says how to choose smith's. smith never
+picks its own tooling for you.
+
+With smith's tooling, `--init` takes these steps in this order, after the workspace is written and
+before the commit:
+
+1. **Lint in place.** The root `eslint.config.mjs` loads `@monosmith/eslint-config`. The config and
+   an `eslint` that it runs with go into the root `devDependencies`. The project gets
+   `"lint": "eslint ."`, and an `eslintConfig` key in its `package.json` goes. A root flat config
+   of yours that passes options smith's config does not take stays, and the lint step stops there.
+2. **Build in place.** A `tsc` build into `lib/` builds into `dist`: a library or a package in its
+   own `dist`, an app in the workspace's `dist/<project dir>` (ADR 0102). `main`, `types` and the
+   other entry points follow. A create-react-app project builds with Vite: `public/index.html`
+   becomes `index.html`, and `vite.config.ts` builds into the workspace's `dist/<project dir>`.
+   Its tests run with Vitest in jsdom, and a project without tests loses its `react-scripts test`
+   script. `dist` goes into `.gitignore`. A rollup, webpack or script build stays, and the
+   outcome says so.
+3. **Old tools out.** Only for a tool whose replacement is in place, smith shows each group of
+   removals (the `.eslintrc` files, `.eslintignore`, the old lint packages, `react-scripts` and
+   the old build packages) and asks before it applies the group. `--yes` applies every group.
+   The removal plan is the one of `smith convert --level full`. It sees only the project's folder
+   and the files at the workspace root, so the tools of other projects stay.
+4. **Check.** One install, then build, test, lint and doctor. The lint runs without `--fix`:
+   smith reports what its rules find in your code and does not rewrite it.
+
+What smith cannot do is an item of the `Left to do` list at the end, with its fix. Examples are a
+bundler build that smith does not rewrite, tests that call `jest.*` under Vitest, SVG files
+imported as React components, and the problems that smith's lint rules find. `smith import` takes
+the same step for the project it brings in. Python and .NET projects are not asked yet.
 
 ## A project at the repository root
 
@@ -143,7 +193,7 @@ Move it into a folder of its own so smith can manage it?
   `--manifest none` refuses, and without a terminal or the flag smith stops). It then asks
   where the project goes, as above. The manifest is written at the root, named after that
   folder and with its kind, staged with `git add`, and moved with the sources, which keep
-  their layout ([ADR 0107](../architecture/decisions/0107-smith-offers-a-manifest-for-a-source-without-one.md)).
+  their layout ([ADR 0108](../architecture/decisions/0108-smith-offers-a-manifest-for-a-source-without-one.md)).
 - The move is `git mv` of the project's files, and it splits the workspace from the project
   ([ADR 0090](../architecture/decisions/0090-adopt-splits-the-workspace-from-the-project.md)).
   These stay at the root: `.git`, `.gitignore`, `.github` and the other CI files, editor and
@@ -296,7 +346,7 @@ smith adopt --json
 | `this is a Turborepo workspace: its tasks are turbo.json's to describe` | Run `smith convert --dry-run`. A recognised Nx workspace is refused the same way (not captured for this page). |
 | `this is already a smith workspace` | The folder has a `smith.toml`. Run `smith doctor` or `smith upgrade`. |
 | `something blocks adoption; see smith adopt` | `--init` or `--tags` was refused. Run `smith adopt` to read the blockers (usually a dirty git tree: commit or stash). |
-| `--level full makes smith the only tool, ... not yet for a plain repository` | Use the default level, or `smith convert --level full` in an Nx or Turborepo workspace. |
+| `nobody can say which build and lint tools <project> should use` | There is no terminal and no `--yes`. Add `--tooling smith\|keep`, or `--tooling <project>=smith\|keep`. |
 
 ## Related
 

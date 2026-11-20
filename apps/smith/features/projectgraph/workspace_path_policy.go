@@ -6,6 +6,17 @@ import (
 	"strings"
 )
 
+// InDependencyFolder reports whether a workspace-relative file is inside a
+// node_modules folder. Such a file belongs to an installed package, never to
+// a project, even when no .gitignore rule hides it (a "/node_modules" rule
+// anchored at the root does not hide apps/web/node_modules).
+//
+// Parameters: f is a workspace-relative path with forward slashes.
+// Returns: true when one of its folders is node_modules.
+func InDependencyFolder(f string) bool {
+	return strings.HasPrefix(f, "node_modules/") || strings.Contains(f, "/node_modules/")
+}
+
 // CleanRelative puts a relative path from a plugin or smith.toml in smith's
 // form: forward slashes, no "." or ".." segments, "." for the base itself.
 // Paths stay POSIX inside smith (cache keys, graphs, messages) and keep the
