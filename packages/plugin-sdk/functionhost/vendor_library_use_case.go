@@ -125,8 +125,10 @@ func vendorLibrary(tools Tools, name, folder, vendorDir string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	builtHere := filepath.Join(root, "dist", rel)
-	if err := placeLibraryCode(name, entry, folder, builtHere, target, manifest); err != nil {
+	// A library builds in its own dist (ADR 0102); an old layout built it
+	// into the workspace's dist/<library dir>.
+	builds := []string{filepath.Join(folder, "dist"), filepath.Join(root, "dist", rel)}
+	if err := placeLibraryCode(name, entry, folder, builds, target, manifest); err != nil {
 		return "", err
 	}
 	if err := writeManifest(filepath.Join(target, "package.json"), manifest); err != nil {
@@ -144,20 +146,24 @@ func vendorLibrary(tools Tools, name, folder, vendorDir string) (string, error) 
 }
 
 // placeLibraryCode copies the code a library ships into target and points the
-// manifest's main at it. The library is built into the workspace's dist/
-// (builtHere), ships from its own folder, or its main points into dist/.
-func placeLibraryCode(name, entry, folder, builtHere, target string, manifest map[string]any) error {
+// manifest's main at it. A library whose main is TypeScript ships the build
+// found in the first of builds (its own dist, then the workspace's
+// dist/<library dir>); another ships from its own folder, or from the folder
+// its main points into.
+func placeLibraryCode(name, entry, folder string, builds []string, target string, manifest map[string]any) error {
 	isTS := strings.HasSuffix(entry, ".ts")
 	source := strings.TrimSuffix(strings.TrimPrefix(entry, "./"), ".ts") + ".js"
 	if isTS {
-		for _, file := range []string{source, strings.TrimPrefix(source, "src/")} {
-			if _, err := os.Stat(filepath.Join(builtHere, filepath.FromSlash(file))); err == nil {
-				manifest["main"] = "./dist/" + file
-				delete(manifest, "exports")
-				return copyTree(builtHere, filepath.Join(target, "dist"))
+		for _, built := range builds {
+			for _, file := range []string{source, strings.TrimPrefix(source, "src/")} {
+				if _, err := os.Stat(filepath.Join(built, filepath.FromSlash(file))); err == nil {
+					manifest["main"] = "./dist/" + file
+					delete(manifest, "exports")
+					return copyTree(built, filepath.Join(target, "dist"))
+				}
 			}
 		}
-		return fmt.Errorf("%s is shipped as TypeScript (%s) and has no build in %s, so a function host cannot run it: give the library a build script that writes there", name, entry, builtHere)
+		return fmt.Errorf("%s is shipped as TypeScript (%s) and has no build in %s, so a function host cannot run it: give the library a build script that writes there, and point main at the built file", name, entry, builds[0])
 	}
 	out := filepath.Dir(filepath.Join(folder, filepath.FromSlash(entry)))
 	if rel, err := filepath.Rel(folder, out); err == nil && strings.HasPrefix(rel, "..") {

@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -38,5 +39,38 @@ func TestLinkedFolderFollowsAWindowsJunction(t *testing.T) {
 	}
 	if got := linkedFolder(app, "@quotes/other"); got != "" {
 		t.Fatalf("no link, no library: %q", got)
+	}
+}
+
+func TestPlaceLibraryCodeShipsATypeScriptLibraryBuiltInItsOwnFolder(t *testing.T) {
+	root := t.TempDir()
+	folder := filepath.Join(root, "libs", "core")
+	write(t, filepath.Join(folder, "dist", "index.js"), "built")
+	target := filepath.Join(t.TempDir(), "core")
+	manifest := map[string]any{"name": "@acme/core", "main": "src/index.ts", "exports": "./src/index.ts"}
+	builds := []string{filepath.Join(folder, "dist"), filepath.Join(root, "dist", "libs", "core")}
+	if err := placeLibraryCode("@acme/core", "src/index.ts", folder, builds, target, manifest); err != nil {
+		t.Fatalf("a library built in its own dist (ADR 0102) ships: %v", err)
+	}
+	if manifest["main"] != "./dist/index.js" || manifest["exports"] != nil {
+		t.Errorf("main points at the built file and exports goes: %v", manifest)
+	}
+	if _, err := os.Stat(filepath.Join(target, "dist", "index.js")); err != nil {
+		t.Errorf("the build is copied: %v", err)
+	}
+}
+
+func TestPlaceLibraryCodeStillShipsTheOldWorkspaceDistLayout(t *testing.T) {
+	root := t.TempDir()
+	folder := filepath.Join(root, "libs", "core")
+	write(t, filepath.Join(root, "dist", "libs", "core", "index.js"), "built")
+	target := filepath.Join(t.TempDir(), "core")
+	manifest := map[string]any{"name": "@acme/core"}
+	builds := []string{filepath.Join(folder, "dist"), filepath.Join(root, "dist", "libs", "core")}
+	if err := placeLibraryCode("@acme/core", "./src/index.ts", folder, builds, target, manifest); err != nil {
+		t.Fatalf("a build in the workspace's dist/<library dir> ships: %v", err)
+	}
+	if err := placeLibraryCode("@acme/none", "src/index.ts", filepath.Join(root, "libs", "none"), []string{filepath.Join(root, "libs", "none", "dist")}, target, map[string]any{}); err == nil || !strings.Contains(err.Error(), "has no build in") {
+		t.Errorf("no build anywhere: %v", err)
 	}
 }
