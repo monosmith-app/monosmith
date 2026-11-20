@@ -55,6 +55,28 @@
         "audit_warn": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Audit policies that only report instead of failing. Default: none." },
         "audit_allow_install_scripts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "npm packages whose install scripts the node audit policy accepts. Default: none." },
         "audit_max_unsafe": { "type": "integer", "minimum": 0, "description": "Unsafe blocks the rust audit policy accepts in all Rust sources. Default: 0." },
+        "azure": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "What smith ci pack tells Azure Pipelines (TF_BUILD set) from the release plan. Every key is on by default.",
+          "properties": {
+            "build_tags": {
+              "description": "A build tag for each project in the release plan, named after the project. A table renames the tag of a project ({ api = \"api-release\" }); false adds no tags. Default: true.",
+              "oneOf": [
+                { "type": "boolean" },
+                { "type": "object", "additionalProperties": { "type": "string", "minLength": 1, "pattern": "^[^;\\r\\n]+$" } }
+              ]
+            },
+            "deploy_variables": { "type": "boolean", "description": "Set DEPLOY_<PROJECT> to true or false for every app and every project with a package task: true when the release plan has it. Default: true." },
+            "build_number": {
+              "description": "The build number pattern, with {project} and {version}, written for each planned project and joined with '-' (api_6.2.0-app_6.2.0). \"\" or false leaves the build number alone. Default: \"{project}_{version}\".",
+              "oneOf": [
+                { "type": "boolean" },
+                { "type": "string", "pattern": "^[^\"/:<>\\\\|?@*\\r\\n]*$" }
+              ]
+            }
+          }
+        },
         "sibling_repos": {
           "type": "array",
           "description": "Other GitHub repositories the generated workflow checks out beside the workspace, GitHub Actions only. Default: none.",

@@ -5,6 +5,9 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/release"
+	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 )
 
 // inGroupedLog reports whether the CI log folds groups (GitHub or Azure).
@@ -55,5 +58,18 @@ func warn(out io.Writer, msg string) {
 		fmt.Fprintf(out, "##vso[task.logissue type=warning]%s\n", msg)
 	default:
 		fmt.Fprintln(out, "warning: "+msg)
+	}
+}
+
+// tellAzure writes the [ci.azure] logging commands of the release plan (build
+// tags, DEPLOY_<PROJECT> variables, the build number) when the run is on Azure
+// Pipelines (TF_BUILD set); elsewhere it writes nothing. Only smith ci pack
+// calls it, so the release phase does not write them a second time.
+func tellAzure(s *session.Session, plan release.Plan, out io.Writer) {
+	if os.Getenv("TF_BUILD") == "" {
+		return
+	}
+	for _, line := range azureReleaseMarkers(s.Config.CI.Azure, plan, deployableNames(s.Graph.Projects)) {
+		fmt.Fprintln(out, line)
 	}
 }

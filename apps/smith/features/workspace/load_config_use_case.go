@@ -183,6 +183,9 @@ func Validate(cfg *Config) error {
 	if err := validateCICost(cfg.CI); err != nil {
 		return err
 	}
+	if err := validateCIAzure(cfg.CI.Azure); err != nil {
+		return err
+	}
 	if err := validateSiblingRepos(cfg); err != nil {
 		return err
 	}

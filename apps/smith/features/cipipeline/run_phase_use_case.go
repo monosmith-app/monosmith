@@ -294,6 +294,12 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		if err := os.MkdirAll(filepath.Join(s.Root, filepath.FromSlash(DropDir)), 0o755); err != nil {
 			return err
 		}
+		// The plan of this branch, as smith release --dry-run makes it: the
+		// packed projects carry the version the release will tag.
+		plan, err := release.PlanFor(s)
+		if err != nil {
+			return fmt.Errorf("planning the release version: %w", err)
+		}
 		packing := false
 		for _, p := range s.Graph.Projects {
 			if _, ok := p.Tasks[PackTask]; ok {
@@ -302,14 +308,26 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		}
 		if !packing {
 			log.banner()
+			tellAzure(s, plan, out)
 			log.say("Nothing to pack: no project has a %s task, so %s stays empty.", PackTask, DropDir)
 			log.conclusion = "nothing to pack"
 			return nil
 		}
-		log.banner(packIntro(s)...)
-		// Native projects are packed by the native job, on each OS.
+		log.heading(packIntro(s)...)
+		stamps, restore, err := release.StampPlanned(ctx, s, plan, packedProjects(s), out)
+		if err != nil {
+			return fmt.Errorf("writing the planned version: %w", err)
+		}
+		defer restore()
+		for _, st := range stamps {
+			log.say("%s", packVersionLine(st))
+		}
+		log.fold()
+		tellAzure(s, plan, out)
+		// Native projects are packed by the native job, on each OS. A stamped
+		// version is not part of the cache key, so a stamped pack runs afresh.
 		outputs := newTaskOutputs()
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{PackTask}, Projects: nativeExcluded, Release: true, Out: io.MultiWriter(out, outputs), Colour: taskrun.ToolColour(os.Stdout)})
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{PackTask}, Projects: nativeExcluded, Release: true, NoCache: len(stamps) > 0, Out: io.MultiWriter(out, outputs), Colour: taskrun.ToolColour(os.Stdout)})
 		if err != nil {
 			return err
 		}

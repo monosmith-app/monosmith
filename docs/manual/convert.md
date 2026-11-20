@@ -95,8 +95,10 @@ Interactions:
   apply only when `level` is `full`) and `options`, each with a `value` and a `label`; the default is the
   first. It reads no folder, so each default is the one smith suggests when it knows nothing about the
   workspace; the plan of `--level full --dry-run` shows what the workspace's own tooling suggests.
-- `--build smith` (the default) also moves every project that compiles with `tsc` to the
-  workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
+- `--build smith` (the default) also moves every app (and VS Code extension) that compiles with
+  `tsc` to the workspace's one `dist/<project dir>`. A library or package keeps building in its
+  own folder ([ADR 0102](../architecture/decisions/0102-node-libraries-build-inside-their-own-folder.md)).
+  For an app, the `outDir` leaves its tsconfig, the `build` script
   passes `--outDir`, and `main`, `types` and the `start` script follow. When the build task in
   `smith.toml` declares the old folder as an output, the output follows too
   (`outputs = ["../../dist/apps/api"]`). It is asked as its own group (nothing is deleted,
