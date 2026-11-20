@@ -1,8 +1,12 @@
 # smith
 
 The `smith` command: MonoSmith's language-agnostic core and the entry point
-of every built-in plugin. One package per slice; [docs/contributing/development.md](../../docs/contributing/development.md)
-lists them, and the [README](../../README.md) and [docs](../../docs/) describe
+of every built-in plugin. One package per slice, in three zones
+([ADR 0100](../../docs/architecture/decisions/0100-apps-keep-their-slices-in-features-integrations-and-shared.md)):
+`features/` for the commands' outcomes, `integrations/` for one external system each (GitHub
+Releases, git, the registries smith publishes app binaries to, smith's own releases) and `shared/`
+for building blocks with no business knowledge. `smith slices check` enforces them.
+[docs/architecture/architecture.md](../../docs/architecture/architecture.md) lists the slices, and the [README](../../README.md) and [docs](../../docs/) describe
 what the command does.
 
 ```sh
@@ -49,8 +53,8 @@ terminal, git or a plugin: each is an adapter for an outside system.
 
 ## Shared version ordering
 
-`semver` holds the one comparison of versions with pre-releases
-(`pluginmarket` uses it). `pluginhost/version_constraint_policy.go` keeps its own
+`shared/semver` holds the one comparison of versions with pre-releases
+(`pluginmarket` uses it). `features/pluginhost/version_constraint_policy.go` keeps its own
 triple comparison (it ignores pre-release and build suffixes and rejects text)
-and `toolinstall/requirement_policy.go` keeps its own `CompareVersions` (it reads
+and `features/toolinstall/requirement_policy.go` keeps its own `CompareVersions` (it reads
 a part that is not a number as 0): both give different answers than `semver`.

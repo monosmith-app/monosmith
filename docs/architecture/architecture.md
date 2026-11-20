@@ -38,7 +38,12 @@ releases this repository itself.
 ## The core
 
 `apps/smith` is organised by vertical slices: one Go package per outcome, its
-exported identifiers as its API. `commandline` assembles the commands from
+exported identifiers as its API. The slices sit in three zones
+([ADR 0100](decisions/0100-apps-keep-their-slices-in-features-integrations-and-shared.md)):
+`features/` for outcomes, `integrations/` for one external system each (`githubrelease`,
+`gitclient`, `pypiwheels`, `nugettool`, `rubygems`, `smithreleases` and others) and `shared/` for
+building blocks with no business knowledge (`semver`, `statuspaint` and others). `shared` and
+`integrations` never import a feature. `commandline` assembles the commands from
 each slice's handler; most commands start by opening a `session`.
 
 | Slice | Owns |
