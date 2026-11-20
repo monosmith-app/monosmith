@@ -74,4 +74,4 @@ flowchart LR
 The research notes are [the inventory of mnci](research/01-current-mnci-inventory.md),
 [the Nx subsystems](research/02-nx-subsystems.md) and
 [prior art and the stack](research/03-prior-art-and-stack.md). The notes of the 2.0 branch are
-[the integration QA](research/smith-v2-integration-qa.md).
+[the integration QA](research/smith-v2-integration-qa.md). [The review of bringing any repository into a workspace](research/any-repo-into-a-workspace-review.md) plans `smith import`.
