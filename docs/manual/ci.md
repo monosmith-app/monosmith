@@ -132,6 +132,20 @@ Creates `dist/drop` (always, so the artifact upload has a path), then runs every
 `package` task except the native ones. With no `package` task anywhere it prints
 `nothing to pack: no project has a package task`; on success, `packed into dist/drop`.
 
+Before it packs, `smith ci pack` writes the planned release version into each packed project
+that the release plan has, on every branch. The release branch gets the next stable version. A
+release channel branch gets its prerelease version. Any other branch gets the next stable
+version, as `smith release --dry-run` shows it. A project that the plan does not have keeps the
+version in its manifest. One line names each project and its versions:
+
+```text
+api: 6.1.0 -> 6.2.0 for the pack (the planned release; 1 file put back after the pack)
+```
+
+The packed file names that hold a version (`npm pack`, a wheel, a `.vsix`) thus hold the version
+that `smith ci release` tags. After the pack, also after a failure, smith puts the changed files
+back.
+
 ### native
 
 <!-- smith:begin ci native -->

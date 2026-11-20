@@ -347,6 +347,16 @@ plugins give every app one:
 A stack's plugin, or `[projects.<name>.tasks.package]` in `smith.toml`, can
 replace it, for example with a zip a deploy step expects.
 
+The `<version>` in these names is the planned release version. Before the
+`package` tasks run, `smith ci pack` makes the release plan of the branch
+(the plan of `smith release --dry-run`). It writes the planned version into
+each packed project that the plan has, as `smith release` does. The release
+branch gets the next stable version, a release channel branch its prerelease
+version, and any other branch the next stable version. A project that the
+plan does not have keeps the version in its manifest. The pack runs without
+the task cache when it writes a version. After the pack, also after a
+failure, smith puts the files back.
+
 On a pull request, `smith ci verify` also runs the `package` task of every
 affected **app**, building into `dist/drop` and publishing nothing, so a
 packaging step that breaks (a staging script that misses a new workspace

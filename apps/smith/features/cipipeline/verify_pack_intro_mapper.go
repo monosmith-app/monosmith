@@ -38,12 +38,19 @@ func verifyIntro(s *session.Session, base string) []string {
 
 // packIntro says what pack is about to build and where it goes.
 func packIntro(s *session.Session) []string {
+	packing := len(packedProjects(s))
+	return []string{fmt.Sprintf("Packing %s (task %q) into %s.",plural(packing, "project"), PackTask, DropDir)}
+}
+
+// packedProjects are the projects smith ci pack packs: those with a package
+// task, less the native ones.
+func packedProjects(s *session.Session) []string {
 	names, _ := s.Graph.Select(nativeExcluded)
-	packing := 0
+	var packed []string
 	for _, n := range names {
 		if _, ok := s.Graph.Get(n).Tasks[PackTask]; ok {
-			packing++
+			packed = append(packed, n)
 		}
 	}
-	return []string{fmt.Sprintf("Packing %s (task %q) into %s.", plural(packing, "project"), PackTask, DropDir)}
+	return packed
 }
