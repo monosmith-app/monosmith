@@ -126,7 +126,8 @@ Interactions:
   plan line was printed first in text and the markdown table after it.
 - `--json` prints the report as JSON (`dryRun`, `started`, `finished`, `results` with
   `project`, `next`, `level`, `tag`, `reason`, `commits`, `changes`, `status`, `files`,
-  `published`, `registry`, `pushed`).
+  `published`, `registry`, `pushed`). Only the report goes to stdout. The progress lines
+  (`would attach ...`, build output) go to stderr, so a script can parse stdout as it is.
 - `--status` prints the release journal and exits; it ignores the other flags except
   `--json`.
 - `--rehearse` asks every registry the packages publish to (npm-compatible feeds including

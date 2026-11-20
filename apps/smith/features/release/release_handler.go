@@ -176,7 +176,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
 			defer stop()
-			report, err := Execute(ctx, s, plan, Options{DryRun: dryRun, Push: !noPush, Out: out, Terse: format != "markdown"})
+			report, err := Execute(ctx, s, plan, Options{DryRun: dryRun, Push: !noPush, Out: progressWriter(asJSON, out, cmd.ErrOrStderr()), Terse: format != "markdown"})
 			if dryRun {
 				preview(report.Markdown())
 			}

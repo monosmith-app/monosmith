@@ -76,6 +76,7 @@ func TestPackFunctionAppZipsTheBuildWithoutDependenciesForAZipHost(t *testing.T)
 func TestPackFunctionAppInstallsDependenciesWhenAsked(t *testing.T) {
 	project, build := t.TempDir(), filepath.Join(t.TempDir(), "out")
 	write(t, filepath.Join(build, "package.json"), `{"name":"app","dependencies":{"left-pad":"1"}}`)
+	write(t, filepath.Join(build, "dist", "index.js"), "x")
 	var ran []string
 	tools := Tools{Run: func(dir string, argv []string) error {
 		ran = append(ran, strings.Join(argv[:2], " "))
@@ -111,6 +112,7 @@ func TestPackFunctionAppVendorsALibraryOfTheWorkspace(t *testing.T) {
 	}
 	build := filepath.Join(ws, "dist", "apps", "fn")
 	write(t, filepath.Join(build, "package.json"), `{"name":"fn","dependencies":{"@acme/greeter":"*"}}`)
+	write(t, filepath.Join(build, "dist", "index.js"), "x")
 	var packed []string
 	tools := Tools{
 		Run: func(string, []string) error { return nil },
@@ -135,6 +137,7 @@ func TestPackFunctionAppInstallsWithTheWorkspaceNpmrcAndNeverZipsIt(t *testing.T
 	write(t, filepath.Join(project, "package.json"), `{"name":"api"}`)
 	build := filepath.Join(ws, "dist", "apps", "api")
 	write(t, filepath.Join(build, "package.json"), `{"name":"api","dependencies":{"@acme/core":"1"}}`)
+	write(t, filepath.Join(build, "dist", "index.js"), "x")
 	var seen string
 	tools := Tools{Run: func(dir string, argv []string) error {
 		if argv[1] == "install" {
