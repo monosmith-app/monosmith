@@ -157,6 +157,9 @@ bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0
 [projects.sdk]
 registry = "github-release"           # pack it and attach the package file (npm tarball, wheel and sdist, nupkg, gem, crate) to its GitHub Release instead of publishing; needs [release] github_releases = true; no registry credential is asked for (also valid under [release]: every package of a private repository)
 
+[projects.orders]
+slot_settings = ["MODE"]              # an Azure function app's settings that stay with a deployment slot (slotSetting true in dist/drop/<app>/env/<env>.json); default: none (plugins/using/catalogue/functions.md)
+
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
 
