@@ -106,10 +106,41 @@ func TestPruneWritesIntoAnotherBuildDirectory(t *testing.T) {
 	if !strings.Contains(string(raw), `"main": "../../dist/apps/api/main.js"`) {
 		t.Errorf("a path outside smith's build directory is left as it is: %s", raw)
 	}
-	for _, f := range []string{"package-lock.json", "workspace_modules/@acme/core/package.json", "workspace_modules/@acme/util/index.js"} {
+	for _, f := range []string{"package-lock.json", "workspace_modules/@acme/core/package.json", "workspace_modules/@acme/util/dist/index.js"} {
 		if _, err := os.Stat(filepath.Join(root, "apps", "api", "dist", filepath.FromSlash(f))); err != nil {
 			t.Errorf("no %s", f)
 		}
+	}
+}
+
+func TestPruneKeepsTheLayoutOfAPackageThatBuildsInItsOwnFolder(t *testing.T) {
+	root := workspace(t)
+	write(t, root, "packages/util/package.json", `{ "name": "@acme/util", "version": "0.2.0", "main": "dist/index.js", "files": ["dist", "!**/*.map"], "scripts": { "build": "tsc" } }`)
+	write(t, root, "packages/util/src/index.ts", "")
+	write(t, root, "packages/util/dist/ui/index.html", "")
+	original := npm
+	npm = func(string, ...string) error { return nil }
+	t.Cleanup(func() { npm = original })
+	if _, err := Prune(Request{WorkspaceRoot: root, Root: "apps/api"}); err != nil {
+		t.Fatal(err)
+	}
+	util := filepath.Join(root, "dist", "apps", "api", "workspace_modules", "@acme", "util")
+	for _, f := range []string{"package.json", "dist/index.js", "dist/ui/index.html"} {
+		if _, err := os.Stat(filepath.Join(util, filepath.FromSlash(f))); err != nil {
+			t.Errorf("no %s: package.json and dist/ must stay siblings", f)
+		}
+	}
+	for _, f := range []string{"index.js", "src", "dist/package.json"} {
+		if _, err := os.Stat(filepath.Join(util, filepath.FromSlash(f))); err == nil {
+			t.Errorf("%s is in the copy", f)
+		}
+	}
+	raw, _ := os.ReadFile(filepath.Join(util, "package.json"))
+	if !strings.Contains(string(raw), `"main": "dist/index.js"`) || strings.Contains(string(raw), `"scripts"`) {
+		t.Errorf("package.json = %s", raw)
+	}
+	if _, err := os.Stat(filepath.Join(root, "packages", "util", "dist", "package.json")); err == nil {
+		t.Error("pruning wrote a package.json into the package's own dist")
 	}
 }
 

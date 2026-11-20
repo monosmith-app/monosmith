@@ -120,15 +120,24 @@ func Prune(req Request) (Result, error) {
 }
 
 // copyModule copies a workspace package into the output as it would be
-// published (its build, with its package.json), and points its own workspace
-// dependencies at their sibling copies. It returns those dependencies.
+// published, and points its own workspace dependencies at their sibling
+// copies. It returns those dependencies. A package that builds inside its own
+// folder keeps its layout (package.json beside dist/); one that builds into
+// dist/<project dir> is copied from that staged build.
 func copyModule(ws, dir, dest, name string, isWorkspace func(string) bool) ([]string, error) {
-	staged, err := releasing.Stage(ws, dir)
-	if err != nil {
-		return nil, err
-	}
-	if err := copyTree(staged, dest); err != nil {
-		return nil, err
+	project := filepath.Join(ws, filepath.FromSlash(dir))
+	if info, err := os.Stat(filepath.Join(project, "dist")); err == nil && info.IsDir() {
+		if err := copyOwnLayout(project, dest); err != nil {
+			return nil, err
+		}
+	} else {
+		staged, err := releasing.Stage(ws, dir)
+		if err != nil {
+			return nil, err
+		}
+		if err := copyTree(staged, dest); err != nil {
+			return nil, err
+		}
 	}
 	raw, err := os.ReadFile(filepath.Join(dest, "package.json"))
 	if err != nil {
