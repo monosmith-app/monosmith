@@ -28,6 +28,10 @@ type RunOptions struct {
 	SkipFinish bool
 	// Verify builds, tests, lints and runs doctor after the install.
 	Verify bool
+	// NoLintFix lints without ESLint's fixes first, even when the lint is
+	// smith's: a step that just took in a project's code reports what the lint
+	// finds and does not rewrite the code.
+	NoLintFix bool
 	// Smith is the command that runs smith for the checks.
 	Smith string
 	// Files lists the workspace's files as they are now.
@@ -88,7 +92,7 @@ func Run(ctx context.Context, o RunOptions) (RunResult, error) {
 		return res, nil
 	}
 	fmt.Fprintln(o.Out)
-	walked, err := doctorfix.Walk(ctx, []doctorfix.Planned{removalplan.Finish(o.Smith, o.Verify, o.Choices.Lint == convertchoices.Smith)}, walkOptions(o))
+	walked, err := doctorfix.Walk(ctx, []doctorfix.Planned{removalplan.Finish(o.Smith, o.Verify, o.Choices.Lint == convertchoices.Smith && !o.NoLintFix)}, walkOptions(o))
 	if err != nil {
 		return res, err
 	}

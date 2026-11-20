@@ -136,9 +136,12 @@ project. A development dependency smith does not know as a tool is asked about; 
 ## 3. Choose how far to go
 
 `--level conservative` is the default: smith keeps the repository's own build and lint
-setup and adds itself around it. `--level full` makes smith the only tool; it exists for
-Nx and Turborepo workspaces, where it is `smith convert --level full`. On a plain
-repository, `smith adopt --level full` says so and stops; it is not built yet.
+setup and adds itself around it. For each Node project, `--init` asks whether the project
+keeps its own build and lint tools or uses smith's. smith recommends its own when a tool is
+legacy (an ESLint 8 `.eslintrc`, create-react-app, a `tsc` build into `lib/`).
+`--tooling smith|keep` answers without a terminal. `--level full` makes smith the only tool:
+smith's tooling for every project, and `smith convert --level full` for Nx and Turborepo
+workspaces. See [smith adopt](../manual/adopt.md#keep-the-projects-tools-or-use-smiths).
 
 ## In the terminal interface
 

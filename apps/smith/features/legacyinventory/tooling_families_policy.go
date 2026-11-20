@@ -118,7 +118,7 @@ func packageFamily(name string) (Family, bool) {
 
 func buildPackage(name string) bool {
 	switch name {
-	case "rollup", "webpack", "webpack-cli", "ts-loader", "swc-loader", "babel-loader", "@swc/cli", "tsup", "tsdx", "microbundle", "parcel":
+	case "rollup", "webpack", "webpack-cli", "ts-loader", "swc-loader", "babel-loader", "@swc/cli", "tsup", "tsdx", "microbundle", "parcel", "react-scripts":
 		return true
 	}
 	return strings.HasPrefix(name, "@rollup/") || strings.HasPrefix(name, "rollup-plugin-")

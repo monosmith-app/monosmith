@@ -12,15 +12,16 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projecttooling"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
 	"github.com/spf13/cobra"
 )
 
-// FullLevelIssue tracks the full level for repositories that are not Nx or
-// Turborepo workspaces.
-const FullLevelIssue = "https://github.com/monosmith-app/monosmith/issues/553"
+// FullLevelIssue tracks the full level of the adopt wizard for repositories
+// that are not Nx or Turborepo workspaces (the command line has it, ADR 0107).
+const FullLevelIssue = "https://github.com/monosmith-app/monosmith/issues/1161"
 
 // The levels --level takes.
 const (
@@ -37,6 +38,7 @@ func Command(version string) *cobra.Command {
 	var move string
 	var hoist []string
 	var eslintSetup string
+	var toolingFlag []string
 	var decided adoptdecision.Flags
 	level := LevelConservative
 	cmd := &cobra.Command{
@@ -74,10 +76,21 @@ the project's own ESLint setup (--eslint-setup shared|keep answers; it is kept w
 With --commit the move is a commit of its own, before the adoption's. --dry-run
 lists the git mv commands for the suggested folder, or for --move.
 
---level conservative (the default) keeps the repository's build and lint setup.
---level full, which makes smith the only tool, applies to Nx and Turborepo
-workspaces and is smith convert --level full's; for a plain repository adopt
-says so and stops.
+--init asks, for each Node project, whether it keeps its own build and lint
+tools or uses smith's, and recommends smith's when a tool is legacy (an ESLint 8
+.eslintrc, create-react-app, a tsc build into lib/, a rollup or webpack build).
+--tooling smith|keep answers for every project, --tooling <project>=smith|keep
+for one; with --yes an open project keeps its tools. smith's tooling puts
+smith's build (into dist; Vite for create-react-app) and the root
+eslint.config.mjs with @monosmith/eslint-config in place first, then removes the
+old tools group by group (each group is shown and asked, --yes removes them),
+then installs, builds, tests, lints and runs doctor. What smith cannot replace
+is listed under "Left to do".
+
+--level conservative (the default) keeps the repository's build and lint setup
+unless --tooling says otherwise. --level full makes smith the only tool: for a
+plain repository it is --tooling smith for every project without an answer of
+its own, and for Nx and Turborepo workspaces it is smith convert --level full's.
 
 An Nx or Turborepo workspace is converted rather than adopted: adopt hands it to
 smith convert (a report stays a --dry-run, --init applies), and --level, --json and
@@ -95,15 +108,9 @@ non-zero while something blocks.`,
 			if Convertible(".") {
 				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint, commit)
 			}
-			switch level {
-			case LevelConservative:
-			case LevelFull:
-				return problem.New("--level full makes smith the only tool, which smith does for Nx and Turborepo workspaces (smith convert) and not yet for a plain repository: adopt keeps its build and lint setup",
-					"smith convert --level full --dry-run, in an Nx or Turborepo workspace",
-					"smith adopt (the conservative level) for this repository",
-					"the full level for plain repositories is tracked in "+FullLevelIssue)
-			default:
-				return problem.New(fmt.Sprintf("--level %q is not one of conservative, full", level), "smith adopt --level conservative")
+			answers, err := ToolingAnswers(toolingFlag, level)
+			if err != nil {
+				return err
 			}
 			if commit && !initialise {
 				return problem.New("--commit commits what --init writes, and --init is not given", "smith adopt --init --commit")
@@ -136,7 +143,7 @@ non-zero while something blocks.`,
 			if initialise && !dryRun && report.Adoptable() {
 				decided.CIGiven = cmd.Flags().Changed("ci")
 				if settled, err = SettleInit(report, InitSettings{
-					Move: MoveOptions{Dir: move, Hoist: hoist, EslintSetup: eslintSetup}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
+					Move: MoveOptions{Dir: move, Hoist: hoist, EslintSetup: eslintSetup}, Flags: decided, Yes: yes, Install: install, Tooling: answers, Env: env, In: in, Out: out,
 				}); err != nil {
 					return err
 				}
@@ -171,7 +178,8 @@ non-zero while something blocks.`,
 				if err != nil || !proceed {
 					return undoMove(err)
 				}
-				if err := Init(report, version, install, eslint, commit, settled.Choices, out); err != nil {
+				run := ToolingRun{Answers: settled.Tooling, In: in, Interactive: env.Terminal && !env.CI, Yes: yes}
+				if err := Init(report, version, install, eslint, commit, settled.Choices, run, out); err != nil {
 					if moved {
 						err = fmt.Errorf("%w\nThe move into %s stays in place: git reset --hard %s puts the tree back as it was", err, settled.Move.Dir, rollbackTarget(commit))
 					}
@@ -199,6 +207,9 @@ non-zero while something blocks.`,
 					if err != nil {
 						return err
 					}
+					if _, err := DecideTooling(report, answers, false, false, true, nil, out); err != nil {
+						return err
+					}
 					fmt.Fprintln(out)
 					operationplan.Render(statuspaint.Writer(out), PlanInit(report, choices, install))
 					fmt.Fprintln(out, "Dry run: nothing was changed.")
@@ -213,7 +224,8 @@ non-zero while something blocks.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&level, "level", LevelConservative, "how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces)")
+	cmd.Flags().StringVar(&level, "level", LevelConservative, "how far to go: conservative (keep the build and lint setup) or full (smith's tooling for every project; smith convert's for Nx and Turborepo workspaces)")
+	cmd.Flags().StringSliceVar(&toolingFlag, "tooling", nil, "with --init, the build and lint tools of the Node projects: smith (smith's build and ESLint config, then the old tools go) or keep, for all, or <project>=smith|keep for one")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only report (this is the default; the flag makes it explicit)")
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")
@@ -230,6 +242,28 @@ non-zero while something blocks.`,
 	cmd.Flags().StringVar(&decided.Existing, "ci-existing", "", "with --init, replace a pipeline of yours (kept as <file>.pre-smith) or keep it and write none for that provider")
 	cmd.Flags().BoolVar(&commit, "commit", false, "with --init, commit the change as one operation, so smith undo can revert it")
 	return cmd
+}
+
+// ToolingAnswers reads --tooling and --level together. --level full is
+// smith's tooling for every project that has no --tooling answer of its own.
+//
+// Parameters: values are the --tooling values; level is --level.
+// Returns: the answers; a problem for a value or a level smith does not know.
+func ToolingAnswers(values []string, level string) (projecttooling.Answers, error) {
+	answers, err := projecttooling.ParseAnswers(values)
+	if err != nil {
+		return answers, problem.New(err.Error(), "--tooling smith|keep, or --tooling <project>=smith|keep")
+	}
+	switch level {
+	case LevelConservative:
+	case LevelFull:
+		if answers.All == "" {
+			answers.All = projecttooling.Smith
+		}
+	default:
+		return answers, problem.New(fmt.Sprintf("--level %q is not one of conservative, full", level), "smith adopt --level conservative")
+	}
+	return answers, nil
 }
 
 func printReport(w io.Writer, r Report) {
