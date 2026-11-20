@@ -9,10 +9,12 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/legacyinventory"
 )
 
-func TestEmbracingTheBuildMovesTscOutputsToTheWorkspaceDist(t *testing.T) {
+func TestEmbracingTheBuildMovesAnAppsTscOutputAndLeavesALibraryInPlace(t *testing.T) {
 	dir := t.TempDir()
 	files := map[string]string{
-		"package.json":                `{"name":"root","workspaces":["packages/*"]}`,
+		"package.json":                `{"name":"root","workspaces":["packages/*","apps/*"]}`,
+		"apps/svc/package.json":       `{"name":"svc","private":true,"main":"dist/index.js","scripts":{"build":"tsc -p tsconfig.json"}}`,
+		"apps/svc/tsconfig.json":      `{"compilerOptions":{"outDir":"dist","strict":true}}`,
 		"packages/kit/package.json":   `{"name":"kit","main":"dist/index.js","scripts":{"build":"tsc -p tsconfig.json"}}`,
 		"packages/kit/tsconfig.json":  `{"compilerOptions":{"outDir":"dist","strict":true}}`,
 		"packages/site/package.json":  `{"name":"site","scripts":{"build":"vite build"}}`,
@@ -34,10 +36,13 @@ func TestEmbracingTheBuildMovesTscOutputsToTheWorkspaceDist(t *testing.T) {
 	for _, e := range g.Fix.Files {
 		edited[e.Path] = e.Content
 	}
-	if len(edited) != 2 || strings.Contains(edited["packages/kit/tsconfig.json"], "outDir") ||
-		!strings.Contains(edited["packages/kit/package.json"], "--outDir ../../dist/packages/kit") ||
-		!strings.Contains(edited["packages/kit/package.json"], `"main": "../../dist/packages/kit/index.js"`) {
-		t.Fatalf("kit moves, the vite site stays: %v", edited)
+	if len(edited) != 2 || strings.Contains(edited["apps/svc/tsconfig.json"], "outDir") ||
+		!strings.Contains(edited["apps/svc/package.json"], "--outDir ../../dist/apps/svc") ||
+		!strings.Contains(edited["apps/svc/package.json"], `"main": "../../dist/apps/svc/index.js"`) {
+		t.Fatalf("the app svc moves, the vite site stays: %v", edited)
+	}
+	if _, ok := edited["packages/kit/package.json"]; ok {
+		t.Fatalf("the library kit keeps building in its own dist (ADR 0102): %v", edited)
 	}
 	keep := fullChoices
 	keep.Build = "keep"
@@ -48,14 +53,14 @@ func TestEmbracingTheBuildMovesTscOutputsToTheWorkspaceDist(t *testing.T) {
 	}
 }
 
-func TestEmbracingTheBuildLeavesAnImportedPackageUnmovedAndSaysWhy(t *testing.T) {
+func TestEmbracingTheBuildLeavesAnImportedAppUnmovedAndSaysWhy(t *testing.T) {
 	dir := t.TempDir()
 	files := map[string]string{
-		"package.json":                `{"name":"root","workspaces":["packages/*"]}`,
-		"packages/util/package.json":  `{"name":"@d/util","private":true,"main":"dist/index.js","types":"dist/index.d.ts","scripts":{"build":"tsc -p tsconfig.json"}}`,
-		"packages/util/tsconfig.json": `{"compilerOptions":{"outDir":"dist"}}`,
-		"packages/web/package.json":   `{"name":"web","private":true,"dependencies":{"@d/util":"*"},"scripts":{"build":"tsc -p tsconfig.json"}}`,
-		"packages/web/tsconfig.json":  `{"compilerOptions":{"outDir":"dist"}}`,
+		"package.json":            `{"name":"root","workspaces":["apps/*"]}`,
+		"apps/util/package.json":  `{"name":"@d/util","private":true,"main":"dist/index.js","types":"dist/index.d.ts","scripts":{"build":"tsc -p tsconfig.json"}}`,
+		"apps/util/tsconfig.json": `{"compilerOptions":{"outDir":"dist"}}`,
+		"apps/web/package.json":   `{"name":"web","private":true,"dependencies":{"@d/util":"*"},"scripts":{"build":"tsc -p tsconfig.json"}}`,
+		"apps/web/tsconfig.json":  `{"compilerOptions":{"outDir":"dist"}}`,
 	}
 	var names []string
 	for name, body := range files {
@@ -70,11 +75,11 @@ func TestEmbracingTheBuildLeavesAnImportedPackageUnmovedAndSaysWhy(t *testing.T)
 	for _, e := range g.Fix.Files {
 		edited[e.Path] = true
 	}
-	if edited["packages/util/package.json"] || edited["packages/util/tsconfig.json"] || !edited["packages/web/package.json"] {
+	if edited["apps/util/package.json"] || edited["apps/util/tsconfig.json"] || !edited["apps/web/package.json"] {
 		t.Fatalf("web moves, the imported util stays: %v", edited)
 	}
 	notes := strings.Join(p.Notes, "\n")
-	if !strings.Contains(notes, "@d/util (packages/util) stays unmoved") || !strings.Contains(notes, "web import it by name") {
+	if !strings.Contains(notes, "@d/util (apps/util) stays unmoved") || !strings.Contains(notes, "web import it by name") {
 		t.Fatalf("the reason is a note of the review:\n%s", notes)
 	}
 }
