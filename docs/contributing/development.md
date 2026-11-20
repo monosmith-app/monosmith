@@ -162,12 +162,12 @@ smith releases itself. The generated pipeline builds smith from the commit (the
 `smith@<version>` and attaches `monosmith_<version>_<os>_<arch>.zip` for six
 platforms, `checksums.txt` and the Homebrew, Scoop and winget manifests to its
 GitHub Release, which is what `install.sh` downloads, with `checksums.txt.minisig`
-(signed with the repository secret `SMITH_SIGNING_KEY`, ADR 0101). The same archives are
-published to PyPI, NuGet and RubyGems (all `monosmith`). npm gets the launcher instead,
-`packages/launcher-node` (`monosmith` from 3.0.0), which releases on its own commits and downloads
-the archives on its first run; the secrets are organisation secrets of `monosmith-app`.
-pub.dev is published by hand for now. `packages/plugin-sdk` releases as the Go
-module tag `packages/plugin-sdk/v<version>`.
+(signed with the repository secret `SMITH_SIGNING_KEY`, ADR 0101). smith itself goes to no
+package registry. npm, PyPI and NuGet get the launchers instead (`monosmith` from 3.0.0):
+`packages/launcher-node`, `packages/launcher-python` and `packages/launcher-dotnet`, which release
+on their own commits and download the archives on their first run; the secrets are organisation
+secrets of `monosmith-app`. RubyGems and pub.dev get nothing new: 2.53.0 was the last smith there.
+`packages/plugin-sdk` releases as the Go module tag `packages/plugin-sdk/v<version>`.
 
 Merging to `main` releases: check what `smith release --dry-run` (and the
 release preview on the pull request) says before merging.

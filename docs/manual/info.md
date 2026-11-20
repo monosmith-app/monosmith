@@ -43,8 +43,8 @@ hashes nothing and creates nothing. [`smith cache status`](cache-status.md) has 
 
 ## Files and environment
 
-Reads `smith.toml` and the size of the files in the cache directory (`SMITH_CACHE_DIR` moves it). Checks the npm registry for the newest release unless
-`SMITH_NO_UPDATE_CHECK` is set; `latest` is then `null` and `updateAvailable` is false.
+Reads `smith.toml` and the size of the files in the cache directory (`SMITH_CACHE_DIR` moves it). Asks GitHub's list of smith releases for the newest release unless
+`SMITH_NO_UPDATE_CHECK` is set (one request, with a 5 second timeout); `latest` is then `null` and `updateAvailable` is false.
 
 ## Examples
 
@@ -54,6 +54,7 @@ smith info
 
 ```text
 smith 1.62.0
+latest release: 1.64.0 (an update is available)
 
 workspace acme (~/work/acme)
   projects  4 (2 apps, 1 lib, 1 package)

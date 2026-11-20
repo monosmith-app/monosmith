@@ -198,6 +198,6 @@ smith. Since then smith runs its own CI: `.github/workflows/ci.yml` is generated
 by `smith ci generate`, and `golden-path.yml` (written by hand) runs the unit
 tests on every pull request and the end-to-end suites once a day, on Linux,
 macOS and Windows. A merge to `main`
-releases: the `smith` app as `smith@<version>` (archives for six platforms,
-npm, PyPI, NuGet, RubyGems, the GitHub Release) and the plugin SDK as
-`packages/plugin-sdk/v<version>`.
+releases: the `smith` app as `smith@<version>` (archives for six platforms on the GitHub
+Release, with signed checksums), the launchers on npm, PyPI and NuGet
+(`packages/launcher-*`, ADR 0101) and the plugin SDK as `packages/plugin-sdk/v<version>`.
