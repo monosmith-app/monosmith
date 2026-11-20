@@ -153,3 +153,7 @@ workspace needs is missing, `smith tools` lists it and `smith tools install` off
 install it. The full list of
 options is in [`smith adopt`](../manual/adopt.md); the tour of a workspace continues in
 [Your first workspace](first-workspace.md#3-add-projects).
+
+To bring more projects into the workspace from other repositories or folders, use
+[`smith import`](../manual/import.md). It keeps a repository's git history, and it ends
+with the same "Left to do" list.

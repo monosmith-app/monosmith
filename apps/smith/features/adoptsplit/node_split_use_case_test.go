@@ -228,3 +228,38 @@ func TestSplitNodeRetiresAFlatConfigWhenTheSharedOneIsChosen(t *testing.T) {
 		t.Errorf("the flat config is kept as .pre-smith and the shared one is wanted: %v %v", err, res.ESLint)
 	}
 }
+
+func TestSplitNodeInPlaceLeavesTheWorkspaceLintAlone(t *testing.T) {
+	root := t.TempDir()
+	put(t, root, "package.json", `{"name": "shop", "private": true, "workspaces": ["packages/*"]}`+"\n")
+	put(t, root, "eslint.config.mjs", "export default []\n")
+	put(t, root, "apps/orders/package.json", orders)
+	put(t, root, "apps/orders/.eslintrc.json", "{}\n")
+	res, err := SplitNode(Request{Root: root, Dir: "apps/orders", Workspace: "shop", Patterns: []string{"apps/*"}, Drop: []string{"eslint"}, InPlace: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "eslint.config.mjs")); err != nil {
+		t.Errorf("the workspace's own lint config must stay: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "apps/orders/.eslintrc.json.pre-smith")); err != nil || !res.ESLint {
+		t.Errorf("the project's legacy config is kept as .pre-smith: %v %v", err, res.ESLint)
+	}
+}
+
+func TestSplitNodeInPlaceKeepsTheProjectsLintWhereItIs(t *testing.T) {
+	root := t.TempDir()
+	put(t, root, "eslint.config.mjs", "export default []\n")
+	put(t, root, "apps/orders/package.json", orders)
+	put(t, root, "apps/orders/.eslintrc.json", "{}\n")
+	res, err := SplitNode(Request{Root: root, Dir: "apps/orders", Workspace: "shop", Patterns: []string{"apps/*"}, KeepLint: true, InPlace: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "apps/orders/eslint.config.mjs")); err == nil {
+		t.Error("the workspace's lint config must not move into the project")
+	}
+	if !strings.Contains(strings.Join(res.Notes, " "), ".eslintrc.json") {
+		t.Errorf("the note names the kept file: %v", res.Notes)
+	}
+}

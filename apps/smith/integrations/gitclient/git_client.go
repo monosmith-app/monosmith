@@ -33,13 +33,30 @@ func (g *Git) RunWithEnv(env []string, args ...string) (string, error) {
 	return strings.TrimRight(out, "\r\n"), err
 }
 
+// RunInput is Run with input on git's standard input, for a command that
+// reads a stream (git fast-import, git mktree).
+//
+// Parameters: input is the stream; args are git's arguments.
+// Returns: the trimmed standard output, or an error with git's message.
+func (g *Git) RunInput(input string, args ...string) (string, error) {
+	out, err := g.rawInput(nil, input, args...)
+	return strings.TrimRight(out, "\r\n"), err
+}
+
 func (g *Git) raw(args ...string) (string, error) { return g.rawEnv(nil, args...) }
 
 func (g *Git) rawEnv(env []string, args ...string) (string, error) {
+	return g.rawInput(env, "", args...)
+}
+
+func (g *Git) rawInput(env []string, input string, args ...string) (string, error) {
 	g.forget(args)
 	full := append([]string{"-c", "core.quotepath=off", "--no-optional-locks"}, args...)
 	cmd := exec.Command("git", full...)
 	cmd.Dir = g.Dir
+	if input != "" {
+		cmd.Stdin = strings.NewReader(input)
+	}
 	if len(env) > 0 {
 		cmd.Env = append(os.Environ(), env...)
 	}

@@ -27,7 +27,7 @@ func Summary(plan []Planned) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s. Nothing is changed until you apply one.\n", Headline(plan))
 	if len(safe) > 0 {
-		fmt.Fprintf(&b, "  --yes applies the %d safe fix(es), which only restore files smith owns: %s\n", len(safe), names(safe))
+		fmt.Fprintf(&b, "  --yes applies the %d safe fix(es), which lose nothing of yours (they restore what smith owns, or add a project to its language's workspace in your manifest): %s\n", len(safe), names(safe))
 	}
 	if len(asked) > 0 {
 		fmt.Fprintf(&b, "  %d need(s) your decision, and --yes alone never applies them: %s\n", len(asked), names(asked))
