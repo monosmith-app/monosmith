@@ -74,6 +74,21 @@ func TestTwoProjectsMaySharePackageNameInDifferentRegistries(t *testing.T) {
 	}
 }
 
+func TestStrandedTagsPointAtAdoptTags(t *testing.T) {
+	// A one-package repository tagged v1.1.1 before it became a workspace.
+	tags := []string{"v1.0.0", "v1.1.1"}
+	got := Assess([]Subject{{Project: "fcc", Prefix: "fcc@", Alternatives: []string{"fcc@", "v"}, Tags: tags}})
+	if len(got) != 1 || got[0].Baseline == nil || got[0].Baseline.Name != "fcc@1.1.1" || got[0].Baseline.Target != "v1.1.1^{commit}" {
+		t.Fatalf("v tags are the package's earlier name: %+v", got)
+	}
+	if !strings.HasPrefix(got[0].Remedy[0], "run smith adopt --tags") || !strings.Contains(got[0].Sentence(), `tag_prefix = "v"`) {
+		t.Errorf("the first remedy is smith adopt --tags, then the manual ways: %v", got[0].Remedy)
+	}
+	if strings.Contains(got[0].Sentence(), "or or") {
+		t.Errorf("one or between remedies: %s", got[0].Sentence())
+	}
+}
+
 func TestAnExplicitPrefixWithNoTagsYetIsAFirstRelease(t *testing.T) {
 	tags := []string{"@acme/web@1.4.0"}
 	stranded := Subject{Project: "web", Prefix: "web@", Alternatives: []string{"@acme/web@"}, Tags: tags}

@@ -2,6 +2,7 @@ package adoptmove
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -11,7 +12,8 @@ import (
 // PlanMove works out the git mv commands that put the project in dir. files are
 // the repository's files (git ls-files), repository-relative with forward
 // slashes; dir is a folder CleanFolder accepted. Every top-level entry moves
-// whole, except the ones Classify keeps at the root. It changes nothing.
+// whole, except the ones Classify keeps at the root. The README and LICENSE of
+// a published package also get a copy in dir (Copies). It changes nothing.
 //
 // It returns a problem, and no plan, when the layout is ambiguous: the folder
 // already holds files, the folder's first part is a file of the repository or a
@@ -39,6 +41,9 @@ func PlanMove(c Candidate, dir string, files []string) (Plan, error) {
 	for _, name := range top {
 		if Classify(c.Ecosystem, name) == RoleRepository {
 			p.Stays = append(p.Stays, name)
+			if c.Published && packageDocument(name) && slices.Contains(files, name) {
+				p.Copies = append(p.Copies, Step{From: name, To: dir + "/" + name})
+			}
 			continue
 		}
 		if Classify(c.Ecosystem, name) == RoleDocs {
@@ -61,6 +66,13 @@ func PlanMove(c Candidate, dir string, files []string) (Plan, error) {
 	sort.Slice(p.Moves, func(i, j int) bool { return p.Moves[i].From < p.Moves[j].From })
 	sort.Slice(p.Docs, func(i, j int) bool { return p.Docs[i].From < p.Docs[j].From })
 	p.Notes = notesFor(c, top)
+	if len(p.Copies) > 0 {
+		names := make([]string, 0, len(p.Copies))
+		for _, s := range p.Copies {
+			names = append(names, s.From)
+		}
+		p.Notes = append(p.Notes, fmt.Sprintf("%s are copied into %s: the published package is made from that folder and keeps them. The root keeps its own for the repository page. Delete the copies in %s to leave them out of the package.", strings.Join(names, " and "), dir, dir))
+	}
 	if len(p.Docs) > 0 {
 		p.Notes = append(p.Notes, fmt.Sprintf("documents go to the workspace's %s folder (%d): README, LICENSE and the other repository documents stay at the root.", DocsDir, len(p.Docs)))
 	}
@@ -90,9 +102,27 @@ func notesFor(c Candidate, top []string) []string {
 // Lines are the plan as the commands a person would type, one per line, for a
 // dry run.
 func (p Plan) Lines() []string {
-	out := make([]string, 0, len(p.Moves)+len(p.Docs))
+	out := make([]string, 0, len(p.Moves)+len(p.Docs)+len(p.Copies))
 	for _, m := range append(append([]Step{}, p.Moves...), p.Docs...) {
 		out = append(out, "git mv "+m.From+" "+m.To)
 	}
+	for _, c := range p.Copies {
+		out = append(out, "cp "+c.From+" "+c.To)
+	}
 	return out
+}
+
+// packageDocuments are the name prefixes of the documents a registry shows or
+// ships with a package (npm always packs README and LICENSE).
+var packageDocuments = []string{"readme", "license", "licence"}
+
+// packageDocument reports whether a top-level entry is a README or LICENSE.
+func packageDocument(name string) bool {
+	lower := strings.ToLower(name)
+	for _, prefix := range packageDocuments {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return false
 }

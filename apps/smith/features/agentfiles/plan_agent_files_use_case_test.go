@@ -116,16 +116,31 @@ func TestRefreshCreatesNothing(t *testing.T) {
 	}
 }
 
-func TestDoctorWarnsOfMissingFilesWithASafeFixAndPassesOnceInstalled(t *testing.T) {
+func TestDoctorWarnsOfMissingFilesWithAnAskedFixAndPassesOnceInstalled(t *testing.T) {
 	root := t.TempDir()
 	f := Finding(root)
-	if f.OK || !f.Warning || f.Fix == nil || !f.Fix.Safe || len(f.Fix.Files) != 3 {
+	// No agent file yet: adding the agent is the person's choice, so
+	// doctor --fix --yes must not write it (an adopt that answered "not now").
+	if f.OK || !f.Warning || f.Fix == nil || f.Fix.Safe || len(f.Fix.Files) != 3 {
 		t.Fatalf("%+v", f)
 	}
 	files, _ := Plan(both(root))
 	_, _ = Write(root, files)
 	if f := Finding(root); !f.OK {
 		t.Fatalf("%+v", f)
+	}
+}
+
+func TestDoctorRestoresAnInstalledAgentWithASafeFix(t *testing.T) {
+	root := t.TempDir()
+	files, _ := Plan(both(root))
+	_, _ = Write(root, files)
+	if err := os.Remove(filepath.Join(root, ".vscode", "mcp.json")); err != nil {
+		t.Fatal(err)
+	}
+	f := Finding(root)
+	if f.OK || f.Fix == nil || !f.Fix.Safe || len(f.Fix.Files) != 1 {
+		t.Fatalf("an agent that is installed is restored safely: %+v", f)
 	}
 }
 

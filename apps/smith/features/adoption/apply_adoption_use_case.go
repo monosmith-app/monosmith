@@ -3,7 +3,6 @@ package adoption
 import (
 	"errors"
 	"fmt"
-	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/features/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/features/releaselineage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
@@ -25,20 +25,30 @@ var ErrDirty = errors.New("commit or stash your changes first: the adoption step
 // CreateBaselines tags, locally, the commits the lineage checks found under
 // an old name with the project's current tag name; nothing is pushed.
 func CreateBaselines(r Report, out io.Writer) (int, error) {
-	git := gitclient.New(r.Root)
+	var baselines []*releaselineage.Baseline
+	for _, b := range r.Blockers {
+		baselines = append(baselines, b.Baseline)
+	}
+	return createTags(r.Root, baselines, out)
+}
+
+// createTags makes each baseline tag that does not exist yet, locally, and
+// says how to push it. It returns how many it made.
+func createTags(root string, baselines []*releaselineage.Baseline, out io.Writer) (int, error) {
+	git := gitclient.New(root)
 	existing, err := git.Tags("")
 	if err != nil {
 		return 0, err
 	}
 	made := 0
-	for _, b := range r.Blockers {
-		if b.Baseline == nil || slices.Contains(existing, b.Baseline.Name) {
+	for _, b := range baselines {
+		if b == nil || slices.Contains(existing, b.Name) {
 			continue
 		}
-		if _, err := git.Run("tag", b.Baseline.Name, b.Baseline.Target); err != nil {
-			return made, fmt.Errorf("tag %s: %w", b.Baseline.Name, err)
+		if _, err := git.Run("tag", b.Name, b.Target); err != nil {
+			return made, fmt.Errorf("tag %s: %w", b.Name, err)
 		}
-		fmt.Fprintf(out, "  tagged %s (%s); push it with git push origin %s\n", b.Baseline.Name, strings.TrimSuffix(b.Baseline.Target, "^{commit}"), b.Baseline.Name)
+		fmt.Fprintf(out, "  tagged %s (%s); push it with git push origin %s\n", b.Name, strings.TrimSuffix(b.Target, "^{commit}"), b.Name)
 		made++
 	}
 	return made, nil
@@ -130,7 +140,9 @@ func Init(r Report, version string, install, eslint, commit bool, c adoptdecisio
 	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
 		return err
 	}
-	doctor.ReportCommandBugs(s, "smith adopt", out)
+	// Adopt keeps the repository's own setup, so what doctor reports next
+	// (install, a lint config) is a step left to do, not a bug of adopt:
+	// DescribeOutcome lists each once.
 	if !commit && !s.Config.Workspace.CommitOperations {
 		fmt.Fprintf(out, "  not committed: git status lists the changes and git can take them back; commit them when you are happy, or %s next time\n", operation.CommitNextTime("run smith adopt --commit"))
 		return DescribeOutcome(r.Root, version, out)

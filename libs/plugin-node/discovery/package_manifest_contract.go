@@ -1,5 +1,7 @@
 package discovery
 
+import "encoding/json"
+
 // PackageManifest is the subset of package.json the plugin reads.
 type PackageManifest struct {
 	Name                 string            `json:"name"`
@@ -16,7 +18,10 @@ type PackageManifest struct {
 	PeerDependenciesMeta map[string]struct {
 		Optional bool `json:"optional"`
 	} `json:"peerDependenciesMeta"`
-	Engines struct {
+	// EslintConfig is the ESLint configuration written in package.json
+	// itself; set, it configures ESLint as an .eslintrc file does.
+	EslintConfig json.RawMessage `json:"eslintConfig"`
+	Engines      struct {
 		VSCode string `json:"vscode"`
 	} `json:"engines"`
 	Smith struct {

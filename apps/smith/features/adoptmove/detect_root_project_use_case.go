@@ -72,6 +72,7 @@ func Detect(dir string, claims []Claim) (Candidate, error) {
 	case EcosystemNode:
 		var pkg struct {
 			Name       string
+			Private    bool
 			Workspaces json.RawMessage
 			Bin        json.RawMessage
 			Scripts    map[string]string
@@ -84,6 +85,7 @@ func Detect(dir string, claims []Claim) (Candidate, error) {
 		}
 		candidate.Name = DeriveName(pkg.Name, base)
 		candidate.App = pkg.Scripts["start"] != "" || (len(pkg.Bin) > 0 && string(pkg.Bin) != "null")
+		candidate.Published = pkg.Name != "" && !pkg.Private
 	case EcosystemGo:
 		if has("go.work") {
 			return Candidate{}, ErrNoRootProject

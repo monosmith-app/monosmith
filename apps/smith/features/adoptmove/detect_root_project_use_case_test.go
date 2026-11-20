@@ -33,20 +33,21 @@ func TestDetectReadsTheProjectAtTheRoot(t *testing.T) {
 		files map[string]string
 		want  Candidate
 	}{
-		{"node app", map[string]string{"package.json": `{"name":"@acme/WebApp","scripts":{"start":"node ."}}`}, Candidate{EcosystemNode, "package.json", "web-app", true}},
-		{"node library", map[string]string{"package.json": `{"name":"kit","main":"index.js"}`}, Candidate{EcosystemNode, "package.json", "kit", false}},
-		{"node bin", map[string]string{"package.json": `{"name":"cli","bin":"cli.js"}`}, Candidate{EcosystemNode, "package.json", "cli", true}},
-		{"go program", map[string]string{"go.mod": "module github.com/a/Tool\n", "main.go": "package main\n"}, Candidate{EcosystemGo, "go.mod", "tool", true}},
-		{"go library", map[string]string{"go.mod": "module github.com/a/lib/v3\n", "lib.go": "package lib\n"}, Candidate{EcosystemGo, "go.mod", "lib", false}},
-		{"python script", map[string]string{"pyproject.toml": "[project]\nname = \"data_tools\"\n[project.scripts]\nd = \"x:y\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "data-tools", true}},
-		{"python package", map[string]string{"pyproject.toml": "[project]\nname = \"pk\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "pk", false}},
-		{"rust binary", map[string]string{"Cargo.toml": "[package]\nname = \"rr\"\n", "src/main.rs": "fn main(){}"}, Candidate{EcosystemRust, "Cargo.toml", "rr", true}},
-		{"composer library", map[string]string{"composer.json": `{"name":"acme/ColorValidator","type":"library"}`}, Candidate{"php", "composer.json", "color-validator", false}},
-		{"composer project", map[string]string{"composer.json": `{"name":"acme/site","type":"project"}`}, Candidate{"php", "composer.json", "site", true}},
-		{"dotnet web", map[string]string{"Api.csproj": `<Project Sdk="Microsoft.NET.Sdk.Web"></Project>`}, Candidate{"dotnet", "Api.csproj", "api", true}},
-		{"dotnet console", map[string]string{"Tool.fsproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>"}, Candidate{"dotnet", "Tool.fsproj", "tool", true}},
-		{"dotnet library", map[string]string{"Core.Lib.csproj": `<Project Sdk="Microsoft.NET.Sdk"></Project>`}, Candidate{"dotnet", "Core.Lib.csproj", "core-lib", false}},
-		{"dart package", map[string]string{"pubspec.yaml": "name: my_widgets\n"}, Candidate{"dart", "pubspec.yaml", "my-widgets", false}},
+		{"node app", map[string]string{"package.json": `{"name":"@acme/WebApp","scripts":{"start":"node ."}}`}, Candidate{EcosystemNode, "package.json", "web-app", true, true}},
+		{"node library", map[string]string{"package.json": `{"name":"kit","main":"index.js"}`}, Candidate{EcosystemNode, "package.json", "kit", false, true}},
+		{"node private", map[string]string{"package.json": `{"name":"site","private":true}`}, Candidate{EcosystemNode, "package.json", "site", false, false}},
+		{"node bin", map[string]string{"package.json": `{"name":"cli","bin":"cli.js"}`}, Candidate{EcosystemNode, "package.json", "cli", true, true}},
+		{"go program", map[string]string{"go.mod": "module github.com/a/Tool\n", "main.go": "package main\n"}, Candidate{EcosystemGo, "go.mod", "tool", true, false}},
+		{"go library", map[string]string{"go.mod": "module github.com/a/lib/v3\n", "lib.go": "package lib\n"}, Candidate{EcosystemGo, "go.mod", "lib", false, false}},
+		{"python script", map[string]string{"pyproject.toml": "[project]\nname = \"data_tools\"\n[project.scripts]\nd = \"x:y\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "data-tools", true, false}},
+		{"python package", map[string]string{"pyproject.toml": "[project]\nname = \"pk\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "pk", false, false}},
+		{"rust binary", map[string]string{"Cargo.toml": "[package]\nname = \"rr\"\n", "src/main.rs": "fn main(){}"}, Candidate{EcosystemRust, "Cargo.toml", "rr", true, false}},
+		{"composer library", map[string]string{"composer.json": `{"name":"acme/ColorValidator","type":"library"}`}, Candidate{"php", "composer.json", "color-validator", false, false}},
+		{"composer project", map[string]string{"composer.json": `{"name":"acme/site","type":"project"}`}, Candidate{"php", "composer.json", "site", true, false}},
+		{"dotnet web", map[string]string{"Api.csproj": `<Project Sdk="Microsoft.NET.Sdk.Web"></Project>`}, Candidate{"dotnet", "Api.csproj", "api", true, false}},
+		{"dotnet console", map[string]string{"Tool.fsproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>"}, Candidate{"dotnet", "Tool.fsproj", "tool", true, false}},
+		{"dotnet library", map[string]string{"Core.Lib.csproj": `<Project Sdk="Microsoft.NET.Sdk"></Project>`}, Candidate{"dotnet", "Core.Lib.csproj", "core-lib", false, false}},
+		{"dart package", map[string]string{"pubspec.yaml": "name: my_widgets\n"}, Candidate{"dart", "pubspec.yaml", "my-widgets", false, false}},
 	}
 	for _, c := range cases {
 		dir := t.TempDir()
@@ -109,7 +110,7 @@ func TestDetectNamesAProjectByItsFolderWhenTheManifestHasNoName(t *testing.T) {
 	}
 	write(t, dir, "pom.xml", "<project/>")
 	got, err := Detect(dir, testClaims)
-	if err != nil || got != (Candidate{"jvm", "pom.xml", "legacy-shop", false}) {
+	if err != nil || got != (Candidate{"jvm", "pom.xml", "legacy-shop", false, false}) {
 		t.Fatalf("got %+v, %v", got, err)
 	}
 }
