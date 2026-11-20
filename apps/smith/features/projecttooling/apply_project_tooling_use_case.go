@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/convertchoices"
@@ -42,6 +43,9 @@ type RunOptions struct {
 	Verify bool
 	// Files lists the workspace's files, workspace-relative; nil reads git.
 	Files func() ([]string, error)
+	// WholeRoot puts every file at the workspace root in the removal plan's
+	// scope (see InScope): smith adopt sets it, smith import does not.
+	WholeRoot bool
 }
 
 // Result is what Apply did.
@@ -114,7 +118,7 @@ func Apply(ctx context.Context, in Input, o RunOptions) (Result, error) {
 			if err != nil {
 				return nil, err
 			}
-			return InScope(all, in.Dir), nil
+			return InScope(all, in.Dir, o.WholeRoot), nil
 		},
 	})
 	if err != nil {
@@ -128,22 +132,30 @@ func Apply(ctx context.Context, in Input, o RunOptions) (Result, error) {
 }
 
 // InScope keeps the files the step of one project may change: the files in
-// the project's folder and the files at the workspace root (its package.json,
-// its lint configuration). The other projects of the workspace are out of
+// the project's folder, the root package.json and the root ESLint flat
+// config. With wholeRoot every file at the workspace root is in scope too:
+// smith adopt moved the repository's own tool files (an .eslintrc) there,
+// and they are the project's. The other projects of the workspace are out of
 // scope, so their tools stay.
 //
-// Parameters: files are workspace-relative paths; dir is the project folder.
+// Parameters: files are workspace-relative paths; dir is the project folder;
+// wholeRoot puts every root file in scope.
 // Returns: the files in scope, in their order.
-func InScope(files []string, dir string) []string {
+func InScope(files []string, dir string, wholeRoot bool) []string {
 	if dir == "." {
 		return files
 	}
 	var out []string
 	prefix := strings.TrimSuffix(dir, "/") + "/"
 	for _, f := range files {
-		if strings.HasPrefix(f, prefix) || path.Dir(f) == "." {
-			out = append(out, f)
+		atRoot := path.Dir(f) == "."
+		switch {
+		case strings.HasPrefix(f, prefix):
+		case atRoot && (wholeRoot || f == "package.json" || slices.Contains(rootFlatConfigs, f)):
+		default:
+			continue
 		}
+		out = append(out, f)
 	}
 	return out
 }

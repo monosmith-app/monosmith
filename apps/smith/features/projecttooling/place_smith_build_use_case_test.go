@@ -50,7 +50,7 @@ func TestPlaceSmithBuildLeavesABundlerAndSaysSo(t *testing.T) {
 
 // craFixture is a create-react-app project in apps/demo with one test.
 var craFixture = map[string]string{
-	"package.json": `{"name": "w", "private": true, "workspaces": ["apps/*"]}`,
+	"package.json": `{"name": "w", "private": true, "workspaces": ["apps/*"], "devDependencies": {"@types/node": "^16.11.6"}}`,
 	"apps/demo/package.json": `{
   "name": "demo",
   "homepage": "https://example.org/demo",
@@ -97,6 +97,9 @@ func TestPlaceSmithBuildMovesCreateReactAppOntoVite(t *testing.T) {
 		t.Errorf("scripts:\n%s", manifest)
 	}
 	rootManifest := readFile(t, root, "package.json")
+	if strings.Contains(rootManifest, `"^16.11.6"`) {
+		t.Errorf("an @types/node older than Vite's peer stays:\n%s", rootManifest)
+	}
 	for _, want := range []string{`"vite"`, `"@vitejs/plugin-react"`, `"vitest"`, `"jsdom"`} {
 		if !strings.Contains(rootManifest, want) {
 			t.Errorf("root package.json lacks %s:\n%s", want, rootManifest)

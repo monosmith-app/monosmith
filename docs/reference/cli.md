@@ -150,6 +150,7 @@ Usage: `smith import <git-url|folder> [flags]`
 | `--name <name>` | the project's name (default: the name in its manifest) |  the name in its manifest |
 | `--path <path>` | the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder |  |
 | `--ref <ref>` | the branch, tag or commit of a git source to import (default: its default branch) |  its default branch |
+| `--tooling <tooling>` | a Node project's build and lint tools: smith (smith's build and ESLint config, then the old tools go) or keep (default with --yes) (repeatable) | with --yes |
 | `-y, --yes` | do not ask: apply the plan (--as or --into must say where the project goes) | off |
 
 <!-- smith:end import -->

@@ -36,8 +36,18 @@ you say yes.
    `"workspaces"`, the uv members of the root `pyproject.toml`, or the .NET solution
    (see [`smith doctor`](doctor.md)). A join that asks a question (which solution) is left
    to `smith doctor --fix`.
-6. **Tooling.** The project keeps its own tools (lint, test, build). A later version of
-   smith import asks whether smith's tooling replaces them.
+6. **Tooling.** A Node project keeps its own build and lint tools, or uses smith's. smith
+   asks this before the plan, and recommends its own tooling when a tool is legacy (an
+   ESLint 8 configuration, create-react-app, a `tsc` build into `lib/`, a bundler build).
+   `--tooling smith|keep` answers. With `--yes` the project keeps its tools, and a line
+   says how to choose smith's. Without a terminal and without either flag, smith refuses
+   and names `--tooling`. With smith's tooling, smith's lint and build go in first, then
+   each group of old tools is shown and removed. The step is the same as in
+   [`smith adopt`](adopt.md#keep-the-projects-tools-or-use-smiths). It changes only the
+   project's folder, the root `package.json` and the root `eslint.config.*`, so the other
+   projects and the workspace's own lint files stay. It installs the whole workspace once,
+   because smith's tools go into the root `package.json`. A project of another language
+   keeps its tools.
 7. **Check.** smith writes the pipelines again, runs `smith install` (the whole workspace,
    because the root manifest changed), then
    `smith run build test -p <name>`, then `smith doctor`.
@@ -148,6 +158,7 @@ Usage: `smith import <git-url|folder> [flags]`
 | `--name <name>` | string |  the name in its manifest | the project's name (default: the name in its manifest) |
 | `--path <path>` | string |  | the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder |
 | `--ref <ref>` | string |  its default branch | the branch, tag or commit of a git source to import (default: its default branch) |
+| `--tooling <tooling>` | string, repeatable | with --yes | a Node project's build and lint tools: smith (smith's build and ESLint config, then the old tools go) or keep (default with --yes) |
 | `-y, --yes` | boolean | off | do not ask: apply the plan (--as or --into must say where the project goes) |
 
 <!-- smith:end import -->

@@ -41,8 +41,9 @@ repository and copy a plain folder (D2).
 3. `keep` and `squash` make commits, so they need a clean work tree and a confirmation (`y` in a
    terminal, or `--yes`). The plan says how many commits git makes. smith commits nothing else
    unless `--commit`.
-4. The tooling step (D3, #553) is a seam: the project keeps its own tools, and the output says that
-   a later version asks.
+4. The tooling step (D3, #553) is the step of smith adopt
+   ([ADR 0107](0107-adopt-asks-each-project-for-its-tooling.md)): a Node project is asked to keep
+   its tools or use smith's (`--tooling`), and `projecttooling.Apply` runs on its folder.
 
 ## Why not git subtree add for keep
 

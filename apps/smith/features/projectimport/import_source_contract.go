@@ -67,4 +67,11 @@ type Plan struct {
 	// Lockfiles are the project's own lockfiles that the import drops,
 	// because the workspace has one lockfile for every project.
 	Lockfiles []string
+	// Tooling is the answer of the tooling question for a Node project
+	// (projecttooling.Keep or projecttooling.Smith); "" for a project of
+	// another language, which keeps its tools.
+	Tooling string
+	// Legacy names the project's legacy tools in words, the reason smith
+	// recommends its own tooling; empty when its tools are current.
+	Legacy []string
 }

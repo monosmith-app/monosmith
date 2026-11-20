@@ -29,6 +29,9 @@ type Options struct {
 	As, Into, Name, Ref, History, ESLint, Manifest, Path string
 	// Hoist is --hoist.
 	Hoist []string
+	// Tooling is --tooling: smith or keep (or <project>=smith|keep), the
+	// answer of the tooling question of a Node project.
+	Tooling []string
 	// DryRun shows the plan and changes nothing.
 	DryRun bool
 	// Yes applies the plan without the question.
@@ -53,6 +56,10 @@ type Options struct {
 // Returns: the plan (its Name is "" when nothing was settled), and an error
 // that says what stopped the import and the step that clears it.
 func Import(o Options) (Plan, error) {
+	// One reader for every question: two would each swallow the other's input.
+	if o.In != nil {
+		o.In = bufio.NewReader(o.In)
+	}
 	root, err := workspace.FindRoot(".")
 	if err != nil {
 		return Plan{}, problem.New("this folder is not in a smith workspace, so there is nothing to import into",
@@ -84,6 +91,9 @@ func Import(o Options) (Plan, error) {
 	if err != nil {
 		return p, err
 	}
+	if err := SettleTooling(src, &p, &o); err != nil {
+		return p, err
+	}
 	fmt.Fprint(o.Out, Summary(p))
 	ok, err := operationplan.Present(o.Out, o.In, Changes(p), operationplan.Options{Yes: o.Yes, DryRun: o.DryRun, Ask: true, Env: o.Env})
 	if err != nil || !ok {
@@ -113,7 +123,7 @@ func Import(o Options) (Plan, error) {
 	if err != nil {
 		return p, err
 	}
-	fmt.Fprintf(o.Out, "  tooling: %s keeps its own tools for now; a later version of smith import asks whether smith's tooling replaces them\n", p.Name)
+	left = append(left, ApplyTooling(root, p, o)...)
 	left = append(left, Install(root, o.Version, p.Name, o.Out)...)
 	if len(left) == 0 {
 		left = append(left, Verify(root, p.Name, o.Out)...)
