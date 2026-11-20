@@ -91,6 +91,7 @@ func Import(o Options) (Plan, error) {
 	if err := Place(root, p, o.Out); err != nil {
 		return p, err
 	}
+	keptLeft := KeepVersions(root, p, o.Out)
 	if dropped, err := DropLockfiles(root, p.Folder, Lockfiles(p.Ecosystem)); err != nil {
 		return p, err
 	} else if len(dropped) > 0 {
@@ -107,6 +108,7 @@ func Import(o Options) (Plan, error) {
 	if err != nil {
 		return p, err
 	}
+	left = append(left, keptLeft...)
 	left = append(left, ApplyTooling(root, p, o)...)
 	left = append(left, Install(root, o.Version, p.Name, o.Out)...)
 	if len(left) == 0 {

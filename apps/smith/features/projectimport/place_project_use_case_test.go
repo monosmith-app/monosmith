@@ -64,6 +64,36 @@ func TestDropLockfilesRemovesOnlyTheLockfilesAtTheTop(t *testing.T) {
 	}
 }
 
+func TestKeepVersionsMergesTheSourceLockIntoTheWorkspaceLock(t *testing.T) {
+	src, root := t.TempDir(), t.TempDir()
+	write(t, src, "package-lock.json", `{"lockfileVersion": 3, "packages": {"node_modules/react-icons": {"version": "4.3.1"}}}`)
+	write(t, root, "package-lock.json", `{"lockfileVersion": 3, "packages": {"": {}}}`)
+	write(t, root, "apps/web/package.json", `{"dependencies": {"react-icons": "^4.3.1"}}`)
+	var out strings.Builder
+	left := KeepVersions(root, Plan{Name: "web", Folder: "apps/web", Ecosystem: "node", Source: Source{Dir: src}}, &out)
+	if len(left) != 0 {
+		t.Fatalf("left = %+v", left)
+	}
+	if !strings.Contains(out.String(), "kept the versions package-lock.json locked (1 packages): react-icons 4.3.1") {
+		t.Errorf("output = %q", out.String())
+	}
+	raw, _ := os.ReadFile(filepath.Join(root, "package-lock.json"))
+	if !strings.Contains(string(raw), "apps/web/node_modules/react-icons") {
+		t.Error("the workspace lockfile does not hold the project's entry")
+	}
+}
+
+func TestKeepVersionsLeavesAnItemForALockfileItCannotCarry(t *testing.T) {
+	src, root := t.TempDir(), t.TempDir()
+	write(t, src, "yarn.lock", "")
+	if left := KeepVersions(root, Plan{Name: "web", Folder: "apps/web", Ecosystem: "node", Source: Source{Dir: src}}, io.Discard); len(left) != 1 || !strings.Contains(left[0].Problem, "yarn.lock") {
+		t.Errorf("left = %+v", left)
+	}
+	if left := KeepVersions(root, Plan{Name: "lib", Folder: "libs/lib", Ecosystem: "python", Lockfiles: []string{"uv.lock"}}, io.Discard); len(left) != 1 || !strings.Contains(left[0].Problem, "uv.lock") {
+		t.Errorf("python left = %+v", left)
+	}
+}
+
 func TestPlaceKeepsTheHistoryUnderTheFolder(t *testing.T) {
 	src, root := t.TempDir(), t.TempDir()
 	git(t, src, "init", "-q", "-b", "main")

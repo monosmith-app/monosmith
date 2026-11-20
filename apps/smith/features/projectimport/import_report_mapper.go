@@ -26,7 +26,7 @@ func Summary(p Plan) string {
 	}
 	split := "the development tools go to the workspace, README and LICENSE stay with the project"
 	if len(p.Lockfiles) > 0 {
-		split += ", " + strings.Join(p.Lockfiles, ", ") + " is dropped (the workspace has one lockfile, the next install writes it)"
+		split += ", " + strings.Join(p.Lockfiles, ", ") + " is dropped (the workspace has one lockfile), and the versions it locked go into the workspace lockfile"
 	}
 	steps := []string{
 		"place    " + placeLine(p),

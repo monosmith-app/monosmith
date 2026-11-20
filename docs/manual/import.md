@@ -31,7 +31,13 @@ you say yes.
    (`--eslint-setup shared|keep`). Without a terminal the project keeps them, and smith
    says so. README and LICENSE stay with the project. The project's own lockfile
    (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `uv.lock`) is removed, because
-   the workspace has one lockfile for every project.
+   the workspace has one lockfile for every project. Before that, smith keeps the
+   versions it locked: the entries of an npm lockfile (`package-lock.json` or
+   `npm-shrinkwrap.json`) go into the workspace `package-lock.json` under the project's
+   folder, and smith names the direct dependencies it keeps. So the first install puts
+   the same versions in place, not the newest version in each range. smith cannot carry
+   the versions of `yarn.lock`, `pnpm-lock.yaml`, a bun lockfile or `uv.lock`. It says
+   so in "Left to do", because the install can then move a package to a newer version.
 5. **Join.** The project joins its language's workspace: the root `package.json`
    `"workspaces"`, the uv members of the root `pyproject.toml`, or the .NET solution
    (see [`smith doctor`](doctor.md)). A join that asks a question (which solution) is left
