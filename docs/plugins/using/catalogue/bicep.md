@@ -15,7 +15,7 @@ anything: the pipeline that owns your environment does that with the files in
 
 | | |
 |---|---|
-| Plugin name | `bicep` (built in; runs as a separate process, `smith plugin serve bicep`) |
+| Plugin name | `bicep` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin; it declares none of its own) |
 | `--lang` value | `bicep` |

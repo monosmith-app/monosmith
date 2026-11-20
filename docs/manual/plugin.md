@@ -1,9 +1,9 @@
 # smith plugin
 
 `smith plugin` inspects the plugins smith loads and chooses which built-in language plugins
-are on. A plugin is a separate process smith starts and talks to over standard input and
-output; the built-in ones ship inside the smith binary and are started by it, and
-installed ones live on a search path. The protocol is described in
+are on. A plugin is a program smith talks to with JSON-RPC: an external one is a separate process on
+standard input and output, and installed ones live on a search path; the built-in ones ship
+inside the smith binary and run inside the smith process, with the same protocol. The protocol is described in
 [Plugins](../reference/plugins.md) and
 [Writing a plugin](../guides/writing-a-plugin.md).
 
@@ -55,7 +55,7 @@ In order, the first match for a name winning:
 3. `$SMITH_HOME/plugins`, where `SMITH_HOME` defaults to `~/.smith`
 
 Each plugin is a directory directly under one of them, holding a `plugin.json`. Plugins
-declared in `smith.toml` with a command are started from there. A plugin process is started
+declared in `smith.toml` with a command are started from there. An external plugin process is started
 with `SMITH_PLUGIN=1` in its environment.
 
 ## External plugins: trust and environment

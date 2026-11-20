@@ -35,9 +35,10 @@ Content-Length: 87\r\n
 
 Three decisions are packed in that sentence.
 
-- *A separate process.* A buggy or slow plugin cannot corrupt the core's memory,
-  a plugin can be written in any language, and the core can kill one that hangs.
-  The cost is a start-up of a few milliseconds per plugin and JSON on a pipe.
+- *A separate process* for an external plugin. A buggy or slow plugin cannot corrupt the
+  core's memory, a plugin can be written in any language, and the core can kill one that hangs.
+  The cost is a start-up of a few milliseconds per plugin and JSON on a pipe. The built-in
+  plugins skip that cost: they run inside the smith process (ADR 0103).
 - *Standard input and output.* Nothing to configure, nothing to listen on, no
   port to clash with; it works the same on Windows, macOS and Linux and inside
   containers. Because stdout carries the protocol, a plugin writes its logs and
@@ -60,7 +61,7 @@ The plugins that ship inside the `smith` binary (the language plugins `node`,
 `go`, `python`, …, and the toolchain, convention and structure plugins
 `eslint`, `jest`, `vitest`, `docker`, `vertical-slices`, …) are not a special
 case. The host
-serves each one inside its own process over in-memory pipes (ADR 0103) and
+serves each one inside the smith process over in-memory pipes (ADR 0103) and
 talks to it with the same protocol, exactly as it would to `smith-plugin-kiwi`. This keeps the protocol
 honest (the built-ins are its first and best-tested users) and means a
 built-in can be replaced by an external plugin of the same name in `smith.toml`
@@ -106,9 +107,9 @@ Almost every command begins with `session.Open` (`apps/smith/features/session`):
    (in a terminal) or refuses with a remedy (everywhere else; in CI a pin in
    `smith.toml` is required). See [External plugins: trust and
    environment](#external-plugins-trust-and-environment).
-   Each child gets `SMITH_PLUGIN=1` in its environment and the workspace root in
-   `initialize`. A built-in child keeps the whole environment of the process; an
-   external one gets the minimal one.
+   Each external plugin process gets `SMITH_PLUGIN=1` and the minimal environment.
+   A built-in plugin runs inside the smith process, so it shares the process's whole
+   environment. Every plugin gets the workspace root in `initialize`.
 4. **Handshake.** `initialize` returns what the plugin *is* (see below). The
    host checks that an external plugin answers to the name it is declared under
    and that its version satisfies the constraint in `smith.toml`.

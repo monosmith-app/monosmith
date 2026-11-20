@@ -102,7 +102,7 @@ flowchart TB
 | Engine server | `apps/smith/features/engineserver` | the engine as JSON-RPC: queries answer with the `--json` output, runs stream `event` notifications | `smith serve` |
 | MCP server | `apps/smith/features/mcpserver` | the same actions for an assistant, each tool one command line | `smith mcp` |
 | Core | the slices listed in [Architecture](architecture.md) | session, graphs, scheduling, cache, release, CI generation | in-process |
-| Built-in plugins | `libs/plugin-*`, constructed by `pluginhost.Builtins` and `pluginhost.BuiltinAddons` | everything language-specific: discovery, tasks, scaffolding, versioning, publishing, CI needs, health checks | the host starts `smith plugin serve <name>` as a child process |
+| Built-in plugins | `libs/plugin-*`, constructed by `pluginhost.Builtins` and `pluginhost.BuiltinAddons` | everything language-specific: discovery, tasks, scaffolding, versioning, publishing, CI needs, health checks | served inside the smith process over in-memory pipes, with the same protocol ([ADR 0103](decisions/0103-built-in-plugins-run-in-the-smith-process.md)) |
 | External plugins | declared under `[plugins.external.<name>]` or found on `.smith/plugins`, `SMITH_PLUGIN_PATH`, `$SMITH_HOME/plugins` | languages and rules smith lacks | any executable; see [The plugin system](plugin-system.md) |
 | Plugin SDK | `packages/plugin-sdk`: `protocol`, `serve`, `host`, `transport`, `conformance`, `templating`, `toolrun`, `jsondoc`, `tomltext`, `xmltext`, `fileedits`, `projectkind` | the protocol types, a server loop for plugins, the client smith uses, and the conformance suite | a Go module, released as `packages/plugin-sdk/v<version>` |
 | Local cache | `apps/smith/features/taskcache` | task results by key | files under `.smith/cache/v1` |
@@ -139,10 +139,14 @@ sequenceDiagram
   S->>P: shutdown
 ```
 
-Every plugin, built in or not, is a separate process. The host starts all enabled plugins in
-parallel (`pluginhost.Start`), asks each for its description (`initialize`), and shuts them
-down when the command ends (`Session.Close`). A plugin that crashes fails the command that
-needed it instead of corrupting the host ([ADR 0002](decisions/0002-out-of-process-plugins.md)).
+An external plugin is a separate process ([ADR 0002](decisions/0002-out-of-process-plugins.md)).
+A built-in plugin is served inside the smith process, over in-memory pipes with the same
+protocol, so a session is one process ([ADR 0103](decisions/0103-built-in-plugins-run-in-the-smith-process.md)).
+The host starts all enabled plugins in parallel (`pluginhost.Start`), asks each for its
+description (`initialize`), and shuts them down when the command ends (`Session.Close`). An
+external plugin that crashes fails the command that needed it instead of corrupting the host. A
+panic while a plugin handles a request answers that request with an error, so a built-in cannot
+end smith.
 
 ## Trust boundaries
 

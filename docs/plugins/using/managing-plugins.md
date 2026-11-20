@@ -20,8 +20,9 @@ and the settings a plugin reads. The model behind it is in
 | `smith plugin disable <name>...` | turns built-in language plugins off in `smith.toml` |
 | `smith plugin set <name>...` | enables exactly these built-in language plugins |
 
-`smith plugin serve <name>` also exists but is hidden: it is what smith runs to start a built-in
-plugin, not a command to use.
+`smith plugin serve <name>` also exists but is hidden: it serves a built-in plugin as a process,
+for `smith plugin check` and for tests. A session serves the built-in plugins inside the smith
+process instead. It is not a command to use.
 
 ### List
 

@@ -12,8 +12,9 @@ format is in [the plugin protocol](../../architecture/plugin-protocol.md) and, f
 
 A plugin is any executable that speaks JSON-RPC 2.0 on its standard input and output. smith starts
 the plugins a workspace uses when a command begins, asks them questions, and stops them when the
-command ends. The built-in plugins are not special: they ship inside the `smith` binary but run
-as child processes (`smith plugin serve <name>`) and speak the same protocol an external plugin does.
+command ends. The built-in plugins are not special: they ship inside the `smith` binary and run inside the
+smith process, over in-memory pipes, but speak the same protocol an external plugin does
+(ADR 0103). An external plugin runs as its own process.
 
 A plugin does not run your tasks. It describes them: a task is an argv array with inputs and
 outputs, and smith itself runs it, hashes it and caches it.
@@ -22,9 +23,9 @@ outputs, and smith itself runs it, hashes it and caches it.
 sequenceDiagram
   participant U as you
   participant S as smith
-  participant P as plugin (one process each)
+  participant P as plugin
   U->>S: smith run build -p web
-  S->>P: start (SMITH_PLUGIN=1), initialize
+  S->>P: start (an external one with SMITH_PLUGIN=1), initialize
   P-->>S: name, version, kind, roles, provides, requires, stacks, capabilities
   S->>P: discover(manifests it found)
   P-->>S: projects: name, root, kind, imports, exports, tasks
@@ -93,7 +94,7 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 | | Built-in | External |
 |---|---|---|
 | where it lives | inside the `smith` binary | any executable you provide |
-| how it is started | `smith plugin serve <name>` (a child of smith) | its `command` from `smith.toml`, or its `plugin.json` on the search path |
+| how it is started | served inside the smith process (`smith plugin serve <name>` serves it as a process for checks) | its `command` from `smith.toml`, or its `plugin.json` on the search path |
 | how many | 18 language plugins and 21 add-ons | as many as you declare |
 | switch | `[plugins] enabled` (the language plugins) | declare or remove `[plugins.external.<name>]` |
 | trust | none needed: it is the smith binary | you trust it before smith starts it: `smith plugin trust <name>` |

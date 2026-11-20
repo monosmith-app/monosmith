@@ -13,7 +13,7 @@ pipelines which PHP to install.
 
 | | |
 |---|---|
-| Plugin name | `php` (built in; runs as a separate process, `smith plugin serve php`) |
+| Plugin name | `php` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin; it declares none of its own) |
 | `--lang` value | `php` |
