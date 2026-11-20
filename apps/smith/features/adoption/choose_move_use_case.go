@@ -55,11 +55,11 @@ func ChooseMove(r Report, opts MoveOptions) (*adoptmove.Candidate, *adoptmove.Pl
 		}
 		return nil, nil, nil
 	}
-	c, err := adoptmove.Detect(r.Root)
+	c, err := adoptmove.Detect(r.Root, r.Claims)
 	switch {
 	case errors.Is(err, adoptmove.ErrNoRootProject):
 		if opts.Dir != "" {
-			return nil, nil, problem.New("--move has nothing to move: the repository root holds no project (package.json, go.mod, pyproject.toml or Cargo.toml)", "drop --move, or give a repository whose project is at the root")
+			return nil, nil, problem.New("--move has nothing to move: the repository root holds no project manifest smith knows ("+manifestNames(r.Claims)+")", "drop --move, or give a repository whose project is at the root")
 		}
 		return nil, nil, nil
 	case err != nil:

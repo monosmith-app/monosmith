@@ -15,7 +15,7 @@ import (
 // returns false when the root holds no project (the caller explains the empty
 // list another way).
 func attachRootProject(r *Report, files []string) bool {
-	c, err := adoptmove.Detect(r.Root)
+	c, err := adoptmove.Detect(r.Root, r.Claims)
 	if errors.Is(err, adoptmove.ErrNoRootProject) {
 		return false
 	}

@@ -111,8 +111,10 @@ yours. Both `--tags` and `--init` need a clean git tree.
 ### A project at the root
 
 smith keeps one folder for each project (`apps/<name>`, `libs/<name>`, `packages/<name>`).
-If the only project of the repository has its `package.json`, `go.mod`, `pyproject.toml`
-or `Cargo.toml` at the root, `--init` asks where to move it. It never picks for you.
+If the only project of the repository has its manifest at the root, `--init` asks where to
+move it. It never picks for you. smith knows the manifest of every language it has a plugin
+for: `package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`, `composer.json`, `*.csproj`,
+`pom.xml` and the others.
 Without a terminal it moves nothing unless `--move <folder>` says where (`--move none`
 keeps the project in place). The move is `git mv`; with `--commit` it is a commit of its
 own, before the adoption's. `smith adopt --dry-run` lists the `git mv` commands.
