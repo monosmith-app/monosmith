@@ -119,9 +119,10 @@ Usage: `smith adopt [flags]`
 | `--init` | write smith.toml and the pipelines (nothing is committed unless --commit) | off |
 | `--install` | with --init, also run npm install for the Node projects and create the Python .venv | off |
 | `--json` | print the report as JSON | off |
-| `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
+| `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith's tooling for every project; smith convert's for Nx and Turborepo workspaces) | `conservative` |
 | `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
+| `--tooling <tooling>` | with --init, the build and lint tools of the Node projects: smith (smith's build and ESLint config, then the old tools go) or keep, for all, or <project>=smith\|keep for one (repeatable) |  |
 | `-y, --yes` | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it | off |
 
 <!-- smith:end adopt -->

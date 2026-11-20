@@ -16,7 +16,9 @@ import (
 // remaining problem with its first step, then the exact next command. It is
 // the one "left to do" list adopt prints: the steps there are expected after
 // a conservative adoption (install, a lint config), not faults of adopt.
-func DescribeOutcome(root, version string, out io.Writer) error {
+// extra are steps the adoption itself could not take (the change of a
+// project's tools); they come first in the list.
+func DescribeOutcome(root, version string, extra []string, out io.Writer) error {
 	s, err := session.Open(session.Options{Dir: root, Version: version, Log: io.Discard})
 	if err != nil {
 		return err
@@ -34,13 +36,16 @@ func DescribeOutcome(root, version string, out io.Writer) error {
 		fmt.Fprintln(out, "  next: move your code into packages/<name> (smith finds it there), or run smith add app <name> --lang <language>")
 		return nil
 	}
-	if len(left) == 0 {
+	if len(left) == 0 && len(extra) == 0 {
 		fmt.Fprintln(out, marks.Passed+" adopted, and smith doctor finds nothing to fix")
 		fmt.Fprintln(out, "  next: smith run build")
 		offerAgent(s.Root, s.Config.AgentEnabled(), out)
 		return nil
 	}
-	fmt.Fprintf(out, marks.Passed+" adopted. Left to do (%d):\n", len(left))
+	fmt.Fprintf(out, marks.Passed+" adopted. Left to do (%d):\n", len(left)+len(extra))
+	for _, e := range extra {
+		fmt.Fprintf(out, "  × %s\n", e)
+	}
 	for _, f := range left {
 		fmt.Fprintf(out, "  × %s\n", f.Detail)
 		for i, line := range strings.Split(f.Remedy, "\n") {

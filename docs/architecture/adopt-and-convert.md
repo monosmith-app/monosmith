@@ -86,8 +86,16 @@ it under "things to check". The full level then removes tooling that nothing use
 
 | Level | `convert` | `adopt` |
 |---|---|---|
-| `conservative` (default) | maps and lists the leftovers | reports; `--init` keeps the repository's own build and lint setup |
-| `full` | after the conversion, removes unused lint, test-runner, build and Nx/mnci tooling after asking | not built for plain repositories; `adopt --level full` stops and names issue 553 |
+| `conservative` (default) | maps and lists the leftovers | reports; `--init` asks each Node project to keep its build and lint tools or use smith's (`--tooling`) |
+| `full` | after the conversion, removes unused lint, test-runner, build and Nx/mnci tooling after asking | smith's tooling for every Node project without a `--tooling` answer |
+
+For a plain repository the per-project step is the slice `projecttooling`
+([ADR 0105](decisions/0105-adopt-asks-each-project-for-its-tooling.md)). `Assess` names the legacy
+tools and the recommended answer, `Decide` settles the answers (flag, question, or the project's
+own tools with `--yes`), and `Apply` takes one answer for one project. With smith's tooling,
+`Apply` puts smith's lint and build in place, then calls `fullconversion.Run` with the lint and
+build choices that are ready, on the files of the project's folder and the workspace root. adopt
+calls it from `Init` before the commit, and `smith import` calls it for the project it brings in.
 
 The full level has four choices (`convertchoices`): `lint` (`smith` or `keep`), `test` (`jest`,
 `vitest` or `keep`), `build` (`smith` or `keep`) and `ci` (`smith` or `keep`). `Defaults` derives
@@ -184,8 +192,8 @@ different front end. The CLI drives the same packages directly: `convert.runFull
 `MakeView`, `Defaults`, `Ask`, `MakeReport`, `Apply` and `fullconversion.Run`. Flags take the place of
 questions, `--dry-run` takes the place of the review, and `--yes` accepts every group.
 
-For a plain repository `adoptflow` offers only the conservative level and tells why the full level is
-missing (`NoFullForPlain`, `IssueFullForPlain`).
+For a plain repository the wizard of `adoptflow` offers only the conservative level and tells how to
+take smith's tooling from the command line (`NoFullForPlain`, `IssueFullForPlain`).
 
 ## Where in the code
 
