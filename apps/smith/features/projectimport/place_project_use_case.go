@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/adoptsplit"
+	"github.com/monosmith-app/monosmith/apps/smith/features/lockcarry"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
 )
 
@@ -197,6 +199,73 @@ func LockfilesIn(dir string, patterns []string) []string {
 		}
 	}
 	return out
+}
+
+// shownVersions is how many kept versions KeepVersions names.
+const shownVersions = 8
+
+// KeepVersions keeps the versions the project's own lockfile locked, before
+// the first install of the workspace resolves its ranges again. For a Node
+// project the npm lockfile of the source goes into the workspace's
+// package-lock.json under the project's folder (lockcarry). A lockfile smith
+// cannot carry is an item left, so the person knows the versions can move.
+//
+// Parameters: root is the workspace root; p is the plan, whose source folder
+// still holds the lockfile; out gets the versions kept.
+// Returns: the items left, or nil.
+func KeepVersions(root string, p Plan, out io.Writer) []Left {
+	if p.Ecosystem == adoptsplit.Python {
+		for _, l := range p.Lockfiles {
+			if strings.EqualFold(l, "uv.lock") {
+				return []Left{{
+					Problem: "the versions " + l + " locked are not kept: the workspace installs " + p.Name + " with pip, which reads the ranges of pyproject.toml again",
+					Remedy:  "if a newer version breaks " + p.Name + ", pin it in " + p.Folder + "/pyproject.toml, then run smith install -p " + p.Name,
+				}}
+			}
+		}
+		return nil
+	}
+	if p.Ecosystem != "node" {
+		return nil
+	}
+	r, err := lockcarry.CarryNpm(root, p.Source.Dir, p.Folder)
+	switch {
+	case err != nil:
+		return []Left{{
+			Problem: "the versions the project's lockfile locked are not kept: " + firstLine(err.Error()),
+			Remedy:  "if a newer version breaks " + p.Name + ", pin it in " + p.Folder + "/package.json, then run smith install -p " + p.Name,
+		}}
+	case r.Unsupported != "":
+		return []Left{{
+			Problem: "the versions " + r.Unsupported + " locked are not kept: smith reads npm lockfiles only, so npm resolves the ranges of package.json again",
+			Remedy:  "if a newer version breaks " + p.Name + ", pin the version " + r.Unsupported + " names in " + p.Folder + "/package.json, then run smith install -p " + p.Name,
+		}}
+	case r.NoWorkspaceLock:
+		fmt.Fprintf(out, "  split: the workspace has no package-lock.json yet, so the install resolves the ranges of %s again\n", p.Name)
+	case r.Lockfile != "":
+		fmt.Fprintf(out, "  split: kept the versions %s locked (%d packages)%s\n", r.Lockfile, r.Added, KeptList(r.Kept))
+	}
+	return nil
+}
+
+// KeptList names the direct dependencies and their kept versions, at most
+// shownVersions of them.
+//
+// Parameters: kept are the direct dependencies and their versions.
+// Returns: ": name version, ..." or "" when kept is empty.
+func KeptList(kept []lockcarry.Locked) string {
+	if len(kept) == 0 {
+		return ""
+	}
+	var names []string
+	for i, k := range kept {
+		if i == shownVersions {
+			names = append(names, fmt.Sprintf("and %d more", len(kept)-shownVersions))
+			break
+		}
+		names = append(names, k.Name+" "+k.Version)
+	}
+	return ": " + strings.Join(names, ", ")
 }
 
 func matches(patterns []string, name string) bool {

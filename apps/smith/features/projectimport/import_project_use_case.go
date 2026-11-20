@@ -107,6 +107,7 @@ func Import(o Options) (Plan, error) {
 			return p, fmt.Errorf("the project is in %s, but its manifest was not written (%w); write it yourself, then run smith doctor", p.Folder, err)
 		}
 	}
+	keptLeft := KeepVersions(root, p, o.Out)
 	if dropped, err := DropLockfiles(root, p.Folder, Lockfiles(p.Ecosystem)); err != nil {
 		return p, err
 	} else if len(dropped) > 0 {
@@ -123,6 +124,7 @@ func Import(o Options) (Plan, error) {
 	if err != nil {
 		return p, err
 	}
+	left = append(left, keptLeft...)
 	left = append(left, ApplyTooling(root, p, o)...)
 	left = append(left, Install(root, o.Version, p.Name, o.Out)...)
 	if len(left) == 0 {

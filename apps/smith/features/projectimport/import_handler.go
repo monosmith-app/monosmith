@@ -29,7 +29,8 @@ a .csproj, and every other manifest the language plugins know), then:
            add --squash, --history copy copies the files only). A plain
            folder is copied, without .git, installed dependencies and caches
   split    the development tools go to the workspace, README and LICENSE stay
-           with the project, and its own lockfile is dropped
+           with the project, and its own lockfile is dropped (the
+           versions an npm lockfile locked go into the workspace lockfile)
   join     the project joins its language's workspace (npm workspaces, the uv
            members, the .NET solution)
   tooling  a Node project keeps its own build and lint tools, or uses smith's
