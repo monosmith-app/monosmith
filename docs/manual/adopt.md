@@ -24,7 +24,7 @@ adopt wizard, which does the same in screens; see
 ## Synopsis
 
 ```sh
-smith adopt [--dry-run] [--json] [--tags] [--init [--install] [--eslint] [--move <folder>|none] [--yes]] [--level conservative|full]
+smith adopt [--dry-run] [--json] [--tags] [--init [--install] [--eslint] [--move <folder>|none] [--manifest <language>|none] [--yes]] [--level conservative|full]
 ```
 
 ## Arguments and flags
@@ -49,6 +49,7 @@ Usage: `smith adopt [flags]`
 | `--install` | boolean | off | with --init, also run npm install for the Node projects and create the Python .venv |
 | `--json` | boolean | off | print the report as JSON |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
+| `--manifest <manifest>` | string |  | with --init, a root of sources without a manifest: the language whose default manifest smith writes before the move (node, python, dotnet), or none; asked in a terminal |
 | `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
 | `--tags` | boolean | off | create the baseline release tags the report asks for, locally |
 | `-y, --yes` | boolean | off | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it |
@@ -136,6 +137,13 @@ Move it into a folder of its own so smith can manage it?
   where, for example `smith adopt --init --move apps/web`. Without it the command stops and
   prints the exact commands. `--move none` keeps the project at the root (an empty workspace,
   add projects with `smith add`).
+- A root of source files with no manifest (loose `.ts` or `.js`, `.py` or `.cs` files) is
+  reported with an offer. `--init` asks whether to write the manifest of the language's own
+  scaffold, from the same template as `smith add` (`--manifest <language>` answers,
+  `--manifest none` refuses, and without a terminal or the flag smith stops). It then asks
+  where the project goes, as above. The manifest is written at the root, named after that
+  folder and with its kind, staged with `git add`, and moved with the sources, which keep
+  their layout ([ADR 0107](../architecture/decisions/0107-smith-offers-a-manifest-for-a-source-without-one.md)).
 - The move is `git mv` of the project's files, and it splits the workspace from the project
   ([ADR 0090](../architecture/decisions/0090-adopt-splits-the-workspace-from-the-project.md)).
   These stay at the root: `.git`, `.gitignore`, `.github` and the other CI files, editor and

@@ -635,6 +635,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Join says whether each project is joined to the language's workspace (npm "workspaces", uv workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin only describes; the host applies the fix.</summary>
     public bool Join { get; init; }
 
+    /// <summary>ManifestOnly says generate honours GenerateParams.ManifestOnly: into a folder that exists and holds sources, it writes only the project's manifest and configuration from its templates. A host never sends ManifestOnly to a plugin without it, since the plugin would write its starter files among the person's sources.</summary>
+    public bool ManifestOnly { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -664,6 +667,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Packs = BooleanValue(Member(map, "packs"), Join(path, "packs")),
             Declared = BooleanValue(Member(map, "declared"), Join(path, "declared")),
             Join = BooleanValue(Member(map, "join"), Join(path, "join")),
+            ManifestOnly = BooleanValue(Member(map, "manifestOnly"), Join(path, "manifestOnly")),
         };
     }
 
@@ -786,6 +790,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("join");
             writer.Boolean(Join);
         }
+        if (ManifestOnly)
+        {
+            writer.Property("manifestOnly");
+            writer.Boolean(ManifestOnly);
+        }
         writer.EndObject();
     }
 
@@ -818,6 +827,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "packs" => Packs,
             "declared" => Declared,
             "join" => Join,
+            "manifestOnly" => ManifestOnly,
             _ => false,
         };
 }
@@ -2328,6 +2338,9 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
     /// <summary>PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name.</summary>
     public string PackageName { get; init; } = string.Empty;
 
+    /// <summary>ManifestOnly asks for the manifest of a folder that exists and holds the person's sources (Directory may be "." for the workspace root): the plugin writes only the files at the top of Directory that are not sources and not documents (package.json and its tsconfig, a pyproject.toml, a .csproj) and never a starter file. It may add the workspace files its tooling needs, as generate does, except when Directory is "." (the project is the root itself), and it installs nothing itself (InstallPending says the host must). A file that exists is an error. Sent only to a plugin with the manifestOnly capability.</summary>
+    public bool ManifestOnly { get; init; }
+
     /// <inheritdoc />
     public static GenerateParams Read(JsonAny? value, string path)
     {
@@ -2345,6 +2358,7 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
             Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
             Choices = ListOf(Member(map, "choices"), Join(path, "choices"), StringValue),
             PackageName = StringValue(Member(map, "packageName"), Join(path, "packageName")),
+            ManifestOnly = BooleanValue(Member(map, "manifestOnly"), Join(path, "manifestOnly")),
         };
     }
 
@@ -2394,6 +2408,11 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
         {
             writer.Property("packageName");
             writer.String(PackageName);
+        }
+        if (ManifestOnly)
+        {
+            writer.Property("manifestOnly");
+            writer.Boolean(ManifestOnly);
         }
         writer.EndObject();
     }
@@ -2505,6 +2524,9 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
     /// <summary>Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose presence in a directory may make it a project of this plugin.</summary>
     public IReadOnlyList<string> Manifests { get; init; } = [];
 
+    /// <summary>Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest.</summary>
+    public IReadOnlyList<string> Sources { get; init; } = [];
+
     /// <summary>Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate level field, because one plugin can play several (a scaffold that is also a toolchain).</summary>
     public IReadOnlyList<Role> Roles { get; init; } = [];
 
@@ -2545,6 +2567,7 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
             Concurrency = IntegerValue(Member(map, "concurrency"), Join(path, "concurrency")),
             Languages = ListOf(Member(map, "languages"), Join(path, "languages"), StringValue),
             Manifests = ListOf(Member(map, "manifests"), Join(path, "manifests"), StringValue),
+            Sources = ListOf(Member(map, "sources"), Join(path, "sources"), StringValue),
             Roles = ListOf(Member(map, "roles"), Join(path, "roles"), Role.Read),
             Provides = ListOf(Member(map, "provides"), Join(path, "provides"), StringValue),
             Requires = ListOf(Member(map, "requires"), Join(path, "requires"), PluginRef.Read),
@@ -2583,6 +2606,11 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
         {
             writer.Property("manifests");
             MessageWritingAlgorithm.List(writer, Manifests, (builder1, item1) => builder1.String(item1));
+        }
+        if (Sources is { Count: > 0 })
+        {
+            writer.Property("sources");
+            MessageWritingAlgorithm.List(writer, Sources, (builder1, item1) => builder1.String(item1));
         }
         if (Roles is { Count: > 0 })
         {
@@ -5605,6 +5633,9 @@ public sealed record PluginDescription
     /// <summary>Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose presence in a directory may make it a project of this plugin.</summary>
     public IReadOnlyList<string> Manifests { get; init; } = [];
 
+    /// <summary>Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest.</summary>
+    public IReadOnlyList<string> Sources { get; init; } = [];
+
     /// <summary>Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate level field, because one plugin can play several (a scaffold that is also a toolchain).</summary>
     public IReadOnlyList<Role> Roles { get; init; } = [];
 
@@ -5645,6 +5676,7 @@ public sealed record PluginDescription
             Concurrency = Concurrency,
             Languages = Languages,
             Manifests = Manifests,
+            Sources = Sources,
             Roles = Roles,
             Provides = Provides,
             Requires = Requires,

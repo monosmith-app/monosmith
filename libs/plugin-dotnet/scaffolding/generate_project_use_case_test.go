@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"slices"
 )
 
 func TestGenerateInheritsTheFrameworkFromTheWorkspace(t *testing.T) {
@@ -72,5 +73,38 @@ func TestGenerate(t *testing.T) {
 	}
 	if _, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "core", Directory: "packages/core", Workspace: info}); err == nil {
 		t.Fatal("an existing directory is refused")
+	}
+}
+
+func TestGenerateManifestOnlyWritesTheProjectFileIntoAFolderThatExists(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "libs", "sorters")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "sorters", Directory: "libs/sorters", ManifestOnly: true, Workspace: protocol.WorkspaceInfo{Name: "acme"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(res.Files, "Directory.Build.props") || len(res.Files) != 2 {
+		t.Fatalf("want the project file and the workspace's Directory.Build.props, got %v", res.Files)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "Program.cs")); err == nil {
+		t.Error("ManifestOnly wrote the starter Program.cs")
+	}
+}
+
+func TestGenerateManifestOnlyAtTheRootNamesItsFramework(t *testing.T) {
+	ws := t.TempDir()
+	res, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "sorters", Directory: ".", ManifestOnly: true, Workspace: protocol.WorkspaceInfo{Name: "acme"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Files) != 1 || !strings.HasSuffix(res.Files[0], ".csproj") {
+		t.Fatalf("want the project file only, got %v", res.Files)
+	}
+	raw, _ := os.ReadFile(filepath.Join(ws, res.Files[0]))
+	if !strings.Contains(string(raw), "<TargetFramework>") {
+		t.Errorf("a project at the root without Directory.Build.props names its framework:\n%s", raw)
 	}
 }

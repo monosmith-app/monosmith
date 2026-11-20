@@ -19,7 +19,7 @@ stack = "[[.Stack]]"
 [[- end]]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["[[.SourceRoot]]"]
 `,
 	"[[.Dir]]/src/[[.Import]]/__init__.py": `"""[[.Name]]: its code lives in the slice packages below, one per outcome."""
 `,

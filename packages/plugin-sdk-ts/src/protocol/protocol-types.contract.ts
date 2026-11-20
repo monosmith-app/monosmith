@@ -253,6 +253,13 @@ export interface Capabilities {
    * only describes; the host applies the fix.
    */
   join?: boolean
+  /**
+   * ManifestOnly says generate honours GenerateParams.ManifestOnly: into a folder that exists and
+   * holds sources, it writes only the project's manifest and configuration from its templates. A
+   * host never sends ManifestOnly to a plugin without it, since the plugin would write its starter
+   * files among the person's sources.
+   */
+  manifestOnly?: boolean
 }
 
 /**
@@ -833,6 +840,16 @@ export interface GenerateParams {
    * the plugin builds the name.
    */
   packageName?: string
+  /**
+   * ManifestOnly asks for the manifest of a folder that exists and holds the person's sources
+   * (Directory may be "." for the workspace root): the plugin writes only the files at the top of
+   * Directory that are not sources and not documents (package.json and its tsconfig, a
+   * pyproject.toml, a .csproj) and never a starter file. It may add the workspace files its tooling
+   * needs, as generate does, except when Directory is "." (the project is the root itself), and it
+   * installs nothing itself (InstallPending says the host must). A file that exists is an error.
+   * Sent only to a plugin with the manifestOnly capability.
+   */
+  manifestOnly?: boolean
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */
@@ -880,6 +897,13 @@ export interface InitializeResult {
    * presence in a directory may make it a project of this plugin.
    */
   manifests?: string[]
+  /**
+   * Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a
+   * folder that has none of its Manifests. The host reads them to offer a manifest for such a
+   * folder (smith import, smith adopt). Empty: the plugin recognises no project without its
+   * manifest.
+   */
+  sources?: string[]
   /**
    * Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe).
    * Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate

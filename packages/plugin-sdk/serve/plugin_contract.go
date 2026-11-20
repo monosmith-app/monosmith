@@ -135,6 +135,15 @@ type PackPublisher interface {
 	PacksPackages()
 }
 
+// ManifestWriter is implemented by a plugin whose Generate honours
+// GenerateParams.ManifestOnly: it writes only the manifest of a folder that
+// holds sources. Serve advertises the manifestOnly capability for it.
+type ManifestWriter interface {
+	Generator
+	// WritesManifestOnly is a marker; it does nothing.
+	WritesManifestOnly()
+}
+
 // Linker is implemented by a plugin that makes a project depend on a library
 // of the same workspace, and takes the dependency out. Serve advertises the
 // link capability for it.

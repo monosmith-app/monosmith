@@ -30,7 +30,17 @@ func planForDryRun(r *Report, dir string) error {
 // again so the adoption sees the project where it is now. The tree was clean
 // before the move, so the report is clean after it: the move's own changes are
 // not "uncommitted work" for the steps that follow.
+//
+// A plan with Write set has no manifest yet: the language plugin writes
+// it at the root first (writeRootManifest), git add stages it, and the move is
+// planned for the project it makes.
 func MoveRootProject(r Report, c adoptmove.Candidate, p adoptmove.Plan, commit bool, version string, log, out io.Writer) (Report, error) {
+	if p.Write != "" {
+		var err error
+		if c, p, err = writeRootManifest(r, c, p.Write, p.Dir, version, out); err != nil {
+			return r, err
+		}
+	}
 	if err := adoptmove.Apply(r.Root, p, out); err != nil {
 		return r, err
 	}

@@ -17,7 +17,14 @@ func Summary(p Plan) string {
 	var b strings.Builder
 	from := p.Source.Arg
 	fmt.Fprintf(&b, "Import %s from %s\n", p.Name, from)
-	fmt.Fprintf(&b, "  found    a %s %s (%s)\n", p.Ecosystem, p.Kind, p.Manifest)
+	switch {
+	case p.WriteManifest != "":
+		fmt.Fprintf(&b, "  found    %d %s source file(s) and no manifest: smith writes %s from the default stack, the sources stay where they are\n", p.Sources, p.Ecosystem, p.Manifest)
+	case p.Source.Path != "":
+		fmt.Fprintf(&b, "  found    a %s %s (%s/%s)\n", p.Ecosystem, p.Kind, p.Source.Path, p.Manifest)
+	default:
+		fmt.Fprintf(&b, "  found    a %s %s (%s)\n", p.Ecosystem, p.Kind, p.Manifest)
+	}
 	fmt.Fprintf(&b, "  folder   %s  (--as and --into change it)\n", p.Folder)
 	fmt.Fprintf(&b, "  history  %s\n", historyLine(p))
 	if p.Source.Dirty && p.History != HistoryCopy {
@@ -29,12 +36,17 @@ func Summary(p Plan) string {
 	}
 	steps := []string{
 		"place    " + placeLine(p),
-		"split    " + split,
+	}
+	if p.WriteManifest != "" {
+		steps = append(steps, "manifest write "+p.Manifest+" of the "+p.Ecosystem+" default stack (smith add's template); the sources stay where they are")
+	}
+	steps = append(steps,
+		"split    "+split,
 		"join     add the project to its language's workspace",
 		"tooling  the project keeps its own tools (lint, test, build); a later version of smith import asks whether smith's tooling replaces them",
 		"CI       write the pipelines again, so CI builds the project",
-		"check    smith install -p " + p.Name + ", then smith doctor",
-	}
+		"check    smith install, then smith doctor",
+	)
 	b.WriteString("Steps:\n")
 	for i, s := range steps {
 		fmt.Fprintf(&b, "  %d. %s\n", i+1, s)
@@ -56,6 +68,9 @@ func Summary(p Plan) string {
 func Changes(p Plan) operationplan.Plan {
 	plan := operationplan.Plan{Title: "import " + p.Name + " into " + p.Folder}
 	plan.Add("Place", operationplan.Line{Action: operationplan.Create, Path: p.Folder, Note: placeLine(p)})
+	if p.WriteManifest != "" {
+		plan.Add("Manifest", operationplan.Line{Action: operationplan.Create, Path: p.Folder + "/" + manifestFile(p), Note: "the " + p.Ecosystem + " default stack's manifest, from smith add's template; the sources stay where they are"})
+	}
 	for _, l := range p.Lockfiles {
 		plan.Add("Split", operationplan.Line{Action: operationplan.Remove, Path: p.Folder + "/" + l, Note: "the workspace has one lockfile"})
 	}
@@ -95,17 +110,35 @@ func Outcome(p Plan, left []Left) string {
 	return b.String()
 }
 
+// manifestFile is the file name of the manifest the import writes; a
+// manifest named by a pattern (a .csproj file) shows the pattern, because
+// the plugin names the file.
+func manifestFile(p Plan) string {
+	if ext, ok := strings.CutPrefix(p.Manifest, "a "); ok {
+		return "*" + strings.TrimSuffix(ext, " file")
+	}
+	return p.Manifest
+}
+
 func historyLine(p Plan) string {
 	switch p.History {
 	case HistoryKeep:
-		return fmt.Sprintf("kept: the %d commit(s) of %s (%s) stay, and git log -- %s shows them (--history squash makes one commit)", p.Source.Commits, p.Source.Ref, p.Source.Commit, p.Folder)
+		return fmt.Sprintf("kept: the %d commit(s) of %s (%s) stay, and git log -- %s shows them (--history squash makes one commit)", p.Source.Commits, refWords(p), p.Source.Commit, p.Folder)
 	case HistorySquash:
-		return fmt.Sprintf("squashed: one commit holds %s (%s), with the source in its message", p.Source.Ref, p.Source.Commit)
+		return fmt.Sprintf("squashed: one commit holds %s (%s), with the source in its message", refWords(p), p.Source.Commit)
 	}
 	if p.Source.Git {
 		return "not kept: the files are copied (--history keep keeps the commits)"
 	}
 	return "none: a plain folder is copied, without .git, dependencies and caches"
+}
+
+// refWords names what the import takes: the ref, or the sub-folder at the ref.
+func refWords(p Plan) string {
+	if p.Source.PathRef != "" {
+		return p.Source.Path + " at " + p.Source.PathRef
+	}
+	return p.Source.Ref
 }
 
 func placeLine(p Plan) string {
@@ -115,7 +148,7 @@ func placeLine(p Plan) string {
 	if p.History == HistorySquash {
 		return "git subtree add --prefix=" + p.Folder + " --squash <source> " + p.Source.Ref
 	}
-	return "merge the commits of " + p.Source.Ref + ", written again under " + p.Folder
+	return "merge the commits of " + refWords(p) + ", written again under " + p.Folder
 }
 
 func commitsMade(p Plan) string {

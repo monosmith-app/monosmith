@@ -142,6 +142,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `apiSurface` | `api/surface` | language |
 | `channels` | (changes `publish`: `PublishParams.tag`) | language; only the Go SDK can declare it for now (`PublishesChannels`) |
 | `packs` | (changes `publish`: `PublishParams.packDir`) | language; the Go SDK declares it (`PacksPackages`); `release` with `registry = "github-release"` |
+| `manifestOnly` | (changes `generate`: `GenerateParams.manifestOnly`) | language or scaffold; the Go SDK declares it (`WritesManifestOnly`); `smith import` and `smith adopt` write a manifest for a folder of sources |
 | `declared` | (changes `discover`: `DiscoverParams.declared`) | language; only the Go SDK can declare it for now (`DescribesDeclared`) |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
@@ -195,6 +196,7 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `concurrency` | `int` | no | Concurrency is how many requests the plugin can work on at the same time; the host never has more in flight. Absent or 0 means 1, which is what every plugin that says nothing does: the host sends the next request only after the previous one is answered. N above 1 allows that many, and -1 leaves the number to the host (it keeps 32 in flight). Any other negative value is invalid and read as 1. |
 | `languages` | `[]string` | no | Languages are the values a user passes to --lang to reach this plugin. |
 | `manifests` | `[]string` | no | Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose presence in a directory may make it a project of this plugin. |
+| `sources` | `[]string` | no | Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest. |
 | `roles` | `[]Role` | no | Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). |
 | `provides` | `[]string` | no | Provides are the slots a toolchain plugin fills: the task names it owns ("test" for a test runner). |
 | `requires` | `[]PluginRef` | no | Requires are plugins that must also be in the project for this one to work: a Node toolchain requires the node language plugin. |
@@ -247,6 +249,7 @@ Capabilities are the optional methods a plugin implements.
 | `apiSurface` | `bool` | no | APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs. |
 | `declared` | `bool` | no | Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so. |
 | `channels` | `bool` | no | Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it. |
+| `manifestOnly` | `bool` | no | ManifestOnly says generate honours GenerateParams.ManifestOnly: into a folder that exists and holds sources, it writes only the project's manifest and configuration from its templates. A host never sends ManifestOnly to a plugin without it, since the plugin would write its starter files among the person's sources. |
 | `packs` | `bool` | no | Packs says publish honours PublishParams.PackDir: it writes the package file and publishes nowhere (registry = "github-release"). A host never calls publish with the setting on a plugin that lacks it, since the plugin would publish to the public registry. |
 
 ### CancelParams
@@ -421,6 +424,7 @@ GenerateParams asks a plugin to scaffold a project.
 | `facts` | `map[string]any` | no | Facts are the shared facts that hold for the new project, from smith.toml: [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin scaffolds its own default. Set by the host; read only. |
 | `shape` | `map[string]string` | no | Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project. |
 | `choices` | `[]string` | no | Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only. |
+| `manifestOnly` | `bool` | no | ManifestOnly asks for the manifest of a folder that exists and holds the person's sources (Directory may be "." for the workspace root): the plugin writes only the files at the top of Directory that are not sources and not documents, never a starter file. It may add the workspace files its tooling needs, except when Directory is ".", and installs nothing itself. A file that exists is an error. Sent only to a plugin with the manifestOnly capability. |
 | `packageName` | `string` | no | PackageName is the name the person gave the project's package (smith add --package-name): the npm package, the Cargo crate, the Python distribution, the last part of the Go module path, and so on. The host has checked it against the language's naming rules. The plugin that writes the manifest uses it as given, in place of the name it builds from the workspace and Name. Empty: the plugin builds the name. |
 
 ### WorkspaceInfo

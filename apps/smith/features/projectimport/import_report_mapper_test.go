@@ -38,3 +38,28 @@ func TestOutcomeIsOneLeftToDoList(t *testing.T) {
 		}
 	}
 }
+
+func TestSummaryOfASourceWithoutManifestSaysWhatIsWritten(t *testing.T) {
+	p := Plan{Name: "sorters", Kind: "lib", Folder: "libs/sorters", Ecosystem: "dotnet", Manifest: "a .csproj file", WriteManifest: "dotnet", Sources: 22, History: HistoryCopy, Source: Source{Arg: "../sorters"}}
+	text := Summary(p)
+	for _, want := range []string{"22 dotnet source file(s) and no manifest", "manifest write a .csproj file", "the sources stay where they are"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the summary lacks %q:\n%s", want, text)
+		}
+	}
+	plan := Changes(p)
+	if len(plan.Groups) < 2 || plan.Groups[1].Lines[0].Path != "libs/sorters/*.csproj" {
+		t.Errorf("the plan shows the manifest it writes: %+v", plan.Groups)
+	}
+}
+
+func TestSummaryOfASubFolderNamesItAndItsRef(t *testing.T) {
+	p := Plan{Name: "scrutor", Kind: "package", Folder: "packages/scrutor", Ecosystem: "dotnet", Manifest: "Scrutor.csproj", History: HistoryKeep,
+		Source: Source{Arg: "../scrutor", Git: true, Path: "src/Scrutor", PathRef: "master", Ref: pathBranch, Commit: "c87fc2f", Commits: 264}}
+	text := Summary(p)
+	for _, want := range []string{"a dotnet package (src/Scrutor/Scrutor.csproj)", "the 264 commit(s) of src/Scrutor at master (c87fc2f)"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the summary lacks %q:\n%s", want, text)
+		}
+	}
+}

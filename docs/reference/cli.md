@@ -120,6 +120,7 @@ Usage: `smith adopt [flags]`
 | `--install` | with --init, also run npm install for the Node projects and create the Python .venv | off |
 | `--json` | print the report as JSON | off |
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
+| `--manifest <manifest>` | with --init, a root of sources without a manifest: the language whose default manifest smith writes before the move (node, python, dotnet), or none; asked in a terminal |  |
 | `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
 | `-y, --yes` | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it | off |
@@ -144,7 +145,9 @@ Usage: `smith import <git-url|folder> [flags]`
 | `--history <history>` | keep (every commit, under the folder), squash (one commit) or copy (the files only); default keep for a git source, copy for a plain folder |  |
 | `--hoist <hoist>` | development dependencies to move to the workspace without asking (the known tools move anyway) (repeatable) |  |
 | `--into <into>` | the project's folder, from the workspace root (default: <kind folder>/<name>, asked in a terminal) |  <kind folder>/<name>, asked in a terminal |
+| `--manifest <manifest>` | a source with no manifest: the language whose default stack's manifest smith writes (node, python, dotnet), or none; asked in a terminal |  |
 | `--name <name>` | the project's name (default: the name in its manifest) |  the name in its manifest |
+| `--path <path>` | the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder |  |
 | `--ref <ref>` | the branch, tag or commit of a git source to import (default: its default branch) |  its default branch |
 | `-y, --yes` | do not ask: apply the plan (--as or --into must say where the project goes) | off |
 

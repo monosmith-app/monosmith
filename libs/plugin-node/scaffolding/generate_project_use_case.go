@@ -64,6 +64,10 @@ type templateData struct {
 	Dependencies []Pair
 }
 
+// Sources are the source files a Node project holds, which the plugin
+// recognises in a folder without a package.json (InitializeResult.Sources).
+var Sources = []string{"*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.jsx", "*.mjs", "*.cjs"}
+
 // Generate scaffolds one plain JavaScript project.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
 	return GenerateFrom(workspaceRoot, params, JavaScript)
@@ -71,9 +75,26 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 
 // GenerateFrom scaffolds one Node project from a template set, adds the
 // workspace's Node tooling the first time. It reports InstallPending: the
-// host installs once, so the new package is linked into node_modules.
+// host installs once, so the new package is linked into node_modules. With
+// params.ManifestOnly it writes only the set's package.json and tsconfig
+// files into the folder that holds the sources, plus the workspace's Node
+// tooling as above, except for a project at the root itself.
 func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) (protocol.GenerateResult, error) {
 	data := newTemplateData(workspaceRoot, params, set)
+	if params.ManifestOnly {
+		templates, err := kindTemplates(params.Kind, set)
+		if err != nil {
+			return protocol.GenerateResult{}, err
+		}
+		var files []string
+		if params.Directory != "." {
+			if files, err = ensureWorkspace(workspaceRoot, params.Workspace.Name, set); err != nil {
+				return protocol.GenerateResult{}, err
+			}
+		}
+		written, err := templating.Write(workspaceRoot, templating.ManifestOnly(templates, Sources), data)
+		return protocol.GenerateResult{Files: append(written, files...), InstallPending: len(files) > 0}, err
+	}
 
 	var files []string
 	rootFiles, err := ensureWorkspace(workspaceRoot, params.Workspace.Name, set)

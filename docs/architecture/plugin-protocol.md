@@ -127,6 +127,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `capabilities` | the optional methods the plugin implements (below) |
 | `languages` | values of `--lang` that reach this plugin |
 | `manifests` | file names or patterns (`package.json`, `*.csproj`) that may make a directory a project of this plugin |
+| `sources` | patterns of source file names (`*.ts`, `*.py`, `*.cs`) the plugin recognises in a folder without its manifest, so smith can offer one ([ADR 0107](decisions/0107-smith-offers-a-manifest-for-a-source-without-one.md)) |
 | `roles` | the levels the plugin can be chosen for; empty means `DefaultRoles(kind)` |
 | `provides` | slots: task names the plugin owns (`test`, `lint`) |
 | `requires`, `conflicts` | plugins that must or must not share a project |
@@ -157,6 +158,7 @@ which capability each method needs.
 | `apiSurface` | `api/surface` | `APISurfaceReader` | `release`, for the version check against the public API (optional) |
 | `packs` | (none: it changes `publish`) | `PackPublisher` | `release`, for a package with `registry = "github-release"`: with `PublishParams.packDir` set, `publish` writes the package file (npm tarball, wheel and sdist, `.nupkg`, `.gem`, `.crate`), returns it in `assets` and publishes nowhere. The host never calls `publish` with the setting on a plugin without it. The built-in Node, Python, .NET, Ruby and Rust plugins declare it |
 | `channels` | (none: it changes `publish`) | `ChannelPublisher` | `release`, to publish a package of a release channel: under `PublishParams.tag` without moving the stable pointer (npm's `latest`), or with no tag when the registry orders a prerelease below the release (PyPI, NuGet). The built-in Node, Python and .NET plugins declare it through the Go SDK; the TypeScript, Python and C# SDKs have no way to yet |
+| `manifestOnly` | (none: it changes `generate`) | `ManifestWriter` | `smith import` and `smith adopt --init`, for a folder of sources without a manifest: with `GenerateParams.manifestOnly` set, `generate` writes only the manifest and its configuration from the plugin's templates into the folder that exists, never a starter file. The host never sends it to a plugin without the capability. The built-in Node, typescript, Python and .NET plugins declare it ([ADR 0107](decisions/0107-smith-offers-a-manifest-for-a-source-without-one.md)) |
 | `declared` | (none: it changes `discover`) | `DeclaredDescriber` | `projectgraph.Discover`, to describe the projects `smith.toml` declares for the plugin's language (`DiscoverParams.declared`): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |

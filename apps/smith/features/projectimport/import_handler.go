@@ -32,8 +32,16 @@ a .csproj, and every other manifest the language plugins know), then:
            with the project, and its own lockfile is dropped
   join     the project joins its language's workspace (npm workspaces, the uv
            members, the .NET solution)
-  check    the pipelines are written again, then smith install -p <name> and
+  check    the pipelines are written again, then smith install and
            smith doctor; it ends with what is left to do
+
+A source whose manifest is below its top (src/MyLib/MyLib.csproj) is offered
+the project there: --path <sub-folder> says it, and a git source keeps the
+commits of that folder (git subtree split). A source with several projects is
+a workspace: smith adopt takes it whole. A folder of sources with no manifest
+(loose .ts, .py or .cs files) is offered the manifest of its language's
+default stack, written from smith add's templates, and the sources stay where
+they are: --manifest <language> says it, --manifest none refuses.
 
 The folder is <kind folder>/<name> (apps/, libs/ or packages/). In a terminal
 smith asks for it, with the kind the project looks like as the default.
@@ -44,7 +52,9 @@ needs a clean work tree. smith commits nothing else unless you add --commit. A p
 import runs after "y" in a terminal, or with --yes.`,
 		Example: "  smith import https://github.com/owner/api --as app\n" +
 			"  smith import ../color-tools --into libs/color-tools --dry-run\n" +
-			"  smith import https://github.com/owner/web --as app --history squash --yes",
+			"  smith import https://github.com/owner/web --as app --history squash --yes\n" +
+			"  smith import https://github.com/owner/dotnet-lib --path src/MyLib --as package\n" +
+			"  smith import ../scripts --as app --manifest python",
 		Args: commandargs.Exactly(commandargs.Spec{Names: []string{"a git URL or a folder"}, Example: "smith import https://github.com/owner/api --as app"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Source, o.Version = args[0], version
@@ -62,6 +72,8 @@ import runs after "y" in a terminal, or with --yes.`,
 	cmd.Flags().StringVar(&o.History, "history", "", "keep (every commit, under the folder), squash (one commit) or copy (the files only); default keep for a git source, copy for a plain folder")
 	cmd.Flags().StringVar(&o.ESLint, "eslint-setup", "", "what happens to a Node project's own ESLint setup: shared (the workspace's replaces it) or keep (default without a terminal)")
 	cmd.Flags().StringSliceVar(&o.Hoist, "hoist", nil, "development dependencies to move to the workspace without asking (the known tools move anyway)")
+	cmd.Flags().StringVar(&o.Manifest, "manifest", "", "a source with no manifest: the language whose default stack's manifest smith writes (node, python, dotnet), or none; asked in a terminal")
+	cmd.Flags().StringVar(&o.Path, "path", "", "the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder")
 	cmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "show the plan and change nothing")
 	commandflags.AddYesFlag(cmd, &o.Yes, "do not ask: apply the plan (--as or --into must say where the project goes)")
 	return operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "import " + imported }})

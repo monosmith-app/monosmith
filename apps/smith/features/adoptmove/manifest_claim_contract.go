@@ -11,4 +11,7 @@ type Claim struct {
 	// Manifests are the base names, or patterns of base names, the plugin
 	// discovers projects by.
 	Manifests []string `json:"manifests"`
+	// Sources are the patterns of source file names the plugin recognises in
+	// a folder without its manifest (*.ts, *.py), for the manifest offer.
+	Sources []string `json:"sources,omitempty"`
 }
