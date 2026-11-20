@@ -328,12 +328,22 @@ type ReleaseSection struct {
 	// Channels let a long-lived branch release its own line of prerelease
 	// versions (see ReleaseChannel). Default: none.
 	Channels []ReleaseChannel `toml:"channels"`
+	// Promote says what a release on the release branch does when its planned
+	// version is not the one a channel without a major last released as a
+	// prerelease (6.2.0 after 6.2.0-beta.N), that is, not the version that was
+	// tested there: "warn" prints the difference, "strict" refuses the
+	// release, "off" does not look. Only channels without a major are
+	// compared. Default: "warn".
+	Promote string `toml:"promote"`
 }
 
 // ReleaseChannel makes a branch other than [release] branch release a line
-// of prerelease versions of its own: with branch "next", prerelease "beta" and
+// of prerelease versions of its own. With branch "next", prerelease "beta" and
 // major 2 the releases are 2.0.0-beta.1, 2.0.0-beta.2 and so on, whatever
-// versions the release branch holds.
+// versions the release branch holds. Without a major, the channel releases
+// prereleases of the next stable version the commits plan: after 6.1.0 and a
+// feat commit, 6.2.0-beta.1, 6.2.0-beta.2, and the release branch then
+// releases 6.2.0.
 type ReleaseChannel struct {
 	// Branch is the branch the channel releases from. It must differ from
 	// [release] branch and from the branch of every other channel.
@@ -341,7 +351,8 @@ type ReleaseChannel struct {
 	// Prerelease is the prerelease identifier of the channel's versions, such
 	// as "beta" or "rc": letters, digits and hyphens, starting with a letter.
 	Prerelease string `toml:"prerelease"`
-	// Major is the major version of the channel's line. It must be 1 or more.
+	// Major is the major version of the channel's line, 1 or more. 0 (not
+	// set) numbers the channel from the next planned stable version.
 	Major int `toml:"major"`
 	// DistTag is the name the channel publishes under: npm's dist-tag, which
 	// keeps latest where it is. Default: Prerelease. It must not be "latest".

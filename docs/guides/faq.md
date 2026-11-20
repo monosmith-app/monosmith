@@ -241,7 +241,9 @@ releases it with the bump you name instead of the one its commits ask for.
 ### Can a branch release prerelease versions?
 
 Yes. Declare the branch as a `[[release.channels]]` table in `smith.toml`.
-It releases its own line (`2.0.0-beta.1`, `beta.2`, ...). See
+With `major`, it releases its own line (`2.0.0-beta.1`, `beta.2`, ...). Without
+`major`, it releases prereleases of the next planned version (`6.2.0-beta.1`), and the
+release branch then releases `6.2.0`. See
 [release channels](../reference/releasing.md#release-channels).
 
 ### What if a release fails half way?

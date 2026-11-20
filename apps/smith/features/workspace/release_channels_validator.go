@@ -28,12 +28,17 @@ func validateReleaseChannels(r ReleaseSection) error {
 			return fmt.Errorf("%s: prerelease must be an identifier such as \"beta\" or \"rc\". To promote the channel, do not remove it: merge the channel branch %q into the release branch %q, and the next release there is stable", at, c.Branch, r.Branch)
 		case !channelPrerelease.MatchString(c.Prerelease):
 			return fmt.Errorf("%s: prerelease must be an identifier such as \"beta\" or \"rc\", not %q", at, c.Prerelease)
-		case c.Major < 1:
-			return fmt.Errorf("%s: major must be 1 or more, not %d", at, c.Major)
+		case c.Major < 0:
+			return fmt.Errorf("%s: major must be 1 or more, or left out to number the channel from the next planned version, not %d", at, c.Major)
 		case c.DistTag != "" && (!channelDistTag.MatchString(c.DistTag) || c.DistTag == "latest"):
 			return fmt.Errorf("%s: dist_tag must be a name that is no version, such as \"next\". \"latest\" is kept for stable releases, so %q cannot be used", at, c.DistTag)
 		}
 		seen[c.Branch] = true
+	}
+	switch r.Promote {
+	case "", "warn", "strict", "off":
+	default:
+		return fmt.Errorf("%s: [release] promote must be \"warn\", \"strict\" or \"off\", not %q", FileName, r.Promote)
 	}
 	return nil
 }

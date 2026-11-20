@@ -93,6 +93,7 @@ func Preflight(s *session.Session, plan Plan) error {
 		problems = append(problems, splitrepo.Ready(s.Git)...)
 	}
 	problems = append(problems, ChannelRefusals(s, plan)...)
+	problems = append(problems, PromoteRefusals(s, plan)...)
 	for name := range plugins {
 		var projects []protocol.Project
 		for _, p := range s.Graph.Projects {
