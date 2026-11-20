@@ -24,7 +24,7 @@ func (e *NewerSmithError) Error() string { return e.Detail }
 // Summary is the one sentence smith prints for the error, for the running
 // smith version.
 func (e *NewerSmithError) Summary(version string) string {
-	return "This smith (" + version + ") is older than smith.toml needs. Run `" + UpgradeCommand + "`. If smith.toml pins [workspace] smith, raise the pin to a newer version."
+	return "This smith (" + version + ") is older than smith.toml needs. Run `" + UpgradeCommand + "`."
 }
 
 // AsNewerSmith returns the NewerSmithError inside err, if there is one.

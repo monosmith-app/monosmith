@@ -35,7 +35,7 @@ opens the Start menu instead.
 ## smith says smith.toml needs a newer smith
 
 ```text
-smith: This smith (1.100.0) is older than smith.toml needs. Run `smith update`. If smith.toml pins [workspace] smith, raise the pin to a newer version.
+smith: This smith (1.100.0) is older than smith.toml needs. Run `smith update`.
 ```
 
 A teammate or CI used a newer smith that added tables or keys to `smith.toml`

@@ -17,7 +17,7 @@ func TestNewerSmithMessageIsOneSentenceAndOneCommand(t *testing.T) {
 	if !ok {
 		t.Fatalf("a smith.toml with unknown tables needs a newer smith, got %v", err)
 	}
-	want := "This smith (1.2.3) is older than smith.toml needs. Run `npm install --global monosmith`."
+	want := "This smith (1.2.3) is older than smith.toml needs. Run `smith update`."
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
