@@ -13,7 +13,7 @@ never publishes to a registry: a release is a git tag.
 
 | | |
 |---|---|
-| Plugin name | `bundle` (built in; runs as a separate process, `smith plugin serve bundle`) |
+| Plugin name | `bundle` (built in; runs inside the smith process) |
 | Kind | language |
 | `--lang` value | `bundle` (`smith add app <name> --lang bundle`) |
 | Manifest that makes a directory a project | `flow.json` or `flow.loom`, with an `app.json` beside it |

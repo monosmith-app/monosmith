@@ -97,7 +97,7 @@ The recurring problems and their answers:
 
 ## Security model
 
-- **No shell, no eval.** Tasks are argv; plugins are separate processes.
+- **No shell, no eval.** Tasks are argv; external plugins are separate processes, and built-in plugins speak the same protocol inside the smith process.
 - **Secrets only through the environment**, named in the generated pipeline and
   listed by `smith ci check`. smith never writes a secret to disk or to a log.
   Forked pull requests, which get no secrets, still build and test.

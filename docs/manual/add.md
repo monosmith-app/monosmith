@@ -282,7 +282,9 @@ lists the sources.
 
 Every app has the tasks `build`, `test`, `lint`, `start` and `package`. The build goes to the
 workspace's `dist/` like every build; `start` builds and runs the function locally; `package` writes a
-zip (Node, Python) or the publish folder (C#) under `dist/`. The tests call the handler directly and
+zip (Node, Python) or the publish folder (C#) under `dist/`. A Node or Python zip is also copied to
+`dist/drop/<name>/<name>.zip`, and an Azure app's settings of each environment go to
+`dist/drop/<name>/env/<env>.json` ([functions](../plugins/using/catalogue/functions.md)). The tests call the handler directly and
 need no cloud tool. `smith doctor` warns, never fails, when `func` or `sam` is missing and says how
 to get it. The Node apps are linted and tested with the defaults (`eslint`, `vitest`); `jest` is
 refused with a function host.

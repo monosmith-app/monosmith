@@ -56,7 +56,7 @@ environments = ["lcl", "dev", "uat", "prd"]  # the builds a new web app gets, on
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 confirm = "risky"                     # which plans ask: "always" (default) or "risky": only a plan that deletes or edits files asks (ADR 0073)
-update_check = "on"                   # ask npm once a day if a newer smith exists on your channel (stable or next); "off" never asks; unset: announced once (docs/getting-started/installing.md)
+update_check = "on"                   # ask smith's GitHub releases once a day if a newer smith exists on your channel (stable or next); "off" never asks; unset: announced once (docs/getting-started/installing.md)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
 defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
@@ -84,6 +84,8 @@ audit_policies = []                    # "node", "go", "python", "rust": policy 
 audit_warn = []                        # audit policies that only report
 audit_allow_install_scripts = []       # npm packages the node policy lets run install scripts
 audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts in all
+artifacts = "on"                       # "optional": a full GitHub artifact quota does not fail an upload step (ci.md)
+artifact_retention_days = 7            # days GitHub keeps the uploaded builds, 1 to 90; default (and 0): 7
 
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
@@ -155,6 +157,9 @@ bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0
 [projects.sdk]
 registry = "github-release"           # pack it and attach the package file (npm tarball, wheel and sdist, nupkg, gem, crate) to its GitHub Release instead of publishing; needs [release] github_releases = true; no registry credential is asked for (also valid under [release]: every package of a private repository)
 
+[projects.orders]
+slot_settings = ["MODE"]              # an Azure function app's settings that stay with a deployment slot (slotSetting true in dist/drop/<app>/env/<env>.json); default: none (plugins/using/catalogue/functions.md)
+
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
 
@@ -175,6 +180,7 @@ npm = "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
 # a convention takes only the keys shown here; an external plugin's own settings go in [projects.<p>.settings.<plugin>]
 languages = ["go"]                    # default: every language it supports
 exclude = ["legacy"]                  # projects it leaves alone
+vendors = ["github.com/lib/pq"]       # vendor packages only a slice in integrations/ may import; a trailing * matches a prefix (docs/manual/slices-check.md)
 
 [conventions.docker]                  # an image task for every app with a Dockerfile
 registry = "ghcr.io/acme"             # where release pushes the images; unset: built, never pushed
@@ -798,8 +804,10 @@ See [Releasing](releasing.md#apps).
 | `FORCE_COLOR` | anything but empty or `0` turns colour on where stdout is not a terminal, for a captured sample; `NO_COLOR` still wins |
 | `SMITH_TOOL_COLOR` | `1` or `0`: set by smith for its plugins and for the child smith of the terminal interface, whose stdout is a pipe, to say whether the tools they run stream to a person who sees colour. `NO_COLOR` wins. See [Tool colour](tasks-and-cache.md#tool-colour) |
 | `FORCE_COLOR=1`, `npm_config_color=always`, `CARGO_TERM_COLOR=always`, `PY_COLORS=1`, `PYTHON_COLORS=1`, `MYPY_FORCE_COLOR=1`, `DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1` | set by smith in a task's environment, and for a tool a plugin streams, when the output reaches a person who sees colour; otherwise smith sets `NO_COLOR=1` and the same variables to their "off" value. They never join the cache key. A task's own `env` can override them |
-| `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release, and the update notice asking npm |
-| `SMITH_UPDATE_CHECK` | `on` or `off`: whether smith asks the npm registry once a day for a newer smith on your channel; wins over `[workspace] update_check` |
+| `SMITH_NO_UPDATE_CHECK` | stop `smith info` and the update notice asking smith's releases for the newest release |
+| `SMITH_VERSION` | the smith version the launchers (npm, PyPI, NuGet) run, before `[workspace] smith`; `latest` means the newest (docs/getting-started/installing.md) |
+| `SMITH_DOWNLOAD_URL` | a mirror of smith's release files, for the launchers, `smith update` and the update check (docs/getting-started/installing.md) |
+| `SMITH_UPDATE_CHECK` | `on` or `off`: whether smith asks its GitHub releases (or the mirror in `SMITH_DOWNLOAD_URL`) once a day for a newer smith on your channel; wins over `[workspace] update_check` |
 | `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |
 | `TWINE_REPOSITORY_URL` | upload Python packages and an app's wheels to another index |
 | `NUGET_PUSH_URL` | the NuGet v2 push endpoint for an app's .NET tool packages (default nuget.org) |

@@ -28,7 +28,7 @@ flowchart LR
   stack --> struct["structure plugins<br/>layout and code rules"]
   stack --> scaf["scaffold plugin<br/>starter files"]
   stack --> dep["deploy plugins<br/>pipeline steps, release targets"]
-  lang & tool & struct & scaf & dep --> proc["each is a process that speaks<br/>JSON-RPC on stdin and stdout"]
+  lang & tool & struct & scaf & dep --> proc["each speaks JSON-RPC<br/>(an external plugin as its own process,<br/>a built-in inside smith)"]
 ```
 
 ## What is in this section

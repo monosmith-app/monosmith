@@ -21,12 +21,24 @@ command, each of which installs the launcher). It then asks what to do. `--check
 changes nothing. Without a terminal it needs `--yes`. When smith cannot tell how it was
 installed, it names the releases page instead of guessing.
 
+## When the newer smith is installed already
+
+A workspace that pins `[workspace] smith`, or a shell that sets `SMITH_VERSION`, makes the launcher
+run that version. When the newer smith is in `~/.smith/versions` already, there is nothing to
+download, and `smith update` changes nothing. It says what to change instead:
+
+```text
+smith 2.56.0 is installed, but this workspace runs 2.55.2: smith.toml pins it ([workspace] smith), or SMITH_VERSION names it. To use 2.56.0 here, set smith = "2.56.0" under [workspace] (or "latest").
+```
+
+The notice after a command says the same, and the interface offers no update for that version.
+
 ## In the interface
 
 When smith knows a newer release, the interface offers it once per version in a dialog with the
 command shown, an **Update now** button and a **Don't remind me about updates** box. Cancel keeps the
 update one click away: a red "update available" in the bottom bar, which opens the same dialog. The
-**Settings > Update** section shows the same facts, asks the registry on Enter, and has the same box
+**Settings > Update** section shows the same facts, asks smith's releases on Enter, and has the same box
 to bring the reminder back or switch it off. The box keeps only the reminder away: smith still
 checks, and `smith update` still works. **Update now** closes the interface and runs
 `smith update --yes`, so the running smith can be replaced.

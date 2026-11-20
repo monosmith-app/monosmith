@@ -17,7 +17,7 @@ project: nothing there says what the project is, or how to build it.
 
 | | |
 |---|---|
-| Plugin name | `objc` (built in; runs as a separate process, `smith plugin serve objc`) |
+| Plugin name | `objc` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin) |
 | `--lang` value | `objc` |
