@@ -11,6 +11,8 @@ ignore_missing_imports = True
 explicit_package_bases = True
 warn_redundant_casts = True
 warn_unused_ignores = True
+# The sdist staging folder (name-1.2.3) that a build of the same project makes and removes.
+exclude = (^|/)[^/]+-[0-9]+[.][0-9][^/]*/
 `
 
 // DefaultConfig returns the text of smith's default configuration.

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -53,7 +54,7 @@ func TestDiscover(t *testing.T) {
 	if sdk.Kind != protocol.ProjectPackage || sdk.Exports[0] != "acme_sdk" || sdk.Tasks["build"].Outputs[0] != "../../dist/packages/sdk" || sdk.Version != "1.2.0" {
 		t.Fatalf("sdk %+v", sdk)
 	}
-	if lint := api.Tasks["lint"].Command; len(lint) != 5 || lint[3] != "check" {
+	if lint := api.Tasks["lint"].Command; len(lint) != 7 || lint[3] != "check" || lint[4] != "--extend-exclude" || lint[6] != "." {
 		t.Fatalf("the root pyproject.toml configures ruff, so smith passes no --config: %v", lint)
 	}
 }
@@ -77,7 +78,7 @@ func TestToolsRunOnSmithsDefaultsUnlessTheRepositoryConfiguresThem(t *testing.T)
 	if cmd := strings.Join(plain["typecheck"].Command[1:], " "); cmd != "-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini ." {
 		t.Fatalf("typecheck %s", cmd)
 	}
-	if cmd := strings.Join(plain["test"].Command[1:], " "); cmd != "-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=." {
+	if cmd := strings.Join(plain["test"].Command[1:], " "); cmd != "-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=. --ignore-glob {projectRoot}/*-[0-9]*.[0-9]*" {
 		t.Fatalf("test %s", cmd)
 	}
 	for task, file := range map[string]string{"lint": "ruff.toml", "typecheck": "mypy.ini", "test": "pytest.ini"} {
@@ -89,7 +90,7 @@ func TestToolsRunOnSmithsDefaultsUnlessTheRepositoryConfiguresThem(t *testing.T)
 	if cmd := typed["typecheck"].Command; len(cmd) != 4 || cmd[2] != "mypy" || cmd[3] != "." {
 		t.Fatalf("a project that configures mypy gets no --config-file: %v", cmd)
 	}
-	if cmd := typed["test"].Command; len(cmd) != 6 {
+	if cmd := typed["test"].Command; len(cmd) != 8 || slices.Contains(cmd, "-c") {
 		t.Fatalf("a project that configures pytest gets no -c: %v", cmd)
 	}
 	if strings.Contains(typed["typecheck"].Description, "smith's default") {
