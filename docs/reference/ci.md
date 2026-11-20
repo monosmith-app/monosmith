@@ -348,6 +348,16 @@ plugins give every app one:
 A stack's plugin, or `[projects.<name>.tasks.package]` in `smith.toml`, can
 replace it, for example with a zip a deploy step expects.
 
+The `<version>` in these names is the planned release version. Before the
+`package` tasks run, `smith ci pack` makes the release plan of the branch
+(the plan of `smith release --dry-run`). It writes the planned version into
+each packed project that the plan has, as `smith release` does. The release
+branch gets the next stable version, a release channel branch its prerelease
+version, and any other branch the next stable version. A project that the
+plan does not have keeps the version in its manifest. The pack runs without
+the task cache when it writes a version. After the pack, also after a
+failure, smith puts the files back.
+
 On a pull request, `smith ci verify` also runs the `package` task of every
 affected **app**, building into `dist/drop` and publishing nothing, so a
 packaging step that breaks (a staging script that misses a new workspace
@@ -355,6 +365,35 @@ dependency) shows on the pull request and not on the release branch. Native
 projects are left to the native job. `verify = false` under
 `[projects.<name>.tasks.package]` turns it off for one app, or under
 `[tasks.package]` for all.
+
+### Azure build tags, deploy variables and build number
+
+On Azure Pipelines (`TF_BUILD` set), `smith ci pack` tells the build what the
+release plan holds. A classic release definition can then start from a build
+tag or read a variable. `smith ci pack` writes three things:
+
+1. A build tag for each project in the plan, with the name of the project
+   (`##vso[build.addbuildtag]api`).
+2. The variable `DEPLOY_<PROJECT>` for each app and each project with a
+   `package` task: `true` when the plan has the project, else `false`.
+   `<PROJECT>` is the name in upper case, with `_` for each character that
+   is not a letter or a digit (`web-admin` gives `DEPLOY_WEB_ADMIN`).
+3. The build number: the pattern `{project}_{version}` for each planned
+   project, joined with `-` (`api_6.2.0-app_6.2.0`). With no planned project,
+   the build number does not change.
+
+`smith ci release` does not write them again. `[ci.azure]` in `smith.toml`
+changes them:
+
+```toml
+[ci.azure]
+build_tags = { api = "api-release" }  # another tag name for a project; false: no tags
+deploy_variables = false              # no DEPLOY_<PROJECT> variables
+build_number = "{project}-v{version}" # the pattern; "" or false: the build number does not change
+```
+
+A build number pattern takes only `{project}` and `{version}`, and none of
+the characters `"/:<>\|?@*`, which Azure refuses.
 
 ## A release started by hand
 
