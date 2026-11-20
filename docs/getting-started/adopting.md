@@ -75,7 +75,7 @@ smith adopt --tags --init
   wrote .mcp.json
   wrote .vscode/mcp.json
   wrote go.work: ./services/api
-✓ adopted. smith doctor still reports 2 thing(s) for you:
+✓ adopted. Left to do (2):
   × node_modules is missing at the workspace root
     → run `npm install` at the workspace root
   ...

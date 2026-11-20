@@ -13,8 +13,8 @@ import (
 
 // Doctor checks that Node.js is the version CI installs (nodeVersion), that
 // dependencies are installed, that every Node project is covered by the
-// root package.json workspaces, and that a built package has every file
-// its package.json names.
+// root package.json workspaces (with no dead lockfile of its own), and that a
+// built package has every file its package.json names.
 func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion string) protocol.DoctorResult {
 	var findings []protocol.Finding
 	if len(params.Projects) == 0 {
@@ -75,6 +75,11 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 			Detail:  p.Root + " is not matched by the root package.json \"workspaces\"",
 			Remedy:  "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
 		})
+		if covered {
+			if f, ok := CheckNestedLockfile(workspaceRoot, p); ok {
+				findings = append(findings, f)
+			}
+		}
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}

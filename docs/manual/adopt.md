@@ -65,6 +65,10 @@ Interactions:
   work tree. With `--commit` (or `commit_operations = true`) it commits them as
   `chore: adopt smith`, and `smith undo` reverts that commit. They can be combined:
   `smith adopt --tags --init --commit`.
+- `--tags` also works in a workspace that smith already manages. `smith release` and
+  `smith doctor` tell you to run it when a project's newest tag has an old name, such as
+  `v1.1.1` for a project that now releases as `<name>@1.1.1`. A `v1.2.3` tag counts only
+  when the workspace has one releasable project.
 - A repository that uses pnpm (`pnpm-workspace.yaml`, or `workspace:` and `catalog:`
   ranges) blocks `--init`: smith installs with npm, which cannot read them. The report
   names the way on. A workflow of yours under `.github/workflows` is listed with a
@@ -139,6 +143,11 @@ Move it into a folder of its own so smith can manage it?
   `wiki`) go to `doc/`. Everything else moves, including source, tests, configs such as
   `jest.config.js` and, for Go, `go.mod` and `go.sum` (the module path does not change).
   Lines of `.gitignore` that start with `/` and name a moved entry follow it.
+- A published Node package (a `package.json` with a `name` and without `"private": true`)
+  also gets a copy of the README and the LICENSE in its new folder, because npm publishes
+  the package from that folder. The root keeps its own copies for the repository page. The
+  dry run shows the copies as `cp` lines, and a note says why. Delete the copies in the
+  folder to leave them out of the package.
 - For a Node project the move also cuts the files that hold both. The tools in
   `devDependencies` (typescript, jest, ts-jest, prettier, `@types/*` and the like) move to a
   root `package.json`, which gets `workspaces`; `dependencies` stay. A development dependency
@@ -252,7 +261,7 @@ smith adopt --init --tags
   wrote .vscode/mcp.json
   wrote go.work: ./services/api
   not committed: git status lists the changes and git can take them back; commit them when you are happy, or run smith adopt --commit next time
-✓ adopted. smith doctor still reports 2 thing(s) for you:
+✓ adopted. Left to do (2):
   × node_modules is missing at the workspace root
     → run `npm install` at the workspace root
   × the workspace root has no eslint.config file, so the slice rules do not run on lib

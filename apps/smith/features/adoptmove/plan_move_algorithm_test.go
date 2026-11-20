@@ -26,6 +26,33 @@ func TestPlanMoveSplitsProjectFromRepositoryFiles(t *testing.T) {
 	}
 }
 
+func TestPlanMoveCopiesTheReadmeAndLicenseOfAPublishedPackage(t *testing.T) {
+	c := Candidate{Ecosystem: EcosystemNode, Manifest: "package.json", Name: "lib", Published: true}
+	p, err := PlanMove(c, "packages/lib", append([]string{"docs/guide.md"}, nodeFiles...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Step{{From: "LICENSE", To: "packages/lib/LICENSE"}, {From: "README.md", To: "packages/lib/README.md"}}
+	if !reflect.DeepEqual(p.Copies, want) {
+		t.Errorf("copies = %v, want %v", p.Copies, want)
+	}
+	lines := p.Lines()
+	if lines[len(lines)-1] != "cp README.md packages/lib/README.md" {
+		t.Errorf("the plan shows the copies: %v", lines)
+	}
+	said := false
+	for _, n := range p.Notes {
+		said = said || strings.Contains(n, "LICENSE and README.md are copied into packages/lib")
+	}
+	if !said {
+		t.Errorf("the plan says why: %v", p.Notes)
+	}
+	c.Published = false
+	if p, _ := PlanMove(c, "packages/lib", nodeFiles); len(p.Copies) != 0 {
+		t.Errorf("a private project copies nothing: %v", p.Copies)
+	}
+}
+
 func TestPlanMoveRefusesAnAmbiguousLayout(t *testing.T) {
 	c := Candidate{Ecosystem: EcosystemNode, Manifest: "package.json", Name: "web"}
 	cases := []struct {

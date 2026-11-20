@@ -21,14 +21,15 @@ func TestDetectReadsTheProjectAtTheRoot(t *testing.T) {
 		files map[string]string
 		want  Candidate
 	}{
-		{"node app", map[string]string{"package.json": `{"name":"@acme/WebApp","scripts":{"start":"node ."}}`}, Candidate{EcosystemNode, "package.json", "web-app", true}},
-		{"node library", map[string]string{"package.json": `{"name":"kit","main":"index.js"}`}, Candidate{EcosystemNode, "package.json", "kit", false}},
-		{"node bin", map[string]string{"package.json": `{"name":"cli","bin":"cli.js"}`}, Candidate{EcosystemNode, "package.json", "cli", true}},
-		{"go program", map[string]string{"go.mod": "module github.com/a/Tool\n", "main.go": "package main\n"}, Candidate{EcosystemGo, "go.mod", "tool", true}},
-		{"go library", map[string]string{"go.mod": "module github.com/a/lib/v3\n", "lib.go": "package lib\n"}, Candidate{EcosystemGo, "go.mod", "lib", false}},
-		{"python script", map[string]string{"pyproject.toml": "[project]\nname = \"data_tools\"\n[project.scripts]\nd = \"x:y\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "data-tools", true}},
-		{"python package", map[string]string{"pyproject.toml": "[project]\nname = \"pk\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "pk", false}},
-		{"rust binary", map[string]string{"Cargo.toml": "[package]\nname = \"rr\"\n", "src/main.rs": "fn main(){}"}, Candidate{EcosystemRust, "Cargo.toml", "rr", true}},
+		{"node app", map[string]string{"package.json": `{"name":"@acme/WebApp","scripts":{"start":"node ."}}`}, Candidate{EcosystemNode, "package.json", "web-app", true, true}},
+		{"node library", map[string]string{"package.json": `{"name":"kit","main":"index.js"}`}, Candidate{EcosystemNode, "package.json", "kit", false, true}},
+		{"node private", map[string]string{"package.json": `{"name":"site","private":true}`}, Candidate{EcosystemNode, "package.json", "site", false, false}},
+		{"node bin", map[string]string{"package.json": `{"name":"cli","bin":"cli.js"}`}, Candidate{EcosystemNode, "package.json", "cli", true, true}},
+		{"go program", map[string]string{"go.mod": "module github.com/a/Tool\n", "main.go": "package main\n"}, Candidate{EcosystemGo, "go.mod", "tool", true, false}},
+		{"go library", map[string]string{"go.mod": "module github.com/a/lib/v3\n", "lib.go": "package lib\n"}, Candidate{EcosystemGo, "go.mod", "lib", false, false}},
+		{"python script", map[string]string{"pyproject.toml": "[project]\nname = \"data_tools\"\n[project.scripts]\nd = \"x:y\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "data-tools", true, false}},
+		{"python package", map[string]string{"pyproject.toml": "[project]\nname = \"pk\"\n"}, Candidate{EcosystemPython, "pyproject.toml", "pk", false, false}},
+		{"rust binary", map[string]string{"Cargo.toml": "[package]\nname = \"rr\"\n", "src/main.rs": "fn main(){}"}, Candidate{EcosystemRust, "Cargo.toml", "rr", true, false}},
 	}
 	for _, c := range cases {
 		dir := t.TempDir()

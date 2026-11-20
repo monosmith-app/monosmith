@@ -59,10 +59,13 @@ Tasks come from the project's `package.json`. This is the central rule: every ke
 
 Cached tasks have the inputs `**/*`, `{workspaceRoot}/package-lock.json`, `{workspaceRoot}/tsconfig.base.json` and `{workspaceRoot}/eslint.config.mjs`. A dependency on a script the project does not have (`start` on `build` in plain JavaScript) is dropped; `^build` is always kept.
 
+A script that is the placeholder `npm init` writes (`echo "Error: no test specified" && exit 1`, with other quotes, with `;` or `||`, or without `exit 1`) gives no task. It can only fail, so the project counts as one without tests, and `smith doctor` warns that it has no `test` task.
+
 Tasks the plugin adds by itself, with no script behind them:
 
 | Task | Command | Appears for | dependsOn | Cached |
 |---|---|---|---|---|
+| `lint` | `npx eslint .`, with the same `--fix` as a lint script that runs ESLint | a project with no `lint` script that has `eslint` in its `dependencies` or `devDependencies` and an ESLint configuration: an `eslint.config.*` or `.eslintrc*` file in its folder, or `eslintConfig` in its `package.json` | `^build` | yes, with the inputs of the other cached tasks |
 | `package` | `npm pack --pack-destination {workspaceRoot}/dist/drop` for an app without a `build` script; `smith npm-pack <dir>` (packs the app's build directory, staged with its `package.json`) for an app that builds | an app, or any project whose `engines.vscode` is set (a VS Code extension), unless it has its own `package` script | `build` (when it builds) | no |
 | `prune` | `smith npm-prune <dir>` | an app that has a `build` script, unless it has its own `prune` script | `build`, `^build` | no |
 | `deps-check` | `smith npm-deps-check <dir>` | a `package`, unless it has its own `deps-check` script; the project's first of `lint`, `build`, `test` gains `deps-check` in its `dependsOn`, so CI verify runs it | none (the first of `lint`, `build`, `test` depends on it) | yes; inputs `**/*` and the root `package.json` |
@@ -399,6 +402,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 | `the scripts of <project> call files and tools that exist` | a script runs a file (`node x.js`, `--config x`) that does not exist, or starts a tool that is installed neither in a `node_modules/.bin` nor on PATH. Files under a build output are "not built yet", not missing. Judged once dependencies are installed; a failure when the broken script is one of `build`, `test`, `lint`, `typecheck`, `prebuild`, `postbuild`, `pretest`, `start`, `dev`, otherwise a warning. The fix asks whether to install the tools or remove the scripts. |
 | `the packages the ESLint config imports are installed` | the root `eslint.config.*` imports something not in `node_modules`; the fix installs it |
 | `npm workspaces include <dir>` | the root `workspaces` does not match the project (remedy also names `[workspace] exclude`) |
+| `<dir> has no lockfile of its own` | a warning when a project that the root `workspaces` covers holds a `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock` or `bun.lockb`. npm installs the workspace from the root lockfile, so the nested one is not used. A project that moved or came from its own repository often keeps one. The fix deletes it, and asks first. |
 | `<project> compiles into dist/<dir>` | the `--outDir`, `--outdir` or `--outfile` of the build script, or the `outDir` of the tsconfig the script names (`-p`), `tsconfig.build.json` or `tsconfig.json`, is inside the source tree. The fix asks per project (move the build, or leave it), shows every changed line, and is refused with the reason for a project that others import by name or a published package that would lose a file; see [doctor](../../../manual/doctor.md#a-build-that-writes-outside-dist) |
 | `<dir> declares the packages it imports` | a package (`kind = package`) fails `deps-check`; the fix declares the imports in `package.json` |
 | `internal dependencies use "*"` | warning. A package.json (a project's, or the root one) lists a package of the same workspace in `dependencies`, `devDependencies` or `optionalDependencies` with a range other than `*` (`workspace:`, `file:`, `link:`, git and URL specs are skipped; `peerDependencies` are never read). A pinned range goes stale when the sibling's version moves, and npm may then fetch the registry copy instead of the workspace one. The fix, offered with the diff, rewrites only those range values to `*` (the range smith writes when it installs an internal dependency) and regenerates `package-lock.json` with `npm install --package-lock-only` |
@@ -450,7 +454,7 @@ A folder cannot be built by `npm run` alone: scripts, dependencies and tool conf
 - `node` and `npm` on PATH; network for `npm install`. Node 24 is what CI uses and what the doctor expects.
 - npm workspaces only. Yarn and pnpm are not supported by the plugin (commands are hard-wired to `npm`).
 - The graph reads imports with a regular-expression scan of source files; dynamic specifiers (`require(name)`) are invisible.
-- Every script becomes a task, but only the six well-known names are cached and ordered. Cache any other by overriding it in `smith.toml` (`[projects.<p>.tasks.<t>] cache = true`).
+- Every script except the `npm init` test placeholder becomes a task, but only the six well-known names are cached and ordered. Cache any other by overriding it in `smith.toml` (`[projects.<p>.tasks.<t>] cache = true`).
 - A Node app's release assets cannot be cross-built; they are built per OS with `"native": true`.
 - Plain-JavaScript projects (`--stack none`) have no `build`, `lint` or `test`; that is the toolchain add-ons' job.
 

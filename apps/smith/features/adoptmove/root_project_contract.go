@@ -30,6 +30,10 @@ type Candidate struct {
 	Name string `json:"name"`
 	// App is true when the project looks like a program.
 	App bool `json:"app"`
+	// Published is true when the project is a package a registry publishes
+	// from its folder (a Node package with a name that is not private), so
+	// the README and LICENSE must be in that folder too.
+	Published bool `json:"published,omitempty"`
 }
 
 // Choice is one answer of the question "where should it go?".
@@ -61,6 +65,10 @@ type Plan struct {
 	// Docs are the git mv commands that put the project's documents in the
 	// workspace's doc folder.
 	Docs []Step `json:"docs,omitempty"`
+	// Copies are the README and LICENSE of a published package, copied into
+	// the project folder so the package keeps them; the root keeps its own
+	// for the repository.
+	Copies []Step `json:"copies,omitempty"`
 	// Stays are the top-level entries that stay at the root.
 	Stays []string `json:"stays"`
 	// Hoist are the dependencies of development that go to the workspace

@@ -39,7 +39,7 @@ func CheckLineage(s *session.Session, fetch bool) []releaselineage.Finding {
 	hung := map[string]bool{} // plugins whose registry did not answer in time
 	turn := make(chan struct{}, lookupsAtOnce)
 	for i, p := range releasing {
-		subjects[i] = releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Explicit: p.TagPrefixSet, Tags: tags}
+		subjects[i] = releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p, len(releasing) == 1), Explicit: p.TagPrefixSet, Tags: tags}
 		if PublishesToNoRegistry(p) {
 			// The git tags and the GitHub Release are the record of such a
 			// package: there is no registry to be behind or ahead of.
@@ -86,8 +86,10 @@ const lookupsAtOnce = 8
 const lookupCallTimeout = 4 * protocol.RegistryLookupTimeout
 
 // alternatives are the names a project's tags may carry from before: its
-// exported package names, scoped and unscoped, and its own name.
-func alternatives(p *projectgraph.Project) []string {
+// exported package names, scoped and unscoped, and its own name. When only
+// is true, the project is the workspace's one releasing project, so the
+// v1.2.3 tags of a one-package repository are its own too.
+func alternatives(p *projectgraph.Project, only bool) []string {
 	var out []string
 	add := func(prefix string) {
 		if !slices.Contains(out, prefix) {
@@ -104,5 +106,8 @@ func alternatives(p *projectgraph.Project) []string {
 		}
 	}
 	add(p.Name + "@")
+	if only {
+		add("v")
+	}
 	return out
 }

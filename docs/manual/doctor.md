@@ -71,6 +71,9 @@ lists every check with its remedy.
 - `The MonoSmith agent files are installed and current`: `.claude/agents/smith.md`,
   `.mcp.json` and `.vscode/mcp.json` match this smith. A warning, with `smith agent install`
   as the remedy; `enabled = false` under `[agent]` in `smith.toml` switches the check off.
+  When the workspace has no agent file yet (you answered "not now" to `smith adopt` or
+  `smith new`), `doctor --fix` asks before it writes them and `--fix --yes` skips them.
+  When some agent files are there, `--fix --yes` restores the others.
 - `derived files are up to date`, `derived file <path> (<renderer>) is up to date` and
   `config files that differ from their sibling projects are yours`: only when
   `[derive] enabled = true`. A hand edit to a derived file is reported with the choices
