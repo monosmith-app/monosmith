@@ -21,6 +21,7 @@ from .plugin_contract import (
     RegistryReader,
     Remover,
     Versioner,
+    WorkspaceJoiner,
 )
 from .plugin_members_config import PLUGIN_MEMBERS
 from .protocol_streams_contract import ByteSink, ByteSource, ServeStreams
@@ -39,6 +40,7 @@ __all__ = [
     "Deriver",
     "Discoverer",
     "DependencyRepairer",
+    "WorkspaceJoiner",
     "DoctorContributor",
     "Generator",
     "KindChanger",

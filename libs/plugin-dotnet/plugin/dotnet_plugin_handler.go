@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
@@ -37,6 +38,12 @@ func (d *Dotnet) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Manifests: []string{"*.csproj", "*.fsproj"},
 		Choices:   functions.Choices(),
 	}, nil
+}
+
+// Join implements serve.WorkspaceJoiner: whether the solution at the
+// workspace root lists each project, when the workspace has one.
+func (d *Dotnet) Join(params protocol.JoinParams) (protocol.JoinResult, error) {
+	return workspacejoin.Join(d.root, params)
 }
 
 // Discover implements serve.Discoverer.

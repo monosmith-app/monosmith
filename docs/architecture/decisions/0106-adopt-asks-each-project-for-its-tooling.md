@@ -1,4 +1,4 @@
-# ADR 0105: Adopt asks each project which build and lint tools it uses
+# ADR 0106: Adopt asks each project which build and lint tools it uses
 
 - Status: accepted
 - Date: 2026-11-20

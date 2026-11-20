@@ -171,6 +171,16 @@ public interface IDependencyRepairer
     Task<RepairResult> RepairAsync(RepairParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A language plugin that says whether each project is joined to its language's workspace, and how to join one that is not. It only describes; the host applies the fix.</summary>
+public interface IWorkspaceJoiner
+{
+    /// <summary>Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace members, a .NET solution), and for the fix that joins one that is not. The plugin writes nothing: the host shows the fix and applies it.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<JoinResult> JoinAsync(JoinParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.</summary>
 public interface IDependencyManager
 {

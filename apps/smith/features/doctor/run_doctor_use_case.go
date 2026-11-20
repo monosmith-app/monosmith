@@ -27,6 +27,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/toolchainpin"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -131,6 +132,7 @@ func run(s *session.Session, askRegistries bool) Report {
 }
 
 // PluginChecks asks each plugin that does doctor about its projects, and
+// each language plugin whether its projects are joined to its workspace, and
 // returns what they find. With only, a plugin is asked about just the named
 // projects, and not at all when it serves none of them.
 func PluginChecks(s *session.Session, only map[string]bool) []Finding {
@@ -141,6 +143,17 @@ func PluginChecks(s *session.Session, only map[string]bool) []Finding {
 		}
 	}
 	for _, c := range s.Plugins.Clients {
+		var own []protocol.Project
+		for _, p := range s.Graph.Projects {
+			if p.Plugin == c.Info.Plugin.Name && (only == nil || only[p.Name]) {
+				own = append(own, p.Project)
+			}
+		}
+		joins, err := workspacejoin.Ask(c, own)
+		if err != nil {
+			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers workspace/join", Area: doctorchecks.AreaConfig, Problem: "plugin " + c.Info.Plugin.Name + " did not say whether its projects are joined to its workspace: " + err.Error(), Detail: err.Error(), Remedy: "report this to the plugin's maintainers"})
+		}
+		add(c.Info.Plugin.Name, joins...)
 		if !c.Info.Capabilities.Doctor {
 			continue
 		}

@@ -37,7 +37,7 @@ removal rule was proposed: remove unused packages only when no remaining file im
 
 `smith adopt --level full` on a plain repository first said it was not built, because the
 removal plan assumes the conversion has already put smith's build and ESLint config in place.
-[ADR 0105](0105-adopt-asks-each-project-for-its-tooling.md) adds that step for Node projects:
+[ADR 0106](0106-adopt-asks-each-project-for-its-tooling.md) adds that step for Node projects:
 adopt asks each project, puts smith's tools in place, then runs the same removal plan
 ([#553](https://github.com/monosmith-app/monosmith/issues/553)). Other languages'
 leftovers are not looked for yet.

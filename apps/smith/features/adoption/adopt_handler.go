@@ -20,7 +20,7 @@ import (
 )
 
 // FullLevelIssue tracks the full level of the adopt wizard for repositories
-// that are not Nx or Turborepo workspaces (the command line has it, ADR 0105).
+// that are not Nx or Turborepo workspaces (the command line has it, ADR 0106).
 const FullLevelIssue = "https://github.com/monosmith-app/monosmith/issues/1161"
 
 // The levels --level takes.

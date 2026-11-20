@@ -40,6 +40,8 @@ from ..protocol import (
     GenerateResult,
     InitializeParams,
     InstallParams,
+    JoinParams,
+    JoinResult,
     LatestParams,
     LatestResult,
     LinkParams,
@@ -165,6 +167,13 @@ class DependencyRepairer(Protocol):
     deletes the paths and runs the commands."""
 
     def repair(self, params: RepairParams, cancel: CancelToken) -> RepairResult: ...
+
+
+class WorkspaceJoiner(Protocol):
+    """`workspace/join`: whether each project is joined to its language's workspace, and the fix
+    that joins one that is not. It only describes; the host applies the fix."""
+
+    def join(self, params: JoinParams, cancel: CancelToken) -> JoinResult: ...
 
 
 class DeclarationEditor(Protocol):

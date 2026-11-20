@@ -348,4 +348,20 @@ public static class PluginClientCalls
         ArgumentNullException.ThrowIfNull(client);
         return client.CallAsync<APISurfaceParams, APISurfaceResult>(ProtocolMethods.ApiSurface, parameters, timeout, cancellation);
     }
+
+    /// <summary>Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace members, a .NET solution), and for the fix that joins one that is not. The plugin writes nothing: the host shows the fix and applies it.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<JoinResult> JoinAsync(
+        this PluginClient client,
+        JoinParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<JoinParams, JoinResult>(ProtocolMethods.WorkspaceJoin, parameters, timeout, cancellation);
+    }
 }

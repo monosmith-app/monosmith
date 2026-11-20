@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
@@ -34,6 +35,12 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Manifests: []string{"pyproject.toml"},
 		Choices:   functions.Choices(),
 	}, nil
+}
+
+// Join implements serve.WorkspaceJoiner: whether the uv workspace of the root
+// pyproject.toml lists each project, when the workspace has one.
+func (p *Python) Join(params protocol.JoinParams) (protocol.JoinResult, error) {
+	return workspacejoin.Join(p.root, params)
 }
 
 // Discover implements serve.Discoverer.

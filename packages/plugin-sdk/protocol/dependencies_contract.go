@@ -30,6 +30,10 @@ type UninstallParams struct {
 type DependencyResult struct {
 	Files []string `json:"files,omitempty"`
 	Notes []string `json:"notes,omitempty"`
+	// Unreached names the projects an install of every project did not reach,
+	// such as a Node project the root "workspaces" do not cover. The host
+	// leaves them out of its count and names them.
+	Unreached []string `json:"unreached,omitempty"`
 }
 
 // LinkParams asks a plugin to make Project depend on Library, a lib or package

@@ -247,6 +247,12 @@ export interface Capabilities {
    * message that says so.
    */
   declared?: boolean
+  /**
+   * Join says whether each project is joined to the language's workspace (npm "workspaces", uv
+   * workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin
+   * only describes; the host applies the fix.
+   */
+  join?: boolean
 }
 
 /**
@@ -504,6 +510,11 @@ export interface DeclaredResult {
 export interface DependencyResult {
   files?: string[]
   notes?: string[]
+  /**
+   * Unreached names the projects an install of every project did not reach, such as a Node project
+   * the root "workspaces" do not cover. The host leaves them out of its count and names them.
+   */
+  unreached?: string[]
 }
 
 /**
@@ -949,6 +960,44 @@ export interface InstallParams {
    * one step of a larger job (smith add).
    */
   quiet?: boolean
+}
+
+/**
+ * JoinParams asks a language plugin whether each of its projects is joined to the language's
+ * workspace (npm "workspaces", the members of a uv workspace, a .NET solution), and how to join the
+ * ones that are not. The plugin writes nothing: the host shows the fix and applies it (smith doctor
+ * --fix, smith import).
+ */
+export interface JoinParams {
+  projects: Project[]
+}
+
+/**
+ * JoinResult has one state for each project the plugin was asked about. A project the plugin leaves
+ * out is joined.
+ */
+export interface JoinResult {
+  projects: JoinState[]
+}
+
+/** JoinState says whether one project is joined to its language's workspace. */
+export interface JoinState {
+  /** Project is the project's name, as JoinParams gave it. */
+  project: string
+  /**
+   * Joined is true when the workspace covers the project, or when the language has no workspace the
+   * project must be part of.
+   */
+  joined: boolean
+  /** Workspace names what the project joins, in words, such as `the root package.json "workspaces"`. */
+  workspace?: string
+  /** Problem says, in one line, what is missing and what it breaks, when Joined is false. */
+  problem?: string
+  /**
+   * Fix joins the project, when Joined is false and the plugin can write the change: the manifest's
+   * new content, then the commands to run.
+   */
+  fix?: Fix
 }
 
 /**
@@ -2061,6 +2110,16 @@ export interface ProtocolMethods {
     params: APISurfaceParams
     result: APISurfaceResult
     capability: 'apiSurface'
+  }
+  /**
+   * Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace
+   * members, a .NET solution), and for the fix that joins one that is not. The plugin writes
+   * nothing: the host shows the fix and applies it.
+   */
+  'workspace/join': {
+    params: JoinParams
+    result: JoinResult
+    capability: 'join'
   }
 }
 

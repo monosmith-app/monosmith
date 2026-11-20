@@ -32,12 +32,12 @@ func TestPrintReportHasHeadersAndEachWayOut(t *testing.T) {
 
 func TestPredictedFailureNamesTheStepThatClearsIt(t *testing.T) {
 	for check, want := range map[string]string{
-		"go.work exists":                  "--init runs go work init",
-		"npm workspaces include web":      "--init adds the \"workspaces\"",
-		"Node dependencies are installed": "--init --install",
-		"something else":                  "do this first",
+		"go.work exists": "--init runs go work init",
+		"apps/web is joined to its language's workspace": "--init adds the \"workspaces\"",
+		"Node dependencies are installed":                "--init --install",
+		"something else":                                 "do this first",
 	} {
-		item := predictedFailure(doctor.Finding{Finding: protocol.Finding{Check: check, Detail: "d", Remedy: "do this first\nand then this"}})
+		item := predictedFailure(doctor.Finding{Finding: protocol.Finding{Check: check, Detail: "d", Remedy: "do this first\nand then this"}, Source: "node"})
 		if !strings.Contains(item.Step, want) {
 			t.Errorf("%s: step %q, want %q", check, item.Step, want)
 		}

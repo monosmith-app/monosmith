@@ -273,6 +273,10 @@ func dispatch(p Plugin, req protocol.Request) (result any, rpcErr *protocol.Resp
 		if r, ok := p.(APISurfaceReader); ok {
 			return call(req.Params, r.APISurface)
 		}
+	case protocol.MethodJoin:
+		if j, ok := p.(WorkspaceJoiner); ok {
+			return call(req.Params, j.Join)
+		}
 	}
 	return nil, &protocol.ResponseError{Code: protocol.CodeMethodNotFound, Message: "method not supported: " + req.Method}
 }
@@ -321,7 +325,8 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, link := p.(Linker)
 	_, packs := p.(PackPublisher)
 	_, repair := p.(DependencyRepairer)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs, Repair: repair}
+	_, join := p.(WorkspaceJoiner)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs, Repair: repair, Join: join}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

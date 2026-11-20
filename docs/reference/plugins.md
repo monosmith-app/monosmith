@@ -290,6 +290,7 @@ Content-Length: 85\r\n
 | `project/kind` | a project, the kind it becomes, its new folder → the edits the change makes, or a refusal (`smith kind`) | `changeKind` |
 | `derive` | the plugin's projects, the dependency graph, the paths smith owns → the files it derives, and the files it left alone because they differ from their siblings (`smith derive`) | `derive` |
 | `sbom/components` | a project → its dependencies, read from a lockfile (`smith release` SBOM) | `components` |
+| `workspace/join` | the projects → for each one the language's workspace is about: joined or not, and the fix that joins it (npm workspaces, uv members, `dotnet sln add`). The plugin only describes; `smith doctor --fix` applies ([ADR 0105](../architecture/decisions/0105-a-plugin-joins-a-project-to-its-language-workspace.md)) | `join` |
 | `api/surface` | a project, a git revision → the names it exports (the release checks the bump against them) | `apiSurface` |
 | `dependencies/declared` | the plugin's projects → every dependency their manifests declare (spec, section, peer, rewritable), and the versions installed | `declarations` |
 | `dependencies/rewrite` | declarations and their new specs → the files changed | `declarations` |

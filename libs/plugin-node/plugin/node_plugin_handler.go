@@ -14,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolpin"
@@ -116,7 +117,19 @@ func (n *Node) Remove(params protocol.RemoveParams) (protocol.RemoveResult, erro
 func (n *Node) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	return dependencies.Install(n.root, params)
+	res, err := dependencies.Install(n.root, params)
+	if err == nil && params.Project == nil {
+		res.Unreached = workspacejoin.Unjoined(n.root, params.Projects)
+	}
+	return res, err
+}
+
+// Join implements serve.WorkspaceJoiner: whether the root package.json
+// "workspaces" cover each project, and the entry that joins one they do not.
+func (n *Node) Join(params protocol.JoinParams) (protocol.JoinResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return workspacejoin.Join(n.root, params)
 }
 
 // Repair implements serve.DependencyRepairer: the plans of npm for each
