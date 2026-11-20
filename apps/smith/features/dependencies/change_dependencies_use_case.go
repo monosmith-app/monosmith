@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/features/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspacejoin"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/marks"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -219,7 +220,7 @@ func installAll(s *session.Session, log io.Writer) error {
 	}
 	fmt.Fprintf(log, "Installing %d projects with %s.\n", count, strings.Join(names, ", "))
 	sections := cipipeline.NewSectionLog(log)
-	var failed []string
+	var failed, unreached []string
 	for _, j := range jobs {
 		sections.Begin(j.name, len(j.projects))
 		var res protocol.DependencyResult
@@ -228,12 +229,23 @@ func installAll(s *session.Session, log io.Writer) error {
 			failed = append(failed, j.name)
 			continue
 		}
-		report(log, fmt.Sprintf("%s: installed %d project(s)", j.name, len(j.projects)), res)
+		report(log, fmt.Sprintf("%s: installed %d project(s)", j.name, len(j.projects)-len(res.Unreached)), res)
+		if line := workspacejoin.UnreachedLine(res.Unreached); line != "" {
+			fmt.Fprintln(log, marks.Warning+" "+line)
+			unreached = append(unreached, res.Unreached...)
+		}
 		sections.End(nil)
 	}
 	sections.Summary()
 	if len(failed) > 0 {
-		return fmt.Errorf("the other languages were installed, but %s could not be: fix the cause in its section above, then run smith install again", strings.Join(failed, ", "))
+		err := fmt.Errorf("the other languages were installed, but %s could not be: fix the cause in its section above, then run smith install again", strings.Join(failed, ", "))
+		if len(unreached) > 0 {
+			err = fmt.Errorf("%w. %s not installed: not joined to its language's workspace (smith doctor --fix joins it)", err, strings.Join(unreached, ", "))
+		}
+		return err
+	}
+	if len(unreached) > 0 {
+		return fmt.Errorf("%s not installed: not joined to its language's workspace. Run smith doctor --fix to join it, then smith install", strings.Join(unreached, ", "))
 	}
 	return nil
 }

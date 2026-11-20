@@ -30,6 +30,12 @@ export const PLUGIN_INTERFACES = [
     methods: { 'dependencies/repair': 'RepairAsync' },
   },
   {
+    name: 'IWorkspaceJoiner',
+    capability: 'join',
+    summary: 'A language plugin that says whether each project is joined to its language\'s workspace, and how to join one that is not. It only describes; the host applies the fix.',
+    methods: { 'workspace/join': 'JoinAsync' },
+  },
+  {
     name: 'IDependencyManager',
     capability: 'dependencies',
     summary: 'A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.',

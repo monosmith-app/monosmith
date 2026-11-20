@@ -285,6 +285,17 @@ _SCHEMA_JSON = r'''{
       },
       "capability": "apiSurface",
       "notification": false
+    },
+    "workspace/join": {
+      "description": "Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace members, a .NET solution), and for the fix that joins one that is not. The plugin writes nothing: the host shows the fix and applies it.",
+      "params": {
+        "$ref": "#/$defs/JoinParams"
+      },
+      "result": {
+        "$ref": "#/$defs/JoinResult"
+      },
+      "capability": "join",
+      "notification": false
     }
   },
   "x-errorCodes": [
@@ -677,6 +688,10 @@ _SCHEMA_JSON = r'''{
         "declared": {
           "type": "boolean",
           "description": "Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so."
+        },
+        "join": {
+          "type": "boolean",
+          "description": "Join says whether each project is joined to the language's workspace (npm \"workspaces\", uv workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin only describes; the host applies the fix."
         }
       }
     },
@@ -1079,6 +1094,13 @@ _SCHEMA_JSON = r'''{
           "items": {
             "type": "string"
           }
+        },
+        "unreached": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Unreached names the projects an install of every project did not reach, such as a Node project the root \"workspaces\" do not cover. The host leaves them out of its count and names them."
         }
       }
     },
@@ -1760,6 +1782,66 @@ _SCHEMA_JSON = r'''{
           "description": "Quiet keeps the package manager's output unless it fails: the host sets it when it installs as one step of a larger job (smith add)."
         }
       }
+    },
+    "JoinParams": {
+      "description": "JoinParams asks a language plugin whether each of its projects is joined to the language's workspace (npm \"workspaces\", the members of a uv workspace, a .NET solution), and how to join the ones that are not. The plugin writes nothing: the host shows the fix and applies it (smith doctor --fix, smith import).",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          }
+        }
+      },
+      "required": [
+        "projects"
+      ]
+    },
+    "JoinResult": {
+      "description": "JoinResult has one state for each project the plugin was asked about. A project the plugin leaves out is joined.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JoinState"
+          }
+        }
+      },
+      "required": [
+        "projects"
+      ]
+    },
+    "JoinState": {
+      "description": "JoinState says whether one project is joined to its language's workspace.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project is the project's name, as JoinParams gave it."
+        },
+        "joined": {
+          "type": "boolean",
+          "description": "Joined is true when the workspace covers the project, or when the language has no workspace the project must be part of."
+        },
+        "workspace": {
+          "type": "string",
+          "description": "Workspace names what the project joins, in words, such as `the root package.json \"workspaces\"`."
+        },
+        "problem": {
+          "type": "string",
+          "description": "Problem says, in one line, what is missing and what it breaks, when Joined is false."
+        },
+        "fix": {
+          "$ref": "#/$defs/Fix",
+          "description": "Fix joins the project, when Joined is false and the plugin can write the change: the manifest's new content, then the commands to run."
+        }
+      },
+      "required": [
+        "project",
+        "joined"
+      ]
     },
     "LatestParams": {
       "description": "LatestParams asks for the newest stable release of each dependency, and, with Tools, how the tools the plugin pins compare with their latest.",

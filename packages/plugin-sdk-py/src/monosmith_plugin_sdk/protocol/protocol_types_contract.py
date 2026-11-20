@@ -69,6 +69,9 @@ __all__ = [
     "InitializeResult",
     "Input",
     "InstallParams",
+    "JoinParams",
+    "JoinResult",
+    "JoinState",
     "LatestParams",
     "LatestResult",
     "LinkOption",
@@ -178,11 +181,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/repair", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/repair", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface", "workspace/join"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared", "join"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -211,6 +214,7 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "sbom/components": "components",
     "derive": "derive",
     "api/surface": "apiSurface",
+    "workspace/join": "join",
 }
 """The capability a plugin advertises to be asked each method (`None`: always available).
 
@@ -445,6 +449,12 @@ class Capabilities(TypedDict, total=False):
     (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a
     project by its manifest only, and the host refuses a declaration for its language with a
     message that says so.
+    """
+    join: bool
+    """
+    Join says whether each project is joined to the language's workspace (npm "workspaces", uv
+    workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin
+    only describes; the host applies the fix.
     """
 
 
@@ -754,6 +764,12 @@ class DependencyResult(TypedDict, total=False):
 
     files: list[str]
     notes: list[str]
+    unreached: list[str]
+    """
+    Unreached names the projects an install of every project did not reach, such as a Node
+    project the root "workspaces" do not cover. The host leaves them out of its count and names
+    them.
+    """
 
 
 class _DeriveParamsRequired(TypedDict):
@@ -1266,6 +1282,53 @@ class InstallParams(TypedDict, total=False):
     """
     Quiet keeps the package manager's output unless it fails: the host sets it when it installs
     as one step of a larger job (smith add).
+    """
+
+
+class JoinParams(TypedDict):
+    """
+    JoinParams asks a language plugin whether each of its projects is joined to the language's
+    workspace (npm "workspaces", the members of a uv workspace, a .NET solution), and how to join
+    the ones that are not. The plugin writes nothing: the host shows the fix and applies it
+    (smith doctor --fix, smith import).
+    """
+
+    projects: list[Project]
+
+
+class JoinResult(TypedDict):
+    """
+    JoinResult has one state for each project the plugin was asked about. A project the plugin
+    leaves out is joined.
+    """
+
+    projects: list[JoinState]
+
+
+class _JoinStateRequired(TypedDict):
+    project: str
+    """Project is the project's name, as JoinParams gave it."""
+    joined: bool
+    """
+    Joined is true when the workspace covers the project, or when the language has no workspace
+    the project must be part of.
+    """
+
+
+class JoinState(_JoinStateRequired, total=False):
+    """JoinState says whether one project is joined to its language's workspace."""
+
+    workspace: str
+    """
+    Workspace names what the project joins, in words, such as `the root package.json
+    "workspaces"`.
+    """
+    problem: str
+    """Problem says, in one line, what is missing and what it breaks, when Joined is false."""
+    fix: Fix
+    """
+    Fix joins the project, when Joined is false and the plugin can write the change: the
+    manifest's new content, then the commands to run.
     """
 
 

@@ -1,20 +1,21 @@
 package pipeline
 
 import (
-	"encoding/json"
 	"os"
-	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Doctor checks that Node.js is the version CI installs (nodeVersion), that
-// dependencies are installed, that every Node project is covered by the
-// root package.json workspaces (with no dead lockfile of its own), and that a
-// built package has every file its package.json names.
+// dependencies are installed, that a project the root package.json
+// workspaces cover has no dead lockfile of its own, and that a built package
+// has every file its package.json names. Whether the workspaces cover each
+// project is the join check the host asks for (workspacejoin).
 func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion string) protocol.DoctorResult {
 	var findings []protocol.Finding
 	if len(params.Projects) == 0 {
@@ -49,33 +50,13 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 
 	findings = append(findings, CheckInternalRangeFindings(workspaceRoot, params.Projects)...)
 
-	var root struct {
-		Workspaces []string `json:"workspaces"`
-	}
-	raw, err := os.ReadFile(filepath.Join(workspaceRoot, "package.json"))
-	if err == nil {
-		err = json.Unmarshal(raw, &root)
-	}
+	unjoined := workspacejoin.Unjoined(workspaceRoot, params.Projects)
 	dependents := map[string][]string{}
 	for _, p := range params.Projects {
 		dependents[p.Name] = dependentsOf(params.Projects, p)
 	}
 	for _, p := range params.Projects {
-		covered := false
-		for _, pattern := range root.Workspaces {
-			if ok, _ := path.Match(pattern, p.Root); ok || pattern == p.Root {
-				covered = true
-			}
-		}
-		findings = append(findings, protocol.Finding{
-			Check:   "npm workspaces include " + p.Root,
-			Project: p.Name,
-			OK:      err == nil && covered,
-			Problem: toolrun.ProblemUnless(err == nil && covered, "is not in the root package.json \"workspaces\""),
-			Detail:  p.Root + " is not matched by the root package.json \"workspaces\"",
-			Remedy:  "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
-		})
-		if covered {
+		if !slices.Contains(unjoined, p.Name) {
 			if f, ok := CheckNestedLockfile(workspaceRoot, p); ok {
 				findings = append(findings, f)
 			}

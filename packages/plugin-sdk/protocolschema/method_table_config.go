@@ -173,4 +173,10 @@ var Methods = []MethodSpec{
 		Params:      reflect.TypeFor[protocol.APISurfaceParams](), Result: reflect.TypeFor[protocol.APISurfaceResult](),
 		Capability: "APISurface",
 	},
+	{
+		Method:      protocol.MethodJoin,
+		Description: "Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace members, a .NET solution), and for the fix that joins one that is not. The plugin writes nothing: the host shows the fix and applies it.",
+		Params:      reflect.TypeFor[protocol.JoinParams](), Result: reflect.TypeFor[protocol.JoinResult](),
+		Capability: "Join",
+	},
 }

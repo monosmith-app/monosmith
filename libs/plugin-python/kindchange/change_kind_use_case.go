@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-python/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/fileedits"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/pathrefs"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -19,8 +20,6 @@ const manifestName = "pyproject.toml"
 var (
 	pathValue      = regexp.MustCompile(`(path[ \t]*=[ \t]*")([^"]+)(")`)
 	requirementRef = regexp.MustCompile(`(?m)^(\s*(?:-e|--editable)\s+)(\.{1,2}/\S*)`)
-	workspaceTable = regexp.MustCompile(`(?s)(\[tool\.uv\.workspace\].*?members[ \t]*=[ \t]*\[)(.*?)(\])`)
-	quotedItem     = regexp.MustCompile(`"([^"]*)"`)
 )
 
 // Change answers what making the project params.Project a params.To changes.
@@ -125,33 +124,9 @@ func retargetWorkspace(edits *fileedits.Set, params protocol.ChangeKindParams) e
 		}
 		text, _ = pathrefs.Retarget(text, "", params.Project.Root, params.NewRoot)
 		if file == manifestName {
-			text = ensureMember(text, params.NewRoot)
+			text = workspacejoin.EnsureMember(text, params.NewRoot)
 		}
 		edits.Write(file, text)
 	}
 	return nil
-}
-
-// ensureMember adds dir to [tool.uv.workspace] members when the table lists
-// members and none of them matches dir.
-func ensureMember(src, dir string) string {
-	loc := workspaceTable.FindStringSubmatchIndex(src)
-	if loc == nil {
-		return src
-	}
-	body := src[loc[4]:loc[5]]
-	for _, item := range quotedItem.FindAllStringSubmatch(body, -1) {
-		if ok, _ := path.Match(item[1], dir); ok {
-			return src
-		}
-	}
-	insert := `, "` + path.Dir(dir) + `/*"`
-	if strings.TrimSpace(body) == "" {
-		insert = `"` + path.Dir(dir) + `/*"`
-	} else if strings.Contains(body, "\n") {
-		trimmed := strings.TrimRight(body, " \t\r\n")
-		trimmed = strings.TrimSuffix(trimmed, ",")
-		return src[:loc[4]] + trimmed + `,` + "\n    \"" + path.Dir(dir) + "/*\",\n" + src[loc[5]:]
-	}
-	return src[:loc[5]] + insert + src[loc[5]:]
 }

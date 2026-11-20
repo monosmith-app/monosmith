@@ -23,6 +23,16 @@ the number of projects, then shows the toolchain's own lines, then closes with o
 names the cause and the way forward, and the other toolchains still run. At the end, a table has one row per
 toolchain: name, projects, status and time.
 
+The count is the projects the toolchain really reached. A Node project that the root package.json
+"workspaces" do not cover is not reached by npm install. smith names it, leaves it out of the count
+and ends with an error:
+
+```
+✓ node: installed 1 project(s) (package-lock.json)
+▲ not installed: faviconit-api (not joined to its language's workspace)
+  → smith doctor --fix joins it, then run smith install again
+```
+
 ```
 Installing 3 projects with node, python, go.
 ══ node (1 project) ════════════════════════════════════════

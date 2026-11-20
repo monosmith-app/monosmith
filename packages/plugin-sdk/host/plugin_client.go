@@ -411,6 +411,8 @@ func (c *Client) Supports(method string) bool {
 		return caps.Derive
 	case protocol.MethodAPISurface:
 		return caps.APISurface
+	case protocol.MethodJoin:
+		return caps.Join
 	}
 	return method == protocol.MethodInitialize || method == protocol.MethodShutdown
 }

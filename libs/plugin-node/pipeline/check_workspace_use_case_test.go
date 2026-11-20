@@ -17,12 +17,12 @@ func TestDoctor(t *testing.T) {
 	for _, f := range res.Findings {
 		got[f.Check] = f.OK
 	}
-	if got["Node dependencies are installed"] || !got["npm workspaces include apps/web"] || got["npm workspaces include tools/x"] {
+	if ok, listed := got["Node dependencies are installed"]; ok || !listed {
 		t.Fatalf("findings %+v", res.Findings)
 	}
-	for _, f := range res.Findings {
-		if f.Check == "npm workspaces include tools/x" && !strings.Contains(f.Remedy, `exclude = ["tools/x"]`) {
-			t.Errorf("the remedy does not offer the exclusion: %s", f.Remedy)
+	for check := range got {
+		if strings.HasPrefix(check, "npm workspaces include ") {
+			t.Errorf("the workspaces coverage is the host's join check now, not a plugin finding: %s", check)
 		}
 	}
 }
