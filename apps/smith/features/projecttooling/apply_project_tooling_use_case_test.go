@@ -26,7 +26,7 @@ func TestApplySmithPutsSmithsToolsInPlaceThenRetiresTheOldOnes(t *testing.T) {
 	root := writeTree(t, libraryFixture)
 	var out bytes.Buffer
 	res, err := Apply(context.Background(), Input{Root: root, Dir: "packages/contrast", Answer: Smith}, RunOptions{
-		Out: &out, Yes: true, SkipFinish: true, Smith: "smith", Files: listFiles(root),
+		Out: &out, Yes: true, SkipFinish: true, Smith: "smith", Files: listFiles(root), WholeRoot: true,
 	})
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
@@ -46,14 +46,32 @@ func TestApplySmithPutsSmithsToolsInPlaceThenRetiresTheOldOnes(t *testing.T) {
 	}
 }
 
+func TestApplyWithoutTheWholeRootLeavesTheWorkspacesOwnLintFiles(t *testing.T) {
+	root := writeTree(t, libraryFixture)
+	var out bytes.Buffer
+	if _, err := Apply(context.Background(), Input{Root: root, Dir: "packages/contrast", Answer: Smith}, RunOptions{
+		Out: &out, Yes: true, SkipFinish: true, Smith: "smith", Files: listFiles(root),
+	}); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+	if readFile(t, root, ".eslintrc.js.pre-smith") == "" || readFile(t, root, ".eslintignore") == "" {
+		t.Errorf("an imported project removed the workspace's own lint files:\n%s", out.String())
+	}
+}
+
 func TestInScopeIsTheProjectFolderAndTheRootFiles(t *testing.T) {
-	files := []string{"package.json", ".eslintrc.js", "apps/web/src/a.ts", "apps/web/package.json", "apps/api/package.json", "docs/readme.md"}
-	got := InScope(files, "apps/web")
-	want := []string{"package.json", ".eslintrc.js", "apps/web/src/a.ts", "apps/web/package.json"}
+	files := []string{"package.json", ".eslintrc.js", "eslint.config.mjs", "apps/web/src/a.ts", "apps/web/package.json", "apps/api/package.json", "docs/readme.md"}
+	got := InScope(files, "apps/web", false)
+	want := []string{"package.json", "eslint.config.mjs", "apps/web/src/a.ts", "apps/web/package.json"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v", got)
 	}
-	if !reflect.DeepEqual(InScope(files, "."), files) {
+	got = InScope(files, "apps/web", true)
+	want = []string{"package.json", ".eslintrc.js", "eslint.config.mjs", "apps/web/src/a.ts", "apps/web/package.json"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("with the whole root: got %v", got)
+	}
+	if !reflect.DeepEqual(InScope(files, ".", false), files) {
 		t.Error("a project at the root sees every file")
 	}
 }

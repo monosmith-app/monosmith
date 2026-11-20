@@ -53,7 +53,7 @@ func ApplyTooling(r Report, t ToolingRun, out io.Writer) ([]string, error) {
 	for i, dir := range dirs {
 		res, err := projecttooling.Apply(context.Background(), projecttooling.Input{Root: r.Root, Dir: dir, Answer: projecttooling.Smith}, projecttooling.RunOptions{
 			Out: out, In: t.In, Interactive: t.Interactive, Yes: t.Yes,
-			Smith: smith, Verify: true, SkipFinish: i < len(dirs)-1,
+			Smith: smith, Verify: true, SkipFinish: i < len(dirs)-1, WholeRoot: true,
 		})
 		left = append(left, res.Left...)
 		if err != nil {

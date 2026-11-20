@@ -10,12 +10,14 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/toolchainversions"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/eslintpeer"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -209,6 +211,7 @@ func placeVite(root string, a Assessment, out io.Writer) (Outcome, error) {
 		if !scripts.Has("start") {
 			scripts.SetString("start", "vite")
 		}
+		raiseTypesNode(doc, out)
 		return nil
 	}); err != nil {
 		return Outcome{}, err
@@ -235,6 +238,9 @@ func placeVite(root string, a Assessment, out io.Writer) (Outcome, error) {
 	}
 	if err := editManifest(filepath.Join(root, "package.json"), func(doc *jsondoc.Document) error {
 		addMissing(doc.Object("devDependencies", true), packages)
+		if a.Dir != "." {
+			raiseTypesNode(doc, out)
+		}
 		if len(overrides) > 0 {
 			addMissing(doc.Object("overrides", true), overrides)
 		}
@@ -257,6 +263,35 @@ func placeVite(root string, a Assessment, out io.Writer) (Outcome, error) {
 		left = append(left, fmt.Sprintf("%s imports SVG files as React components (%s), which Vite does without create-react-app only with vite-plugin-svgr: add it to vite.config.ts", a.Name, strings.Join(src.svgComponents, ", ")))
 	}
 	return Outcome{Ready: true, Left: left}, nil
+}
+
+// typesNodeFloor is the oldest @types/node that Vite accepts as its peer
+// (^20.19.0 || >=22.12.0); an older one stops npm install with ERESOLVE.
+const typesNodeFloor = 20
+
+// raiseTypesNode sets an @types/node older than Vite accepts to the range
+// smith's stacks pin, in the dependency sections of a package.json.
+func raiseTypesNode(doc *jsondoc.Document, out io.Writer) {
+	for _, section := range []string{"dependencies", "devDependencies"} {
+		deps := doc.Object(section, false)
+		if deps == nil {
+			continue
+		}
+		current, ok := deps.String("@types/node")
+		if !ok {
+			continue
+		}
+		floor, simple := eslintpeer.RangeFloor(current)
+		if !simple {
+			continue
+		}
+		major, _, _ := strings.Cut(floor, ".")
+		if n, err := strconv.Atoi(major); err != nil || n >= typesNodeFloor {
+			continue
+		}
+		deps.SetString("@types/node", toolchainversions.TypesNode)
+		fmt.Fprintf(out, "  build: @types/node %s → %s, which Vite needs\n", current, toolchainversions.TypesNode)
+	}
 }
 
 // addMissing sets each name the object does not have yet, in name order.
