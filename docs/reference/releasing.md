@@ -994,7 +994,7 @@ release, because the plan's versions would be wrong:
 
 | Problem | Why it matters | Fix |
 |---|---|---|
-| The project's newest tag is under another name (its package name, scoped or not), not its tag prefix | the release would start from scratch, or from an older version | set `[projects.<name>] tag_prefix`, or tag the same commit under the current prefix |
+| The project's newest tag is under another name (its package name, scoped or not, or `v1.2.3` when the workspace has only one releasable project), not its tag prefix | the release would start from scratch, or from an older version | run `smith adopt --tags`, which tags the same commit under the current prefix on your machine, then push the tag. Or tag it yourself, or set `[projects.<name>] tag_prefix` |
 | The registry has a version, but the project has no tag | the release would start from the manifest | `git fetch --tags`; if the tag really does not exist, tag the commit that published it |
 | The newest tag is lower than the registry's version | the release would propose a version the registry refuses | tag the commit that published the registry's version |
 

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/features/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/features/release"
@@ -17,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspacejoin"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // GeneratedMarker starts every file smith owns.
@@ -88,6 +90,11 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		return r, err
 	}
 	defer s.Close()
+	infos := make([]protocol.InitializeResult, len(s.Plugins.Clients))
+	for i, c := range s.Plugins.Clients {
+		infos[i] = c.Info
+	}
+	r.Claims = adoptmove.ClaimsOf(infos)
 	for _, p := range s.Graph.Projects {
 		r.Projects = append(r.Projects, ProjectLine{Name: p.Name, Root: p.Root, Language: p.Language, Kind: string(p.Kind), Stack: p.Stack})
 	}
@@ -96,7 +103,7 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		if attachRootProject(&r, files) {
 			r.Warnings = withoutRootProgramWarning(r.Warnings)
 		} else {
-			r.Warnings = append(r.Warnings, noProjectWarning(exists))
+			r.Warnings = append(r.Warnings, noProjectWarning(exists, r.Claims))
 		}
 	}
 	for _, f := range release.CheckLineage(s, false) {
@@ -138,7 +145,10 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 // noProjectWarning explains an empty project list. A package.json at the root
 // is the commonest cause: smith's projects live in apps/, libs/ or packages/,
 // and the root manifest describes the workspace, not a project.
-func noProjectWarning(exists func(string) bool) Item {
+//
+// Parameters: exists says whether a root-relative path exists; claims are the
+// language plugins' manifest names, which the last message lists.
+func noProjectWarning(exists func(string) bool, claims []adoptmove.Claim) Item {
 	if exists("package.json") {
 		return Item{
 			Message: "no project found: the package.json at the root describes the workspace, not a project, and smith looks for projects in their own folders (apps/, libs/ or packages/)",
@@ -167,7 +177,7 @@ func noProjectWarning(exists func(string) bool) Item {
 		}
 	}
 	return Item{
-		Message: "no project found: smith knows a project by its manifest (package.json in a workspace, go.mod, pyproject.toml)",
+		Message: "no project found: smith knows a project by the manifest of a language it has a plugin for (" + manifestNames(claims) + ")",
 		Steps:   []string{"smith adopt --init makes an empty workspace; then smith add app <name> --lang <language>"},
 	}
 }
@@ -287,4 +297,23 @@ func cleanApartFromSmith(status string) bool {
 		return false
 	}
 	return true
+}
+
+// manifestNames lists the manifest names of the claims, in order and without
+// repeats, for a message.
+func manifestNames(claims []adoptmove.Claim) string {
+	seen := map[string]bool{}
+	var out []string
+	for _, c := range claims {
+		for _, m := range c.Manifests {
+			if !seen[m] {
+				seen[m] = true
+				out = append(out, m)
+			}
+		}
+	}
+	if len(out) == 0 {
+		return "no language plugin is enabled"
+	}
+	return strings.Join(out, ", ")
 }

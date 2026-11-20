@@ -13,7 +13,9 @@ import (
 
 // DescribeOutcome checks the adopted workspace the way smith doctor does and
 // says what is left, so "adopted" is never followed by a surprise: each
-// remaining problem with its first step, then the exact next command.
+// remaining problem with its first step, then the exact next command. It is
+// the one "left to do" list adopt prints: the steps there are expected after
+// a conservative adoption (install, a lint config), not faults of adopt.
 func DescribeOutcome(root, version string, out io.Writer) error {
 	s, err := session.Open(session.Options{Dir: root, Version: version, Log: io.Discard})
 	if err != nil {
@@ -38,7 +40,7 @@ func DescribeOutcome(root, version string, out io.Writer) error {
 		offerAgent(s.Root, s.Config.AgentEnabled(), out)
 		return nil
 	}
-	fmt.Fprintf(out, marks.Passed+" adopted. smith doctor still reports %d thing(s) for you:\n", len(left))
+	fmt.Fprintf(out, marks.Passed+" adopted. Left to do (%d):\n", len(left))
 	for _, f := range left {
 		fmt.Fprintf(out, "  × %s\n", f.Detail)
 		for i, line := range strings.Split(f.Remedy, "\n") {

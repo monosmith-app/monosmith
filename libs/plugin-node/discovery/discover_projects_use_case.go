@@ -71,8 +71,15 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 		return project, err
 	}
 	project.Imports = mergeDeclared(imports, pkg)
-	for script := range pkg.Scripts {
+	for script, command := range pkg.Scripts {
+		if IsPlaceholderScript(command) {
+			// npm init's "no test specified" only fails: the project has no tests.
+			continue
+		}
 		project.Tasks[script] = TaskFor(script, root, pkg.Scripts)
+	}
+	if lint, ok := InferredLintTask(filepath.Join(workspaceRoot, filepath.FromSlash(root)), pkg); ok {
+		project.Tasks["lint"] = lint
 	}
 	// A library or package builds inside its own folder (ADR 0102): its build
 	// task caches the folder the build writes there, dist by default.

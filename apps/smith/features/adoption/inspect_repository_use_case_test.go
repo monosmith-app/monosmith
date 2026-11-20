@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
 )
 
 func TestWorkspaceName(t *testing.T) {
@@ -107,23 +109,27 @@ func TestNoProjectWarningExplainsARootPackage(t *testing.T) {
 			return false
 		}
 	}
-	root := noProjectWarning(has("package.json"))
+	root := noProjectWarning(has("package.json"), nil)
 	if !strings.Contains(root.Message, "package.json at the root describes the workspace, not a project") || len(root.Steps) != 2 {
 		t.Errorf("root package: %+v", root)
 	}
-	goRoot := noProjectWarning(has("go.mod"))
+	goRoot := noProjectWarning(has("go.mod"), nil)
 	if !strings.Contains(goRoot.Message, "go.mod at the root is one module for the whole repository") || len(goRoot.Steps) != 2 || !strings.Contains(goRoot.Steps[0], "go work use") {
 		t.Errorf("root go module: %+v", goRoot)
 	}
-	if both := noProjectWarning(has("package.json", "go.mod")); !strings.Contains(both.Message, "package.json at the root") {
+	if both := noProjectWarning(has("package.json", "go.mod"), nil); !strings.Contains(both.Message, "package.json at the root") {
 		t.Errorf("a root package.json still comes first: %+v", both)
 	}
-	py := noProjectWarning(has("pyproject.toml"))
+	py := noProjectWarning(has("pyproject.toml"), nil)
 	if !strings.Contains(py.Message, "pyproject.toml at the root describes the whole repository") || len(py.Steps) != 2 || !strings.Contains(py.Steps[1], "--lang python") {
 		t.Errorf("root python project: %+v", py)
 	}
-	if bare := noProjectWarning(has()); !strings.Contains(bare.Steps[0], "smith adopt --init makes an empty workspace") {
+	if bare := noProjectWarning(has(), nil); !strings.Contains(bare.Steps[0], "smith adopt --init makes an empty workspace") {
 		t.Errorf("no manifest: %+v", bare)
+	}
+	claims := []adoptmove.Claim{{Language: "php", Manifests: []string{"composer.json"}}, {Language: "dotnet", Manifests: []string{"*.csproj", "*.fsproj"}}}
+	if listed := noProjectWarning(has(), claims); !strings.Contains(listed.Message, "composer.json, *.csproj, *.fsproj") {
+		t.Errorf("the message must list the plugins' manifests: %+v", listed)
 	}
 }
 

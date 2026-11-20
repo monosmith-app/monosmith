@@ -55,5 +55,10 @@ func (f Finding) Sentence() string {
 	if len(f.Remedy) == 0 {
 		return f.Message
 	}
-	return strings.TrimSuffix(f.Message, ".") + ". To fix it: " + strings.Join(f.Remedy, "; or ") + "."
+	steps := make([]string, len(f.Remedy))
+	for i, r := range f.Remedy {
+		// A remedy may start with its own "or"; the join adds one.
+		steps[i] = strings.TrimPrefix(r, "or ")
+	}
+	return strings.TrimSuffix(f.Message, ".") + ". To fix it: " + strings.Join(steps, "; or ") + "."
 }

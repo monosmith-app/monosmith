@@ -10,7 +10,9 @@ import (
 
 // Finding is smith doctor's check of the agent files, for the clients the
 // workspace has. A missing file, or a stale one smith wrote, is a warning with
-// a fix that writes it; a file the person edited is theirs and passes.
+// a fix that writes it; a file the person edited is theirs and passes. The fix
+// is safe (doctor --fix --yes applies it) only when the workspace already has
+// an agent file: a workspace with none is asked first.
 func Finding(root string) protocol.Finding {
 	check := "The MonoSmith agent files are installed and current"
 	claude, vscode := PresentClients(root, nil)
@@ -36,7 +38,14 @@ func Finding(root string) protocol.Finding {
 	if len(todo) == 0 {
 		return protocol.Finding{Check: check, OK: true, Warning: true, Area: "config"}
 	}
-	fix := &protocol.Fix{Description: "write the MonoSmith agent files (smith agent install)", Safe: true}
+	// Bringing files that are there up to date is safe. Adding the agent to a
+	// workspace that has none is the person's choice (smith adopt and smith
+	// new ask it, "not now" included), so doctor --fix asks and --yes skips it.
+	installed := false
+	for _, f := range files {
+		installed = installed || f.Status != Missing
+	}
+	fix := &protocol.Fix{Description: "write the MonoSmith agent files (smith agent install)", Safe: installed}
 	for _, f := range todo {
 		fix.Files = append(fix.Files, protocol.FileEdit{Path: f.Path, Content: f.New})
 	}

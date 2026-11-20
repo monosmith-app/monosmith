@@ -3,15 +3,18 @@ package pipeline
 import (
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Doctor checks that Node.js is the version CI installs (nodeVersion), that
-// dependencies are installed, and that a built package has every file its
-// package.json names. Whether the root package.json workspaces cover each
+// dependencies are installed, that a project the root package.json
+// workspaces cover has no dead lockfile of its own, and that a built package
+// has every file its package.json names. Whether the workspaces cover each
 // project is the join check the host asks for (workspacejoin).
 func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion string) protocol.DoctorResult {
 	var findings []protocol.Finding
@@ -47,11 +50,17 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 
 	findings = append(findings, CheckInternalRangeFindings(workspaceRoot, params.Projects)...)
 
+	unjoined := workspacejoin.Unjoined(workspaceRoot, params.Projects)
 	dependents := map[string][]string{}
 	for _, p := range params.Projects {
 		dependents[p.Name] = dependentsOf(params.Projects, p)
 	}
 	for _, p := range params.Projects {
+		if !slices.Contains(unjoined, p.Name) {
+			if f, ok := CheckNestedLockfile(workspaceRoot, p); ok {
+				findings = append(findings, f)
+			}
+		}
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}

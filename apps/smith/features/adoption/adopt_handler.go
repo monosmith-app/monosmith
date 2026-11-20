@@ -48,7 +48,8 @@ blockers and warnings, and the step that clears each. Read-only unless a step
 is asked for, and both steps need a clean git tree:
 
   --tags  creates, locally, the release tags a project needs where its tags
-          were made under another name (nothing is pushed)
+          were made under another name (nothing is pushed). It also works
+          in a workspace that smith already manages
   --init  writes smith.toml and the pipelines (with --install it also runs npm
           install; with --eslint it writes the root eslint.config.mjs and adds
           @monosmith/eslint-config to the devDependencies); a pipeline of yours
@@ -64,7 +65,8 @@ a terminal, or with --yes, it moves nothing unless --move <folder> says where
 (--move none keeps the project where it is). The move is git mv of the project's
 files, and what belongs to the workspace stays or goes there: the repository's own
 files (.git, .github, README, LICENSE, the .code-workspace file, ...) and the tool
-configuration (prettier, ESLint, ...) stay at the root, documents go to doc/, and a
+configuration (prettier, ESLint, ...) stay at the root (a published package also
+gets a copy of README and LICENSE in its folder), documents go to doc/, and a
 Node project's tools (typescript, jest, ...) move from its package.json to the
 workspace's, with a root tsconfig.base.json it extends. A development dependency
 smith does not know is asked about (--hoist <name> sends it to the workspace), and so is
@@ -108,6 +110,10 @@ non-zero while something blocks.`,
 			}
 			if dryRun && tags {
 				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags", "drop --dry-run to take the step, or drop the step to only look")
+			}
+			if tags && !initialise && IsWorkspace(".") {
+				// smith release and smith doctor point an adopted workspace here.
+				return TagWorkspaceBaselines(".", version, out)
 			}
 			report, err := Inspect(".", version, cmd.ErrOrStderr())
 			if err != nil {

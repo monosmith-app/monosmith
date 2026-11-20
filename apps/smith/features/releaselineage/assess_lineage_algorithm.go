@@ -40,7 +40,8 @@ func Assess(subjects []Subject) []Finding {
 				"%s's newest release tag is %s, under another name than its prefix %s, so the next release would start from %s.",
 				s.Project, altTag, s.Prefix, describe(own, s.Prefix)),
 				Remedy: []string{
-					fmt.Sprintf("tag the same commit under the current name: git tag %s%s %s^{commit}, then push the tag", s.Prefix, alt, altTag),
+					fmt.Sprintf("run smith adopt --tags, which tags the same commit as %s%s on this machine, then push the tag", s.Prefix, alt),
+					fmt.Sprintf("or tag it yourself: git tag %s%s %s^{commit}, then push the tag", s.Prefix, alt, altTag),
 					fmt.Sprintf("or keep the old name: set [projects.%s] tag_prefix = %q in smith.toml", s.Project, strings.TrimSuffix(altTag, alt)),
 				},
 				Baseline: &Baseline{Name: s.Prefix + alt, Target: altTag + "^{commit}"}})
