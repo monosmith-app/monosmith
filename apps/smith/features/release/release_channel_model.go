@@ -10,7 +10,8 @@ import (
 )
 
 // Channel is the release channel of the branch being released: the line of
-// prerelease versions <Major>.0.0-<ID>.<n> it publishes (see
+// prerelease versions <Major>.0.0-<ID>.<n> it publishes, or, with Major 0,
+// prereleases <next>-<ID>.<n> of the next planned stable version (see
 // workspace.ReleaseChannel).
 type Channel struct {
 	ID    string
@@ -33,10 +34,17 @@ func ChannelOf(cfg workspace.ReleaseSection, branch string) *Channel {
 	return &Channel{ID: c.Prerelease, Major: c.Major, Tag: tag}
 }
 
-// counter returns n of a version <Major>.x.y-<ID>.<n> of this channel.
+// FromNext reports whether the channel numbers its prereleases from the next
+// planned stable version (no major set) instead of a major line of its own.
+func (c Channel) FromNext() bool {
+	return c.Major == 0
+}
+
+// counter returns n of a version <Major>.x.y-<ID>.<n> of this channel (any
+// major for a channel that numbers from the next version).
 func (c Channel) counter(v Version) (int, bool) {
 	rest, ok := strings.CutPrefix(v.Pre, c.ID+".")
-	if !ok || v.Major != c.Major {
+	if !ok || (!c.FromNext() && v.Major != c.Major) {
 		return 0, false
 	}
 	n, err := strconv.Atoi(rest)
@@ -54,6 +62,32 @@ func (c Channel) Next(last Version, onChannel bool) Version {
 	n, _ := c.counter(last)
 	last.Pre = c.ID + "." + strconv.Itoa(n+1)
 	return last
+}
+
+// NextFrom is the next version of a channel that numbers from the next
+// planned version: target with the prerelease <ID>.1, or, when last is the
+// channel's latest release (onChannel) of the same target, its counter plus 1.
+//
+// Parameters: target is the next stable version the commits plan; last is the
+// channel's latest release; onChannel says whether last exists.
+// Returns the prerelease version to release.
+func (c Channel) NextFrom(target, last Version, onChannel bool) Version {
+	if onChannel && SameRelease(target, last) {
+		n, _ := c.counter(last)
+		last.Pre = c.ID + "." + strconv.Itoa(n+1)
+		return last
+	}
+	target.Pre = c.ID + ".1"
+	return target
+}
+
+// SameRelease reports whether two versions share major, minor and patch, as
+// 6.2.0-beta.3 and 6.2.0 do.
+//
+// Parameters: a and b are the versions to compare.
+// Returns true when only their prerelease parts may differ.
+func SameRelease(a, b Version) bool {
+	return a.Major == b.Major && a.Minor == b.Minor && a.Patch == b.Patch
 }
 
 // ChannelNotice says, in a plan or a preview, that the versions belong to a

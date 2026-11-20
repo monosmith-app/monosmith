@@ -144,6 +144,10 @@ func makePlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel, base s
 		latest              Version
 		tag                 string
 		released, onChannel bool
+		// A channel that numbers from the next version keeps the stable
+		// release in latest/tag and its own latest release here.
+		channelLatest Version
+		channelTag    string
 	}
 	last := map[string]lastRelease{}
 	var tags []string
@@ -157,12 +161,19 @@ func makePlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel, base s
 			latest, tag, released = LatestTag(git, p)
 		}
 		onChannel := false
+		var channelLatest Version
+		var channelTag string
 		if ch != nil {
 			if v, t, ok := latestChannelTag(git, p, *ch); ok {
-				latest, tag, released, onChannel = v, t, true, true
+				onChannel = true
+				if ch.FromNext() {
+					channelLatest, channelTag = v, t
+				} else {
+					latest, tag, released = v, t, true
+				}
 			}
 		}
-		last[name] = lastRelease{latest, tag, released, onChannel}
+		last[name] = lastRelease{latest, tag, released, onChannel, channelLatest, channelTag}
 		tags = append(tags, tag)
 	}
 	// The index reads the history of HEAD only: a preview asks git for the union.
@@ -204,10 +215,11 @@ func makePlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel, base s
 		}
 		level := LevelOfAll(commits)
 		reason := fmt.Sprintf("%d releasing commit(s)", len(subjects))
+		fromDependency := false
 		if level == None {
 			for _, d := range p.Deps {
 				if releasing[d] != "" {
-					level, reason = Patch, "dependency "+d+" "+releasing[d]
+					level, reason, fromDependency = Patch, "dependency "+d+" "+releasing[d], true
 					break
 				}
 			}
@@ -221,8 +233,30 @@ func makePlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel, base s
 			return Plan{}, err
 		}
 		next := current.Bump(level)
-		if ch != nil {
+		if ch != nil && !ch.FromNext() {
 			next = ch.Next(latest, onChannel)
+		}
+		if ch != nil && ch.FromNext() && level != None {
+			target := next
+			next = ch.NextFrom(target, l.channelLatest, onChannel)
+			if onChannel && SameRelease(target, l.channelLatest) {
+				item.Current = l.channelLatest.String()
+				if !fromDependency {
+					// The channel already released this target: release again
+					// only for releasing commits since its latest prerelease.
+					since, err := logSince(git, base, l.channelTag, SourceRoots(graph, p)...)
+					if err != nil {
+						return Plan{}, err
+					}
+					var newer []Commit
+					for _, c := range since {
+						newer = append(newer, ParseCommit(c.Hash, c.Subject, c.Body))
+					}
+					if LevelOfAll(newer) == None {
+						level = None
+					}
+				}
+			}
 		}
 		if forced != "" {
 			v, err := ParseVersion(forced)

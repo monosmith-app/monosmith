@@ -1102,6 +1102,35 @@ To promote the line, merge the channel branch into the release branch: the next 
 stable (`1.4.2 → 2.0.0`). Removing `prerelease` from the channel is an error, because a channel
 without a prerelease id would release stable versions from the wrong branch.
 
+### A channel of the next version
+
+Leave out `major` to make a channel release prereleases of the next stable version, for example a
+`dev` branch that deploys to a test environment before `main` releases:
+
+```toml
+[release]
+promote = "warn"     # default; "strict" refuses, "off" does not look
+
+[[release.channels]]
+branch = "dev"
+prerelease = "beta"
+```
+
+After `6.1.0` and a `feat:` commit, `dev` releases `6.2.0-beta.1`. A `fix:` commit after it gives
+`6.2.0-beta.2`, because the target stays `6.2.0`. A breaking change moves the target, and the next
+release is `7.0.0-beta.1`. A commit that releases nothing (`docs:`, `chore:`) after the latest
+prerelease gives no new release. The commits counted for the target are those since the last
+stable tag.
+
+Merge `dev` into `main`, and `main` plans `6.2.0`: the version `dev` tested. `[release] promote`
+compares the two. On the release branch, each project in the plan must have a prerelease of the
+same version on a channel without a major that `HEAD` contains. When a project has none, or when
+its latest prerelease has another version (a commit went straight to `main`), smith prints a warning
+(`promote = "warn"`) or refuses the release (`promote = "strict"`), and names the channel branch to
+release again. A channel with a major is a line of its own and is not compared.
+
+`main` builds the release again from the same commits. It does not reuse the files that `dev` built.
+
 Smith checks this before it publishes anything, and refuses the release when a project in the plan:
 
 - is a package whose plugin does not declare the `channels` capability (the Node, Python, .NET,
