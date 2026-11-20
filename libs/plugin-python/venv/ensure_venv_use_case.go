@@ -50,10 +50,12 @@ func Ensure(workspaceRoot string) ([]string, error) {
 }
 
 // InstallEditable installs one project into the venv in editable mode, which
-// is what makes every workspace project importable by every other one.
+// is what makes every workspace project importable by every other one, with
+// its own development extras and dependency groups (EditableTarget), so its
+// tests find the tools it declares.
 func InstallEditable(workspaceRoot, projectRoot string) error {
 	toolrun.Step("Installing " + projectRoot + " into the environment")
-	return Runner(workspaceRoot, []string{Path(workspaceRoot), "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-e", "./" + projectRoot})
+	return Runner(workspaceRoot, append([]string{Path(workspaceRoot), "-m", "pip", "install", "--quiet", "--disable-pip-version-check"}, EditableTarget(workspaceRoot, projectRoot)...))
 }
 
 func create(workspaceRoot string) error {
