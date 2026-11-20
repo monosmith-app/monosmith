@@ -90,16 +90,24 @@ func SplitNode(req Request) (Result, error) {
 	if build != "" {
 		res.Notes = append(res.Notes, build)
 	}
+	lintRoot := req.Root
+	if req.InPlace {
+		lintRoot = dir
+	}
 	if req.KeepLint {
-		kept, err := moveLintIntoProject(req.Root, dir)
-		if err != nil {
+		var kept []string
+		if req.InPlace {
+			kept = lintFilesIn(dir)
+		} else if kept, err = moveLintIntoProject(req.Root, dir); err != nil {
 			return res, err
 		}
-		if len(kept) > 0 {
+		if len(kept) > 0 && req.InPlace {
+			res.Notes = append(res.Notes, "the project keeps its own ESLint setup ("+strings.Join(kept, ", ")+"); --eslint-setup shared replaces it with the workspace's.")
+		} else if len(kept) > 0 {
 			res.Notes = append(res.Notes, "your own ESLint setup stays in the project ("+strings.Join(kept, ", ")+"): smith doctor reports that the shared slice rules do not run until the workspace root loads @monosmith/eslint-config.")
 		}
 	} else {
-		legacy, err := retireLegacyESLint(req.Root)
+		legacy, err := retireLegacyESLint(lintRoot)
 		if err != nil {
 			return res, err
 		}
@@ -165,6 +173,19 @@ func moveLintIntoProject(root, dir string) ([]string, error) {
 	}
 	slices.Sort(names)
 	return names, nil
+}
+
+// lintFilesIn names the ESLint configuration files in dir, sorted.
+func lintFilesIn(dir string) []string {
+	var names []string
+	for _, pattern := range lintFilePatterns {
+		found, _ := filepath.Glob(filepath.Join(dir, pattern))
+		for _, m := range found {
+			names = append(names, filepath.Base(m))
+		}
+	}
+	slices.Sort(names)
+	return names
 }
 
 // retireLegacyESLint renames the ESLint configuration files at the root

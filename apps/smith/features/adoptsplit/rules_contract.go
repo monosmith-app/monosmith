@@ -66,6 +66,10 @@ type Request struct {
 	// KeepLint is true when the person keeps the project's own lint setup: it
 	// moves into the project folder and nothing of it is replaced.
 	KeepLint bool
+	// InPlace is true when the project arrived whole in its folder (smith
+	// import), so its lint setup is in the folder and not at the root. The
+	// workspace's own root files are then never touched.
+	InPlace bool
 }
 
 // Result is what a Split did.

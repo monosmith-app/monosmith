@@ -57,7 +57,8 @@ Already have a repository? `smith adopt --dry-run` tells you what bringing it
 under smith involves, changing nothing (and sends an Nx or Turborepo workspace
 to `smith convert --dry-run`). Most people start with `smith new` (an empty
 folder) or `smith adopt` (a repository they already have), then `smith build`
-and `smith doctor`.
+and `smith doctor`. To bring another project into the workspace, with its git
+history, use [`smith import <git-url|folder>`](docs/manual/import.md).
 
 ## Install
 
