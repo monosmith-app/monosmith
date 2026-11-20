@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/features/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/release"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
@@ -102,6 +103,8 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	if len(r.Projects) == 0 {
 		if attachRootProject(&r, files) {
 			r.Warnings = withoutRootProgramWarning(r.Warnings)
+		} else if r.Sources = manifestoffer.Sources(root, r.Claims); len(r.Sources) > 0 {
+			r.Warnings = append(r.Warnings, sourcesWarning(r.Sources))
 		} else {
 			r.Warnings = append(r.Warnings, noProjectWarning(exists, r.Claims))
 		}
@@ -179,6 +182,19 @@ func noProjectWarning(exists func(string) bool, claims []adoptmove.Claim) Item {
 	return Item{
 		Message: "no project found: smith knows a project by the manifest of a language it has a plugin for (" + manifestNames(claims) + ")",
 		Steps:   []string{"smith adopt --init makes an empty workspace; then smith add app <name> --lang <language>"},
+	}
+}
+
+// sourcesWarning explains a root of sources without a manifest, and the
+// offer --init makes.
+func sourcesWarning(finds []manifestoffer.Find) Item {
+	f := finds[0]
+	return Item{
+		Message: fmt.Sprintf("no project found: the root has %d %s source file(s) and no %s, so smith sees no project", len(f.Files), f.Language, f.Manifest),
+		Steps: []string{
+			fmt.Sprintf("smith adopt --init offers to write %s from the default stack of %s (--manifest %s answers), then asks where the project goes; the sources keep their layout", f.Manifest, f.Language, f.Language),
+			"or write the manifest yourself, commit it, then run smith adopt again",
+		},
 	}
 }
 

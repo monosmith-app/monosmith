@@ -1,14 +1,17 @@
 package adoption
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
 	"golang.org/x/term"
@@ -23,6 +26,9 @@ type MoveOptions struct {
 	Hoist []string
 	// EslintSetup is --eslint-setup: "shared", "keep", or "" when not given.
 	EslintSetup string
+	// Manifest is --manifest: the language whose manifest smith writes at a
+	// root of sources without one, manifestoffer.None, or "" when not given.
+	Manifest string
 	// Yes is --yes: do not ask.
 	Yes bool
 	// In and Out are where a question is read and written.
@@ -56,7 +62,22 @@ func ChooseMove(r Report, opts MoveOptions) (*adoptmove.Candidate, *adoptmove.Pl
 		return nil, nil, nil
 	}
 	c, err := adoptmove.Detect(r.Root, r.Claims)
+	write := ""
 	switch {
+	case errors.Is(err, adoptmove.ErrNoRootProject) && len(r.Sources) > 0 && opts.Dir != adoptmove.Leave:
+		in, _ := opts.In.(*bufio.Reader)
+		if in == nil && opts.In != nil {
+			in = bufio.NewReader(opts.In)
+		}
+		f, ok, serr := manifestoffer.Settle(manifestoffer.Question{
+			Folder: "the repository root", Finds: r.Sources, Answer: opts.Manifest, Ask: !opts.Yes && interactive(),
+			Command: "smith adopt --init", In: in, Out: opts.Out,
+		})
+		if serr != nil || !ok {
+			return nil, nil, serr
+		}
+		c = adoptmove.Candidate{Ecosystem: f.Language, Manifest: f.Manifest, Name: adoptmove.DeriveName("", filepath.Base(r.Root)), App: manifestoffer.LooksLikeProgram(f.Files)}
+		write = f.Language
 	case errors.Is(err, adoptmove.ErrNoRootProject):
 		if opts.Dir != "" {
 			return nil, nil, problem.New("--move has nothing to move: the repository root holds no project manifest smith knows ("+manifestNames(r.Claims)+")", "drop --move, or give a repository whose project is at the root")
@@ -76,6 +97,10 @@ func ChooseMove(r Report, opts MoveOptions) (*adoptmove.Candidate, *adoptmove.Pl
 		if dir == adoptmove.Leave {
 			return nil, nil, nil
 		}
+	}
+	if write != "" {
+		// The manifest is written, and the moves planned, by MoveRootProject.
+		return &c, &adoptmove.Plan{Dir: dir, Ecosystem: c.Ecosystem, Write: write}, nil
 	}
 	plan, err := PlanFor(r.Root, c, dir)
 	if err != nil {

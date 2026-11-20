@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/features/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
@@ -23,9 +24,9 @@ import (
 type Options struct {
 	// Source is the git URL or the folder.
 	Source string
-	// As, Into, Name, Ref, History and ESLint are the flags of the same names
-	// (ESLint is --eslint-setup); "" when not given.
-	As, Into, Name, Ref, History, ESLint string
+	// As, Into, Name, Ref, History, ESLint, Manifest and Path are the flags
+	// of the same names (ESLint is --eslint-setup); "" when not given.
+	As, Into, Name, Ref, History, ESLint, Manifest, Path string
 	// Hoist is --hoist.
 	Hoist []string
 	// Tooling is --tooling: smith or keep (or <project>=smith|keep), the
@@ -67,6 +68,11 @@ func Import(o Options) (Plan, error) {
 	if o.ESLint != "" && o.ESLint != ESLintShared && o.ESLint != ESLintKeep {
 		return Plan{}, problem.New("--eslint-setup "+o.ESLint+" is not a choice", "use --eslint-setup shared or --eslint-setup keep")
 	}
+	if _, ok := o.In.(*bufio.Reader); !ok && o.In != nil {
+		// One reader for every question and the confirmation: two would each
+		// swallow the other's input.
+		o.In = bufio.NewReader(o.In)
+	}
 	claims, taken, err := readWorkspace(root, o.Version, o.Log)
 	if err != nil {
 		return Plan{}, err
@@ -75,8 +81,13 @@ func Import(o Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	defer Release(src)
-	p, err := settle(root, src, claims, taken, o)
+	defer func() { Release(src) }()
+	if o.Path != "" {
+		if src, err = Narrow(src, o.Path, o.Out); err != nil {
+			return Plan{}, err
+		}
+	}
+	p, err := settle(root, &src, claims, taken, o)
 	if err != nil {
 		return p, err
 	}
@@ -90,6 +101,11 @@ func Import(o Options) (Plan, error) {
 	}
 	if err := Place(root, p, o.Out); err != nil {
 		return p, err
+	}
+	if p.WriteManifest != "" {
+		if err := writeManifest(root, o.Version, &p, o.Out); err != nil {
+			return p, fmt.Errorf("the project is in %s, but its manifest was not written (%w); write it yourself, then run smith doctor", p.Folder, err)
+		}
 	}
 	keptLeft := KeepVersions(root, p, o.Out)
 	if dropped, err := DropLockfiles(root, p.Folder, Lockfiles(p.Ecosystem)); err != nil {
@@ -114,6 +130,7 @@ func Import(o Options) (Plan, error) {
 	if len(left) == 0 {
 		left = append(left, Verify(root, p.Name, o.Out)...)
 	}
+	left = append(left, LayoutLeft(root, p)...)
 	checked, err := Check(root, o.Version)
 	if err != nil {
 		return p, err
@@ -143,17 +160,23 @@ func readWorkspace(root, version string, log io.Writer) ([]adoptmove.Claim, map[
 
 // settle identifies the project and settles its name, kind, folder and
 // history. It refuses what the import cannot do, before anything changes.
-func settle(root string, src Source, claims []adoptmove.Claim, taken map[string]bool, o Options) (Plan, error) {
+func settle(root string, src *Source, claims []adoptmove.Claim, taken map[string]bool, o Options) (Plan, error) {
 	c, err := adoptmove.Detect(src.Dir, claims)
+	write := ""
 	if errors.Is(err, adoptmove.ErrNoRootProject) {
-		return Plan{}, problem.New("smith finds no project at the top of "+o.Source,
-			"smith knows a project by one of these manifests at the top of its folder: "+ManifestNames(claims),
-			"import the sub-folder that holds the manifest, or add the manifest to the project first")
+		c, write, err = offer(src, claims, o)
 	}
 	if err != nil {
 		return Plan{}, err
 	}
-	p := Plan{Name: c.Name, Ecosystem: c.Ecosystem, Manifest: c.Manifest, Source: src}
+	p := Plan{Name: c.Name, Ecosystem: c.Ecosystem, Manifest: c.Manifest, Source: *src, WriteManifest: write}
+	if write != "" {
+		for _, f := range manifestoffer.Sources(src.Dir, claims) {
+			if f.Language == write {
+				p.Sources = len(f.Files)
+			}
+		}
+	}
 	if o.Name != "" {
 		p.Name = o.Name
 	}
@@ -200,6 +223,48 @@ func settle(root string, src Source, claims []adoptmove.Claim, taken map[string]
 		}
 	}
 	return p, nil
+}
+
+// writeManifest has the language plugin write the manifest of the default
+// stack into the placed folder, and records its file in the plan.
+func writeManifest(root, version string, p *Plan, out io.Writer) error {
+	s, err := session.Open(session.Options{Dir: root, Version: version, Log: io.Discard})
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	w, err := manifestoffer.Write(s, p.WriteManifest, protocol.ProjectKind(p.Kind), p.Name, p.Folder)
+	if err != nil {
+		return err
+	}
+	stack := "the " + w.Plugin + " plugin's own"
+	if w.Stack != "" {
+		stack = "stack " + w.Stack
+	}
+	fmt.Fprintf(out, "  manifest: wrote %s (%s); the sources stay where they are\n", strings.Join(w.Files, ", "), stack)
+	if len(w.Files) > 0 {
+		p.Manifest = filepath.Base(filepath.FromSlash(w.Files[0]))
+	}
+	return nil
+}
+
+// LayoutLeft names what a written manifest leaves to the person: a Node
+// template points its tsconfig and package.json at src/, and the sources of
+// a folder without src/ stay at its top.
+//
+// Parameters: root is the workspace root; p is the plan.
+// Returns: the item left, or nil.
+func LayoutLeft(root string, p Plan) []Left {
+	if p.WriteManifest != "node" {
+		return nil
+	}
+	if info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p.Folder), "src")); err == nil && info.IsDir() {
+		return nil
+	}
+	return []Left{{
+		Problem: p.Name + ": the written package.json and tsconfig.json point at src/, and the sources are at the top of " + p.Folder,
+		Remedy:  "move the sources into " + p.Folder + "/src (git mv), or point include, rootDir, main and exports at the folder's top\nsmith run typecheck build -p " + p.Name + " shows what still fails",
+	}}
 }
 
 // cleanTree refuses the import of a git history on a work tree with uncommitted changes,

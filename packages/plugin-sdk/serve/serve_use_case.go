@@ -326,7 +326,8 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, packs := p.(PackPublisher)
 	_, repair := p.(DependencyRepairer)
 	_, join := p.(WorkspaceJoiner)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs, Repair: repair, Join: join}
+	_, manifestOnly := p.(ManifestWriter)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link, Packs: packs, Repair: repair, Join: join, ManifestOnly: manifestOnly}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

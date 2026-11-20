@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"slices"
 )
 
 func TestGenerate(t *testing.T) {
@@ -50,5 +51,26 @@ func TestGenerate(t *testing.T) {
 	}
 	if strings.Contains(strings.Join(calls, "\n"), "-m venv") {
 		t.Fatal("the venv must be created once")
+	}
+}
+
+func TestGenerateManifestOnlyFindsFlatSources(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, "libs", "sorts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "sorts", Directory: "libs/sorts", ManifestOnly: true, Workspace: protocol.WorkspaceInfo{Name: "acme"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(res.Files, []string{"libs/sorts/pyproject.toml"}) {
+		t.Fatalf("want pyproject.toml only, got %v", res.Files)
+	}
+	raw, _ := os.ReadFile(filepath.Join(ws, "libs", "sorts", "pyproject.toml"))
+	if !strings.Contains(string(raw), `where = ["."]`) {
+		t.Errorf("a folder without src/ finds its packages at its top:\n%s", raw)
+	}
+	if _, err := os.Stat(filepath.Join(ws, ".venv")); err == nil {
+		t.Error("ManifestOnly made a venv")
 	}
 }

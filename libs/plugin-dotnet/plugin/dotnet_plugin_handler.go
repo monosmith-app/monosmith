@@ -36,6 +36,7 @@ func (d *Dotnet) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Tools:     toolcatalog.For("dotnet", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"dotnet", "csharp", "fsharp"},
 		Manifests: []string{"*.csproj", "*.fsproj"},
+		Sources:   scaffolding.Sources,
 		Choices:   functions.Choices(),
 	}, nil
 }
@@ -50,6 +51,10 @@ func (d *Dotnet) Join(params protocol.JoinParams) (protocol.JoinResult, error) {
 func (d *Dotnet) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
 	return discovery.Discover(d.root, params.Manifests)
 }
+
+// WritesManifestOnly implements serve.ManifestWriter: Generate honours
+// GenerateParams.ManifestOnly.
+func (d *Dotnet) WritesManifestOnly() {}
 
 // Generate implements serve.Generator.
 func (d *Dotnet) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {

@@ -35,6 +35,12 @@ type Source struct {
 	Dirty bool
 	// Temp is the temporary clone that Release removes, or "".
 	Temp string
+	// Path is the sub-folder of the source the project is in (--path), with
+	// forward slashes, or "" for the top. Dir is then that folder's content.
+	Path string
+	// PathRef is the ref the history of Path was split from; Ref is then
+	// the temporary branch that holds it.
+	PathRef string
 }
 
 // Plan is what smith import will do, settled before anything is written.
@@ -53,6 +59,11 @@ type Plan struct {
 	Source Source
 	// History is HistoryKeep, HistorySquash or HistoryCopy.
 	History string
+	// WriteManifest is the language whose manifest the import writes into
+	// the folder after the place step (--manifest), or "" when the source has one.
+	WriteManifest string
+	// Sources is the number of source files of a source without a manifest.
+	Sources int
 	// Lockfiles are the project's own lockfiles that the import drops,
 	// because the workspace has one lockfile for every project.
 	Lockfiles []string

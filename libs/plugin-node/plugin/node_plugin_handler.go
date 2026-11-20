@@ -45,6 +45,7 @@ func (n *Node) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Tools:     toolcatalog.For("node", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"node", "javascript", "js"},
 		Manifests: []string{"package.json"},
+		Sources:   scaffolding.Sources,
 		// Concurrency lets the host ask the registry about many projects at
 		// once; the other handlers still run one at a time (see Node.mu).
 		Concurrency: publishedConcurrency,
@@ -64,6 +65,10 @@ func (n *Node) Generate(params protocol.GenerateParams) (protocol.GenerateResult
 	defer n.mu.Unlock()
 	return scaffolding.Generate(n.root, params)
 }
+
+// WritesManifestOnly implements serve.ManifestWriter: Generate honours
+// GenerateParams.ManifestOnly.
+func (n *Node) WritesManifestOnly() {}
 
 // WriteVersion implements serve.Versioner.
 func (n *Node) WriteVersion(params protocol.VersionParams) (protocol.VersionResult, error) {

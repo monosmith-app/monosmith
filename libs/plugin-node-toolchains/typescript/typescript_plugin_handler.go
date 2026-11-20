@@ -66,6 +66,11 @@ func (p *TypeScript) Generate(params protocol.GenerateParams) (protocol.Generate
 	return scaffolding.GenerateFrom(p.root, params, set)
 }
 
+// WritesManifestOnly implements serve.ManifestWriter: Generate honours
+// GenerateParams.ManifestOnly (scaffolding.GenerateFrom writes the
+// package.json and the tsconfig files only).
+func (p *TypeScript) WritesManifestOnly() {}
+
 // Derive implements serve.Deriver: the tsconfig.json of the projects the plugin
 // scaffolded, rendered from its own template (ADR 0049). An app made from
 // choices has a vite.config.ts and belongs to the vite plugin.

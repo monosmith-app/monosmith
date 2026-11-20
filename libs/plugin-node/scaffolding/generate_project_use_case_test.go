@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"slices"
 )
 
 func TestGenerateWritesProjectAndWorkspaceOnce(t *testing.T) {
@@ -74,5 +75,43 @@ func TestRootManifestKeepsUserEntries(t *testing.T) {
 	dev := root["devDependencies"].(map[string]any)
 	if root["name"] != "mine" || dev["typescript"] != "5.0.0" || dev["@types/node"] == nil || root["scripts"] == nil {
 		t.Fatalf("user entries must survive: %v", root)
+	}
+}
+
+func TestGenerateManifestOnlyKeepsTheSources(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "libs", "tools")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "a.js"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "tools", Directory: "libs/tools", ManifestOnly: true, Workspace: protocol.WorkspaceInfo{Name: "acme"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(res.Files, "libs/tools/package.json") || !slices.Contains(res.Files, "package.json") {
+		t.Fatalf("want the manifest and the workspace's package.json, got %v", res.Files)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "src")); err == nil {
+		t.Fatalf("ManifestOnly wrote the starter sources: %v", res.Files)
+	}
+	if !res.InstallPending {
+		t.Error("the workspace's package.json changed: the host must install")
+	}
+}
+
+func TestGenerateManifestOnlyAtTheRootWritesNoWorkspaceFile(t *testing.T) {
+	ws := t.TempDir()
+	res, err := Generate(ws, protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "tools", Directory: ".", ManifestOnly: true, Workspace: protocol.WorkspaceInfo{Name: "acme"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(res.Files, []string{"package.json"}) {
+		t.Fatalf("want the project's package.json only, got %v", res.Files)
+	}
+	if _, err := os.Stat(filepath.Join(ws, ".npmrc")); err == nil {
+		t.Error("a project at the root got the workspace's .npmrc")
 	}
 }
