@@ -60,8 +60,8 @@ commit. The hashes of the imported commits change, which is also true of `git su
   fix edits the person's package.json, pyproject.toml or solution, so "only restore files smith
   owns" was not true.
 - A source whose manifest is not at its top (a .NET repository with `src/<Name>/<Name>.csproj`)
-  is refused. The person imports the sub-folder, which copies the files without the history.
-  #1154 offers a manifest for sources without one.
+  is offered the project below its top, with that folder's history, and a folder of sources
+  without a manifest is offered one: see [ADR 0108](0108-smith-offers-a-manifest-for-a-source-without-one.md).
 - The project's build and tests decide the end state. A legacy tool (create-react-app in a hoisted
   npm workspace) fails there and is named in the list, until the tooling step (#553) offers smith's
   tooling.

@@ -26,11 +26,20 @@ type templateData struct {
 	functions.Data
 }
 
+// Sources are the source files a .NET project holds, which the plugin
+// recognises in a folder without a project file (InitializeResult.Sources).
+var Sources = []string{"*.cs"}
+
 // Generate writes a project and its tests project, and the workspace's
-// Directory.Build.props the first time.
+// Directory.Build.props the first time. With params.ManifestOnly it writes
+// only the project file into the folder that holds the sources (no tests
+// project and no starter file), with the workspace's Directory.Build.props
+// when there is none yet. A project at the root itself (Directory ".") gets
+// no Directory.Build.props, and its project file names its own target
+// framework.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(params.Directory))
-	if _, err := os.Stat(dir); err == nil {
+	if _, err := os.Stat(dir); err == nil && !params.ManifestOnly {
 		return protocol.GenerateResult{}, fmt.Errorf("%s already exists", params.Directory)
 	}
 	templates := maps.Clone(sliceTemplates)
@@ -48,8 +57,13 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	case params.Kind == protocol.ProjectApp:
 		maps.Copy(templates, appTemplates)
 	}
+	if params.ManifestOnly {
+		templates = templating.ManifestOnly(templates, Sources)
+	}
 	explicitFramework := false
-	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, directoryBuildProps)); errors.Is(err, fs.ErrNotExist) {
+	if raw, err := os.ReadFile(filepath.Join(workspaceRoot, directoryBuildProps)); errors.Is(err, fs.ErrNotExist) && params.ManifestOnly && params.Directory == "." {
+		explicitFramework = true
+	} else if errors.Is(err, fs.ErrNotExist) {
 		maps.Copy(templates, rootTemplates)
 	} else if err != nil {
 		return protocol.GenerateResult{}, err

@@ -87,21 +87,23 @@ func Join(root, version string, p Plan, out io.Writer) ([]Left, error) {
 	return left, nil
 }
 
-// Install installs the project's dependencies as smith install -p <name>
-// does, and shows the output.
+// Install installs the workspace's dependencies as smith install does, and
+// shows the output. It installs every project, not only the new one: the
+// split and the join changed the workspace manifest (the tools moved to its
+// root), and an install of one project does not install the root's tools.
 //
 // Parameters: root is the workspace root; version is smith's; name is the
 // project; out gets the output.
 // Returns: an item left when the install fails, else nil.
 func Install(root, version, name string, out io.Writer) []Left {
-	failed := []Left{{Problem: "smith install -p " + name + " failed (its output is above)", Remedy: "fix the cause it names, then run smith install -p " + name}}
+	failed := []Left{{Problem: "smith install failed after the import of " + name + " (its output is above)", Remedy: "fix the cause it names, then run smith install"}}
 	s, err := session.Open(session.Options{Dir: root, Version: version, Log: io.Discard})
 	if err != nil {
 		return failed
 	}
 	defer s.Close()
-	fmt.Fprintf(out, "… smith install -p %s\n", name)
-	if err := dependencies.Install(s, []string{name}, nil, false, out, dependencies.LinkOptions{}); err != nil {
+	fmt.Fprintln(out, "… smith install")
+	if err := dependencies.Install(s, nil, nil, false, out, dependencies.LinkOptions{}); err != nil {
 		fmt.Fprintf(out, "  %s\n", firstLine(err.Error()))
 		return failed
 	}

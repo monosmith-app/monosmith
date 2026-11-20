@@ -33,6 +33,7 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Tools:     toolcatalog.For("python", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"python", "py"},
 		Manifests: []string{"pyproject.toml"},
+		Sources:   scaffolding.Sources,
 		Choices:   functions.Choices(),
 	}, nil
 }
@@ -51,6 +52,10 @@ func (p *Python) Discover(params protocol.DiscoverParams) (protocol.DiscoverResu
 // DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
 // the projects smith.toml declares, as folders of the distribution above them.
 func (p *Python) DescribesDeclared() {}
+
+// WritesManifestOnly implements serve.ManifestWriter: Generate honours
+// GenerateParams.ManifestOnly.
+func (p *Python) WritesManifestOnly() {}
 
 // Generate implements serve.Generator.
 func (p *Python) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {

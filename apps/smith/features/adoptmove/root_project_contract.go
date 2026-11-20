@@ -89,4 +89,8 @@ type Plan struct {
 	Keep []string `json:"keep,omitempty"`
 	// Notes are things the person should know, one sentence each.
 	Notes []string `json:"notes,omitempty"`
+	// Write is the language whose manifest smith writes at the root before
+	// the move, for a root of sources without a manifest. The plan then holds
+	// only Dir and Ecosystem: the moves are planned once the manifest exists.
+	Write string `json:"write,omitempty"`
 }

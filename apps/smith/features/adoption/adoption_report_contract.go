@@ -2,6 +2,7 @@ package adoption
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/releaselineage"
 )
 
@@ -39,6 +40,10 @@ type Report struct {
 	// --init asks where. MovePlan is the move for the suggested folder.
 	RootProject *adoptmove.Candidate `json:"rootProject,omitempty"`
 	MovePlan    *adoptmove.Plan      `json:"movePlan,omitempty"`
+	// Sources are the source files the language plugins recognise at a root
+	// with no manifest and no project: --init offers to write the manifest
+	// of their language (--manifest answers).
+	Sources []manifestoffer.Find `json:"sources,omitempty"`
 	// Claims are the manifest names of the language plugins the look started:
 	// the root project is identified by them, as the workspace identifies its
 	// projects (not part of the report's JSON).

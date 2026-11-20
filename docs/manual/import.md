@@ -18,8 +18,8 @@ you say yes.
    folder. `--ref` takes a branch, tag or commit other than the default branch.
 2. **Identify.** The language plugins find the project by its manifest at the top of the
    source: `package.json`, `pyproject.toml`, a `.csproj`, and every other manifest they
-   know. A source with no manifest at its top is refused, and smith lists the manifests it
-   knows. Import the sub-folder that holds the manifest.
+   know. A source with no manifest at its top is looked at further (see
+   [A source without a manifest at its top](#a-source-without-a-manifest-at-its-top)).
 3. **Place.** The project goes into `<kind folder>/<name>`: `apps/` for an app, `libs/`
    for a lib, `packages/` for a package. The name comes from the manifest, or from
    `--name`. In a terminal smith asks for the folder and suggests the kind the project
@@ -48,11 +48,42 @@ you say yes.
    projects and the workspace's own lint files stay. It installs the whole workspace once,
    because smith's tools go into the root `package.json`. A project of another language
    keeps its tools.
-7. **Check.** smith writes the pipelines again, runs `smith install -p <name>`, then
+7. **Check.** smith writes the pipelines again, runs `smith install` (the whole workspace,
+   because the root manifest changed), then
    `smith run build test -p <name>`, then `smith doctor`.
 
 It ends with `✓ imported <name> into <folder>`, then either "smith doctor finds nothing to
 fix" or one "Left to do (N)" list: each item with the step that clears it.
+
+## A source without a manifest at its top
+
+**The project is in a sub-folder.** A .NET repository often keeps its library in
+`src/<Name>/<Name>.csproj`, and a JavaScript repository its package in `packages/<name>`.
+smith looks for manifests up to four folders below the top, without hidden folders,
+installed dependencies and build output.
+
+- One project: smith offers it. `--path <sub-folder>` says it without a question.
+- Several projects: the source is a workspace. smith says so and offers one of them.
+  `smith adopt`, run in a clone of the source, takes all of them.
+
+A git source keeps the commits of the sub-folder: in a temporary clone,
+`git subtree split --prefix=<sub-folder>` writes each commit that touches the folder again
+with its files at the top, and `--history keep` or `squash` takes that branch. A file the
+project uses outside its sub-folder (a signing key in `src/`, a `Directory.Build.props` at
+the top) does not come with it, and the build names it.
+
+**A folder of sources and no manifest.** For loose `.ts` or `.js`, `.py` and `.cs` files
+(Node, Python and .NET for now), smith offers to write the manifest of the language's default
+stack: the stack in `[default_stacks]`, else the language plugin's own. The manifest comes
+from the same templates as `smith add`, with the name of the folder and the kind you choose.
+The sources stay where they are. `--manifest <language>` answers, `--manifest none` refuses,
+and in a terminal smith asks. Without a terminal and without the flag smith refuses and
+prints the command with the flag: it never writes a manifest you did not ask for.
+
+The template may expect another layout. A Node template points `tsconfig.json` and
+`package.json` at `src/`; when the folder has no `src/`, the "Left to do" list says so. A
+Python manifest finds the packages at the top of a folder without `src/`. A `.csproj` takes
+every `.cs` file in its folder.
 
 ## History
 
@@ -83,6 +114,12 @@ smith import https://github.com/owner/api --as app --yes
 # a local Python library, copied, a test dependency sent to the workspace
 smith import ../color-tools --as lib --hoist freezegun --yes
 
+# a .NET library kept in src/MyLib, with the commits of that folder
+smith import https://github.com/owner/dotnet-lib --path src/MyLib --as package --yes
+
+# a folder of loose Python scripts, with a pyproject.toml written for it
+smith import ../scripts --as app --manifest python --yes
+
 # a .NET package as one squashed commit, and the rest committed too
 smith import https://github.com/owner/codes --as package --history squash --commit --yes
 ```
@@ -93,7 +130,9 @@ smith import https://github.com/owner/codes --as package --history squash --comm
 |---|---|---|
 | Not in a workspace | this folder is not in a smith workspace | `smith adopt`, or cd into a workspace |
 | The folder exists | `<folder>` exists already | `--into` another folder, or `--name` |
-| No manifest at the top | smith finds no project at the top of `<source>` | import the sub-folder that holds the manifest |
+| No manifest and no source file smith knows | smith finds no project at the top of `<source>` | add the manifest first |
+| Projects below the top, no terminal | the manifest of `<source>` is not at its top, or it holds N projects (a workspace) | `--path <sub-folder>`, or `smith adopt` |
+| Sources without a manifest, no terminal | `<source>` has N source files and no manifest | `--manifest <language>`, or write the manifest |
 | Uncommitted changes and a git history | the work tree has uncommitted changes | commit or stash, or `--history copy` |
 | No terminal and no folder | smith does not choose the folder | `--as <kind>` or `--into <folder>` |
 
@@ -115,7 +154,9 @@ Usage: `smith import <git-url|folder> [flags]`
 | `--history <history>` | string |  | keep (every commit, under the folder), squash (one commit) or copy (the files only); default keep for a git source, copy for a plain folder |
 | `--hoist <hoist>` | string, repeatable |  | development dependencies to move to the workspace without asking (the known tools move anyway) |
 | `--into <into>` | string |  <kind folder>/<name>, asked in a terminal | the project's folder, from the workspace root (default: <kind folder>/<name>, asked in a terminal) |
+| `--manifest <manifest>` | string |  | a source with no manifest: the language whose default stack's manifest smith writes (node, python, dotnet), or none; asked in a terminal |
 | `--name <name>` | string |  the name in its manifest | the project's name (default: the name in its manifest) |
+| `--path <path>` | string |  | the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder |
 | `--ref <ref>` | string |  its default branch | the branch, tag or commit of a git source to import (default: its default branch) |
 | `--tooling <tooling>` | string, repeatable | with --yes | a Node project's build and lint tools: smith (smith's build and ESLint config, then the old tools go) or keep (default with --yes) |
 | `-y, --yes` | boolean | off | do not ask: apply the plan (--as or --into must say where the project goes) |

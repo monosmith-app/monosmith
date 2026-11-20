@@ -185,7 +185,7 @@ MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate",
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared", "join"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared", "join", "manifestOnly"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -455,6 +455,13 @@ class Capabilities(TypedDict, total=False):
     Join says whether each project is joined to the language's workspace (npm "workspaces", uv
     workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin
     only describes; the host applies the fix.
+    """
+    manifestOnly: bool
+    """
+    ManifestOnly says generate honours GenerateParams.ManifestOnly: into a folder that exists and
+    holds sources, it writes only the project's manifest and configuration from its templates. A
+    host never sends ManifestOnly to a plugin without it, since the plugin would write its
+    starter files among the person's sources.
     """
 
 
@@ -1144,6 +1151,16 @@ class GenerateParams(_GenerateParamsRequired, total=False):
     writes the manifest uses it as given, in place of the name it builds from the workspace and
     Name. Empty: the plugin builds the name.
     """
+    manifestOnly: bool
+    """
+    ManifestOnly asks for the manifest of a folder that exists and holds the person's sources
+    (Directory may be "." for the workspace root): the plugin writes only the files at the top of
+    Directory that are not sources and not documents (package.json and its tsconfig, a
+    pyproject.toml, a .csproj) and never a starter file. It may add the workspace files its
+    tooling needs, as generate does, except when Directory is "." (the project is the root
+    itself), and it installs nothing itself (InstallPending says the host must). A file that
+    exists is an error. Sent only to a plugin with the manifestOnly capability.
+    """
 
 
 class _GenerateResultRequired(TypedDict):
@@ -1199,6 +1216,13 @@ class InitializeResult(_InitializeResultRequired, total=False):
     """
     Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose
     presence in a directory may make it a project of this plugin.
+    """
+    sources: list[str]
+    """
+    Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a
+    folder that has none of its Manifests. The host reads them to offer a manifest for such a
+    folder (smith import, smith adopt). Empty: the plugin recognises no project without its
+    manifest.
     """
     roles: list[Role]
     """
@@ -2411,6 +2435,13 @@ class PluginDescription(_PluginDescriptionRequired, total=False):
     """
     Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose
     presence in a directory may make it a project of this plugin.
+    """
+    sources: list[str]
+    """
+    Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a
+    folder that has none of its Manifests. The host reads them to offer a manifest for such a
+    folder (smith import, smith adopt). Empty: the plugin recognises no project without its
+    manifest.
     """
     roles: list[Role]
     """

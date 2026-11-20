@@ -45,6 +45,16 @@ type GenerateParams struct {
 	// writes the manifest uses it as given, in place of the name it builds
 	// from the workspace and Name. Empty: the plugin builds the name.
 	PackageName string `json:"packageName,omitempty"`
+	// ManifestOnly asks for the manifest of a folder that exists and holds
+	// the person's sources (Directory may be "." for the workspace root): the
+	// plugin writes only the files at the top of Directory that are not
+	// sources and not documents (package.json and its tsconfig, a
+	// pyproject.toml, a .csproj) and never a starter file. It may add the
+	// workspace files its tooling needs, as generate does, except when
+	// Directory is "." (the project is the root itself), and it installs
+	// nothing itself (InstallPending says the host must). A file that exists
+	// is an error. Sent only to a plugin with the manifestOnly capability.
+	ManifestOnly bool `json:"manifestOnly,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.

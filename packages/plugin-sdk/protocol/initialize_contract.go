@@ -34,6 +34,11 @@ type InitializeResult struct {
 	// them (*.csproj), whose presence in a directory may make it a project of
 	// this plugin.
 	Manifests []string `json:"manifests,omitempty"`
+	// Sources are patterns of source file base names (*.ts, *.py, *.cs) the
+	// plugin recognises in a folder that has none of its Manifests. The host
+	// reads them to offer a manifest for such a folder (smith import, smith
+	// adopt). Empty: the plugin recognises no project without its manifest.
+	Sources []string `json:"sources,omitempty"`
 	// Roles are the levels the plugin can be chosen for in a project's
 	// make-up (a stack, a recipe). Empty means the default of its kind (see
 	// DefaultRoles). A role is a level: there is no separate level field,
@@ -184,6 +189,12 @@ type Capabilities struct {
 	// fix that joins one that is not. The plugin only describes; the host
 	// applies the fix.
 	Join bool `json:"join,omitempty"`
+	// ManifestOnly says generate honours GenerateParams.ManifestOnly: into a
+	// folder that exists and holds sources, it writes only the project's
+	// manifest and configuration from its templates. A host never sends
+	// ManifestOnly to a plugin without it, since the plugin would write its
+	// starter files among the person's sources.
+	ManifestOnly bool `json:"manifestOnly,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's
