@@ -39,6 +39,10 @@ type Report struct {
 	// --init asks where. MovePlan is the move for the suggested folder.
 	RootProject *adoptmove.Candidate `json:"rootProject,omitempty"`
 	MovePlan    *adoptmove.Plan      `json:"movePlan,omitempty"`
+	// Claims are the manifest names of the language plugins the look started:
+	// the root project is identified by them, as the workspace identifies its
+	// projects (not part of the report's JSON).
+	Claims []adoptmove.Claim `json:"-"`
 }
 
 // Item is one finding and the step that clears it.

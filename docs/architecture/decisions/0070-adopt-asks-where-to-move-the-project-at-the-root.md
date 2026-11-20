@@ -2,6 +2,11 @@
 
 - Status: accepted
 - Date: 2026-11-01
+- Amended: 2026-11-20 (issue #1150). The root project is identified by the manifest names the
+  language plugins claim in their handshake, the same names the workspace discovery uses, so every
+  language gets the move offer. A language without split rules moves every entry that is not the
+  repository's. Kind for other languages: a .NET project with an executable output or the web or
+  worker SDK, and a Composer `project`, are offered as apps.
 
 ## Context
 
