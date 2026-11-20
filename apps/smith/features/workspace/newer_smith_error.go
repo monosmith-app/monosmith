@@ -2,8 +2,10 @@ package workspace
 
 import "errors"
 
-// UpgradeCommand is the one command that installs the latest smith.
-const UpgradeCommand = "npm install --global monosmith"
+// UpgradeCommand is the one command that updates smith, whatever installed
+// it: the launcher downloads the new version, another install runs its own
+// update command (ADR 0101).
+const UpgradeCommand = "smith update"
 
 // NewerSmithError says smith.toml was written for a newer smith than the one
 // reading it: its schema is newer, or it has tables or several keys this smith

@@ -107,7 +107,9 @@ func mapPackageTasks(c taskContext, p *turboworkspace.Package, pp *convertplan.P
 			for _, loose := range out.Loose {
 				c.plan.Add(convertplan.Manual, pp.Name, script, fmt.Sprintf("the output %s is not a directory inside the package; smith caches directories, so list the directory it sits in under outputs in smith.toml", loose))
 			}
-			if script == "build" && len(out.Dirs) > 0 {
+			// An app builds into the workspace's dist; a library or package
+			// builds in its own folder (ADR 0102), so its outputs are right.
+			if script == "build" && len(out.Dirs) > 0 && pp.Kind == protocol.ProjectApp {
 				c.plan.Add(convertplan.Manual, pp.Name, script, "the build writes to "+strings.Join(out.Dirs, ", ")+" inside the package, and smith doctor fails a build that does not write to the workspace's "+buildDirOf(pp.Root)+": point the tool there (tsconfig outDir, --outdir) and update main, types and exports, then set outputs to match")
 			}
 		}

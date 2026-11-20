@@ -11,14 +11,17 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/features/legacyinventory"
 	smithconfig "github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// buildOutputGroup moves the output of every project that compiles with tsc
-// into the workspace's one dist folder: the folder leaves the tsconfig, the
-// build script passes it, and main, types and start follow. It deletes
+// buildOutputGroup moves the output of every app (and VS Code extension) that
+// compiles with tsc into the workspace's one dist folder: the folder leaves
+// the tsconfig, the build script passes it, and main, types and start follow.
+// A library or package keeps building in its own folder (ADR 0102). It deletes
 // nothing; it is the part of embracing smith's build that edits.
 //
 // A project that doctor refuses to move stays where it is, with the same
@@ -53,10 +56,15 @@ func buildOutputGroup(v *legacyinventory.Tree) built {
 			continue
 		}
 		project := protocol.Project{Name: name, Root: root, Exports: []string{name}}
-		var flags struct{ Private bool }
-		_ = json.Unmarshal([]byte(v.Read(manifest)), &flags)
-		if !flags.Private {
-			project.Kind = protocol.ProjectPackage
+		var pkg discovery.PackageManifest
+		_ = json.Unmarshal([]byte(v.Read(manifest)), &pkg)
+		fallback := protocol.ProjectPackage
+		if pkg.Private {
+			fallback = protocol.ProjectLib
+		}
+		project.Kind = projectkind.Resolve(pkg.Smith.Kind, root, fallback)
+		if !discovery.BuildsLikeApp(project.Kind, pkg.Engines.VSCode != "") {
+			continue
 		}
 		if reason := manifestfixes.MigrationRefusal(v.Root, project, config, outDir, importers[name]); reason != "" {
 			out.notes = append(out.notes, name+" ("+root+") stays unmoved: "+reason)

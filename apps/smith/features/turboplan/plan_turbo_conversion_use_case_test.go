@@ -166,7 +166,10 @@ func TestMakePlanReportsWhatSmithCannotMap(t *testing.T) {
 		"task ghost", "pnpm@9.1.0", "options that only set how turbo runs: ui", "engines.pnpm", "pnpm-lock.yaml", "npx only-allow pnpm")
 	manual := findings(plan, convertplan.Manual)
 	mustContain(t, "manual", manual,
-		"script lint", "a>b", ".github/workflows/deploy.yml", "the build writes to dist inside the package")
+		"script lint", "a>b", ".github/workflows/deploy.yml", "web build: the build writes to .next inside the package")
+	if strings.Contains(manual, "the build writes to dist inside the package") {
+		t.Errorf("a library or package builds in its own dist (ADR 0102), so its build is not a manual step:\n%s", manual)
+	}
 }
 
 func TestMakePlanMovesToNpmWorkspaces(t *testing.T) {
