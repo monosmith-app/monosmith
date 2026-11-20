@@ -84,6 +84,8 @@ audit_policies = []                    # "node", "go", "python", "rust": policy 
 audit_warn = []                        # audit policies that only report
 audit_allow_install_scripts = []       # npm packages the node policy lets run install scripts
 audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts in all
+artifacts = "on"                       # "optional": a full GitHub artifact quota does not fail an upload step (ci.md)
+artifact_retention_days = 7            # days GitHub keeps the uploaded builds, 1 to 90; default (and 0): 7
 
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
@@ -175,6 +177,7 @@ npm = "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
 # a convention takes only the keys shown here; an external plugin's own settings go in [projects.<p>.settings.<plugin>]
 languages = ["go"]                    # default: every language it supports
 exclude = ["legacy"]                  # projects it leaves alone
+vendors = ["github.com/lib/pq"]       # vendor packages only a slice in integrations/ may import; a trailing * matches a prefix (docs/manual/slices-check.md)
 
 [conventions.docker]                  # an image task for every app with a Dockerfile
 registry = "ghcr.io/acme"             # where release pushes the images; unset: built, never pushed
