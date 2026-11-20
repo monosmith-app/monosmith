@@ -12,7 +12,7 @@ attach to a GitHub Release.
 
 | | |
 |---|---|
-| Plugin name | `recipe` (built in; runs as a separate process, `smith plugin serve recipe`) |
+| Plugin name | `recipe` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin; it declares none of its own) |
 | `--lang` value | `recipe` |

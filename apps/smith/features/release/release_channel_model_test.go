@@ -219,3 +219,58 @@ func TestAnAppIsNeverPublishedToARegistryByItsPlugin(t *testing.T) {
 		}
 	}
 }
+
+func TestAChannelWithoutAMajorReleasesPrereleasesOfTheNextVersion(t *testing.T) {
+	g := repo(t)
+	pg := packages(t)
+	ch := &Channel{ID: "beta", Tag: "beta"}
+	commit(t, g, "packages/core/a", "feat(core): first")
+	if err := g.CreateTag("core@6.1.0", "core@6.1.0"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Run("checkout", "-q", "-b", "dev"); err != nil {
+		t.Fatal(err)
+	}
+	releaseDev := func(wantNext, wantCurrent string) {
+		t.Helper()
+		plan, err := MakeChannelPlan(g, pg, ch)
+		if err != nil {
+			t.Fatal(err)
+		}
+		core := byProject(plan)["core"]
+		if core.Next != wantNext || core.Current != wantCurrent {
+			t.Fatalf("core %+v, want %s after %q", core, wantNext, wantCurrent)
+		}
+		if err := g.CreateTag(core.Tag, core.Tag); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	commit(t, g, "packages/core/b", "feat(core): a feature for 6.2.0")
+	releaseDev("6.2.0-beta.1", "6.1.0")
+	commit(t, g, "packages/core/c", "fix(core): a fix keeps the target")
+	releaseDev("6.2.0-beta.2", "6.2.0-beta.1")
+
+	commit(t, g, "README.md", "docs: nothing to release")
+	plan, err := MakeChannelPlan(g, pg, ch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := byProject(plan)["core"]; ok {
+		t.Fatalf("no releasing commit since 6.2.0-beta.2 releases nothing: %+v", plan.Items)
+	}
+
+	commit(t, g, "packages/core/d", "feat(core)!: a breaking change moves the target")
+	releaseDev("7.0.0-beta.1", "6.1.0")
+}
+
+func TestAChannelWithoutAMajorIsValid(t *testing.T) {
+	cfg := workspace.ReleaseSection{Branch: "main", Channels: []workspace.ReleaseChannel{{Branch: "dev", Prerelease: "beta"}}}
+	ch := ChannelOf(cfg, "dev")
+	if ch == nil || !ch.FromNext() {
+		t.Fatalf("a channel without a major numbers from the next version: %+v", ch)
+	}
+	if ChannelOf(workspace.ReleaseSection{Channels: []workspace.ReleaseChannel{{Branch: "next", Prerelease: "beta", Major: 2}}}, "next").FromNext() {
+		t.Error("a channel with a major keeps its own line")
+	}
+}

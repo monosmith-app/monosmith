@@ -195,11 +195,13 @@ and `smith ci generate` rewrites the file. Keep your own steps between the
 
 ### How does CI install smith?
 
-A Node, Python or .NET workspace installs the `monosmith` package with npm, pip or
-`dotnet tool`. Any other workspace runs `tools/smith/install.sh`,
+A Node, Python or .NET workspace installs the `monosmith` launcher with npm, pip or
+`dotnet tool`, then runs `SMITH_VERSION=<version> smith --version` so the launcher downloads
+that smith. Any other workspace runs `tools/smith/install.sh`,
 a copy of the installer that `smith ci generate` commits into your project (never edit
-it; `smith doctor --fix` refreshes it). Both are pinned to the version that generated the pipeline (a development build
-installs the latest). Change `[workspace] smith` to pin another version. See
+it; `smith doctor --fix` refreshes it). The version is `[workspace] smith` when the workspace
+pins one, else the version that generated the pipeline (a development build installs the
+latest). With `smith = "latest"` the launcher runs the newest smith. See
 [installing](../getting-started/installing.md).
 
 ### How does CI cache package downloads?
@@ -239,7 +241,9 @@ releases it with the bump you name instead of the one its commits ask for.
 ### Can a branch release prerelease versions?
 
 Yes. Declare the branch as a `[[release.channels]]` table in `smith.toml`.
-It releases its own line (`2.0.0-beta.1`, `beta.2`, ...). See
+With `major`, it releases its own line (`2.0.0-beta.1`, `beta.2`, ...). Without
+`major`, it releases prereleases of the next planned version (`6.2.0-beta.1`), and the
+release branch then releases `6.2.0`. See
 [release channels](../reference/releasing.md#release-channels).
 
 ### What if a release fails half way?
@@ -264,9 +268,19 @@ download. See [installing](../getting-started/installing.md).
 
 ### How do I upgrade smith?
 
-Install the newer one (rerun the install script, or use your package manager),
-then run `smith upgrade` in each workspace. See
+Run `smith update`. It installs the newest smith the way you installed it: through a launcher
+(npm, PyPI, NuGet) it downloads the new version into `~/.smith/versions`; for another install it
+shows the command and runs it after you choose. Then run `smith upgrade` in each workspace. See
+[`smith update`](../manual/update.md) and
 [getting started](../getting-started/first-workspace.md#10-upgrade-smith).
+
+### How do I keep a workspace on one smith version?
+
+Set `smith = "<version>"` under `[workspace]` in `smith.toml`. The launchers, the committed
+launcher of [`smith bootstrap`](../manual/bootstrap.md) and the generated pipelines run that
+version, whatever newer smith is installed. `smith = "latest"` follows the newest release.
+`SMITH_VERSION` overrides the pin for one shell. See
+[the launchers](../getting-started/installing.md#the-launchers).
 
 ### Is there an editor or AI assistant integration?
 

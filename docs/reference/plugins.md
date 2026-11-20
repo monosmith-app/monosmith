@@ -69,9 +69,8 @@ support, CI contributions and limits, written from its code and from real runs.
   test runner leaves `e2e/` alone (the starter's `*.e2e.ts` names keep Vitest
   and Jest away).
 
-Built-in plugins ship inside the `smith` binary but still run as separate
-processes (`smith plugin serve <name>`), speaking the same protocol an external
-plugin does. `smith plugin list` shows each one's levels (roles), the slots it
+Built-in plugins ship inside the `smith` binary and run inside the smith process,
+over in-memory pipes, speaking the same protocol an external plugin does (ADR 0103). `smith plugin list` shows each one's levels (roles), the slots it
 fills, what it requires and whether it can describe `declared` projects, publish to `channels` and `link` a library (`--json` adds its conflicts and capabilities), and
 `smith stacks` the stacks they publish. `smith plugin enable`, `disable` and
 `set` change which built-in language plugins load (`[plugins] enabled` in `smith.toml`);

@@ -126,7 +126,8 @@ Interactions:
   plan line was printed first in text and the markdown table after it.
 - `--json` prints the report as JSON (`dryRun`, `started`, `finished`, `results` with
   `project`, `next`, `level`, `tag`, `reason`, `commits`, `changes`, `status`, `files`,
-  `published`, `registry`, `pushed`).
+  `published`, `registry`, `pushed`). Only the report goes to stdout. The progress lines
+  (`would attach ...`, build output) go to stderr, so a script can parse stdout as it is.
 - `--status` prints the release journal and exits; it ignores the other flags except
   `--json`.
 - `--rehearse` asks every registry the packages publish to (npm-compatible feeds including
@@ -137,7 +138,9 @@ Interactions:
   when a check fails. Each failure names the exact fix.
 - With `registry = "github-release"` (a private repository), `--dry-run` lists the package files and the
   bundle it would attach, and `--rehearse` checks that the token may write to the repository; no registry
-  is asked and no registry credential is needed. See
+  is asked and no registry credential is needed. It also warns when the repository's Actions cache
+  holds 9 GB or more of the 10 GB GitHub keeps, and names the `cache-hygiene` workflow
+  ([CI pipelines](../reference/ci.md#cost-controls)). See
   [Releasing](../reference/releasing.md#attach-the-package-files-to-the-github-release).
 - `--no-push` creates the tags locally only.
 - Without a terminal a real release must be confirmed with `-y`/`--yes` (CI passes it).

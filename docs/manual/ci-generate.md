@@ -6,7 +6,10 @@ parent: ci.md
 `smith ci generate` rewrites the CI pipeline files from the workspace's projects and
 settings: `.github/workflows/ci.yml` for GitHub, `azure-pipelines.yml` for Azure,
 `.gitlab-ci.yml` for GitLab, `.circleci/config.yml` for CircleCI, `bitbucket-pipelines.yml` for Bitbucket Pipelines (per `ci.providers`), and `.devcontainer/devcontainer.json`
-when `ci.devcontainer` is on. The pipelines install smith with `npm`, `pip` or `dotnet tool` when the workspace has a
+when `ci.devcontainer` is on. A GitHub workspace also gets `.github/workflows/cache-hygiene.yml`, which
+deletes the Actions caches no build reads again ([CI pipelines](../reference/ci.md)). The pipelines
+install smith at `[workspace] smith`, else at the version of the smith that generates them: the
+`monosmith` launcher with `npm`, `pip` or `dotnet tool` when the workspace has a
 Node, Python or .NET toolchain (in that order of preference). For any other workspace it also writes
 `tools/smith/install.sh`, the installer the pipelines run (`sh tools/smith/install.sh "<version>"`) instead of
 fetching a script from GitHub at every run; commit it, and do not edit it (`smith doctor --fix` restores it).

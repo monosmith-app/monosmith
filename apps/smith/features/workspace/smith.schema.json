@@ -158,19 +158,20 @@
         "registry": { "type": "string", "description": "The [registries] entry packages are published to, or \"none\" (tag only, for a registry that builds from the tag: no credential), or \"github-release\" (pack each package and attach its file to its GitHub Release instead of publishing; needs github_releases = true; no registry credential). Default: [workspace] registry, then the public registries." },
         "channels": {
           "type": "array",
-          "description": "Branches that release a line of prerelease versions of their own, such as 2.0.0-beta.1, 2.0.0-beta.2 from a next branch, whatever versions [release] branch holds. Default: none.",
+          "description": "Branches that release a line of prerelease versions of their own: with a major, a next-major line such as 2.0.0-beta.1 from a next branch; without one, prereleases of the next planned version, such as 6.2.0-beta.1 from a dev branch. Default: none.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["branch", "prerelease", "major"],
+            "required": ["branch", "prerelease"],
             "properties": {
               "branch": { "type": "string", "minLength": 1, "description": "The branch the channel releases from. Not [release] branch, and not the branch of another channel." },
               "prerelease": { "type": "string", "pattern": "^[A-Za-z][0-9A-Za-z-]*$", "description": "The prerelease identifier of the channel's versions, such as beta or rc." },
-              "major": { "type": "integer", "minimum": 1, "description": "The major version of the channel's line. The first release is <major>.0.0-<prerelease>.1." },
+              "major": { "type": "integer", "minimum": 1, "description": "The major version of the channel's line. The first release is <major>.0.0-<prerelease>.1. Leave it out to number the channel from the next planned stable version: after 6.1.0 and a feat commit, 6.2.0-<prerelease>.1, 6.2.0-<prerelease>.2, and [release] branch then releases 6.2.0." },
               "dist_tag": { "type": "string", "pattern": "^[A-Za-z][0-9A-Za-z._-]*$", "not": { "const": "latest" }, "description": "The name the channel publishes under (npm's dist-tag), which keeps latest where it is. Default: the prerelease identifier." }
             }
           }
-        }
+        },
+        "promote": { "enum": ["warn", "strict", "off"], "x-reason": "a release branch that plans another version than the channel tested ships an untested version.", "description": "What a release on [release] branch does when its planned version is not the one a channel without a major last released as a prerelease (6.2.0 after 6.2.0-beta.N): warn prints the difference, strict refuses the release, off does not look. Default: warn." }
       }
     },
     "agent": {

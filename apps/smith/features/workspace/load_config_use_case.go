@@ -222,6 +222,9 @@ func Validate(cfg *Config) error {
 	if err := validateReleaseChannels(cfg.Release); err != nil {
 		return err
 	}
+	if cfg.Release.Promote == "" {
+		cfg.Release.Promote = "warn"
+	}
 	if err := validatePropagationWait(cfg); err != nil {
 		return err
 	}

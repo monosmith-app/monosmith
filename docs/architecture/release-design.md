@@ -77,6 +77,13 @@ build with a detached merge commit, the branch the pull request targets.
 - The first release of a project is `<major>.0.0-<prerelease>.1`, whatever stable versions exist.
   Each later one raises the counter and keeps the numbers before it, so a breaking change inside a
   channel does not start a new major.
+- A channel without a major (`Channel.FromNext`, [ADR 0104](decisions/0104-a-channel-without-a-major-releases-the-next-version.md))
+  keeps the stable tag as the base: the commits since it give the target (`6.2.0`), and
+  `Channel.NextFrom` gives `<target>-<prerelease>.<n>`. The counter rises only while the target stays
+  the same and a releasing commit follows the channel's latest prerelease. On the release branch,
+  `PromoteFindings` (`promote_check_use_case.go`) compares each planned version with the highest
+  prerelease of such a channel that HEAD contains; `Preflight` refuses with `[release] promote = "strict"`
+  and the run prints warnings with `"warn"`.
 - The channel's last release is the highest tag of that line that the checked out branch contains
   (`git tag --merged HEAD`). The stable plan ignores prerelease tags.
 - `Plan.Channel` carries the publish name, and `--dry-run`, the report and the pull request comment

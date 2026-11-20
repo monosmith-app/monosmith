@@ -43,9 +43,9 @@ Check it:
 smith --version
 ```
 
-[Installing](installing.md) lists every other channel (npm, pipx, dotnet tool,
-gem, pub, a plain download, `.deb` and `.rpm`), how to upgrade and how to check
-a download.
+[Installing](installing.md) lists every other channel (npm, pipx, uv, pip and
+dotnet tool, which install a launcher; a plain download; `.deb` and `.rpm`), how to
+update and how to check a download.
 
 You also need **git**, and the toolchain of each language you use. `smith tools`
 lists the programs your workspace needs and which are installed. When one is
@@ -713,7 +713,10 @@ tags, release channels, binaries and container images.
 
 ## 10. Upgrade smith
 
-After installing a newer smith, run it once in the workspace:
+`smith update` installs the newest smith the way you installed it. A workspace that pins its
+smith (`smith = "<version>"` under `[workspace]` in `smith.toml`) keeps that version: the
+launchers and the pipelines run the pin. To move the workspace to the new smith, change the pin
+(or set it to `"latest"`). Then run the new smith once in the workspace:
 
 ```sh
 smith upgrade             # migrate smith.toml, regenerate the pipelines, update recipe projects

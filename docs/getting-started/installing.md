@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/instal
 `SMITH_VERSION` does the same. With no version they install the newest
 `smith@` release. On GitHub Actions and Azure Pipelines `install.sh` also
 adds its directory to `PATH` for the following steps; generated pipelines
-install smith with the package manager of the workspace's main toolchain, pinned to the version that generated them: the launcher (`npm install --global monosmith@^3` when the workspace has Node, first choice; else `pip install "monosmith>=3,<4"` when it has Python; else `dotnet tool update --global monosmith --version "3.*"` when it has .NET), then `SMITH_VERSION=<version> smith --version` to download that smith. GitHub keeps `~/.smith/versions` in the Actions cache, keyed on the version, so later runs do not download it again. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. Set
+install smith with the package manager of the workspace's main toolchain, pinned to `[workspace] smith`, or else to the version that generated them: the launcher (`npm install --global monosmith@^3` when the workspace has Node, first choice; else `pip install "monosmith>=3,<4"` when it has Python; else `dotnet tool update --global monosmith --version "3.*"` when it has .NET), then `SMITH_VERSION=<version> smith --version` to download that smith. GitHub keeps `~/.smith/versions` in the Actions cache, keyed on the version, so later runs do not download it again. With `smith = "latest"` a Node, Python or .NET pipeline installs the newest launcher and sets no `SMITH_VERSION`, so the launcher runs the newest smith. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. Set
 `GITHUB_TOKEN` to avoid GitHub's API rate limit on shared runners.
 
 ### Linux packages
@@ -185,7 +185,7 @@ provenance on GitHub, which proves they were built by this repository's
 workflow:
 
 ```sh
-gh attestation verify monosmith_1.3.1_linux_amd64.tar.gz --repo monosmith-app/monosmith
+gh attestation verify monosmith_1.3.1_linux_amd64.zip --repo monosmith-app/monosmith
 ```
 
 Each release also carries a CycloneDX SBOM (`*_sbom.cdx.json`).

@@ -16,6 +16,19 @@ func TestParseAppliesDefaults(t *testing.T) {
 	if cfg.Schema != 1 || cfg.CI.Providers[0] != "github" || cfg.Release.Branch != "main" || cfg.Cache.Dir != ".smith/cache" || cfg.Cache.MaxSizeMB != 2048 {
 		t.Fatalf("defaults %+v", cfg)
 	}
+	if cfg.Release.Promote != "warn" {
+		t.Errorf("[release] promote defaults to warn, got %q", cfg.Release.Promote)
+	}
+}
+
+func TestParseAcceptsAChannelWithoutAMajor(t *testing.T) {
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[release]\npromote = \"strict\"\n[[release.channels]]\nbranch = \"dev\"\nprerelease = \"beta\"\n"))
+	if err != nil {
+		t.Fatalf("a channel without a major numbers from the next planned version: %v", err)
+	}
+	if c := cfg.Release.Channels[0]; c.Major != 0 || cfg.Release.Promote != "strict" {
+		t.Fatalf("channel %+v, promote %q", c, cfg.Release.Promote)
+	}
 }
 
 func TestParseReadsAnExternalPluginsEnvAndPin(t *testing.T) {
@@ -50,7 +63,8 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"main\"\nprerelease = \"beta\"\nmajor = 2\n":                                                                          "is the [release] branch",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"rc\"\nmajor = 3\n": "branch of another channel",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"2.beta\"\nmajor = 2\n":                                                                        "prerelease must be an identifier",
-		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\n":                                                                                     "major must be 1 or more",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = -1\n":                                                                         "major must be 1 or more, or left out",
+		"[workspace]\nname = \"a\"\n[release]\npromote = \"always\"\n":                                                                                                                    "promote must be",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nmajor = 2\n":                                                                                                 "merge the channel branch",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ngithub_prerelease = true\n":                                                "marked as a prerelease on its own",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nprerelease = \"beta\"\nmajor = 2\n":                                                                                             "branch must name",

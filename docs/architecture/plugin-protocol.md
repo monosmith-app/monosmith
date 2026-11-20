@@ -1,7 +1,9 @@
 # The plugin protocol: roles, handshake, capabilities and contributions
 
-Everything that depends on a language, a tool or a registry in smith is a plugin: a separate process
-that answers JSON-RPC requests on its standard input and output. This page is the architecture of
+Everything that depends on a language, a tool or a registry in smith is a plugin: a program
+that answers JSON-RPC requests on its standard input and output. An external plugin is a separate
+process; a built-in plugin is served inside the smith process over in-memory pipes, with the same
+protocol (ADR 0103). This page is the architecture of
 that protocol: how a plugin is started and identified, what it declares in the handshake, which
 methods exist and who calls them, how several plugins are merged into one project, and what
 happens when something goes wrong. It is a map of `packages/plugin-sdk/protocol` and
@@ -91,12 +93,12 @@ them and the host relies on them):
 ## Who is started, and how
 
 `pluginhost.Start` (`apps/smith/features/pluginhost/start_plugins_use_case.go`) builds a list of launches
-and starts them in parallel, each with `SMITH_PLUGIN=1` in its environment and the workspace root
-in `initialize`:
+and starts them in parallel, each with the workspace root in `initialize`. An external plugin's
+process also gets `SMITH_PLUGIN=1` in its environment:
 
 | Plugin | Command | Notes |
 |---|---|---|
-| a built-in language plugin in `Builtins` (`node`, `go`, `python`, `rust`, `dotnet`, `ruby`, `php`, `cpp`, `dart`, `jvm`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `bundle`, `recipe`) | `smith plugin serve <name>`, i.e. the running binary again | all of them unless `[plugins] enabled` lists some; skipped when `[plugins.external.<name>]` replaces it |
+| a built-in language plugin in `Builtins` (`node`, `go`, `python`, `rust`, `dotnet`, `ruby`, `php`, `cpp`, `dart`, `jvm`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `bundle`, `recipe`) | served inside the smith process over in-memory pipes (`smith plugin serve <name>` serves it as a process for `smith plugin check` and tests) | all of them unless `[plugins] enabled` lists some; skipped when `[plugins.external.<name>]` replaces it |
 | a built-in addon in `BuiltinAddons` (`vertical-slices`, `eslint`, `jest`, `vitest`, `playwright`, `typescript`, `vite`, `angular`, `astro`, `vscode`, `tauri`, `go-smith-plugin`, `docker`, and one for each architecture beyond vertical slices) | the same | always started unless replaced |
 | an external plugin, `[plugins.external.<name>]` | the `command` of the `plugin.json` found on the search path, or the command in `smith.toml` | the name it answers to and its version are checked (`checkExternal`) |
 

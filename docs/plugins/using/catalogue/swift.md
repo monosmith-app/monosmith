@@ -15,7 +15,7 @@ Apple-platform app targets are not discovered.
 
 | | |
 |---|---|
-| Plugin name | `swift` (built in; runs as a separate process, `smith plugin serve swift`) |
+| Plugin name | `swift` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin) |
 | `--lang` value | `swift` |

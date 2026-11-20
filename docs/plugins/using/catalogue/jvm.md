@@ -14,7 +14,7 @@ install.
 
 | | |
 |---|---|
-| Plugin name | `jvm` (built in; runs as a separate process, `smith plugin serve jvm`) |
+| Plugin name | `jvm` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin; it declares none of its own) |
 | `--lang` values | `jvm`, `java` |

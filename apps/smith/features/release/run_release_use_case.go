@@ -56,6 +56,9 @@ func execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 	if len(plan.Items) == 0 {
 		return report, nil
 	}
+	for _, w := range promoteWarnings(s, plan) {
+		fmt.Fprintln(opts.Out, "warning: "+w)
+	}
 	if !opts.DryRun {
 		if err := Preflight(s, plan); err != nil {
 			report.Error = err.Error()

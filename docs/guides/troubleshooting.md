@@ -39,8 +39,9 @@ smith: This smith (1.100.0) is older than smith.toml needs. Run `npm install --g
 ```
 
 A teammate or CI used a newer smith that added tables or keys to `smith.toml`
-(or raised its `schema`), and this smith does not know them. Upgrade smith with
-the command shown. `--verbose` adds the parse errors, one per unknown table or
+(or raised its `schema`), and this smith does not know them. Run `smith update`. When a launcher
+runs smith and the workspace pins `[workspace] smith`, raise the pin instead: the launcher runs
+the pinned version. The command in the message reinstalls the npm launcher only. `--verbose` adds the parse errors, one per unknown table or
 key. A single unknown key is not taken for a newer smith, because it is more
 likely a typo: that error names the key.
 
@@ -138,7 +139,7 @@ lists them all. The checks, grouped by who owns them:
 | the local cache has no unusable entries (a warning, only once a cache exists) | entries that can never be a hit. Run `smith cache verify --fix` |
 | `derived file <path> (<renderer>) is up to date` (only with `[derive] enabled = true`) | the finding names the state and the owner. A file in `stale` or `missing`: run `smith derive`. A file in `drift` or `diverged`: read the diff with `smith derive --explain <path>`, then `--replace`, `--adopt` or `--eject` it. See [Derived files](derived-files.md) |
 | the clone has full history | a shallow clone cannot compute versions or affected projects. `git fetch --unshallow`; in CI, check out with `fetch-depth: 0` |
-| the smith the pipelines install is the smith in your dependencies (a warning) | the pipelines install the smith that generated them (or `[workspace] smith`), but package.json resolves another `monosmith`. `smith doctor --fix` lists two steps and asks first: it sets the dependency to the pipeline's version in package.json, then runs `npm install` to refresh package-lock.json. If the install fails, the package.json change stays and you can retry |
+| the monosmith dependency is the launcher (a warning) | package.json (or its lockfile) resolves `monosmith` 2.x or older, which is smith itself. From 3.0 the package is the launcher, and smith no longer publishes its versions to npm, so that dependency stays old for good. `smith doctor --fix` asks first: it sets the dependency to `^3` and runs `npm install` to refresh package-lock.json. When the workspace has no `[workspace] smith`, it also pins the version you had, so the same smith keeps running |
 | tracked files are not generated files | git tracks a file that .gitignore ignores or a task writes (a build output, a cache). Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | `<project> compiles into dist/<dir>` | a Node project builds into its own folder. `smith doctor --fix` offers to move it (per project, with a preview), or refuses with the reason. See [doctor](../manual/doctor.md#a-build-that-writes-outside-dist) |

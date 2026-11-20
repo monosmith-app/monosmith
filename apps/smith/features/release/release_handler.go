@@ -118,7 +118,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			}
 			if dryRun {
 				// A real release refuses these in its preflight: the preview says so too.
-				if problems := ChannelRefusals(s, plan); len(problems) > 0 {
+				if problems := append(ChannelRefusals(s, plan), PromoteRefusals(s, plan)...); len(problems) > 0 {
 					preview("### Release preview\n\n**Blocked:** this release would be refused:\n\n- " + strings.Join(problems, "\n- ") + "\n")
 					return fmt.Errorf("cannot release:\n  - %s", strings.Join(problems, "\n  - "))
 				}
@@ -176,7 +176,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
 			defer stop()
-			report, err := Execute(ctx, s, plan, Options{DryRun: dryRun, Push: !noPush, Out: out, Terse: format != "markdown"})
+			report, err := Execute(ctx, s, plan, Options{DryRun: dryRun, Push: !noPush, Out: progressWriter(asJSON, out, cmd.ErrOrStderr()), Terse: format != "markdown"})
 			if dryRun {
 				preview(report.Markdown())
 			}

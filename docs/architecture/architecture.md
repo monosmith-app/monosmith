@@ -38,7 +38,12 @@ releases this repository itself.
 ## The core
 
 `apps/smith` is organised by vertical slices: one Go package per outcome, its
-exported identifiers as its API. `commandline` assembles the commands from
+exported identifiers as its API. The slices sit in three zones
+([ADR 0100](decisions/0100-apps-keep-their-slices-in-features-integrations-and-shared.md)):
+`features/` for outcomes, `integrations/` for one external system each (`githubrelease`,
+`gitclient`, `pypiwheels`, `nugettool`, `rubygems`, `smithreleases` and others) and `shared/` for
+building blocks with no business knowledge (`semver`, `statuspaint` and others). `shared` and
+`integrations` never import a feature. `commandline` assembles the commands from
 each slice's handler; most commands start by opening a `session`.
 
 | Slice | Owns |
@@ -198,6 +203,6 @@ smith. Since then smith runs its own CI: `.github/workflows/ci.yml` is generated
 by `smith ci generate`, and `golden-path.yml` (written by hand) runs the unit
 tests on every pull request and the end-to-end suites once a day, on Linux,
 macOS and Windows. A merge to `main`
-releases: the `smith` app as `smith@<version>` (archives for six platforms,
-npm, PyPI, NuGet, RubyGems, the GitHub Release) and the plugin SDK as
-`packages/plugin-sdk/v<version>`.
+releases: the `smith` app as `smith@<version>` (archives for six platforms on the GitHub
+Release, with signed checksums), the launchers on npm, PyPI and NuGet
+(`packages/launcher-*`, ADR 0101) and the plugin SDK as `packages/plugin-sdk/v<version>`.

@@ -13,7 +13,7 @@ pub.dev or a private pub repository, and installs and removes pub dependencies.
 
 | | |
 |---|---|
-| Plugin name | `dart` (built in; runs as a separate process, `smith plugin serve dart`) |
+| Plugin name | `dart` (built in; runs inside the smith process) |
 | Kind | language |
 | Roles | `language`, `toolchain`, `scaffold` (the defaults of a language plugin; it declares none of its own) |
 | `--lang` values | `dart`, `flutter` (`--lang flutter` reaches this plugin but makes a plain Dart project; see Creating a project) |

@@ -119,8 +119,9 @@ GitHub keeps 10 GB of Actions cache for a repository and evicts the oldest entri
 and every new lockfile saves a new npm or Go cache beside the old one. The workflow deletes the
 caches no build reads again: when a pull request closes, every cache of its merge ref; after
 the `ci` workflow on a branch, every `smith-` cache of that branch except the newest of each name.
-Its `after-prune` slot keeps your own steps. The release rehearsal (`smith release --dry-run`)
-warns when the cache holds 9 GB or more.
+Its `after-prune` slot keeps your own steps. `smith release --rehearse` warns when the cache
+holds 9 GB or more, for a workspace with a package that attaches to its GitHub Release
+(`registry = "github-release"`) and a token that can read the cache.
 
 **`publish_on`** says which branches pack apps, keep the packed apps, attest the release
 archives and build the release files in the assets job. `release` (default) is the release
@@ -446,7 +447,7 @@ Nothing installs "latest". Each plugin pins what it installs: for example
 Node.js 24, Python 3.12 and its tools (`requirements-dev.txt`), Go at the
 version `go.work` names and golangci-lint, the .NET 10 SDK, a JDK 21; actions
 are pinned to a major.
-Generated pipelines install smith at the version that generated them.
+Generated pipelines install smith at `[workspace] smith`, or else at the version that generated them.
 
 With `[ci] devcontainer = true` (which `smith new` sets), smith also writes
 `.devcontainer/devcontainer.json`: a base image plus one dev container
@@ -507,10 +508,18 @@ the `smith:slot` markers move with the job.
 
 ## Installing smith in CI
 
-Generated pipelines install the smith version that generated them with the
-install script (`SMITH_VERSION`), so a pipeline does not change behaviour until
-you regenerate it with a newer smith. Each release of smith therefore makes
-`smith doctor` report the pipelines as out of date until you regenerate them.
+A Node, Python or .NET workspace installs the `monosmith` launcher with npm, pip or
+`dotnet tool` (in that order of preference), pinned to launcher 3, then runs
+`SMITH_VERSION=<version> smith --version`, so the launcher downloads that smith once. GitHub keeps
+`~/.smith/versions` in the Actions cache, keyed on the version. Any other workspace runs
+`sh tools/smith/install.sh "<version>"`, the installer `smith ci generate` writes into the
+repository. On GitHub the install step gets the job's token, so the download is not held by
+GitHub's rate limit for anonymous requests.
+
+The version is `[workspace] smith` when the workspace sets it, else the smith that generated the
+pipelines, so a pipeline does not change behaviour until you regenerate it with a newer smith.
+Each release of smith therefore makes `smith doctor` report an unpinned workspace's pipelines
+as out of date until you regenerate them.
 
 A workspace that does not need that sets the version itself:
 
@@ -519,8 +528,9 @@ A workspace that does not need that sets the version itself:
 smith = "latest"    # or an exact version such as "1.70.0"
 ```
 
-smith's own repository does: its pipelines run the smith built from the commit,
-and the installed one only bootstraps.
+With `"latest"` a Node, Python or .NET pipeline installs the newest launcher and sets no
+`SMITH_VERSION`, so the launcher runs the newest smith. smith's own repository does this: its
+pipelines run the smith built from the commit, and the installed one only bootstraps.
 
 ## Secrets
 

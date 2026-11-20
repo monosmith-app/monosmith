@@ -25,27 +25,43 @@ var hostPlatform = runtime.GOOS + "/" + runtime.GOARCH
 // what differs per platform is native code npm installed for this machine,
 // so it is built on each OS: a native app ("smith": {"native": true}), whose
 // native jobs each ask for their own platform.
+//
+// A dry run names the asset of every platform and adds a note for each one
+// this machine cannot build, so the plan stays readable on any machine. A real
+// run fails before anything is built when a platform is not this machine's.
+//
+// Parameters: workspaceRoot is the workspace folder; params carry the project,
+// the version, the asset spec and whether this is a dry run.
+// Returns the assets with their platforms, or an error when a platform is not
+// this machine's (real run), no platform is set, the name pattern is wrong or
+// the build is missing.
 func BuildAssets(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
 	spec := *params.Assets
 	p := params.Project
-	for _, platform := range spec.Platforms {
-		if platform != hostPlatform {
-			return protocol.PublishResult{}, fmt.Errorf("%s: a Node app's release assets are built on each OS, so this machine (%s) cannot build %s; mark it native (\"smith\": {\"native\": true} in package.json) and each native job builds its own", p.Name, hostPlatform, platform)
-		}
-	}
 	if len(spec.Platforms) == 0 {
 		return protocol.PublishResult{}, fmt.Errorf("%s: no platforms to build assets for", p.Name)
 	}
-	goos, goarch, _ := strings.Cut(hostPlatform, "/")
-	name, err := assetName(spec, p.Name, params.Version, goos, goarch, "zip")
-	if err != nil {
-		return protocol.PublishResult{}, err
+	res := protocol.PublishResult{AssetPlatforms: map[string]string{}}
+	for _, platform := range spec.Platforms {
+		if platform != hostPlatform && !params.DryRun {
+			return protocol.PublishResult{}, fmt.Errorf("%s: this machine (%s) cannot build the release asset for %s, because a Node app's asset holds the native code npm installed for this machine. Nothing was tagged. Run the release on %s, or mark the app native (\"smith\": {\"native\": true} in package.json) so a job on each OS builds its own", p.Name, hostPlatform, platform, platform)
+		}
+		goos, goarch, _ := strings.Cut(platform, "/")
+		name, err := assetName(spec, p.Name, params.Version, goos, goarch, "zip")
+		if err != nil {
+			return protocol.PublishResult{}, err
+		}
+		asset := path.Join(spec.OutDir, name)
+		res.Assets = append(res.Assets, asset)
+		res.AssetPlatforms[asset] = platform
+		if platform != hostPlatform {
+			res.Notes = append(res.Notes, fmt.Sprintf("this machine (%s) cannot build the %s asset, so a release here stops before it tags. Run the release on %s, or mark the app native (\"smith\": {\"native\": true} in package.json)", hostPlatform, platform, platform))
+		}
 	}
-	asset := path.Join(spec.OutDir, name)
-	res := protocol.PublishResult{Assets: []string{asset}, AssetPlatforms: map[string]string{asset: hostPlatform}}
 	if params.DryRun {
 		return res, nil
 	}
+	asset := res.Assets[0]
 	build := filepath.Join(workspaceRoot, filepath.FromSlash(protocol.BuildOutputDir(p)))
 	if info, err := os.Stat(build); err != nil || !info.IsDir() {
 		return protocol.PublishResult{}, fmt.Errorf("%s: no build in %s to make the release asset from; build it first", p.Name, protocol.BuildOutputDir(p))
