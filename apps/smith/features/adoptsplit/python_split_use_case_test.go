@@ -47,6 +47,18 @@ func TestSortPythonSeparatesToolsFromUnknown(t *testing.T) {
 	}
 }
 
+func TestSortPythonReadsAFileWithWindowsLineEnds(t *testing.T) {
+	root := t.TempDir()
+	put(t, root, "pyproject.toml", strings.ReplaceAll(pyproject, "\n", "\r\n"))
+	got, err := SortPython(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (Sorted{Tools: []string{"pytest", "pytest-cov", "ruff"}, Unsure: []string{"hypothesis"}}); !reflect.DeepEqual(got, want) {
+		t.Errorf("SortPython = %+v, want %+v", got, want)
+	}
+}
+
 func TestSplitPythonMovesToolsAndRuffToTheWorkspace(t *testing.T) {
 	root := t.TempDir()
 	put(t, root, "apps/orders/pyproject.toml", pyproject)
