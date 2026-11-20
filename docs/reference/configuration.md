@@ -73,6 +73,10 @@ branches = ["main", "dev"]             # branches the GitHub and Azure pipelines
 # [[ci.sibling_repos]]: repo, ref, env, dir, pre_build, token_secret: other repositories the GitHub workflow checks out beside the workspace (docs/reference/ci.md)
 azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines definition runs on; default: Microsoft's hosted ubuntu-latest
 azure_variable_groups = ["Build"]     # variable groups the definition links, for the secrets its steps read; default: none
+# [ci.azure]: what smith ci pack tells Azure Pipelines from the release plan; all on by default (docs/reference/ci.md, Azure build tags)
+# build_tags = { api = "api-release" }  # rename a project's build tag; false adds no tags
+# deploy_variables = false              # no DEPLOY_<PROJECT> variables
+# build_number = "{project}_{version}"  # the build number pattern, joined with '-'; "" or false leaves the build number alone
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
 native_on = "release"                  # when the native job runs: release (default), main or always (docs/reference/ci.md#cost-controls)
 triggers = ["push", "pull_request"]    # events that start the GitHub and Azure pipelines; default: both

@@ -146,6 +146,10 @@ The packed file names that hold a version (`npm pack`, a wheel, a `.vsix`) thus 
 that `smith ci release` tags. After the pack, also after a failure, smith puts the changed files
 back.
 
+On Azure Pipelines, `smith ci pack` also adds a build tag for each planned project, sets
+`DEPLOY_<PROJECT>` for each app, and sets the build number (`api_6.2.0-app_6.2.0`). `[ci.azure]`
+changes or stops them (see [Azure build tags](../reference/ci.md#azure-build-tags-deploy-variables-and-build-number)).
+
 ### native
 
 <!-- smith:begin ci native -->

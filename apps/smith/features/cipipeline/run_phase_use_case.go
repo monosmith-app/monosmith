@@ -308,6 +308,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		}
 		if !packing {
 			log.banner()
+			tellAzure(s, plan, out)
 			log.say("Nothing to pack: no project has a %s task, so %s stays empty.", PackTask, DropDir)
 			log.conclusion = "nothing to pack"
 			return nil
@@ -322,6 +323,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 			log.say("%s", packVersionLine(st))
 		}
 		log.fold()
+		tellAzure(s, plan, out)
 		// Native projects are packed by the native job, on each OS. A stamped
 		// version is not part of the cache key, so a stamped pack runs afresh.
 		outputs := newTaskOutputs()

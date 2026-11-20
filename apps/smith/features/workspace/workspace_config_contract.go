@@ -257,6 +257,75 @@ type CISection struct {
 	// workflow checks out beside the workspace, with the path exported in an
 	// environment variable and an optional pre-build command. Default: none.
 	SiblingRepos []SiblingRepo `toml:"sibling_repos"`
+	// Azure configures what smith ci pack tells Azure Pipelines about the
+	// release plan ([ci.azure]): build tags, deploy variables and the build
+	// number. Default: all three on when the run is on Azure Pipelines.
+	Azure AzureSection `toml:"azure"`
+}
+
+// AzureSection is [ci.azure]: what smith ci pack writes to Azure Pipelines
+// (TF_BUILD set) from the release plan. Every key is on by default.
+type AzureSection struct {
+	// BuildTags adds a build tag for each project in the release plan, named
+	// after the project. A table renames the tag of a project
+	// ({ api = "api-release" }); false adds no tags. Default: true.
+	BuildTags any `toml:"build_tags"`
+	// DeployVariables sets DEPLOY_<PROJECT> to true or false for every app and
+	// every project with a package task: true when the release plan has it.
+	// Default: true.
+	DeployVariables *bool `toml:"deploy_variables"`
+	// BuildNumber is the pattern of the build number, with {project} and
+	// {version}, written for each planned project and joined with "-". An
+	// empty string or false leaves the build number alone.
+	// Default: "{project}_{version}".
+	BuildNumber any `toml:"build_number"`
+}
+
+// DefaultBuildNumber is the build number pattern of [ci.azure] when
+// build_number is not set.
+const DefaultBuildNumber = "{project}_{version}"
+
+// BuildTag returns the build tag of a planned project.
+//
+// Parameters: project is the project's name.
+// Returns: the tag (the project's name unless build_tags renames it), and
+// false when build_tags = false turns the tags off.
+func (a AzureSection) BuildTag(project string) (string, bool) {
+	switch v := a.BuildTags.(type) {
+	case bool:
+		return project, v
+	case map[string]any:
+		if name, ok := v[project].(string); ok && name != "" {
+			return name, true
+		}
+	}
+	return project, true
+}
+
+// DeployVariablesOn reports whether smith ci pack sets the DEPLOY_<PROJECT>
+// variables: on unless deploy_variables = false.
+func (a AzureSection) DeployVariablesOn() bool {
+	return a.DeployVariables == nil || *a.DeployVariables
+}
+
+// BuildNumberPattern returns the build number pattern.
+//
+// Returns: DefaultBuildNumber when build_number is not set (or true), the
+// pattern when it is a string, and "" (no build number) when it is "" or
+// false.
+func (a AzureSection) BuildNumberPattern() string {
+	switch v := a.BuildNumber.(type) {
+	case nil:
+		return DefaultBuildNumber
+	case bool:
+		if v {
+			return DefaultBuildNumber
+		}
+		return ""
+	case string:
+		return v
+	}
+	return ""
 }
 
 // AgentSection configures the MonoSmith agent: .claude/agents/smith.md and the

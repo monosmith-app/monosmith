@@ -365,6 +365,35 @@ projects are left to the native job. `verify = false` under
 `[projects.<name>.tasks.package]` turns it off for one app, or under
 `[tasks.package]` for all.
 
+### Azure build tags, deploy variables and build number
+
+On Azure Pipelines (`TF_BUILD` set), `smith ci pack` tells the build what the
+release plan holds. A classic release definition can then start from a build
+tag or read a variable. `smith ci pack` writes three things:
+
+1. A build tag for each project in the plan, with the name of the project
+   (`##vso[build.addbuildtag]api`).
+2. The variable `DEPLOY_<PROJECT>` for each app and each project with a
+   `package` task: `true` when the plan has the project, else `false`.
+   `<PROJECT>` is the name in upper case, with `_` for each character that
+   is not a letter or a digit (`web-admin` gives `DEPLOY_WEB_ADMIN`).
+3. The build number: the pattern `{project}_{version}` for each planned
+   project, joined with `-` (`api_6.2.0-app_6.2.0`). With no planned project,
+   the build number does not change.
+
+`smith ci release` does not write them again. `[ci.azure]` in `smith.toml`
+changes them:
+
+```toml
+[ci.azure]
+build_tags = { api = "api-release" }  # another tag name for a project; false: no tags
+deploy_variables = false              # no DEPLOY_<PROJECT> variables
+build_number = "{project}-v{version}" # the pattern; "" or false: the build number does not change
+```
+
+A build number pattern takes only `{project}` and `{version}`, and none of
+the characters `"/:<>\|?@*`, which Azure refuses.
+
 ## A release started by hand
 
 `[ci] manual_release = true` lets a person start a release of a package that no commit releases (the
