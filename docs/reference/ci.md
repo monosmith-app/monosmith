@@ -105,6 +105,11 @@ assets jobs. A skipped audit never blocks verify or the release. On Azure, `main
 condition. `schedule` does not apply there (the audit runs on every run), and the other
 providers always audit.
 
+On GitHub Actions the verify step gets the job's read-only token as `GITHUB_TOKEN`
+(`${{ github.token }}`), beside the task credentials. A test that starts smith through a
+launcher asks GitHub's release list, and without a token GitHub answers 403 after 60 requests an
+hour from a shared runner's address.
+
 **`artifacts`** and **`artifact_retention_days`** set how the generated GitHub pipeline keeps
 its artifacts (the packed apps, `drop`, and the native builds). `artifacts = "optional"` adds
 `continue-on-error: true` to the upload steps, so a full GitHub artifact storage quota does not
