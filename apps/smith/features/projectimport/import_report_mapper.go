@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projecttooling"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/marks"
 )
 
@@ -31,7 +32,7 @@ func Summary(p Plan) string {
 		"place    " + placeLine(p),
 		"split    " + split,
 		"join     add the project to its language's workspace",
-		"tooling  the project keeps its own tools (lint, test, build); a later version of smith import asks whether smith's tooling replaces them",
+		"tooling  " + toolingLine(p),
 		"CI       write the pipelines again, so CI builds the project",
 		"check    smith install -p " + p.Name + ", then smith doctor",
 	}
@@ -93,6 +94,21 @@ func Outcome(p Plan, left []Left) string {
 	}
 	b.WriteString("  next: follow the steps above, then run smith doctor\n")
 	return b.String()
+}
+
+// toolingLine says what happens to the project's build and lint tools.
+func toolingLine(p Plan) string {
+	switch p.Tooling {
+	case string(projecttooling.Smith):
+		line := "smith's build and ESLint config go in, then each group of old tools is shown and removed"
+		if len(p.Legacy) > 0 {
+			line += " (it uses " + strings.Join(p.Legacy, ", ") + ")"
+		}
+		return line
+	case string(projecttooling.Keep):
+		return "the project keeps its own tools (lint, test, build); --tooling smith uses smith's"
+	}
+	return "the project keeps its own tools (smith asks this question for Node projects only)"
 }
 
 func historyLine(p Plan) string {

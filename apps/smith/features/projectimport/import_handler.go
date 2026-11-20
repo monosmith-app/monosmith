@@ -32,7 +32,11 @@ a .csproj, and every other manifest the language plugins know), then:
            with the project, and its own lockfile is dropped
   join     the project joins its language's workspace (npm workspaces, the uv
            members, the .NET solution)
-  check    the pipelines are written again, then smith install -p <name> and
+  tooling  a Node project keeps its own build and lint tools, or uses smith's
+           (smith asks, and recommends its own for a legacy tool: ESLint 8,
+           create-react-app, a tsc build into lib/; --tooling smith|keep
+           answers). smith's go in first, then the old tools go
+  check   the pipelines are written again, then smith install -p <name> and
            smith doctor; it ends with what is left to do
 
 The folder is <kind folder>/<name> (apps/, libs/ or packages/). In a terminal
@@ -61,6 +65,7 @@ import runs after "y" in a terminal, or with --yes.`,
 	cmd.Flags().StringVar(&o.Ref, "ref", "", "the branch, tag or commit of a git source to import (default: its default branch)")
 	cmd.Flags().StringVar(&o.History, "history", "", "keep (every commit, under the folder), squash (one commit) or copy (the files only); default keep for a git source, copy for a plain folder")
 	cmd.Flags().StringVar(&o.ESLint, "eslint-setup", "", "what happens to a Node project's own ESLint setup: shared (the workspace's replaces it) or keep (default without a terminal)")
+	cmd.Flags().StringSliceVar(&o.Tooling, "tooling", nil, "a Node project's build and lint tools: smith (smith's build and ESLint config, then the old tools go) or keep (default with --yes)")
 	cmd.Flags().StringSliceVar(&o.Hoist, "hoist", nil, "development dependencies to move to the workspace without asking (the known tools move anyway)")
 	cmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "show the plan and change nothing")
 	commandflags.AddYesFlag(cmd, &o.Yes, "do not ask: apply the plan (--as or --into must say where the project goes)")
