@@ -125,11 +125,13 @@ Interactions:
   name, whose `main`, `types` or `exports` lead into the old folder, stays where it is, and the plan
   says why (a note of the review); so does a published package that needs a file outside the build
   folder.
-- Without `--level full`, convert keeps the build scripts as they are, so a package may still build
-  into its own `dist/`. `smith doctor` reports each such project (`kit compiles into
-  dist/packages/kit`) and offers the move per project, with a preview and a "leave it as it is"
-  answer; see [doctor](doctor.md#a-build-that-writes-outside-dist). `smith adopt` keeps scripts
-  the same way.
+- Without `--level full`, convert keeps the build scripts as they are. A Node library or package
+  that builds into its own `dist/` stays there, which is where smith wants it
+  ([ADR 0102](../architecture/decisions/0102-node-libraries-build-inside-their-own-folder.md)).
+  An app that builds elsewhere than `dist/<project dir>` is reported by `smith doctor` (`web
+  compiles into dist/apps/web`), which offers the move per project, with a preview and a "leave
+  it as it is" answer; see [doctor](doctor.md#a-build-that-writes-outside-dist). `smith adopt`
+  keeps scripts the same way.
 - `--allow-dirty` converts with uncommitted changes. It is refused with
   `--level full`, which needs a clean git tree so that git can undo everything.
 - `--strict` turns any item that needs manual work or is unsupported into a failure.
