@@ -36,14 +36,17 @@ func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolA
 		}
 		return protocol.Task{Command: command, Inputs: tooldefaults.WithDefaultInputs(inputs, toolArgs), Cache: true, Description: description}
 	}
+	// The build stages a <name>-<version> folder in the project while it runs;
+	// the tools skip it (mypy through smith's default config).
+	ruffSkip, pytestSkip := stagingSkip(root)
 	tasks := map[string]protocol.Task{
-		"lint":      task(slices.Concat([]string{py, "-m", "ruff", "check"}, args.Ruff, []string{"."}), "ruff check", args.Ruff),
+		"lint":      task(slices.Concat([]string{py, "-m", "ruff", "check"}, args.Ruff, ruffSkip, []string{"."}), "ruff check", args.Ruff),
 		"typecheck": task(slices.Concat([]string{py, "-m", "mypy"}, args.Mypy, []string{"."}), "mypy", args.Mypy),
-		"test":      task(slices.Concat([]string{py, "-m", "pytest", "-q", "-p", "no:cacheprovider"}, args.Pytest), "pytest", args.Pytest),
+		"test":      task(slices.Concat([]string{py, "-m", "pytest", "-q", "-p", "no:cacheprovider"}, args.Pytest, pytestSkip), "pytest", args.Pytest),
 	}
 	// ruff check --fix rewrites what ruff can; the plain lint says what is left.
 	lint := tasks["lint"]
-	lint.Fix = &protocol.TaskFix{Command: slices.Concat([]string{py, "-m", "ruff", "check", "--fix"}, args.Ruff, []string{"."})}
+	lint.Fix = &protocol.TaskFix{Command: slices.Concat([]string{py, "-m", "ruff", "check", "--fix"}, args.Ruff, ruffSkip, []string{"."})}
 	tasks["lint"] = lint
 	switch kind {
 	case protocol.ProjectPackage:

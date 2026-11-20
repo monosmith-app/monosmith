@@ -51,9 +51,9 @@ All tasks run in the project directory with the venv interpreter, written `{work
 
 | Task | Command (after `<py>`) | Appears for | Cached | Outputs |
 |---|---|---|---|---|
-| `lint` | `-m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml .` (no `--config` when the repository configures ruff, see [Tool configuration](#tool-configuration)) | every project | yes | none |
-| `test` | `-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=.` (no `-c` when the repository configures pytest) | every project | yes | none |
-| `typecheck` | `-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini .` (no `--config-file` when the repository configures mypy) | every project | yes | none |
+| `lint` | `-m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml --extend-exclude *-[0-9]*.[0-9]* .` (no `--config` when the repository configures ruff, see [Tool configuration](#tool-configuration)). `--extend-exclude` skips the `<name>-<version>` folder that `python -m build` makes in the project while a build of it runs | every project | yes | none |
+| `test` | `-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=. --ignore-glob {projectRoot}/*-[0-9]*.[0-9]*` (no `-c` when the repository configures pytest; `--ignore-glob` skips the build's staging folder) | every project | yes | none |
+| `typecheck` | `-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini .` (no `--config-file` when the repository configures mypy). smith's default config excludes the build's staging folder; a repository's own mypy config should exclude it too (`exclude = (^\|/)[^/]+-[0-9]+[.][0-9][^/]*/`) | every project | yes | none |
 | `build` | `-m build --outdir {workspaceRoot}/dist/<project dir> .` | `package` only | yes | `dist/<project dir>` (wheel and sdist) |
 | `deps-check` | `smith py-deps-check <dir>` (not run through the venv) | `package` only; its `lint` (or, without one, `typecheck` or `test`) runs after it, so CI verify runs it | yes; inputs `**/*` and `requirements-dev.txt` | none |
 | `start` | `-m <import name>` | `app` only | no | none |
