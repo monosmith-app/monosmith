@@ -70,7 +70,9 @@ func lineStart(text string, i int) int {
 	return strings.LastIndexByte(text[:i], '\n') + 1
 }
 
-var tableHeader = regexp.MustCompile(`(?m)^[ \t]*\[\[?([^\]\r\n]+)\]\]?[ \t]*(?:#[^\r\n]*)?$`)
+// tableHeader matches a [table] line; \r? lets it match in a file with
+// Windows line ends, where $ comes after the \r.
+var tableHeader = regexp.MustCompile(`(?m)^[ \t]*\[\[?([^\]\r\n]+)\]\]?[ \t]*(?:#[^\r\n]*)?\r?$`)
 
 // keyArray finds the array value of key in the table: the span of its
 // brackets, quotes respected. It reports false when the table or key is

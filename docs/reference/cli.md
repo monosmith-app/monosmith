@@ -127,6 +127,30 @@ Usage: `smith adopt [flags]`
 
 <!-- smith:end adopt -->
 
+### smith import
+
+[Manual page](../manual/import.md)
+
+<!-- smith:begin import -->
+Bring an existing project into this workspace, from a git repository or a folder
+
+Usage: `smith import <git-url|folder> [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--as <as>` | the project's kind: app, lib or package (default: what the project looks like, shown in the plan) |  what the project looks like, shown in the plan |
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--dry-run` | show the plan and change nothing | off |
+| `--eslint-setup <eslint-setup>` | what happens to a Node project's own ESLint setup: shared (the workspace's replaces it) or keep (default without a terminal) | without a terminal |
+| `--history <history>` | keep (every commit, under the folder), squash (one commit) or copy (the files only); default keep for a git source, copy for a plain folder |  |
+| `--hoist <hoist>` | development dependencies to move to the workspace without asking (the known tools move anyway) (repeatable) |  |
+| `--into <into>` | the project's folder, from the workspace root (default: <kind folder>/<name>, asked in a terminal) |  <kind folder>/<name>, asked in a terminal |
+| `--name <name>` | the project's name (default: the name in its manifest) |  the name in its manifest |
+| `--ref <ref>` | the branch, tag or commit of a git source to import (default: its default branch) |  its default branch |
+| `-y, --yes` | do not ask: apply the plan (--as or --into must say where the project goes) | off |
+
+<!-- smith:end import -->
+
 ### smith convert
 
 [Manual page](../manual/convert.md)

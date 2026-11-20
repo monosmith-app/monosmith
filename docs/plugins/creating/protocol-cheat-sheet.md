@@ -722,7 +722,7 @@ Fix is a change that clears a failed finding: files' new contents, then commands
 | JSON field | Type | Required | Meaning |
 |---|---|---|---|
 | `description` | `string` | yes |  |
-| `safe` | `bool` | yes | Safe marks a fix that only restores what smith or the plugin owns and loses nothing of the user's; doctor --fix --yes applies only safe fixes with no Choices. |
+| `safe` | `bool` | yes | Safe marks a fix that loses nothing of the user's: it restores what smith or the plugin owns, or it adds a project to its language's workspace in a manifest of the user's (package.json "workspaces", the uv members, a solution). doctor --fix --yes applies only safe fixes with no Choices. |
 | `files` | `[]FileEdit` | no | Files are written first, as whole new contents. |
 | `steps` | `[]FixStep` | no | Steps run after the files, in order, from the workspace root; the first one that fails stops the rest, unless it is advisory. |
 | `choices` | `[]FixChoice` | no | Choices are questions the user answers before the fix applies, in order. |

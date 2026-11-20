@@ -90,7 +90,7 @@ it under "things to check". The full level then removes tooling that nothing use
 | `full` | after the conversion, removes unused lint, test-runner, build and Nx/mnci tooling after asking | smith's tooling for every Node project without a `--tooling` answer |
 
 For a plain repository the per-project step is the slice `projecttooling`
-([ADR 0106](decisions/0106-adopt-asks-each-project-for-its-tooling.md)). `Assess` names the legacy
+([ADR 0107](decisions/0107-adopt-asks-each-project-for-its-tooling.md)). `Assess` names the legacy
 tools and the recommended answer, `Decide` settles the answers (flag, question, or the project's
 own tools with `--yes`), and `Apply` takes one answer for one project. With smith's tooling,
 `Apply` puts smith's lint and build in place, then calls `fullconversion.Run` with the lint and

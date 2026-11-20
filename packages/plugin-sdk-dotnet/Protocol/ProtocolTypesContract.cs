@@ -2098,7 +2098,7 @@ public sealed record Fix : IProtocolValue<Fix>
     /// <summary>The <c>description</c> member of <c>Fix</c>.</summary>
     public required string Description { get; init; }
 
-    /// <summary>Safe marks a fix that only restores what smith or the plugin owns and loses nothing of the user's; doctor --fix --yes applies only safe fixes with no Choices. Any other fix is asked about before it runs.</summary>
+    /// <summary>Safe marks a fix that loses nothing of the user's: it restores what smith or the plugin owns, or it adds a project to its language's workspace in a manifest of the user's (package.json "workspaces", the uv members, a solution). doctor --fix --yes applies only safe fixes with no Choices. Any other fix is asked about before it runs.</summary>
     public bool Safe { get; init; }
 
     /// <summary>Files are written first, as whole new contents.</summary>

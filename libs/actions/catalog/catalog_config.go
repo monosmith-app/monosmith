@@ -23,6 +23,7 @@ var catalog = []Action{
 	{Command: []string{"add"}, Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},
 	{Command: []string{"remove"}, Plan: "--dry-run", Safety: Changes, Asks: true},
 	{Command: []string{"adopt"}, Asks: true, Safety: Reads, Variants: []Variant{{When: []string{"--tags", "--init"}, Safety: Changes}}, NotInMCP: "no tool yet: bringing a repository under smith is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
+	{Command: []string{"import"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInTUI: "no form yet: smith import asks for the project's folder in the terminal", NotInMCP: "no tool yet: bringing a project into the workspace is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
 	{Command: []string{"convert"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: "no tool yet: converting an Nx or Turborepo workspace is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
 	{Command: []string{"upgrade"}, Plan: "--dry-run", Asks: true, Safety: Changes},
 	{Command: []string{"swap"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},

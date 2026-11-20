@@ -995,9 +995,10 @@ class _FixRequired(TypedDict):
     description: str
     safe: bool
     """
-    Safe marks a fix that only restores what smith or the plugin owns and loses nothing of the
-    user's; doctor --fix --yes applies only safe fixes with no Choices. Any other fix is asked
-    about before it runs.
+    Safe marks a fix that loses nothing of the user's: it restores what smith or the plugin owns,
+    or it adds a project to its language's workspace in a manifest of the user's (package.json
+    "workspaces", the uv members, a solution). doctor --fix --yes applies only safe fixes with no
+    Choices. Any other fix is asked about before it runs.
     """
 
 
