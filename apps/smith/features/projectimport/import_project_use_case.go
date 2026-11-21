@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/features/outputignore"
+	"github.com/monosmith-app/monosmith/apps/smith/features/outsidefiles"
 	"github.com/monosmith-app/monosmith/apps/smith/features/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
@@ -28,6 +29,9 @@ type Options struct {
 	// As, Into, Name, Ref, History, ESLint, Manifest and Path are the flags
 	// of the same names (ESLint is --eslint-setup); "" when not given.
 	As, Into, Name, Ref, History, ESLint, Manifest, Path string
+	// Outside is --outside-files: copy or leave the files the project uses
+	// outside its --path sub-folder; "" when not given.
+	Outside string
 	// Hoist is --hoist.
 	Hoist []string
 	// Tooling is --tooling: smith or keep (or <project>=smith|keep), the
@@ -83,13 +87,20 @@ func Import(o Options) (Plan, error) {
 		return Plan{}, err
 	}
 	defer func() { Release(src) }()
+	var outside []outsidefiles.File
 	if o.Path != "" {
+		// Read before the narrow step: the import takes the sub-folder only.
+		outside = outsidefiles.Find(src.Dir, o.Path)
 		if src, err = Narrow(src, o.Path, o.Out); err != nil {
 			return Plan{}, err
 		}
 	}
 	p, err := settle(root, &src, claims, taken, o)
 	if err != nil {
+		return p, err
+	}
+	p.Outside = outside
+	if err := SettleOutside(&p, o); err != nil {
 		return p, err
 	}
 	p.Ignores = outputignore.Missing(root, p.Folder, ignoresOf(claims, p.Ecosystem))
@@ -104,6 +115,7 @@ func Import(o Options) (Plan, error) {
 	if err := Place(root, p, o.Out); err != nil {
 		return p, err
 	}
+	outsideLeft := BringOutside(root, p, o.Out)
 	// Before any step builds: a commit of the import never takes build output.
 	if err := outputignore.Append(root, p.Folder, p.Ignores); err != nil {
 		return p, fmt.Errorf("the project is in %s, but .gitignore could not be written (%w); add %s to it yourself before you commit", p.Folder, err, strings.Join(p.Ignores, ", "))
@@ -143,6 +155,7 @@ func Import(o Options) (Plan, error) {
 		left = append(left, Lint(root, p.Name, o.Out)...)
 	}
 	left = append(left, LayoutLeft(root, p)...)
+	left = append(left, outsideLeft...)
 	checked, err := Check(root, o.Version)
 	if err != nil {
 		return p, err

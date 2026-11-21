@@ -87,9 +87,25 @@ installed dependencies and build output.
 
 A git source keeps the commits of the sub-folder: in a temporary clone,
 `git subtree split --prefix=<sub-folder>` writes each commit that touches the folder again
-with its files at the top, and `--history keep` or `squash` takes that branch. A file the
-project uses outside its sub-folder (a signing key in `src/`, a `Directory.Build.props` at
-the top) does not come with it, and the build names it.
+with its files at the top, and `--history keep` or `squash` takes that branch.
+
+A file the project uses outside its sub-folder does not come with it. Before the import,
+smith reads the source and lists these files in the plan:
+
+- a path that leaves the folder in a `.csproj`, `.fsproj`, `.vbproj`, `.props` or
+  `.targets` file at its top: an item (`<None Include="..\LICENSE">`), an `<Import>`, or a
+  path property (`AssemblyOriginatorKeyFile`, `ApplicationIcon`, `ApplicationManifest`,
+  `CodeAnalysisRuleSet`, `Win32Resource`). A path with `$(`, `@(`, `%(` or a wildcard is
+  not read, because only MSBuild knows its value.
+- a `Directory.Build.props`, `Directory.Build.targets` or `Directory.Packages.props` in a
+  folder above it, for a .NET project.
+- a `"files"` entry with `../` in its `package.json`.
+
+smith asks whether to copy each plain file into the project folder: the copy takes the
+file's name, and the file that names it gets the new path (`..\LICENSE` becomes
+`LICENSE`). `--outside-files copy|leave` answers. With `--yes` and without a terminal, the
+files stay in the source. A file that stays, a missing file, a folder, a project reference
+and an MSBuild file above the folder each get an item in "Left to do", with its path.
 
 **A folder of sources and no manifest.** For loose `.ts` or `.js`, `.py` and `.cs` files
 (Node, Python and .NET for now), smith offers to write the manifest of the language's default
@@ -175,6 +191,7 @@ Usage: `smith import <git-url|folder> [flags]`
 | `--into <into>` | string |  <kind folder>/<name>, asked in a terminal | the project's folder, from the workspace root (default: <kind folder>/<name>, asked in a terminal) |
 | `--manifest <manifest>` | string |  | a source with no manifest: the language whose default stack's manifest smith writes (node, python, dotnet), or none; asked in a terminal |
 | `--name <name>` | string |  the name in its manifest | the project's name (default: the name in its manifest) |
+| `--outside-files <outside-files>` | string | with --yes | with --path, the files the project uses outside its sub-folder (..\LICENSE, a signing key): copy (into the project folder, with the new path in the file that names it) or leave, and Left to do names each (default with --yes) |
 | `--path <path>` | string |  | the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder |
 | `--ref <ref>` | string |  its default branch | the branch, tag or commit of a git source to import (default: its default branch) |
 | `--tooling <tooling>` | string, repeatable | with --yes | a Node project's build and lint tools: smith (smith's build and ESLint config, then the old tools go) or keep (default with --yes) |

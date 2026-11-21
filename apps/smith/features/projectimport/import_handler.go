@@ -80,6 +80,7 @@ import runs after "y" in a terminal, or with --yes.`,
 	cmd.Flags().StringSliceVar(&o.Hoist, "hoist", nil, "development dependencies to move to the workspace without asking (the known tools move anyway)")
 	cmd.Flags().StringVar(&o.Manifest, "manifest", "", "a source with no manifest: the language whose default stack's manifest smith writes (node, python, dotnet), or none; asked in a terminal")
 	cmd.Flags().StringVar(&o.Path, "path", "", "the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder")
+	cmd.Flags().StringVar(&o.Outside, "outside-files", "", "with --path, the files the project uses outside its sub-folder (..\\LICENSE, a signing key): copy (into the project folder, with the new path in the file that names it) or leave, and Left to do names each (default with --yes)")
 	cmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "show the plan and change nothing")
 	commandflags.AddYesFlag(cmd, &o.Yes, "do not ask: apply the plan (--as or --into must say where the project goes)")
 	return operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "import " + imported }})

@@ -28,6 +28,9 @@ func Summary(p Plan) string {
 	}
 	fmt.Fprintf(&b, "  folder   %s  (--as and --into change it)\n", p.Folder)
 	fmt.Fprintf(&b, "  history  %s\n", historyLine(p))
+	for _, line := range OutsideLines(p) {
+		fmt.Fprintf(&b, "  outside  %s\n", line)
+	}
 	if p.Source.Dirty && p.History != HistoryCopy {
 		fmt.Fprintf(&b, "  ! %s has changes that are not committed: the import takes only %s (%s)\n", from, p.Source.Ref, p.Source.Commit)
 	}
@@ -71,6 +74,14 @@ func Changes(p Plan) operationplan.Plan {
 	plan.Add("Place", operationplan.Line{Action: operationplan.Create, Path: p.Folder, Note: placeLine(p)})
 	if p.WriteManifest != "" {
 		plan.Add("Manifest", operationplan.Line{Action: operationplan.Create, Path: p.Folder + "/" + manifestFile(p), Note: "the " + p.Ecosystem + " default stack's manifest, from smith add's template; the sources stay where they are"})
+	}
+	if p.CopyOutside {
+		for _, f := range p.Outside {
+			if f.Movable() {
+				plan.Add("Outside files", operationplan.Line{Action: operationplan.Create, Path: p.Folder + "/" + f.Name(), Note: "a copy of " + f.Path + " from the source"})
+				plan.Add("Outside files", operationplan.Line{Action: operationplan.Change, Path: p.Folder + "/" + f.Manifest, Note: f.Ref + " becomes " + f.Name()})
+			}
+		}
 	}
 	if len(p.Ignores) > 0 {
 		plan.Add("Ignore", operationplan.Line{Action: operationplan.Change, Path: ".gitignore", Note: "ignore the build output in " + p.Folder + ": " + strings.Join(p.Ignores, ", ")})
