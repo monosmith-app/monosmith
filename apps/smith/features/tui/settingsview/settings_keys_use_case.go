@@ -179,9 +179,9 @@ func (m Model) editSetting(st Setting) (Model, Result) {
 	case st.Type == "boolean":
 		m = m.begin(words.Say("settingsview.busy.saving", "path", st.Path), false)
 		return m, Result{Cmd: m.setSetting(st.Path, []string{fmt.Sprint(!boolValue(st))})}
-	case st.Type == "array" && len(st.Options) > 0:
+	case st.Type == "array" && len(st.Choices) > 0:
 		m.ed = newPicker(st)
-	case st.Type == "string" && len(st.Options) > 0:
+	case st.Type == "string" && len(st.Choices) > 0:
 		m.ed = newChooser(st)
 	default:
 		m.ed = newTextEditor(st)

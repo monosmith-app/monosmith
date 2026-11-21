@@ -113,8 +113,8 @@ func takesPath(st Setting) bool {
 // newPicker edits a list of fixed choices: Space ticks, Enter saves. When the
 // setting is not set, what its default says is ticked.
 func newPicker(st Setting) *editor {
-	e := &editor{kind: editMulti, title: st.Path, about: st.Explanation, setting: st, choices: st.values(), marked: make([]bool, len(st.Options))}
-	for i, o := range st.Options {
+	e := &editor{kind: editMulti, title: st.Path, about: st.Explanation, setting: st, choices: st.values(), marked: make([]bool, len(st.Choices))}
+	for i, o := range st.Choices {
 		if st.Set {
 			e.marked[i] = slices.Contains(st.Current, o.Value)
 		} else {
@@ -130,7 +130,7 @@ func newPicker(st Setting) *editor {
 func newChooser(st Setting) *editor {
 	e := &editor{kind: editChoose, title: st.Path, about: st.Explanation, setting: st, choices: st.values(), current: -1}
 	now := ""
-	for _, o := range st.Options {
+	for _, o := range st.Choices {
 		if o.Default {
 			now = o.Value
 		}

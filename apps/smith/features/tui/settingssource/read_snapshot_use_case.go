@@ -101,7 +101,7 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 			return snap
 		}
 		snap.Settings = append(snap.Settings, settingsview.Setting{
-			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Options: viewOptions(f.Options),
+			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Choices: viewOptions(f.Options),
 			Value: value, Set: set, Current: decode(value, set),
 		})
 	}
