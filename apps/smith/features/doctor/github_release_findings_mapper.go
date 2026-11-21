@@ -27,14 +27,16 @@ var publicCredential = map[string]string{
 // cannot publish there). Nothing is reported for a workspace that does not
 // use the mode.
 func githubReleaseChecks(s *session.Session) []protocol.Finding {
-	return githubReleaseFindings(s.Graph.Projects, s.Config.Release.GitHubReleases, func(plugin string) bool {
+	return githubReleaseFindings(s.Graph.Projects, s.Config.Release.GitHubReleases, s.Config.Release.NuGetTrustedPublishing, func(plugin string) bool {
 		c := s.Plugins.Get(plugin)
 		return c != nil && c.Info.Capabilities.Packs
 	}, os.Getenv)
 }
 
-// githubReleaseFindings is githubReleaseChecks with its inputs given.
-func githubReleaseFindings(all []*projectgraph.Project, githubReleases bool, packs func(plugin string) bool, env func(string) string) []protocol.Finding {
+// githubReleaseFindings is githubReleaseChecks with its inputs given. With
+// nugetTrusted ([release] nuget_trusted_publishing) a .NET package signs in
+// with the NUGET_USER secret, so that is the credential it asks for.
+func githubReleaseFindings(all []*projectgraph.Project, githubReleases, nugetTrusted bool, packs func(plugin string) bool, env func(string) string) []protocol.Finding {
 	projects := map[string]*projectgraph.Project{}
 	names := make([]string, 0, len(all))
 	for _, p := range all {
@@ -70,6 +72,9 @@ func githubReleaseFindings(all []*projectgraph.Project, githubReleases bool, pac
 			continue // a private registry of its own
 		}
 		credential, ok := publicCredential[p.Plugin]
+		if p.Plugin == "dotnet" && nugetTrusted {
+			credential = "NUGET_USER"
+		}
 		if !ok || env(credential) != "" {
 			continue
 		}

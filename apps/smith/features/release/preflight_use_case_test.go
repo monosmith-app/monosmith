@@ -60,3 +60,23 @@ func TestTheMarketplaceTokenIsSignedInByTheRunOnlyWithEntra(t *testing.T) {
 		}
 	}
 }
+
+func TestTheNuGetKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T) {
+	cfg := workspace.Config{}
+	secret := &session.Session{Config: cfg}
+	cfg.Release.NuGetTrustedPublishing = true
+	trusted := &session.Session{Config: cfg}
+	for _, c := range []struct {
+		s    *session.Session
+		env  string
+		want bool
+	}{
+		{secret, "NUGET_API_KEY", false},
+		{trusted, "NUGET_API_KEY", true},
+		{trusted, "GEM_HOST_API_KEY", false},
+	} {
+		if got := signedInByTheRun(c.s, c.env); got != c.want {
+			t.Errorf("signedInByTheRun(trusted=%v, %s) = %v, want %v", c.s.Config.Release.NuGetTrustedPublishing, c.env, got, c.want)
+		}
+	}
+}

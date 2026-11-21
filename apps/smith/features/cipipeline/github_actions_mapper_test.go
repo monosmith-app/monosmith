@@ -475,3 +475,51 @@ func TestGitHubGetsACacheHygieneWorkflow(t *testing.T) {
 		t.Error("only a GitHub workspace gets the workflow")
 	}
 }
+
+func TestTrustedPublishingSignsInToNuGetRightBeforeTheRelease(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "NUGET_API_KEY", Required: true}, {Env: "PYPI_TOKEN", Required: true}}})
+	c.UseNuGetTrustedPublishing()
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	signIn := strings.Index(gh, "      - name: Sign in to NuGet\n        id: nuget-login\n        if: github.event_name == 'push' && github.ref_name == 'main'\n        uses: NuGet/login@v1\n        with:\n          user: ${{ secrets.NUGET_USER }}\n")
+	release := strings.Index(gh, "      - name: Release\n")
+	if signIn < 0 || release < 0 || signIn > release {
+		t.Fatalf("the sign-in must come right before the release, only on a push to the release branch:\n%s", gh)
+	}
+	if !strings.Contains(gh, "  id-token: write\n") {
+		t.Error("the job may not ask for the OIDC token")
+	}
+	if strings.Contains(gh, "secrets.NUGET_API_KEY") {
+		t.Error("the key is still a secret the release reads")
+	}
+	if !strings.Contains(gh[release:], "          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}\n") {
+		t.Errorf("the release does not read the key the sign-in got:\n%s", gh)
+	}
+	if !strings.Contains(gh, "PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}") {
+		t.Error("the other credentials went too")
+	}
+}
+
+func TestWithoutTrustedPublishingTheNuGetKeyIsASecret(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "NUGET_API_KEY", Required: true}}})
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	if strings.Contains(gh, "Sign in to NuGet") || strings.Contains(gh, "id-token") || strings.Contains(gh, "nuget-login") || !strings.Contains(gh, "NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}") {
+		t.Errorf("GitHub:\n%s", gh)
+	}
+}
+
+func TestTheNativeJobSignsInToNuGetOnlyWhenItPublishes(t *testing.T) {
+	var c Contributions
+	c.Native = true
+	c.UseNuGetTrustedPublishing()
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	if strings.Count(gh, "Sign in to NuGet") != 1 || strings.Count(gh, "steps.nuget-login.outputs.NUGET_API_KEY") != 1 {
+		t.Errorf("a native job that publishes nothing signs in:\n%s", gh)
+	}
+	c.NativePublish = true
+	gh = RenderGitHub(NewModel(c, "dev", "main"))
+	if strings.Count(gh, "Sign in to NuGet") != 2 || strings.Count(gh, "steps.nuget-login.outputs.NUGET_API_KEY") != 2 {
+		t.Errorf("a native job that publishes must sign in and read the key too:\n%s", gh)
+	}
+}

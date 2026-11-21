@@ -165,6 +165,9 @@ func Validate(cfg *Config) error {
 	if cfg.Release.RubyGemsTrustedPublishing && slices.ContainsFunc(cfg.CI.Providers, func(p string) bool { return p != "github" }) {
 		return fmt.Errorf("%s: [release] rubygems_trusted_publishing works on GitHub Actions only: set [ci] providers = [\"github\"]", FileName)
 	}
+	if cfg.Release.NuGetTrustedPublishing && slices.ContainsFunc(cfg.CI.Providers, func(p string) bool { return p != "github" }) {
+		return fmt.Errorf("%s: [release] nuget_trusted_publishing works on GitHub Actions only: set [ci] providers = [\"github\"]", FileName)
+	}
 	if cfg.Release.VSCEEntra && slices.ContainsFunc(cfg.CI.Providers, func(p string) bool { return p != "github" }) {
 		return fmt.Errorf("%s: [release] vsce_entra works on GitHub Actions only: set [ci] providers = [\"github\"]", FileName)
 	}

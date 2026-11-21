@@ -106,6 +106,9 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 	if s.Config.Release.RubyGemsTrustedPublishing {
 		c.UseRubyGemsTrustedPublishing()
 	}
+	if s.Config.Release.NuGetTrustedPublishing {
+		c.UseNuGetTrustedPublishing()
+	}
 	if s.Config.Release.VSCEEntra {
 		c.UseVSCEEntra()
 	}

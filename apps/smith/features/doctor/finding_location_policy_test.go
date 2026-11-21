@@ -64,7 +64,7 @@ func TestEveryHostMapperLocatesItsFindings(t *testing.T) {
 	assertLocated(t, "derived", deriveFindings(derive.Plan{})...)
 
 	pack := &protocol.Registries{PackToRelease: true}
-	assertLocated(t, "github release", githubReleaseFindings([]*projectgraph.Project{pkg("core", "node", pack), pkg("lib", "python", nil)}, false, func(string) bool { return false }, func(string) string { return "" })...)
+	assertLocated(t, "github release", githubReleaseFindings([]*projectgraph.Project{pkg("core", "node", pack), pkg("lib", "python", nil)}, false, false, func(string) bool { return false }, func(string) string { return "" })...)
 }
 
 func TestACollapsedMachineCheckSpeaksForTheMachine(t *testing.T) {

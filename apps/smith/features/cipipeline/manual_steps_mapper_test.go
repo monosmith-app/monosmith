@@ -66,3 +66,19 @@ func TestManualStepsWarnAProviderTheSignInDoesNotReach(t *testing.T) {
 		t.Errorf("steps:\n%s", steps)
 	}
 }
+
+func TestManualStepsAskForTheNuGetUserAndPolicyWithTrustedPublishing(t *testing.T) {
+	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github"}}}
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "NUGET_API_KEY", Required: true}}})
+	c.UseNuGetTrustedPublishing()
+	steps := strings.Join(ManualSteps(cfg, NewModel(c, "dev", "main")), "\n")
+	for _, want := range []string{"GitHub: add the repository secrets NUGET_USER", "trusted publishing policy", "workflow file ci.yml"} {
+		if !strings.Contains(steps, want) {
+			t.Errorf("lacks %q:\n%s", want, steps)
+		}
+	}
+	if strings.Contains(steps, "NUGET_API_KEY") {
+		t.Errorf("the key is no secret to add:\n%s", steps)
+	}
+}

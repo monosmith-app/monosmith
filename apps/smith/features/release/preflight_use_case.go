@@ -219,10 +219,12 @@ func DistributionCredentials(r *workspace.ProjectRelease, version string) []prot
 // signedInByTheRun is true for a credential the pipeline signs in with right
 // before the release, so it is not in the environment before: the RubyGems
 // key when gems are published with the workflow's OIDC token
-// (rubygems_trusted_publishing), and the Marketplace token when extensions are
+// (rubygems_trusted_publishing), the NuGet key when NuGet packages are
+// published with it (nuget_trusted_publishing), and the Marketplace token when extensions are
 // published with Entra ID (vsce_entra).
 func signedInByTheRun(s *session.Session, env string) bool {
 	return (env == "GEM_HOST_API_KEY" && s.Config.Release.RubyGemsTrustedPublishing) ||
+		(env == "NUGET_API_KEY" && s.Config.Release.NuGetTrustedPublishing) ||
 		(env == "VSCE_PAT" && s.Config.Release.VSCEEntra)
 }
 
