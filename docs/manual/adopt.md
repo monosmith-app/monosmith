@@ -204,7 +204,9 @@ Move it into a folder of its own so smith can manage it?
   for the workspace layout). Other documents (`*.md`, `*.rst`, `*.adoc`, `documentation`,
   `wiki`) go to `doc/`. Everything else moves, including source, tests, configs such as
   `jest.config.js` and, for Go, `go.mod` and `go.sum` (the module path does not change).
-  Lines of `.gitignore` that start with `/` and name a moved entry follow it.
+  Lines of `.gitignore` that start with `/` and name a moved entry follow it. A line that
+  names an entry git does not track (`/dist`, `/node_modules`) stays, and a copy of it for
+  the new folder is added, because the project makes that output in its new folder.
 - A published Node package (a `package.json` with a `name` and without `"private": true`)
   also gets a copy of the README and the LICENSE in its new folder, because npm publishes
   the package from that folder. The root keeps its own copies for the repository page. The

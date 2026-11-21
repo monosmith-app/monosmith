@@ -42,7 +42,8 @@ func SplitNode(req Request) (Result, error) {
 		return res, fmt.Errorf("package.json at the root: %w", err)
 	}
 
-	hoisted := takeDevDependencies(project, req.Hoist)
+	hoist, own := splitByRootVersion(root, project, req.Hoist)
+	hoisted := takeDevDependencies(project, hoist)
 	dropped := takeDevDependencies(project, req.Drop)
 	if !root.Has("name") {
 		root.SetString("name", req.Workspace+"-workspace")
@@ -70,6 +71,9 @@ func SplitNode(req Request) (Result, error) {
 	}
 	if len(hoisted) > 0 {
 		res.Notes = append(res.Notes, fmt.Sprintf("moved %d devDependencies to the root package.json: %s.", len(hoisted), strings.Join(slices.Sorted(mapKeys(hoisted)), ", ")))
+	}
+	for _, k := range own {
+		res.Notes = append(res.Notes, fmt.Sprintf("%s %s stays in the project's own development dependencies: the workspace has %s %s, another major version.", k.name, k.project, k.name, k.root))
 	}
 	if len(dropped) > 0 {
 		res.Notes = append(res.Notes, "removed from the project, because the shared lint config brings its own: "+strings.Join(slices.Sorted(mapKeys(dropped)), ", ")+".")
@@ -127,6 +131,32 @@ func SplitNode(req Request) (Result, error) {
 		res.Notes = append(res.Notes, filepath.Base(jest[0])+" stays with the project: its paths are relative to the project folder. The jest packages are in the workspace.")
 	}
 	return res, nil
+}
+
+// ownVersion is a development dependency that stays in the project, with the
+// two ranges that differ.
+type ownVersion struct{ name, project, root string }
+
+// splitByRootVersion returns the names that go to the workspace and the ones
+// that stay in the project because the root has another major (KeepsOwnVersion).
+func splitByRootVersion(root, project *jsondoc.Document, names []string) ([]string, []ownVersion) {
+	rootDev := root.Object("devDependencies", false)
+	projectDev := project.Object("devDependencies", false)
+	if rootDev == nil || projectDev == nil {
+		return names, nil
+	}
+	var hoist []string
+	var own []ownVersion
+	for _, name := range names {
+		have, _ := rootDev.String(name)
+		want, _ := projectDev.String(name)
+		if KeepsOwnVersion(have, want) {
+			own = append(own, ownVersion{name: name, project: want, root: have})
+			continue
+		}
+		hoist = append(hoist, name)
+	}
+	return hoist, own
 }
 
 // takeDevDependencies removes the named devDependencies from the manifest
