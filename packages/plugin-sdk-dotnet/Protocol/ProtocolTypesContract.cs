@@ -2527,6 +2527,9 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
     /// <summary>Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest.</summary>
     public IReadOnlyList<string> Sources { get; init; } = [];
 
+    /// <summary>Ignores are gitignore patterns, relative to a project folder, of what the language's tools write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the workspace (smith import), the host makes sure git ignores them in its folder, so a commit never takes the build output. Empty: the tools write nothing there.</summary>
+    public IReadOnlyList<string> Ignores { get; init; } = [];
+
     /// <summary>Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate level field, because one plugin can play several (a scaffold that is also a toolchain).</summary>
     public IReadOnlyList<Role> Roles { get; init; } = [];
 
@@ -2568,6 +2571,7 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
             Languages = ListOf(Member(map, "languages"), Join(path, "languages"), StringValue),
             Manifests = ListOf(Member(map, "manifests"), Join(path, "manifests"), StringValue),
             Sources = ListOf(Member(map, "sources"), Join(path, "sources"), StringValue),
+            Ignores = ListOf(Member(map, "ignores"), Join(path, "ignores"), StringValue),
             Roles = ListOf(Member(map, "roles"), Join(path, "roles"), Role.Read),
             Provides = ListOf(Member(map, "provides"), Join(path, "provides"), StringValue),
             Requires = ListOf(Member(map, "requires"), Join(path, "requires"), PluginRef.Read),
@@ -2611,6 +2615,11 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
         {
             writer.Property("sources");
             MessageWritingAlgorithm.List(writer, Sources, (builder1, item1) => builder1.String(item1));
+        }
+        if (Ignores is { Count: > 0 })
+        {
+            writer.Property("ignores");
+            MessageWritingAlgorithm.List(writer, Ignores, (builder1, item1) => builder1.String(item1));
         }
         if (Roles is { Count: > 0 })
         {
@@ -5636,6 +5645,9 @@ public sealed record PluginDescription
     /// <summary>Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest.</summary>
     public IReadOnlyList<string> Sources { get; init; } = [];
 
+    /// <summary>Ignores are gitignore patterns, relative to a project folder, of what the language's tools write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the workspace (smith import), the host makes sure git ignores them in its folder, so a commit never takes the build output. Empty: the tools write nothing there.</summary>
+    public IReadOnlyList<string> Ignores { get; init; } = [];
+
     /// <summary>Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate level field, because one plugin can play several (a scaffold that is also a toolchain).</summary>
     public IReadOnlyList<Role> Roles { get; init; } = [];
 
@@ -5677,6 +5689,7 @@ public sealed record PluginDescription
             Languages = Languages,
             Manifests = Manifests,
             Sources = Sources,
+            Ignores = Ignores,
             Roles = Roles,
             Provides = Provides,
             Requires = Requires,

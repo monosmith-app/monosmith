@@ -83,6 +83,9 @@ func Changes(p Plan) operationplan.Plan {
 			}
 		}
 	}
+	if len(p.Ignores) > 0 {
+		plan.Add("Ignore", operationplan.Line{Action: operationplan.Change, Path: ".gitignore", Note: "ignore the build output in " + p.Folder + ": " + strings.Join(p.Ignores, ", ")})
+	}
 	for _, l := range p.Lockfiles {
 		plan.Add("Split", operationplan.Line{Action: operationplan.Remove, Path: p.Folder + "/" + l, Note: "the workspace has one lockfile"})
 	}

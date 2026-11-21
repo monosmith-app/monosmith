@@ -1224,6 +1224,13 @@ class InitializeResult(_InitializeResultRequired, total=False):
     folder (smith import, smith adopt). Empty: the plugin recognises no project without its
     manifest.
     """
+    ignores: list[str]
+    """
+    Ignores are gitignore patterns, relative to a project folder, of what the language's tools
+    write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the
+    workspace (smith import), the host makes sure git ignores them in its folder, so a commit
+    never takes the build output. Empty: the tools write nothing there.
+    """
     roles: list[Role]
     """
     Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe).
@@ -2442,6 +2449,13 @@ class PluginDescription(_PluginDescriptionRequired, total=False):
     folder that has none of its Manifests. The host reads them to offer a manifest for such a
     folder (smith import, smith adopt). Empty: the plugin recognises no project without its
     manifest.
+    """
+    ignores: list[str]
+    """
+    Ignores are gitignore patterns, relative to a project folder, of what the language's tools
+    write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the
+    workspace (smith import), the host makes sure git ignores them in its folder, so a commit
+    never takes the build output. Empty: the tools write nothing there.
     """
     roles: list[Role]
     """

@@ -81,4 +81,8 @@ type Plan struct {
 	// CopyOutside is the answer to the outside-files question: true copies
 	// the movable ones into the project folder and writes their new paths.
 	CopyOutside bool
+	// Ignores are the .gitignore lines the import adds, anchored to Folder,
+	// so git ignores the build output of the language's tools there
+	// (/packages/astar/bin/); empty when git ignores it already.
+	Ignores []string
 }

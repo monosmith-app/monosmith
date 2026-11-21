@@ -34,6 +34,7 @@ func (j *JVM) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 		Tools:     toolcatalog.For("java", "gradle", "mvn"),
 		Languages: []string{"jvm", "java"},
 		Manifests: []string{"pom.xml", "build.gradle.kts", "build.gradle"},
+		Ignores:   []string{"target/", "build/", ".gradle/"},
 		Stacks: []protocol.Stack{
 			{Name: scaffolding.KotlinStack, Description: "a Kotlin module built with Gradle, linted with ktlint", Language: Name},
 			{Name: scaffolding.AndroidStack, Description: "an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint", Language: Name},

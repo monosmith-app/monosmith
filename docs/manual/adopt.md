@@ -143,15 +143,20 @@ before the commit:
    other entry points follow. A create-react-app project builds with Vite: `public/index.html`
    becomes `index.html`, and `vite.config.ts` builds into the workspace's `dist/<project dir>`.
    Its tests run with Vitest in jsdom, and a project without tests loses its `react-scripts test`
-   script. `dist` goes into `.gitignore`. A rollup, webpack or script build stays, and the
-   outcome says so.
+   script. `dist` goes into `.gitignore`. A Vite build stays as it is, also after a type check
+   (`tsc && vite build`): Vite is the build smith writes for a web app. A rollup, webpack or
+   script build stays, and the outcome says so: for an app it names `vite build` as the build to
+   write, for a library `tsc` or esbuild.
 3. **Old tools out.** Only for a tool whose replacement is in place, smith shows each group of
    removals (the `.eslintrc` files, `.eslintignore`, the old lint packages, `react-scripts` and
    the old build packages) and asks before it applies the group. `--yes` applies every group.
    The removal plan is the one of `smith convert --level full`. It sees only the project's folder
    and the files at the workspace root, so the tools of other projects stay.
-4. **Check.** One install, then build, test, lint and doctor. The lint runs without `--fix`:
-   smith reports what its rules find in your code and does not rewrite it.
+4. **Check.** One install, then build, test, lint and doctor. Then `smith run lint -p <name>`
+   runs for each project with smith's tooling, also when a test failed before. The lint runs
+   without `--fix`: smith reports what its rules find in your code and does not rewrite it. The
+   "Left to do" list gives the count of problems, the rules found most, and
+   `smith lint --fix -p <name>` with the count it repairs, for you to run when you want it.
 
 What smith cannot do is an item of the `Left to do` list at the end, with its fix. Examples are a
 bundler build that smith does not rewrite, tests that call `jest.*` under Vitest, SVG files
