@@ -197,6 +197,7 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `languages` | `[]string` | no | Languages are the values a user passes to --lang to reach this plugin. |
 | `manifests` | `[]string` | no | Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose presence in a directory may make it a project of this plugin. |
 | `sources` | `[]string` | no | Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest. |
+| `ignores` | `[]string` | no | Ignores are gitignore patterns, relative to a project folder, of what the language's tools write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the workspace (smith import), the host makes sure git ignores them in its folder, so a commit never takes the build output. Empty: the tools write nothing there. |
 | `roles` | `[]Role` | no | Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). |
 | `provides` | `[]string` | no | Provides are the slots a toolchain plugin fills: the task names it owns ("test" for a test runner). |
 | `requires` | `[]PluginRef` | no | Requires are plugins that must also be in the project for this one to work: a Node toolchain requires the node language plugin. |

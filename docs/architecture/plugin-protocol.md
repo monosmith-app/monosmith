@@ -128,6 +128,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `languages` | values of `--lang` that reach this plugin |
 | `manifests` | file names or patterns (`package.json`, `*.csproj`) that may make a directory a project of this plugin |
 | `sources` | patterns of source file names (`*.ts`, `*.py`, `*.cs`) the plugin recognises in a folder without its manifest, so smith can offer one ([ADR 0108](decisions/0108-smith-offers-a-manifest-for-a-source-without-one.md)) |
+| `ignores` | gitignore patterns, relative to a project folder, of what the language's tools write into it (`bin/`, `obj/`, `node_modules/`). `smith import` makes sure git ignores them in the folder of the imported project |
 | `roles` | the levels the plugin can be chosen for; empty means `DefaultRoles(kind)` |
 | `provides` | slots: task names the plugin owns (`test`, `lint`) |
 | `requires`, `conflicts` | plugins that must or must not share a project |

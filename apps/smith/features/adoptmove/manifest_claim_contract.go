@@ -14,4 +14,7 @@ type Claim struct {
 	// Sources are the patterns of source file names the plugin recognises in
 	// a folder without its manifest (*.ts, *.py), for the manifest offer.
 	Sources []string `json:"sources,omitempty"`
+	// Ignores are the folder-relative gitignore patterns of what the
+	// language's tools write into a project folder (bin/, node_modules/).
+	Ignores []string `json:"ignores,omitempty"`
 }

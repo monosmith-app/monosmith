@@ -53,6 +53,17 @@ func TestSummaryOfASourceWithoutManifestSaysWhatIsWritten(t *testing.T) {
 	}
 }
 
+func TestChangesShowTheIgnoreLinesForTheBuildOutput(t *testing.T) {
+	p := Plan{Name: "astar", Folder: "packages/astar", Ecosystem: "dotnet", History: HistoryKeep, Ignores: []string{"/packages/astar/bin/", "/packages/astar/obj/"}}
+	plan := Changes(p)
+	if len(plan.Groups) < 2 || plan.Groups[1].Heading != "Ignore" || plan.Groups[1].Lines[0].Path != ".gitignore" || !strings.Contains(plan.Groups[1].Lines[0].Note, "/packages/astar/bin/, /packages/astar/obj/") {
+		t.Errorf("the plan shows the .gitignore lines: %+v", plan.Groups)
+	}
+	if plan := Changes(Plan{Name: "astar", Folder: "packages/astar", Ecosystem: "dotnet"}); len(plan.Groups) != 1 {
+		t.Errorf("no ignore line, no group: %+v", plan.Groups)
+	}
+}
+
 func TestSummaryOfASubFolderNamesItAndItsRef(t *testing.T) {
 	p := Plan{Name: "scrutor", Kind: "package", Folder: "packages/scrutor", Ecosystem: "dotnet", Manifest: "Scrutor.csproj", History: HistoryKeep,
 		Source: Source{Arg: "../scrutor", Git: true, Path: "src/Scrutor", PathRef: "master", Ref: pathBranch, Commit: "c87fc2f", Commits: 264}}
