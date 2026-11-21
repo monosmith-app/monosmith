@@ -64,7 +64,8 @@ type Result struct {
 
 // Apply takes the answer for one Node project. Keep changes nothing. Smith
 // first puts smith's lint (PlaceSmithLint) and build (PlaceSmithBuild) in
-// place, then retires the old tools with the full conversion's removal plan,
+// place, raises a TypeScript 4 that cannot read the types smith's ESLint
+// config installs (PlanTypeScript, shown and asked), then retires the old tools with the full conversion's removal plan,
 // limited to the project's folder and the workspace root, and only for the
 // tool whose replacement is in place: a lint group when the lint is ready, a
 // build group when the build is ready. Each group is asked (or applied with
@@ -99,6 +100,11 @@ func Apply(ctx context.Context, in Input, o RunOptions) (Result, error) {
 	}
 	res.Lint, res.Build = lint.Ready, build.Ready
 	res.Left = append(append(res.Left, lint.Left...), build.Left...)
+	typescript, err := raiseTypeScript(ctx, in, a.Name, o)
+	if err != nil {
+		return res, err
+	}
+	res.Left = append(res.Left, typescript...)
 	choices := convertchoices.Choices{Level: convertchoices.LevelFull, Lint: convertchoices.Keep, Test: convertchoices.Keep, Build: convertchoices.Keep, CI: convertchoices.Smith}
 	if lint.Ready {
 		choices.Lint = convertchoices.Smith

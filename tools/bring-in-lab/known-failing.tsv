@@ -3,5 +3,4 @@
 # when the issue is fixed: the lab prints a note when a known step passes.
 #
 # id	step	issue
-mitt	test	1174
 astar	build	1175

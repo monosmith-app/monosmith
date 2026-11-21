@@ -138,6 +138,12 @@ before the commit:
    an `eslint` that it runs with go into the root `devDependencies`. The project gets
    `"lint": "eslint ."`, and an `eslintConfig` key in its `package.json` goes. A root flat config
    of yours that passes options smith's config does not take stays, and the lint step stops there.
+   smith's config installs the newest `@types/node`, and TypeScript loads every `@types` package
+   in `node_modules`. TypeScript 4 cannot read it, so `tsc` fails. When the root or the project
+   `package.json` names a TypeScript older than 5, smith shows the change to `^5.9.3` and asks
+   (`--yes` applies it). TypeScript 5.9 keeps the compiler options of a TypeScript 4 project.
+   The 6.x that smith's stacks write turns some of them into errors (`moduleResolution: "node"`),
+   so smith does not go to 6. Without the change, the "Left to do" list names it.
 2. **Build in place.** A `tsc` build into `lib/` builds into `dist`: a library or a package in its
    own `dist`, an app in the workspace's `dist/<project dir>` (ADR 0102). `main`, `types` and the
    other entry points follow. A create-react-app project builds with Vite: `public/index.html`
