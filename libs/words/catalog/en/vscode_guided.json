@@ -68,5 +68,10 @@
   "vscode.guided.architecture.verb": "Use it",
   "vscode.guided.architecture.consequence": "It edits the lines of smith.toml that turn an architecture on, and nothing else. An architecture that applies to none of your projects checks nothing: smith warns. \"none\" turns the checks off. Nothing is committed.",
   "vscode.guided.architecture.choice.title": "MonoSmith: the architecture of the workspace",
-  "vscode.guided.architecture.choice.placeholder": "The one in use is marked"
+  "vscode.guided.architecture.choice.placeholder": "The one in use is marked",
+  "vscode.guided.project-settings.consequence": "It edits [projects.<name>] in smith.toml and nothing else. A cleared value removes its line, and the table when nothing is left in it. Nothing is committed: review it with git.",
+  "vscode.guided.project-settings.project.title": "MonoSmith: project settings (1/3): which project?",
+  "vscode.guided.project-settings.setting.title": "MonoSmith: project settings (2/3): which setting?",
+  "vscode.guided.project-settings.value.title": "MonoSmith: project settings (3/3): the new value",
+  "vscode.guided.project-settings.verb": "Write the setting"
 }

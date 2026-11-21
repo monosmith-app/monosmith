@@ -45,6 +45,11 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
     repositories first, the call only after a yes).
   - **Look Up**: **Why Would a Task Run Again?…**, **Tools the Workspace Needs**, **Info** and **Copies Between
     Projects**. They only read.
+  - **Settings…** on a project's menu in the tool window edits `[projects.<name>]` of `smith.toml`. The list
+    comes from `smith config list -p <name> --json`: first the values the project's manifest owns, read-only,
+    each with the file to change it in, then each setting with its value, default and explanation. A setting
+    with a fixed set of values is a list of them, each explained and the default marked. **Go back to the
+    default** removes the line, and the table when nothing is left in it.
   - **Dependencies: Require One Version…** edits `dependencies.one_version` through the settings editor with its
     reason and the plan of `smith config set`. **Write the Agent File** and **Connect smith to a Coding
     Assistant…** (`smith mcp install`; the assistants start unticked) are in the menu too.

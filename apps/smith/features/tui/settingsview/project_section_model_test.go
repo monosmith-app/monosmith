@@ -94,7 +94,7 @@ func TestAProjectSettingIsWrittenAtItsPathAndTheSectionReadsItAgain(t *testing.T
 	if out := text(m, 110, 30); !strings.Contains(out, `"web-v"`) {
 		t.Fatalf("the new value is not shown:\n%s", out)
 	}
-	m, _ = press(m, "u")
+	_, _ = press(m, "u")
 	if got := f.calls[len(f.calls)-2]; got != "unset projects.web.tag_prefix" {
 		t.Fatalf("u must clear the key: %v", f.calls)
 	}

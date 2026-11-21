@@ -28,6 +28,7 @@ Usage: `smith config set <setting> <value...> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `-p, --project <project>` | string |  | the project whose settings ([projects.<name>]) to read or change (also -w, --workspace, --projects) |
 
 <!-- smith:end config set -->
 

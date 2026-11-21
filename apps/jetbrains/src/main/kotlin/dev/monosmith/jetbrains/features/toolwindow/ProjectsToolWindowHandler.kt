@@ -25,6 +25,7 @@ import dev.monosmith.jetbrains.features.newworkspace.NewWorkspaceUseCase
 import dev.monosmith.jetbrains.features.projectactions.ProjectActionsUseCase
 import dev.monosmith.jetbrains.features.releaseflow.ReadReleasePreviewUseCase
 import dev.monosmith.jetbrains.features.releaseflow.ReleaseWorkspaceUseCase
+import dev.monosmith.jetbrains.features.settings.ProjectSettingsUseCase
 import dev.monosmith.jetbrains.features.smithrun.OutputConsoleStore
 import dev.monosmith.jetbrains.features.smithrun.SmithRunClient
 import dev.monosmith.jetbrains.features.smithversion.SmithPresenceUseCase
@@ -44,6 +45,7 @@ import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDO
 import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_AFFECTED_ONLY
 import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_INSTALL_PACKAGE
 import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_MAKE_APP_LIBRARY_OR_PACKAGE
+import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_PROJECT_SETTINGS
 import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_READ_THE_PROJECTS_THE_UPDATES
 import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_REFRESH
 import dev.monosmith.jetbrains.shared.words.SmithWordsConfig.JETBRAINS_TOOLWINDOW_RUN_TASK
@@ -299,6 +301,7 @@ class ProjectsToolWindowHandler :
         item(say(JETBRAINS_TOOLWINDOW_UNLINK_LIBRARY)) { ProjectActionsUseCase.unlink(ide, root, name) }
         item(say(COMMANDS_PROJ_SWAP_TITLE)) { SwapChoiceUseCase.start(ide, root, name) }
         item(say(JETBRAINS_TOOLWINDOW_MAKE_APP_LIBRARY_OR_PACKAGE)) { ProjectActionsUseCase.changeKind(ide, root, name) }
+        item(say(JETBRAINS_TOOLWINDOW_PROJECT_SETTINGS)) { ProjectSettingsUseCase.start(ide, root, name) }
         item("Remove…") { ProjectActionsUseCase.remove(ide, root, name) }
         menu.addSeparator()
         item("Why…") { WorkspaceToolsUseCase.why(ide, root, name) }

@@ -1,0 +1,6 @@
+{
+  "jetbrains.projectsettings.title": "MonoSmith settings of {project}",
+  "jetbrains.projectsettings.pick": "Pick a setting of [projects.<name>] in smith.toml. The values from {manifest} are read-only: change them there.",
+  "jetbrains.projectsettings.read-only-from": "read-only, from {file}",
+  "jetbrains.projectsettings.comes-from": "{key} comes from {file}: change it there."
+}

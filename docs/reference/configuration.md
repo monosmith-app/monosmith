@@ -40,6 +40,21 @@ changes only that setting's value, so comments and every other line stay as
 they are, and it refuses to write a file that would not load. Edit stacks,
 conventions, tasks and projects in the file itself.
 
+The settings of one project, the `[projects.<name>]` table, take `-p`:
+
+```sh
+smith config list -p web                   # what the manifest owns (read-only), then the settings
+smith config set -p web tag_prefix web-v   # the same as: smith config set projects.web.tag_prefix web-v
+smith config unset -p web tag_prefix       # removes the line, and the table when it is empty
+```
+
+These are the settings that are one value or a list. The tables inside a project's
+table (`release`, `docker`, `generate`, `tasks`, ...) are edited in the file. `root`,
+`language` and `kind` are settings only of a project that `smith.toml` declares. A
+project that a plugin finds by its manifest gets them from the manifest. The TUI
+(Projects, then Settings… in the detail of a project) and the VS Code and JetBrains
+projects views edit the same settings with the same checks.
+
 A setting that takes a fixed set of values has them in the schema as `enum`
 (for a list, the `enum` of its `items`), with one line per value in
 `enumDescriptions` and the default in `default`. `smith config list --json`

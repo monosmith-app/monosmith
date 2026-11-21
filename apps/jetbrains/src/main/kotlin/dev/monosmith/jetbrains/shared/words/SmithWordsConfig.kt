@@ -1774,6 +1774,18 @@ object SmithWordsConfig {
     /** The key jetbrains.projectactions.which-library-should-the-project. */
     const val JETBRAINS_PROJECTACTIONS_WHICH_LIBRARY_SHOULD_THE_PROJECT = "jetbrains.projectactions.which-library-should-the-project"
 
+    /** The key jetbrains.projectsettings.comes-from. Values: {0} is key, {1} is file. */
+    const val JETBRAINS_PROJECTSETTINGS_COMES_FROM = "jetbrains.projectsettings.comes-from"
+
+    /** The key jetbrains.projectsettings.pick. Values: {0} is manifest. */
+    const val JETBRAINS_PROJECTSETTINGS_PICK = "jetbrains.projectsettings.pick"
+
+    /** The key jetbrains.projectsettings.read-only-from. Values: {0} is file. */
+    const val JETBRAINS_PROJECTSETTINGS_READ_ONLY_FROM = "jetbrains.projectsettings.read-only-from"
+
+    /** The key jetbrains.projectsettings.title. Values: {0} is project. */
+    const val JETBRAINS_PROJECTSETTINGS_TITLE = "jetbrains.projectsettings.title"
+
     /** The key jetbrains.readcommands.monosmith. Values: {0} is what. */
     const val JETBRAINS_READCOMMANDS_MONOSMITH = "jetbrains.readcommands.monosmith"
 
@@ -2202,6 +2214,9 @@ object SmithWordsConfig {
 
     /** The key jetbrains.toolwindow.no-smith-toml-in-this. */
     const val JETBRAINS_TOOLWINDOW_NO_SMITH_TOML_IN_THIS = "jetbrains.toolwindow.no-smith-toml-in-this"
+
+    /** The key jetbrains.toolwindow.project-settings. */
+    const val JETBRAINS_TOOLWINDOW_PROJECT_SETTINGS = "jetbrains.toolwindow.project-settings"
 
     /** The key jetbrains.toolwindow.read-the-projects-the-updates. */
     const val JETBRAINS_TOOLWINDOW_READ_THE_PROJECTS_THE_UPDATES = "jetbrains.toolwindow.read-the-projects-the-updates"

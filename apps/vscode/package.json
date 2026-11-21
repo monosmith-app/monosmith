@@ -373,6 +373,12 @@
         "icon": "$(trash)"
       },
       {
+        "command": "monosmith.projectSettings",
+        "title": "%vscode.command.project-settings.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(settings-gear)"
+      },
+      {
         "command": "monosmith.changeKind",
         "title": "%vscode.command.change-kind.title%",
         "category": "%vscode.package.display-name%",
@@ -1042,6 +1048,11 @@
           "group": "2_change@4"
         },
         {
+          "command": "monosmith.projectSettings",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "1_inspect@4"
+        },
+        {
           "command": "monosmith.changeKind",
           "when": "view == monosmith.projects && viewItem == project",
           "group": "2_change@5"
@@ -1459,6 +1470,10 @@
         },
         {
           "command": "monosmith.configSet",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.projectSettings",
           "when": "monosmith.state == ready"
         },
         {

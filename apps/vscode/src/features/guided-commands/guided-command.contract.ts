@@ -10,7 +10,8 @@ export interface GuidedOption {
 /** Where the options or the first value of a step come from, when smith holds them and not this extension. */
 export type GuidedSource =
   | 'web-apps' | 'environments-of-app' | 'workspace-environments' | 'pipeline-templates' |
-  'settings' | 'settings-set' | 'setting-value' | 'builtin-plugins' | 'architectures' | 'marketplace'
+  'settings' | 'settings-set' | 'setting-value' | 'builtin-plugins' | 'architectures' | 'marketplace' |
+  'projects' | 'project-settings' | 'project-setting-value'
 
 /** One question of a guided command. */
 export interface GuidedStep {

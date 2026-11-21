@@ -18,13 +18,15 @@ smith config get <setting>
 <!-- smith:begin config get -->
 Print one setting's value as written in smith.toml
 
-Usage: `smith config get <setting>`
+Usage: `smith config get <setting> [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
 | `setting` | yes | the setting, such as `ci.providers` |
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `-p, --project <project>` | string |  | the project whose settings ([projects.<name>]) to read or change (also -w, --workspace, --projects) |
 
 <!-- smith:end config get -->
 

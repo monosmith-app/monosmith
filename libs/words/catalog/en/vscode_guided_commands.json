@@ -22,5 +22,11 @@
   "vscode.guided-commands.monosmith-done": "MonoSmith: {replace}: done. {part}",
   "vscode.guided-commands.in-use": " (in use)",
   "vscode.guided-commands.monosmith": "MonoSmith: {title}?",
-  "vscode.guided-commands.default": "(default)"
+  "vscode.guided-commands.default": "(default)",
+  "vscode.guided-commands.smith-lists-no-project-here": "smith lists no project in this workspace.",
+  "vscode.guided-commands.read-only-from": "read-only, from {file}",
+  "vscode.guided-commands.comes-from-change-it-there": "{key} comes from {file}: change it there.",
+  "vscode.guided-commands.clear-to-default": "Clear it",
+  "vscode.guided-commands.clear-to-default-hint": "remove the line from smith.toml, so the setting takes its default",
+  "vscode.guided-commands.empty-clears-it": "Leave it empty to remove the line, so the setting takes its default."
 }

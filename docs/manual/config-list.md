@@ -16,7 +16,25 @@ is written, use [`smith config get`](config-get.md).
 
 ```sh
 smith config list [--json]
+smith config list -p <project> [--json]
 ```
+
+With `-p, --project` it lists the settings of one project, the `[projects.<name>]`
+table. The values that the project's manifest owns come first (name, version, and for a
+project that a plugin finds by its manifest also language, kind and folder). They are
+read-only, and the command names the file to change them in. Then come the settings of
+the table, with their values. `root`, `language` and `kind` are settings only of a
+project that `smith.toml` declares. smith opens the workspace with its plugins to read
+the project. `--json` then prints one object: `name`, `declared`, `manifest`, `facts`
+(each with `path`, `value`, `description` and `source`) and `settings` (the same objects
+as above, at the path `projects.<name>.<setting>`).
+
+`smith config get|set|unset` take the same `-p`, or the full path:
+`smith config set -p web tag_prefix web-v` and
+`smith config set projects.web.tag_prefix web-v` do the same. `unset` removes the line,
+and the table when nothing is left in it. The schema and the validators check the value
+first (for example, only one project can set `bare_tags`), and smith refuses a project
+that the workspace does not have.
 
 ## Arguments and flags
 
@@ -28,6 +46,7 @@ Usage: `smith config list [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--json` | boolean | off | print the settings as JSON |
+| `-p, --project <project>` | string |  | the project whose settings ([projects.<name>]) to read or change (also -w, --workspace, --projects) |
 
 <!-- smith:end config list -->
 
