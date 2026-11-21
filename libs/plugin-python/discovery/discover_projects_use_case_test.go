@@ -70,6 +70,7 @@ func TestToolsRunOnSmithsDefaultsUnlessTheRepositoryConfiguresThem(t *testing.T)
 	ws := t.TempDir()
 	write(t, ws, "libs/typed/pyproject.toml", "[project]\nname = \"typed\"\n\n[tool.mypy]\nstrict = true\n\n[tool.pytest.ini_options]\naddopts = \"-x\"\n")
 	write(t, ws, "libs/plain/pyproject.toml", "[project]\nname = \"plain\"\n")
+	write(t, ws, "libs/plain/tests/test_plain.py", "")
 	res, err := Discover(ws, []string{"libs/plain/pyproject.toml", "libs/typed/pyproject.toml"})
 	if err != nil {
 		t.Fatal(err)
