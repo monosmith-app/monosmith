@@ -796,6 +796,32 @@ longer passes `GEM_HOST_API_KEY` as a secret; the step exports a short-lived
 key that `gem push` and smith's own gem uploads use. The release does not ask
 for the secret either. The setting needs `providers = ["github"]`.
 
+#### NuGet without a key: trusted publishing
+
+NuGet trusted publishing replaces the long-lived `NUGET_API_KEY` with a key
+that lives one hour, which the workflow gets with its OIDC token:
+
+```toml
+[release]
+nuget_trusted_publishing = true        # GitHub Actions only
+```
+
+Set up two things once:
+
+1. On nuget.org, open your profile, then **Trusted Publishing**, and add a
+   policy for GitHub Actions: the repository owner, the repository name and
+   the workflow file `ci.yml`. Leave the environment empty.
+2. In the repository, add the secret `NUGET_USER`: your nuget.org profile
+   name (not your email). smith never writes the name into the repository.
+
+With the setting on, `smith ci generate` gives the workflow `id-token: write`
+and adds a `Sign in to NuGet` step (`NuGet/login@v1`, `id: nuget-login`)
+right before the release step, only on a push to a release branch. The
+release step reads `NUGET_API_KEY` from the output of that step, not from a
+secret. The native job does the same when it publishes. The release does not
+ask for the secret either, and `smith ci check` asks for `NUGET_USER` and the
+policy in its place. The setting needs `providers = ["github"]`.
+
 ### VS Code extensions
 
 An extension is an app: nothing imports it, and its version is what it

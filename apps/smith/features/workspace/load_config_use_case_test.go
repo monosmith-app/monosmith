@@ -58,6 +58,7 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[ci]\naudit_max_unsafe=-1":                                                                                                                            "audit_max_unsafe",
 		"[workspace]\nname = \"a\"\n[ci]\nproviders=[\"x\"]":                                                                                                                              "unknown CI provider",
 		"[workspace]\nname = \"a\"\n[release]\nrubygems_trusted_publishing = true\n[ci]\nproviders=[\"github\",\"gitlab\"]":                                                               "works on GitHub Actions only",
+		"[workspace]\nname = \"a\"\n[release]\nnuget_trusted_publishing = true\n[ci]\nproviders=[\"github\",\"gitlab\"]":                                                                  "nuget_trusted_publishing works on GitHub Actions only",
 		"[workspace]\nname = \"a\"\n[release]\nvsce_entra = true\n[ci]\nproviders=[\"github\",\"azure\"]":                                                                                 "vsce_entra works on GitHub Actions only",
 		"[workspace]\nname = \"a\"\n[release]\napi_check = \"strict\"\n":                                                                                                                  "api_check must be",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"main\"\nprerelease = \"beta\"\nmajor = 2\n":                                                                          "is the [release] branch",

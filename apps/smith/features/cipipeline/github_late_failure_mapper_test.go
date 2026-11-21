@@ -41,10 +41,10 @@ func TestWithNoJobAfterTheCiJobThereIsNoMarkerAndNoOutputs(t *testing.T) {
 
 func TestTheSignInsRunWhereTheReleaseRunsAChannelBranchIncluded(t *testing.T) {
 	m := model()
-	m.VSCEEntra, m.RubyGemsTrusted = true, true
+	m.VSCEEntra, m.RubyGemsTrusted, m.NuGetTrusted = true, true, true
 	m.ChannelBranches = []string{"next"}
 	out := RenderGitHub(m)
-	for _, step := range []string{"Sign in to Azure", "Sign in to RubyGems"} {
+	for _, step := range []string{"Sign in to Azure", "Sign in to RubyGems", "Sign in to NuGet\n        id: nuget-login"} {
 		want := "- name: " + step + "\n        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'next')\n"
 		if !strings.Contains(out, want) {
 			t.Errorf("%s must run on the channel branch too:\n%s", step, out)

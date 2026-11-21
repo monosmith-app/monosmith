@@ -70,6 +70,7 @@ jobs:
 %[4]s`, githubOnPublishBranches(m), githubEnv("        ", m.TaskCredentials()), githubArtifactContinue(m), githubArtifactRetention(m))
 	}
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
+	b.WriteString(githubNuGetSignIn(m, "ci"))
 	b.WriteString(githubAzureSignIn(m, "ci"))
 	releaseID := ""
 	if githubHasDependents(m) {
@@ -78,11 +79,12 @@ jobs:
 	fmt.Fprintf(&b, `      - name: Release
 %[2]s        if: github.event_name == 'push' && %[1]s
 %[3]s`, githubOnReleaseBranches(m), releaseID, githubReleaseRun(m))
-	if len(m.Credentials) > 0 || m.VSCEEntra || m.ManualRelease {
+	if len(m.Credentials) > 0 || m.VSCEEntra || m.NuGetTrusted || m.ManualRelease {
 		b.WriteString("        env:\n" + githubReleaseBumpEnv(m))
 		for _, c := range m.Credentials {
 			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 		}
+		b.WriteString(githubNuGetEnv(m))
 		b.WriteString(githubEntraEnv(m))
 	}
 	// No marker step follows the release: smith ci release writes released=true to
@@ -128,6 +130,33 @@ func githubRubyGemsSignIn(m Model, job string) string {
         if: github.event_name == 'push' && %s
         uses: rubygems/configure-rubygems-credentials@v2.1.0
 `, githubOnReleaseBranches(m))
+}
+
+// githubNuGetSignIn signs in to NuGet with the run's OIDC token (NuGet
+// trusted publishing) right before the step that publishes, and only on a
+// push to the release branch: the key it gets lives one hour and must not
+// be minted for a pull request. The nuget.org profile name is the repository
+// secret NUGET_USER, so it is never written into the repository.
+func githubNuGetSignIn(m Model, job string) string {
+	if !m.NuGetTrusted || (job == "native" && !m.NativePublish) {
+		return ""
+	}
+	return fmt.Sprintf(`      - name: Sign in to NuGet
+        id: nuget-login
+        if: github.event_name == 'push' && %s
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+`, githubOnReleaseBranches(m))
+}
+
+// githubNuGetEnv gives the release step the short-lived key the NuGet
+// sign-in got, in place of the NUGET_API_KEY secret.
+func githubNuGetEnv(m Model) string {
+	if !m.NuGetTrusted {
+		return ""
+	}
+	return "          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}\n"
 }
 
 // githubAzureSignIn signs in to Azure with the run's OIDC token (workload
@@ -189,6 +218,7 @@ func githubNativeJob(m Model) string {
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(githubRubyGemsSignIn(m, "native"))
+	b.WriteString(githubNuGetSignIn(m, "native"))
 	b.WriteString(githubAzureSignIn(m, "native"))
 	b.WriteString(`      - name: Native
         run: smith ci native
@@ -201,6 +231,7 @@ func githubNativeJob(m Model) string {
 		fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 	}
 	if m.NativePublish {
+		b.WriteString(githubNuGetEnv(m))
 		b.WriteString(githubEntraEnv(m))
 	}
 	b.WriteString(`      - name: Keep the native builds (dist/drop as artifact native-OS)
@@ -246,7 +277,7 @@ func idToken(m Model) string {
 	if m.Pub {
 		b.WriteString("  actions: write\n")
 	}
-	if m.Provenance || m.Attest || m.RubyGemsTrusted || m.VSCEEntra {
+	if m.Provenance || m.Attest || m.RubyGemsTrusted || m.NuGetTrusted || m.VSCEEntra {
 		b.WriteString("  id-token: write\n")
 	}
 	if m.Attest {

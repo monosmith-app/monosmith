@@ -30,6 +30,10 @@ type RegistryProbe struct {
 	// credentials; empty means the registry is not asked (the credential
 	// check says it is missing).
 	NPMToken, PyPIUser, PyPIPassword, NuGetKey, RubyGemsKey string
+	// NuGetTrusted is true when the NuGet key comes from the workflow's
+	// trusted publishing sign-in ([release] nuget_trusted_publishing), so
+	// the advice names the NUGET_USER secret and the nuget.org policy.
+	NuGetTrusted bool
 	// Published says whether the release journal already holds a package,
 	// which makes a registry having its version expected, not suspicious.
 	Published func(project, registry, name string) bool
@@ -244,7 +248,11 @@ func (p *RegistryProbe) nuget(t RegistryTarget) []RegistryFinding {
 		return []RegistryFinding{p.unreachable(t, p.NuGetPush, err)}
 	}
 	if rejected(status) {
-		return []RegistryFinding{p.finding(t, false, "if the key is wrong, create a NuGet API key that can push "+strings.Join(t.Names, " and ")+" and set NUGET_API_KEY", "NuGet answered the empty push with %d; the API key was not confirmed", status)}
+		advice := "if the key is wrong, create a NuGet API key that can push " + strings.Join(t.Names, " and ") + " and set NUGET_API_KEY"
+		if p.NuGetTrusted {
+			advice = "if the sign-in is wrong, check the repository secret NUGET_USER (the nuget.org profile name) and the trusted publishing policy on nuget.org (this repository's owner and name, workflow file ci.yml)"
+		}
+		return []RegistryFinding{p.finding(t, false, advice, "NuGet answered the empty push with %d; the API key was not confirmed", status)}
 	}
 	if p.NuGetIndex == "" {
 		return nil

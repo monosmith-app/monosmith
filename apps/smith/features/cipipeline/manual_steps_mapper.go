@@ -30,12 +30,19 @@ func ManualSteps(cfg workspace.Config, m Model) []string {
 			}
 			secrets = append(secrets, c.Env)
 		}
+		if p == "github" && m.NuGetTrusted {
+			// NuGet/login reads the nuget.org profile name from this secret.
+			secrets = append(secrets, "NUGET_USER")
+		}
 		if len(secrets) == 0 {
 			continue
 		}
 		switch p {
 		case "github":
 			steps = append(steps, "GitHub: add the repository secrets "+strings.Join(secrets, ", ")+" (Settings → Secrets and variables → Actions)")
+			if m.NuGetTrusted {
+				steps = append(steps, "nuget.org: NUGET_USER is your nuget.org profile name, not your email. Add a trusted publishing policy for GitHub Actions (your profile → Trusted Publishing) with this repository's owner and name and the workflow file ci.yml")
+			}
 		case "azure":
 			steps = append(steps, "Azure Pipelines: add the secret variables "+strings.Join(secrets, ", ")+" to the pipeline (Edit → Variables, keep this value secret)")
 		case "circleci":

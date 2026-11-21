@@ -373,6 +373,13 @@ type ReleaseSection struct {
 	// secret, which needs a one-time password when the account asks for one.
 	// GitHub Actions only. Default: false.
 	RubyGemsTrustedPublishing bool `toml:"rubygems_trusted_publishing"`
+	// NuGetTrustedPublishing publishes NuGet packages with the GitHub
+	// workflow's OIDC token (NuGet trusted publishing) instead of the
+	// NUGET_API_KEY secret: the workflow signs in with NuGet/login, which
+	// reads the nuget.org profile name from the repository secret NUGET_USER
+	// and needs a trusted publishing policy on nuget.org for the repository
+	// and the workflow file ci.yml. GitHub Actions only. Default: false.
+	NuGetTrustedPublishing bool `toml:"nuget_trusted_publishing"`
 	// VSCEEntra publishes VS Code extensions with Microsoft Entra ID instead
 	// of the VSCE_PAT secret: the GitHub workflow signs in to Azure with its
 	// OIDC token (workload identity federation) and vsce publishes as that

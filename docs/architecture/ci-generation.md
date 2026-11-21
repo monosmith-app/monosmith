@@ -70,6 +70,7 @@ The core then adds what is not a plugin's business, by reading the project graph
 | an app is published to npm | `Provenance = true`: the job may request an OIDC token | npm provenance needs `id-token: write` |
 | a release attaches archives to a GitHub Release (`[release] github_releases`) | `Attest = true`: build provenance attestation | needs `id-token` and `attestations: write` |
 | an app has `pub` set | `Pub = true`: the release dispatches a second workflow, `pub.yml` | pub.dev publishing is accepted from a tag-triggered workflow |
+| `[release] nuget_trusted_publishing` | `NuGetTrusted`; the `NUGET_API_KEY` secret is dropped, the release step reads the key from the `Sign in to NuGet` step, and `smith ci check` asks for `NUGET_USER` | NuGet packages are signed in with the workflow's token |
 | `[release] rubygems_trusted_publishing` | `RubyGemsTrusted`; the `GEM_HOST_API_KEY` secret is dropped | gems are signed in with the workflow's token |
 | `[release] vsce_entra` | `VSCEEntra`; the `VSCE_PAT` secret is dropped | see [ADR 0031](decisions/0031-marketplace-publishing-with-entra-id.md) |
 | `[cache] remote` | credentials for the remote cache (`cachecredentials.For`) | every step that runs tasks reads it |

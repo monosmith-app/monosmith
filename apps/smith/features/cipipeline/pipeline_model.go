@@ -97,6 +97,11 @@ type Model struct {
 	// OIDC token: the release job then gets id-token permission and signs in
 	// to RubyGems right before the release, and the key is not a secret.
 	RubyGemsTrusted bool
+	// NuGetTrusted is true when NuGet packages are published with the
+	// workflow's OIDC token: the release job then gets id-token permission
+	// and signs in to NuGet right before the release, which hands the
+	// short-lived key to the release step, and NUGET_API_KEY is not a secret.
+	NuGetTrusted bool
 	// VSCEEntra is true when extensions are published with Microsoft Entra
 	// ID: the release job gets id-token permission and signs in to Azure
 	// right before the release, and the Marketplace token is not a secret.
@@ -147,6 +152,8 @@ type Contributions struct {
 	Pub bool
 	// RubyGemsTrusted is true when [release] rubygems_trusted_publishing is set.
 	RubyGemsTrusted bool
+	// NuGetTrusted is true when [release] nuget_trusted_publishing is set.
+	NuGetTrusted bool
 	// VSCEEntra is true when [release] vsce_entra is set.
 	VSCEEntra bool
 	// Permissions are the GitHub token permissions plugins asked for.
@@ -159,6 +166,15 @@ type Contributions struct {
 func (c *Contributions) UseRubyGemsTrustedPublishing() {
 	c.RubyGemsTrusted = true
 	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "GEM_HOST_API_KEY" })
+}
+
+// UseNuGetTrustedPublishing makes NuGet packages publish with the workflow's
+// OIDC token: NUGET_API_KEY is no longer a secret the release needs, because
+// the pipeline signs in to NuGet right before it and passes the short-lived
+// key it gets to the release step.
+func (c *Contributions) UseNuGetTrustedPublishing() {
+	c.NuGetTrusted = true
+	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "NUGET_API_KEY" })
 }
 
 // UseVSCEEntra makes extensions publish with Microsoft Entra ID: the
@@ -329,7 +345,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 		smithVersion = "latest"
 	}
 	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish, AssetPlatforms: c.AssetPlatforms,
-		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Deployments: c.Deployments, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
+		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Deployments: c.Deployments, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, NuGetTrusted: c.NuGetTrusted, VSCEEntra: c.VSCEEntra}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners
 	}

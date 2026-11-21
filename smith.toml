@@ -33,6 +33,10 @@ github_releases = true
 # VS Code extensions publish as a Microsoft Entra ID app signed in with the workflow
 # (federated credential), not with a VSCE_PAT secret: see docs/reference/releasing.md.
 vsce_entra = true
+# NuGet packages publish with a one-hour key the workflow gets with its OIDC token
+# (NuGet trusted publishing), not with a NUGET_API_KEY secret. Needs the secret
+# NUGET_USER and a policy on nuget.org: see docs/reference/releasing.md.
+nuget_trusted_publishing = true
 
 [projects.smith.release]
 asset_name = "{product}_{version}_{os}_{arch}.{ext}"

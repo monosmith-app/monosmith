@@ -271,3 +271,18 @@ func TestAPushOnlyRubyGemsKeyIsAWarningNotABlock(t *testing.T) {
 		t.Errorf("the missing scope should be said: %+v", found)
 	}
 }
+
+func TestWithNuGetTrustedPublishingTheRefusalNamesTheNuGetUserAndPolicy(t *testing.T) {
+	f := newFakeRegistries(t)
+	probe := f.probe()
+	probe.NuGetKey, probe.NuGetTrusted = "expired", true
+	fix := ""
+	for _, finding := range ValidateRegistries(allTargets(), probe) {
+		if finding.Registry == "NuGet" && strings.Contains(finding.Message, "not confirmed") {
+			fix = finding.Fix
+		}
+	}
+	if !strings.Contains(fix, "NUGET_USER") || !strings.Contains(fix, "trusted publishing policy") || strings.Contains(fix, "set NUGET_API_KEY") {
+		t.Errorf("the fix must name the NuGet user and the policy, not the key: %q", fix)
+	}
+}

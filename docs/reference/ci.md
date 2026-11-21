@@ -211,9 +211,9 @@ to `$BASH_ENV`, which every later step reads.
   of them; the credentials the release reads are listed in a comment at its
   end and by `smith ci check`.
 - **GitHub-only features.** SBOM provenance attestation, `pub.yml`, npm
-  provenance, RubyGems trusted publishing and `vsce_entra` are GitHub Actions
-  features. The last two are refused in `smith.toml` when another provider is
-  listed.
+  provenance, RubyGems and NuGet trusted publishing and `vsce_entra` are
+  GitHub Actions features. The last three are refused in `smith.toml` when
+  another provider is listed.
 
 `smith ci generate --check` and `smith doctor` cover the file like the
 others: an edited file is reported as out of date, and steps you put between
