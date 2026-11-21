@@ -72,6 +72,9 @@ func Changes(p Plan) operationplan.Plan {
 	if p.WriteManifest != "" {
 		plan.Add("Manifest", operationplan.Line{Action: operationplan.Create, Path: p.Folder + "/" + manifestFile(p), Note: "the " + p.Ecosystem + " default stack's manifest, from smith add's template; the sources stay where they are"})
 	}
+	if len(p.Ignores) > 0 {
+		plan.Add("Ignore", operationplan.Line{Action: operationplan.Change, Path: ".gitignore", Note: "ignore the build output in " + p.Folder + ": " + strings.Join(p.Ignores, ", ")})
+	}
 	for _, l := range p.Lockfiles {
 		plan.Add("Split", operationplan.Line{Action: operationplan.Remove, Path: p.Folder + "/" + l, Note: "the workspace has one lockfile"})
 	}

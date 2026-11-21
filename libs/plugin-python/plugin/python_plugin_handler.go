@@ -33,6 +33,7 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Tools:     toolcatalog.For("python", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"python", "py"},
 		Manifests: []string{"pyproject.toml"},
+		Ignores:   []string{"__pycache__/", "*.egg-info/"},
 		Sources:   scaffolding.Sources,
 		Choices:   functions.Choices(),
 	}, nil

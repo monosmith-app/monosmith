@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/outputignore"
 	"github.com/monosmith-app/monosmith/apps/smith/features/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
@@ -91,6 +92,7 @@ func Import(o Options) (Plan, error) {
 	if err != nil {
 		return p, err
 	}
+	p.Ignores = outputignore.Missing(root, p.Folder, ignoresOf(claims, p.Ecosystem))
 	if err := SettleTooling(src, &p, &o); err != nil {
 		return p, err
 	}
@@ -101,6 +103,12 @@ func Import(o Options) (Plan, error) {
 	}
 	if err := Place(root, p, o.Out); err != nil {
 		return p, err
+	}
+	// Before any step builds: a commit of the import never takes build output.
+	if err := outputignore.Append(root, p.Folder, p.Ignores); err != nil {
+		return p, fmt.Errorf("the project is in %s, but .gitignore could not be written (%w); add %s to it yourself before you commit", p.Folder, err, strings.Join(p.Ignores, ", "))
+	} else if len(p.Ignores) > 0 {
+		fmt.Fprintf(o.Out, "  ignore: .gitignore now ignores %s\n", strings.Join(p.Ignores, ", "))
 	}
 	if p.WriteManifest != "" {
 		if err := writeManifest(root, o.Version, &p, o.Out); err != nil {
@@ -137,6 +145,17 @@ func Import(o Options) (Plan, error) {
 	}
 	fmt.Fprint(o.Out, Outcome(p, append(left, checked...)))
 	return p, nil
+}
+
+// ignoresOf returns the folder-relative ignore patterns of the plugin that
+// identified the project, or nil.
+func ignoresOf(claims []adoptmove.Claim, ecosystem string) []string {
+	for _, c := range claims {
+		if c.Language == ecosystem {
+			return c.Ignores
+		}
+	}
+	return nil
 }
 
 // readWorkspace reads the plugins' manifest claims and the names and

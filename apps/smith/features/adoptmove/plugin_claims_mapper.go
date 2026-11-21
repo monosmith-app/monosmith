@@ -15,7 +15,7 @@ func ClaimsOf(plugins []protocol.InitializeResult) []Claim {
 		if !p.Capabilities.Discover || len(p.Manifests) == 0 || len(p.Languages) == 0 {
 			continue
 		}
-		out = append(out, Claim{Language: p.Languages[0], Manifests: p.Manifests, Sources: p.Sources})
+		out = append(out, Claim{Language: p.Languages[0], Manifests: p.Manifests, Sources: p.Sources, Ignores: p.Ignores})
 	}
 	return out
 }

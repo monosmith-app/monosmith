@@ -24,7 +24,12 @@ you say yes.
    for a lib, `packages/` for a package. The name comes from the manifest, or from
    `--name`. In a terminal smith asks for the folder and suggests the kind the project
    looks like. Without a terminal, `--as` or `--into` must say it: smith never picks it
-   for you. A folder that exists is refused.
+   for you. A folder that exists is refused. Right after the place step, smith makes sure
+   git ignores the build output of the language's tools in the folder (`bin/` and `obj/`
+   for .NET, `node_modules/` and `dist/` for Node, `__pycache__/` and `*.egg-info/` for
+   Python). It adds a line to the workspace `.gitignore`, anchored to the folder
+   (`/packages/astar/bin/`), for each pattern that git does not ignore yet. The plan shows
+   these lines. So `--commit` never commits the output of the check step.
 4. **Split.** The known development tools go to the workspace manifest. A tool that the
    workspace has at another major version (TypeScript 5 beside the workspace's TypeScript 4)
    stays in the project, and smith says so. smith asks about

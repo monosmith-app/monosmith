@@ -39,6 +39,12 @@ type InitializeResult struct {
 	// reads them to offer a manifest for such a folder (smith import, smith
 	// adopt). Empty: the plugin recognises no project without its manifest.
 	Sources []string `json:"sources,omitempty"`
+	// Ignores are gitignore patterns, relative to a project folder, of what
+	// the language's tools write into it (bin/ and obj/ for .NET,
+	// node_modules/ for Node). When a project comes into the workspace (smith
+	// import), the host makes sure git ignores them in its folder, so a commit
+	// never takes the build output. Empty: the tools write nothing there.
+	Ignores []string `json:"ignores,omitempty"`
 	// Roles are the levels the plugin can be chosen for in a project's
 	// make-up (a stack, a recipe). Empty means the default of its kind (see
 	// DefaultRoles). A role is a level: there is no separate level field,
