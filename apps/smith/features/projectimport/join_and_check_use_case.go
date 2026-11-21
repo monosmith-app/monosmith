@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/derive"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/features/lintreport"
 	"github.com/monosmith-app/monosmith/apps/smith/features/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/taskrun"
@@ -142,6 +143,21 @@ func Verify(root, name string, out io.Writer) []Left {
 	}
 	fmt.Fprintln(out, strings.Join(lines, "\n"))
 	return []Left{{Problem: "the build or the tests of " + name + " fail (the last lines are above)", Remedy: "smith run build test -p " + name + " shows the whole output; fix the cause it names"}}
+}
+
+// Lint runs the project's lint without --fix (lintreport.Check) and turns
+// what it finds into items left: the count, what --fix repairs, the rules
+// found most, or the ways on from the vertical-slice check.
+//
+// Parameters: root is the workspace root; name is the project; out gets the
+// progress line.
+// Returns: the items left, or nil when the lint passes.
+func Lint(root, name string, out io.Writer) []Left {
+	var left []Left
+	for _, item := range lintreport.Check(root, name, out) {
+		left = append(left, Left{Problem: item.Problem, Remedy: item.Remedy})
+	}
+	return left
 }
 
 // shownLines is how many lines of a failed build or test Verify shows.

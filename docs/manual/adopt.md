@@ -152,8 +152,11 @@ before the commit:
    the old build packages) and asks before it applies the group. `--yes` applies every group.
    The removal plan is the one of `smith convert --level full`. It sees only the project's folder
    and the files at the workspace root, so the tools of other projects stay.
-4. **Check.** One install, then build, test, lint and doctor. The lint runs without `--fix`:
-   smith reports what its rules find in your code and does not rewrite it.
+4. **Check.** One install, then build, test, lint and doctor. Then `smith run lint -p <name>`
+   runs for each project with smith's tooling, also when a test failed before. The lint runs
+   without `--fix`: smith reports what its rules find in your code and does not rewrite it. The
+   "Left to do" list gives the count of problems, the rules found most, and
+   `smith lint --fix -p <name>` with the count it repairs, for you to run when you want it.
 
 What smith cannot do is an item of the `Left to do` list at the end, with its fix. Examples are a
 bundler build that smith does not rewrite, tests that call `jest.*` under Vitest, SVG files
