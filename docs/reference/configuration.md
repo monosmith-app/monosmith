@@ -40,6 +40,14 @@ changes only that setting's value, so comments and every other line stay as
 they are, and it refuses to write a file that would not load. Edit stacks,
 conventions, tasks and projects in the file itself.
 
+A setting that takes a fixed set of values has them in the schema as `enum`
+(for a list, the `enum` of its `items`), with one line per value in
+`enumDescriptions` and the default in `default`. `smith config list --json`
+gives them as `options`, and the TUI, VS Code and JetBrains show each value
+with what it does and mark the default. `plugins.enabled` takes the names of
+the built-in language plugins only. A test fails when a setting with a fixed
+set of values has no description for a value.
+
 ```toml
 schema = 1
 

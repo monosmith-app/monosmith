@@ -120,8 +120,12 @@ describe('the other commands', () => {
 
 const SETTINGS = JSON.stringify([
   { path: 'ci.devcontainer', type: 'boolean', description: 'Write a dev container.', reason: 'it makes a laptop and CI agree', value: 'true', set: true },
-  { path: 'release.api_check', type: 'string', description: 'How the public API is checked.', enum: ['warn', 'fail', 'off'], value: '', set: false },
+  { path: 'release.api_check', type: 'string', description: 'How the public API is checked.', options: [{ value: 'warn', description: 'Print a warning.', default: true }, { value: 'fail', description: 'Stop the release.' }, { value: 'off', description: 'Do not look.' }], value: '', set: false },
   { path: 'workspace.scope', type: 'string', description: 'The npm scope.', value: '', set: false },
+])
+
+const LIST_SETTING = JSON.stringify([
+  { path: 'ci.providers', type: 'array', description: 'Pipelines to generate.', options: [{ value: 'github', description: 'GitHub Actions.', default: true }, { value: 'azure', description: 'Azure Pipelines.' }, { value: 'gitlab', description: 'GitLab CI.' }], value: '["github", "gitlab"]', set: true },
 ])
 
 describe('the settings of smith.toml', () => {
@@ -137,9 +141,19 @@ describe('the settings of smith.toml', () => {
     const enumerated = fake(['release.api_check', 'warn'], true, { 'config list': ok(SETTINGS) })
     await runGuidedCommand(command('configSet'), enumerated.deps)
     expect(enumerated.asked[1].options.map((o) => o.value)).toEqual(['warn', 'fail', 'off'])
+    expect(enumerated.asked[1].options.map((o) => o.label)).toEqual(['warn (default)', 'fail', 'off'])
+    expect(enumerated.asked[1].options.map((o) => o.description)).toEqual(['Print a warning.', 'Stop the release.', 'Do not look.'])
     const typed = fake(['workspace.scope', '@acme'], true, { 'config list': ok(SETTINGS) })
     await runGuidedCommand(command('configSet'), typed.deps)
     expect(typed.asked[1]).toMatchObject({ kind: 'text', value: '' })
+  })
+
+  it('ticks the values of a list of fixed values, starting from what it holds, and writes each ticked one', async () => {
+    const f = fake(['ci.providers', ['github', 'azure']], true, { 'config list': ok(LIST_SETTING), 'config set': ok('✓ ci.providers = ["github", "azure"]\n') })
+    expect(await runGuidedCommand(command('configSet'), f.deps)).toMatchObject({ kind: 'done' })
+    expect(f.asked[1].kind).toBe('multi')
+    expect(f.asked[1].options.map((o) => [o.label, o.picked])).toEqual([['github (default)', true], ['azure', false], ['gitlab', true]])
+    expect(f.calls.at(-1)).toEqual(['config', 'set', 'ci.providers', 'github', 'azure'])
   })
 
   it('resets only a setting that smith.toml writes', async () => {

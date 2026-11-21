@@ -30,6 +30,15 @@ func TestConfigGetReadsASettingAndSaysWhetherItIsSet(t *testing.T) {
 	if unset["set"] != false || unset["setting"] != "release.branch" {
 		t.Fatalf("config.get answered %v", unset)
 	}
+	attest := c.call("config.get", map[string]any{"setting": "ci.attest"})["result"].(map[string]any)
+	options, _ := attest["options"].([]any)
+	if len(options) != 3 {
+		t.Fatalf("ci.attest takes three values, each explained: %v", attest)
+	}
+	first := options[0].(map[string]any)
+	if first["value"] != "on" || first["default"] != true || first["description"] == "" {
+		t.Fatalf("the first option of ci.attest is on, explained and the default: %v", first)
+	}
 	if reply := c.call("config.get", map[string]any{"setting": "stacks.web"}); reply["error"].(map[string]any)["code"].(float64) != codeInvalidParams {
 		t.Fatalf("an unknown setting answered %v", reply)
 	}

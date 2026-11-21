@@ -274,7 +274,8 @@ export const GUIDED_COMMANDS: readonly GuidedCommand[] = [
       { key: 'setting', kind: 'pick', title: say('vscode.guided.config-set.setting.title'), from: 'settings' },
       { key: 'value', kind: 'text', title: say('vscode.guided.config-set.value.title'), from: 'setting-value' },
     ],
-    args: (a) => ['config', 'set', text(a, 'setting'), text(a, 'value')],
+    // A list of fixed values is ticked (an array of answers); any other value is one answer.
+    args: (a) => ['config', 'set', text(a, 'setting'), ...(Array.isArray(a.value) ? list(a, 'value') : [text(a, 'value')])],
   },
   {
     id:          'configUnset',

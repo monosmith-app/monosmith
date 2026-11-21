@@ -79,8 +79,10 @@ type Setting struct {
 	// Reason is one line saying why the default is what it is; empty when
 	// the schema gives none.
 	Reason string
-	// Choices are the values an array setting may hold.
-	Choices []string
+	// Options are the values of a setting with a fixed set of values (one
+	// word, or the words a list may hold), each explained, the default
+	// marked; empty for a setting that takes any value of its type.
+	Options []Option
 	// Value is the value as written in smith.toml; Set is false when the
 	// setting has its default.
 	Value string
@@ -88,6 +90,23 @@ type Setting struct {
 	// Current is Value as plain text: one entry for a scalar, one per item of
 	// an array.
 	Current []string
+}
+
+// Option is one value of a setting with a fixed set of values.
+type Option struct {
+	// Value is the word written in smith.toml; Description says what it does.
+	Value, Description string
+	// Default is true for the value the setting takes when it is not set.
+	Default bool
+}
+
+// values are the words of the options, in their order.
+func (st Setting) values() []string {
+	out := make([]string, 0, len(st.Options))
+	for _, o := range st.Options {
+		out = append(out, o.Value)
+	}
+	return out
 }
 
 // Recipe is a recipe file of the workspace.

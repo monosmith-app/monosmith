@@ -113,12 +113,12 @@ func takesPath(st Setting) bool {
 // newPicker edits a list of fixed choices: Space ticks, Enter saves. When the
 // setting is not set, what its default says is ticked.
 func newPicker(st Setting) *editor {
-	e := &editor{kind: editMulti, title: st.Path, about: st.Explanation, setting: st, choices: st.Choices, marked: make([]bool, len(st.Choices))}
-	for i, c := range st.Choices {
+	e := &editor{kind: editMulti, title: st.Path, about: st.Explanation, setting: st, choices: st.values(), marked: make([]bool, len(st.Options))}
+	for i, o := range st.Options {
 		if st.Set {
-			e.marked[i] = slices.Contains(st.Current, c)
+			e.marked[i] = slices.Contains(st.Current, o.Value)
 		} else {
-			e.marked[i] = strings.Contains(st.Default, `"`+c+`"`)
+			e.marked[i] = o.Default
 		}
 	}
 	return e
@@ -128,12 +128,17 @@ func newPicker(st Setting) *editor {
 // move, Enter saves the one under the cursor. The cursor starts on the value the
 // setting has now, which is its default while it is not set.
 func newChooser(st Setting) *editor {
-	e := &editor{kind: editChoose, title: st.Path, about: st.Explanation, setting: st, choices: st.Choices, current: -1}
-	now := strings.Trim(st.Default, `"`)
+	e := &editor{kind: editChoose, title: st.Path, about: st.Explanation, setting: st, choices: st.values(), current: -1}
+	now := ""
+	for _, o := range st.Options {
+		if o.Default {
+			now = o.Value
+		}
+	}
 	if st.Set && len(st.Current) > 0 {
 		now = st.Current[0]
 	}
-	if i := slices.Index(st.Choices, now); i >= 0 {
+	if i := slices.Index(e.choices, now); i >= 0 {
 		e.current, e.at = i, i
 	}
 	return e

@@ -623,7 +623,9 @@ table of `smith.toml` it belongs to, with what it does and its default. A switch
 (`ci.attest`, `ci.audit`, `release.api_check`) opens a pick list: the arrows move, `Enter` picks, `Esc`
 cancels; a list with fixed choices (`ci.providers`) is ticked with `Space` and saved with
 `Enter`; text, numbers and lists without fixed choices (separate the items with commas) are
-typed. The value is checked against the schema before anything is written, and the reason
+typed. Each choice of a pick list or a ticked list says what it does, and the default is marked
+`(the default)`. The detail of the row lists the same choices. The choices and their words come
+from the schema of `smith.toml`, so the extensions show the same ones. The value is checked against the schema before anything is written, and the reason
 stays in the editor when it is refused. `u` removes the setting, so it has its default.
 `plugins.enabled` is edited in Plugins, and stacks, tasks and projects are edited in the file.
 

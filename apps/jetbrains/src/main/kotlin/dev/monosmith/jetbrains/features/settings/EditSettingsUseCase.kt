@@ -29,7 +29,8 @@ import java.nio.file.Path
 
 /**
  * Edits one setting of smith.toml: the list comes from `smith config list --json` (with each setting's
- * value, description and the reason of its default), a setting of a few values is a list of those values, a
+ * value, description and the reason of its default), a setting of a few values is a list of those values, each
+ * explained and the default marked (ticked boxes for a list of them), a
  * true-or-false setting is two answers, and any other is a text. The change is `smith config set` (or
  * `unset`), shown first. smith never commits here.
  */
@@ -136,7 +137,17 @@ object EditSettingsUseCase {
         words: String,
     ): String? =
         when {
-            setting.choices.isNotEmpty() -> {
+            setting.options.isNotEmpty() && setting.type == "array" -> {
+                ports.prompt
+                    .pickMany(
+                        "$TITLE: ${setting.path}",
+                        words,
+                        SettingsJsonMapper.enumRows(setting),
+                    )?.takeIf { it.isNotEmpty() }
+                    ?.joinToString(", ")
+            }
+
+            setting.options.isNotEmpty() -> {
                 ports.prompt
                     .pickOne(
                         "$TITLE: ${setting.path}",

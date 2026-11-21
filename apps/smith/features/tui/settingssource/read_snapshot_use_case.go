@@ -101,7 +101,7 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 			return snap
 		}
 		snap.Settings = append(snap.Settings, settingsview.Setting{
-			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Choices: f.Enum,
+			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Options: viewOptions(f.Options),
 			Value: value, Set: set, Current: decode(value, set),
 		})
 	}
@@ -112,6 +112,15 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 		}
 	}
 	return snap
+}
+
+// viewOptions are a setting's options as the Settings tab shows them.
+func viewOptions(options []configedit.Option) []settingsview.Option {
+	var out []settingsview.Option
+	for _, o := range options {
+		out = append(out, settingsview.Option{Value: o.Value, Description: o.Description, Default: o.Default})
+	}
+	return out
 }
 
 // decode is a value as written in smith.toml as plain text: one entry for a

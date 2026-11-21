@@ -87,7 +87,7 @@ func sample() *fake {
 			SearchPath: []string{"/ws/.smith/plugins", "/home/me/.smith/plugins"},
 			Settings: []Setting{
 				{Path: "ci.devcontainer", Type: "boolean", Explanation: "Write a devcontainer.", Default: "false", Reason: "a devcontainer is only useful when the team opens the repository in one"},
-				{Path: "ci.providers", Type: "array", Explanation: "Which CI systems.", Default: `["github"]`, Choices: []string{"github", "azure", "gitlab"}, Value: `["github"]`, Set: true, Current: []string{"github"}},
+				{Path: "ci.providers", Type: "array", Explanation: "Which CI systems.", Default: `["github"]`, Options: []Option{{Value: "github", Description: "GitHub Actions.", Default: true}, {Value: "azure", Description: "Azure Pipelines."}, {Value: "gitlab", Description: "GitLab CI."}}, Value: `["github"]`, Set: true, Current: []string{"github"}},
 				{Path: "ci.branches", Type: "array", Explanation: "Branches.", Default: "the release branch"},
 				{Path: "cache.max_size_mb", Type: "integer", Explanation: "Cache size.", Default: "2048", Value: "512", Set: true, Current: []string{"512"}},
 				{Path: "release.branch", Type: "string", Explanation: "The release branch.", Default: "main"},
@@ -794,7 +794,7 @@ func TestASettingShowsWhyItsDefaultIsWhatItIs(t *testing.T) {
 // enumSample is a snapshot with one setting that takes one word of a fixed set, last in the list.
 func enumSample() *fake {
 	f := sample()
-	f.snap.Settings = append(f.snap.Settings, Setting{Path: "ci.provider", Type: "string", Explanation: "The CI system.", Default: `"github"`, Choices: []string{"github", "azure", "gitlab"}})
+	f.snap.Settings = append(f.snap.Settings, Setting{Path: "ci.provider", Type: "string", Explanation: "The CI system.", Default: `"github"`, Options: []Option{{Value: "github", Description: "GitHub Actions.", Default: true}, {Value: "azure", Description: "Azure Pipelines."}, {Value: "gitlab", Description: "GitLab CI."}}})
 	return f
 }
 
@@ -817,6 +817,21 @@ func TestASettingWithOneOfAFixedSetOfValuesIsPickedFromAListNotTyped(t *testing.
 	}
 	if m.Modal() {
 		t.Fatal("the pick list stays open after the choice")
+	}
+}
+
+func TestEachOptionOfThePickListSaysWhatItDoesAndTheDefaultIsMarked(t *testing.T) {
+	f := enumSample()
+	m := opened(t, f).Show(Workspace)
+	m, _ = press(m, "end", "enter")
+	out := text(m, 120, 28)
+	for _, want := range []string{"github (the default)", "GitHub Actions.", "azure  Azure Pipelines.", "gitlab  GitLab CI."} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("the pick list lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "azure (the default)") {
+		t.Fatalf("only the default is marked:\n%s", out)
 	}
 }
 

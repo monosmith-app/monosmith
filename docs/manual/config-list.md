@@ -34,7 +34,11 @@ Usage: `smith config list [flags]`
 `--json` prints an array of objects, one per setting: `path`, `type` (`string`, `boolean`,
 `integer`, `array`), `description`, `set` (true when the file has it), `value` (the TOML
 text of the value, only when set) and the schema's limits (`minimum`, `minLength`, and
-so on) where there are some.
+so on) where there are some. A setting that takes a fixed set of values (one word, or the
+words of a list) also has `enum` and `options`: one object per value, with `value`,
+`description` (one line that says what the value does) and `default` (true for the default
+value, or each default value of a list). The TUI, VS Code and JetBrains show `options` as a pick
+list or as tick boxes.
 
 ## Exit codes
 

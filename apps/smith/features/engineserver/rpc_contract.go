@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/features/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/features/recipecatalog"
 )
@@ -29,13 +30,16 @@ type ConfigSetParams struct {
 }
 
 // ConfigValue is what config.get answers. Value is as written in smith.toml;
-// when Set is false the setting has its default.
+// when Set is false the setting has its default. Options are the values a
+// setting with a fixed set of values takes, each explained and the default
+// marked; empty for a setting that takes any value of its type.
 type ConfigValue struct {
-	Setting     string `json:"setting"`
-	Value       string `json:"value,omitempty"`
-	Set         bool   `json:"set"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
+	Setting     string              `json:"setting"`
+	Value       string              `json:"value,omitempty"`
+	Set         bool                `json:"set"`
+	Type        string              `json:"type"`
+	Description string              `json:"description"`
+	Options     []configedit.Option `json:"options,omitempty"`
 }
 
 // RecipeParams are the parameters of recipe.describe and recipe.roles.

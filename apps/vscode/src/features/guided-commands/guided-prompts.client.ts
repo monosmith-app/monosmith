@@ -21,7 +21,7 @@ export async function askGuidedStep (step: ResolvedStep): Promise<string | strin
       return picked?.value
     }
     case 'multi': {
-      const picked = await vscode.window.showQuickPick(step.options.map((option) => ({ label: option.label, description: option.description, value: option.value })), { title: step.title, placeHolder: step.placeholder, canPickMany: true, matchOnDescription: true })
+      const picked = await vscode.window.showQuickPick(step.options.map((option) => ({ label: option.label, description: option.description, value: option.value, picked: option.picked })), { title: step.title, placeHolder: step.placeholder, canPickMany: true, matchOnDescription: true })
       if (picked === undefined) return undefined
       if (picked.length === 0) {
         void vscode.window.showInformationMessage(say('vscode.guided-commands.monosmith-nothing-was-ticked-so-nothing'))

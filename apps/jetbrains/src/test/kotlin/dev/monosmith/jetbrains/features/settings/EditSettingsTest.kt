@@ -10,10 +10,11 @@ class EditSettingsTest {
     private val fake = FakePortsHarness()
     private val json =
         """
-        [{"path":"workspace.confirm","type":"string","description":"Which plans ask.","reason":"every plan asks so you see what smith does","set":false,"enum":["always","risky"]},
+        [{"path":"workspace.confirm","type":"string","description":"Which plans ask.","reason":"every plan asks so you see what smith does","set":false,"options":[{"value":"always","description":"Every plan asks.","default":true},{"value":"risky","description":"Only a plan that deletes or edits asks."}]},
          {"path":"workspace.exclude","type":"array","description":"Globs.","value":"[\"docs/**\",\"x/**\"]","set":true},
          {"path":"ci.devcontainer","type":"boolean","description":"A dev container.","value":"false","set":true},
          {"path":"workspace.module_prefix","type":"string","description":"Go prefix.","value":"\"github.com/acme\"","set":true},
+         {"path":"ci.providers","type":"array","description":"Pipelines.","value":"[\"github\",\"gitlab\"]","set":true,"options":[{"value":"github","description":"GitHub Actions.","default":true},{"value":"azure","description":"Azure Pipelines."},{"value":"gitlab","description":"GitLab CI."}]},
          {"path":""}]
         """.trimIndent()
     private val settings = SettingsJsonMapper.toSettings(json)
@@ -27,7 +28,7 @@ class EditSettingsTest {
         assertEquals("docs/**, x/**", SettingsJsonMapper.shown(settings[1]))
         assertEquals("github.com/acme", SettingsJsonMapper.shown(settings[3]))
         assertEquals("", SettingsJsonMapper.shown(settings[0]))
-        assertEquals(4, settings.size)
+        assertEquals(5, settings.size)
     }
 
     @Test
@@ -55,6 +56,24 @@ class EditSettingsTest {
         assertEquals(listOf("false", "true"), SettingsJsonMapper.booleanRows(settings[2]).map { it.name })
         assertEquals(listOf("always", "risky"), SettingsJsonMapper.enumRows(settings[0]).map { it.name })
         assertTrue(SettingsJsonMapper.words(settings[0]).contains("Why the default: every plan asks"))
+    }
+
+    @Test
+    fun eachValueSaysWhatItDoesAndTheDefaultIsMarked() {
+        val rows = SettingsJsonMapper.enumRows(settings[0])
+        assertEquals(listOf("Every plan asks.", "Only a plan that deletes or edits asks."), rows.map { it.detail })
+        assertEquals(listOf("(default)", ""), rows.map { it.description })
+    }
+
+    @Test
+    fun aListOfFixedValuesIsTickedFromWhatItHoldsAndWritesEachTickedOne() {
+        val rows = SettingsJsonMapper.enumRows(settings[4])
+        assertEquals(listOf(true, false, true), rows.map { it.picked })
+        fake.ones.addAll(listOf("ci.providers", "change"))
+        fake.manies.add(listOf("github", "azure"))
+        fake.plans.add(fake.yes())
+        assertTrue(EditSettingsUseCase.run(fake.ports) {})
+        assertEquals(listOf("config", "set", "ci.providers", "github", "azure"), fake.calls.last())
     }
 
     @Test
