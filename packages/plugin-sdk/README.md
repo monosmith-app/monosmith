@@ -96,11 +96,16 @@ func (k *kiwi) Describe(p protocol.InitializeParams) (protocol.InitializeResult,
 	return protocol.InitializeResult{
 		Plugin: protocol.Peer{Name: "kiwi", Version: "0.1.0"}, Kind: protocol.KindLanguage,
 		Languages: []string{"kiwi"}, Manifests: []string{"kiwi.toml"},
+		Ignores: []string{"out/"},
 	}, nil
 }
 
 func main() { serve.Main(&kiwi{}) }
 ```
+
+`Ignores` names what the language's tools write into a project folder (here
+`out/`). When `smith import` brings a project in, smith makes sure git ignores
+these patterns in the project's folder, so a commit never takes build output.
 
 `smith add app my-plugin --stack go-smith-plugin` scaffolds a working plugin
 with a conformance test. The protocol, the plugin roles and how a workspace
