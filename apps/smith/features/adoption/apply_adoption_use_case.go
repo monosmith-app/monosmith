@@ -163,11 +163,7 @@ func writePipelines(root, version string, out io.Writer) (bool, error) {
 		return false, err
 	}
 	defer s.Close()
-	contributions, err := cipipeline.Collect(s)
-	if err != nil {
-		return false, err
-	}
-	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
+	if _, _, err := cipipeline.RegenerateNoting(s, out); err != nil {
 		return false, err
 	}
 	return s.Config.Workspace.CommitOperations, nil

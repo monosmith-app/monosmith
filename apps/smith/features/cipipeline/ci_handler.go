@@ -1,6 +1,7 @@
 package cipipeline
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/commandflags"
@@ -118,6 +119,10 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 			if err != nil {
 				return err
 			}
+			env := operationplan.DetectEnvironment()
+			if err := OfferSignIns(s, &contributions, SignInAsk{Ask: !dryRun && operationplan.ShouldAsk(env, yes), In: bufio.NewReader(c.InOrStdin()), Out: c.OutOrStdout()}); err != nil {
+				return err
+			}
 			model := NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)
 			plan, _, err := Preview(s.Root, s.Config, model)
 			if err != nil {
@@ -127,7 +132,7 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 				fmt.Fprintln(c.OutOrStdout(), "pipelines are up to date")
 				return nil
 			}
-			if goOn, err := operationplan.Present(c.OutOrStdout(), c.InOrStdin(), plan, operationplan.Options{Yes: yes, DryRun: dryRun, Ask: true, Env: operationplan.DetectEnvironment()}); err != nil || !goOn {
+			if goOn, err := operationplan.Present(c.OutOrStdout(), c.InOrStdin(), plan, operationplan.Options{Yes: yes, DryRun: dryRun, Ask: true, Env: env}); err != nil || !goOn {
 				return err
 			}
 			changed, lost, err := Write(s.Root, s.Config, model)

@@ -590,6 +590,14 @@ app's pub tag (the ci workflow gets `actions: write` for that). It sets up
 Dart with pub.dev's OIDC token and runs `smith release pub`; see
 [Releasing](releasing.md#pubdev) for the one-time setup on pub.dev.
 
+`NUGET_API_KEY`, `GEM_HOST_API_KEY` and `VSCE_PAT` have a keyless sign-in on
+GitHub Actions. When the pipelines need one of them and smith.toml does not
+decide its `[release]` setting, `smith ci generate` asks in a terminal:
+trusted publishing (recommended) or the secret. It explains the one-time set-up
+on the registry and writes the answer to smith.toml. With `--yes`, `--dry-run`
+or in CI it prints a note with the `smith config set` command instead. See
+[Releasing](releasing.md#smith-asks-which-sign-in-to-use).
+
 ## Package download stores
 
 smith caches task outputs, but `npm ci`, `pip install`, `go mod download`,

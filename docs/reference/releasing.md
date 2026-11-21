@@ -774,6 +774,29 @@ The setting shows in every place that knows the registries:
 
 Pre-releases that a registry already holds stay there: smith never deletes a published version.
 
+#### smith asks which sign-in to use
+
+When a GitHub workspace publishes to NuGet, RubyGems or the VS Code Marketplace,
+and smith.toml does not set `nuget_trusted_publishing`,
+`rubygems_trusted_publishing` or `vsce_entra`, `smith ci generate` asks how the
+pipeline signs in to that registry. The question lists the one-time set-up on
+the registry, with the owner, the repository, the workflow file and the
+branches smith knows. Choose trusted publishing (recommended: no long-lived key)
+or the API key secret. smith writes `true` or `false` to `[release]`, and does
+not ask again. `false` keeps the secret.
+
+A run without a person (`--yes`, `--dry-run`, CI) does not ask and changes
+nothing. It prints one note for each undecided registry:
+
+```
+note: NuGet publishes with the secret NUGET_API_KEY.
+→ smith config set release.nuget_trusted_publishing true signs in with trusted publishing instead, false keeps the key and stops this note
+```
+
+`smith add`, `smith import` and `smith adopt` print the same note when they
+write the pipelines. A workspace with a CI provider other than GitHub is never
+asked. See [ADR 0109](../architecture/decisions/0109-smith-offers-trusted-publishing.md).
+
 #### RubyGems without a key: trusted publishing
 
 A RubyGems account that asks for a one-time password on pushes (its MFA level

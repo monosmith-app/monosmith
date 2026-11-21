@@ -3,6 +3,7 @@ package cipipeline
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -103,15 +104,7 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 			c.Pub = true
 		}
 	}
-	if s.Config.Release.RubyGemsTrustedPublishing {
-		c.UseRubyGemsTrustedPublishing()
-	}
-	if s.Config.Release.NuGetTrustedPublishing {
-		c.UseNuGetTrustedPublishing()
-	}
-	if s.Config.Release.VSCEEntra {
-		c.UseVSCEEntra()
-	}
+	c.ApplySignIns(s.Config.Release)
 	// A remote cache is read by every step that runs tasks.
 	c.Add(protocol.CIResult{Credentials: cachecredentials.For(s.Config.Cache.Remote)})
 	c.Add(protocol.CIResult{Credentials: SecretCredentials(s.Config.CI.Secrets)})
@@ -318,9 +311,25 @@ func Drift(root string, cfg workspace.Config, m Model) []string {
 // Regenerate collects contributions and rewrites the pipelines of an open
 // workspace.
 func Regenerate(s *session.Session) (changed, lost []string, err error) {
+	return RegenerateNoting(s, nil)
+}
+
+// RegenerateNoting is Regenerate for a command that writes the pipelines on
+// the way (smith add, smith import, smith adopt): it never asks, and prints on
+// notes one line for each registry sign-in without a long-lived key that
+// smith.toml does not decide yet (OfferSignIns). A nil notes prints nothing.
+//
+// Parameters: s is the open session; notes takes the notes, or nil.
+// Returns: the files changed and the slots lost, as Write; or an error.
+func RegenerateNoting(s *session.Session, notes io.Writer) (changed, lost []string, err error) {
 	c, err := Collect(s)
 	if err != nil {
 		return nil, nil, err
+	}
+	if notes != nil {
+		if err := OfferSignIns(s, &c, SignInAsk{Out: notes}); err != nil {
+			return nil, nil, err
+		}
 	}
 	return Write(s.Root, s.Config, NewModel(c, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch))
 }

@@ -348,6 +348,22 @@ func (r ReleaseSection) DeploymentsOn() bool {
 	return r.GitHubDeployments == nil || *r.GitHubDeployments
 }
 
+// RubyGemsTrustedOn reports whether gems publish with RubyGems trusted
+// publishing: only when [release] rubygems_trusted_publishing = true.
+func (r ReleaseSection) RubyGemsTrustedOn() bool {
+	return r.RubyGemsTrustedPublishing != nil && *r.RubyGemsTrustedPublishing
+}
+
+// NuGetTrustedOn reports whether NuGet packages publish with NuGet trusted
+// publishing: only when [release] nuget_trusted_publishing = true.
+func (r ReleaseSection) NuGetTrustedOn() bool {
+	return r.NuGetTrustedPublishing != nil && *r.NuGetTrustedPublishing
+}
+
+// VSCEEntraOn reports whether VS Code extensions publish with Microsoft Entra
+// ID: only when [release] vsce_entra = true.
+func (r ReleaseSection) VSCEEntraOn() bool { return r.VSCEEntra != nil && *r.VSCEEntra }
+
 // ReleaseSection configures `smith release`.
 type ReleaseSection struct {
 	// Branch is the only branch a real release runs from. Default: main.
@@ -371,21 +387,26 @@ type ReleaseSection struct {
 	// RubyGemsTrustedPublishing publishes gems with the GitHub workflow's
 	// OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY
 	// secret, which needs a one-time password when the account asks for one.
-	// GitHub Actions only. Default: false.
-	RubyGemsTrustedPublishing bool `toml:"rubygems_trusted_publishing"`
+	// GitHub Actions only. Unset means not decided yet: smith ci generate
+	// asks, and false records the answer "keep the key". Default: false.
+	RubyGemsTrustedPublishing *bool `toml:"rubygems_trusted_publishing"`
 	// NuGetTrustedPublishing publishes NuGet packages with the GitHub
 	// workflow's OIDC token (NuGet trusted publishing) instead of the
 	// NUGET_API_KEY secret: the workflow signs in with NuGet/login, which
 	// reads the nuget.org profile name from the repository secret NUGET_USER
 	// and needs a trusted publishing policy on nuget.org for the repository
-	// and the workflow file ci.yml. GitHub Actions only. Default: false.
-	NuGetTrustedPublishing bool `toml:"nuget_trusted_publishing"`
+	// and the workflow file ci.yml. GitHub Actions only. Unset means not
+	// decided yet: smith ci generate asks, and false records the answer
+	// "keep the key". Default: false.
+	NuGetTrustedPublishing *bool `toml:"nuget_trusted_publishing"`
 	// VSCEEntra publishes VS Code extensions with Microsoft Entra ID instead
 	// of the VSCE_PAT secret: the GitHub workflow signs in to Azure with its
 	// OIDC token (workload identity federation) and vsce publishes as that
 	// identity. Needs the repository secrets AZURE_CLIENT_ID and
-	// AZURE_TENANT_ID. GitHub Actions only. Default: false.
-	VSCEEntra bool `toml:"vsce_entra"`
+	// AZURE_TENANT_ID. GitHub Actions only. Unset means not decided yet:
+	// smith ci generate asks, and false records the answer "keep the token".
+	// Default: false.
+	VSCEEntra *bool `toml:"vsce_entra"`
 	// Registry names the [registries] entry packages are published to;
 	// empty means [workspace] registry, and then the public registries.
 	Registry string `toml:"registry"`

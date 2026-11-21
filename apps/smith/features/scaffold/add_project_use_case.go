@@ -218,7 +218,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	fmt.Fprintln(opts.Out, "Updating the CI pipelines")
 	var changed []string
 	if err := times.Do("pipelines", func() (err error) {
-		changed, _, err = cipipeline.Regenerate(s)
+		changed, _, err = cipipeline.RegenerateNoting(s, opts.Out)
 		return err
 	}); err != nil {
 		return &res, err

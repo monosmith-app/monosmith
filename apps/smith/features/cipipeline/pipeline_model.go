@@ -160,6 +160,23 @@ type Contributions struct {
 	Permissions []string
 }
 
+// ApplySignIns drops the secrets the keyless registry sign-ins the [release]
+// section turns on replace: RubyGems and NuGet trusted publishing, and
+// Microsoft Entra ID for the Marketplace. Applying it twice changes nothing.
+//
+// Parameters: r is the [release] section.
+func (c *Contributions) ApplySignIns(r workspace.ReleaseSection) {
+	if r.RubyGemsTrustedOn() {
+		c.UseRubyGemsTrustedPublishing()
+	}
+	if r.NuGetTrustedOn() {
+		c.UseNuGetTrustedPublishing()
+	}
+	if r.VSCEEntraOn() {
+		c.UseVSCEEntra()
+	}
+}
+
 // UseRubyGemsTrustedPublishing makes gems publish with the workflow's OIDC
 // token: the key is no longer a secret the release needs, because the
 // pipeline signs in to RubyGems right before it.

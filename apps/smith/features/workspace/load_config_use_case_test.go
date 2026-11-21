@@ -221,3 +221,16 @@ func TestParseChecksCISecrets(t *testing.T) {
 		t.Fatalf("%v %v", cfg.CI.Secrets, err)
 	}
 }
+
+func TestParseKeepsADeclinedSignInApartFromAnUndecidedOne(t *testing.T) {
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[release]\nnuget_trusted_publishing = false\nvsce_entra = false\n[ci]\nproviders = [\"azure\"]\n"))
+	if err != nil {
+		t.Fatalf("a declined sign-in on a provider that is not GitHub was refused: %v", err)
+	}
+	if cfg.Release.NuGetTrustedPublishing == nil || cfg.Release.NuGetTrustedOn() || cfg.Release.VSCEEntraOn() {
+		t.Errorf("false did not load as a decided no: %+v", cfg.Release)
+	}
+	if cfg.Release.RubyGemsTrustedPublishing != nil || cfg.Release.RubyGemsTrustedOn() {
+		t.Error("an absent setting did not load as undecided and off")
+	}
+}
