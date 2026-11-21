@@ -83,10 +83,10 @@ type Setting struct {
 	// Reason is one line saying why the default is what it is; empty when
 	// the schema gives none.
 	Reason string
-	// Options are the values of a setting with a fixed set of values (one
+	// Choices are the values of a setting with a fixed set of values (one
 	// word, or the words a list may hold), each explained, the default
 	// marked; empty for a setting that takes any value of its type.
-	Options []Option
+	Choices []Option
 	// Value is the value as written in smith.toml; Set is false when the
 	// setting has its default.
 	Value string
@@ -106,8 +106,8 @@ type Option struct {
 
 // values are the words of the options, in their order.
 func (st Setting) values() []string {
-	out := make([]string, 0, len(st.Options))
-	for _, o := range st.Options {
+	out := make([]string, 0, len(st.Choices))
+	for _, o := range st.Choices {
 		out = append(out, o.Value)
 	}
 	return out

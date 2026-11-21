@@ -114,7 +114,7 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 // viewSetting is a setting and its value as the Settings tab shows them.
 func viewSetting(f configedit.Field, value string, set bool) settingsview.Setting {
 	return settingsview.Setting{
-		Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Options: viewOptions(f.Options),
+		Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Choices: viewOptions(f.Options),
 		Value: value, Set: set, Current: decode(value, set),
 	}
 }

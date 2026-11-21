@@ -240,9 +240,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		if st.Reason != "" {
 			add(th.Muted(words.Say("settingsview.setting.why")) + st.Reason)
 		}
-		if len(st.Options) > 0 {
+		if len(st.Choices) > 0 {
 			add(th.Muted(words.Say("settingsview.setting.choices")))
-			for _, o := range st.Options {
+			for _, o := range st.Choices {
 				add("  " + optionText(th, o))
 			}
 		}
@@ -317,7 +317,7 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 		}
 	case editChoose:
 		lines = append(lines, "")
-		for i, o := range e.setting.Options {
+		for i, o := range e.setting.Choices {
 			r := choicerow.Row{Lead: choicerow.Radio(th, i == e.current) + " ", Selected: i == e.at}
 			r.Label, r.Hint = optionRow(o)
 			// Every line of a wrapped row answers a click on that option.
@@ -329,7 +329,7 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 		keys = words.Say("settingsview.keys.choose")
 	case editMulti:
 		lines = append(lines, "")
-		for i, o := range e.setting.Options {
+		for i, o := range e.setting.Choices {
 			r := choicerow.Ticks("", e.marked[i], false)
 			r.Label, r.Hint = optionRow(o)
 			r.Selected = i == e.at
@@ -394,7 +394,7 @@ func enterKey(st Setting) string {
 		return words.Say("settingsview.setting.keys.cache-setup")
 	case st.Type == "boolean":
 		return words.Say("settingsview.setting.keys.flip")
-	case st.Type == "string" && len(st.Options) > 0:
+	case st.Type == "string" && len(st.Choices) > 0:
 		return words.Say("settingsview.setting.keys.pick")
 	}
 	return words.Say("settingsview.setting.keys.change")
