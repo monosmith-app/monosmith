@@ -278,6 +278,25 @@ export const GUIDED_COMMANDS: readonly GuidedCommand[] = [
     args: (a) => ['config', 'set', text(a, 'setting'), ...(Array.isArray(a.value) ? list(a, 'value') : [text(a, 'value')])],
   },
   {
+    id:          'projectSettings',
+    title:       say('vscode.command.project-settings.title'),
+    mode:        'change',
+    commit:      true,
+    verb:        say('vscode.guided.project-settings.verb'),
+    consequence: say('vscode.guided.project-settings.consequence'),
+    steps:       [
+      { key: 'project', kind: 'pick', title: say('vscode.guided.project-settings.project.title'), from: 'projects' },
+      { key: 'setting', kind: 'pick', title: say('vscode.guided.project-settings.setting.title'), from: 'project-settings' },
+      { key: 'value', kind: 'text', title: say('vscode.guided.project-settings.value.title'), from: 'project-setting-value' },
+    ],
+    // An empty answer (or the Clear answer) removes the line; a list of fixed values is ticked.
+    args: (a) => {
+      const values = Array.isArray(a.value) ? list(a, 'value') : [text(a, 'value')]
+
+      return values.length === 0 || values.includes('') ? ['config', 'unset', text(a, 'setting')] : ['config', 'set', text(a, 'setting'), ...values]
+    },
+  },
+  {
     id:          'configUnset',
     title:       say('vscode.command.config-unset.title'),
     mode:        'change',

@@ -88,6 +88,7 @@ runs the command with `--yes`. Nothing is committed.
 | Why Would a Task Run Again? | `smith why-miss <project>:<task>` | text |
 | Regenerate the CI Pipelines…; Derived Files: Check, Preview, Update | `smith ci generate`, `smith derive` | text and the plan |
 | Change a Setting of smith.toml…; Reset a Setting… | `smith config set\|unset` | `config list --json`: the type, the allowed values (each with what it does, the default marked; a list of them is ticked), the current value and the reason of the default |
+| Project Settings… (also on a project's menu in the Projects view) | `smith config set\|unset projects.<name>.<setting>` | `projects --json` when started from the palette, then `config list -p <name> --json`: the values the manifest owns (read-only, with the file to change them in), then each setting of `[projects.<name>]` with its value, default and explanation; an empty answer or Clear it removes the line |
 | Turn a Plugin On or Off…; Choose the Architecture… | `smith plugin enable\|disable`, `smith architecture <name>` | `plugin list --json`; `smith architecture` |
 | Install a Plugin from the Marketplace… | `smith plugin search <words> --json`, then `smith plugin install <name> [--trust --pin]` | the search result: name, newest version, description, roles; the trust question says the plugin runs unsandboxed with your privileges |
 | Connect smith to a Coding Assistant… | `smith mcp install --claude --vscode` | none |

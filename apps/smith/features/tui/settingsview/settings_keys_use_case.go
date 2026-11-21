@@ -92,9 +92,9 @@ func (m Model) move(key commands.NavAction) Model {
 		case commands.NavHome:
 			at = 0
 		case commands.NavEnd:
-			at = len(Sections) - 1
+			at = len(m.sections()) - 1
 		}
-		m.section = Section(max(min(at, len(Sections)-1), 0))
+		m.section = m.sections()[max(min(at, len(m.sections())-1), 0)]
 		return m
 	}
 	n := len(m.items(m.section))
@@ -152,12 +152,15 @@ func (m Model) activate() (Model, Result) {
 		m = m.begin(words.Say("settingsview.busy.style"), false)
 		return m, Result{Cmd: m.saveStyle(m.savedTheme, normalise(it.key))}
 	case kindSetting:
-		if m.snap.Settings[it.idx].Path == "cache.remote" {
+		st := m.settingAt(it)
+		if st.Path == "cache.remote" {
 			// The remote is chosen with the setup, which finds it, shows each
 			// command first, and writes the setting only after a yes.
 			return m, Result{CacheSetup: true}
 		}
-		return m.editSetting(m.snap.Settings[it.idx])
+		return m.editSetting(st)
+	case kindFact:
+		m.note = m.factNote(m.proj.Facts[it.idx])
 	case kindForm:
 		return m, Result{Form: it.key}
 	case kindUpdate:
@@ -229,7 +232,7 @@ func (m Model) resetSetting() (Model, Result) {
 	if !ok || it.kind != kindSetting || !m.onItems {
 		return m, Result{}
 	}
-	st := m.snap.Settings[it.idx]
+	st := m.settingAt(it)
 	if !st.Set {
 		m.note = words.Say("settingsview.note.default", "path", st.Path)
 		return m, Result{}
@@ -242,13 +245,13 @@ func unavailable() tea.Cmd { return func() tea.Msg { return Applied{Err: errUnav
 
 // run does a change off the update loop and reads the workspace again after it.
 func (m Model) run(op func() (string, error)) tea.Cmd {
-	load := m.b.Load
+	load, project := m.b.Load, m.freshProject()
 	return func() tea.Msg {
 		note, err := op()
 		if err != nil {
 			return Applied{Err: err}
 		}
-		a := Applied{Note: note}
+		a := Applied{Note: note, FreshProject: project()}
 		if load != nil {
 			fresh := load()
 			a.Fresh = &fresh

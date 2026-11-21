@@ -39,6 +39,33 @@ data class SettingOptionContract(
     val default: Boolean,
 )
 
+/**
+ * A value of a project that its manifest owns: shown read-only, with the file that holds it.
+ *
+ * @property key name, version, language, kind or root
+ * @property source the workspace-relative file that holds it
+ */
+data class ProjectFactContract(
+    val key: String,
+    val value: String,
+    val description: String,
+    val source: String,
+)
+
+/**
+ * What `smith config list -p <project> --json` prints.
+ *
+ * @property manifest the file that owns the read-only values
+ * @property facts the read-only values
+ * @property settings the settings of `[projects.<name>]`, at `projects.<name>.<key>`
+ */
+data class ProjectViewContract(
+    val name: String,
+    val manifest: String,
+    val facts: List<ProjectFactContract>,
+    val settings: List<SettingContract>,
+)
+
 /** Reads the settings and words the questions and command lines of the settings editor. */
 object SettingsJsonMapper {
     /**
@@ -73,6 +100,28 @@ object SettingsJsonMapper {
                     JsonFieldsMapper.flag(it, "default"),
                 )
             }.filter { it.value.isNotEmpty() }
+
+    /**
+     * @param json what `smith config list -p <project> --json` printed
+     * @return the view of the project
+     * @throws IllegalStateException when the text is not a JSON object
+     */
+    fun toProjectView(json: String): ProjectViewContract {
+        val record = JsonFieldsMapper.parseObject(json)
+        return ProjectViewContract(
+            JsonFieldsMapper.text(record, "name"),
+            JsonFieldsMapper.text(record, "manifest"),
+            JsonFieldsMapper.records(record, "facts").map {
+                ProjectFactContract(
+                    JsonFieldsMapper.text(it, "path"),
+                    JsonFieldsMapper.text(it, "value"),
+                    JsonFieldsMapper.text(it, "description"),
+                    JsonFieldsMapper.text(it, "source"),
+                )
+            },
+            toSettings(record.get("settings")?.takeIf { it.isJsonArray }?.toString() ?: "[]"),
+        )
+    }
 
     /** The value as a person types it: `"main"` is `main`, `["a","b"]` is `a, b`. */
     fun shown(setting: SettingContract): String {

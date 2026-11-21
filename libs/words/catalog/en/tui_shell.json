@@ -373,5 +373,7 @@
   "tui.link.run": "Restart now",
   "tui.link.line": "smith (opens the interface again)",
   "tui.link.toast": "smith now starts directly: quit and run smith again to use it (smith link --status shows how smith starts)",
-  "tui.link.later": "the next start of smith uses it; smith link --status shows how smith starts, smith link --undo gives the entries back"
+  "tui.link.later": "the next start of smith uses it; smith link --status shows how smith starts, smith link --undo gives the entries back",
+  "tui.detail.project_settings": "Settings…",
+  "tui.detail.project_settings_hint": "the settings of [projects.{name}] in smith.toml: each with its value, default and what it does"
 }

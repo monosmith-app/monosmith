@@ -29,6 +29,13 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			}
 			return ReadSnapshot(r, version)
 		},
+		LoadProject: func(p settingsview.ProjectRef) settingsview.ProjectView {
+			r, err := root()
+			if err != nil {
+				return settingsview.ProjectView{Name: p.Name, Err: err}
+			}
+			return ReadProject(r, p)
+		},
 		SetPlugin: func(name string, enable bool) (string, error) {
 			r, err := root()
 			if err != nil {

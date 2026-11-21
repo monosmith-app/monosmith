@@ -19,5 +19,6 @@
   "jetbrains.toolwindow.align-versions": "Align versions…",
   "jetbrains.toolwindow.tools-with-a-newer-version": "Tools with a newer version ({size})",
   "jetbrains.toolwindow.reading-the-release-plan": "Reading the release plan…",
-  "jetbrains.toolwindow.release-hold-bump-force": "Release… (hold, bump, force)"
+  "jetbrains.toolwindow.release-hold-bump-force": "Release… (hold, bump, force)",
+  "jetbrains.toolwindow.project-settings": "Settings…"
 }

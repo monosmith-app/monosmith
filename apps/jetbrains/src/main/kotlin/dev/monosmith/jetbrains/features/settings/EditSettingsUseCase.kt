@@ -78,6 +78,21 @@ object EditSettingsUseCase {
             ports.notice.warn(say(JETBRAINS_SETTINGS_NO_SETTING_WAS_CHANGED_THIS, path.toString()))
             return false
         }
+        return edit(ports, setting, commitLater)
+    }
+
+    /**
+     * Changes one setting, a workspace one or a project one (`projects.<name>.<key>`): a set one may also go back
+     * to its default, which removes its line (and, for a project, the table when nothing is left in it).
+     *
+     * @param setting the setting, as smith listed it
+     * @return true when the setting was changed
+     */
+    fun edit(
+        ports: FlowPortsContract,
+        setting: SettingContract,
+        commitLater: (String) -> Unit,
+    ): Boolean {
         val words = SettingsJsonMapper.words(setting)
         val action =
             if (setting.set) {

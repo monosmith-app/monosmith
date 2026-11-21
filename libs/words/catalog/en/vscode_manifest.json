@@ -135,5 +135,6 @@
   "vscode.walkthrough.monosmith-start-health.description": "The Health view lists the checks that failed with the remedy, and applies the fixes smith proposes after you have seen them. Dependencies and Release Preview are beside it.\n[Open the Health view](command:monosmith.health.focus)",
   "vscode.walkthrough.monosmith-start-tasks.title": "Use it from tasks.json and the keyboard",
   "vscode.walkthrough.monosmith-start-tasks.description": "Tasks of type \"smith\" appear in Run Task and in tasks.json. Ctrl+Alt+M then T, A, R or C runs, runs affected, re-runs and cancels.\n[Open the settings](command:monosmith.openSettings)",
-  "vscode.untrusted-workspace.description": "In a workspace that is not trusted, MonoSmith does not run the smith inside the workspace (node_modules/.bin or .smith/bin) and does not run tasks. It shows the projects with the smith from your monosmith.path user setting or the PATH."
+  "vscode.untrusted-workspace.description": "In a workspace that is not trusted, MonoSmith does not run the smith inside the workspace (node_modules/.bin or .smith/bin) and does not run tasks. It shows the projects with the smith from your monosmith.path user setting or the PATH.",
+  "vscode.command.project-settings.title": "Project Settings…"
 }

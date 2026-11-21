@@ -100,10 +100,7 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 			snap.Err = err
 			return snap
 		}
-		snap.Settings = append(snap.Settings, settingsview.Setting{
-			Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Choices: viewOptions(f.Options),
-			Value: value, Set: set, Current: decode(value, set),
-		})
+		snap.Settings = append(snap.Settings, viewSetting(f, value, set))
 	}
 
 	if listed, err := recipecatalog.ListRecipes(root); err == nil {
@@ -112,6 +109,37 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 		}
 	}
 	return snap
+}
+
+// viewSetting is a setting and its value as the Settings tab shows them.
+func viewSetting(f configedit.Field, value string, set bool) settingsview.Setting {
+	return settingsview.Setting{
+		Path: f.Path, Type: f.Type, Explanation: f.Explanation(), Default: f.Default(), Reason: f.Reason, Choices: viewOptions(f.Options),
+		Value: value, Set: set, Current: decode(value, set),
+	}
+}
+
+// ReadProject reads what the Project section shows for one project of the
+// workspace at root: what smith config list -p reads.
+//
+// Parameters: root is the workspace root; p is the project as the Projects
+// tab knows it.
+// Returns: the view; its Err says why it could not be read.
+func ReadProject(root string, p settingsview.ProjectRef) settingsview.ProjectView {
+	v, err := configedit.ReadProjectSettings(root, configedit.ProjectFacts{Name: p.Name, Root: p.Root, Language: p.Language, Kind: p.Kind, Version: p.Version})
+	if err != nil {
+		return settingsview.ProjectView{Name: p.Name, Err: err}
+	}
+	out := settingsview.ProjectView{Name: v.Name, Manifest: v.Manifest}
+	for _, f := range v.Facts {
+		out.Facts = append(out.Facts, settingsview.Fact{Key: f.Key, Value: f.Value, Explanation: f.Explanation, Source: f.Source})
+	}
+	for _, st := range v.Settings {
+		s := viewSetting(st.Field, st.Value, st.Set)
+		s.Name = st.Key()
+		out.Settings = append(out.Settings, s)
+	}
+	return out
 }
 
 // viewOptions are a setting's options as the Settings tab shows them.

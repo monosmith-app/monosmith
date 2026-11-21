@@ -148,14 +148,14 @@ func TestChangingAndResettingASettingWritesTheBytesConfigSetAndUnsetWrite(t *tes
 		if _, err := b.SetSetting(s.path, s.values); err != nil {
 			t.Fatal(err)
 		}
-		cli(t, cliDir, configedit.Command(), append([]string{"set", s.path}, s.values...)...)
+		cli(t, cliDir, configedit.Command(nil), append([]string{"set", s.path}, s.values...)...)
 		same(t, tab, cliDir)
 	}
 	for _, path := range []string{"release.branch", "cache.max_size_mb"} {
 		if _, err := b.UnsetSetting(path); err != nil {
 			t.Fatal(err)
 		}
-		cli(t, cliDir, configedit.Command(), "unset", path)
+		cli(t, cliDir, configedit.Command(nil), "unset", path)
 		same(t, tab, cliDir)
 	}
 	got := read(t, tab)
@@ -265,6 +265,42 @@ func TestTheSnapshotListsEverySettingConfigListKnowsExceptTheOnePluginsEdits(t *
 	}
 	if s := got["release.github_releases"]; s.Set || s.Default != "false" || s.Explanation == "" || strings.Contains(s.Explanation, "Default:") {
 		t.Fatalf("a boolean that is not set: %+v", s)
+	}
+}
+
+func TestAProjectsSettingsAreReadAndWrittenAsConfigWithAProjectDoes(t *testing.T) {
+	tab, cliDir := twoWorkspaces(t)
+	for _, dir := range []string{tab, cliDir} {
+		_ = os.MkdirAll(filepath.Join(dir, "apps", "web"), 0o755)
+		_ = os.WriteFile(filepath.Join(dir, "apps", "web", "package.json"), []byte(`{"name":"web"}`), 0o644)
+	}
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
+	web := settingsview.ProjectRef{Name: "web", Root: "apps/web", Language: "node", Kind: "app", Version: "1.0.0"}
+	v := b.LoadProject(web)
+	if v.Err != nil || v.Manifest != "apps/web/package.json" || len(v.Facts) == 0 {
+		t.Fatalf("%+v", v)
+	}
+	var path string
+	for _, st := range v.Settings {
+		if st.Name == "tag_prefix" {
+			path = st.Path
+		}
+	}
+	if path != "projects.web.tag_prefix" {
+		t.Fatalf("tag_prefix is at %q", path)
+	}
+	if _, err := b.SetSetting(path, []string{"web-v"}); err != nil {
+		t.Fatal(err)
+	}
+	cli(t, cliDir, configedit.Command(nil), "set", "-p", "web", "tag_prefix", "web-v")
+	same(t, tab, cliDir)
+	if _, err := b.UnsetSetting(path); err != nil {
+		t.Fatal(err)
+	}
+	cli(t, cliDir, configedit.Command(nil), "unset", "-p", "web", "tag_prefix")
+	same(t, tab, cliDir)
+	if strings.Contains(read(t, tab), "[projects.web]") {
+		t.Fatalf("the empty table must go:\n%s", read(t, tab))
 	}
 }
 

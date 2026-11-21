@@ -3,15 +3,32 @@ package engineserver
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/configedit"
 	smithworkspace "github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 )
 
 // configList answers with the settings of smith.toml, their values and what
-// they do: what `smith config list --json` prints.
-func (s *Server) configList(ctx context.Context, _ json.RawMessage) (any, *rpcError) {
-	return s.queryArgs(ctx, []string{"config", "list", "--json"})
+// they do: what `smith config list --json` prints. With {"project": name} it
+// answers with that project's view: the values its manifest owns and the
+// settings of [projects.<name>] (`smith config list -p <name> --json`). The
+// settings of a project are read and changed with config.get, config.set and
+// config.unset at projects.<name>.<setting>.
+func (s *Server) configList(ctx context.Context, raw json.RawMessage) (any, *rpcError) {
+	var p ConfigListParams
+	if err := decodeParams(raw, &p); err != nil {
+		return nil, &rpcError{codeInvalidParams, err.Error()}
+	}
+	args := []string{"config", "list", "--json"}
+	if p.Project != "" {
+		if strings.HasPrefix(p.Project, "-") || strings.ContainsAny(p.Project, " \t\r\n") {
+			return nil, &rpcError{codeInvalidParams, `"project" must be the name of a project, such as "web"`}
+		}
+		args = append(args, flagvocabulary.Arg("project"), p.Project)
+	}
+	return s.queryArgs(ctx, args)
 }
 
 // configGet answers with one setting's value as written in smith.toml, and

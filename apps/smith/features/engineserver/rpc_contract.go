@@ -21,6 +21,12 @@ type SettingParams struct {
 	Setting string `json:"setting"`
 }
 
+// ConfigListParams are the parameters of config.list: Project names the
+// project whose settings to list; empty lists the workspace's settings.
+type ConfigListParams struct {
+	Project string `json:"project,omitempty"`
+}
+
 // ConfigSetParams are the parameters of config.set: Value for a setting that
 // holds one value, Values for a list.
 type ConfigSetParams struct {

@@ -1,6 +1,7 @@
 import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { GuidedAnswers, GuidedCommand, GuidedOutcome, GuidedStep, ResolvedStep } from './guided-command.contract.ts'
-import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarketplace, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, settingWords, type Setting, type WebApp } from './guided-sources.mapper.ts'
+import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarketplace, parsePipelineTemplates, parseProjectNames, parseProjectView, parseSettings, parseWebApps, parseWorkspaceEnvironments, settingWords, type ProjectView, type Setting, type WebApp } from './guided-sources.mapper.ts'
+import { flag } from '../../shared/smith-flags/index.ts'
 import { say } from '../../shared/words/index.ts'
 
 /** What running a guided command needs from the editor. */
@@ -83,6 +84,48 @@ async function readSettings (deps: GuidedDeps): Promise<Setting[] | string> {
   return listed.code === 0 ? parseSettings(listed.stdout) : describeFailure(listed)
 }
 
+/** Reads one project's view once: `smith config list -p <project> --json`. */
+async function readProjectView (deps: GuidedDeps, project: string): Promise<ProjectView | string> {
+  const listed = await deps.run(['config', 'list', flag.project, project, '--json'])
+
+  return listed.code === 0 ? parseProjectView(listed.stdout) ?? say('vscode.guided-commands.smith-has-no-setting', { setting: project }) : describeFailure(listed)
+}
+
+/** The last part of a setting's path: `tag_prefix` of `projects.web.tag_prefix`. */
+const lastKey = (path: string): string => path.slice(path.lastIndexOf('.') + 1)
+
+/**
+ * Makes the value step fit the setting: true or false, a pick or tick boxes of its fixed values (each explained,
+ * the default marked), or a text box with the value now. A project setting that is set can also be cleared.
+ * @param resolved - the step to fill
+ * @param setting - the setting, as smith listed it
+ * @param clearable - true for a project setting: an empty text, or the Clear answer, removes it
+ */
+function valueStep (resolved: ResolvedStep, setting: Setting, clearable: boolean): void {
+  const current = setting.set ? settingWords(setting.value) : []
+  const marked = (value: string): string => current.includes(value) ? ' (current)' : ''
+  const clear = clearable && setting.set ? [{ label: say('vscode.guided-commands.clear-to-default'), value: '', description: say('vscode.guided-commands.clear-to-default-hint') }] : []
+  if (setting.type === 'boolean') {
+    resolved.kind = 'pick'
+    resolved.options = [...['true', 'false'].map((value) => ({ label: `${value}${marked(value)}`, value, description: setting.reason ?? setting.description })), ...clear]
+  } else if (setting.options.length > 0) {
+    // Each value says what it does and the default is marked; a list ticks several, starting from what it holds now (or its default).
+    const many = setting.type === 'array'
+    resolved.kind = many ? 'multi' : 'pick'
+    resolved.options = [...setting.options.map((option) => ({
+      label:       `${option.value}${option.default ? ` ${say('vscode.guided-commands.default')}` : ''}${many ? '' : marked(option.value)}`,
+      value:       option.value,
+      description: option.description === '' ? setting.description : option.description,
+      picked:      many ? (setting.set ? current.includes(option.value) : option.default) : undefined,
+    })), ...clear]
+  } else {
+    resolved.value = clearable ? current.join(', ') : setting.value
+    resolved.optional = clearable
+    resolved.prompt = say('vscode.guided-commands.a-list-is-comma-separated', { description: setting.description, part: setting.reason === undefined ? '' : say('vscode.guided-commands.why-the-default-is-what-it', { reason: setting.reason }) })
+    if (clearable) resolved.prompt += ` ${say('vscode.guided-commands.empty-clears-it')}`
+  }
+}
+
 /** Reads the options or the first value of a step from smith. */
 async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDeps, webApps: () => Promise<WebApp[]>): Promise<ResolvedStep | { refused: string }> {
   const resolved: ResolvedStep = { ...step, options: step.options ?? [] }
@@ -127,25 +170,35 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       if (typeof settings === 'string') return { refused: settings }
       const setting = settings.find((item) => item.path === answers.setting)
       if (setting === undefined) return { refused: say('vscode.guided-commands.smith-has-no-setting', { setting: String(answers.setting) }) }
-      const current = setting.set ? settingWords(setting.value) : []
-      const marked = (value: string): string => current.includes(value) ? ' (current)' : ''
-      if (setting.type === 'boolean') {
-        resolved.kind = 'pick'
-        resolved.options = ['true', 'false'].map((value) => ({ label: `${value}${marked(value)}`, value, description: setting.reason ?? setting.description }))
-      } else if (setting.options.length > 0) {
-        // Each value says what it does and the default is marked; a list ticks several, starting from what it holds now (or its default).
-        const many = setting.type === 'array'
-        resolved.kind = many ? 'multi' : 'pick'
-        resolved.options = setting.options.map((option) => ({
-          label:       `${option.value}${option.default ? ` ${say('vscode.guided-commands.default')}` : ''}${many ? '' : marked(option.value)}`,
-          value:       option.value,
-          description: option.description === '' ? setting.description : option.description,
-          picked:      many ? (setting.set ? current.includes(option.value) : option.default) : undefined,
-        }))
-      } else {
-        resolved.value = setting.value
-        resolved.prompt = say('vscode.guided-commands.a-list-is-comma-separated', { description: setting.description, part: setting.reason === undefined ? '' : say('vscode.guided-commands.why-the-default-is-what-it', { reason: setting.reason }) })
-      }
+      valueStep(resolved, setting, false)
+      break
+    }
+    case 'projects': {
+      const listed = await deps.run(['projects', '--json'])
+      if (listed.code !== 0) return { refused: describeFailure(listed) }
+      resolved.options = parseProjectNames(listed.stdout)
+      if (resolved.options.length === 0) return { refused: say('vscode.guided-commands.smith-lists-no-project-here') }
+      break
+    }
+    case 'project-settings': {
+      const view = await readProjectView(deps, String(answers.project))
+      if (typeof view === 'string') return { refused: view }
+      // What the manifest owns comes first, read-only and with its file; then the settings of [projects.<name>].
+      resolved.options = [
+        ...view.facts.map((fact) => ({ label: fact.path, value: `fact:${fact.path}`, description: `${fact.value} · ${say('vscode.guided-commands.read-only-from', { file: fact.source })}` })),
+        ...view.settings.map((setting) => ({ label: lastKey(setting.path), value: setting.path, description: `${setting.set ? setting.value : say('vscode.guided-commands.default')}: ${setting.description}` })),
+      ]
+      break
+    }
+    case 'project-setting-value': {
+      const view = await readProjectView(deps, String(answers.project))
+      if (typeof view === 'string') return { refused: view }
+      const picked = String(answers.setting)
+      const fact = view.facts.find((item) => `fact:${item.path}` === picked)
+      if (fact !== undefined) return { refused: say('vscode.guided-commands.comes-from-change-it-there', { key: fact.path, file: fact.source }) }
+      const setting = view.settings.find((item) => item.path === picked)
+      if (setting === undefined) return { refused: say('vscode.guided-commands.smith-has-no-setting', { setting: picked }) }
+      valueStep(resolved, setting, true)
       break
     }
     case 'builtin-plugins': {

@@ -130,6 +130,67 @@ export function parseSettings (json: string): Setting[] {
   }))
 }
 
+/** A value of a project that its manifest owns: shown read-only, with the file that holds it. */
+export interface ProjectFact {
+  path:        string
+  value:       string
+  description: string
+  source:      string
+}
+
+/** What `smith config list -p <project> --json` prints: the read-only values and the settings of `[projects.<name>]`. */
+export interface ProjectView {
+  name:     string
+  manifest: string
+  facts:    ProjectFact[]
+  settings: Setting[]
+}
+
+/**
+ * Reads `smith config list -p <project> --json`.
+ * @param json - what smith printed
+ * @returns the view; an unreadable text gives undefined
+ */
+export function parseProjectView (json: string): ProjectView | undefined {
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    return undefined
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const record = value as Record<string, unknown>
+  const facts = (Array.isArray(record.facts) ? record.facts : [])
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && typeof item.path === 'string')
+    .map((item) => ({ path: item.path as string, value: String(item.value ?? ''), description: String(item.description ?? ''), source: String(item.source ?? '') }))
+
+  return {
+    name:     typeof record.name === 'string' ? record.name : '',
+    manifest: typeof record.manifest === 'string' ? record.manifest : '',
+    facts,
+    settings: parseSettings(JSON.stringify(record.settings ?? [])),
+  }
+}
+
+/**
+ * The project names `smith projects --json` prints, as answers.
+ * @param json - what smith printed
+ */
+export function parseProjectNames (json: string): GuidedOption[] {
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    return []
+  }
+
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && typeof item.name === 'string')
+        .map((item) => ({ label: item.name as string, value: item.name as string, description: [item.kind, item.language].filter((part) => typeof part === 'string' && part !== '').join(' · ') }))
+    : []
+}
+
 /**
  * The built-in plugins `smith plugin list --json` prints.
  * @param json - what smith printed

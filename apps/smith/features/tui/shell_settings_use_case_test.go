@@ -185,7 +185,7 @@ func TestChangingASettingInTheTabWritesWhatConfigSetWrites(t *testing.T) {
 	l.walkTo(t, "ci.devcontainer")
 	l.press("space")
 	l.has("ci.devcontainer = true")
-	want := cliTwin(t, configedit.Command(), "set", "ci.devcontainer", "true")
+	want := cliTwin(t, configedit.Command(nil), "set", "ci.devcontainer", "true")
 	if got := tomlOf(t, ws.dir); got != want {
 		t.Fatalf("the tab and smith config set wrote different files.\ntab:\n%s\ncommand:\n%s", got, want)
 	}
@@ -237,7 +237,7 @@ func TestATypedSettingIsAnEditorThatTakesEveryKeyIncludingTheOnesThatAreShortcut
 		t.Fatalf("Esc cancels without writing:\n%s", got)
 	}
 	l.press("enter").typeText("trunk").keys("enter")
-	want := cliTwin(t, configedit.Command(), "set", "release.branch", "trunk")
+	want := cliTwin(t, configedit.Command(nil), "set", "release.branch", "trunk")
 	if got := tomlOf(t, ws.dir); got != want {
 		t.Fatalf("tab:\n%s\ncommand:\n%s", got, want)
 	}

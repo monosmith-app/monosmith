@@ -295,7 +295,8 @@ func (s Shell) projectPanel() detail.Panel {
 		title = words.Say("tui.detail.run_on", "name", p.Name)
 	}
 	// The forms about the project have no key: they are under More, after the keyed actions.
-	more := append(s.projectFormActions(p), s.projectMoreActions()...)
+	more := append([]detail.Action{{ID: "x:settings", Label: words.Say("tui.detail.project_settings"), Hint: words.Say("tui.detail.project_settings_hint", "name", p.Name)}}, s.projectFormActions(p)...)
+	more = append(more, s.projectMoreActions()...)
 	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, More: more, MoreTitle: words.Say("tui.detail.more"), After: after}
 }
 

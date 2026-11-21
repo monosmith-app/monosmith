@@ -3,6 +3,7 @@ import type { SmithRun } from '../../shared/smith-run/index.ts'
 import type { ResolvedStep } from './guided-command.contract.ts'
 import { GUIDED_COMMANDS } from './guided-commands.config.ts'
 import { parsePipelineTemplates, parseWebApps, parseWorkspaceEnvironments } from './guided-sources.mapper.ts'
+import { projectRowAnswers } from './project-row-answers.mapper.ts'
 import { runGuidedCommand, type GuidedDeps } from './run-guided-command.use-case.ts'
 
 const ok = (stdout: string): SmithRun => ({ code: 0, stdout, stderr: '' })
@@ -214,6 +215,46 @@ describe('installing a plugin from the marketplace', () => {
     expect(await runGuidedCommand(command('pluginInstall'), empty.deps)).toMatchObject({ kind: 'refused', message: expect.stringContaining('lists no plugins yet') })
     const none = fake(['zzz'], true, { 'plugin search': ok('[]') })
     expect(await runGuidedCommand(command('pluginInstall'), none.deps)).toMatchObject({ kind: 'refused', message: expect.stringContaining('No plugin') })
+  })
+})
+
+const WEB_VIEW = JSON.stringify({
+  name:     'web',
+  manifest: 'apps/web/package.json',
+  facts:    [{ path: 'version', value: '1.2.0', description: 'The version its manifest records.', source: 'apps/web/package.json' }],
+  settings: [
+    { path: 'projects.web.tag_prefix', type: 'string', description: 'Replaces the release tag prefix.', value: '"web-v"', set: true },
+    { path: 'projects.web.bare_tags', type: 'boolean', description: 'Tag releases with the bare version.', set: false },
+  ],
+})
+
+describe('the settings of a project', () => {
+  it('starts on the project of the row, lists the read-only values with their file, then writes [projects.<name>]', async () => {
+    const f = fake(['projects.web.bare_tags', 'true'], true, { 'config list': ok(WEB_VIEW), 'config set': ok('✓ projects.web.bare_tags = true\n') })
+    expect(await runGuidedCommand(command('projectSettings'), f.deps, projectRowAnswers('projectSettings', { kind: 'project', project: 'web' }))).toMatchObject({ kind: 'done' })
+    expect(f.calls[0]).toEqual(['config', 'list', '-p', 'web', '--json'])
+    expect(f.asked[0].options.map((o) => o.label)).toEqual(['version', 'tag_prefix', 'bare_tags'])
+    expect(f.asked[0].options[0].description).toContain('read-only, from apps/web/package.json')
+    expect(f.calls.at(-1)).toEqual(['config', 'set', 'projects.web.bare_tags', 'true'])
+  })
+
+  it('says where a read-only value is changed and writes nothing', async () => {
+    const f = fake(['fact:version'], true, { 'config list': ok(WEB_VIEW) })
+    expect(await runGuidedCommand(command('projectSettings'), f.deps, { project: 'web' })).toMatchObject({ kind: 'refused', message: 'version comes from apps/web/package.json: change it there.' })
+    expect(f.calls.some((c) => c[1] === 'set' || c[1] === 'unset')).toBe(false)
+  })
+
+  it('clears a set value with an empty answer, which removes its line', async () => {
+    const f = fake(['projects.web.tag_prefix', ''], true, { 'config list': ok(WEB_VIEW), 'config unset': ok('✓ removed\n') })
+    await runGuidedCommand(command('projectSettings'), f.deps, { project: 'web' })
+    expect(f.asked[1]).toMatchObject({ kind: 'text', value: 'web-v', optional: true })
+    expect(f.calls.at(-1)).toEqual(['config', 'unset', 'projects.web.tag_prefix'])
+  })
+
+  it('asks for the project from the palette, from smith projects', async () => {
+    const f = fake(['web', 'projects.web.bare_tags', 'false'], true, { 'projects --json': ok('[{"name":"web","kind":"app","language":"node"}]'), 'config list': ok(WEB_VIEW) })
+    await runGuidedCommand(command('projectSettings'), f.deps)
+    expect(f.asked[0].options).toEqual([{ label: 'web', value: 'web', description: 'app · node' }])
   })
 })
 
