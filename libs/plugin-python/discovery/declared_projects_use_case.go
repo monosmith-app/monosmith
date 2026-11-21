@@ -77,7 +77,10 @@ func describeDeclared(workspaceRoot string, d protocol.DeclaredProject) (protoco
 	var args ToolArgs
 	if args.Ruff, _, err = linting.Args(workspaceRoot, d.Root); err == nil {
 		if args.Mypy, _, err = typechecking.Args(workspaceRoot, d.Root); err == nil {
-			args.Pytest, _, err = testrunning.Args(workspaceRoot, d.Root)
+			var own bool
+			if args.Pytest, own, err = testrunning.Args(workspaceRoot, d.Root); err == nil {
+				args.NoTests = !own && !HasTestFiles(dir)
+			}
 		}
 	}
 	if err != nil {

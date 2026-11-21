@@ -52,7 +52,7 @@ All tasks run in the project directory with the venv interpreter, written `{work
 | Task | Command (after `<py>`) | Appears for | Cached | Outputs |
 |---|---|---|---|---|
 | `lint` | `-m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml --extend-exclude *-[0-9]*.[0-9]* .` (no `--config` when the repository configures ruff, see [Tool configuration](#tool-configuration)). `--extend-exclude` skips the `<name>-<version>` folder that `python -m build` makes in the project while a build of it runs | every project | yes | none |
-| `test` | `-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=. --ignore-glob {projectRoot}/*-[0-9]*.[0-9]*` (no `-c` when the repository configures pytest; `--ignore-glob` skips the build's staging folder) | every project | yes | none |
+| `test` | `-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=. --ignore-glob {projectRoot}/*-[0-9]*.[0-9]*` (no `-c` when the repository configures pytest; `--ignore-glob` skips the build's staging folder) | a project with a `test_*.py` or `*_test.py` file, or one that configures pytest itself. pytest finds no test in any other project and fails (exit code 5), so such a project has no `test` task, and `smith doctor` warns that it has no tests | yes | none |
 | `typecheck` | `-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini .` (no `--config-file` when the repository configures mypy). smith's default config excludes the build's staging folder; a repository's own mypy config should exclude it too (`exclude = (^\|/)[^/]+-[0-9]+[.][0-9][^/]*/`) | every project | yes | none |
 | `build` | `-m build --outdir {workspaceRoot}/dist/<project dir> .` | `package` only | yes | `dist/<project dir>` (wheel and sdist) |
 | `deps-check` | `smith py-deps-check <dir>` (not run through the venv) | `package` only; its `lint` (or, without one, `typecheck` or `test`) runs after it, so CI verify runs it | yes; inputs `**/*` and `requirements-dev.txt` | none |
@@ -312,6 +312,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use
 | `Python venv exists` | `.venv/Scripts/python.exe` (or `.venv/bin/python`) is missing | run `smith ci setup` |
 | `requirements-dev.txt exists` | the file is missing | run `smith add` for a Python project, or restore it |
 | `<dir> declares the distributions it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix | add the distribution to `dependencies` in `<dir>/pyproject.toml` |
+| `the project has tests` | a warning when a project has no `test` task: it has no `test_*.py` or `*_test.py` file and does not configure pytest | add a test, such as `tests/test_<project>.py` |
 | `the venv's Python is 3.12, as in CI` | a warning when the venv's Python is newer than `3.12` (or has none); a failure when it is older | delete `.venv`, then `smith ci setup` |
 
 All three passed in the test run (`17 passed, 0 failed, 0 warnings`).
