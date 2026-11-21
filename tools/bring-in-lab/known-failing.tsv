@@ -3,12 +3,4 @@
 # when the issue is fixed: the lab prints a note when a known step passes.
 #
 # id	step	issue
-mitt	lint	1173
-express-api	lint	1173
-vite-react	lint	1173
-sampleproject	lint	1173
-astar	lint	1173
-file-analyzer	lint	1173
 astar	build	1175
-file-analyzer	test	1176
-astar	ignored	1178

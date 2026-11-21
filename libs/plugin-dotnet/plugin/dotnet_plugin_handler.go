@@ -36,6 +36,7 @@ func (d *Dotnet) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Tools:     toolcatalog.For("dotnet", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"dotnet", "csharp", "fsharp"},
 		Manifests: []string{"*.csproj", "*.fsproj"},
+		Ignores:   []string{"bin/", "obj/"},
 		Sources:   scaffolding.Sources,
 		Choices:   functions.Choices(),
 	}, nil

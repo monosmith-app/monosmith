@@ -115,5 +115,6 @@ func dependencyFiles(projects []protocol.Project) []string {
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	res := doctorChecks(workspaceRoot, params)
 	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	res.Findings = append(res.Findings, MissingTests(params.Projects)...)
 	return res
 }

@@ -45,6 +45,7 @@ func (n *Node) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Tools:     toolcatalog.For("node", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"node", "javascript", "js"},
 		Manifests: []string{"package.json"},
+		Ignores:   []string{"node_modules/", "dist/"},
 		Sources:   scaffolding.Sources,
 		// Concurrency lets the host ask the registry about many projects at
 		// once; the other handlers still run one at a time (see Node.mu).

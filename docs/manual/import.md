@@ -24,7 +24,12 @@ you say yes.
    for a lib, `packages/` for a package. The name comes from the manifest, or from
    `--name`. In a terminal smith asks for the folder and suggests the kind the project
    looks like. Without a terminal, `--as` or `--into` must say it: smith never picks it
-   for you. A folder that exists is refused.
+   for you. A folder that exists is refused. Right after the place step, smith makes sure
+   git ignores the build output of the language's tools in the folder (`bin/` and `obj/`
+   for .NET, `node_modules/` and `dist/` for Node, `__pycache__/` and `*.egg-info/` for
+   Python). It adds a line to the workspace `.gitignore`, anchored to the folder
+   (`/packages/astar/bin/`), for each pattern that git does not ignore yet. The plan shows
+   these lines. So `--commit` never commits the output of the check step.
 4. **Split.** The known development tools go to the workspace manifest. A tool that the
    workspace has at another major version (TypeScript 5 beside the workspace's TypeScript 4)
    stays in the project, and smith says so. smith asks about
@@ -58,7 +63,13 @@ you say yes.
    keeps its tools.
 7. **Check.** smith writes the pipelines again, runs `smith install` (the whole workspace,
    because the root manifest changed), then
-   `smith run build test -p <name>`, then `smith doctor`.
+   `smith run build test -p <name>`, then `smith run lint -p <name>` (without `--fix`), then
+   `smith doctor`. When the lint fails, the "Left to do" list says what it found: the count of
+   problems, the rules found most, and `smith lint --fix -p <name>` with the count it repairs.
+   smith does not run the fix, because it changes your files. A file that breaks the
+   vertical-slice layout gets three ways on: move it into a slice, write the exception in the
+   project README, or add the project to `exclude` under `[conventions.vertical-slices]`. A task
+   that stops the lint before it runs (a `deps-check`) is named with its cause.
 
 It ends with `✓ imported <name> into <folder>`, then either "smith doctor finds nothing to
 fix" or one "Left to do (N)" list: each item with the step that clears it.

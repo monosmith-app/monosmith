@@ -74,4 +74,8 @@ type Plan struct {
 	// Legacy names the project's legacy tools in words, the reason smith
 	// recommends its own tooling; empty when its tools are current.
 	Legacy []string
+	// Ignores are the .gitignore lines the import adds, anchored to Folder,
+	// so git ignores the build output of the language's tools there
+	// (/packages/astar/bin/); empty when git ignores it already.
+	Ignores []string
 }

@@ -34,6 +34,7 @@ func (r *Rust) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Tools:     toolcatalog.For("rust", "cargo-audit"),
 		Languages: []string{"rust"},
 		Manifests: []string{"Cargo.toml"},
+		Ignores:   []string{"target/"},
 	}, nil
 }
 

@@ -48,6 +48,33 @@ func TestPlaceSmithBuildLeavesABundlerAndSaysSo(t *testing.T) {
 	}
 }
 
+func TestPlaceSmithBuildKeepsTheViteBuildOfAnApp(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"package.json":          `{"name": "w", "private": true, "workspaces": ["apps/*"]}`,
+		"apps/web/package.json": `{"name": "web", "scripts": {"build": "tsc && vite build"}}`,
+	})
+	a, _ := Assess(root, "apps/web")
+	got, err := PlaceSmithBuild(root, a, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Ready || len(got.Left) != 0 {
+		t.Errorf("outcome %+v, want the Vite build kept", got)
+	}
+}
+
+func TestPlaceSmithBuildTellsAnAppWithABundlerToBuildWithVite(t *testing.T) {
+	root := writeTree(t, map[string]string{
+		"package.json":          `{"name": "w", "private": true, "workspaces": ["apps/*"]}`,
+		"apps/web/package.json": `{"name": "web", "scripts": {"build": "webpack --mode production"}}`,
+	})
+	a, _ := Assess(root, "apps/web")
+	got, _ := PlaceSmithBuild(root, a, &bytes.Buffer{})
+	if len(got.Left) != 1 || !strings.Contains(got.Left[0], "vite build") || strings.Contains(got.Left[0], "esbuild") {
+		t.Errorf("outcome %+v", got)
+	}
+}
+
 // craFixture is a create-react-app project in apps/demo with one test.
 var craFixture = map[string]string{
 	"package.json": `{"name": "w", "private": true, "workspaces": ["apps/*"], "devDependencies": {"@types/node": "^16.11.6"}}`,
