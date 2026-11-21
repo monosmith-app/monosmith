@@ -105,3 +105,25 @@ func TestSummarizeOfAnOutputWithoutAFailedTaskNamesTheCommand(t *testing.T) {
 		t.Errorf("items %+v", got)
 	}
 }
+
+func TestSummarizeNamesTheErrorLineOfATaskThatStoppedTheLint(t *testing.T) {
+	out := "astar:build │   Determining projects to restore...\n" +
+		"astar:build │ Grid.cs(3,1): error CS0246: The type 'Foo' could not be found\n" +
+		"astar:build × exited with code 1\n"
+	got := Summarize("astar", out)
+	if len(got) != 1 || !strings.Contains(got[0].Problem, "its task build fails (Grid.cs(3,1): error CS0246") {
+		t.Errorf("items %+v", got)
+	}
+}
+
+func TestSummarizeCountsAFileESLintCannotParse(t *testing.T) {
+	out := "web:lint │   0:0  error  Parsing error: Unable to parse the specified 'tsconfig' file\n" +
+		"web:lint │   0:0  error  Parsing error: Unable to parse the specified 'tsconfig' file\n" +
+		"web:lint │   3:18  error  Missing space  @stylistic/key-spacing\n" +
+		"web:lint │ ✖ 3 problems (3 errors, 0 warnings)\n" +
+		"web:lint × exited with code 1\n"
+	got := Summarize("web", out)
+	if len(got) != 1 || !strings.Contains(got[0].Problem, "parsing error (2), @stylistic/key-spacing (1)") {
+		t.Errorf("items %+v", got)
+	}
+}

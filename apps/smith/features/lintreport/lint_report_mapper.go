@@ -19,6 +19,7 @@ type Item struct {
 var (
 	eslintTotal   = regexp.MustCompile(`✖ (\d+) problems? \(`)
 	eslintFixable = regexp.MustCompile(`(\d+) errors? and (\d+) warnings? potentially fixable`)
+	eslintParse   = regexp.MustCompile(`^\s*\d+:\d+\s+error\s+Parsing error: `)
 	eslintRule    = regexp.MustCompile(`^\s*\d+:\d+\s+(?:error|warning)\s+.*\S\s{2,}(\S+)\s*$`)
 	ruffTotal     = regexp.MustCompile(`^Found (\d+) errors?\.`)
 	ruffFixable   = regexp.MustCompile(`^\[\*\] (\d+) fixable`)
@@ -105,7 +106,11 @@ func lintItem(name string, lines []string) Item {
 		if m := ruffFixable.FindStringSubmatch(line); m != nil {
 			fixable = atoi(m[1])
 		}
-		if m := eslintRule.FindStringSubmatch(line); m != nil {
+		if eslintParse.MatchString(line) {
+			// A file ESLint cannot parse has no rule: the cause is in the
+			// file or its tsconfig.
+			rules["parsing error"]++
+		} else if m := eslintRule.FindStringSubmatch(line); m != nil {
 			rules[m[1]]++
 		} else if m := ruffRule.FindStringSubmatch(line); m != nil {
 			rules[m[1]]++
@@ -156,17 +161,26 @@ func sliceItem(name string, lines []string) Item {
 }
 
 // cause is the line of a task's output that says why it failed: smith's own
-// last line, else the first line with text.
+// last line, else the first line that names an error, else the first line
+// with text.
 func cause(lines []string) string {
 	for i := len(lines) - 1; i >= 0; i-- {
 		if text, ok := strings.CutPrefix(lines[i], "smith: "); ok {
 			return text
 		}
 	}
+	first := ""
 	for _, line := range lines {
-		if strings.TrimSpace(line) != "" {
-			return strings.TrimSpace(line)
+		text := strings.TrimSpace(line)
+		if strings.Contains(strings.ToLower(text), "error") && !strings.HasPrefix(text, "npm error") {
+			return text
 		}
+		if first == "" {
+			first = text
+		}
+	}
+	if first != "" {
+		return first
 	}
 	return "it names no cause"
 }
