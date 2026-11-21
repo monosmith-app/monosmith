@@ -26,6 +26,22 @@ type Field struct {
 	// Reason is one line saying why the default is what it is, from the
 	// schema's x-reason; empty when the schema gives none.
 	Reason string `json:"reason,omitempty"`
+	// Options are the values of Enum, each with what it does and whether it
+	// is the default, so an editor shows a picker; empty when the setting
+	// takes any value of its type.
+	Options []Option `json:"options,omitempty"`
+}
+
+// Option is one value a setting with a fixed set of values takes.
+type Option struct {
+	// Value is the word written in smith.toml.
+	Value string `json:"value"`
+	// Description is one line saying what the value does, from the schema's
+	// enumDescriptions.
+	Description string `json:"description"`
+	// Default is true for the value (or, for a list, each value) the setting
+	// takes when smith.toml does not set it.
+	Default bool `json:"default,omitempty"`
 }
 
 // Table and Key split the path.
@@ -41,6 +57,8 @@ type schemaNode struct {
 	Properties           map[string]schemaNode `json:"properties"`
 	Items                *schemaNode           `json:"items"`
 	Enum                 []string              `json:"enum"`
+	EnumDescriptions     []string              `json:"enumDescriptions"`
+	Default              json.RawMessage       `json:"default"`
 	Minimum              *int                  `json:"minimum"`
 	MinLength            int                   `json:"minLength"`
 	AdditionalProperties json.RawMessage       `json:"additionalProperties"`
@@ -64,22 +82,57 @@ func Fields() ([]Field, error) {
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			p := node.Properties[k]
-			if p.Type == "object" || (p.Type == "array" && p.Items != nil && p.Items.Type == "object") {
-				continue // a table, or a list of tables ([[release.channels]]): edited in the file
+			// A table, or a list of tables ([[release.channels]]), is edited in the file.
+			if f, ok := fieldOf(table+"."+k, node.Properties[k]); ok {
+				out = append(out, f)
 			}
-			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Reason: p.Reason, Minimum: p.Minimum, MinLength: p.MinLength}
-			if p.Items != nil {
-				f.Enum = p.Items.Enum
-			}
-			if len(p.Enum) > 0 {
-				// A string that takes one of a few words, with or without "type": "string".
-				f.Type, f.Enum = "string", p.Enum
-			}
-			out = append(out, f)
 		}
 	}
 	return out, nil
+}
+
+// fieldOf is the setting at path that the schema node p describes, with its
+// options when it takes a fixed set of values. ok is false for a table or a
+// list of tables.
+func fieldOf(path string, p schemaNode) (Field, bool) {
+	if p.Type == "object" || (p.Type == "array" && p.Items != nil && p.Items.Type == "object") {
+		return Field{}, false
+	}
+	f := Field{Path: path, Type: p.Type, Description: p.Description, Reason: p.Reason, Minimum: p.Minimum, MinLength: p.MinLength}
+	descriptions := p.EnumDescriptions
+	if p.Items != nil {
+		f.Enum, descriptions = p.Items.Enum, p.Items.EnumDescriptions
+	}
+	if len(p.Enum) > 0 {
+		// A string that takes one of a few words, with or without "type": "string".
+		f.Type, f.Enum, descriptions = "string", p.Enum, p.EnumDescriptions
+	}
+	f.Options = options(f.Enum, descriptions, p.Default)
+	return f, true
+}
+
+// options pairs each value with its description and marks the default: one
+// word, or each word of a list.
+func options(values, descriptions []string, def json.RawMessage) []Option {
+	if len(values) == 0 {
+		return nil
+	}
+	var defaults []string
+	var one string
+	if json.Unmarshal(def, &one) == nil {
+		defaults = []string{one}
+	} else {
+		_ = json.Unmarshal(def, &defaults) // no default, or not a list of words: none is marked
+	}
+	out := make([]Option, 0, len(values))
+	for i, v := range values {
+		o := Option{Value: v, Default: slices.Contains(defaults, v)}
+		if i < len(descriptions) {
+			o.Description = descriptions[i]
+		}
+		out = append(out, o)
+	}
+	return out
 }
 
 // DefaultStackPrefix starts the path of a default stack: default_stacks.node

@@ -3,6 +3,8 @@ export interface GuidedOption {
   label:        string
   value:        string
   description?: string
+  /** A tick box that starts ticked (`multi` only): the value a list holds now, or its default. */
+  picked?:      boolean
 }
 
 /** Where the options or the first value of a step come from, when smith holds them and not this extension. */

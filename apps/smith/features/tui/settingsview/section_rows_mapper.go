@@ -222,7 +222,10 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 			add(th.Muted(words.Say("settingsview.setting.why")) + st.Reason)
 		}
 		if len(st.Choices) > 0 {
-			add(th.Muted(words.Say("settingsview.setting.choices")) + strings.Join(st.Choices, ", "))
+			add(th.Muted(words.Say("settingsview.setting.choices")))
+			for _, o := range st.Choices {
+				add("  " + optionText(th, o))
+			}
 		}
 		now := shownValue(th, st)
 		if !st.Set {
@@ -295,20 +298,27 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 		}
 	case editChoose:
 		lines = append(lines, "")
-		for i, c := range e.choices {
-			r := choicerow.Row{Lead: choicerow.Radio(th, i == e.current) + " ", Label: c, Selected: i == e.at}
-			rowOf[len(lines)] = i
-			lines = append(lines, " "+choicerow.Line(th, r, max(w-1, 1)))
+		for i, o := range e.setting.Choices {
+			r := choicerow.Row{Lead: choicerow.Radio(th, i == e.current) + " ", Selected: i == e.at}
+			r.Label, r.Hint = optionRow(o)
+			// Every line of a wrapped row answers a click on that option.
+			for _, l := range choicerow.Lines(th, r, max(w-1, 1)) {
+				rowOf[len(lines)] = i
+				lines = append(lines, " "+l)
+			}
 		}
 		keys = words.Say("settingsview.keys.choose")
 	case editMulti:
 		lines = append(lines, "")
-		for i, c := range e.choices {
-			r := choicerow.Ticks(c, e.marked[i], false)
+		for i, o := range e.setting.Choices {
+			r := choicerow.Ticks("", e.marked[i], false)
+			r.Label, r.Hint = optionRow(o)
 			r.Selected = i == e.at
 			// Each tick box row answers a click (see Click), as in every list of boxes.
-			rowOf[len(lines)] = i
-			lines = append(lines, " "+choicerow.Line(th, r, max(w-1, 1)))
+			for _, l := range choicerow.Lines(th, r, max(w-1, 1)) {
+				rowOf[len(lines)] = i
+				lines = append(lines, " "+l)
+			}
 		}
 		keys = words.Say("settingsview.keys.multi")
 	case editReview:
@@ -336,6 +346,25 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	}
 	lines = lines[:min(len(lines), max(h-1, 0))]
 	return append(lines, " "+th.Muted(fmt.Sprint(keys))), rowOf
+}
+
+// optionRow is an option as a row of a pick list: the word, marked when it is
+// the default, and what it does as the muted hint.
+func optionRow(o Option) (label, hint string) {
+	label = o.Value
+	if o.Default {
+		label += words.Say("settingsview.setting.isdefault")
+	}
+	return label, o.Description
+}
+
+// optionText is an option on one line of the detail pane.
+func optionText(th theme.Theme, o Option) string {
+	label, hint := optionRow(o)
+	if hint == "" {
+		return label
+	}
+	return label + th.Muted(" - "+hint)
 }
 
 // enterKey says what Enter does to a setting: a switch flips, a value of a fixed

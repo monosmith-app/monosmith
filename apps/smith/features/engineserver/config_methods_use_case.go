@@ -36,5 +36,5 @@ func (s *Server) configGet(_ context.Context, raw json.RawMessage) (any, *rpcErr
 	if err != nil {
 		return nil, &rpcError{codeFailed, err.Error()}
 	}
-	return ConfigValue{Setting: p.Setting, Value: value, Set: set, Type: field.Type, Description: field.Description}, nil
+	return ConfigValue{Setting: p.Setting, Value: value, Set: set, Type: field.Type, Description: field.Description, Options: field.Options}, nil
 }

@@ -61,15 +61,47 @@ export function parseWorkspaceEnvironments (text: string): string[] {
   return names.length > 0 ? names : DEFAULT_ENVIRONMENTS
 }
 
+/** One value of a setting with a fixed set of values: what it does, and whether it is the default. */
+export interface SettingOption {
+  value:       string
+  description: string
+  default:     boolean
+}
+
 /** A setting of smith.toml, as `smith config list --json` prints it. */
 export interface Setting {
   path:        string
   type:        string
   description: string
-  enum?:       string[]
+  /** The values of a setting with a fixed set of values (one word, or the words a list holds); empty for any other. */
+  options:     SettingOption[]
   reason?:     string
   value:       string
   set:         boolean
+}
+
+/**
+ * The options smith printed for a setting.
+ * @param value - the `options` field of a setting
+ * @returns the options that have a value
+ */
+function parseOptions (value: unknown): SettingOption[] {
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && typeof item.value === 'string')
+        .map((item) => ({ value: item.value as string, description: typeof item.description === 'string' ? item.description : '', default: item.default === true }))
+    : []
+}
+
+/**
+ * The words of a value as smith.toml writes it: `["github", "azure"]` is two, `"warn"` or `warn` one.
+ * @param raw - the value as written; empty when the setting is not set
+ */
+export function settingWords (raw: string): string[] {
+  const quoted = Array.from(raw.matchAll(/"([^"]*)"/g), (match) => match[1])
+  if (quoted.length > 0) return quoted
+
+  return raw.trim() === '' ? [] : [raw.trim()]
 }
 
 /**
@@ -91,7 +123,7 @@ export function parseSettings (json: string): Setting[] {
     path:        record.path as string,
     type:        typeof record.type === 'string' ? record.type : '',
     description: typeof record.description === 'string' ? record.description : '',
-    enum:        Array.isArray(record.enum) ? record.enum.filter((item): item is string => typeof item === 'string') : undefined,
+    options:     parseOptions(record.options),
     reason:      typeof record.reason === 'string' && record.reason !== '' ? record.reason : undefined,
     value:       typeof record.value === 'string' ? record.value : '',
     set:         record.set === true,

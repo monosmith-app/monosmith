@@ -87,7 +87,7 @@ runs the command with `--yes`. Nothing is committed.
 | Add a Ready-Made Pipeline…; Make the Icons of a Tauri App…; Docker Hub Descriptions | `smith pipeline`, `smith tauri icon`, `smith docker description` | `smith pipeline` lists the templates |
 | Why Would a Task Run Again? | `smith why-miss <project>:<task>` | text |
 | Regenerate the CI Pipelines…; Derived Files: Check, Preview, Update | `smith ci generate`, `smith derive` | text and the plan |
-| Change a Setting of smith.toml…; Reset a Setting… | `smith config set\|unset` | `config list --json`: the type, the allowed values, the current value and the reason of the default |
+| Change a Setting of smith.toml…; Reset a Setting… | `smith config set\|unset` | `config list --json`: the type, the allowed values (each with what it does, the default marked; a list of them is ticked), the current value and the reason of the default |
 | Turn a Plugin On or Off…; Choose the Architecture… | `smith plugin enable\|disable`, `smith architecture <name>` | `plugin list --json`; `smith architecture` |
 | Install a Plugin from the Marketplace… | `smith plugin search <words> --json`, then `smith plugin install <name> [--trust --pin]` | the search result: name, newest version, description, roles; the trust question says the plugin runs unsandboxed with your privileges |
 | Connect smith to a Coding Assistant… | `smith mcp install --claude --vscode` | none |

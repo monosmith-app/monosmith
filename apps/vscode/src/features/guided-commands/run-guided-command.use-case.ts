@@ -1,6 +1,6 @@
 import { describeFailure, type SmithRun } from '../../shared/smith-run/index.ts'
 import type { GuidedAnswers, GuidedCommand, GuidedOutcome, GuidedStep, ResolvedStep } from './guided-command.contract.ts'
-import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarketplace, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, type Setting, type WebApp } from './guided-sources.mapper.ts'
+import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarketplace, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, settingWords, type Setting, type WebApp } from './guided-sources.mapper.ts'
 import { say } from '../../shared/words/index.ts'
 
 /** What running a guided command needs from the editor. */
@@ -127,11 +127,21 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       if (typeof settings === 'string') return { refused: settings }
       const setting = settings.find((item) => item.path === answers.setting)
       if (setting === undefined) return { refused: say('vscode.guided-commands.smith-has-no-setting', { setting: String(answers.setting) }) }
-      const marked = (value: string): string => value === setting.value && setting.set ? ' (current)' : ''
-      const choices = setting.type === 'boolean' ? ['true', 'false'] : (setting.enum ?? [])
-      if (choices.length > 0) {
+      const current = setting.set ? settingWords(setting.value) : []
+      const marked = (value: string): string => current.includes(value) ? ' (current)' : ''
+      if (setting.type === 'boolean') {
         resolved.kind = 'pick'
-        resolved.options = choices.map((value) => ({ label: `${value}${marked(value)}`, value, description: setting.reason ?? setting.description }))
+        resolved.options = ['true', 'false'].map((value) => ({ label: `${value}${marked(value)}`, value, description: setting.reason ?? setting.description }))
+      } else if (setting.options.length > 0) {
+        // Each value says what it does and the default is marked; a list ticks several, starting from what it holds now (or its default).
+        const many = setting.type === 'array'
+        resolved.kind = many ? 'multi' : 'pick'
+        resolved.options = setting.options.map((option) => ({
+          label:       `${option.value}${option.default ? ` ${say('vscode.guided-commands.default')}` : ''}${many ? '' : marked(option.value)}`,
+          value:       option.value,
+          description: option.description === '' ? setting.description : option.description,
+          picked:      many ? (setting.set ? current.includes(option.value) : option.default) : undefined,
+        }))
       } else {
         resolved.value = setting.value
         resolved.prompt = say('vscode.guided-commands.a-list-is-comma-separated', { description: setting.description, part: setting.reason === undefined ? '' : say('vscode.guided-commands.why-the-default-is-what-it', { reason: setting.reason }) })

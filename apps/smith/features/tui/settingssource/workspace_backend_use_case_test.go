@@ -260,7 +260,7 @@ func TestTheSnapshotListsEverySettingConfigListKnowsExceptTheOnePluginsEdits(t *
 	if s := got["default_stacks.node"]; !s.Set || s.Current[0] != "node-jest" {
 		t.Fatalf("a default stack that is set is listed: %+v", s)
 	}
-	if s := got["ci.providers"]; !s.Set || len(s.Current) != 1 || s.Current[0] != "github" || len(s.Choices) != 5 {
+	if s := got["ci.providers"]; !s.Set || len(s.Current) != 1 || s.Current[0] != "github" || len(s.Choices) != 5 || s.Choices[0].Description == "" || !s.Choices[0].Default {
 		t.Fatalf("an array reads as its items: %+v", s)
 	}
 	if s := got["release.github_releases"]; s.Set || s.Default != "false" || s.Explanation == "" || strings.Contains(s.Explanation, "Default:") {
