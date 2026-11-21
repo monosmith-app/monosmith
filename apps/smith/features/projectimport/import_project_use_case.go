@@ -126,9 +126,13 @@ func Import(o Options) (Plan, error) {
 	}
 	left = append(left, keptLeft...)
 	left = append(left, ApplyTooling(root, p, o)...)
-	left = append(left, Install(root, o.Version, p.Name, o.Out)...)
+	installed := Install(root, o.Version, p.Name, o.Out)
+	left = append(left, installed...)
 	if len(left) == 0 {
 		left = append(left, Verify(root, p.Name, o.Out)...)
+	}
+	if len(installed) == 0 {
+		left = append(left, Lint(root, p.Name, o.Out)...)
 	}
 	left = append(left, LayoutLeft(root, p)...)
 	checked, err := Check(root, o.Version)

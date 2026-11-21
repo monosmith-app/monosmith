@@ -58,7 +58,13 @@ you say yes.
    keeps its tools.
 7. **Check.** smith writes the pipelines again, runs `smith install` (the whole workspace,
    because the root manifest changed), then
-   `smith run build test -p <name>`, then `smith doctor`.
+   `smith run build test -p <name>`, then `smith run lint -p <name>` (without `--fix`), then
+   `smith doctor`. When the lint fails, the "Left to do" list says what it found: the count of
+   problems, the rules found most, and `smith lint --fix -p <name>` with the count it repairs.
+   smith does not run the fix, because it changes your files. A file that breaks the
+   vertical-slice layout gets three ways on: move it into a slice, write the exception in the
+   project README, or add the project to `exclude` under `[conventions.vertical-slices]`. A task
+   that stops the lint before it runs (a `deps-check`) is named with its cause.
 
 It ends with `✓ imported <name> into <folder>`, then either "smith doctor finds nothing to
 fix" or one "Left to do (N)" list: each item with the step that clears it.
