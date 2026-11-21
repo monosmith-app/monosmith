@@ -1671,6 +1671,13 @@ export const protocolSchema: SchemaDocument = {
           },
           "description": "Sources are patterns of source file base names (*.ts, *.py, *.cs) the plugin recognises in a folder that has none of its Manifests. The host reads them to offer a manifest for such a folder (smith import, smith adopt). Empty: the plugin recognises no project without its manifest."
         },
+        "ignores": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ignores are gitignore patterns, relative to a project folder, of what the language's tools write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the workspace (smith import), the host makes sure git ignores them in its folder, so a commit never takes the build output. Empty: the tools write nothing there."
+        },
         "roles": {
           "type": "array",
           "items": {

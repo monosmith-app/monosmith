@@ -905,6 +905,13 @@ export interface InitializeResult {
    */
   sources?: string[]
   /**
+   * Ignores are gitignore patterns, relative to a project folder, of what the language's tools
+   * write into it (bin/ and obj/ for .NET, node_modules/ for Node). When a project comes into the
+   * workspace (smith import), the host makes sure git ignores them in its folder, so a commit never
+   * takes the build output. Empty: the tools write nothing there.
+   */
+  ignores?: string[]
+  /**
    * Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe).
    * Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate
    * level field, because one plugin can play several (a scaffold that is also a toolchain).
