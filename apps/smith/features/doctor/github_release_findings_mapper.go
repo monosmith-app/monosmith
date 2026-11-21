@@ -27,7 +27,7 @@ var publicCredential = map[string]string{
 // cannot publish there). Nothing is reported for a workspace that does not
 // use the mode.
 func githubReleaseChecks(s *session.Session) []protocol.Finding {
-	return githubReleaseFindings(s.Graph.Projects, s.Config.Release.GitHubReleases, s.Config.Release.NuGetTrustedPublishing, func(plugin string) bool {
+	return githubReleaseFindings(s.Graph.Projects, s.Config.Release.GitHubReleases, s.Config.Release.NuGetTrustedOn(), func(plugin string) bool {
 		c := s.Plugins.Get(plugin)
 		return c != nil && c.Info.Capabilities.Packs
 	}, os.Getenv)

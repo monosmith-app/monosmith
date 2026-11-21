@@ -73,6 +73,11 @@ The core then adds what is not a plugin's business, by reading the project graph
 | `[release] nuget_trusted_publishing` | `NuGetTrusted`; the `NUGET_API_KEY` secret is dropped, the release step reads the key from the `Sign in to NuGet` step, and `smith ci check` asks for `NUGET_USER` | NuGet packages are signed in with the workflow's token |
 | `[release] rubygems_trusted_publishing` | `RubyGemsTrusted`; the `GEM_HOST_API_KEY` secret is dropped | gems are signed in with the workflow's token |
 | `[release] vsce_entra` | `VSCEEntra`; the `VSCE_PAT` secret is dropped | see [ADR 0031](decisions/0031-marketplace-publishing-with-entra-id.md) |
+
+When one of these three settings is absent and the pipelines need its secret, `smith ci generate`
+asks before it writes (`OfferSignIns`, the `trustedpublishing` slice), and records `true` or
+`false`; a run that does not ask prints a note. See
+[ADR 0109](decisions/0109-smith-offers-trusted-publishing.md).
 | `[cache] remote` | credentials for the remote cache (`cachecredentials.For`) | every step that runs tasks reads it |
 | `[release] github_releases` | a required `GITHUB_TOKEN` | Releases need it |
 

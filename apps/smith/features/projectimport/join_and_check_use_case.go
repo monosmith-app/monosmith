@@ -77,7 +77,7 @@ func Join(root, version string, p Plan, out io.Writer) ([]Left, error) {
 			}
 		}
 	}
-	if changed, _, err := cipipeline.Regenerate(s); err != nil {
+	if changed, _, err := cipipeline.RegenerateNoting(s, out); err != nil {
 		left = append(left, Left{Problem: "the pipelines were not written again: " + firstLine(err.Error()), Remedy: "smith ci generate"})
 	} else if len(changed) > 0 {
 		fmt.Fprintf(out, "  CI: wrote %d pipeline file(s) again, so CI builds %s\n", len(changed), p.Name)

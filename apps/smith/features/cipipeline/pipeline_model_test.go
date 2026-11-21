@@ -126,3 +126,17 @@ func TestTheReleaseBranchIsNotRepeatedWhenListed(t *testing.T) {
 		t.Errorf("want [dev, main] twice:\n%s", out)
 	}
 }
+
+func TestApplySignInsDropsOnlyTheSecretsTheChosenSignInsReplace(t *testing.T) {
+	c := Contributions{Credentials: []protocol.Credential{{Env: "NUGET_API_KEY"}, {Env: "GEM_HOST_API_KEY"}, {Env: "VSCE_PAT"}}}
+	r := workspace.ReleaseSection{NuGetTrustedPublishing: new(true), RubyGemsTrustedPublishing: new(false)}
+	c.ApplySignIns(r)
+	c.ApplySignIns(r)
+	var left []string
+	for _, cred := range c.Credentials {
+		left = append(left, cred.Env)
+	}
+	if strings.Join(left, ",") != "GEM_HOST_API_KEY,VSCE_PAT" || !c.NuGetTrusted || c.RubyGemsTrusted || c.VSCEEntra {
+		t.Errorf("got %v %+v", left, c)
+	}
+}

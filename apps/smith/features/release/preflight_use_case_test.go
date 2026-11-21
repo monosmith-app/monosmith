@@ -23,7 +23,7 @@ func TestStableOnlyLeavesThePyPITokenOutOfAPrereleaseButKeepsItForTheWorkflow(t 
 func TestTheRubyGemsKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T) {
 	cfg := workspace.Config{}
 	secret := &session.Session{Config: cfg}
-	cfg.Release.RubyGemsTrustedPublishing = true
+	cfg.Release.RubyGemsTrustedPublishing = new(true)
 	trusted := &session.Session{Config: cfg}
 	cases := []struct {
 		s    *session.Session
@@ -36,7 +36,7 @@ func TestTheRubyGemsKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T)
 	}
 	for _, c := range cases {
 		if got := signedInByTheRun(c.s, c.env); got != c.want {
-			t.Errorf("signedInByTheRun(trusted=%v, %s) = %v, want %v", c.s.Config.Release.RubyGemsTrustedPublishing, c.env, got, c.want)
+			t.Errorf("signedInByTheRun(trusted=%v, %s) = %v, want %v", c.s.Config.Release.RubyGemsTrustedOn(), c.env, got, c.want)
 		}
 	}
 }
@@ -44,7 +44,7 @@ func TestTheRubyGemsKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T)
 func TestTheMarketplaceTokenIsSignedInByTheRunOnlyWithEntra(t *testing.T) {
 	cfg := workspace.Config{}
 	secret := &session.Session{Config: cfg}
-	cfg.Release.VSCEEntra = true
+	cfg.Release.VSCEEntra = new(true)
 	entra := &session.Session{Config: cfg}
 	for _, c := range []struct {
 		s    *session.Session
@@ -56,7 +56,7 @@ func TestTheMarketplaceTokenIsSignedInByTheRunOnlyWithEntra(t *testing.T) {
 		{entra, "NODE_AUTH_TOKEN", false},
 	} {
 		if got := signedInByTheRun(c.s, c.env); got != c.want {
-			t.Errorf("signedInByTheRun(entra=%v, %s) = %v, want %v", c.s.Config.Release.VSCEEntra, c.env, got, c.want)
+			t.Errorf("signedInByTheRun(entra=%v, %s) = %v, want %v", c.s.Config.Release.VSCEEntraOn(), c.env, got, c.want)
 		}
 	}
 }
@@ -64,7 +64,7 @@ func TestTheMarketplaceTokenIsSignedInByTheRunOnlyWithEntra(t *testing.T) {
 func TestTheNuGetKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T) {
 	cfg := workspace.Config{}
 	secret := &session.Session{Config: cfg}
-	cfg.Release.NuGetTrustedPublishing = true
+	cfg.Release.NuGetTrustedPublishing = new(true)
 	trusted := &session.Session{Config: cfg}
 	for _, c := range []struct {
 		s    *session.Session
@@ -76,7 +76,7 @@ func TestTheNuGetKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T) {
 		{trusted, "GEM_HOST_API_KEY", false},
 	} {
 		if got := signedInByTheRun(c.s, c.env); got != c.want {
-			t.Errorf("signedInByTheRun(trusted=%v, %s) = %v, want %v", c.s.Config.Release.NuGetTrustedPublishing, c.env, got, c.want)
+			t.Errorf("signedInByTheRun(trusted=%v, %s) = %v, want %v", c.s.Config.Release.NuGetTrustedOn(), c.env, got, c.want)
 		}
 	}
 }

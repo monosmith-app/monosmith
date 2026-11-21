@@ -223,9 +223,9 @@ func DistributionCredentials(r *workspace.ProjectRelease, version string) []prot
 // published with it (nuget_trusted_publishing), and the Marketplace token when extensions are
 // published with Entra ID (vsce_entra).
 func signedInByTheRun(s *session.Session, env string) bool {
-	return (env == "GEM_HOST_API_KEY" && s.Config.Release.RubyGemsTrustedPublishing) ||
-		(env == "NUGET_API_KEY" && s.Config.Release.NuGetTrustedPublishing) ||
-		(env == "VSCE_PAT" && s.Config.Release.VSCEEntra)
+	return (env == "GEM_HOST_API_KEY" && s.Config.Release.RubyGemsTrustedOn()) ||
+		(env == "NUGET_API_KEY" && s.Config.Release.NuGetTrustedOn()) ||
+		(env == "VSCE_PAT" && s.Config.Release.VSCEEntraOn())
 }
 
 // alternative accepts the credential forms each tool also understands.

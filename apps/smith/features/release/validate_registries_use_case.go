@@ -72,7 +72,7 @@ func checkRegistries(s *session.Session, plan Plan, probe *RegistryProbe, out io
 	}
 	if probe == nil {
 		probe = ProbeFromEnvironment()
-		probe.NuGetTrusted = s.Config.Release.NuGetTrustedPublishing
+		probe.NuGetTrusted = s.Config.Release.NuGetTrustedOn()
 	}
 	if probe.Published == nil {
 		probe.Published = func(project, _, name string) bool {
