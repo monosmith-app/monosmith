@@ -143,8 +143,10 @@ before the commit:
    other entry points follow. A create-react-app project builds with Vite: `public/index.html`
    becomes `index.html`, and `vite.config.ts` builds into the workspace's `dist/<project dir>`.
    Its tests run with Vitest in jsdom, and a project without tests loses its `react-scripts test`
-   script. `dist` goes into `.gitignore`. A rollup, webpack or script build stays, and the
-   outcome says so.
+   script. `dist` goes into `.gitignore`. A Vite build stays as it is, also after a type check
+   (`tsc && vite build`): Vite is the build smith writes for a web app. A rollup, webpack or
+   script build stays, and the outcome says so: for an app it names `vite build` as the build to
+   write, for a library `tsc` or esbuild.
 3. **Old tools out.** Only for a tool whose replacement is in place, smith shows each group of
    removals (the `.eslintrc` files, `.eslintignore`, the old lint packages, `react-scripts` and
    the old build packages) and asks before it applies the group. `--yes` applies every group.
