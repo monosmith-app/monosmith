@@ -88,7 +88,7 @@ When an issue is fixed, the lab prints "passes now" for its step. Remove the lin
 | `express-api` | rzgry/Express-REST-API-Template | an Express API in JavaScript, with Jest |
 | `vite-react` | joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate | a Vite React app with Vitest and a pnpm lockfile |
 | `sampleproject` | pypa/sampleproject | a Python package with `pyproject.toml` and pytest |
-| `astar` | roy-t/AStar | a .NET library (`netstandard2.0`) in a sub-folder, beside its tests |
+| `astar` | roy-t/AStar | a .NET library (`netstandard2.0`) in a sub-folder, beside its tests, that packs the `LICENSE` above its folder (`--outside-files copy`) |
 | `file-analyzer` | mraza007/python-file-analyzer | one Python file and no manifest |
 
 The commits are in `tools/bring-in-lab/repos.tsv`.

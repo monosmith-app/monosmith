@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/features/manifestoffer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/features/outsidefiles"
 	"github.com/monosmith-app/monosmith/apps/smith/features/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
@@ -27,6 +28,9 @@ type Options struct {
 	// As, Into, Name, Ref, History, ESLint, Manifest and Path are the flags
 	// of the same names (ESLint is --eslint-setup); "" when not given.
 	As, Into, Name, Ref, History, ESLint, Manifest, Path string
+	// Outside is --outside-files: copy or leave the files the project uses
+	// outside its --path sub-folder; "" when not given.
+	Outside string
 	// Hoist is --hoist.
 	Hoist []string
 	// Tooling is --tooling: smith or keep (or <project>=smith|keep), the
@@ -82,13 +86,20 @@ func Import(o Options) (Plan, error) {
 		return Plan{}, err
 	}
 	defer func() { Release(src) }()
+	var outside []outsidefiles.File
 	if o.Path != "" {
+		// Read before the narrow step: the import takes the sub-folder only.
+		outside = outsidefiles.Find(src.Dir, o.Path)
 		if src, err = Narrow(src, o.Path, o.Out); err != nil {
 			return Plan{}, err
 		}
 	}
 	p, err := settle(root, &src, claims, taken, o)
 	if err != nil {
+		return p, err
+	}
+	p.Outside = outside
+	if err := SettleOutside(&p, o); err != nil {
 		return p, err
 	}
 	if err := SettleTooling(src, &p, &o); err != nil {
@@ -102,6 +113,7 @@ func Import(o Options) (Plan, error) {
 	if err := Place(root, p, o.Out); err != nil {
 		return p, err
 	}
+	outsideLeft := BringOutside(root, p, o.Out)
 	if p.WriteManifest != "" {
 		if err := writeManifest(root, o.Version, &p, o.Out); err != nil {
 			return p, fmt.Errorf("the project is in %s, but its manifest was not written (%w); write it yourself, then run smith doctor", p.Folder, err)
@@ -131,6 +143,7 @@ func Import(o Options) (Plan, error) {
 		left = append(left, Verify(root, p.Name, o.Out)...)
 	}
 	left = append(left, LayoutLeft(root, p)...)
+	left = append(left, outsideLeft...)
 	checked, err := Check(root, o.Version)
 	if err != nil {
 		return p, err

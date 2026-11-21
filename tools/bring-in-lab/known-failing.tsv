@@ -10,6 +10,5 @@ sampleproject	lint	1173
 astar	lint	1173
 file-analyzer	lint	1173
 mitt	test	1174
-astar	build	1175
 file-analyzer	test	1176
 astar	ignored	1178

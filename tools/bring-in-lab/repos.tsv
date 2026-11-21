@@ -7,5 +7,5 @@ mitt	adopt	https://github.com/developit/mitt	6b41670516ed8e8b738612f60491995470a
 express-api	import	https://github.com/rzgry/Express-REST-API-Template	4d0f45dfa5be103de4f838472f125965affe210f	express-api	--as app --name express-api --tooling smith
 vite-react	import	https://github.com/joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate	495d24cca8dfe17ad2c94ced7d04be8e917bb885	vite-react	--as app --name vite-react --tooling smith
 sampleproject	import	https://github.com/pypa/sampleproject	621e4974ca25ce531773def586ba3ed8e736b3fc	sampleproject	--as package --name sampleproject
-astar	import	https://github.com/roy-t/AStar	3d57efaa83c8cd217e4973fd4738c57e2f694bd2	astar	--as package --name astar --path Roy-T.AStar
+astar	import	https://github.com/roy-t/AStar	3d57efaa83c8cd217e4973fd4738c57e2f694bd2	astar	--as package --name astar --path Roy-T.AStar --outside-files copy
 file-analyzer	import	https://github.com/mraza007/python-file-analyzer	3488383526fa7b296ea1510bed4869509669bc51	file-analyzer	--as app --name file-analyzer --manifest python

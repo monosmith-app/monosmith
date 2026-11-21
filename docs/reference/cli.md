@@ -148,6 +148,7 @@ Usage: `smith import <git-url|folder> [flags]`
 | `--into <into>` | the project's folder, from the workspace root (default: <kind folder>/<name>, asked in a terminal) |  <kind folder>/<name>, asked in a terminal |
 | `--manifest <manifest>` | a source with no manifest: the language whose default stack's manifest smith writes (node, python, dotnet), or none; asked in a terminal |  |
 | `--name <name>` | the project's name (default: the name in its manifest) |  the name in its manifest |
+| `--outside-files <outside-files>` | with --path, the files the project uses outside its sub-folder (..\LICENSE, a signing key): copy (into the project folder, with the new path in the file that names it) or leave, and Left to do names each (default with --yes) | with --yes |
 | `--path <path>` | the sub-folder of the source that holds the project (src/MyLib); a git source keeps the commits of that folder |  |
 | `--ref <ref>` | the branch, tag or commit of a git source to import (default: its default branch) |  its default branch |
 | `--tooling <tooling>` | a Node project's build and lint tools: smith (smith's build and ESLint config, then the old tools go) or keep (default with --yes) (repeatable) | with --yes |

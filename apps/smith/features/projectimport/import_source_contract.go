@@ -1,5 +1,7 @@
 package projectimport
 
+import "github.com/monosmith-app/monosmith/apps/smith/features/outsidefiles"
+
 // The history modes of --history.
 const (
 	// HistoryKeep merges every commit of the source, written again under the
@@ -74,4 +76,9 @@ type Plan struct {
 	// Legacy names the project's legacy tools in words, the reason smith
 	// recommends its own tooling; empty when its tools are current.
 	Legacy []string
+	// Outside are the files the project uses outside its --path sub-folder.
+	Outside []outsidefiles.File
+	// CopyOutside is the answer to the outside-files question: true copies
+	// the movable ones into the project folder and writes their new paths.
+	CopyOutside bool
 }
