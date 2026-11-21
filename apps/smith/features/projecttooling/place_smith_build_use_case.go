@@ -99,13 +99,19 @@ func ignoredEverywhere(gitignore, name string) bool {
 	return false
 }
 
-// otherBuild is the outcome of a build smith does not rewrite.
+// otherBuild is the outcome of a build smith does not rewrite. The advice
+// names the build smith writes for the kind: Vite for an app (it builds the
+// page, the styles and the assets), tsc or esbuild for a library.
 func otherBuild(a Assessment) Outcome {
 	tool := bundlerOf(a.Facts.BuildScript)
 	if tool == "" {
 		tool = "a script of its own"
 	}
-	return Outcome{Left: []string{fmt.Sprintf("%s builds with %s (%q), which smith does not rewrite. Replace the build script with tsc or esbuild; its old build tools stay until then", a.Name, tool, a.Facts.BuildScript)}}
+	with := "tsc or esbuild"
+	if a.Kind == string(protocol.ProjectApp) {
+		with = "vite build"
+	}
+	return Outcome{Left: []string{fmt.Sprintf("%s builds with %s (%q), which smith does not rewrite. Replace the build script with %s; its old build tools stay until then", a.Name, tool, a.Facts.BuildScript, with)}}
 }
 
 // placeTscBuild moves a tsc build into dist with the doctor's own fixes.

@@ -33,7 +33,8 @@ type BuildKind string
 const (
 	// BuildNone is a project without a build script.
 	BuildNone BuildKind = "none"
-	// BuildSmith is a build smith writes itself: vite, esbuild, or tsc into dist.
+	// BuildSmith is a build smith writes itself: vite (alone or after a type
+	// check, "tsc && vite build"), esbuild, or tsc into dist.
 	BuildSmith BuildKind = "smith"
 	// BuildTsc is a tsc build into another folder (lib/, build/).
 	BuildTsc BuildKind = "tsc"
@@ -58,7 +59,7 @@ func ClassifyBuild(f Facts) BuildKind {
 		return BuildNone
 	case strings.Contains(script, "react-scripts build"):
 		return BuildCRA
-	case words[0] == "vite" || words[0] == "esbuild":
+	case words[0] == "esbuild" || buildsWithVite(script):
 		return BuildSmith
 	case words[0] == "tsc" && !strings.ContainsAny(script, "&|;"):
 		if out := strings.TrimPrefix(path.Clean(f.OutDir), "./"); f.OutDir == "" || out == "dist" || strings.Contains(out, "dist/") {
@@ -67,6 +68,22 @@ func ClassifyBuild(f Facts) BuildKind {
 		return BuildTsc
 	}
 	return BuildOther
+}
+
+// buildsWithVite reports whether a chain of commands builds with Vite, as the
+// Vite templates do ("tsc && vite build", "tsc -b && vite build"): one command
+// of the chain is vite and no other bundler runs. Vite is the build smith
+// writes for a web app, so smith keeps it.
+func buildsWithVite(script string) bool {
+	if bundlerOf(script) != "" {
+		return false
+	}
+	for _, command := range strings.Split(script, "&&") {
+		if words := strings.Fields(command); len(words) > 0 && words[0] == "vite" {
+			return true
+		}
+	}
+	return false
 }
 
 // bundlerOf is the bundler a build script runs, "" when none of the known ones.
