@@ -121,6 +121,9 @@ change the unit tests can't judge, such as a plugin's scaffold or the release.
 The convert suite builds real Nx and old-mnci workspaces and takes over half
 an hour on Windows, so it runs only when started by hand.
 
+The [bring-in lab](bring-in-lab.md) (`.github/workflows/bring-in-lab.yml`) adopts and imports
+pinned sample repositories once a week and on demand. Run it after a change to adopt or import.
+
 `smith run lint test build` runs the same through the workspace (lint includes
 the vertical-slices convention's `slice-check`), with the cache. Use the smith you are working on:
 `go run ./apps/smith run lint test build`.

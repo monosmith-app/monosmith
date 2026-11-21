@@ -1,0 +1,15 @@
+# Steps that fail because of a smith gap with an open issue, tab-separated.
+# The lab reports such a step as "known #N" and stays green. Remove the line
+# when the issue is fixed: the lab prints a note when a known step passes.
+#
+# id	step	issue
+mitt	lint	1173
+express-api	lint	1173
+vite-react	lint	1173
+sampleproject	lint	1173
+astar	lint	1173
+file-analyzer	lint	1173
+mitt	test	1174
+astar	build	1175
+file-analyzer	test	1176
+astar	ignored	1178
