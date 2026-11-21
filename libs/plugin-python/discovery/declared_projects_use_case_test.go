@@ -14,6 +14,7 @@ func declaredWorkspace(t *testing.T) string {
 	write(t, ws, "pyproject.toml", "[project]\nname = \"acme\"\nversion = \"1.0.0\"\n")
 	write(t, ws, "src/core/__init__.py", "")
 	write(t, ws, "apps/web/__main__.py", "import os\nfrom core import x\n")
+	write(t, ws, "apps/web/test_web.py", "")
 	return ws
 }
 

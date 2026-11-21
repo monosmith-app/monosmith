@@ -54,7 +54,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		var args ToolArgs
 		if args.Ruff, _, err = linting.Args(workspaceRoot, root); err == nil {
 			if args.Mypy, _, err = typechecking.Args(workspaceRoot, root); err == nil {
-				args.Pytest, _, err = testrunning.Args(workspaceRoot, root)
+				var own bool
+				if args.Pytest, own, err = testrunning.Args(workspaceRoot, root); err == nil {
+					args.NoTests = !own && !HasTestFiles(dir)
+				}
 			}
 		}
 		if err != nil {
