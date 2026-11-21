@@ -288,7 +288,6 @@ func (s Shell) projectPanel() detail.Panel {
 		detail.Action{ID: "x:explain", Label: words.Say("tui.detail.explain"), Hint: words.Say("tui.detail.explain_hint")},
 		detail.Action{ID: "x:why", Label: words.Say("tui.detail.why_who_owns_these_files"), Hint: words.Say("tui.detail.what_produced_the_project_s_files")},
 		detail.Action{ID: "x:graph", Label: words.Say("tui.detail.graph_needs_and_used_by")},
-		detail.Action{ID: "x:settings", Label: words.Say("tui.detail.project_settings"), Hint: words.Say("tui.detail.project_settings_hint", "name", p.Name)},
 	)
 	actions = append(actions, s.derivedActions(p)...)
 	title := ""
@@ -296,7 +295,8 @@ func (s Shell) projectPanel() detail.Panel {
 		title = words.Say("tui.detail.run_on", "name", p.Name)
 	}
 	// The forms about the project have no key: they are under More, after the keyed actions.
-	more := append(s.projectFormActions(p), s.projectMoreActions()...)
+	more := append([]detail.Action{{ID: "x:settings", Label: words.Say("tui.detail.project_settings"), Hint: words.Say("tui.detail.project_settings_hint", "name", p.Name)}}, s.projectFormActions(p)...)
+	more = append(more, s.projectMoreActions()...)
 	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, More: more, MoreTitle: words.Say("tui.detail.more"), After: after}
 }
 
