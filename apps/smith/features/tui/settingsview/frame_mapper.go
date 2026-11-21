@@ -38,19 +38,20 @@ func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 	rw := max(w-f.listW-1, 0)
 	left := make([]string, h)
 	left[0] = th.Muted(words.Say("settingsview.sections.title"))
-	for i, s := range Sections {
+	for i, s := range m.sections() {
 		row := i + 1
 		if row >= h {
 			break
 		}
 		f.rowSection[row] = s
-		label := "   " + s.Title()
+		title := m.titleOf(s)
+		label := "   " + title
 		switch {
 		case s == m.section && !m.onItems:
 			// The selected look of every pick list: the cursor mark and an accent label.
-			label = th.Accent(" " + th.Icons.Pointer + " " + s.Title())
+			label = th.Accent(" " + th.Icons.Pointer + " " + title)
 		case s == m.section:
-			label = th.Bold(" " + th.Icons.Pointer + " " + s.Title())
+			label = th.Bold(" " + th.Icons.Pointer + " " + title)
 		case px >= 0 && px < f.listW && py == row:
 			label = th.RowHover(pane.Fit(label, f.listW))
 		}
@@ -89,7 +90,7 @@ func capital(s string) string {
 func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	rows := make([]string, h)
 	rowItem := map[int]int{}
-	rows[0] = " " + th.Title(m.section.Title()) + "  " + th.Muted(m.section.About())
+	rows[0] = " " + th.Title(m.titleOf(m.section)) + "  " + th.Muted(m.section.About())
 	body := h - 1
 	if body < 1 {
 		return rows, rowItem
@@ -246,6 +247,15 @@ func (m Model) listLines(th theme.Theme, list []item, w, cursor int) (lines []st
 // or no backend. blocked is true when it does.
 func (m Model) unavailable(th theme.Theme, w int) (lines []string, blocked bool) {
 	if !m.section.readsWorkspace() {
+		return nil, false
+	}
+	if m.section == Project {
+		switch {
+		case m.projectLoading:
+			return []string{"", " " + th.Muted(words.Say("settingsview.project.reading", "name", m.proj.Name))}, true
+		case m.proj.Err != nil:
+			return append([]string{""}, indent(pane.Wrap(th.Failure(m.proj.Err.Error()), w-2, 0))...), true
+		}
 		return nil, false
 	}
 	switch {

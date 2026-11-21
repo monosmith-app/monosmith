@@ -21,12 +21,16 @@ const (
 	CI
 	Forms
 	Update
+	// Project is the settings of one project, listed last while one is open
+	// (see Model.OpenProject).
+	Project
 )
 
 // sectionCount is the number of sections, the size of the per-section state.
-const sectionCount = Update + 1
+const sectionCount = Project + 1
 
-// Sections lists them in order.
+// Sections lists the sections that are always there, in order; the Project
+// section follows them while a project is open.
 var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Assistants, CI, Forms, Update}
 
 // sectionForms are the actions (by catalogue id, see guide.Action.Presents)
@@ -40,7 +44,7 @@ var sectionForms = map[Section][]string{
 
 // Title is the name in the list.
 func (s Section) Title() string {
-	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.assistants"), words.Say("settingsview.section.ci"), words.Say("settingsview.section.forms"), words.Say("settingsview.section.update")}[s]
+	return [...]string{words.Say("settingsview.section.plugins"), words.Say("settingsview.section.architecture"), words.Say("settingsview.section.style"), words.Say("settingsview.section.workspace"), words.Say("settingsview.section.recipes"), words.Say("settingsview.section.assistants"), words.Say("settingsview.section.ci"), words.Say("settingsview.section.forms"), words.Say("settingsview.section.update"), words.Say("settingsview.section.project")}[s]
 }
 
 // About is the line under the heading of the open section.
@@ -55,6 +59,7 @@ func (s Section) About() string {
 		words.Say("settingsview.about.ci"),
 		words.Say("settingsview.about.forms"),
 		words.Say("settingsview.about.update"),
+		words.Say("settingsview.about.project"),
 	}[s]
 }
 
@@ -93,6 +98,8 @@ const (
 	kindForm
 	kindUpdate
 	kindUpdateMute
+	// kindFact is a value of a project that its manifest owns: shown, not changed.
+	kindFact
 )
 
 // item is one selectable row of a section; group is the heading it sits under.
@@ -137,6 +144,13 @@ func (m Model) items(s Section) []item {
 		for i, st := range m.snap.Settings {
 			add(kindSetting, tableOf(st.Path), st.Path, i)
 		}
+	case Project:
+		for i, f := range m.proj.Facts {
+			add(kindFact, words.Say("settingsview.group.facts", "file", f.Source), f.Key, i)
+		}
+		for i, st := range m.proj.Settings {
+			add(kindSetting, words.Say("settingsview.group.project", "table", m.projectTable()), st.Path, i)
+		}
 	case Recipes:
 		for i, r := range m.snap.Recipes {
 			add(kindRecipe, words.Say("settingsview.group.recipes"), r.Path, i)
@@ -179,8 +193,26 @@ func (m Model) current() (item, bool) {
 
 // clampCursors keeps every cursor on a row, after the lists changed.
 func (m Model) clampCursors() Model {
-	for _, s := range Sections {
+	for _, s := range m.sections() {
 		m.cursor[s] = max(min(m.cursor[s], len(m.items(s))-1), 0)
 	}
 	return m
+}
+
+// sections are the sections the list shows: Sections, and Project while a
+// project is open.
+func (m Model) sections() []Section {
+	if m.project == nil {
+		return Sections
+	}
+	return append(append([]Section{}, Sections...), Project)
+}
+
+// settingAt is the setting of a kindSetting row: the open project's in the
+// Project section, the workspace's elsewhere.
+func (m Model) settingAt(it item) Setting {
+	if m.section == Project {
+		return m.proj.Settings[it.idx]
+	}
+	return m.snap.Settings[it.idx]
 }

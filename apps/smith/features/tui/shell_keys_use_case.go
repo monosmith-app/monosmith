@@ -334,6 +334,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.openPresentedForm(formEject, nil)
 	case "tauri-add":
 		return s.openPresentedForm(formTauriAdd, s.projectsWhere(canAddTauri))
+	case "settings":
+		return s.openProjectSettings()
 	case "graph":
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)

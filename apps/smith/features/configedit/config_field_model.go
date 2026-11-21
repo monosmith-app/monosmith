@@ -30,6 +30,10 @@ type Field struct {
 	// is the default, so an editor shows a picker; empty when the setting
 	// takes any value of its type.
 	Options []Option `json:"options,omitempty"`
+	// DeclaredOnly is true for a project setting that only a project declared
+	// in smith.toml takes (root, language, kind): a project with a manifest
+	// gets them from the manifest and its plugin.
+	DeclaredOnly bool `json:"declaredOnly,omitempty"`
 }
 
 // Option is one value a setting with a fixed set of values takes.
@@ -44,11 +48,12 @@ type Option struct {
 	Default bool `json:"default,omitempty"`
 }
 
-// Table and Key split the path.
-func (f Field) Table() string { return strings.SplitN(f.Path, ".", 2)[0] }
+// Table is the table of smith.toml the setting sits in: the path up to its
+// last dot ("ci", or "projects.web" for a project's setting).
+func (f Field) Table() string { return f.Path[:strings.LastIndex(f.Path, ".")] }
 
 // Key is the setting's name inside its table.
-func (f Field) Key() string { return strings.SplitN(f.Path, ".", 2)[1] }
+func (f Field) Key() string { return f.Path[strings.LastIndex(f.Path, ".")+1:] }
 
 type schemaNode struct {
 	Type                 string                `json:"type"`
@@ -139,10 +144,93 @@ func options(values, descriptions []string, def json.RawMessage) []Option {
 // is the stack Node projects take when they record none.
 const DefaultStackPrefix = "default_stacks."
 
+// projectsPrefix starts the path of a project's setting:
+// projects.<name>.<key>.
+const projectsPrefix = "projects."
+
+// declaredOnlyKeys are the project settings only a project declared in
+// smith.toml takes; the validator of declared projects refuses them alone.
+var declaredOnlyKeys = []string{"root", "language", "kind"}
+
+// ProjectPath is the path of a project's setting: projects.<name>.<key>, the
+// name quoted when it is not a bare TOML key.
+//
+// Parameters: name is the project's name; key is the setting (tag_prefix).
+// Returns: the path Find, Get, Set and Unset take.
+func ProjectPath(name, key string) string { return projectsPrefix + TableKey(name) + "." + key }
+
+// ProjectFields are the settings of [projects.<name>] that are one value or a
+// list of values, as the schema describes them, by name. Tables inside it
+// (release, docker, tasks, ...) are edited in the file.
+//
+// Parameters: name is the project's name.
+// Returns: the fields, with paths from ProjectPath; an error when the
+// embedded schema cannot be read.
+func ProjectFields(name string) ([]Field, error) {
+	var root schemaNode
+	if err := json.Unmarshal(workspace.Schema, &root); err != nil {
+		return nil, err
+	}
+	var node schemaNode
+	if err := json.Unmarshal(root.Properties["projects"].AdditionalProperties, &node); err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(node.Properties))
+	for k := range node.Properties {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var out []Field
+	for _, k := range keys {
+		if f, ok := fieldOf(ProjectPath(name, k), node.Properties[k]); ok {
+			f.DeclaredOnly = slices.Contains(declaredOnlyKeys, k)
+			out = append(out, f)
+		}
+	}
+	return out, nil
+}
+
+// splitProjectPath splits "<name>.<key>" (the path after "projects.") at its
+// last dot, and unquotes a quoted name.
+func splitProjectPath(rest string) (name, key string, ok bool) {
+	i := strings.LastIndex(rest, ".")
+	if i <= 0 || i == len(rest)-1 {
+		return "", "", false
+	}
+	name, key = rest[:i], rest[i+1:]
+	if unquoted, err := strconv.Unquote(name); err == nil {
+		name = unquoted
+	}
+	return name, key, name != ""
+}
+
+// findProjectField is Find for projects.<name>.<key>.
+func findProjectField(path string) (Field, error) {
+	name, key, ok := splitProjectPath(strings.TrimPrefix(path, projectsPrefix))
+	if !ok {
+		return Field{}, fmt.Errorf("%s is not a project setting: write projects.<project>.<setting>, such as projects.web.tag_prefix", path)
+	}
+	fields, err := ProjectFields(name)
+	if err != nil {
+		return Field{}, err
+	}
+	var keys []string
+	for _, f := range fields {
+		if f.Key() == key {
+			return f, nil
+		}
+		keys = append(keys, f.Key())
+	}
+	return Field{}, fmt.Errorf("%s is not a setting of [projects.%s] that smith config edits. Its settings are %s; tables such as release and tasks are edited in smith.toml", key, TableKey(name), strings.Join(keys, ", "))
+}
+
 // Find returns the field at path.
 func Find(path string) (Field, error) {
 	if language := strings.TrimPrefix(path, DefaultStackPrefix); language != path && language != "" {
 		return DefaultStackField(language), nil
+	}
+	if strings.HasPrefix(path, projectsPrefix) {
+		return findProjectField(path)
 	}
 	fields, err := Fields()
 	if err != nil {
@@ -162,7 +250,7 @@ func Find(path string) (Field, error) {
 	if strings.HasPrefix(path, "release.channels") {
 		return Field{}, errors.New("release channels are a list of tables, which smith config set does not edit: add a [[release.channels]] table to smith.toml (branch, prerelease, major, dist_tag). docs/reference/releasing.md, Release channels, shows one")
 	}
-	return Field{}, errors.New(message + " Run smith config list to see them (stacks, tasks and projects are edited in smith.toml).")
+	return Field{}, errors.New(message + " Run smith config list to see them, or smith config list -p <project>.")
 }
 
 // DefaultStackField is the setting that names the stack of a language's

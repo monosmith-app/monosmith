@@ -88,6 +88,33 @@ func TestEverySettingWithAFixedSetOfValuesCarriesItsOptionsExplained(t *testing.
 	}
 }
 
+// The settings of a project ([projects.<name>]) follow the same rule: a fixed
+// set of values is shown as options, each explained.
+func TestEveryProjectSettingWithAFixedSetOfValuesCarriesItsOptionsExplained(t *testing.T) {
+	fields, err := ProjectFields("web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	withEnum := 0
+	for _, f := range fields {
+		if len(f.Enum) == 0 {
+			continue
+		}
+		withEnum++
+		if len(f.Options) != len(f.Enum) {
+			t.Errorf("%s takes %v but has %d options", f.Path, f.Enum, len(f.Options))
+		}
+		for _, o := range f.Options {
+			if strings.TrimSpace(o.Description) == "" {
+				t.Errorf("%s option %q has no description", f.Path, o.Value)
+			}
+		}
+	}
+	if withEnum == 0 {
+		t.Fatal("kind takes app, lib or package: the walk found no fixed set")
+	}
+}
+
 func TestTheDefaultOptionIsMarkedForAWordAndForEachWordOfAList(t *testing.T) {
 	marked := func(path string) []string {
 		f, err := Find(path)

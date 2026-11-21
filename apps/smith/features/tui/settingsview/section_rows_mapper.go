@@ -67,12 +67,15 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 	case kindIcons:
 		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(iconsAbout[it.key]))
 	case kindSetting:
-		st := m.snap.Settings[it.idx]
+		st := m.settingAt(it)
 		if st.Type == "boolean" {
 			// A switch shows its state as a box, then the word the file holds.
-			return "   " + pane.Cell(st.Path, m.pathWidth(w)) + choicerow.Box(boolValue(st), false) + " " + shownValue(th, st)
+			return "   " + pane.Cell(st.label(), m.pathWidth(w)) + choicerow.Box(boolValue(st), false) + " " + shownValue(th, st)
 		}
-		return "   " + pane.Cell(st.Path, m.pathWidth(w)) + shownValue(th, st)
+		return "   " + pane.Cell(st.label(), m.pathWidth(w)) + shownValue(th, st)
+	case kindFact:
+		f := m.proj.Facts[it.idx]
+		return "   " + pane.Cell(f.Key, m.pathWidth(w)) + f.Value
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
 		if r.Error != "" {
@@ -93,6 +96,15 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 // pathWidth is the width of the setting names: the longest, up to half the pane.
 func (m Model) pathWidth(w int) int {
 	n := 0
+	if m.section == Project {
+		for _, f := range m.proj.Facts {
+			n = max(n, pane.Width(f.Key))
+		}
+		for _, s := range m.proj.Settings {
+			n = max(n, pane.Width(s.label()))
+		}
+		return min(n+2, max(w/2, 12))
+	}
 	for _, s := range m.snap.Settings {
 		n = max(n, pane.Width(s.Path))
 	}
@@ -107,7 +119,9 @@ func (m Model) summary(it item) string {
 	case kindExternal:
 		return words.Say("settingsview.summary.external")
 	case kindSetting:
-		return oneLine(m.snap.Settings[it.idx].Explanation)
+		return oneLine(m.settingAt(it).Explanation)
+	case kindFact:
+		return oneLine(m.proj.Facts[it.idx].Explanation)
 	case kindTheme, kindIcons:
 		return words.Say("settingsview.summary.style")
 	case kindUpdate, kindUpdateMute:
@@ -212,8 +226,13 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		add(m.previewLines(th, it, w)...)
 	case kindIcons:
 		add(m.previewLines(th, it, w)...)
+	case kindFact:
+		f := m.proj.Facts[it.idx]
+		add(th.Bold(f.Key)+th.Muted("  "+words.Say("settingsview.fact.tag")), f.Explanation)
+		add(th.Muted(words.Say("settingsview.setting.now")) + f.Value)
+		add(th.Muted(words.Say("settingsview.fact.source", "file", f.Source)))
 	case kindSetting:
-		st := m.snap.Settings[it.idx]
+		st := m.settingAt(it)
 		add(th.Bold(st.Path)+th.Muted("  "+st.Type), st.Explanation)
 		if st.Default != "" {
 			add(th.Muted(words.Say("settingsview.setting.default")) + st.Default)

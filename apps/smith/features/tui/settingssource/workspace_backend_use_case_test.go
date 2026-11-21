@@ -148,14 +148,14 @@ func TestChangingAndResettingASettingWritesTheBytesConfigSetAndUnsetWrite(t *tes
 		if _, err := b.SetSetting(s.path, s.values); err != nil {
 			t.Fatal(err)
 		}
-		cli(t, cliDir, configedit.Command(), append([]string{"set", s.path}, s.values...)...)
+		cli(t, cliDir, configedit.Command(nil), append([]string{"set", s.path}, s.values...)...)
 		same(t, tab, cliDir)
 	}
 	for _, path := range []string{"release.branch", "cache.max_size_mb"} {
 		if _, err := b.UnsetSetting(path); err != nil {
 			t.Fatal(err)
 		}
-		cli(t, cliDir, configedit.Command(), "unset", path)
+		cli(t, cliDir, configedit.Command(nil), "unset", path)
 		same(t, tab, cliDir)
 	}
 	got := read(t, tab)

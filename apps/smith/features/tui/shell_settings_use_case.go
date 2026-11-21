@@ -164,3 +164,17 @@ func (s *Shell) showSettings(section settingsview.Section) tea.Cmd {
 	s.settings = s.settings.Show(section)
 	return cmd
 }
+
+// openProjectSettings opens the Settings tab on the settings of the project
+// selected in the Projects tab: the same editors as the Workspace section,
+// writing [projects.<name>] in smith.toml.
+func (s *Shell) openProjectSettings() tea.Cmd {
+	p, ok := s.list.Selected()
+	if !ok {
+		return nil
+	}
+	cmd := s.gotoTab(commands.TabSettings)
+	var load tea.Cmd
+	s.settings, load = s.settings.OpenProject(settingsview.ProjectRef{Name: p.Name, Root: p.Root, Language: p.Language, Kind: p.Kind, Version: p.Version})
+	return tea.Batch(cmd, load)
+}

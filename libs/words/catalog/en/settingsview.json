@@ -186,5 +186,15 @@
   "settingsview.update.mute_about": "Ticked: the bottom bar and the first-run alert stay quiet about updates. smith still checks, and this section and smith update still work.",
   "settingsview.update.mute_enter": "Enter ticks or unticks it. It is saved for you only.",
   "settingsview.update.reminders_off": "update reminders are off; Settings > Update brings them back",
-  "settingsview.update.reminders_on": "update reminders are on"
+  "settingsview.update.reminders_on": "update reminders are on",
+  "settingsview.section.project": "Project",
+  "settingsview.section.project.named": "Project {name}",
+  "settingsview.about.project": "the settings smith.toml gives this project; what its manifest owns is read-only",
+  "settingsview.group.facts": "From {file} (read-only)",
+  "settingsview.group.project": "{table} in smith.toml",
+  "settingsview.fact.readonly": "{key} comes from {file}: change it there.",
+  "settingsview.fact.tag": "read-only",
+  "settingsview.fact.source": "Set in {file}. Change it there.",
+  "settingsview.reason.readonly": "this value comes from {file}, not smith.toml",
+  "settingsview.project.reading": "Reading the settings of {name}…"
 }

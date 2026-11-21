@@ -69,8 +69,12 @@ type InstalledPlugin struct {
 // Setting is one setting of smith.toml as the schema describes it, and its
 // value now.
 type Setting struct {
-	// Path is "table.key", e.g. "ci.devcontainer".
+	// Path is "table.key", e.g. "ci.devcontainer", or projects.<name>.<key>
+	// for a project's setting.
 	Path string
+	// Name is what the row shows when it is not the path: the key of a
+	// project's setting (tag_prefix). Empty shows Path.
+	Name string
 	// Type is the schema's: boolean, integer, string or array.
 	Type string
 	// Explanation is what the setting does; Default what it is when unset.
@@ -107,6 +111,44 @@ func (st Setting) values() []string {
 		out = append(out, o.Value)
 	}
 	return out
+}
+
+// label is what the row of a setting shows: its name, else its path.
+func (st Setting) label() string {
+	if st.Name != "" {
+		return st.Name
+	}
+	return st.Path
+}
+
+// ProjectRef is the project whose settings the Project section shows, as the
+// Projects tab knows it.
+type ProjectRef struct {
+	// Name is the project's name; Root its workspace-relative folder.
+	Name, Root string
+	// Language, Kind and Version are what its plugin reports.
+	Language, Kind, Version string
+}
+
+// ProjectView is what the Project section shows: the values the project's
+// manifest owns, read-only, and the settings of [projects.<name>].
+type ProjectView struct {
+	// Err says why the project could not be read; the rest is then empty.
+	Err error
+	// Name is the project's name; Manifest the file that owns the facts.
+	Name, Manifest string
+	// Facts are the read-only values, with the file that holds each.
+	Facts []Fact
+	// Settings are the settings of [projects.<name>] that apply to it.
+	Settings []Setting
+}
+
+// Fact is a value the project's manifest or plugin owns.
+type Fact struct {
+	// Key names it (name, version, language, kind, root); Value is the value.
+	Key, Value string
+	// Explanation says what it is and where to change it; Source is the file.
+	Explanation, Source string
 }
 
 // Recipe is a recipe file of the workspace.

@@ -8,6 +8,10 @@ package settingsview
 type Backend struct {
 	// Load reads the workspace.
 	Load func() Snapshot
+	// LoadProject reads the settings of one project (smith config list -p).
+	// Its settings are changed with SetSetting and UnsetSetting at
+	// projects.<name>.<key>.
+	LoadProject func(p ProjectRef) ProjectView
 	// SetPlugin switches a built-in plugin on or off (smith plugin enable|disable).
 	// It returns a warning to show with the change ("" for none).
 	SetPlugin func(name string, enable bool) (string, error)

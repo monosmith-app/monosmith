@@ -12,12 +12,16 @@ type Msg interface{ settingsMsg() }
 type (
 	// Loaded carries the workspace as read.
 	Loaded struct{ Snapshot Snapshot }
-	// Applied says how a change ended; Fresh is the workspace read again after it.
+	// Applied says how a change ended; Fresh is the workspace read again after
+	// it, and FreshProject the open project's settings.
 	Applied struct {
-		Note  string
-		Err   error
-		Fresh *Snapshot
+		Note         string
+		Err          error
+		Fresh        *Snapshot
+		FreshProject *ProjectView
 	}
+	// ProjectLoaded carries the settings of the project the section opened.
+	ProjectLoaded struct{ View ProjectView }
 	// Reviewed carries the review of a plugin the person asked to trust.
 	Reviewed struct {
 		// Ticket is the number of the request: an answer to a stopped one is dropped.
@@ -40,7 +44,8 @@ type (
 	}
 )
 
-func (Loaded) settingsMsg()     {}
+func (Loaded) settingsMsg()        {}
+func (ProjectLoaded) settingsMsg() {}
 func (Applied) settingsMsg()    {}
 func (Reviewed) settingsMsg()   {}
 func (StyleSaved) settingsMsg() {}

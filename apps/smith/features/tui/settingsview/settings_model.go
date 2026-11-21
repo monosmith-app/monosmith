@@ -56,6 +56,12 @@ type Model struct {
 	// tick and waited move the spinner line (see Pulse).
 	tick   int
 	waited time.Duration
+	// project is the project the Project section shows, nil while none is
+	// open; proj is what was read about it, and projectLoading is true until
+	// it is read.
+	project        *ProjectRef
+	proj           ProjectView
+	projectLoading bool
 }
 
 // New builds the tab on a backend; forms are the guided forms its last section opens.
@@ -153,6 +159,8 @@ func (m Model) Handle(msg Msg) (Model, Result) {
 	case Loaded:
 		m.snap, m.loaded, m.loading = msg.Snapshot, true, false
 		m = m.clampCursors()
+	case ProjectLoaded:
+		m = m.projectLoaded(msg.View)
 	case Applied:
 		m.busy = ""
 		return m.applied(msg)
@@ -215,6 +223,9 @@ func (m Model) applied(msg Applied) (Model, Result) {
 		m.snap = *msg.Fresh
 		m = m.clampCursors()
 	}
+	if msg.FreshProject != nil {
+		m = m.projectLoaded(*msg.FreshProject)
+	}
 	toggled := m.toggling
 	m.toggling = nil
 	return m, Result{Note: msg.Note, Toggled: toggled}
@@ -253,6 +264,8 @@ func (m Model) Reasons() map[string]string {
 		r["settings.change"] = words.Say("settingsview.reason.nothing")
 	case it.kind == kindInstalled || it.kind == kindRecipe:
 		r["settings.change"] = words.Say("settingsview.reason.listed")
+	case it.kind == kindFact:
+		r["settings.change"] = words.Say("settingsview.reason.readonly", "file", m.proj.Facts[it.idx].Source)
 	}
 	if !ok || it.kind != kindExternal {
 		r["settings.trust"] = words.Say("settingsview.reason.select.trust")
@@ -262,7 +275,7 @@ func (m Model) Reasons() map[string]string {
 	}
 	if !ok || it.kind != kindSetting {
 		r["settings.unset"] = words.Say("settingsview.reason.select.unset")
-	} else if !m.snap.Settings[it.idx].Set {
+	} else if !m.settingAt(it).Set {
 		r["settings.unset"] = words.Say("settingsview.reason.default")
 	}
 	return r
