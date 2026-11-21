@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -152,9 +153,13 @@ func TestSetVersionIgnoresCaseAndRefusesAGonePackage(t *testing.T) {
 func TestLatestTakesTheNewestStableRelease(t *testing.T) {
 	real := FetchJSON
 	t.Cleanup(func() { FetchJSON = real })
+	// Latest asks for every package at once, so the fake records under a lock.
+	var mu sync.Mutex
 	var asked []string
 	FetchJSON = func(url string, v any) error {
+		mu.Lock()
 		asked = append(asked, url)
+		mu.Unlock()
 		switch {
 		case strings.Contains(url, "private"):
 			return errors.New(url + ": 404 Not Found")
