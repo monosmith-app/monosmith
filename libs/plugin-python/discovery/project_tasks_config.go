@@ -21,12 +21,17 @@ var inputs = []string{
 // file, or nothing when the repository configures the tool itself.
 type ToolArgs struct {
 	Ruff, Mypy, Pytest []string
+	// NoTests is true for a project with no test file that does not
+	// configure pytest: pytest would collect nothing and fail (exit code 5),
+	// so the project gets no test task.
+	NoTests bool
 }
 
 // Tasks returns the tasks of a Python project. Every project is installed in
 // the venv in editable mode, so none needs another project built first. Lint,
 // typecheck and test run on smith's default configuration unless the repository
-// configures the tool; the default's content is an input of the task.
+// configures the tool; the default's content is an input of the task. A
+// project without tests (args.NoTests) gets no test task.
 func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolArgs) map[string]protocol.Task {
 	py := venv.Interpreter()
 	task := func(command []string, tool string, toolArgs []string) protocol.Task {
@@ -48,6 +53,9 @@ func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolA
 	lint := tasks["lint"]
 	lint.Fix = &protocol.TaskFix{Command: slices.Concat([]string{py, "-m", "ruff", "check", "--fix"}, args.Ruff, ruffSkip, []string{"."})}
 	tasks["lint"] = lint
+	if args.NoTests {
+		delete(tasks, "test")
+	}
 	switch kind {
 	case protocol.ProjectPackage:
 		addDepsCheck(tasks, root)
