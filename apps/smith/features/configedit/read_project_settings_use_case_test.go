@@ -147,6 +147,8 @@ func TestAProjectNameThatIsNotABareKeyIsQuotedInItsPath(t *testing.T) {
 
 func TestConfigListWithAProjectPrintsItsViewAndSetChecksTheProjectExists(t *testing.T) {
 	root := projectWorkspace(t)
+	// smith sets it for the tasks it runs (smith run test); the command would follow it to the real workspace.
+	t.Setenv("SMITH_WORKSPACE_ROOT", "")
 	t.Chdir(root)
 	loader := func(_, name string, _ io.Writer) (ProjectFacts, error) {
 		if name != "web" {
