@@ -1,6 +1,10 @@
 package pipeline
 
-import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+import (
+	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
 
 // MissingTests returns a warning for each project that has no test task.
 // Discovery gives no test task to a project with no test file, because pytest
@@ -20,7 +24,7 @@ func MissingTests(projects []protocol.Project) []protocol.Finding {
 			Warning: true,
 			Problem: "has no tests: no test_*.py or *_test.py file, so it has no test task",
 			Detail:  p.Name + " has no test_*.py or *_test.py file, and pytest finds no tests to run",
-			Remedy:  "add a test, such as tests/test_" + p.Name + ".py; smith run test -p " + p.Name + " then runs it with pytest",
+			Remedy:  "add a test, such as tests/test_" + strings.NewReplacer("-", "_", ".", "_").Replace(p.Name) + ".py; smith run test -p " + p.Name + " then runs it with pytest",
 		})
 	}
 	return out

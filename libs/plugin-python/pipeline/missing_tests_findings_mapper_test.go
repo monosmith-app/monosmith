@@ -19,7 +19,7 @@ func TestMissingTests(t *testing.T) {
 	if f.Project != "file-analyzer" || !f.Warning || f.OK {
 		t.Fatalf("a warning about file-analyzer: %+v", f)
 	}
-	if !strings.Contains(f.Problem, "has no tests") || !strings.Contains(f.Remedy, "smith run test -p file-analyzer") {
+	if !strings.Contains(f.Problem, "has no tests") || !strings.Contains(f.Remedy, "smith run test -p file-analyzer") || !strings.Contains(f.Remedy, "tests/test_file_analyzer.py") {
 		t.Fatalf("the problem and the remedy: %+v", f)
 	}
 }
