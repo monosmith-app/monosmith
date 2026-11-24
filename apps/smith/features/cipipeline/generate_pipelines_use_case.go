@@ -86,7 +86,7 @@ func collect(s *session.Session, assets bool) (Contributions, error) {
 		// registry = "none" or "github-release": no registry credential and no
 		// pub.dev workflow. The GitHub token below is all such a project needs.
 		if !release.PublishesToNoRegistry(p) {
-			c.Add(protocol.CIResult{Credentials: release.DistributionCredentials(p.Release, "")})
+			c.Add(protocol.CIResult{Credentials: release.DistributionCredentials(p.Release, release.NPMRegistry(p), "")})
 		}
 		if p.SplitRepo != "" {
 			c.Add(protocol.CIResult{Credentials: []protocol.Credential{splitrepo.Credential(p.SplitRepo)}})

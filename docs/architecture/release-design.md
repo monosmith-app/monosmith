@@ -187,7 +187,7 @@ The re-packaging of one binary into every package manager is a core feature, not
 
 | Target | Authentication | Where |
 |---|---|---|
-| npm packages of an app | `NODE_AUTH_TOKEN`; provenance through the job's OIDC token | `npmbinaries`, CI model `Provenance` |
+| npm packages of an app | The project's publish registry from smith.toml (`npmbinaries.RegistryOf`): `NODE_AUTH_TOKEN` on npmjs.org, the pipeline's sign-in on Azure Artifacts, `GITHUB_TOKEN` on GitHub Packages, `token_env` on a token registry. Each package folder gets an `.npmrc` naming the registry and its credentials (`npmbinaries.Npmrc`). Provenance through the job's OIDC token | `npmbinaries`, CI model `Provenance` |
 | PyPI, NuGet | `PYPI_TOKEN`, `NUGET_API_KEY` (`DistributionCredentials`) | `pypiwheels`, `nugettool` |
 | RubyGems | `GEM_HOST_API_KEY`, or the workflow's OIDC token with `rubygems_trusted_publishing` | `rubygems` |
 | VS Code Marketplace | `VSCE_PAT`, or an Entra ID identity the pipeline signed in as (`vsce_entra`) | `libs/plugin-node/releasing/publish_extension_use_case.go`; [ADR 0031](decisions/0031-marketplace-publishing-with-entra-id.md) |

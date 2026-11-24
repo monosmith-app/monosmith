@@ -44,6 +44,9 @@ type Release struct {
 	Tag string
 	// OutDir is the workspace-relative directory the packages are written to.
 	OutDir string
+	// Registry is the npm registry the packages publish to; "" is npmjs.org.
+	// TokenEnv is the variable npm reads its token from. See RegistryOf.
+	Registry, TokenEnv string
 	// PropagationWait is the longest Finalize waits for the platform packages
 	// to be fetchable from the registry; 0 probes once. Publish never waits.
 	PropagationWait time.Duration
@@ -99,6 +102,9 @@ func Publish(root string, r Release, dryRun bool) (Result, error) {
 		if err := writePlatform(root, r, a, name, dir); err != nil {
 			return res, err
 		}
+		if err := writeAuth(root, dir, r); err != nil {
+			return res, err
+		}
 	}
 	if len(platforms) == 0 {
 		return res, fmt.Errorf("no archive for a platform npm knows")
@@ -110,6 +116,9 @@ func Publish(root string, r Release, dryRun bool) (Result, error) {
 			continue
 		}
 		if err := writeWrapper(r, name, platforms, dir); err != nil {
+			return res, err
+		}
+		if err := writeAuth(root, dir, r); err != nil {
 			return res, err
 		}
 	}
@@ -173,7 +182,7 @@ func Finalize(root string, r Release, moves []protocol.TagMove) (Finalized, erro
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return out, err
 		}
-		if err := writeAuth(dir); err != nil {
+		if err := writeAuth(root, dir, r); err != nil {
 			return out, err
 		}
 		step := r
@@ -210,13 +219,20 @@ func Incomplete(root string, r Release, pairs [][2]string) (missing []string, mo
 		}
 	}
 	slices.Sort(awaits)
+	dir := root
+	if r.Registry != "" && r.OutDir != "" {
+		ask := filepath.Join(root, filepath.FromSlash(r.OutDir), "registry")
+		if writeAuth(root, ask, r) == nil {
+			dir = ask
+		}
+	}
 	for _, name := range append(slices.Clone(awaits), r.Names...) {
-		if !fetchable(root, name, r.Version) {
+		if !fetchable(dir, name, r.Version) {
 			missing = append(missing, name)
 		}
 	}
 	for _, name := range r.Names {
-		if hasPendingTag(root, name, r.Version, cmp.Or(intendedTag(r), "latest")) {
+		if hasPendingTag(dir, name, r.Version, cmp.Or(intendedTag(r), "latest")) {
 			moves = append(moves, protocol.TagMove{Package: name, Version: r.Version, Tag: cmp.Or(intendedTag(r), "latest"), Awaits: awaits})
 		}
 	}
@@ -341,13 +357,26 @@ var fetchable = func(dir, name, version string) bool {
 
 var pause = time.Sleep
 
-// writeAuth gives a package directory an .npmrc using NODE_AUTH_TOKEN, when set
-// (npm never packs an .npmrc); otherwise npm's own login is used.
-func writeAuth(dir string) error {
-	if os.Getenv("NODE_AUTH_TOKEN") == "" {
+// writeAuth gives a package folder the .npmrc that points npm at the
+// release's registry and signs in to it (see Npmrc), and a stub package.json
+// when the folder has none, since npm reads a project .npmrc only next to one.
+// Without anything to say it writes nothing: npm's own login is used.
+func writeAuth(root, dir string, r Release) error {
+	workspace, _ := os.ReadFile(filepath.Join(root, ".npmrc"))
+	rc := Npmrc(string(workspace), r, os.Getenv)
+	if rc == "" {
 		return nil
 	}
-	return os.WriteFile(filepath.Join(dir, ".npmrc"), []byte("//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n"), 0o600)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	manifest := filepath.Join(dir, "package.json")
+	if _, err := os.Stat(manifest); os.IsNotExist(err) {
+		if err := os.WriteFile(manifest, []byte("{\"private\": true}\n"), 0o644); err != nil {
+			return err
+		}
+	}
+	return os.WriteFile(filepath.Join(dir, ".npmrc"), []byte(rc), 0o600)
 }
 
 // publishOne publishes a package directory unless the registry has its
@@ -359,9 +388,6 @@ func writeAuth(dir string) error {
 func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	if registryHas(dir, name, r.Version) {
 		return false, nil
-	}
-	if err := writeAuth(dir); err != nil {
-		return false, err
 	}
 	args := []string{"publish", "--access", "public"}
 	if tag != "" {

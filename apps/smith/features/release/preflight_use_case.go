@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/npmbinaries"
 	"github.com/monosmith-app/monosmith/apps/smith/features/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/features/releasepack"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
@@ -75,7 +76,7 @@ func Preflight(s *session.Session, plan Plan) error {
 			}
 		}
 		if p := s.Graph.Get(item.Project); p != nil && !Native(p) && !PublishesToNoRegistry(p) {
-			for _, c := range DistributionCredentials(p.Release, item.Next) {
+			for _, c := range DistributionCredentials(p.Release, NPMRegistry(p), item.Next) {
 				if os.Getenv(c.Env) == "" && !alternative(c.Env) && !signedInByTheRun(s, c.Env) {
 					problems = append(problems, fmt.Sprintf("%s is not set: %s", c.Env, c.Description))
 				}
@@ -187,14 +188,25 @@ func publishedByItsPlugin(p *projectgraph.Project) bool {
 // pre-release version it is left out, and with no version (the generated
 // pipeline, which serves both) its description says so.
 //
+// The npm secret follows the registry smith.toml names for the project
+// (npm, from NPMRegistry): none for Azure Artifacts, which the pipeline signs
+// in to with its own token; GITHUB_TOKEN for GitHub Packages; the named
+// variable for a token registry; NODE_AUTH_TOKEN for npmjs.org.
+//
 // version is the version about to be published, or empty for any version.
-func DistributionCredentials(r *workspace.ProjectRelease, version string) []protocol.Credential {
+func DistributionCredentials(r *workspace.ProjectRelease, npm *protocol.Registry, version string) []protocol.Credential {
 	var creds []protocol.Credential
 	if r == nil {
 		return nil
 	}
 	if len(r.NPM) > 0 {
-		creds = append(creds, protocol.Credential{Env: "NODE_AUTH_TOKEN", Description: "npm token that can publish " + strings.Join(r.NPM, " and ") + " and their platform packages", Required: true})
+		if registryURL, env := npmbinaries.RegistryOf(npm); env != "" && (npm == nil || npm.Auth != protocol.AuthAzureArtifacts) {
+			where := ""
+			if registryURL != "" {
+				where = " on " + registryURL
+			}
+			creds = append(creds, protocol.Credential{Env: env, Description: "npm token that can publish " + strings.Join(r.NPM, " and ") + " and their platform packages" + where, Required: true})
+		}
 	}
 	if r.PyPI != "" && !r.SkipsPrerelease("pypi", version) {
 		creds = append(creds, protocol.Credential{Env: "PYPI_TOKEN", Description: "PyPI API token that can upload " + r.PyPI, Required: true})

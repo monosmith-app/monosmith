@@ -78,6 +78,7 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 	}
 	if len(r.NPM) > 0 {
 		release := npmbinaries.Release{Names: r.NPM, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/npm"}
+		release.Registry, release.TokenEnv = npmbinaries.RegistryOf(NPMRegistry(p))
 		if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
 			release.Tag = ch.Tag
 		}

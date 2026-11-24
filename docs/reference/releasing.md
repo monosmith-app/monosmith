@@ -730,7 +730,7 @@ rubygems = "acme"             # gem install acme
 
 | Registry | Packages | Secret |
 |---|---|---|
-| npm | One package per platform, named after the first name (`@acme/cli-linux-x64`, `@acme/cli-win32-arm64`, ...), holding the binary and limited to its `os` and `cpu`. Then every listed name as a package whose `bin` runs the binary that npm installed from its optional dependencies. | `NODE_AUTH_TOKEN` |
+| npm | One package per platform, named after the first name (`@acme/cli-linux-x64`, `@acme/cli-win32-arm64`, ...), holding the binary and limited to its `os` and `cpu`. Then every listed name as a package whose `bin` runs the binary that npm installed from its optional dependencies. The packages go to the registry smith.toml names for the project (`registry` under `[projects.<name>]`, else `[release]`, else `[workspace]`), else npmjs.org. | `NODE_AUTH_TOKEN` for npmjs.org; none for an `azure-artifacts` registry (the pipeline's `npmAuthenticate@0` signs in, or `SYSTEM_ACCESSTOKEN`); `GITHUB_TOKEN` for `github-packages`; the `token_env` variable for a `token` registry |
 | PyPI | One wheel per platform, the binary in its scripts, so pip, pipx and uv put it on PATH with no Python in between. One Linux wheel serves glibc and musl. | `PYPI_TOKEN` |
 | NuGet | One package per platform (`acme.linux-x64`, `acme.win-arm64`, ...) holding the binary, then the .NET tool package `acme`, which points at them. `dotnet tool install` (.NET 10 SDK and later) picks the platform's package and the command runs the binary itself, with no .NET runtime. Set `NUGET_PUSH_URL` to push to another feed's v2 endpoint. | `NUGET_API_KEY` |
 | RubyGems | One platform gem per platform (`x86_64-linux`, `x86_64-linux-musl`, `arm64-darwin`, `x64-mingw-ucrt`, ...), holding the binary and a Ruby launcher that runs it; RubyGems installs the gem matching the machine. | `GEM_HOST_API_KEY` |
@@ -1228,7 +1228,11 @@ else is only a warning, since a team can own it). Any failure stops the
 release before a single package is published, naming the registry, the
 secret and the fix. A key that is merely unset is already refused by the
 credential check above; npm's own login (no `NODE_AUTH_TOKEN`) cannot be
-asked and is left to `npm publish`.
+asked and is left to `npm publish`. An app's npm packages are checked on the
+registry smith.toml names for the project, with the token the publish uses:
+the registry's own variable, else the workspace `.npmrc` line for it (written
+by `npmAuthenticate@0` on Azure), else `NODE_AUTH_TOKEN`. With no token found
+for a named registry, the check is left to `npm publish`.
 
 A version a registry already has is a warning: it is expected when the
 [journal](#the-release-journal) shows this release published it, and said

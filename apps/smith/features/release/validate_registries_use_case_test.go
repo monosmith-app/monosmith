@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -284,5 +286,47 @@ func TestWithNuGetTrustedPublishingTheRefusalNamesTheNuGetUserAndPolicy(t *testi
 	}
 	if !strings.Contains(fix, "NUGET_USER") || !strings.Contains(fix, "trusted publishing policy") || strings.Contains(fix, "set NUGET_API_KEY") {
 		t.Errorf("the fix must name the NuGet user and the policy, not the key: %q", fix)
+	}
+}
+
+func TestTheNpmCheckAsksTheRegistrySmithTomlNamesNotNpmjs(t *testing.T) {
+	f := newFakeRegistries(t)
+	probe := f.probe()
+	// The default endpoint refuses everything, as npmjs.org refuses an Azure token.
+	probe.NPMRegistry, probe.NPMToken = f.server.URL+"/elsewhere", "good-npm-token"
+	named := RegistryTarget{Project: "cli", Registry: "npm", Names: []string{"acme"}, Version: "1.2.0", URL: f.server.URL + "/npm/", Token: "good-npm-token"}
+	if found := blocking(ValidateRegistries([]RegistryTarget{named}, probe)); len(found) != 0 {
+		t.Fatalf("the named registry accepts the token: %+v", found)
+	}
+	named.Token = "expired"
+	found := blocking(ValidateRegistries([]RegistryTarget{named}, probe))
+	if len(found) != 1 || !strings.Contains(found[0].Message, f.server.URL+"/npm") {
+		t.Fatalf("the refusal should name the registry it asked: %+v", found)
+	}
+	named.Token = ""
+	if found := ValidateRegistries([]RegistryTarget{named}, probe); len(found) != 0 {
+		t.Errorf("with no token found for the named registry, only npm publish can tell: %+v", found)
+	}
+}
+
+func TestTheNpmTargetReadsTheTokenWhereThePublishReadsIt(t *testing.T) {
+	feed := "https://pkgs.dev.azure.com/acme/_packaging/auto/npm/registry/"
+	azure := &protocol.Registry{Auth: protocol.AuthAzureArtifacts, NPM: feed}
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".npmrc"), []byte("registry="+feed+"\n//pkgs.dev.azure.com/acme/_packaging/auto/npm/registry/:_authToken=from-npmrc\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := map[string]string{}
+	get := func(k string) string { return env[k] }
+	if url, token := npmTarget(root, azure, get); url != feed || token != "from-npmrc" {
+		t.Errorf("npmTarget = %q, %q", url, token)
+	}
+	env["SYSTEM_ACCESSTOKEN"] = "job-token"
+	if _, token := npmTarget(root, azure, get); token != "job-token" {
+		t.Errorf("the registry's own variable comes first: %q", token)
+	}
+	env["NPM_CONFIG_REGISTRY"] = "https://override.example/"
+	if url, _ := npmTarget(root, azure, get); url != "https://override.example/" {
+		t.Errorf("NPM_CONFIG_REGISTRY overrides the URL, as for npm: %q", url)
 	}
 }

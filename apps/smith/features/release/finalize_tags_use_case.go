@@ -149,6 +149,7 @@ func (m *sessionMover) Move(project, plugin string, moves []protocol.TagMove) ([
 	}
 	if plugin == "" {
 		r := npmbinaries.Release{OutDir: "dist/release/" + project + "/npm", PropagationWait: wait, Progress: func(line string) { m.out("%s: %s", project, line) }}
+		r.Registry, r.TokenEnv = npmbinaries.RegistryOf(NPMRegistry(p))
 		done, err := npmbinaries.Finalize(m.s.Root, r, moves)
 		return done.Moved, done.Pending, done.Notes, err
 	}
@@ -174,7 +175,8 @@ func resumeNPM(ctx context.Context, s *session.Session, p *projectgraph.Project,
 	if r == nil || len(r.NPM) == 0 || Native(p) {
 		return nil
 	}
-	probe := npmbinaries.Release{Names: r.NPM, Version: item.Next}
+	probe := npmbinaries.Release{Names: r.NPM, Version: item.Next, OutDir: "dist/release/" + p.Name + "/npm"}
+	probe.Registry, probe.TokenEnv = npmbinaries.RegistryOf(NPMRegistry(p))
 	if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
 		probe.Tag = ch.Tag
 	}
