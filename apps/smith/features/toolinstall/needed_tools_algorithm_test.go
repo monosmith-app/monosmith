@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 func tool(name, choice string) protocol.ToolNeed {
@@ -85,5 +86,33 @@ func TestLookup(t *testing.T) {
 	found, unknown := Lookup("/w", []protocol.ToolNeed{tool("git", "")}, []Source{{Plugin: "go", Tools: []protocol.ToolNeed{tool("go", "")}}}, []string{"go", "git", "cobol"})
 	if !reflect.DeepEqual(names(found), []string{"go", "git"}) || !reflect.DeepEqual(unknown, []string{"cobol"}) {
 		t.Fatalf("found %v unknown %v", names(found), unknown)
+	}
+}
+
+func TestDockerIsNeededOnlyByAProjectWithADockerfile(t *testing.T) {
+	ws := t.TempDir()
+	web := filepath.Join(ws, "apps", "web")
+	api := filepath.Join(ws, "apps", "api")
+	for _, dir := range []string{web, api} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	docker := Source{Plugin: "docker", Languages: []string{"node", "go"}, Tools: toolcatalog.For("docker")}
+	core := []protocol.ToolNeed{tool("git", "")}
+	uses := []Use{{Project: "web", Language: "node", Root: web}, {Project: "api", Language: "go", Root: api}}
+
+	if got := names(Needed(ws, core, []Source{docker}, uses, nil, nil)); !reflect.DeepEqual(got, []string{"git"}) {
+		t.Errorf("no Dockerfile in the workspace, so no Docker: %v", got)
+	}
+	if got := names(Needed(ws, core, []Source{docker}, nil, []string{"node"}, nil)); !reflect.DeepEqual(got, []string{"git"}) {
+		t.Errorf("a language named by flag brings no Docker: %v", got)
+	}
+	if err := os.WriteFile(filepath.Join(api, "Dockerfile"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := Needed(ws, core, []Source{docker}, uses, nil, nil)
+	if !reflect.DeepEqual(names(got), []string{"git", "docker"}) || !reflect.DeepEqual(got[1].Projects, []string{"api"}) {
+		t.Errorf("the project with a Dockerfile needs Docker: %v %+v", names(got), got)
 	}
 }
