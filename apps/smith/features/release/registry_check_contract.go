@@ -9,6 +9,10 @@ type RegistryTarget struct {
 	// Names are the packages the release publishes there.
 	Names   []string
 	Version string
+	// URL is the registry smith.toml names for the project ("" for the
+	// probe's own endpoint), and Token the credential found for it ("" means
+	// none was found, so the registry is not asked). npm only, for now.
+	URL, Token string
 }
 
 // RegistryFinding is what a registry check found. A blocking finding stops

@@ -819,7 +819,8 @@ type ProjectRelease struct {
 	LinuxPackages []string `toml:"linux_packages"`
 	// NPM are the npm packages the app is published as, each installing its
 	// binary; the first also names the per-platform packages holding the
-	// binaries (<first>-<os>-<cpu>). Publishing needs NODE_AUTH_TOKEN.
+	// binaries (<first>-<os>-<cpu>). They publish to the project's registry
+	// from smith.toml, else npmjs.org (with NODE_AUTH_TOKEN).
 	NPM []string `toml:"npm"`
 	// PropagationWait overrides [release] propagation_wait for this project:
 	// the longest wait for its platform packages to be fetchable before a

@@ -559,7 +559,7 @@ start with `GITHUB_`. None is required, so a local run needs none.
 
 | Secret | Used for |
 |---|---|
-| `NODE_AUTH_TOKEN` | `npm publish` (the generated `.npmrc` reads it), and an app's npm packages |
+| `NODE_AUTH_TOKEN` | `npm publish` (the generated `.npmrc` reads it), and an app's npm packages when they publish to npmjs.org (a registry named in smith.toml uses its own sign-in) |
 | `PYPI_TOKEN` | twine upload as `__token__` (or set `TWINE_USERNAME`/`TWINE_PASSWORD` and `TWINE_REPOSITORY_URL` for another index), and an app's wheels |
 | `NUGET_API_KEY` | `dotnet nuget push` of .NET packages, and an app's .NET tool packages (a nuget.org API key that can push the tool's package and `<name>.*`) |
 | `GEM_HOST_API_KEY` | `gem push` of Ruby gems, and an app's platform gems (rubygems.org, or `RUBYGEMS_HOST`) |

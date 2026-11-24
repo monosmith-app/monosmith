@@ -42,3 +42,13 @@ func PublishesToRegistry(p *projectgraph.Project) bool {
 	r := p.Release
 	return r != nil && (len(r.NPM) > 0 || r.PyPI != "" || r.NuGet != "" || r.RubyGems != "")
 }
+
+// NPMRegistry is the registry smith.toml names for the project's publishing,
+// nil for the public registries. An app's npm packages, its credential check
+// and its pipeline's secrets all follow it.
+func NPMRegistry(p *projectgraph.Project) *protocol.Registry {
+	if p == nil || p.Registries == nil || p.Registries.Publish == nil || p.Registries.Publish.NPM == "" {
+		return nil
+	}
+	return p.Registries.Publish
+}

@@ -3,11 +3,16 @@ package release
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/npmbinaries"
+	"github.com/monosmith-app/monosmith/apps/smith/features/releaserehearsal"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // RegistryTargets lists the registries a plan publishes an app's binaries
@@ -25,6 +30,9 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 		}
 		if len(r.NPM) > 0 {
 			add("npm", r.NPM...)
+			if reg := NPMRegistry(p); reg != nil {
+				out[len(out)-1].URL, out[len(out)-1].Token = npmTarget(s.Root, reg, os.Getenv)
+			}
 		}
 		if r.PyPI != "" && !r.SkipsPrerelease("pypi", item.Next) {
 			add("PyPI", r.PyPI)
@@ -37,6 +45,30 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 		}
 	}
 	return out
+}
+
+// npmTarget is the registry an app's npm packages publish to and the token
+// npm signs in to it with, read where the publish reads it (see
+// npmbinaries.Npmrc): NPM_CONFIG_REGISTRY overrides the URL, as it does for
+// npm; the registry's own variable comes first, then the workspace .npmrc's
+// line for it (Azure's npmAuthenticate@0 writes one), then NODE_AUTH_TOKEN.
+func npmTarget(root string, reg *protocol.Registry, env func(string) string) (registryURL, token string) {
+	registryURL = reg.NPM
+	if v := env("NPM_CONFIG_REGISTRY"); v != "" {
+		registryURL = v
+	}
+	_, tokenEnv := npmbinaries.RegistryOf(reg)
+	if tokenEnv != "" {
+		if token = env(tokenEnv); token != "" {
+			return registryURL, token
+		}
+	}
+	if rc, err := os.ReadFile(filepath.Join(root, ".npmrc")); err == nil {
+		if token, _ = releaserehearsal.NpmrcToken(string(rc), registryURL, env); token != "" {
+			return registryURL, token
+		}
+	}
+	return registryURL, env("NODE_AUTH_TOKEN")
 }
 
 // ValidateRegistries asks every registry of a plan whether it would accept

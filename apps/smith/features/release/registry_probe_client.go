@@ -123,17 +123,22 @@ func rejected(status int) bool {
 }
 
 func (p *RegistryProbe) npm(t RegistryTarget) []RegistryFinding {
-	if p.NPMToken == "" {
+	registry, token, secret := p.NPMRegistry, p.NPMToken, "NODE_AUTH_TOKEN"
+	if t.URL != "" {
+		// The registry smith.toml names, signed in to as the publish is.
+		registry, token, secret = t.URL, t.Token, "the token for "+t.URL
+	}
+	if token == "" {
 		return nil // npm's own login: only `npm publish` can tell
 	}
-	registry := strings.TrimSuffix(p.NPMRegistry, "/")
-	auth := map[string]string{"Authorization": "Bearer " + p.NPMToken}
+	registry = strings.TrimSuffix(registry, "/")
+	auth := map[string]string{"Authorization": "Bearer " + token}
 	status, body, err := p.get(registry+"/-/whoami", auth)
 	if err != nil {
 		return []RegistryFinding{p.unreachable(t, registry, err)}
 	}
 	if rejected(status) {
-		return []RegistryFinding{p.finding(t, true, "create an npm token that can publish "+strings.Join(t.Names, " and ")+" and set NODE_AUTH_TOKEN", "npm refused NODE_AUTH_TOKEN (%d)", status)}
+		return []RegistryFinding{p.finding(t, true, "create an npm token that can publish "+strings.Join(t.Names, " and ")+" and set NODE_AUTH_TOKEN", "npm (%s) refused %s (%d)", registry, secret, status)}
 	}
 	var who struct {
 		Username string `json:"username"`
