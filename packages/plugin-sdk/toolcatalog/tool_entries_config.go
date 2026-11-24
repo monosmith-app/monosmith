@@ -248,7 +248,9 @@ var entries = []protocol.ToolNeed{
 		Name: "docker", Title: "Docker",
 		Why:         "the docker projects build their images with Docker",
 		Consequence: "smith build fails for the docker projects",
-		Program:     "docker",
+		// Only a project with a Dockerfile builds an image (images.Ships), so
+		// a workspace without one is never asked to install Docker.
+		Program: "docker", Files: []string{"Dockerfile"},
 		Install: []protocol.ToolInstall{
 			install("winget", "Docker.DockerDesktop"), install("brew-cask", "docker-desktop"),
 			{Manager: "apt", Package: "docker.io", Note: "the distribution's own build, not Docker's; start the docker service and add your user to the docker group afterwards"},
