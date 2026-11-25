@@ -20,8 +20,8 @@ from .plugin_contract import (
     Publisher,
     RegistryReader,
     Remover,
-    Versioner,
     Standardizer,
+    Versioner,
     WorkspaceJoiner,
 )
 from .plugin_members_config import PLUGIN_MEMBERS
