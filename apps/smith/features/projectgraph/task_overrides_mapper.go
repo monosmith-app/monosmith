@@ -13,6 +13,10 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
+// PackageCheckTask is the task that checks a project's package more cheaply
+// than the package task, in smith verify.
+const PackageCheckTask = "package-check"
+
 // TaskFields are the fields of a task whose source is tracked.
 var TaskFields = []string{"command", "cwd", "inputs", "outputs", "dependsOn", "env", "cache"}
 
@@ -35,8 +39,10 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 	}
 	// An app's package task runs in smith ci verify, so a packaging that breaks
 	// shows on the pull request and not at the release; verify = false turns
-	// it off.
-	if t, ok := p.Tasks["package"]; ok && p.Kind == protocol.ProjectApp && len(t.Command) > 0 {
+	// it off. A project whose plugin gives a package-check task that runs in
+	// verify (a function app: it checks the package without installing or
+	// zipping) is checked by that task instead.
+	if t, ok := p.Tasks["package"]; ok && p.Kind == protocol.ProjectApp && len(t.Command) > 0 && !p.Tasks[PackageCheckTask].Verify {
 		t.Verify = true
 		p.Tasks["package"] = t
 	}

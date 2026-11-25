@@ -178,3 +178,42 @@ func TestNearestNpmrcStopsAtTheWorkspaceRoot(t *testing.T) {
 		t.Errorf("the project's own .npmrc was not first: %q", got)
 	}
 }
+
+func TestAPrebuiltCheckLaysOutTheStageButBuildsInstallsAndZipsNothing(t *testing.T) {
+	ws := t.TempDir()
+	lib := filepath.Join(ws, "libs", "greeter")
+	write(t, filepath.Join(lib, "package.json"), `{"name":"@acme/greeter","main":"index.js","scripts":{"build":"x"}}`)
+	write(t, filepath.Join(lib, "index.js"), "module.exports = 1")
+	project := filepath.Join(ws, "apps", "fn")
+	write(t, filepath.Join(project, "package.json"), `{"name":"fn","dependencies":{"@acme/greeter":"*"}}`)
+	if err := os.MkdirAll(filepath.Join(ws, "node_modules", "@acme"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(lib, filepath.Join(ws, "node_modules", "@acme", "greeter")); err != nil {
+		t.Skipf("no symbolic links here: %v", err)
+	}
+	build := filepath.Join(ws, "dist", "apps", "fn")
+	write(t, filepath.Join(build, "package.json"), `{"name":"fn","main":"dist/index.js","dependencies":{"@acme/greeter":"*","left-pad":"1"}}`)
+	write(t, filepath.Join(build, "dist", "index.js"), "x")
+	var ran []string
+	packed := false
+	tools := Tools{
+		Run: func(dir string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil },
+		Output: func(dir string, argv []string) (string, error) {
+			packed = true
+			return "acme-greeter-1.0.0.tgz\n", nil
+		},
+	}
+	got, err := PackFunctionApp(PackOptions{ProjectDir: project, BuildDir: build, Name: "fn", WithDependencies: true, Prebuilt: true, CheckOnly: true, Tools: tools})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "" || len(ran) != 0 || !packed {
+		t.Fatalf("zip %q, ran %v, library vendored %v: the graph built everything, a check installs nothing", got, ran, packed)
+	}
+	for _, left := range []string{"stage", "fn.zip"} {
+		if _, err := os.Stat(filepath.Join(build, left)); err == nil {
+			t.Errorf("%s is left behind", left)
+		}
+	}
+}
