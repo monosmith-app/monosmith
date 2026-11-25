@@ -195,6 +195,10 @@ type Capabilities struct {
 	// fix that joins one that is not. The plugin only describes; the host
 	// applies the fix.
 	Join bool `json:"join,omitempty"`
+	// Standard gives smith's standard version of a project's configuration
+	// files (project/standard). The plugin only describes; the host compares,
+	// asks and writes.
+	Standard bool `json:"standard,omitempty"`
 	// ManifestOnly says generate honours GenerateParams.ManifestOnly: into a
 	// folder that exists and holds sources, it writes only the project's
 	// manifest and configuration from its templates. A host never sends

@@ -20,6 +20,7 @@ from .plugin_contract import (
     Publisher,
     RegistryReader,
     Remover,
+    Standardizer,
     Versioner,
     WorkspaceJoiner,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "Deriver",
     "Discoverer",
     "DependencyRepairer",
+    "Standardizer",
     "WorkspaceJoiner",
     "DoctorContributor",
     "Generator",

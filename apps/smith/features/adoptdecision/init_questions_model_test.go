@@ -66,12 +66,12 @@ func TestFromAnswers(t *testing.T) {
 }
 
 func TestArgvCarriesEveryChoiceSoYesTakesNoDefaultOfItsOwn(t *testing.T) {
-	c := Choices{Gitattributes: GitattributesAdd, Agent: AgentSkip, CI: []string{"gitlab", "github"}, Existing: ExistingKeep}
-	want := []string{"--gitattributes", "add", "--agent", "skip", "--ci", "gitlab,github", "--ci-existing", "keep"}
+	c := Choices{Gitattributes: GitattributesAdd, Agent: AgentSkip, CI: []string{"gitlab", "github"}, Existing: ExistingKeep, ProjectConfig: ProjectConfigKeep}
+	want := []string{"--gitattributes", "add", "--agent", "skip", "--ci", "gitlab,github", "--ci-existing", "keep", "--project-config", "keep"}
 	if got := c.Argv(); !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v", got)
 	}
-	if got := (Choices{}).Argv(); !reflect.DeepEqual(got, []string{"--gitattributes", "skip", "--agent", "skip", "--ci", "none", "--ci-existing", "replace"}) {
+	if got := (Choices{}).Argv(); !reflect.DeepEqual(got, []string{"--gitattributes", "skip", "--agent", "skip", "--ci", "none", "--ci-existing", "replace", "--project-config", "replace"}) {
 		t.Errorf("an empty choice is the safe one: %v", got)
 	}
 }

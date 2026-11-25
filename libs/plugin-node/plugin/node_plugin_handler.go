@@ -14,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/standardfiles"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/workspacejoin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
@@ -136,6 +137,15 @@ func (n *Node) Join(params protocol.JoinParams) (protocol.JoinResult, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	return workspacejoin.Join(n.root, params)
+}
+
+// Standard implements serve.Standardizer: smith's standard version of the
+// projects' configuration files, for a converted workspace to take. It only
+// reads the disk; the host compares, asks and writes.
+func (n *Node) Standard(params protocol.StandardParams) (protocol.StandardResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return standardfiles.Standard(n.root, params)
 }
 
 // Repair implements serve.DependencyRepairer: the plans of npm for each

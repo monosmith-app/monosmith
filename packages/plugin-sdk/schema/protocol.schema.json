@@ -180,6 +180,13 @@
       "result": {"$ref": "#/$defs/JoinResult"},
       "capability": "join",
       "notification": false
+    },
+    "project/standard": {
+      "description": "Asks for smith's standard version of each project's configuration files (whole files, or keys of a manifest), so a converted project can take them. The plugin writes nothing: the host compares with the files on disk, asks, keeps a replaced file as <path>.pre-smith, and writes.",
+      "params": {"$ref": "#/$defs/StandardParams"},
+      "result": {"$ref": "#/$defs/StandardResult"},
+      "capability": "standard",
+      "notification": false
     }
   },
   "x-errorCodes": [
@@ -503,6 +510,10 @@
         "join": {
           "type": "boolean",
           "description": "Join says whether each project is joined to the language's workspace (npm \"workspaces\", uv workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin only describes; the host applies the fix."
+        },
+        "standard": {
+          "type": "boolean",
+          "description": "Standard gives smith's standard version of a project's configuration files (project/standard). The plugin only describes; the host compares, asks and writes."
         },
         "manifestOnly": {
           "type": "boolean",
@@ -2009,6 +2020,56 @@
         }
       },
       "required": ["name", "language"]
+    },
+    "StandardFileContent": {
+      "description": "StandardFileContent is smith's standard for one file.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project is the project the file belongs to; empty for a file of the workspace (the root tsconfig.base.json)."
+        },
+        "path": {"type": "string", "description": "Path is workspace-relative, with forward slashes."},
+        "mode": {"type": "string", "description": "Mode is StandardFile or StandardKeys."},
+        "content": {"type": "string", "description": "Content is the whole file, for StandardFile."},
+        "format": {"type": "string", "description": "Format is \"json\" or \"toml\", for StandardKeys."},
+        "table": {
+          "type": "string",
+          "description": "Table is the TOML table that holds the keys (\"tool.pytest.ini_options\"); empty for the top level and for JSON."
+        },
+        "keys": {
+          "type": "object",
+          "additionalProperties": {},
+          "description": "Keys are the top-level keys to set and their whole values as JSON, for StandardKeys. A key's value replaces the one on disk, so a plugin that adds to an object gives the object with its other members kept. The members of an object value keep the plugin's order, which matters where order is meaning (the conditions of a package.json \"exports\")."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason says in one sentence what the standard gives the team (\"Ctrl+click on an import opens the library's source, not its built .d.ts\")."
+        }
+      },
+      "required": ["path", "mode", "reason"]
+    },
+    "StandardParams": {
+      "description": "StandardParams asks a plugin for smith's standard version of the configuration files of its projects: the files `smith add` writes for a new project of the same kind, fitted to what the project already is. A plugin leaves out a file it cannot standardize without breaking the project (a browser project's tsconfig.json, a build file that holds the dependencies). The plugin writes nothing: the host compares the files with the ones on disk, asks, and writes (smith adopt, smith convert, smith doctor --fix).",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"}
+        }
+      },
+      "required": ["projects"]
+    },
+    "StandardResult": {
+      "description": "StandardResult carries the standard files. A file that already is as the plugin gives it is not a difference: the host compares.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/StandardFileContent"}
+        }
+      },
+      "required": ["files"]
     },
     "Step": {
       "description": "Step is one command a CI phase runs.",

@@ -170,6 +170,16 @@ func TestAnAppsPackageTaskRunsInVerifyUnlessTurnedOff(t *testing.T) {
 	}
 }
 
+func TestAPackageCheckInVerifyTakesThePlaceOfThePackageTask(t *testing.T) {
+	app := &Project{Project: protocol.Project{Name: "api", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{
+		"package":        {Command: []string{"npm", "run", "package"}},
+		PackageCheckTask: {Command: []string{"{smith}", "func", "package", "--check"}, Verify: true},
+	}}}
+	if err := ApplyOverrides(app, workspace.Config{}); err != nil || app.Tasks["package"].Verify || !app.Tasks[PackageCheckTask].Verify {
+		t.Errorf("verify runs the check, not the full package: %v %+v", err, app.Tasks)
+	}
+}
+
 func TestTagFormatGivesTheProjectsThatSetNoPrefixTheirs(t *testing.T) {
 	cfg := workspace.Config{
 		Workspace: workspace.WorkspaceSection{Scope: "@acme"},

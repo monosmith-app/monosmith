@@ -22,6 +22,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/features/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/features/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectstandard"
 	"github.com/monosmith-app/monosmith/apps/smith/features/release"
 	"github.com/monosmith-app/monosmith/apps/smith/features/releaselineage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
@@ -154,6 +155,11 @@ func PluginChecks(s *session.Session, only map[string]bool) []Finding {
 			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers workspace/join", Area: doctorchecks.AreaConfig, Problem: "plugin " + c.Info.Plugin.Name + " did not say whether its projects are joined to its workspace: " + err.Error(), Detail: err.Error(), Remedy: "report this to the plugin's maintainers"})
 		}
 		add(c.Info.Plugin.Name, joins...)
+		standard, err := projectstandard.Ask(s.Root, c, own)
+		if err != nil {
+			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers project/standard", Area: doctorchecks.AreaConfig, Problem: "plugin " + c.Info.Plugin.Name + " did not give smith's standard files: " + err.Error(), Detail: err.Error(), Remedy: "report this to the plugin's maintainers", Warning: true})
+		}
+		add(c.Info.Plugin.Name, projectstandard.Findings(standard)...)
 		if !c.Info.Capabilities.Doctor {
 			continue
 		}

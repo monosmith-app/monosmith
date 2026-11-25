@@ -179,4 +179,10 @@ var Methods = []MethodSpec{
 		Params:      reflect.TypeFor[protocol.JoinParams](), Result: reflect.TypeFor[protocol.JoinResult](),
 		Capability: "Join",
 	},
+	{
+		Method:      protocol.MethodStandard,
+		Description: "Asks for smith's standard version of each project's configuration files (whole files, or keys of a manifest), so a converted project can take them. The plugin writes nothing: the host compares with the files on disk, asks, keeps a replaced file as <path>.pre-smith, and writes.",
+		Params:      reflect.TypeFor[protocol.StandardParams](), Result: reflect.TypeFor[protocol.StandardResult](),
+		Capability: "Standard",
+	},
 }

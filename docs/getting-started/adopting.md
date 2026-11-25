@@ -84,9 +84,10 @@ smith adopt --tags --init
 
 In a terminal, `--init` first asks a few questions, each with its consequence and a safe
 default: the CI provider, whether to add the agent files, what to do with a pipeline of
-yours, and whether to set line endings. It prints the plan, with a diff of every file of
+yours and with project configuration that differs from smith's standard (replace, keeping a
+`.pre-smith` copy, or keep yours), and whether to set line endings. It prints the plan, with a diff of every file of
 yours it edits, and asks `Go ahead? [y/N]`. Without a terminal it refuses and names the
-flags that answer (`--ci`, `--agent`, `--ci-existing`, `--gitattributes`); `--yes` takes
+flags that answer (`--ci`, `--agent`, `--ci-existing`, `--project-config`, `--gitattributes`); `--yes` takes
 each default.
 
 `--init` leaves the new files in the work tree, so you can review them with `git status`.

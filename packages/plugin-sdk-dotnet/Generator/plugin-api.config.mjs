@@ -36,6 +36,12 @@ export const PLUGIN_INTERFACES = [
     methods: { 'workspace/join': 'JoinAsync' },
   },
   {
+    name: 'IStandardizer',
+    capability: 'standard',
+    summary: 'A plugin that gives smith\'s standard version of each project\'s configuration files, so a converted project can take them. It only describes; the host compares, asks and writes.',
+    methods: { 'project/standard': 'StandardAsync' },
+  },
+  {
     name: 'IDependencyManager',
     capability: 'dependencies',
     summary: 'A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.',

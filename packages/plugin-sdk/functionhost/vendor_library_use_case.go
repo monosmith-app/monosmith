@@ -58,6 +58,20 @@ func workspaceRootOf(folder string) string {
 	}
 }
 
+// WorkspaceLibraries are the libraries of the workspace that a project's
+// production dependencies name, and the ones those libraries need too, by
+// name, with their folders: the libraries a function app's zip vendors.
+//
+// Errors: a manifest cannot be read.
+func WorkspaceLibraries(projectDir string) (map[string]string, error) {
+	manifest, err := readManifest(filepath.Join(projectDir, "package.json"))
+	if err != nil {
+		return nil, err
+	}
+	found := map[string]string{}
+	return found, workspaceLibraries(projectDir, stringMap(manifest["dependencies"]), found)
+}
+
 // workspaceLibraries finds the libraries of the workspace that dependencies
 // name, and the ones those libraries need too. found maps name to folder.
 func workspaceLibraries(projectDir string, dependencies map[string]any, found map[string]string) error {
@@ -86,16 +100,17 @@ func workspaceLibraries(projectDir string, dependencies map[string]any, found ma
 	return nil
 }
 
-// vendorLibrary builds a library of the workspace, packs what it ships into
+// vendorLibrary builds a library of the workspace (unless prebuilt: the task
+// graph built it), packs what it ships into
 // vendorDir and returns the name of the tarball. A tarball is always installed
 // as a copy, where a folder would be installed as a link that a zip cannot hold.
-func vendorLibrary(tools Tools, name, folder, vendorDir string) (string, error) {
+func vendorLibrary(tools Tools, name, folder, vendorDir string, prebuilt bool) (string, error) {
 	root := workspaceRootOf(folder)
 	pkg, err := readManifest(filepath.Join(folder, "package.json"))
 	if err != nil {
 		return "", err
 	}
-	if scripts := stringMap(pkg["scripts"]); scripts["build"] != nil {
+	if scripts := stringMap(pkg["scripts"]); scripts["build"] != nil && !prebuilt {
 		if err := tools.Run(folder, []string{"npm", "run", "build"}); err != nil {
 			return "", err
 		}

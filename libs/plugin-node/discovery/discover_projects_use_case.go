@@ -100,6 +100,11 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 	if _, own := pkg.Scripts["package"]; !own && (project.Kind == protocol.ProjectApp || pkg.Engines.VSCode != "") {
 		project.Tasks["package"] = PackageTask(root, pkg.Scripts)
 	}
+	// A function app packs with smith func package: cached, after its builds,
+	// and checked in verify without installing.
+	if script, own := pkg.Scripts["package"]; own && project.Kind == protocol.ProjectApp && FunctionPackage(script) {
+		ApplyFunctionPackage(project.Tasks, root, pkg.Scripts)
+	}
 	// An app that builds can be deployed from its build directory alone.
 	if _, own := pkg.Scripts[pruning.Task]; !own && project.Kind == protocol.ProjectApp {
 		if _, builds := pkg.Scripts["build"]; builds {

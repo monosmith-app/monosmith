@@ -2,11 +2,11 @@ package convert
 
 import (
 	"bufio"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/monosmith-app/monosmith/apps/smith/shared/statuspaint"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,12 +14,14 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/features/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/features/nxworkspace"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectstandard"
 	"github.com/monosmith-app/monosmith/apps/smith/features/turboplan"
 	"github.com/monosmith-app/monosmith/apps/smith/features/turboworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/shared/statuspaint"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -31,6 +33,7 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 func Command(version string) *cobra.Command {
 	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify, commit, questions bool
 	var outputs []string
+	var projectConfig string
 	choices := convertchoices.Choices{Level: convertchoices.LevelConservative}
 	cmd := &cobra.Command{
 		Use:   "convert",
@@ -83,6 +86,9 @@ git undoes everything.`,
 		Example: "  smith convert --dry-run\n  smith convert\n  smith convert --level full --dry-run\n  smith convert --level full --lint smith --test jest --build smith --ci smith --yes",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) (err error) {
+			if _, err := projectstandard.ParseAnswer(projectConfig); err != nil {
+				return problem.New(err.Error())
+			}
 			// Reading and planning change nothing, so a failure there that no one
 			// foresaw is told as a problem with a way on, not as a stack trace.
 			defer func() {
@@ -204,7 +210,7 @@ git undoes everything.`,
 				return runFull(cmd, fullArgs{
 					Root: root, Git: git, Plan: plan, Version: version, Files: files, Strict: strict,
 					Choices: choices, Given: given, DryRun: dryRun, JSON: asJSON, Yes: yes,
-					SkipInstall: skipInstall, SkipVerify: skipVerify, Commit: commit, OutputsGiven: outputsGiven,
+					SkipInstall: skipInstall, SkipVerify: skipVerify, Commit: commit, OutputsGiven: outputsGiven, ProjectConfig: projectConfig,
 				})
 			}
 			if dryRun {
@@ -236,7 +242,7 @@ git undoes everything.`,
 				}
 			}
 			fmt.Fprintln(log)
-			res, err := Apply(plan, ApplyOptions{Version: version, SkipInstall: skipInstall, Out: log})
+			res, err := Apply(plan, ApplyOptions{Version: version, SkipInstall: skipInstall, ProjectConfig: cmp.Or(projectConfig, projectstandard.Replace), Out: log})
 			if err != nil {
 				return err
 			}
@@ -272,6 +278,7 @@ git undoes everything.`,
 	f.StringVar(&choices.Build, "build", convertchoices.Smith, "full level: build with smith's stack build (smith) or keep the current build setup (keep)")
 	f.StringVar(&choices.CI, "ci", convertchoices.Smith, "full level: the pipeline smith generates (smith) or keep the current one (keep)")
 	f.StringArrayVar(&outputs, "outputs", nil, "the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given")
+	f.StringVar(&projectConfig, "project-config", "", "what happens to project configuration files that differ from smith's standard (tsconfig.json, a library's package.json entry points): replace (the default: smith's standard, a replaced file kept as <file>.pre-smith) or keep")
 	f.BoolVar(&skipVerify, "skip-verify", false, "full level: install, but do not build, test, lint and run doctor afterwards")
 	return cmd
 }

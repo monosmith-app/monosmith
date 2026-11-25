@@ -14,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/features/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/features/lockfilesync"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectstandard"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/marks"
@@ -28,6 +29,10 @@ type ApplyOptions struct {
 	// KeepPipelines leaves the CI pipelines as they are instead of
 	// regenerating them (the full level's --ci keep).
 	KeepPipelines bool
+	// ProjectConfig is what happens to project configuration files that
+	// differ from smith's standard: projectstandard.Replace or Keep; empty
+	// skips the step (the scratch conversions that only check).
+	ProjectConfig string
 	Out           io.Writer
 }
 
@@ -58,6 +63,13 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		}
 		return Result{}, fmt.Errorf("%w; nothing was changed: the files the conversion touched are back as they were", err)
 	}
+	if opts.ProjectConfig != "" {
+		// The conversion is complete here: a standard file that cannot be
+		// written stops the command and leaves the conversion in place.
+		if err := standardize(plan.Root, opts, &res); err != nil {
+			return res, err
+		}
+	}
 	if !opts.SkipInstall {
 		fmt.Fprintf(opts.Out, "… reinstalling dependencies (this can take a minute)\n")
 		notes, err := refreshLockfile(plan.Root, opts.Out, plan.Source != convertplan.SourceTurborepo)
@@ -70,6 +82,22 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		}
 	}
 	return res, nil
+}
+
+// standardize brings the converted projects' configuration files to smith's
+// standard, or leaves them, as opts.ProjectConfig says.
+func standardize(root string, opts ApplyOptions, res *Result) error {
+	s, err := session.Open(session.Options{Dir: root, Exact: true, Version: opts.Version, Log: opts.Out, AllowCycles: true})
+	if err != nil {
+		return fmt.Errorf("the converted workspace does not load: %w", err)
+	}
+	defer s.Close()
+	written, left, err := projectstandard.Standardize(s, opts.ProjectConfig, opts.Out)
+	res.Rewritten = append(res.Rewritten, written...)
+	for _, l := range left {
+		fmt.Fprintln(opts.Out, "  "+l)
+	}
+	return err
 }
 
 // guarded runs step and turns a panic in it into an error, so Apply can put the

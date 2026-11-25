@@ -17,28 +17,40 @@ func FuncCommand() *cobra.Command {
 		Short:  "The steps that build and pack a function app (Azure Functions, AWS Lambda, Google Cloud), run by its tasks",
 		Hidden: true,
 	}
-	var withDependencies bool
+	var withDependencies, check bool
 	pack := &cobra.Command{
 		Use:   "package",
 		Short: "Build the function app, then zip it into its build folder",
 		Long: `Build the function app of the folder you are in, then zip the compiled code, the manifest
 and host.json into dist/<project dir>/<name>.zip, with a copy in dist/drop/<name>/ that
 smith ci pack keeps. A library of the workspace that the app needs is built and copied into the zip. With --with-dependencies the production dependencies
-are installed into the zip too, for a host that does not install them itself (Azure Functions).`,
+are installed into the zip too, for a host that does not install them itself (Azure Functions).
+
+With --check it lays out the stage and vendors the libraries, checks the compiled entry, and
+checks that the app and each library it vendors declare in dependencies every package they
+import, which the zip's production install relies on; it installs nothing and writes no zip.
+smith verify runs it (the task package-check); smith ci pack and the release run the full package.
+With ` + PrebuiltEnv + `=1 (set by the package and package-check tasks, which run after the
+builds) the app and its libraries are not built again.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			f, err := foldersHere()
 			if err != nil {
 				return err
 			}
-			zip, err := functionhost.PackFunctionApp(functionhost.PackOptions{ProjectDir: f.Project, BuildDir: f.Build, Name: f.Name, WithDependencies: withDependencies})
+			prebuilt := os.Getenv(PrebuiltEnv) == "1"
+			zip, err := functionhost.PackFunctionApp(functionhost.PackOptions{ProjectDir: f.Project, BuildDir: f.Build, Name: f.Name, WithDependencies: withDependencies, Prebuilt: prebuilt, CheckOnly: check})
 			if err != nil {
 				return err
+			}
+			if check {
+				return checkDeclared(cmd, f)
 			}
 			return keepPackage(cmd, f, zip)
 		},
 	}
 	pack.Flags().BoolVar(&withDependencies, "with-dependencies", false, "install the production dependencies into the zip")
+	pack.Flags().BoolVar(&check, "check", false, "check the package without installing or zipping: the stage, the compiled entry, and the dependencies the app and its libraries declare")
 	assemble := &cobra.Command{
 		Use:   "assemble",
 		Short: "Copy package.json and host.json next to the compiled code in the build folder",

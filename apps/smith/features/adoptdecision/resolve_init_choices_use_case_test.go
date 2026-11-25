@@ -39,7 +39,7 @@ func TestResolveTakesFlagsInSilence(t *testing.T) {
 	if err != nil || out != "" {
 		t.Fatalf("%v %q", err, out)
 	}
-	want := Choices{Gitattributes: GitattributesAdd, Agent: AgentNever, CI: []string{"gitlab"}, Existing: ExistingReplace}
+	want := Choices{Gitattributes: GitattributesAdd, Agent: AgentNever, CI: []string{"gitlab"}, Existing: ExistingReplace, ProjectConfig: ProjectConfigReplace}
 	if !reflect.DeepEqual(c, want) {
 		t.Fatalf("got %+v, want %+v", c, want)
 	}
@@ -106,5 +106,21 @@ func TestResolveRejectsAnUnknownFlagValue(t *testing.T) {
 		if _, _, err := resolve(t, Request{Flags: f, Yes: true}, ""); err == nil {
 			t.Errorf("%+v: want an error", f)
 		}
+	}
+}
+
+func TestProjectConfigIsAskedOnlyForARepositoryWithProjects(t *testing.T) {
+	flags := Flags{Gitattributes: GitattributesSkip, Agent: AgentSkip, CI: []string{NoCI}, CIGiven: true}
+	c, out, err := resolve(t, Request{Flags: flags, Yes: true, Facts: Facts{HasProjects: true}}, "")
+	if err != nil || c.ProjectConfig != ProjectConfigReplace || !strings.Contains(out, "--project-config keep") {
+		t.Fatalf("without a terminal the standard is taken and said: %+v %q %v", c, out, err)
+	}
+	flags.ProjectConfig = ProjectConfigKeep
+	if c, _, err = resolve(t, Request{Flags: flags, Facts: Facts{HasProjects: true}}, ""); err != nil || c.ProjectConfig != ProjectConfigKeep {
+		t.Fatalf("the flag answers: %+v %v", c, err)
+	}
+	flags.ProjectConfig = "maybe"
+	if _, _, err = resolve(t, Request{Flags: flags}, ""); err == nil || !strings.Contains(err.Error(), "--project-config maybe") {
+		t.Fatalf("an unknown answer is refused: %v", err)
 	}
 }

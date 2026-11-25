@@ -211,7 +211,8 @@ projects are generated adds no tasks.
 
 The same pass copies the per-project release settings (`tag_prefix`, `bare_tags`,
 `[projects.<name>.release]`, `split_repo`, registries) onto the project and marks an app's
-`package` task to run in `smith ci verify`. See [The task graph](task-graph.md) for what
+`package` task to run in `smith ci verify`, unless the project has a `package-check` task
+that runs there (a function app). See [The task graph](task-graph.md) for what
 happens to the tasks afterwards.
 
 ## Step 7: the checks that end discovery

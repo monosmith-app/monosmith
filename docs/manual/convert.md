@@ -53,6 +53,7 @@ Usage: `smith convert [flags]`
 | `--lint <lint>` | `smith` or `keep` | `smith` when the ESLint config imports a shared config smith replaces, else `keep` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) |
 | `--no-install` | boolean | off | do not run npm install afterwards (also --skip-install) |
 | `--outputs <outputs>` | string, repeatable |  | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given |
+| `--project-config <project-config>` | string |  | what happens to project configuration files that differ from smith's standard (tsconfig.json, a library's package.json entry points): replace (the default: smith's standard, a replaced file kept as <file>.pre-smith) or keep |
 | `--questions` | boolean | off | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--skip-verify` | boolean | off | full level: install, but do not build, test, lint and run doctor afterwards |
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
@@ -140,6 +141,11 @@ Interactions:
 - `--yes` applies without asking. Without a terminal and without `--yes` convert refuses. In a
   terminal it lists the files it deletes and says when a pnpm or yarn workspace switches to npm,
   then offers: apply, show the report and stop, or cancel.
+- `--project-config replace|keep` says what happens to project configuration files that differ
+  from smith's standard, as for `smith adopt --init`. `replace` (the default) writes the
+  standard: a whole file it replaces is kept as `<file>.pre-smith`, and a manifest only gets the
+  keys it needs (for Node, the `source` condition of a library's `exports`). `keep` changes
+  nothing, and `smith doctor` lists the differences ([ADR 0110](../architecture/decisions/0110-a-plugin-gives-the-standard-configuration-of-a-converted-project.md)).
 - `--skip-install` skips the `npm install` afterwards. `--skip-verify` (full level)
   installs but does not build, test, lint and run `smith doctor` afterwards.
 - `--json` prints the plan: `root`, `source`, `projects`, `findings` (each with a

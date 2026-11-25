@@ -364,4 +364,20 @@ public static class PluginClientCalls
         ArgumentNullException.ThrowIfNull(client);
         return client.CallAsync<JoinParams, JoinResult>(ProtocolMethods.WorkspaceJoin, parameters, timeout, cancellation);
     }
+
+    /// <summary>Asks for smith's standard version of each project's configuration files (whole files, or keys of a manifest), so a converted project can take them. The plugin writes nothing: the host compares with the files on disk, asks, keeps a replaced file as &lt;path&gt;.pre-smith, and writes.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<StandardResult> StandardAsync(
+        this PluginClient client,
+        StandardParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<StandardParams, StandardResult>(ProtocolMethods.ProjectStandard, parameters, timeout, cancellation);
+    }
 }

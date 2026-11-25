@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/features/fullconversion"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectstandard"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
@@ -110,7 +111,7 @@ func (a *Analysis) Convert(keepPipelines bool, log io.Writer) (string, error) {
 	if a.Dirty {
 		return "", errors.New("the working tree has uncommitted changes: the conversion would not be one reviewable change")
 	}
-	res, err := Apply(a.Plan, ApplyOptions{Version: a.Version, SkipInstall: true, KeepPipelines: keepPipelines, Out: log})
+	res, err := Apply(a.Plan, ApplyOptions{Version: a.Version, SkipInstall: true, KeepPipelines: keepPipelines, ProjectConfig: projectstandard.Replace, Out: log})
 	if err != nil {
 		return "", err
 	}

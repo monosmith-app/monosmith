@@ -33,6 +33,7 @@ PLUGIN_MEMBERS: dict[str, PluginMember] = {
     "dependencies/unlink": PluginMember("unlink", ("link", "unlink")),
     "dependencies/repair": PluginMember("repair", ("repair",)),
     "workspace/join": PluginMember("join", ("join",)),
+    "project/standard": PluginMember("standard", ("standard",)),
     "dependencies/declared":PluginMember("declared", ("declared", "rewrite")),
     "dependencies/rewrite": PluginMember("rewrite", ("declared", "rewrite")),
     "dependencies/latest": PluginMember("latest", ("latest",)),

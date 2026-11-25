@@ -110,6 +110,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `dependencies/unlink` | `link` | `Linker.Unlink` | `UnlinkParams` → `DependencyResult` | `smith uninstall -p <project> <library>` | 20 min |
 | `dependencies/repair` | `repair` | `DependencyRepairer.Repair` | `RepairParams` → `RepairResult` | `smith deps repair`, the Deps tab | 1 min |
 | `workspace/join` | `join` | `WorkspaceJoiner.Join` | `JoinParams` → `JoinResult` | `smith doctor` (the join check and its fix), `smith import` | 1 min |
+| `project/standard` | `standard` | `Standardizer.Standard` | `StandardParams` → `StandardResult` | `smith adopt --init`, `smith convert`, `smith doctor` (the standard check and its fix) | 1 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
 | `dependencies/rewrite` | `declarations` | `DeclarationEditor.Rewrite` | `RewriteParams` → `DependencyResult` | `smith sync`, `smith up` | 20 min |
 | `dependencies/latest` | `latest` | `LatestReader` | `LatestParams` → `LatestResult` | `smith up` | 20 min |
@@ -149,6 +150,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `link` | `dependencies/link`, `dependencies/unlink` | language |
 | `repair` | `dependencies/repair` | language |
 | `join` | `workspace/join` | language |
+| `standard` | `project/standard` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
 | `latest` | `dependencies/latest` | language |
 | `cancel` | the `cancel` notification: the plugin stops the work of a request when the host cancels it | any plugin with a method that can run for long |

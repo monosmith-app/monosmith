@@ -48,7 +48,7 @@ func Resolve(r Request) (Choices, error) {
 	if err := validate(r.Flags); err != nil {
 		return c, err
 	}
-	c.Gitattributes, c.Agent, c.Existing = r.Flags.Gitattributes, r.Flags.Agent, r.Flags.Existing
+	c.Gitattributes, c.Agent, c.Existing, c.ProjectConfig = r.Flags.Gitattributes, r.Flags.Agent, r.Flags.Existing, r.Flags.ProjectConfig
 	if r.Flags.CIGiven {
 		c.CI = withoutNone(r.Flags.CI)
 	}
@@ -109,6 +109,7 @@ func Resolve(r Request) (Choices, error) {
 		c.CI = askCI(r, say)
 	}
 	c.Existing = settleExisting(r, c, say)
+	c.ProjectConfig = settleProjectConfig(r, c, say)
 	return c, nil
 }
 
@@ -182,6 +183,37 @@ func settleExisting(r Request, c Choices, say func(string, ...any)) string {
 	return answer
 }
 
+// settleProjectConfig decides what happens to project configuration files
+// that differ from smith's standard (tsconfig.json, a library's package.json
+// entry points): smith's standard, with each replaced file kept as
+// <file>.pre-smith (the default, and the answer without a terminal), or the
+// projects' own.
+func settleProjectConfig(r Request, c Choices, say func(string, ...any)) string {
+	if c.ProjectConfig != "" {
+		return c.ProjectConfig
+	}
+	if !r.Facts.HasProjects {
+		return ProjectConfigReplace
+	}
+	if !r.asks() {
+		say("Project configuration: smith's standard files where yours differ, yours kept as <file>.pre-smith (--project-config keep leaves them alone)")
+		return ProjectConfigReplace
+	}
+	answer := scaffold.AskChoice(projectConfigPrompt, projectConfigOptions(), ProjectConfigReplace, r.In, r.Out)
+	say("Project configuration: %s (change it with --project-config replace|keep)", answer)
+	return answer
+}
+
+// projectConfigPrompt asks about the projects' configuration files.
+const projectConfigPrompt = "Your projects' configuration files (tsconfig.json, a library's package.json entry points, ...) may differ from smith's standard. What should happen to them?"
+
+func projectConfigOptions() []scaffold.NewOption {
+	return []scaffold.NewOption{
+		{Label: "Replace them, keep a copy", Value: ProjectConfigReplace, Hint: "smith writes its standard files; a replaced file is kept as <file>.pre-smith, and a manifest only gets the keys it needs (default)"},
+		{Label: "Keep mine", Value: ProjectConfigKeep, Hint: "nothing changes; smith doctor lists where they differ"},
+	}
+}
+
 // WithoutKept removes from the providers the ones whose own pipeline stays
 // (Existing is ExistingKeep), because smith then writes nothing there.
 //
@@ -226,6 +258,9 @@ func validate(f Flags) error {
 	}
 	if f.Existing != "" && f.Existing != ExistingReplace && f.Existing != ExistingKeep {
 		return problem.New(fmt.Sprintf("--ci-existing %s: use replace or keep", f.Existing))
+	}
+	if f.ProjectConfig != "" && f.ProjectConfig != ProjectConfigReplace && f.ProjectConfig != ProjectConfigKeep {
+		return problem.New(fmt.Sprintf("--project-config %s: use replace or keep", f.ProjectConfig))
 	}
 	for _, p := range f.CI {
 		if p != NoCI && !slices.Contains(Providers, p) {

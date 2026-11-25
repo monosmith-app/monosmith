@@ -3,7 +3,7 @@ import type {
   APISurfaceParams, APISurfaceResult, ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
   DiscoverParams, DiscoverResult, DoctorParams, DoctorResult, GenerateParams, GenerateResult, InitializeParams,
   InitializeResult, InstallParams, LatestParams, LatestResult, LinkParams, LinkResult, PublishedParams, PublishedResult, PublishParams,
-  PublishResult, RemoveParams, RemoveResult, JoinParams, JoinResult, RepairParams, RepairResult, RewriteParams, UninstallParams, UnlinkParams, VersionParams, VersionResult,
+  PublishResult, RemoveParams, RemoveResult, JoinParams, JoinResult, StandardParams, StandardResult, RepairParams, RepairResult, RewriteParams, UninstallParams, UnlinkParams, VersionParams, VersionResult,
 } from '../protocol/index.ts'
 
 /** A result now or later: every method of a plugin may be `async`. */
@@ -106,6 +106,15 @@ export interface WorkspaceJoiner {
   join: (params: JoinParams, signal: AbortSignal) => Awaitable<JoinResult>
 }
 
+/**
+ * `project/standard`: smith's standard version of each project's configuration
+ * files, so a converted project can take them. It only describes; the host
+ * compares, asks and writes.
+ */
+export interface Standardizer {
+  standard: (params: StandardParams, signal: AbortSignal) => Awaitable<StandardResult>
+}
+
 /** `dependencies/declared` and `dependencies/rewrite`: both, or the capability is not advertised. */
 export interface DeclarationEditor {
   declared: (params: DeclaredParams, signal: AbortSignal) => Awaitable<DeclaredResult>
@@ -144,5 +153,5 @@ export interface Cancellable {
  */
 export type SmithPlugin = Plugin & Partial<
 Discoverer & Generator & Versioner & Publisher & RegistryReader & CIContributor & DoctorContributor &
-Remover & KindChanger & ComponentLister & Deriver & APISurfaceReader & DependencyManager & Linker & DependencyRepairer & WorkspaceJoiner & DeclarationEditor & LatestReader & Contributor & Cancellable
+Remover & KindChanger & ComponentLister & Deriver & APISurfaceReader & DependencyManager & Linker & DependencyRepairer & WorkspaceJoiner & Standardizer & DeclarationEditor & LatestReader & Contributor & Cancellable
 >

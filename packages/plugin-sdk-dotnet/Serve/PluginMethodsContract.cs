@@ -125,6 +125,11 @@ internal static class PluginMethods
             plugin => plugin is IWorkspaceJoiner,
             value => JoinParams.Read(value, "params"),
             async (plugin, parameters, cancellation) => await ((IWorkspaceJoiner)plugin).JoinAsync((JoinParams)parameters, cancellation)),
+        [ProtocolMethods.ProjectStandard] = new(
+            ProtocolMethods.ProjectStandard,
+            plugin => plugin is IStandardizer,
+            value => StandardParams.Read(value, "params"),
+            async (plugin, parameters, cancellation) => await ((IStandardizer)plugin).StandardAsync((StandardParams)parameters, cancellation)),
     };
 
     /// <summary>The capabilities a plugin advertises, derived from the interfaces it implements.</summary>
@@ -146,6 +151,7 @@ internal static class PluginMethods
             Link = plugin is ILinker,
             Repair = plugin is IDependencyRepairer,
             Join = plugin is IWorkspaceJoiner,
+            Standard = plugin is IStandardizer,
             Dependencies = plugin is IDependencyManager,
             Declarations = plugin is IDeclarationEditor,
             Latest = plugin is ILatestReader,
