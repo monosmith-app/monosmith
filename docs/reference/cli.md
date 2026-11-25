@@ -122,6 +122,7 @@ Usage: `smith adopt [flags]`
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith's tooling for every project; smith convert's for Nx and Turborepo workspaces) | `conservative` |
 | `--manifest <manifest>` | with --init, a root of sources without a manifest: the language whose default manifest smith writes before the move (node, python, dotnet), or none; asked in a terminal |  |
 | `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
+| `--project-config <project-config>` | with --init, what happens to project configuration files that differ from smith's standard (tsconfig.json, a library's package.json entry points): replace (smith's standard, a replaced file kept as <file>.pre-smith) or keep |  |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
 | `--tooling <tooling>` | with --init, the build and lint tools of the Node projects: smith (smith's build and ESLint config, then the old tools go) or keep, for all, or <project>=smith\|keep for one (repeatable) |  |
 | `-y, --yes` | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it | off |
@@ -177,6 +178,7 @@ Usage: `smith convert [flags]`
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--no-install` | do not run npm install afterwards (also --skip-install) | off |
 | `--outputs <outputs>` | the outputs to cache for a build task whose declared outputs differ from what its build writes: <project>:<task>=detected (what the build writes, the suggestion) or <project>:<task>=declared (as Nx or Turborepo declared them); repeat it for each task. A terminal asks the ones not given (repeatable) |  |
+| `--project-config <project-config>` | what happens to project configuration files that differ from smith's standard (tsconfig.json, a library's package.json entry points): replace (the default: smith's standard, a replaced file kept as <file>.pre-smith) or keep |  |
 | `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |

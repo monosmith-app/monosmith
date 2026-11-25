@@ -105,6 +105,9 @@ __all__ = [
     "RewriteParams",
     "Role",
     "Stack",
+    "StandardFileContent",
+    "StandardParams",
+    "StandardResult",
     "Step",
     "TagMove",
     "Task",
@@ -181,11 +184,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/repair", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface", "workspace/join"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/repair", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface", "workspace/join", "project/standard"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared", "join", "manifestOnly"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "repair", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared", "join", "standard", "manifestOnly"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -215,6 +218,7 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "derive": "derive",
     "api/surface": "apiSurface",
     "workspace/join": "join",
+    "project/standard": "standard",
 }
 """The capability a plugin advertises to be asked each method (`None`: always available).
 
@@ -455,6 +459,11 @@ class Capabilities(TypedDict, total=False):
     Join says whether each project is joined to the language's workspace (npm "workspaces", uv
     workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin
     only describes; the host applies the fix.
+    """
+    standard: bool
+    """
+    Standard gives smith's standard version of a project's configuration files
+    (project/standard). The plugin only describes; the host compares, asks and writes.
     """
     manifestOnly: bool
     """
@@ -2036,6 +2045,66 @@ class Stack(_StackRequired, total=False):
     the language, the scaffold and the toolchain from them, and Toolchain lists only the plugins
     to add after those. The plugins of the stack get the choices in GenerateParams.Choices.
     """
+
+
+class _StandardFileContentRequired(TypedDict):
+    path: str
+    """Path is workspace-relative, with forward slashes."""
+    mode: str
+    """Mode is StandardFile or StandardKeys."""
+    reason: str
+    """
+    Reason says in one sentence what the standard gives the team ("Ctrl+click on an import opens
+    the library's source, not its built .d.ts").
+    """
+
+
+class StandardFileContent(_StandardFileContentRequired, total=False):
+    """StandardFileContent is smith's standard for one file."""
+
+    project: str
+    """
+    Project is the project the file belongs to; empty for a file of the workspace (the root
+    tsconfig.base.json).
+    """
+    content: str
+    """Content is the whole file, for StandardFile."""
+    format: str
+    """Format is "json" or "toml", for StandardKeys."""
+    table: str
+    """
+    Table is the TOML table that holds the keys ("tool.pytest.ini_options"); empty for the top
+    level and for JSON.
+    """
+    keys: dict[str, Any]
+    """
+    Keys are the top-level keys to set and their whole values as JSON, for StandardKeys. A key's
+    value replaces the one on disk, so a plugin that adds to an object gives the object with its
+    other members kept. The members of an object value keep the plugin's order, which matters
+    where order is meaning (the conditions of a package.json "exports").
+    """
+
+
+class StandardParams(TypedDict):
+    """
+    StandardParams asks a plugin for smith's standard version of the configuration files of its
+    projects: the files `smith add` writes for a new project of the same kind, fitted to what the
+    project already is. A plugin leaves out a file it cannot standardize without breaking the
+    project (a browser project's tsconfig.json, a build file that holds the dependencies). The
+    plugin writes nothing: the host compares the files with the ones on disk, asks, and writes
+    (smith adopt, smith convert, smith doctor --fix).
+    """
+
+    projects: list[Project]
+
+
+class StandardResult(TypedDict):
+    """
+    StandardResult carries the standard files. A file that already is as the plugin gives it is
+    not a difference: the host compares.
+    """
+
+    files: list[StandardFileContent]
 
 
 class _StepRequired(TypedDict):

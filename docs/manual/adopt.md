@@ -51,6 +51,7 @@ Usage: `smith adopt [flags]`
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith's tooling for every project; smith convert's for Nx and Turborepo workspaces) |
 | `--manifest <manifest>` | string |  | with --init, a root of sources without a manifest: the language whose default manifest smith writes before the move (node, python, dotnet), or none; asked in a terminal |
 | `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
+| `--project-config <project-config>` | string |  | with --init, what happens to project configuration files that differ from smith's standard (tsconfig.json, a library's package.json entry points): replace (smith's standard, a replaced file kept as <file>.pre-smith) or keep |
 | `--tags` | boolean | off | create the baseline release tags the report asks for, locally |
 | `--tooling <tooling>` | string, repeatable |  | with --init, the build and lint tools of the Node projects: smith (smith's build and ESLint config, then the old tools go) or keep, for all, or <project>=smith\|keep for one |
 | `-y, --yes` | boolean | off | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it |
@@ -104,6 +105,14 @@ the plan with a diff of every file of yours it edits, and asks `Go ahead? [y/N]`
 | Add the agent files and merge the MCP server into `.mcp.json`? | `--agent add\|skip\|never` | skip; `never` records `[agent] enabled = false` |
 | Which CI? GitHub, Azure, GitLab, CircleCI and Bitbucket are detected | `--ci <provider>\|none` | the provider the repository uses, else GitHub |
 | A pipeline of yours at the path smith writes: replace it (yours moves to `<file>.pre-smith`) or keep it? | `--ci-existing replace\|keep` | replace, keeping the copy |
+| Your projects' configuration files differ from smith's standard (a library's package.json entry points, a tsconfig.json): replace them (a replaced file moves to `<file>.pre-smith`, a manifest only gets the keys it needs) or keep yours? (asked only if the repository has projects) | `--project-config replace\|keep` | replace, keeping the copies |
+
+The standard of each language comes from its plugin, which offers a file only where it cannot
+change how the project builds ([ADR 0110](../architecture/decisions/0110-a-plugin-gives-the-standard-configuration-of-a-converted-project.md)).
+For Node, a library whose `main` and `types` lead to its build gets a `source` condition in
+`exports` and the root `tsconfig.base.json` gets `"customConditions": ["source"]`: Ctrl+click on an
+import then opens the library's TypeScript source, not its built `.d.ts`, and Node and npm still
+use the build. With `keep`, `smith doctor` lists the differences until you accept them.
 
 Without a terminal and without `--yes` it refuses and names these flags. With `--yes` each open
 question takes its safe default and a line says which. `--init --dry-run` prints the same plan and

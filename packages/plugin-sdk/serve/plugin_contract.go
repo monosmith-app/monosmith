@@ -169,6 +169,14 @@ type WorkspaceJoiner interface {
 	Join(params protocol.JoinParams) (protocol.JoinResult, error)
 }
 
+// Standardizer is implemented by a plugin that gives smith's standard version
+// of its projects' configuration files. Serve advertises the standard
+// capability for it. Standard only describes: the host compares, asks and
+// writes.
+type Standardizer interface {
+	Standard(params protocol.StandardParams) (protocol.StandardResult, error)
+}
+
 // DeclaredDescriber is implemented by a plugin whose Discover also describes
 // the projects smith.toml declares (DiscoverParams.Declared): folders with no
 // manifest of their own. Serve advertises the declared capability for it.

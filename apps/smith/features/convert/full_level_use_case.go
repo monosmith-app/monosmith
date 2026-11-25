@@ -2,6 +2,7 @@ package convert
 
 import (
 	"bufio"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/features/fullconversion"
 	"github.com/monosmith-app/monosmith/apps/smith/features/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectstandard"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/marks"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/problem"
@@ -44,6 +46,9 @@ type fullArgs struct {
 	Commit bool
 	// OutputsGiven are the build tasks --outputs answered: not asked again.
 	OutputsGiven map[string]bool
+	// ProjectConfig is --project-config: projectstandard.Replace, Keep, or
+	// empty for the default (Replace).
+	ProjectConfig string
 }
 
 // fullJSON is `smith convert --level full --json`: the conversion plan as it
@@ -126,7 +131,7 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 		}
 	}
 	fmt.Fprintln(log)
-	res, err := Apply(a.Plan, ApplyOptions{Version: a.Version, SkipInstall: true, KeepPipelines: choices.CI == convertchoices.Keep, Out: log})
+	res, err := Apply(a.Plan, ApplyOptions{Version: a.Version, SkipInstall: true, KeepPipelines: choices.CI == convertchoices.Keep, ProjectConfig: cmp.Or(a.ProjectConfig, projectstandard.Replace), Out: log})
 	if err != nil {
 		return err
 	}

@@ -123,6 +123,9 @@ public static class ProtocolMethods
     /// <summary>Asks whether each project is joined to its language's workspace (npm workspaces, uv workspace members, a .NET solution), and for the fix that joins one that is not. The plugin writes nothing: the host shows the fix and applies it.</summary>
     public const string WorkspaceJoin = "workspace/join";
 
+    /// <summary>Asks for smith's standard version of each project's configuration files (whole files, or keys of a manifest), so a converted project can take them. The plugin writes nothing: the host compares with the files on disk, asks, keeps a replaced file as &lt;path&gt;.pre-smith, and writes.</summary>
+    public const string ProjectStandard = "project/standard";
+
     /// <summary>For each method the capability a plugin advertises to be asked it; <c>null</c> where it is always available.</summary>
     public static IReadOnlyDictionary<string, string?> CapabilityByMethod { get; } = new Dictionary<string, string?>(StringComparer.Ordinal)
     {
@@ -151,6 +154,7 @@ public static class ProtocolMethods
         [Derive] = "derive",
         [ApiSurface] = "apiSurface",
         [WorkspaceJoin] = "join",
+        [ProjectStandard] = "standard",
     };
 }
 
@@ -635,6 +639,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Join says whether each project is joined to the language's workspace (npm "workspaces", uv workspace members, a .NET solution) and gives the fix that joins one that is not. The plugin only describes; the host applies the fix.</summary>
     public bool Join { get; init; }
 
+    /// <summary>Standard gives smith's standard version of a project's configuration files (project/standard). The plugin only describes; the host compares, asks and writes.</summary>
+    public bool Standard { get; init; }
+
     /// <summary>ManifestOnly says generate honours GenerateParams.ManifestOnly: into a folder that exists and holds sources, it writes only the project's manifest and configuration from its templates. A host never sends ManifestOnly to a plugin without it, since the plugin would write its starter files among the person's sources.</summary>
     public bool ManifestOnly { get; init; }
 
@@ -667,6 +674,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Packs = BooleanValue(Member(map, "packs"), Join(path, "packs")),
             Declared = BooleanValue(Member(map, "declared"), Join(path, "declared")),
             Join = BooleanValue(Member(map, "join"), Join(path, "join")),
+            Standard = BooleanValue(Member(map, "standard"), Join(path, "standard")),
             ManifestOnly = BooleanValue(Member(map, "manifestOnly"), Join(path, "manifestOnly")),
         };
     }
@@ -790,6 +798,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("join");
             writer.Boolean(Join);
         }
+        if (Standard)
+        {
+            writer.Property("standard");
+            writer.Boolean(Standard);
+        }
         if (ManifestOnly)
         {
             writer.Property("manifestOnly");
@@ -827,6 +840,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "packs" => Packs,
             "declared" => Declared,
             "join" => Join,
+            "standard" => Standard,
             "manifestOnly" => ManifestOnly,
             _ => false,
         };
@@ -4747,6 +4761,141 @@ public sealed record Stack : IProtocolValue<Stack>
             writer.Property("choices");
             MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => builder1.String(item1));
         }
+        writer.EndObject();
+    }
+}
+
+/// <summary>StandardFileContent is smith's standard for one file.</summary>
+public sealed record StandardFileContent : IProtocolValue<StandardFileContent>
+{
+    /// <summary>Project is the project the file belongs to; empty for a file of the workspace (the root tsconfig.base.json).</summary>
+    public string Project { get; init; } = string.Empty;
+
+    /// <summary>Path is workspace-relative, with forward slashes.</summary>
+    public required string Path { get; init; }
+
+    /// <summary>Mode is StandardFile or StandardKeys.</summary>
+    public required string Mode { get; init; }
+
+    /// <summary>Content is the whole file, for StandardFile.</summary>
+    public string Content { get; init; } = string.Empty;
+
+    /// <summary>Format is "json" or "toml", for StandardKeys.</summary>
+    public string Format { get; init; } = string.Empty;
+
+    /// <summary>Table is the TOML table that holds the keys ("tool.pytest.ini_options"); empty for the top level and for JSON.</summary>
+    public string Table { get; init; } = string.Empty;
+
+    /// <summary>Keys are the top-level keys to set and their whole values as JSON, for StandardKeys. A key's value replaces the one on disk, so a plugin that adds to an object gives the object with its other members kept. The members of an object value keep the plugin's order, which matters where order is meaning (the conditions of a package.json "exports").</summary>
+    public IReadOnlyDictionary<string, JsonAny?> Keys { get; init; } = new Dictionary<string, JsonAny?>();
+
+    /// <summary>Reason says in one sentence what the standard gives the team ("Ctrl+click on an import opens the library's source, not its built .d.ts").</summary>
+    public required string Reason { get; init; }
+
+    /// <inheritdoc />
+    public static StandardFileContent Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new StandardFileContent
+        {
+            Project = StringValue(Member(map, "project"), Join(path, "project")),
+            Path = StringValue(Member(map, "path"), Join(path, "path")),
+            Mode = StringValue(Member(map, "mode"), Join(path, "mode")),
+            Content = StringValue(Member(map, "content"), Join(path, "content")),
+            Format = StringValue(Member(map, "format"), Join(path, "format")),
+            Table = StringValue(Member(map, "table"), Join(path, "table")),
+            Keys = MapOf(Member(map, "keys"), Join(path, "keys"), (value1, path1) => AnyValue(value1, path1), keepNull: true),
+            Reason = StringValue(Member(map, "reason"), Join(path, "reason")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        if (Project.Length > 0)
+        {
+            writer.Property("project");
+            writer.String(Project);
+        }
+        writer.Property("path");
+        writer.String(Path);
+        writer.Property("mode");
+        writer.String(Mode);
+        if (Content.Length > 0)
+        {
+            writer.Property("content");
+            writer.String(Content);
+        }
+        if (Format.Length > 0)
+        {
+            writer.Property("format");
+            writer.String(Format);
+        }
+        if (Table.Length > 0)
+        {
+            writer.Property("table");
+            writer.String(Table);
+        }
+        if (Keys is { Count: > 0 })
+        {
+            writer.Property("keys");
+            MessageWritingAlgorithm.Map(writer, Keys, (builder1, member1) => builder1.Any(member1));
+        }
+        writer.Property("reason");
+        writer.String(Reason);
+        writer.EndObject();
+    }
+}
+
+/// <summary>StandardParams asks a plugin for smith's standard version of the configuration files of its projects: the files <c>smith add</c> writes for a new project of the same kind, fitted to what the project already is. A plugin leaves out a file it cannot standardize without breaking the project (a browser project's tsconfig.json, a build file that holds the dependencies). The plugin writes nothing: the host compares the files with the ones on disk, asks, and writes (smith adopt, smith convert, smith doctor --fix).</summary>
+public sealed record StandardParams : IProtocolValue<StandardParams>
+{
+    /// <summary>The <c>projects</c> member of <c>StandardParams</c>.</summary>
+    public IReadOnlyList<Project> Projects { get; init; } = [];
+
+    /// <inheritdoc />
+    public static StandardParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new StandardParams
+        {
+            Projects = ListOf(Member(map, "projects"), Join(path, "projects"), Project.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("projects");
+        MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>StandardResult carries the standard files. A file that already is as the plugin gives it is not a difference: the host compares.</summary>
+public sealed record StandardResult : IProtocolValue<StandardResult>
+{
+    /// <summary>The <c>files</c> member of <c>StandardResult</c>.</summary>
+    public IReadOnlyList<StandardFileContent> Files { get; init; } = [];
+
+    /// <inheritdoc />
+    public static StandardResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new StandardResult
+        {
+            Files = ListOf(Member(map, "files"), Join(path, "files"), StandardFileContent.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("files");
+        MessageWritingAlgorithm.List(writer, Files, (builder1, item1) => item1.Write(builder1));
         writer.EndObject();
     }
 }

@@ -56,6 +56,8 @@ from ..protocol import (
     RepairParams,
     RepairResult,
     RewriteParams,
+    StandardParams,
+    StandardResult,
     UninstallParams,
     UnlinkParams,
     VersionParams,
@@ -174,6 +176,13 @@ class WorkspaceJoiner(Protocol):
     that joins one that is not. It only describes; the host applies the fix."""
 
     def join(self, params: JoinParams, cancel: CancelToken) -> JoinResult: ...
+
+
+class Standardizer(Protocol):
+    """`project/standard`: smith's standard version of each project's configuration files, so a
+    converted project can take them. It only describes; the host compares, asks and writes."""
+
+    def standard(self, params: StandardParams, cancel: CancelToken) -> StandardResult: ...
 
 
 class DeclarationEditor(Protocol):

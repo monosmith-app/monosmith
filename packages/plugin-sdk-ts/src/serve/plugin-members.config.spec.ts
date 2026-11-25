@@ -35,12 +35,13 @@ describe('PLUGIN_MEMBERS', () => {
       rewrite:      () => ({}),
       latest:       () => ({}),
       join:         () => ({ projects: [] }),
+      standard:     () => ({ files: [] }),
       cancellable:  true,
     }
     const rows = Object.values(protocolSchema['x-methods'])
     const wanted = new Set(rows.map(row => row.capability).filter(c => c !== null))
     const advertised = new Set(Object.keys(capabilitiesOf(everything)))
     expect(advertised).toEqual(wanted)
-    expect(wanted.size).toBe(20)
+    expect(wanted.size).toBe(21)
   })
 })

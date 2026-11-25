@@ -307,6 +307,20 @@ A workspace that uses `registry = "github-release"` gets these checks:
 - A package with `registry = "none"` or `"github-release"` is not asked about its registry by the lineage check
   (`release tags are not behind the registry`): its tags and release assets are the record.
 
+## smith's standard configuration
+
+A project that came in with `smith adopt` or `smith convert` keeps its configuration files. Each
+language plugin says what smith's standard version of them is, and doctor compares: the check
+`<folder> uses smith's standard configuration` (and `the workspace uses smith's standard
+configuration` for the root files) is a warning when a file differs. For Node, a library whose
+package.json leads to its build lacks the `source` condition, so Ctrl+click on an import opens the
+built `.d.ts`, not the TypeScript source.
+
+The fix writes the standard. A whole file it replaces is kept as `<file>.pre-smith`; a manifest
+only gets the keys it needs. It changes your files, so `--yes` alone never applies it: answer it
+in a terminal, or name it with `--only`. To keep your files, add the `[[doctor.accept]]` entry the
+remedy prints ([ADR 0110](../architecture/decisions/0110-a-plugin-gives-the-standard-configuration-of-a-converted-project.md)).
+
 ## Suggestions about a project's kind
 
 Two warnings point at [`smith kind`](kind.md). They are suggestions, never failures, and they

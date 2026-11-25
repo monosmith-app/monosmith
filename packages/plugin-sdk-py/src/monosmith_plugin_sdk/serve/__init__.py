@@ -21,6 +21,7 @@ from .plugin_contract import (
     RegistryReader,
     Remover,
     Versioner,
+    Standardizer,
     WorkspaceJoiner,
 )
 from .plugin_members_config import PLUGIN_MEMBERS
@@ -40,6 +41,7 @@ __all__ = [
     "Deriver",
     "Discoverer",
     "DependencyRepairer",
+    "Standardizer",
     "WorkspaceJoiner",
     "DoctorContributor",
     "Generator",

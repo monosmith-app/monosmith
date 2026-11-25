@@ -46,6 +46,7 @@ func InitFacts(r Report) adoptdecision.Facts {
 		MCPExists:           exists(".mcp.json"),
 		Detected:            r.Detected,
 		OwnPipelines:        OwnPipelines(r.Root),
+		HasProjects:         len(r.Projects) > 0,
 	}
 }
 

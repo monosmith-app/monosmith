@@ -1,6 +1,7 @@
 package adoption
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/features/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/features/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/features/projectstandard"
 	"github.com/monosmith-app/monosmith/apps/smith/features/releaselineage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/features/session"
@@ -138,6 +140,11 @@ func Init(r Report, version string, install, eslint, commit bool, c adoptdecisio
 	if err != nil {
 		return err
 	}
+	standardLeft, err := applyStandard(r.Root, version, c.ProjectConfig, out)
+	if err != nil {
+		return err
+	}
+	left = append(left, standardLeft...)
 	// Adopt keeps the repository's own setup, so what doctor reports next
 	// (install, a lint config) is a step left to do, not a bug of adopt:
 	// DescribeOutcome lists each once.
@@ -153,6 +160,18 @@ func Init(r Report, version string, install, eslint, commit bool, c adoptdecisio
 		fmt.Fprintln(out, "  committed: chore: adopt smith (smith undo reverts it)")
 	}
 	return DescribeOutcome(r.Root, version, left, out)
+}
+
+// applyStandard brings the projects' configuration files to smith's standard,
+// or leaves them, as the answer says (projectstandard.Standardize).
+func applyStandard(root, version, answer string, out io.Writer) ([]string, error) {
+	s, err := session.Open(session.Options{Dir: root, Version: version, Log: out})
+	if err != nil {
+		return nil, err
+	}
+	defer s.Close()
+	_, left, err := projectstandard.Standardize(s, cmp.Or(answer, projectstandard.Replace), out)
+	return left, err
 }
 
 // writePipelines generates the CI pipelines for the projects found, and says

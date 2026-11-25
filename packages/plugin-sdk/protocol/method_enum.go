@@ -53,4 +53,7 @@ const (
 	// MethodJoin asks whether each project is joined to its language's
 	// workspace, and for the fix that joins it.
 	MethodJoin = "workspace/join"
+	// MethodStandard asks for smith's standard version of a project's
+	// configuration files, so a converted project can take them.
+	MethodStandard = "project/standard"
 )

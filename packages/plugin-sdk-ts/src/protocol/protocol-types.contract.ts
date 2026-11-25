@@ -254,6 +254,11 @@ export interface Capabilities {
    */
   join?: boolean
   /**
+   * Standard gives smith's standard version of a project's configuration files (project/standard).
+   * The plugin only describes; the host compares, asks and writes.
+   */
+  standard?: boolean
+  /**
    * ManifestOnly says generate honours GenerateParams.ManifestOnly: into a folder that exists and
    * holds sources, it writes only the project's manifest and configuration from its templates. A
    * host never sends ManifestOnly to a plugin without it, since the plugin would write its starter
@@ -1623,6 +1628,60 @@ export interface Stack {
   choices?: string[]
 }
 
+/** StandardFileContent is smith's standard for one file. */
+export interface StandardFileContent {
+  /**
+   * Project is the project the file belongs to; empty for a file of the workspace (the root
+   * tsconfig.base.json).
+   */
+  project?: string
+  /** Path is workspace-relative, with forward slashes. */
+  path: string
+  /** Mode is StandardFile or StandardKeys. */
+  mode: string
+  /** Content is the whole file, for StandardFile. */
+  content?: string
+  /** Format is "json" or "toml", for StandardKeys. */
+  format?: string
+  /**
+   * Table is the TOML table that holds the keys ("tool.pytest.ini_options"); empty for the top
+   * level and for JSON.
+   */
+  table?: string
+  /**
+   * Keys are the top-level keys to set and their whole values as JSON, for StandardKeys. A key's
+   * value replaces the one on disk, so a plugin that adds to an object gives the object with its
+   * other members kept. The members of an object value keep the plugin's order, which matters where
+   * order is meaning (the conditions of a package.json "exports").
+   */
+  keys?: Record<string, unknown>
+  /**
+   * Reason says in one sentence what the standard gives the team ("Ctrl+click on an import opens
+   * the library's source, not its built .d.ts").
+   */
+  reason: string
+}
+
+/**
+ * StandardParams asks a plugin for smith's standard version of the configuration files of its
+ * projects: the files `smith add` writes for a new project of the same kind, fitted to what the
+ * project already is. A plugin leaves out a file it cannot standardize without breaking the project
+ * (a browser project's tsconfig.json, a build file that holds the dependencies). The plugin writes
+ * nothing: the host compares the files with the ones on disk, asks, and writes (smith adopt, smith
+ * convert, smith doctor --fix).
+ */
+export interface StandardParams {
+  projects: Project[]
+}
+
+/**
+ * StandardResult carries the standard files. A file that already is as the plugin gives it is not a
+ * difference: the host compares.
+ */
+export interface StandardResult {
+  files: StandardFileContent[]
+}
+
 /** Step is one command a CI phase runs. */
 export interface Step {
   name: string
@@ -2152,6 +2211,16 @@ export interface ProtocolMethods {
     params: JoinParams
     result: JoinResult
     capability: 'join'
+  }
+  /**
+   * Asks for smith's standard version of each project's configuration files (whole files, or keys
+   * of a manifest), so a converted project can take them. The plugin writes nothing: the host
+   * compares with the files on disk, asks, keeps a replaced file as <path>.pre-smith, and writes.
+   */
+  'project/standard': {
+    params: StandardParams
+    result: StandardResult
+    capability: 'standard'
   }
 }
 

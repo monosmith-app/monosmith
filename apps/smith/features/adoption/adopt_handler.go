@@ -244,6 +244,7 @@ non-zero while something blocks.`,
 	cmd.Flags().StringVar(&decided.Gitattributes, "gitattributes", "", "with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it)")
 	cmd.Flags().StringVar(&decided.Agent, "agent", "", "with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false)")
 	cmd.Flags().StringSliceVar(&decided.CI, "ci", nil, "with --init, the CI providers to write pipelines for (github, azure, gitlab, circleci, bitbucket), or none")
+	cmd.Flags().StringVar(&decided.ProjectConfig, "project-config", "", "with --init, what happens to project configuration files that differ from smith's standard (tsconfig.json, a library's package.json entry points): replace (smith's standard, a replaced file kept as <file>.pre-smith) or keep")
 	cmd.Flags().StringVar(&decided.Existing, "ci-existing", "", "with --init, replace a pipeline of yours (kept as <file>.pre-smith) or keep it and write none for that provider")
 	cmd.Flags().BoolVar(&commit, "commit", false, "with --init, commit the change as one operation, so smith undo can revert it")
 	return cmd

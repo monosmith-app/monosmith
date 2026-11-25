@@ -10,6 +10,7 @@ const (
 	KeyGitattributes = "gitattributes"
 	KeyCI            = "ci"
 	KeyExisting      = "existing"
+	KeyProjectConfig = "project-config"
 )
 
 // DefaultCI is the value of the CI answer that takes the providers smith
@@ -74,6 +75,13 @@ func Questions(f Facts) []Question {
 				{Label: "Keep mine", Value: ExistingKeep, Hint: "smith writes no pipeline for that provider"},
 			}})
 	}
+	if f.HasProjects {
+		var answers []Answer
+		for _, o := range projectConfigOptions() {
+			answers = append(answers, Answer{Label: o.Label, Value: o.Value, Hint: o.Hint})
+		}
+		qs = append(qs, Question{Key: KeyProjectConfig, Prompt: projectConfigPrompt, Answers: answers})
+	}
 	return qs
 }
 
@@ -92,7 +100,7 @@ func proposedCI(f Facts) []string {
 // Parameters: f are the facts; answers map a question key to the Value chosen.
 // Returns: the choices.
 func FromAnswers(f Facts, answers map[string]string) Choices {
-	c := Choices{Gitattributes: GitattributesSkip, Agent: AgentSkip, Existing: ExistingReplace}
+	c := Choices{Gitattributes: GitattributesSkip, Agent: AgentSkip, Existing: ExistingReplace, ProjectConfig: ProjectConfigReplace}
 	if v := answers[KeyGitattributes]; v == GitattributesAdd {
 		c.Gitattributes = GitattributesAdd
 	}
@@ -106,6 +114,9 @@ func FromAnswers(f Facts, answers map[string]string) Choices {
 	if answers[KeyExisting] == ExistingKeep {
 		c.Existing = ExistingKeep
 	}
+	if answers[KeyProjectConfig] == ProjectConfigKeep {
+		c.ProjectConfig = ProjectConfigKeep
+	}
 	return c
 }
 
@@ -118,7 +129,7 @@ func (c Choices) Argv() []string {
 	} else {
 		argv = append(argv, "--ci", strings.Join(c.CI, ","))
 	}
-	return append(argv, "--ci-existing", cmpOr(c.Existing, ExistingReplace))
+	return append(argv, "--ci-existing", cmpOr(c.Existing, ExistingReplace), "--project-config", cmpOr(c.ProjectConfig, ProjectConfigReplace))
 }
 
 func cmpOr(v, fallback string) string {
