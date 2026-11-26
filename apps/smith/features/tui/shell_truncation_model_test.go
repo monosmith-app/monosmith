@@ -13,7 +13,7 @@ func TestTheTabStripAndTheFootersHelpAndQuitAreNeverCutAboveTheMinimumWidth(t *t
 		if strip := lines[l.sh().lay().Tabs.Y]; !strings.Contains(strip, "Rel") && !strings.Contains(strip, "›") {
 			t.Fatalf("%d columns: the tab strip is cut without a marker: %q", w, strip)
 		}
-		if foot := lines[len(lines)-2]; !strings.Contains(foot, "help (?)") || !strings.Contains(foot, "quit (q)") {
+		if foot := lines[len(lines)-2]; !strings.Contains(foot, "? help") || !strings.Contains(foot, "q quit") {
 			t.Fatalf("%d columns: the footer lost help or quit: %q", w, foot)
 		}
 	}

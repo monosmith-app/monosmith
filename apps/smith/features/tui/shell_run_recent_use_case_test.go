@@ -61,12 +61,12 @@ func TestTheRunFooterNamesTheKeysThatMoveBetweenRuns(t *testing.T) {
 	l.next = failingRun()
 	l.keys("b")
 	l.keys("r")
-	if f := footerOf(l); !strings.Contains(f, "older (,)") || strings.Contains(f, "newer") || !strings.Contains(f, "back (Esc)") {
+	if f := footerOf(l); !strings.Contains(f, ", older") || strings.Contains(f, "newer") || !strings.Contains(f, "Esc back") {
 		t.Fatalf("run footer %q", f)
 	}
 	closeRunPanel(l)
 	l.keys("tab")
-	if f := footerOf(l); !strings.Contains(f, "↑↓ choose run") || !strings.Contains(f, "open (Enter)") || strings.Contains(f, "follow") {
+	if f := footerOf(l); !strings.Contains(f, "↑↓ choose run") || !strings.Contains(f, "Enter open") || strings.Contains(f, "follow") {
 		t.Fatalf("recent runs footer %q", f)
 	}
 }

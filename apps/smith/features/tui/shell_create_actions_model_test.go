@@ -29,7 +29,7 @@ func TestHomeComposeButtonStartsTheComposer(t *testing.T) {
 func TestProjectsListStartsWithANewProjectButtonAndTheAKey(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
 	l.has("[+ New project (a)]")
-	newLab(t, true, 260, 34).openTab(commands.TabProjects).has("add project (a)")
+	newLab(t, true, 260, 34).openTab(commands.TabProjects).has("a add project")
 	l.clickText("[+ New project")
 	l.has("What are you building?")
 

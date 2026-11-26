@@ -1,7 +1,6 @@
 package footer
 
 import (
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
@@ -13,19 +12,16 @@ type Placed struct {
 	X, W int
 }
 
-// gap is the room between two hints.
-const gap = 2
+// gap is the room between two hints: a space, the separator and a space.
+const gap = 3
 
 // keptLast is how many hints at the end of the tail (help and quit) stay
 // after the view's own hints are gone.
 const keptLast = 2
 
-// width is the cells a hint takes: a button when a click presses its key, the
-// glyph and the label as text when not.
-func width(th theme.Theme, h commands.Hint) int {
-	if h.Key != "" {
-		return button.Width(th, h.Label, h.Glyph)
-	}
+// width is the cells a hint takes: its key, a space and its description, in
+// every theme.
+func width(_ theme.Theme, h commands.Hint) int {
 	return pane.Width(h.Glyph) + 1 + pane.Width(h.Label)
 }
 

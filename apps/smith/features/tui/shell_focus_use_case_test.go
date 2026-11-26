@@ -12,22 +12,22 @@ import (
 
 func TestTabMovesTheKeyboardBetweenTheListAndTheDetailOfProjects(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
-	l.has("[detail (Tab)]")
+	l.has("Tab detail")
 	l.keys("tab")
 	if !l.sh().sideFocus {
 		t.Fatal("Tab did not move the keyboard to the detail")
 	}
-	l.has("[list (Tab)]", "↑↓ choose", "[go to run (Enter)]")
+	l.has("Tab list", "↑↓ choose", "Enter go to run")
 	l.keys("enter")
-	l.has("[run (Enter)]")
+	l.has("Enter run")
 	l.hasNot("go to run")
 	l.keys("up")
-	l.hasNot("[detail (Tab)]")
+	l.hasNot("Tab detail")
 	l.keys("tab")
 	if l.sh().sideFocus {
 		t.Fatal("a second Tab did not give the keyboard back to the list")
 	}
-	l.has("[detail (Tab)]")
+	l.has("Tab detail")
 }
 
 func TestOnAShortScreenTheRunButtonOfTheDetailStaysInView(t *testing.T) {
@@ -164,7 +164,7 @@ func TestAnOpenRunHasTheKeyboardUntilTabGivesItToTheList(t *testing.T) {
 	if !l.runPanelHasKeys() {
 		t.Fatal("a run that starts does not take the keyboard")
 	}
-	l.has("[list (Tab)]")
+	l.has("Tab list")
 	l.keys("tab")
 	if l.runPanelHasKeys() || !l.sh().runShown() {
 		t.Fatal("Tab should keep the run open and give the keyboard to the list")
@@ -186,12 +186,12 @@ func (l *lab) runPanelHasKeys() bool { return l.sh().runShown() && l.sh().sideKe
 
 func TestOnDoctorTabAndRightMoveTheKeyboardToTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabDoctor)
-	l.has("[detail (Tab)]")
+	l.has("Tab detail")
 	l.keys("tab")
 	if !l.sh().sideFocus {
 		t.Fatal("Tab did not move the keyboard to the detail of the check")
 	}
-	l.has("[list (Tab)]", "↑↓ choose")
+	l.has("Tab list", "↑↓ choose")
 	cursor := l.sh().doctor.Cursor
 	l.keys("down")
 	if l.sh().doctor.Cursor != cursor {

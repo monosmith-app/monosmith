@@ -15,12 +15,12 @@ func TestTheDepsFooterHidesTheKeysThatCannotWorkBeforeTheRegistriesAnswer(t *tes
 	sh.tab, sh.deps = commands.TabDeps, depsview.Model{}
 	l.m = sh
 	footer := l.lines()[len(l.lines())-2]
-	for _, banned := range []string{"update (u", "align (v", "mark (", "remove ("} {
+	for _, banned := range []string{"u update", "v align", "Space mark", "x remove"} {
 		if strings.Contains(footer, banned) {
 			t.Fatalf("the footer promises %q before the answer: %q", banned, footer)
 		}
 	}
-	if !strings.Contains(footer, "reload view (r)") {
+	if !strings.Contains(footer, "r reload view") {
 		t.Fatalf("reload still works: %q", footer)
 	}
 	l.keys("u")

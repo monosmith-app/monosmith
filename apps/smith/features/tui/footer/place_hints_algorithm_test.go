@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
@@ -32,7 +31,7 @@ func TestTheViewHintsSitLeftAndTheTailRight(t *testing.T) {
 		t.Fatalf("the tail ends at %d", last.X+last.W)
 	}
 	line := pane.Strip(Render(theme.Default(), placed, -1, 70))
-	if pane.Width(line) != 70 || !strings.Contains(line, "build (b)    test (t)    lint (l)") || !strings.HasSuffix(strings.TrimRight(line, " "), "help (?)    quit (q)") {
+	if pane.Width(line) != 70 || !strings.Contains(line, "b build • t test • l lint") || !strings.HasSuffix(strings.TrimRight(line, " "), "? help • q quit") {
 		t.Fatalf("%q", line)
 	}
 }
@@ -75,16 +74,24 @@ func TestAtFindsTheHintUnderAColumn(t *testing.T) {
 	}
 }
 
-func TestAHintWithoutAKeyStaysTextAndAKeyedOneIsAButton(t *testing.T) {
+func TestEveryHintIsTheKeyAndItsDescriptionWithASeparatorInTheBorderColour(t *testing.T) {
 	th := theme.Default()
 	hints := []commands.Hint{{Glyph: "↑↓", Label: "move"}, {Glyph: "b", Label: "build", Key: "b"}}
 	placed := Place(th, hints, nil, 60)
-	if placed[0].W != pane.Width("↑↓ move") || placed[1].W != button.Width(th, "build", "b") {
+	if placed[0].W != pane.Width("↑↓ move") || placed[1].W != pane.Width("b build") || placed[1].X != placed[0].X+placed[0].W+gap {
 		t.Fatalf("%+v", placed)
 	}
-	line := pane.Strip(Render(th, placed, -1, 60))
-	if !strings.Contains(line, "↑↓ move") || !strings.Contains(line, "build (b)") {
+	got := Render(th, placed, -1, 60)
+	if line := pane.Strip(got); !strings.HasPrefix(line, " ↑↓ move • b build ") {
 		t.Fatalf("%q", line)
+	}
+	for _, want := range []string{th.Accent("b"), th.Muted("build"), th.Border("•", false)} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the row lacks %q: %q", want, got)
+		}
+	}
+	if Render(th, placed, -1, 60) != Render(th, placed, placed[0].X, 60) {
+		t.Error("a hint without a key is not lit: a click on it presses nothing")
 	}
 }
 

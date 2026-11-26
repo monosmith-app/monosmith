@@ -115,9 +115,9 @@ func (s Shell) baseRows() []string {
 }
 
 // statusInfo is what the status bar shows: the exact command running or last
-// run, its result, the branch and the version.
+// run, its result and counts, the branch, the version and the doctor state.
 func (s Shell) statusInfo() statusbar.Info {
-	info := statusbar.Info{Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
+	info := statusbar.Info{Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff, Branch: s.branch, Health: s.healthSummary()}
 	if s.updateOffered() {
 		info.Update = s.upd.Latest
 	}
@@ -141,6 +141,7 @@ func (s Shell) statusInfo() statusbar.Info {
 	}
 	if s.run.Finished {
 		info.Result = s.summary()
+		info.Failed, info.Passed, info.Took = c.Failed, c.Passed, shortDuration(s.run.RunTime(s.now()))
 	}
 	return info
 }

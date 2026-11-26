@@ -34,16 +34,17 @@ the command you end up with; see [Plain mode](#plain-mode-and-environment).
 
 From top to bottom:
 
-1. **Header**: the workspace's name (`smith` when there is none, with a hint about
-   `smith new` and `smith adopt` outside a workspace), the git branch, and a health summary:
-   `checking…` until the first doctor run has finished (it starts with the shell), then
-   the counts of failed checks and warnings, or a check mark when everything passed. When the
-   workspace has a remote cache, the last mark is its state: `≈ checking…` until the first
-   answer, then `≈✓` (it answers and accepts the credentials), `≈▲` (it does not answer) or
-   `≈×` (it refuses the credentials, or `SMITH_CACHE_KEY` or the store's credentials are not
-   set). ASCII terminals show `[c][v]`, `[c][!]` and `[c][x]`. smith asks the remote in the
-   background with a 5 second timeout, so the screen never waits. There is no mark without a
-   remote. The header sits at the right end of its row.
+1. **Header**: the ` smith ` tag in the accent colour, the workspace's name in bold (with a
+   hint about `smith new` and `smith adopt` outside a workspace) and the git branch, muted.
+   When the workspace has a remote cache, the last mark is its state: `≈ checking…` until
+   the first answer, then `≈✓` (it answers and accepts the credentials), `≈▲` (it does not
+   answer) or `≈×` (it refuses the credentials, or `SMITH_CACHE_KEY` or the store's
+   credentials are not set). ASCII terminals show `[c][v]`, `[c][!]` and `[c][x]`. smith asks
+   the remote in the background with a 5 second timeout, so the screen never waits. There is
+   no mark without a remote. Under 120 columns the header is a title bar of its own, with the
+   palette hint (`⌕ Type a command, project or task  Ctrl+P`, or `Ctrl+P commands` on a short
+   row) and `smith <version>` at the right. From 120 columns it sits at the right end of the
+   tab row, without the hint and the version.
 2. **Tabs**: Home, Projects, Doctor, Deps, Release, Settings, numbered 1 to 6. When the names do
    not fit, they are shortened, then the strip scrolls with `‹` and `›`. On a short terminal
    the tabs are one row of names.
@@ -57,11 +58,15 @@ From top to bottom:
    There is no left, right or bottom edge. The rule has no title: the lit tab says where
    you are, and a fact shows once. A form on the Start tab names itself on its first line.
 4. **Footer**: key hints for the open view, then the ones every view ends with
-   (`views`, `palette`, `help`, `quit`, `mouse`). Each hint can be clicked. When the line is
-   too narrow, these global hints go first, so the view keeps its own keys (Home keeps
-   `next (Enter)`); then the view's last hints go.
-5. **Status bar**: the exact command line running or last run, its result, the git branch
-   and the smith version.
+   (`views`, `palette`, `help`, `quit`, `mouse`), as `key description • key description`.
+   Each hint can be clicked. When the line is too narrow, these global hints go first, so
+   the view keeps its own keys (Home keeps `Enter next`); then the view's last hints go.
+5. **Status bar**: the exact command line running or last run, muted, then its result: the
+   counts with their symbols and the time (`× 1 failed  ✓ 17 passed  38s`, or `× 1  ✓ 17  38s`
+   on a short row). At the right: the git branch, the smith version and the health summary,
+   `checking…` until the first doctor run has finished (it starts with the shell), then the
+   counts of failed checks and warnings, or a check mark when everything passed. A short row
+   drops the branch first, then the health summary.
 
 A short **toast** in a corner reports a result, a refusal (with the reason) or a warning, and
 goes away by itself. A result toast belongs to the view it was raised on.
@@ -118,7 +123,7 @@ can be pressed.
 Every item is drawn the same way: its title in bold, an optional note under it, and its buttons on one line
 below, left-aligned under the title, never at the right. A button names its destination (`Open Doctor`,
 `Open Deps`) and shows its key. **Enter runs the first button of the first item**, which shows `(Enter)`;
-the footer says `next (Enter)`. Every button has three looks:
+the footer says `Enter next`. Every button has three looks:
 at rest, under the pointer and pressed. A click on a button runs its command; a click
 elsewhere on an item does nothing.
 
@@ -892,8 +897,8 @@ Doctor (Fix, Run this check now, Check again, Why).
 
 With the keyboard (after `Tab`, or in the opened detail), `Up` and `Down` choose an action. `Down`
 after the last action moves to the run button, and `Up` goes back. `Enter` on an action moves to the
-run button, and `Enter` on the run button runs the action. The footer says which: `go to run (Enter)`
-on an action, `run (Enter)` on the run button. The shortcut letters (`b`, `t`, `l`, `c`,
+run button, and `Enter` on the run button runs the action. The footer says which: `Enter go to run`
+on an action, `Enter run` on the run button. The shortcut letters (`b`, `t`, `l`, `c`,
 `p` and the others the buttons show) do not choose: they run the action at once. They are the fast
 path that the footer and the help promise.
 

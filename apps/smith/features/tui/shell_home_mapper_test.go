@@ -54,12 +54,12 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 		t.Fatalf("the first item (row %d, buttons %d) comes before the others (row %d)", title, fix, affected)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"next (Enter)", "build all 3 (B)", "changed (w)", "doctor (d)", "1-6 views"} {
+	for _, want := range []string{"Enter next", "B build all 3", "w changed", "d doctor", "1-6 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
 	}
-	if strings.Contains(footer, "follow (f)") || strings.Contains(footer, "fix all (F)") {
+	if strings.Contains(footer, "f follow") || strings.Contains(footer, "F fix all") {
 		t.Fatalf("keys of other views on Home: %q", footer)
 	}
 }
@@ -168,8 +168,9 @@ func healthyShell(t *testing.T, affected bool) *lab {
 func TestWhenAllIsWellHomeSaysSoAndOffersABuild(t *testing.T) {
 	l := healthyShell(t, false)
 	l.has("All good", "[Build all (Enter)]", "Updates not looked at yet")
-	if first := l.lines()[0]; strings.Contains(first, "×") || !strings.Contains(first, "✓") {
-		t.Fatalf("the header shows a clean bill: %q", first)
+	lines := l.lines()
+	if bar := lines[len(lines)-1]; strings.Contains(bar, "×") || !strings.Contains(bar, "✓") {
+		t.Fatalf("the status bar shows a clean bill: %q", bar)
 	}
 	l.keys("enter")
 	if l.lastStarted() != "run build" {

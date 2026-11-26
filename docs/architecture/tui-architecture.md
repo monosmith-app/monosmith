@@ -120,7 +120,7 @@ release and active look of a button. The shortcut keys go through the keymap, no
 run the action at once. When the whole panel does not fit, `pinRun` sets `Panel.PinRun`: `View` leaves
 the run part out and `Panel.PinnedRun` draws it under the scrolling body, in at most half of the rows
 (the rule and the button always stay), so it never falls below the fold; `scrollDetail` and
-`keepDetailCursorVisible` count the body without it. The footer says `go to run (Enter)` while the
+`keepDetailCursorVisible` count the body without it. The footer says `Enter go to run` while the
 keyboard is above the rule (`tabPage.Footer`), since `Enter` there moves to the run button.
 
 Home has no second panel. Its keys are `home.move`, `home.scroll` and `Ctrl+U`/`Ctrl+D`
@@ -182,7 +182,7 @@ actions, which scroll and keep `keepDetailCursorVisible` in the part under the r
 the plan of the Release tab (`pendingNext`), never computed again.
 
 Views load lazily: Doctor, Deps and Release load on first open; Doctor also starts in the
-background when the shell opens, so the header shows its counts before any tab is visited.
+background when the shell opens, so the status bar shows its counts before any tab is visited.
 
 ## Running commands
 

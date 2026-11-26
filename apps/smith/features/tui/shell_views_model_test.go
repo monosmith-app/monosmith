@@ -105,8 +105,8 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("3") // the checks are grouped by default
-	l.has("workspace", "web  1 failed", "2 checks passed", "fix all (F)")
-	l.hasNot("fix (f)", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
+	l.has("workspace", "web  1 failed", "2 checks passed", "F fix all")
+	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
 	l.has("Check again")
 	l.keys("f")
 	if l.sh().fix != nil || len(l.started) != 0 {
@@ -114,7 +114,7 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	}
 	l.has("no fix")
 	l.keys("down", "down") // past web's heading
-	l.has("fix (f)", "[Fix (f)]", "write web's registry", "writes apps/web/Dockerfile")
+	l.has("f fix", "[Fix (f)]", "write web's registry", "writes apps/web/Dockerfile")
 	l.keys("f") // web's Docker finding
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
@@ -134,7 +134,7 @@ func TestTheDoctorTabListsGroupedUntilGroupingIsOff(t *testing.T) {
 func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5")
-	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "notes (n)")
+	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "n notes")
 	l.hasNot("a1b2c3d")
 	l.keys("enter")
 	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old cookie format")
@@ -377,7 +377,7 @@ func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
 
 func TestTheHeaderNamesTheWorkspaceAndTheStatusBarTheVersion(t *testing.T) {
 	l := newLab(t, true, 100, 40)
-	if last := l.lines()[39]; !strings.Contains(last, "smith 1.2.3") {
+	if last := l.lines()[39]; !strings.Contains(last, "1.2.3") {
 		t.Fatalf("status bar %q", last)
 	}
 	if first := l.lines()[0]; !strings.Contains(first, "acme") || strings.HasPrefix(first, "╭") {
