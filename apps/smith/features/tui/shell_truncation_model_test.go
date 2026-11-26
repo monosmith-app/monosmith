@@ -3,15 +3,22 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 )
 
 func TestTheTabStripAndTheFootersHelpAndQuitAreNeverCutAboveTheMinimumWidth(t *testing.T) {
 	for w := minWidth; w <= 150; w += 3 {
 		l := newLab(t, true, w, 24)
 		lines := l.lines()
-		// The strip is shortened to fit and, when it still does not, scrolls with a marker.
-		if strip := lines[l.sh().lay().Tabs.Y]; !strings.Contains(strip, "Rel") && !strings.Contains(strip, "›") {
-			t.Fatalf("%d columns: the tab strip is cut without a marker: %q", w, strip)
+		// The strip is shortened to fit and, when it still does not, scrolls with a
+		// marker. From WideFrom the rail lists every view instead.
+		if lay := l.sh().lay(); lay.Tabs.H > 0 {
+			if strip := lines[lay.Tabs.Y]; !strings.Contains(strip, "Rel") && !strings.Contains(strip, "›") {
+				t.Fatalf("%d columns: the tab strip is cut without a marker: %q", w, strip)
+			}
+		} else {
+			l.railSpot(commands.TabRelease)
 		}
 		if foot := lines[len(lines)-2]; !strings.Contains(foot, "? help") || !strings.Contains(foot, "q quit") {
 			t.Fatalf("%d columns: the footer lost help or quit: %q", w, foot)

@@ -252,6 +252,11 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		return nil
 	case layout.Tabs:
 		return s.tabClick(x)
+	case layout.Rail:
+		if id := s.railAt(y); id != "" {
+			return s.gotoTab(id)
+		}
+		return nil
 	case layout.Main:
 		if in := s.mainInner(); in.Contains(x, y) {
 			s.sideFocus = false

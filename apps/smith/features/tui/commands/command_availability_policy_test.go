@@ -68,7 +68,7 @@ func TestEveryCommandWithAKeyShowsItsShortcut(t *testing.T) {
 			t.Errorf("%s has keys but shows no shortcut", c.ID)
 		}
 	}
-	if c, _ := ByID("file.palette"); c.Shortcut != ": / Ctrl+P" {
+	if c, _ := ByID("file.palette"); c.Shortcut != ": / Ctrl+K" {
 		t.Errorf("the palette shows %q", c.Shortcut)
 	}
 	if c, _ := ByID("help.keys"); c.Shortcut != "? / F1" {
@@ -206,9 +206,9 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		return strings.Join(out, " · ")
 	}
 	for view, want := range map[string]string{
-		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
-		TabDoctor:   "Enter expand · f fix · F fix all · E expand all · g group · r reload view · x show failed · w show warnings · p show passed · b build · B build all · t test · z zoom · y copy",
-		TabHome:     "Enter next · ←↑↓→ move · PgUp/PgDn scroll · r reload view · b build · B build all · t test · w changed · d doctor",
+		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d health · a add project · z zoom · y copy",
+		TabDoctor:   "Enter open · f fix · F fix all · E expand all · g group · r reload view · x show failed · w show warnings · p show passed · b build · B build all · t test · z zoom · y copy",
+		TabHome:     "Enter next · ←↑↓→ move · PgUp/PgDn scroll · r reload view · b build · B build all · t test · w changed · d health",
 		TabDeps:     "Space mark · u update · g registry · i install · x remove · v align · o one version · U update all · S sync · r reload view · b build · B build all · t test · y copy",
 		TabRelease:  "←→ expand/collapse · p preview · n notes · x release · w why · c first commit · r reload view · b build · B build all · t test",
 		TabSettings: "↑↓ move · Enter change · Tab list/sections · Esc back · t trust · f forget · u reset · r reload view",
@@ -294,8 +294,8 @@ func TestWhileARunGoesTheFooterOffersStopNotBuild(t *testing.T) {
 func TestTheHelpListsTheViewKeysFirstAndNeverAKeyThatDoesNothing(t *testing.T) {
 	s := inside
 	s.View = TabDoctor
-	rows := HelpRows(s, "Doctor")
-	if rows[0].Group != "Doctor view" {
+	rows := HelpRows(s, "Health")
+	if rows[0].Group != "Health view" {
 		t.Fatalf("first group %q", rows[0].Group)
 	}
 	var titles []string
@@ -303,7 +303,7 @@ func TestTheHelpListsTheViewKeysFirstAndNeverAKeyThatDoesNothing(t *testing.T) {
 		titles = append(titles, r.Title+"="+r.Shortcut)
 	}
 	joined := strings.Join(titles, "\n")
-	for _, want := range []string{"Build=b", "Check types=c", "Doctor (check my project)=d", "Command palette…=: / Ctrl+P", "Keyboard shortcuts=? / F1", "Quit=q", "Mouse on or off=m", "Add project…=a"} {
+	for _, want := range []string{"Build=b", "Check types=c", "Health (check my project)=d", "Command palette…=: / Ctrl+K", "Keyboard shortcuts=? / F1", "Quit=q", "Mouse on or off=m", "Add project…=a"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("the help lacks %q:\n%s", want, joined)
 		}
@@ -364,7 +364,7 @@ func TestAViewLeavesOutTheHintsOfKeysThatCannotDoAnythingNow(t *testing.T) {
 	}
 }
 
-func TestTheDoctorExpandsInPlaceOnlyWhenNoDetailIsBesideIt(t *testing.T) {
+func TestTheHealthListOpensACheckOnlyWhenNoDetailIsBesideIt(t *testing.T) {
 	has := func(s State, label string) bool {
 		v, _ := Hints(s)
 		for _, h := range v {
@@ -376,8 +376,8 @@ func TestTheDoctorExpandsInPlaceOnlyWhenNoDetailIsBesideIt(t *testing.T) {
 	}
 	narrow := State{InWorkspace: true, Narrow: true, View: TabDoctor}
 	wide := State{InWorkspace: true, View: TabDoctor}
-	if !has(narrow, "expand") || has(wide, "expand") {
-		t.Fatal("Enter expands a check in the single pane and does nothing beside the detail")
+	if !has(narrow, "open") || has(wide, "open") {
+		t.Fatal("Enter opens a check in the single pane and does nothing beside the detail")
 	}
 }
 

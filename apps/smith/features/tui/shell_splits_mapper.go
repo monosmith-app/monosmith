@@ -15,7 +15,8 @@ func (s Shell) detailDivider() string { return splitter.DetailID(s.tab) }
 func (s Shell) detailWidth() int {
 	n, _ := s.split.Size(s.detailDivider())
 	if n == 0 && s.runWanted() {
-		return layout.ClampDetailWidth(s.w, s.w/2)
+		cw := layout.ContentWidth(s.w)
+		return layout.ClampDetailWidth(cw, cw/2)
 	}
 	return n
 }
@@ -90,7 +91,8 @@ func (s Shell) paintSplits(rows []string) []string {
 		rows = splitter.Paint(s.th, rows, p, s.split.Look(p.ID))
 	}
 	// The junctions follow, so a tee over a lit divider is lit with it.
-	js := splitter.Junctions(spots, s.lay().Main.Y)
+	l := s.lay()
+	js := splitter.Junctions(spots, l.Main.Y, l.Main.Y+l.Main.H-1)
 	for _, p := range spots {
 		rows = splitter.PaintJunctions(s.th, rows, js, p, s.split.Look(p.ID))
 	}

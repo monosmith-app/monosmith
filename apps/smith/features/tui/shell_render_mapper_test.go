@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runner"
@@ -34,11 +36,11 @@ func TestEveryScreenFillsExactlyTheTerminal(t *testing.T) {
 	}
 }
 
-func TestAt140ColumnsTheHeaderTheListAndTheDetailShareTheScreen(t *testing.T) {
+func TestAt140ColumnsTheTitleBarTheRailTheListAndTheDetailShareTheScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.hasNot("File ", "View ", "Help ", "Apps", "Libs") // no menu bar, no tree, no permanent side panel
 	l.has("acme", "main",                               // the header
-		"Projects", "Doctor", // the tabs
+		"Projects", "Health", // the rail of views
 		"web", "orders", "kit", "sdk", "4 projects", // the list
 		"root", "affected", "Build app", // the detail of the selected project
 		"1.2.3") // the status bar
@@ -64,7 +66,7 @@ func TestAtTheSupportedFloorEveryProjectIsStillListed(t *testing.T) {
 func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
 	l := newLab(t, false, 100, 28)
 	l.has("Start", "Create a workspace", "No workspace here")
-	l.hasNot("Doctor", "Settings")
+	l.hasNot("Health", "Settings")
 }
 
 func TestTheInterfaceFollowsEveryResize(t *testing.T) {
@@ -232,39 +234,53 @@ func frameTab(t *testing.T, name string, w, h int) *lab {
 	return nil
 }
 
-func TestTheMainScreenIsARuleUnderTheTabsWithNoSidesAndNoBottom(t *testing.T) {
+func TestEveryPaneIsARoundedFrameWithItsTitleInTheTopBorder(t *testing.T) {
 	for _, w := range []int{80, 120} {
 		for _, tc := range frameTabs {
 			l := tc.set(t, w, 40)
-			lay := l.sh().lay()
+			sh := l.sh()
+			lay := sh.lay()
 			lines := l.lines()
-			for y := lay.Main.Y; y < lay.Footer.Y; y++ {
-				row := []rune(lines[y])
-				if len(row) != w {
-					t.Fatalf("%s at %d: row %d is %d cells", tc.name, w, y, len(row))
-				}
-				if strings.ContainsAny(lines[y], "╭╮╰╯┴") {
-					t.Errorf("%s at %d: row %d has a corner or a bottom tee: %q", tc.name, w, y, lines[y])
-				}
-				if first, last := row[0], row[w-1]; (first != ' ' && first != '─') || (last != ' ' && last != '─') {
-					t.Errorf("%s at %d: row %d starts or ends with a border glyph: %q", tc.name, w, y, lines[y])
+			top, bottom := lay.Main.Y, lay.Main.Y+lay.Main.H-1
+			for y := top; y <= bottom; y++ {
+				if got := len([]rune(lines[y])); got != w {
+					t.Fatalf("%s at %d: row %d is %d cells", tc.name, w, y, got)
 				}
 			}
-			// The rule is one line across the width; a tee marks each vertical division.
+			boxes := []layout.Rect{lay.Main}
+			if lay.HasDetail() {
+				boxes = append(boxes, lay.Detail)
+			}
+			if lay.Rail.W > 0 {
+				boxes = append(boxes, lay.Rail)
+			}
 			tees := map[int]bool{}
-			for _, j := range splitter.Junctions(l.sh().spots(), lay.Main.Y) {
-				if j.Y == lay.Main.Y {
-					tees[j.X] = true
+			for _, j := range splitter.Junctions(sh.spots(), top, bottom) {
+				tees[j.X] = true
+			}
+			for _, r := range boxes {
+				cell := func(x, y int) rune { return []rune(lines[y])[x] }
+				if cell(r.X, top) != '╭' || cell(r.X+r.W-1, top) != '╮' || cell(r.X, bottom) != '╰' || cell(r.X+r.W-1, bottom) != '╯' {
+					t.Errorf("%s at %d: the frame at %+v has no rounded corners:\n%s", tc.name, w, r, l.view())
+				}
+				if cell(r.X+1, top) != '─' || cell(r.X+2, top) != ' ' {
+					t.Errorf("%s at %d: the frame at %+v has no title in its top border: %q", tc.name, w, r, lines[top])
+				}
+				for y := top + 1; y < bottom; y++ {
+					if cell(r.X, y) != '│' || cell(r.X+r.W-1, y) != '│' {
+						t.Errorf("%s at %d: row %d of the frame at %+v has no side borders: %q", tc.name, w, y, r, lines[y])
+						break
+					}
+				}
+				for x := r.X + 1; x < r.X+r.W-1; x++ {
+					if c := cell(x, bottom); c != '─' && (!tees[x] || c != '┴') {
+						t.Errorf("%s at %d: the bottom border of %+v has %q at column %d", tc.name, w, r, c, x)
+						break
+					}
 				}
 			}
-			if lay.HasDetail() && !tees[lay.Detail.X-1] {
-				t.Errorf("%s at %d: no tee where the detail's divider meets the rule", tc.name, w)
-			}
-			for x, r := range []rune(lines[lay.Main.Y]) {
-				if want := map[bool]rune{true: '┬', false: '─'}[tees[x]]; r != want {
-					t.Errorf("%s at %d: the rule has %q at column %d, want %q: %q", tc.name, w, r, x, want, lines[lay.Main.Y])
-					break
-				}
+			if title := []rune(lines[top]); !strings.Contains(string(title[lay.Main.X:lay.Main.X+lay.Main.W]), sh.mainTitle()) {
+				t.Errorf("%s at %d: the main frame is not titled %q: %q", tc.name, w, sh.mainTitle(), lines[top])
 			}
 		}
 	}
@@ -359,11 +375,12 @@ func TestTheWheelScrollsTheListFromItsLastRowAt80And120Columns(t *testing.T) {
 		l.m = sh
 		l.keys("4", "r")
 		last := l.sh().mainInner().Y + l.sh().mainInner().H - 1
-		if last != l.sh().lay().Footer.Y-1 {
-			t.Fatalf("at %d the content ends on row %d, the footer is on %d", w, last, l.sh().lay().Footer.Y)
+		if lay := l.sh().lay(); last != lay.Main.Y+lay.Main.H-2 {
+			t.Fatalf("at %d the content ends on row %d, the frame's bottom border is on %d", w, last, lay.Main.Y+lay.Main.H-1)
 		}
 		before := l.view()
-		l.send(wheel(4, last, 1)).send(wheel(4, last, 1))
+		x := l.sh().mainInner().X + 2
+		l.send(wheel(x, last, 1)).send(wheel(x, last, 1))
 		if l.view() == before {
 			t.Errorf("at %d the wheel on the last content row did not scroll the list", w)
 		}
@@ -379,8 +396,8 @@ func TestBehindAModalTheWholeScreenIsDimmedAndWithoutOneItIsNot(t *testing.T) {
 			t.Errorf("row %d is dimmed without a modal: %q", y, raw)
 		}
 	}
-	if raw := l.rawRow(lay.Tabs.Y); !strings.Contains(raw, ";48;") {
-		t.Fatalf("the tab buttons have a background colour: %q", raw)
+	if raw := l.rawRow(lay.Header.Y); !strings.Contains(raw, ";48;") {
+		t.Fatalf("the title bar has a background colour: %q", raw)
 	}
 	l.keys("f1")
 	for _, y := range rows {
@@ -390,7 +407,7 @@ func TestBehindAModalTheWholeScreenIsDimmedAndWithoutOneItIsNot(t *testing.T) {
 		}
 	}
 	l.keys("esc")
-	if raw := l.rawRow(lay.Tabs.Y); !strings.Contains(raw, "48;") {
+	if raw := l.rawRow(lay.Header.Y); !strings.Contains(raw, "48;") {
 		t.Fatalf("the screen is bright again once the modal closes: %q", raw)
 	}
 }
@@ -407,32 +424,50 @@ func TestInThePlainThemeTheDimmingIsTheFaintAttributeAndOnlyBehindAModal(t *test
 }
 
 func TestTheJunctionTakesTheColourOfItsDividerWhileItIsSelectedOrHeld(t *testing.T) {
-	l := doctorLab(t, 140, 30)
-	lay := l.sh().lay()
-	x, rule := lay.Detail.X-1, lay.Main.Y
+	l, _ := newSettingsLab(t, 140, 30)
+	l.keys("6")
+	var sp splitter.Spot
+	for _, p := range l.sh().spots() {
+		if p.ID == splitter.SettingsListID {
+			sp = p
+		}
+	}
+	if sp.ID == "" {
+		t.Fatal("Settings has a divider between its sections and its options")
+	}
+	x, rule := sp.Hit.X, l.sh().lay().Main.Y
 	th := l.sh().th
-	rest, accent, active := th.Border("┬", false), th.Accent("┬"), th.ButtonActive("┬")
+	rest, accent, active := th.Border("┬", true), th.Accent("┬"), th.ButtonActive("┬")
 	cell := func() string { return cellAt(l.rawRow(rule), x) }
 	if cell() != rest {
-		t.Fatalf("at rest the tee is in the rule's colour: %q, want %q", cell(), rest)
+		t.Fatalf("at rest the tee is in the frame's colour: %q, want %q", cell(), rest)
 	}
 	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
+	if l.sh().split.Selected != sp.ID {
+		t.Fatalf("Shift+Right selects the divider inside the tab first, not %q", l.sh().split.Selected)
+	}
 	if cell() != accent {
 		t.Fatalf("selected: the tee is in the accent: %q, want %q", cell(), accent)
 	}
 	l.keys("esc")
 	if cell() != rest {
-		t.Fatalf("let go of by the keys: the tee returns to the rule's colour: %q", cell())
+		t.Fatalf("let go of by the keys: the tee returns to the frame's colour: %q", cell())
 	}
 	l.send(click(x, rule+4))
 	if cell() != active {
 		t.Fatalf("held: the tee is in the held colour: %q, want %q", cell(), active)
 	}
-	l.send(letGo(3, rule+9))
+	l.send(letGo(x, rule+4))
 	if cell() != rest {
-		t.Fatalf("released: the tee returns to the rule's colour: %q, want %q", cell(), rest)
+		t.Fatalf("released: the tee returns to the frame's colour: %q, want %q", cell(), rest)
 	}
 }
 
-// cellAt is the cell at column x of a styled row, with its escape codes.
-func cellAt(row string, x int) string { return ansi.Cut(row, x, x+1) }
+// cellAt is the cell at column x of a styled row, with its escape codes. The
+// empty styled runs a cut keeps beside the cell are dropped: they draw nothing.
+func cellAt(row string, x int) string {
+	return emptyRun.ReplaceAllString(ansi.Cut(row, x, x+1), "")
+}
+
+// emptyRun is a style that is reset before it draws any cell.
+var emptyRun = regexp.MustCompile(`\x1b\[[0-9;]*m\x1b\[0m`)

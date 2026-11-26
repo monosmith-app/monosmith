@@ -22,7 +22,7 @@ func TestTheDetailsListTheChecksThePackagesWithTheirTagsAndTheEffects(t *testing
 	f.Tests = TestsFailed
 	out := strings.Join(Details(plain, twoPackages(), []string{"sdk"}, Preflight(f), f), "\n")
 	for _, want := range []string{
-		"Before you release:", "✓ Doctor: no findings", "▲ Tests: the last test run failed", "A warning does not stop the release. You decide.",
+		"Before you release:", "✓ Health: no findings", "▲ Tests: the last test run failed", "A warning does not stop the release. You decide.",
 		"Packages and versions to publish:", "web  1.0.0 → 1.1.0  tag web@1.1.0", "kit  new → 0.1.0  tag kit@0.1.0", "Held back, not released: sdk",
 		"What will happen:", "Commit: no.", "Tag: 2 tags are created.", "Push: the tags go to origin.", "Publish: yes.",
 	} {

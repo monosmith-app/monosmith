@@ -48,10 +48,8 @@ func TestTheChosenTaskHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T) {
 	l.keys("b")
 	l.clickText("web:build")
 	marked := 0
-	for _, line := range l.lines() {
+	for _, line := range l.inside(l.sh().lay().DetailInner()) {
 		// The run panel is the right pane.
-		parts := strings.Split(line, "│")
-		line = parts[len(parts)-1]
 		if strings.Contains(line, "› ") && (strings.Contains(line, ":build") || strings.Contains(line, "All output")) {
 			marked++
 			if !strings.Contains(line, "web:build") {

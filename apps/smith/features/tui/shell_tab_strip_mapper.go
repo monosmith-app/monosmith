@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/tabs"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -30,33 +29,19 @@ const badgeRoom = 3
 // tabStrip is the row of views.
 func (s Shell) tabStrip() tabs.Strip { return s.renderStrip(s.hoveredTab()) }
 
-// headerReserve is the width the header takes from the tabs when it shares
-// their row.
-func (s Shell) headerReserve() int {
-	if right := s.headerRight(); right != "" {
-		return pane.Width(right) + 2
-	}
-	return 0
-}
-
-// renderStrip draws the strip with the tab hover highlighted, in the width the
-// header leaves it.
+// renderStrip draws the strip with the tab hover highlighted, across the screen.
 func (s Shell) renderStrip(hover string) tabs.Strip {
-	return s.stripAt(s.w-s.headerReserve(), hover)
+	return s.stripAt(s.w, hover)
 }
 
 // stripAt draws the strip in a width.
 func (s Shell) stripAt(width int, hover string) tabs.Strip {
 	list := make([]tabs.Tab, 0, len(s.tabs))
 	for _, id := range s.tabs {
-		t := tabs.Tab{ID: id, Label: tabTitles()[id], Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id)}
-		if name := s.guideModalName(); id == commands.TabGuide && name != "" {
-			// A form that was answered and waits for its confirmation, or a box
-			// that took its place: the tab names it, not "Start".
-			t.Label = name
-		}
-		if id == commands.TabProjects || id == commands.TabDoctor {
-			t.Reserve = badgeRoom
+		t := tabs.Tab{ID: id, Label: s.viewName(id), Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id), Reserve: badgeRoom}
+		if id == commands.TabDeps {
+			// The strip must fit 80 columns: it says Deps.
+			t.Label = words.Say("tui.tab.deps_short")
 		}
 		list = append(list, t)
 	}
@@ -66,8 +51,20 @@ func (s Shell) stripAt(width int, hover string) tabs.Strip {
 	})
 }
 
-// tabBadge is the mark after a tab's name: how the run is going (Projects, which
-// holds the run panel), what doctor found.
+// viewName is the name of a view in the rail and the strip. A form that was
+// answered and waits for its confirmation, or a box that took its place, is
+// named for itself, not "Start".
+func (s Shell) viewName(id string) string {
+	if name := s.guideModalName(); id == commands.TabGuide && name != "" {
+		return name
+	}
+	return tabTitles()[id]
+}
+
+// tabBadge is the mark after a view's name in the strip and the rail: how the
+// run is going (Projects, which holds the run panel), what doctor found, how
+// many dependencies have a newer release and how many packages are ready to
+// release.
 func (s Shell) tabBadge(id string) string {
 	if id != commands.TabProjects && s.tabBusy(id) {
 		// Work for the tab goes on in the background: a spinner says so.
@@ -99,6 +96,14 @@ func (s Shell) tabBadge(id string) string {
 			if r.Warnings > 0 {
 				return s.th.Warning(fmt.Sprintf("%s%d", s.th.Icons.Warning, r.Warnings))
 			}
+		}
+	case commands.TabDeps:
+		if s.deps.Loaded && s.deps.Err == nil && len(s.deps.All) > 0 {
+			return s.th.Info(fmt.Sprintf("↑%d", len(s.deps.All)))
+		}
+	case commands.TabRelease:
+		if s.release.CanRelease() {
+			return s.th.Success(fmt.Sprintf("%s%d", s.th.Icons.Passed, len(s.release.Plan.Items)))
 		}
 	}
 	return ""

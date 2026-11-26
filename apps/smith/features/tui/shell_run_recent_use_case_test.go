@@ -14,7 +14,7 @@ func closeRunPanel(l *lab) {
 }
 
 func TestTheRecentRunsUnderTheListOpenTheChosenOneInThePanel(t *testing.T) {
-	l := newLab(t, true, 100, 36)
+	l := newLab(t, true, 130, 36)
 	l.next = failingRun()
 	l.keys("b")
 	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✓ 12ms"}}

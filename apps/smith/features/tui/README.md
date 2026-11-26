@@ -9,8 +9,10 @@ progress (palette, chrome, layout, the views one by one) is in
 
 The pieces that stand alone are subfeatures with their own `doc.go`: `commands`
 (the keymap), `theme` (tokens, themes and symbols), `pane` (frames, wrapping,
-truncation), `dialog`, `palette`, `tabs`, `footer`, `statusbar`, `toast`, the
-views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
+truncation), `dialog`, `palette`, `tabs` (the one-line strip of views under the
+title bar of a narrow screen), `rail` (the framed list of views at the left of a wide
+screen), `footer`, `statusbar`, `toast`, the
+views (`dashboard`, `doctorview` (the Health view), `depsview`, `releaseview`, `projectlist`,
 `detail`, `runview`, `logview`, `guide`, `settingsview` (the Settings tab; its detail is drawn in the side panel of the shell, `WithSideDetail`)), `settingssource` (what the Settings
 tab reads, and the functions it calls, which are the ones `smith plugin` and `smith config` call), `userprefs` (the
 person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix dialog),
@@ -18,6 +20,17 @@ person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix
 `progress`, `splitter` (the dividers: keys, step and spots from plain values), `selection` (drag to select text: regions cut along the dividers, the selected text and its highlight), `runhistory` (the run panel's
 history: ago text, header parts, recent rows, steps, the rerun-failed line) and `commandtext` (the
 text a captured command printed: plan lines, failure text, report file, not-committed line).
+
+## Screen layout
+
+`layout` divides the screen. Row 0 is always the title bar (`shell_header_mapper.go`). From
+`layout.WideFrom` (100 columns) the rail of views (`shell_rail_mapper.go`, 24 columns, not
+resizable) sits at the left, then the frame of the list and the frame of the detail. Below it
+a one-line strip of views is row 1, and one frame shows at a time: Enter opens the detail of
+Projects and Health in that frame (`‹ View / item`, `shell_frame_title_mapper.go`) and Esc goes
+back. Every pane is a rounded frame with its title in the top border and one cell of padding
+(`layout.MainFrame`, `layout.DetailFrame`); the list's right border is the divider the mouse drags.
+The footer and the status bar keep the last two rows.
 
 ## Text
 

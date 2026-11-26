@@ -60,13 +60,13 @@ func TestSetupNamesTheChecksAndOffersTheFixFirst(t *testing.T) {
 	if it.Title != "3 checks fail, 6 can be fixed now" || it.Detail != "gradle is not on PATH · ci.yml is out of date" || it.Severity != SeverityFailure {
 		t.Fatalf("%+v", it)
 	}
-	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Doctor:view.doctor:3"; got != want {
+	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Health:view.doctor:3"; got != want {
 		t.Fatalf("buttons %q, want %q", got, want)
 	}
 
 	f.Fixable = 0
 	it = Queue(f)[0]
-	if it.Title != "3 checks fail" || buttonsOf(it) != "Open Doctor:view.doctor:Enter" {
+	if it.Title != "3 checks fail" || buttonsOf(it) != "Open Health:view.doctor:Enter" {
 		t.Fatalf("without a fix: %+v", it)
 	}
 	f.Failed, f.Problems = 1, nil
@@ -107,12 +107,12 @@ func TestWarningsAreCountedAndTheFirstIsNamed(t *testing.T) {
 	if it.Title != "1 warning: golangci-lint is older than CI" || it.Severity != SeverityWarning || it.Kind != KindWarnings {
 		t.Fatalf("%+v", it)
 	}
-	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Doctor:view.doctor:3"; got != want {
+	if got, want := buttonsOf(it), "Fix:ws.fix:Enter|Open Health:view.doctor:3"; got != want {
 		t.Fatalf("%q, want %q", got, want)
 	}
 	f.Warnings, f.Fixable = 3, 0
 	it = Queue(f)[0]
-	if it.Title != "3 warnings. First: golangci-lint is older than CI" || buttonsOf(it) != "Open Doctor:view.doctor:Enter" {
+	if it.Title != "3 warnings. First: golangci-lint is older than CI" || buttonsOf(it) != "Open Health:view.doctor:Enter" {
 		t.Fatalf("%+v", it)
 	}
 	for _, it := range Queue(f) {

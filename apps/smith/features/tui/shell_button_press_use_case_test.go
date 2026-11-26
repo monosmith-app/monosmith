@@ -187,14 +187,15 @@ func TestEveryActionOfTheRunAndDoctorDetailsShowsAKey(t *testing.T) {
 	}
 }
 
-func TestNoTabNamesTheFrameAtAnyWidth(t *testing.T) {
+func TestEveryFrameIsTitledWithItsViewAtAnyWidth(t *testing.T) {
 	for _, w := range []int{80, 120} {
 		for _, tab := range []string{commands.TabProjects, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings} {
 			l := newLab(t, true, w, 34)
 			l.openTab(tab)
-			top := l.lines()[l.sh().lay().Main.Y]
-			if strings.Trim(top, "╭╮─┬ ") != "" {
-				t.Errorf("%s at %d columns: the top edge of the pane has a title: %q", tab, w, top)
+			lay := l.sh().lay()
+			top := []rune(l.lines()[lay.Main.Y])
+			if edge := string(top[lay.Main.X:]); !strings.HasPrefix(edge, "╭─ "+tabTitles()[tab]+" ") {
+				t.Errorf("%s at %d columns: the top edge of the pane is not titled %q: %q", tab, w, tabTitles()[tab], edge)
 			}
 		}
 	}

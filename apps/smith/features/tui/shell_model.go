@@ -689,7 +689,7 @@ func (s Shell) lay() layout.Layout {
 	if s.fullRun() {
 		return layout.DivideFull(s.w, s.h)
 	}
-	return layout.DivideShared(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth(), s.inlineHeader())
+	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth())
 }
 
 // canShow is true for a view the shell can open: a tab of the strip, or the

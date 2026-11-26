@@ -19,12 +19,15 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 	if first := l.lines()[0]; !strings.Contains(first, "acme") || !strings.Contains(first, "main") {
 		t.Fatalf("the first row names the workspace and its branch, with no menu bar above: %q", first)
 	}
-	// On a wide screen the header shares the row of the tabs, at its right end.
-	if first := l.lines()[0]; !strings.Contains(first, "Home") || !strings.Contains(first, "Projects") || !strings.Contains(first, "Doctor") {
-		t.Fatalf("the views are tabs on the first row of a wide screen: %q", first)
+	// On a wide screen the title bar has a row of its own and the rail lists the views.
+	if first := l.lines()[0]; strings.Contains(first, "Home") || strings.Contains(first, "Projects") {
+		t.Fatalf("the views are in the rail, not on the title bar: %q", first)
+	}
+	for _, id := range []string{commands.TabHome, commands.TabProjects, commands.TabDoctor} {
+		l.railSpot(id)
 	}
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"b build orders", "t test orders", "l lint orders", "c typecheck orders", "w changed", "d doctor", "a add project", ": palette", "? help", "q quit", "m mouse"} {
+	for _, want := range []string{"b build orders", "t test orders", "l lint orders", "c typecheck orders", "w changed", "d health", "a add project", ": palette", "? help", "q quit", "m mouse"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
@@ -146,7 +149,7 @@ func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 
 func TestThePaletteRunsAShellCommandAndACommandLine(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("ctrl+p").typeText("doctor").keys("enter") // the shell's Doctor comes first
+	l.keys("ctrl+p").typeText("health").keys("enter") // the shell's Health view comes first
 	l.has("2 failed")
 	l.keys("ctrl+p").typeText("show what").keys("enter") // a command line: it runs
 	if l.lastStarted() != "affected" {
@@ -287,7 +290,7 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l.has("Build all", "Stop", "Ctrl+C")
 	l.keys("pgup")
 	l.keys("end")
-	l.has(": / Ctrl+P", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
+	l.has(": / Ctrl+K", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
 	l.hasNot("Right-click", "Alt+", "F10", "menu")
 	l.keys("esc")
 	l.hasNot("Keyboard shortcuts")

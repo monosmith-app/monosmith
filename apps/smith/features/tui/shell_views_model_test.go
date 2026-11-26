@@ -11,7 +11,7 @@ import (
 )
 
 func TestTheProjectsViewShowsStackNeedsAndWhatIsAffected(t *testing.T) {
-	l := newLab(t, true, 140, 34)
+	l := newLab(t, true, 170, 34)
 	l.has("4 projects", "1 affected", "Stack", "node-vitest", "Language")
 }
 
@@ -30,7 +30,7 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 }
 
 func TestTheDepsViewListsNewerReleasesAndThePolicy(t *testing.T) {
-	l := newLab(t, true, 140, 34)
+	l := newLab(t, true, 170, 34)
 	l.keys("4")
 	l.has("3 with newer releases", "All 3 (e)", "Patch 1 (p)", "Minor 1 (n)", "Major 1 (M)", "axios", "1.6.8", "zod", "react", "web, api",
 		"One version", "every production dependency has one version", "axios (node) should be ^1.6.8 everywhere")
@@ -207,7 +207,7 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
 	// Nine tabs do not fit 79 cells: the long names are shortened and the strip scrolls.
-	l.has("Proj", "Doctor")
+	l.has("Projects", "Health")
 	for _, key := range []string{"1", "2", "3", "4", "5"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
@@ -367,7 +367,7 @@ func TestTheBoxInTheHeadingMarksEveryRowThenNoneAndShowsSome(t *testing.T) {
 func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
 	for key, want := range map[string][]string{
 		"2": {"Projects view", "Open the detail of the project"},
-		"4": {"Deps view", "Update the marked ones", "Use the same version everywhere (Align)"},
+		"4": {"Dependencies view", "Update the marked ones", "Use the same version everywhere (Align)"},
 	} {
 		l := newLab(t, true, 100, 40)
 		l.keys(key, "?")

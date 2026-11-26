@@ -26,26 +26,28 @@ func RunListRows(given, avail int) int {
 }
 
 // DetailSpot is the divider between the list and the detail of the tab, for the
-// layout l of a screen w cells wide. It runs under the rule below the tabs.
+// layout l of a screen w cells wide: the right border of the list's frame,
+// between its top and bottom corners.
 func DetailSpot(tab string, l layout.Layout, w int) Spot {
 	in := l.Main.Inner()
 	return Spot{
 		ID: DetailID(tab), Axis: Column,
 		Hit:  layout.Rect{X: l.Detail.X - 1, Y: in.Y, W: 1, H: in.H},
-		Size: l.Detail.W, Min: layout.MinDetail, Max: max(w-layout.MinList, layout.MinDetail),
+		Size: l.Detail.W, Min: layout.MinDetail, Max: max(l.Main.W+l.Detail.W-layout.MinList, layout.MinDetail),
 		Origin: w - 1, Sign: -1,
 	}
 }
 
-// rightEdge is the cell after the right margin of the pane whose content is in.
-func rightEdge(in layout.Rect) int { return in.X + in.W + layout.MainFrame.Right }
+// rightEdge is the cell after the right padding of the pane whose content is
+// in: the column of its right border.
+func rightEdge(in layout.Rect) int { return in.X + in.W + layout.Pad }
 
 // RunListSpot is the divider between the task list and the log of a run, in the
 // area in; listTop is the row of the list, sepRow the row of the divider. It
-// runs from edge to edge of the pane.
+// runs over the padding from border to border of the pane.
 func RunListSpot(in layout.Rect, listTop, sepRow, listRows int) Spot {
 	avail := max(in.H-listTop-2, 1)
-	x := in.X - layout.MainFrame.Left
+	x := in.X - layout.Pad
 	return Spot{
 		ID: RunListID, Axis: Row,
 		Hit:  layout.Rect{X: x, Y: in.Y + sepRow, W: rightEdge(in) - x, H: 1},

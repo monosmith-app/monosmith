@@ -13,7 +13,7 @@ type Theme struct {
 	Icons  Icons
 
 	accent, success, warning, failure, info, muted, faint, text lipgloss.Style
-	hover, bar, title, border                                   lipgloss.Style
+	hover, selected, bar, title, border, tab                    lipgloss.Style
 	button, buttonHover, buttonActive                           lipgloss.Style
 }
 
@@ -36,7 +36,8 @@ func New(c Choice) Theme {
 		accent: fg(t.Accent).Bold(true), success: fg(t.Success), warning: fg(t.Warning),
 		failure: fg(t.Error).Bold(true), info: fg(t.Info), muted: fg(t.Muted), faint: fg(t.Faint),
 		text: fg(t.Text), title: lipgloss.NewStyle().Bold(true), border: fg(t.Border),
-		bar: bg(t.Bar).Inherit(fg(t.Text)),
+		bar: bg(t.Bar).Inherit(fg(t.Text)), selected: bg(t.Highlight),
+		tab: fg(t.Accent).Bold(true).Underline(true),
 	}
 	if t.Colour {
 		th.hover = bg(t.RowHover)
@@ -117,6 +118,15 @@ func (t Theme) Bar(s string) string { return under(t.bar, s) }
 // row already has. Without colour it is underlined. Every row under the
 // pointer takes this one look; a button takes ButtonHover.
 func (t Theme) RowHover(s string) string { return under(t.hover, s) }
+
+// Selected renders a whole row in the look of the selected row: on the
+// Highlight background, kept under the styled segments the row already has.
+// Without colour it is s unchanged: the row's own mark tells it.
+func (t Theme) Selected(s string) string { return under(t.selected, s) }
+
+// ActiveTab renders the name of the open view in a strip of views: in the
+// accent, bold and underlined (bold and underlined without colour).
+func (t Theme) ActiveTab(s string) string { return t.tab.Render(s) }
 
 // under renders s in style, and puts the style back after every reset inside
 // s, so a styled segment does not end it.

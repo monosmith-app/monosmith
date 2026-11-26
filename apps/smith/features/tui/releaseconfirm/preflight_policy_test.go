@@ -14,7 +14,7 @@ func TestAReadyWorkspaceHasNoWarning(t *testing.T) {
 	if Warns(checks) {
 		t.Fatalf("warns: %+v", checks)
 	}
-	want := []string{"Doctor: no findings", "Tests: the last test run passed", "Branch main: pushed"}
+	want := []string{"Health: no findings", "Tests: the last test run passed", "Branch main: pushed"}
 	for i, c := range checks {
 		if c.Text != want[i] {
 			t.Fatalf("check %d is %q, want %q", i, c.Text, want[i])
@@ -29,9 +29,9 @@ func TestEachFailingItemIsAWarningThatSaysWhy(t *testing.T) {
 		index  int
 		want   string
 	}{
-		{"findings", func(f *Facts) { f.DoctorFindings = 2 }, 0, "Doctor: 2 findings are open"},
-		{"one finding", func(f *Facts) { f.DoctorFindings = 1 }, 0, "Doctor: 1 finding is open"},
-		{"doctor not read", func(f *Facts) { f.DoctorKnown = false }, 0, "Doctor: not checked yet"},
+		{"findings", func(f *Facts) { f.DoctorFindings = 2 }, 0, "Health: 2 findings are open"},
+		{"one finding", func(f *Facts) { f.DoctorFindings = 1 }, 0, "Health: 1 finding is open"},
+		{"doctor not read", func(f *Facts) { f.DoctorKnown = false }, 0, "Health: not checked yet"},
 		{"tests failed", func(f *Facts) { f.Tests = TestsFailed }, 1, "Tests: the last test run failed"},
 		{"tests not run", func(f *Facts) { f.Tests = TestsNone }, 1, "Tests: no test run in this session"},
 		{"ahead", func(f *Facts) { f.Ahead = 3 }, 2, "Branch main: 3 commits are not pushed"},

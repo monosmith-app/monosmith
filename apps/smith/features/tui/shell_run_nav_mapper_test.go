@@ -48,12 +48,13 @@ func TestTheRecentRunsSitOnTheBottomRowsOfThePaneUnderARule(t *testing.T) {
 	for _, h := range []int{20, 36} {
 		l := projectsWithRuns(t, 140, h, 2)
 		lines := l.lines()
-		footer := h - 2 // the footer and the status bar are the last two rows
+		lay := l.sh().lay()
+		footer := lay.Main.Y + lay.Main.H - 1 // the bottom border of the frame
 		if !strings.Contains(lines[footer-1], "smith run build a") || !strings.Contains(lines[footer-2], "smith run build b") {
 			t.Fatalf("h=%d: the runs are not on the last rows of the pane:\n%s", h, l.view())
 		}
 		title := screenRow(l, "Recent runs")
-		if title != footer-3 || !strings.HasPrefix(strings.TrimSpace(lines[title-1]), "───") {
+		if title != footer-3 || !strings.HasPrefix(strings.TrimSpace(string([]rune(lines[title-1])[lay.Main.X+1:])), "───") {
 			t.Fatalf("h=%d: the title is on row %d and the rule above it is %q:\n%s", h, title, lines[title-1], l.view())
 		}
 	}
@@ -72,7 +73,7 @@ func TestTheRecentRunsShowTheLastThreeAndSayHowManyMoreThereAre(t *testing.T) {
 }
 
 func TestTabOpensTheRecentRunsUpwardAndEscOrTabClosesThem(t *testing.T) {
-	l := projectsWithRuns(t, 140, 36, 7)
+	l := projectsWithRuns(t, 170, 39, 7)
 	l.keys("tab")
 	if !l.sh().recentFocus {
 		t.Fatal("Tab did not give the keyboard to the recent runs")
@@ -80,7 +81,7 @@ func TestTabOpensTheRecentRunsUpwardAndEscOrTabClosesThem(t *testing.T) {
 	l.has("smith run build a", "smith run build g", "Esc or Tab closes")
 	l.hasNot("more runs")
 	// The block grew upward: its last row is still on the bottom of the pane.
-	if !strings.Contains(l.lines()[36-3], "smith run build a") {
+	if lay := l.sh().lay(); !strings.Contains(l.lines()[lay.Main.Y+lay.Main.H-2], "smith run build a") {
 		t.Fatalf("the block does not end on the bottom row:\n%s", l.view())
 	}
 	l.keys("esc")
@@ -114,7 +115,7 @@ func TestTheOpenRecentRunsMoveWithTheArrowsAndEnterOpensTheChosenRun(t *testing.
 }
 
 func TestAClickOnTheClosedRecentRunsOpensThemAndADoubleClickOpensTheRun(t *testing.T) {
-	l := projectsWithRuns(t, 140, 36, 7)
+	l := projectsWithRuns(t, 170, 39, 7)
 	x, y := l.find("smith run build f")
 	l.send(click(x, y))
 	if !l.sh().recentFocus || l.sh().recentAt != 1 {

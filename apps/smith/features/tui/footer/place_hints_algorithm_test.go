@@ -21,17 +21,18 @@ var (
 	tail = []commands.Hint{{Glyph: "?", Label: "help", Key: "?"}, {Glyph: "q", Label: "quit", Key: "q"}}
 )
 
-func TestTheViewHintsSitLeftAndTheTailRight(t *testing.T) {
+func TestTheHintsAreOneRunTheViewsFirstThenTheTail(t *testing.T) {
 	placed := Place(theme.Default(), view, tail, 70)
 	if len(placed) != 5 || placed[0].X != 1 {
 		t.Fatalf("%+v", placed)
 	}
-	last := placed[len(placed)-1]
-	if last.X+last.W != 69 {
-		t.Fatalf("the tail ends at %d", last.X+last.W)
+	for i := 1; i < len(placed); i++ {
+		if placed[i].X != placed[i-1].X+placed[i-1].W+gap {
+			t.Fatalf("hint %d does not follow the one before it: %+v", i, placed)
+		}
 	}
 	line := pane.Strip(Render(theme.Default(), placed, -1, 70))
-	if pane.Width(line) != 70 || !strings.Contains(line, "b build • t test • l lint") || !strings.HasSuffix(strings.TrimRight(line, " "), "? help • q quit") {
+	if pane.Width(line) != 70 || !strings.HasPrefix(line, " b build • t test • l lint • ? help • q quit ") {
 		t.Fatalf("%q", line)
 	}
 }

@@ -188,7 +188,7 @@ func TestFixWizardWorksWithTheMouse(t *testing.T) {
 }
 
 func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t *testing.T) {
-	l := newLab(t, true, 140, 34)
+	l := newLab(t, true, 170, 37)
 	loads := 0
 	sh := l.sh()
 	sh.sources.Doctor = func() doctorview.Result {

@@ -52,7 +52,7 @@ func TestTheReleaseViewHasAReleaseNowButtonThatOpensTheQuestion(t *testing.T) {
 func TestTheReleaseConfirmationListsTheChecksTheEffectsAndTheCommandAndStartsOnCancel(t *testing.T) {
 	l := newLab(t, true, 120, 40)
 	l.keys("5", "x", "enter")
-	l.has("Release now", "Before you release:", "Doctor: 2 findings are open", "Tests: no test run in this session", "Branch: not known",
+	l.has("Release now", "Before you release:", "Health: 2 findings are open", "Tests: no test run in this session", "Branch: not known",
 		"A warning does not stop the release", "Packages and versions to publish:", "web 1.0.0 → 1.1.0 tag web@1.1.0",
 		"What will happen:", "Commit: no", "Tag: 2 tags are created.", "Push: no. There is no remote", "Publish: yes",
 		"$ smith release --yes", "Release anyway (y)", "Cancel (Esc)")
@@ -77,7 +77,7 @@ func TestAConfirmationWithNoWarningSaysReleaseNow(t *testing.T) {
 	l.keys("5")
 	readyToRelease(l)
 	l.keys("x", "enter")
-	l.has("Doctor: no findings", "Tests: the last test run passed", "Branch main: pushed", "Push: the tags go to origin.", "Release now (y)")
+	l.has("Health: no findings", "Tests: the last test run passed", "Branch main: pushed", "Push: the tags go to origin.", "Release now (y)")
 	l.hasNot("Release anyway", "A warning does not stop")
 }
 

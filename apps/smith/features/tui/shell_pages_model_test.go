@@ -96,15 +96,16 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 	}
 }
 
-func TestTheDoctorExpandsACheckInPlaceOnANarrowScreen(t *testing.T) {
+func TestOnANarrowScreenEnterOpensTheCheckInTheFrameAndTellsItOnce(t *testing.T) {
 	l := newLab(t, true, 95, 30)
 	l.keys("3")
 	l.has("2 failed", "go.work lists every module")
 	l.hasNot("libs/x is missing")
-	if !strings.Contains(footerOf(l), "Enter expand") {
-		t.Fatalf("Enter expands in the single pane: %q", footerOf(l))
+	if !strings.Contains(footerOf(l), "Enter open") {
+		t.Fatalf("Enter opens the check in the single pane: %q", footerOf(l))
 	}
 	l.keys("enter")
+	l.has("‹ Health / ")
 	if n := strings.Count(l.view(), "libs/x is missing"); n != 1 {
 		t.Fatalf("the problem shows %d times:\n%s", n, l.view())
 	}
@@ -156,7 +157,7 @@ func TestTheReleaseFooterOffersReleaseOnlyWhenThereIsSomethingToRelease(t *testi
 
 func TestLongNamesAreShortenedInTheMiddleInDepsAndRelease(t *testing.T) {
 	long := "@acme-platform/design-system-components-react"
-	l := newLab(t, true, 100, 30)
+	l := newLab(t, true, 130, 30)
 	sh := l.sh()
 	sh.sources.Deps = func() depsview.Result {
 		return depsview.Result{Rows: []depsview.Row{{Name: long, Current: "1.0.0", Latest: "1.0.1", Level: "patch", Projects: []string{"web"}}}}

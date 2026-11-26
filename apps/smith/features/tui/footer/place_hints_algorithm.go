@@ -36,11 +36,16 @@ func total(th theme.Theme, hints []commands.Hint) int {
 	return n
 }
 
-// Place lays the hints out in w cells, each as wide as it is drawn in th: the view's on the left, the tail on the
-// right. When they do not fit the tail's global hints go first, from its
-// left (views, mouse, palette), so the view keeps its own keys (Home keeps
-// next (Enter)); then the view's last hints go; the last keptLast hints of
-// the tail (help and quit) are the last of all to go.
+// Place lays the hints out in w cells as one run, each as wide as it is drawn
+// in th: the view's first, then the tail ("key desc • … • ? help • q quit").
+// When they do not fit the lowest-priority hints go first: the tail's global
+// hints, from its left (views, mouse, palette), so the view keeps its own keys
+// (Home keeps next (Enter)); then the view's last hints go; the last keptLast
+// hints of the tail (help and quit) are the last of all to go.
+//
+// Parameters: th is the theme; view are the open view's hints, most important
+// first; tail are the global hints; w is the width of the row.
+// Returns: the hints that fit, with their columns.
 func Place(th theme.Theme, view, tail []commands.Hint, w int) []Placed {
 	view, tail = append([]commands.Hint(nil), view...), append([]commands.Hint(nil), tail...)
 	fits := func() bool { return 2+total(th, view)+gap+total(th, tail) <= w }
@@ -59,7 +64,6 @@ func Place(th theme.Theme, view, tail []commands.Hint, w int) []Placed {
 		out = append(out, Placed{Hint: h, X: x, W: width(th, h)})
 		x += width(th, h) + gap
 	}
-	x = max(w-1-total(th, tail), x)
 	for _, h := range tail {
 		out = append(out, Placed{Hint: h, X: x, W: width(th, h)})
 		x += width(th, h) + gap

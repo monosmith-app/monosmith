@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/statusbar"
@@ -76,8 +76,8 @@ func (s Shell) tooSmall() string {
 	return strings.Join(rows, "\n")
 }
 
-// screen is the whole terminal as h lines of w cells: the header, the tabs,
-// the content, the footer and the status bar.
+// screen is the whole terminal as h lines of w cells: the title bar, the strip
+// of views (narrow) or the rail (wide), the content, the footer and the status bar.
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
 	var rows []string
@@ -100,15 +100,22 @@ func (s Shell) baseRows() []string {
 		// Only the top bar and the run: nothing else shares the terminal.
 		return s.paintSplits(append([]string{s.fullBar()}, s.body()...))
 	}
+	l := s.lay()
 	rows := make([]string, 0, s.h)
-	strip := s.tabStrip()
-	if s.inlineHeader() {
-		rows = append(rows, s.tabRow(strip))
-	} else {
+	if l.Header.H > 0 {
 		rows = append(rows, s.headerRow())
-		rows = append(rows, strip.Lines...)
+	}
+	if l.Tabs.H > 0 {
+		rows = append(rows, s.tabStrip().Lines...)
+	}
+	blank := strings.Repeat(" ", s.w)
+	for len(rows) < l.Main.Y {
+		rows = append(rows, blank)
 	}
 	rows = append(rows, s.body()...)
+	for len(rows) < l.Footer.Y {
+		rows = append(rows, blank)
+	}
 	rows = append(rows, s.footerRow())
 	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), s.w))
 	return s.paintSplits(rows)
@@ -146,60 +153,61 @@ func (s Shell) statusInfo() statusbar.Info {
 	return info
 }
 
-// body draws the list, or the detail that took its place, and, on a wide
-// screen, the detail of the selection beside it. The main screen has no box: one
-// rule under the tabs across the whole width, a one-cell margin at each side,
-// and the divisions between the panels (see the layout's Frame).
+// body draws the rows of the content: on a wide screen the rail of views,
+// then the frame of the list (or of the detail that took its place) and the
+// frame of the detail of the selection beside it. Every pane is a rounded box
+// with its title in the top border and one cell of padding inside each side
+// (see the layout's Frame).
 func (s Shell) body() []string {
 	l := s.lay()
 	in, din := l.Main.Inner(), l.DetailInner()
 	reserve := s.toastRows(in.H)
 	spots := s.dividers()
 	list := pane.Block(s.withRowHover(s.page().View(in.W, in.H-reserve), in).lines, in.W, in.H)
+	focused := s.mainFocused()
+	main := s.framed(s.mainTitle(), l.Main, in, list, focused, spots)
 	var side []string
 	if l.HasDetail() {
-		side = pane.Block(s.withRowHover(s.sideContent(din.W, din.H-reserve), din).lines, din.W, din.H)
+		lines := pane.Block(s.withRowHover(s.sideContent(din.W, din.H-reserve), din).lines, din.W, din.H)
+		side = s.framed(s.detailTitle(), l.Detail, din, lines, !focused, spots)
 	}
-	rows := make([]string, 0, l.Main.H)
-	rows = append(rows, s.th.Border(strings.Repeat("─", l.Main.W+l.Detail.W), false))
-	for i := range in.H {
-		y := in.Y + i
-		row := s.marginCell(spots, l.Main.X, y) + list[i]
-		if l.HasDetail() {
-			// A scrollbar in the list's last column moves onto the divider, so the
-			// screen shows one line there, not two side by side.
-			divider := s.th.Border("│", false)
-			if glyph, ok := s.scrollbarCell(list[i], in.W); ok {
-				row, divider = s.marginCell(spots, l.Main.X, y)+pane.Splice(list[i], in.W-1, 1, " "), glyph
-			}
-			row += divider + side[i] + s.marginCell(spots, din.X+din.W, y)
-		} else {
-			row += s.marginCell(spots, in.X+in.W, y)
+	railLines := s.renderRail(s.hoveredRail()).Lines
+	rows := make([]string, l.Main.H)
+	for i := range rows {
+		row := ""
+		if i < len(railLines) {
+			row = railLines[i] + strings.Repeat(" ", max(l.Main.X-l.Rail.W, 0))
 		}
-		rows = append(rows, row)
+		row += main[i]
+		if i < len(side) {
+			row += side[i]
+		}
+		rows[i] = row
 	}
-	for _, j := range splitter.Junctions(spots, l.Main.Y) {
+	for _, j := range splitter.Junctions(spots, l.Main.Y, l.Main.Y+l.Main.H-1) {
 		if at := j.Y - l.Main.Y; at >= 0 && at < len(rows) {
-			rows[at] = pane.Splice(rows[at], j.X, 1, s.th.Border(j.Glyph, false))
+			rows[at] = pane.Splice(rows[at], j.X, 1, s.th.Border(j.Glyph, focused))
 		}
 	}
 	return rows
 }
 
-// scrollbarCell is the last cell of a list line w cells wide, with its style,
-// when that cell is a scrollbar glyph (the track or the thumb).
-func (s Shell) scrollbarCell(line string, w int) (string, bool) {
-	if w < 2 {
-		return "", false
+// framed draws a pane at box: its lines, drawn for the inside in, with one
+// cell of padding at each side, inside a rounded frame with the title in the
+// top border. A horizontal division that runs through the padding is drawn
+// there as part of its rule.
+func (s Shell) framed(title string, box, in layout.Rect, lines []string, focused bool, spots []splitter.Spot) []string {
+	body := make([]string, len(lines))
+	for i, line := range lines {
+		y := in.Y + i
+		body[i] = s.padCell(spots, in.X-layout.Pad, y) + line + s.padCell(spots, in.X+in.W, y)
 	}
-	cell := ansi.Cut(line, w-1, w)
-	glyph := pane.Strip(cell)
-	return cell, glyph == s.th.Icons.Track || glyph == s.th.Icons.Thumb
+	return pane.Frame(s.th, pane.CutEllipsis(title, max(box.W-6, 1)), body, box.W, box.H, focused)
 }
 
-// marginCell is the cell of a margin at (x, y): blank, or part of the rule when a
-// horizontal division runs through it to the edge of the screen.
-func (s Shell) marginCell(spots []splitter.Spot, x, y int) string {
+// padCell is the padding cell at (x, y): blank, or part of the rule when a
+// horizontal division runs through it to the border of the pane.
+func (s Shell) padCell(spots []splitter.Spot, x, y int) string {
 	for _, p := range spots {
 		if p.Axis == splitter.Row && p.Hit.Contains(x, y) {
 			return s.th.Border("─", false)
@@ -221,17 +229,16 @@ func (s Shell) toastRows(innerH int) int {
 
 // overlays composes the palette, dialogs and toast over the rendered
 // screen by cell, so nothing underneath is pushed down. Behind a modal the
-// content area is emptied (its rule and dividers stay) so no half word of the
-// view shows at the modal's edges, and the whole screen is drawn dimmed so
-// nothing behind it looks interactive. The toast sits inside the content area.
+// inside of the content frames is emptied (the frames and the rail stay) so no
+// half word of the view shows at the modal's edges, and the whole screen is
+// drawn dimmed so nothing behind it looks interactive. The toast sits inside
+// the content area.
 func (s Shell) overlays(rows []string) []string {
 	l := s.lay()
 	if s.modalOpen() {
-		keep := []int{}
-		if l.HasDetail() {
-			keep = append(keep, l.Detail.X-1)
+		for _, r := range []layout.Rect{l.Main.Inner(), l.DetailInner()} {
+			rows = blankRect(rows, layout.Rect{X: r.X - layout.Pad, Y: r.Y, W: r.W + 2*layout.Pad, H: r.H})
 		}
-		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y, keep...)
 		for i := range rows {
 			rows[i] = s.th.Dim(rows[i])
 		}
@@ -293,8 +300,8 @@ func (s Shell) overlays(rows []string) []string {
 }
 
 // toastSpot is the toast as drawn and where it sits. The content ends on the
-// row above the footer: the toast sits on its last rows, one cell clear of the
-// right edge. An open dialog keeps its border whole: the toast goes under the
+// row above the bottom border of its frames: the toast sits on its last rows,
+// inside the right border. An open dialog keeps its border whole: the toast goes under the
 // dialog or over it when the rows there are free, and inside its border, over
 // its first rows, when the dialog takes the whole height.
 func (s Shell) toastSpot() (lines []string, x, y int, ok bool) {
@@ -303,15 +310,28 @@ func (s Shell) toastSpot() (lines []string, x, y int, ok bool) {
 	}
 	l, h := s.lay(), len(lines)
 	right := func(lines []string, edge int) int { return max(edge-pane.Width(lines[0]), 1) }
+	bottom := l.Main.Y + l.Main.H - 1
 	r, open := s.modalRect()
 	switch {
-	case !open || l.Footer.Y-(r.Y+r.H) >= h:
-		return lines, right(lines, s.w-2), max(l.Footer.Y-h, l.Main.Y+1), true
+	case !open || bottom-(r.Y+r.H) >= h:
+		return lines, right(lines, s.w-1-layout.Pad), max(bottom-h, l.Main.Y+1), true
 	case r.Y-s.mainInner().Y >= h:
-		return lines, right(lines, s.w-2), s.mainInner().Y, true
+		return lines, right(lines, s.w-1-layout.Pad), s.mainInner().Y, true
 	}
 	if lines = s.toast.Lines(s.th, r.W-2); lines == nil || r.H < len(lines)+2 {
 		return nil, 0, 0, false
 	}
 	return lines, right(lines, r.X+r.W-1), r.Y + 1, true
+}
+
+// blankRect empties the cells of r in the rows (one string per screen row).
+func blankRect(rows []string, r layout.Rect) []string {
+	if r.W <= 0 {
+		return rows
+	}
+	blank := strings.Repeat(" ", r.W)
+	for y := max(r.Y, 0); y < r.Y+r.H && y < len(rows); y++ {
+		rows[y] = pane.Splice(rows[y], r.X, r.W, blank)
+	}
+	return rows
 }

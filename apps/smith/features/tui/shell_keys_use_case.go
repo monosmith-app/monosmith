@@ -628,6 +628,9 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			// Enter on a check doctor does not run runs it, with no question.
 			cmd, _ := s.runSelectedExtra()
 			return cmd
+		case commands.NavNamed(name) == commands.NavConfirm && s.lay().Mode == layout.Narrow && s.onDoctorFinding():
+			// On a narrow screen Enter opens the check in the frame; Esc goes back.
+			s.detailOpen, s.detailCursor = true, 0
 		case commands.NavNamed(name) == commands.NavConfirm && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
 			// Beside the detail Enter unfolds what the detail folded. On the line
 			// that hides the passed checks it shows them, as that line says.
@@ -692,6 +695,13 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		return cmd
 	}
 	return nil
+}
+
+// onDoctorFinding is true while the cursor of the Health list is on a check:
+// not on a group's header, not on the line of the passed checks.
+func (s Shell) onDoctorFinding() bool {
+	_, ok := s.doctor.Selected()
+	return ok && !s.doctor.OnHeader() && !s.doctor.OnPassedLine()
 }
 
 // projectsKey moves in the list of projects. Enter opens the detail over the

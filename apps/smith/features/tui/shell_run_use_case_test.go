@@ -34,7 +34,7 @@ func rowOf(l *lab, text string) int {
 }
 
 func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
-	l := newLab(t, true, 180, 36)
+	l := newLab(t, true, 210, 36)
 	l.next = failingRun()
 	l.keys("b")
 	if l.lastStarted() != "run build -p orders" {
@@ -50,7 +50,12 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	l.has("Log: orders:build", "main.go:12: undefined: Foo")
 	l.hasNot("ok example.com/kit")
 	// The tab carries a badge, the status bar the result, the Projects list a mark.
-	l.has("Projects (2)] ×1")
+	if strip := stripText(l); !strings.Contains(strip, "2 Projects ×1") {
+		t.Fatalf("the Projects tab carries the failures: %q", strip)
+	}
+	if x, y := l.railSpot(commands.TabProjects); !strings.Contains(l.lines()[y][x:], "×1") {
+		t.Fatalf("and so does its row of the rail: %q", l.lines()[y])
+	}
 }
 
 func TestTheStatusBarShowsTheExactCommandWhileAndAfterItRuns(t *testing.T) {

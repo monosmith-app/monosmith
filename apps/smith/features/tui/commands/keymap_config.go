@@ -243,7 +243,7 @@ var all = []Command{
 	{ID: "view.mouse", Group: GroupViews, Title: words.Say("commands.view.mouse.title"), Hint: words.Say("commands.view.mouse.hint"), Keys: []string{"m"}, Kind: ToggleMouse, Footer: words.Say("commands.view.mouse.footer"), Tail: true},
 
 	// Help
-	{ID: "file.palette", Group: GroupHelp, Title: words.Say("commands.file.palette.title"), Hint: words.Say("commands.file.palette.hint"), Keys: []string{":", "ctrl+p"}, Kind: Palette, WhileEditing: true, Footer: words.Say("commands.file.palette.footer"), Tail: true},
+	{ID: "file.palette", Group: GroupHelp, Title: words.Say("commands.file.palette.title"), Hint: words.Say("commands.file.palette.hint"), Keys: []string{":", "ctrl+k", "ctrl+p"}, Kind: Palette, WhileEditing: true, Footer: words.Say("commands.file.palette.footer"), Tail: true},
 	{ID: "file.find", Group: GroupHelp, Title: words.Say("commands.file.find.title"), Hint: words.Say("commands.file.find.hint"), Keys: []string{"/"}, Kind: Palette},
 	{ID: "help.keys", Group: GroupHelp, Title: words.Say("commands.help.keys.title"), Hint: words.Say("commands.help.keys.hint"), Keys: []string{"?", "f1"}, Kind: Help, WhileEditing: true, Footer: words.Say("commands.help.keys.footer"), Tail: true},
 	{ID: "file.quit", Group: GroupHelp, Title: words.Say("commands.file.quit.title"), Hint: words.Say("commands.file.quit.hint"), Keys: []string{"q"}, Kind: Quit, Footer: words.Say("commands.file.quit.footer"), Tail: true},
