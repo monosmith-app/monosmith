@@ -69,6 +69,10 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
 			req.Colour = runColour(os.Getenv, asJSON, jsonEvents, req.Out, term.IsTerminal)
 			req.StatusColour = statusColour(os.Getenv, asJSON, jsonEvents, req.Out, term.IsTerminal)
+			// A single uncached task gets this terminal (AttachedTask), so an
+			// interactive program draws and reads keys.
+			req.Terminal = !asJSON && !jsonEvents && req.Out == os.Stdout &&
+				term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
 				// output arrives as task.output events.

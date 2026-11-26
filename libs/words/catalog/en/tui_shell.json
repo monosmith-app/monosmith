@@ -185,6 +185,7 @@
   "tui.run.reading_the_commits_to_work_out": "Reading the commits to work out each version",
   "tui.run.working_out_what_will_change": "Working out what will change",
   "tui.run.a_run_is_in_progress_ctrl": "A run is in progress (Ctrl+C stops it)",
+  "tui.run.needs_own_terminal": "The start task needs a terminal of its own → run it there: {commandLine}",
   "tui.run.stopping_ctrl_c_again_quits": "Stopping… (Ctrl+C again quits)",
   "tui.tab_page.compose_a_stack": "Compose a stack",
   "tui.tab_page.bring_into_monosmith": "Bring into MonoSmith",

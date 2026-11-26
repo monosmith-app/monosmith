@@ -187,6 +187,10 @@ tracks changed. The run panel lists its tasks as it does for `smith run`.
 
 ### The run panel
 
+The run panel is not a terminal, so it does not run an app's `start` task: the app could
+not draw or read keys there. The `start` button shows the line to run in a terminal instead,
+such as `smith run start -p web`.
+
 There is no Run tab. While a task runs, or when you open a past run, the right panel of Projects
 shows that run, as Nx and Turborepo do, and the list of projects stays on the left. From the top
 the panel has:

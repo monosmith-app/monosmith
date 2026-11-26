@@ -102,6 +102,11 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		s.Argv, s.quit = argv, true
 		return nil
 	}
+	if commands.NeedsOwnTerminal(argv) {
+		// The run panel is not a terminal: the app could not draw or read keys.
+		s.say(words.Say("tui.run.needs_own_terminal", "commandLine", commands.Line(argv)))
+		return nil
+	}
 	if s.running() {
 		s.say(words.Say("tui.run.a_run_is_in_progress_ctrl"))
 		return nil

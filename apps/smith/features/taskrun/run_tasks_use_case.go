@@ -74,6 +74,9 @@ type Options struct {
 	// It follows termcolour.Wanted and never the tool colour a host hands on, so a
 	// program that reads these lines (the interface) gets them plain.
 	StatusColour bool
+	// Terminal says smith's standard input and output are a terminal a person
+	// uses: the one task AttachedTask picks then runs on it.
+	Terminal bool
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -86,7 +89,8 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 		opts.Out = os.Stdout
 	}
 	r := &runner{opts: opts, g: g, keyer: newKeyer(opts), sem: make(chan struct{}, opts.Parallel),
-		done: map[string]chan struct{}{}, results: map[string]Result{}, keys: map[string]string{}, fixes: map[string]lintfix.Outcome{}}
+		done: map[string]chan struct{}{}, results: map[string]Result{}, keys: map[string]string{}, fixes: map[string]lintfix.Outcome{},
+		attached: AttachedTask(g, opts.Terminal, opts.Quiet)}
 	for _, id := range g.Order {
 		r.done[id] = make(chan struct{})
 	}
@@ -142,6 +146,8 @@ type runner struct {
 	// after are, per task, the tasks of the run that write the same folder
 	// and come first: it starts when they are done (overlapOrder).
 	after map[string][]string
+	// attached is the task that runs on smith's terminal (AttachedTask), or "".
+	attached string
 }
 
 func (r *runner) record(res Result) {
@@ -251,7 +257,8 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error()}
 		}
 	}
-	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out, Installable: r.opts.Installable})
+	// The attached task writes to the terminal itself: out stays empty.
+	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out, Installable: r.opts.Installable, Terminal: t.ID == r.attached})
 	out.Flush()
 	if app != nil {
 		app.stop()

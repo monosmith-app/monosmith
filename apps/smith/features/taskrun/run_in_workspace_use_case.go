@@ -48,6 +48,9 @@ type Request struct {
 	// StatusColour says the run's own lines go to a person who sees colour; see
 	// Options.StatusColour.
 	StatusColour bool
+	// Terminal says smith's standard input and output are a terminal a person
+	// uses; see Options.Terminal.
+	Terminal bool
 }
 
 // Command is the smith command line the request stands for.
@@ -165,7 +168,7 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Fix: req.Fix, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
 		Events: stream, Command: req.Command(), SharedOutputs: s.Config.Workspace.SharedOutputs,
 		Installable: func(name string) bool { return toolinstall.Declares(s, name) },
-		Colour:      req.Colour, StatusColour: req.StatusColour,
+		Colour:      req.Colour, StatusColour: req.StatusColour, Terminal: req.Terminal,
 	})
 	pruneAfterRun(s, meter, os.Stderr)
 	return summary, nil

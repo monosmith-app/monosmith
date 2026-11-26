@@ -27,6 +27,10 @@ type Spec struct {
 	// Installable reports whether smith tools install knows a tool by name; it
 	// decides if the missing-program message offers that command. Nil means no.
 	Installable func(name string) bool
+	// Terminal hands smith's own terminal to the command: its standard input,
+	// output and error are smith's, Out and Err are not used, and it stays in
+	// the terminal's foreground so it reads keys and gets Ctrl+C itself.
+	Terminal bool
 }
 
 // RunProcess runs a command to completion and returns its exit code. When ctx
@@ -51,13 +55,7 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	cmd := exec.Command(program, spec.Argv[1:]...)
 	cmd.Dir = spec.Dir
 	cmd.Env = spec.Env
-	cmd.Stdout = spec.Out
-	cmd.Stderr = spec.Out
-	if spec.Err != nil {
-		cmd.Stderr = spec.Err
-	}
-	cmd.Stdin = nil
-	prepare(cmd)
+	wire(cmd, spec)
 	if err := cmd.Start(); err != nil {
 		return -1, err
 	}
@@ -73,6 +71,15 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	case <-done:
 		return exitCode(waitErr)
 	case <-ctx.Done():
+		if spec.Terminal {
+			// Ctrl+C reached the command too: let it stop on its own first,
+			// so it is not stopped twice.
+			select {
+			case <-done:
+				return -1, ctx.Err()
+			case <-time.After(KillGrace):
+			}
+		}
 		killTree(cmd)
 		select {
 		case <-done:
@@ -82,6 +89,23 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 		}
 		return -1, ctx.Err()
 	}
+}
+
+// wire connects the command's streams and process group: smith's terminal for
+// Spec.Terminal, else Out and Err with no input in a group of its own.
+func wire(cmd *exec.Cmd, spec Spec) {
+	if spec.Terminal {
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+		prepare(cmd, true)
+		return
+	}
+	cmd.Stdout = spec.Out
+	cmd.Stderr = spec.Out
+	if spec.Err != nil {
+		cmd.Stderr = spec.Err
+	}
+	cmd.Stdin = nil
+	prepare(cmd, false)
 }
 
 // lookPath finds a program on the PATH of the child's environment (which
