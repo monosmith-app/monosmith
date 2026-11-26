@@ -8,8 +8,8 @@ type Tab struct {
 	// Label is the full name; Short is a shorter one used when the full names
 	// do not fit ("" means the name cannot be shortened).
 	Label, Short string
-	// Key is the key that opens the tab, shown in parentheses after the name
-	// ("" when it has none).
+	// Key is the key that opens the tab, shown before the name ("" when it
+	// has none).
 	Key string
 	// Badge is a small styled mark after the name (a failure count, a spinner),
 	// "" for none. Reserve is the room, in cells, kept for it in the fit

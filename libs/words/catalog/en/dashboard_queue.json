@@ -8,7 +8,7 @@
   "dashboard.setup.fixable.one": "{count} can be fixed now",
   "dashboard.setup.fixable.other": "{count} can be fixed now",
   "dashboard.fix.label": "Fix",
-  "dashboard.doctor.label": "Open Doctor",
+  "dashboard.doctor.label": "Open Health",
   "dashboard.warn.title.one": "{count} warning: {first}",
   "dashboard.warn.title.other": "{count} warnings. First: {first}",
   "dashboard.run.failed": "{what} failed",

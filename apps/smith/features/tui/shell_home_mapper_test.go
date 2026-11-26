@@ -31,13 +31,18 @@ func TestAWorkspaceOpensOnHomeAndChecksItselfInTheBackground(t *testing.T) {
 
 func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 	l := newHomeLab(t, 230, 34)
-	// The header badge is filled without the Doctor view having been opened.
-	if first := l.lines()[0]; !strings.Contains(first, "×2") {
-		t.Fatalf("the header carries the health: %q", first)
+	// The badge of Health in the rail is filled without the view having been opened.
+	if x, y := l.railSpot(commands.TabDoctor); !strings.Contains(l.lines()[y][x:], "×2") {
+		t.Fatalf("the rail carries the health: %q", l.lines()[y])
 	}
-	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Doctor (3)]",
+	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Health (3)]",
 		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Open Deps (4)]", "4 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)")
-	l.hasNot("Where to go", "Health", "nothing has run yet", "Next:")
+	l.contentHasNot("Where to go", "nothing has run yet", "Next:")
+	for _, line := range strings.Split(l.content(), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "Health") {
+			t.Fatalf("Home has no Health heading: %q", line)
+		}
+	}
 	lines := l.lines()
 	var title, fix, affected int
 	for i, line := range lines {
@@ -54,7 +59,7 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 		t.Fatalf("the first item (row %d, buttons %d) comes before the others (row %d)", title, fix, affected)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"Enter next", "B build all 3", "w changed", "d doctor", "1-6 views"} {
+	for _, want := range []string{"Enter next", "B build all 3", "w changed", "d health", "1-6 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
@@ -83,7 +88,7 @@ func TestEnterAndAClickDoTheSuggestedAction(t *testing.T) {
 	sh := l.sh()
 	sh.doctor.Report.Findings[1].Fix, sh.doctor.Report.Fixes = nil, nil
 	l.m = sh
-	l.has("2 checks fail", "[Open Doctor (Enter)]")
+	l.has("2 checks fail", "[Open Health (Enter)]")
 	l.hasNot("[Fix (")
 	l.keys("enter")
 	if l.sh().tab != commands.TabDoctor || l.sh().fix != nil {
@@ -99,7 +104,7 @@ func TestAClickOnAButtonRunsItsCommandAndAClickElsewhereOnTheItemDoesNothing(t *
 	}
 
 	l = newHomeLab(t, 140, 34)
-	l.clickText("[Open Doctor")
+	l.clickText("[Open Health")
 	if l.sh().tab != commands.TabDoctor {
 		t.Fatalf("the second button of the first item opened %q", l.sh().tab)
 	}
@@ -329,6 +334,6 @@ func TestHomeNeverSaysAllGoodWhileTheDoctorWarns(t *testing.T) {
 	}
 	l.m = sh
 	l.keys("r")
-	l.has("1 warning: golangci-lint is older than CI", "[Open Doctor (Enter)]")
+	l.has("1 warning: golangci-lint is older than CI", "[Open Health (Enter)]")
 	l.hasNot("All good")
 }

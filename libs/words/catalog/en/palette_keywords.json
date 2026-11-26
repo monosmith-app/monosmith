@@ -1,4 +1,5 @@
 {
+  "palette.keywords.ws.doctor": "doctor, health, check, problems, findings",
   "palette.keywords.deps.update": "update, outdated, upgrade packages, newer versions, bump, dependencies",
   "palette.keywords.deps.align": "same version, drift, mismatch, duplicate versions, one version, bring drifting versions to one, align",
   "palette.keywords.deps.one-version": "same version, drift, mismatch, duplicate versions, policy",

@@ -212,8 +212,8 @@ func (l *lab) walkTo(t *testing.T, text string) {
 
 // selectedLine is the row the pointer of the right pane is on.
 func (l *lab) selectedLine() string {
-	for _, line := range l.lines() {
-		// " left │ right": the main screen has no sides, so the right pane is the second part.
+	for _, line := range l.mainLines() {
+		// "sections │ options" inside the frame: the options are the second part.
 		if parts := strings.SplitN(line, "│", 3); len(parts) >= 2 && strings.HasPrefix(parts[1], " › ") {
 			return parts[1]
 		}
@@ -318,13 +318,15 @@ func TestTheSettingsTabFillsExactlyTheTerminalInEverySectionAndEditor(t *testing
 }
 
 func TestTheTabStripKeepsEveryTabReachableAtTheNarrowestScreen(t *testing.T) {
-	for _, w := range []int{72, 80, 100} {
+	for _, w := range []int{72, 80} {
 		l, _ := newSettingsLab(t, w, 24)
-		strip := strings.Join(l.lines()[:4], "\n")
-		if !strings.Contains(strip, "Sett") && (w >= 100 || !strings.Contains(strip, "›")) {
+		strip := l.lines()[l.sh().lay().Tabs.Y]
+		if !strings.Contains(strip, "Sett") && !strings.Contains(strip, "›") {
 			t.Errorf("width %d: the Settings tab is not in the strip:\n%s", w, strip)
 		}
 	}
+	l, _ := newSettingsLab(t, 100, 24)
+	l.railSpot(commands.TabSettings) // from 100 columns the rail lists every view
 }
 
 func TestTheSettingsTabCarriesNoColourInThePlainTheme(t *testing.T) {

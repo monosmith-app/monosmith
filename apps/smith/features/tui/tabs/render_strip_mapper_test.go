@@ -38,13 +38,13 @@ func props(width int, active string) Props {
 		ShortenOrder: []string{"settings", "release", "projects"}}
 }
 
-func TestTheStripIsOneRowOfButtonsWithTheirKeysAndABlankBetweenThem(t *testing.T) {
+func TestTheStripIsOneRowOfKeysAndNamesWithTwoBlanksBetweenThem(t *testing.T) {
 	s := Render(props(90, "run"))
 	if len(s.Lines) != 1 {
 		t.Fatalf("rows: %d", len(s.Lines))
 	}
 	line := plain(s.Lines)[0]
-	if pane.Width(line) != 90 || !strings.Contains(line, "[Projects (2)] [Run (3)] [Doctor (4)] [Release (6)] [Settings (7)]") {
+	if pane.Width(line) != 90 || !strings.HasPrefix(line, "2 Projects  3 Run  4 Doctor  6 Release  7 Settings") {
 		t.Fatalf("%q", line)
 	}
 }
@@ -63,7 +63,7 @@ func TestEverySpanFindsItsTab(t *testing.T) {
 
 func TestNamesAreShortenedBeforeTheStripScrolls(t *testing.T) {
 	// Wide enough for the short names, not for the full ones.
-	s := Render(props(68, "run"))
+	s := Render(props(55, "run"))
 	text := strings.Join(plain(s.Lines), "\n")
 	if strings.Contains(text, "‹") || strings.Contains(text, "›") {
 		t.Fatalf("shortening is enough, no scrolling:\n%s", text)
@@ -97,7 +97,7 @@ func TestTheActiveTabIsAlwaysInViewWhenTheStripScrolls(t *testing.T) {
 }
 
 func TestMarkersShowWhatIsHiddenAndAreClickable(t *testing.T) {
-	s := Render(props(40, "doctor"))
+	s := Render(props(34, "doctor"))
 	text := strings.Join(plain(s.Lines), "\n")
 	if !strings.Contains(text, "‹") || !strings.Contains(text, "›") {
 		t.Fatalf("tabs hidden on both sides need both markers:\n%s", text)
@@ -109,15 +109,15 @@ func TestMarkersShowWhatIsHiddenAndAreClickable(t *testing.T) {
 	}
 }
 
-func TestABadgeSitsAfterTheButtonAndNeverChangesTheNamesSpelledOut(t *testing.T) {
-	without := props(68, "run")
+func TestABadgeSitsAfterTheNameAndNeverChangesTheNamesSpelledOut(t *testing.T) {
+	without := props(55, "run")
 	with := without
 	with.Tabs = sample()
 	with.Tabs[2].Badge = "×2"
 	a := strings.Join(plain(Render(without).Lines), "\n")
 	b := strings.Join(plain(Render(with).Lines), "\n")
-	if !strings.Contains(b, "Doctor (4)] ×2") {
-		t.Fatalf("the badge follows the button:\n%s", b)
+	if !strings.Contains(b, "4 Doctor ×2") {
+		t.Fatalf("the badge follows the name:\n%s", b)
 	}
 	for _, name := range []string{"Sett", "Rel", "Proj"} {
 		if strings.Contains(a, name) != strings.Contains(b, name) {
@@ -126,7 +126,7 @@ func TestABadgeSitsAfterTheButtonAndNeverChangesTheNamesSpelledOut(t *testing.T)
 	}
 }
 
-func TestSpansCoverTheButtonAndItsBadge(t *testing.T) {
+func TestSpansCoverTheTabAndItsBadge(t *testing.T) {
 	p := props(90, "run")
 	p.Tabs[2].Badge = "×2"
 	s := Render(p)
@@ -148,6 +148,9 @@ func TestTheActiveAndTheHoveredTabLookDifferentFromTheOthers(t *testing.T) {
 	p.Hover, p.Active = "", "doctor"
 	if Render(p).Lines[0] == rest {
 		t.Fatal("the active tab must be drawn differently from a resting one")
+	}
+	if got := Render(p).Lines[0]; !strings.Contains(got, p.Theme.ActiveTab("4 Doctor")) {
+		t.Fatalf("the active tab is in the accent, bold and underlined: %q", got)
 	}
 }
 

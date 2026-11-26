@@ -50,11 +50,11 @@ func TestTheHeaderShowsTheRemoteCacheStateInBothLayouts(t *testing.T) {
 			if !strings.Contains(first, tc.mark) {
 				t.Errorf("%s at %d columns: the first row lacks %q: %q", tc.name, w, tc.mark, first)
 			}
-			if got := pane.Width(l.sh().headerText()); got > inlineHeaderMax {
-				t.Errorf("%s: the header takes %d columns, more than %d", tc.name, got, inlineHeaderMax)
+			if got := pane.Width(first); got != w {
+				t.Errorf("%s: the title bar is %d columns, not %d", tc.name, got, w)
 			}
-			if w == 160 && !l.sh().inlineHeader() {
-				t.Errorf("%s: the remote mark pushed the header off the tab row", tc.name)
+			if !strings.Contains(first, "smith 1.2.3") {
+				t.Errorf("%s at %d columns: the remote mark pushed the version off the title bar: %q", tc.name, w, first)
 			}
 		}
 	}

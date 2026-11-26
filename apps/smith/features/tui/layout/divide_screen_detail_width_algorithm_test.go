@@ -4,16 +4,16 @@ import "testing"
 
 func TestAChosenDetailWidthReplacesTheAutomaticOne(t *testing.T) {
 	l := DivideWith(140, 40, true, 70)
-	if l.Detail.W != 70 || l.Main.W != 70 {
+	if l.Detail.W != 70 || l.Main.W != ContentWidth(140)-70 {
 		t.Fatalf("%+v", l)
 	}
-	if got := DivideWith(140, 40, true, 0).Detail.W; got != AutoDetailWidth(140) {
+	if got := DivideWith(140, 40, true, 0).Detail.W; got != AutoDetailWidth(ContentWidth(140)) {
 		t.Fatalf("0 keeps the automatic width, got %d", got)
 	}
 }
 
 func TestAChosenDetailWidthLeavesTheListItsMinimum(t *testing.T) {
-	if got := DivideWith(120, 40, true, 500).Detail.W; got != 120-MinList {
+	if got := DivideWith(120, 40, true, 500).Detail.W; got != ContentWidth(120)-MinList {
 		t.Fatalf("too wide: %d", got)
 	}
 	if got := DivideWith(120, 40, true, 3).Detail.W; got != MinDetail {

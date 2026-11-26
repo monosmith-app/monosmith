@@ -88,7 +88,7 @@ func detailLabels(s Shell) map[string]bool {
 }
 
 func TestBesideTheListTheProjectDetailLeavesOutKindLanguageAndStack(t *testing.T) {
-	for _, w := range []int{120, 140} {
+	for _, w := range []int{150, 170} {
 		l := newLab(t, true, w, 34)
 		l.keys("down") // web, which has a stack
 		got := detailLabels(l.sh())
@@ -279,7 +279,7 @@ func TestTaskButtonsSayWhatTheTaskDoesToTheKindOfProject(t *testing.T) {
 }
 
 func TestTheDetailNamesTheKindInItsTaskButtonsAndKeepsTheRawTaskInTheHint(t *testing.T) {
-	l := buttonLab(t, 160, 100) // web, an app with package, slice-check and start tasks
+	l := buttonLab(t, 200, 100) // web, an app with package, slice-check and start tasks
 	l.has("Build app (b)", "Test app (t)", "Package app (p)", "Run slice-check (s)", "Run start (S)")
 	l.hasNot("Run build", "Run test", "Run package")
 	// The description of the chosen action is under the rule: Build app is chosen first.

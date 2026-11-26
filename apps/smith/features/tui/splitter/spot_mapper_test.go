@@ -23,7 +23,7 @@ func TestSpotsAreBuiltFromPlainValues(t *testing.T) {
 	in := layout.Rect{X: 2, Y: 3, W: 60, H: 20}
 	run := RunListSpot(in, 3, 8, 5)
 	if run.Hit.X != 1 || run.Hit.W != 62 {
-		t.Fatalf("the run divider runs edge to edge, over the margins: %+v", run.Hit)
+		t.Fatalf("the run divider runs from border to border, over the padding: %+v", run.Hit)
 	}
 	if run.ID != RunListID || run.Axis != Row || run.Hit.Y != 11 || run.Origin != 6 || run.Sign != 1 || run.Size != 5 {
 		t.Fatalf("run list spot %+v", run)
@@ -43,26 +43,27 @@ func TestSpotsAreBuiltFromPlainValues(t *testing.T) {
 	}
 }
 
-func TestJunctionsJoinTheDivisionsAndLeaveNoBottomTee(t *testing.T) {
+func TestJunctionsJoinTheDivisionsToTheBordersOfThePane(t *testing.T) {
 	in := layout.Rect{X: 1, Y: 3, W: 60, H: 20}
 	list := SettingsListSpot(in, 20, 10, 30)
 	detail := SettingsDetailSpot(in, 20, 4, 6, 3, 9)
-	got := Junctions([]Spot{list, detail}, 2)
-	want := []Junction{{X: 21, Y: 2, Glyph: "┬"}, {X: 21, Y: 7, Glyph: "├"}}
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	got := Junctions([]Spot{list, detail}, 2, 23)
+	want := []Junction{{X: 21, Y: 2, Glyph: "┬"}, {X: 21, Y: 23, Glyph: "┴"}, {X: 21, Y: 7, Glyph: "├"}}
+	if len(got) != len(want) {
 		t.Fatalf("junctions = %+v, want %+v", got, want)
 	}
-	// A run list beside a detail ends in a tee on the detail's divider.
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("junctions = %+v, want %+v", got, want)
+		}
+	}
+}
+
+func TestTheDividerBesideTheDetailIsAFrameBorderWithNoJunction(t *testing.T) {
 	l := layout.DivideWith(120, 30, true, 0)
 	div := DetailSpot("run", l, 120)
-	run := RunListSpot(l.Main.Inner(), 3, 6, 3)
-	got = Junctions([]Spot{div, run}, l.Main.Y)
-	if len(got) != 2 || got[0].Glyph != "┬" || got[0].X != l.Detail.X-1 || got[1].Glyph != "┤" || got[1].X != l.Detail.X-1 {
+	run := RunListSpot(l.DetailInner(), 3, 6, 3)
+	if got := Junctions([]Spot{div, run}, l.Main.Y, l.Main.Y+l.Main.H-1); len(got) != 0 {
 		t.Fatalf("run junctions = %+v", got)
-	}
-	for _, j := range got {
-		if j.Glyph == "┴" {
-			t.Fatal("there is no bottom border")
-		}
 	}
 }

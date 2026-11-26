@@ -1,7 +1,6 @@
 package tabs
 
 import (
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
 )
@@ -17,14 +16,23 @@ func (t Tab) name(short bool) string {
 	return t.Label
 }
 
-// planned is the width the fit calculation gives a tab: its button, and the
+// text is the tab as the strip spells it: its key, a space and its name, or the
+// name alone when it has no key.
+func (t Tab) text(name string) string {
+	if t.Key == "" {
+		return name
+	}
+	return t.Key + " " + name
+}
+
+// planned is the width the fit calculation gives a tab: its text, and the
 // room for its badge, which counts whether or not the badge is there.
-func (t Tab) planned(th theme.Theme, short bool) int {
+func (t Tab) planned(_ theme.Theme, short bool) int {
 	extra := t.Reserve
 	if t.Badge != "" {
 		extra = max(extra, pane.Width(t.Badge)+1)
 	}
-	return button.Width(th, t.name(short), t.Key) + extra
+	return pane.Width(t.text(t.name(short))) + extra
 }
 
 // shortened says which tabs use their short name: as few as it takes for every

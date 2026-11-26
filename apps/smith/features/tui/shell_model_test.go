@@ -19,6 +19,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
@@ -350,6 +351,56 @@ func (l *lab) typeText(text string) *lab {
 func (l *lab) view() string { return pane.Strip(l.sh().View()) }
 
 func (l *lab) lines() []string { return strings.Split(l.view(), "\n") }
+
+// inside are the screen lines of the rectangle r, cut to its columns.
+func (l *lab) inside(r layout.Rect) []string {
+	lines := l.lines()
+	var out []string
+	for y := r.Y; y < r.Y+r.H && y < len(lines); y++ {
+		row := []rune(lines[y])
+		out = append(out, string(row[min(r.X, len(row)):min(r.X+r.W, len(row))]))
+	}
+	return out
+}
+
+// mainLines are the lines inside the main frame: the list, or the detail
+// that took its place.
+func (l *lab) mainLines() []string { return l.inside(l.sh().lay().Main.Inner()) }
+
+// content is what the frames of the content show, the rail and the bars left out.
+func (l *lab) content() string {
+	lay := l.sh().lay()
+	all := l.mainLines()
+	if lay.HasDetail() {
+		all = append(all, l.inside(lay.DetailInner())...)
+	}
+	return strings.Join(all, "\n")
+}
+
+// contentHasNot fails the test when a text is in the frames of the content.
+func (l *lab) contentHasNot(texts ...string) {
+	l.t.Helper()
+	view := l.content()
+	for _, bad := range texts {
+		if strings.Contains(view, bad) {
+			l.t.Fatalf("%q should not be in the content:\n%s", bad, view)
+		}
+	}
+}
+
+// railSpot is the cell of the name of a view in the rail.
+func (l *lab) railSpot(id string) (x, y int) {
+	l.t.Helper()
+	sh := l.sh()
+	r := sh.lay().Rail
+	for y := r.Y; y < r.Y+r.H; y++ {
+		if sh.railAt(y) == id {
+			return r.X + 4, y
+		}
+	}
+	l.t.Fatalf("%q is not in the rail:\n%s", id, l.view())
+	return 0, 0
+}
 
 // has fails the test unless every text is on screen.
 func (l *lab) has(texts ...string) {

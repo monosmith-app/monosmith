@@ -113,14 +113,36 @@ func (l *lab) doubleClick(x, y int) {
 	l.send(click(x, y))
 }
 
-func TestClickingATabSwitchesTheView(t *testing.T) {
+func TestClickingARowOfTheRailSwitchesTheView(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Doctor", 0) // the one row of tabs, the first on a wide screen
-	if y != 0 {
-		t.Fatalf("the tab labels are on row %d", y)
+	x, y := l.railSpot(commands.TabDoctor)
+	l.send(click(x+1, y))
+	if l.sh().tab != commands.TabDoctor {
+		t.Fatalf("a click on Health in the rail opened %q", l.sh().tab)
+	}
+	l.has("2 failed", "× go.work lists every module", "F fix all")
+	// The blank row under a view opens nothing.
+	l.send(click(x+1, y+1))
+	if l.sh().tab != commands.TabDoctor {
+		t.Fatalf("a click between two views opened %q", l.sh().tab)
+	}
+	x, y = l.railSpot(commands.TabSettings)
+	l.send(click(x, y))
+	if l.sh().tab != commands.TabSettings {
+		t.Fatalf("a click on Settings in the rail opened %q", l.sh().tab)
+	}
+}
+
+func TestClickingATabOfTheStripSwitchesTheView(t *testing.T) {
+	l := newLab(t, true, 80, 30)
+	x, y := l.findAfter("Health", 1)
+	if y != l.sh().lay().Tabs.Y {
+		t.Fatalf("the strip is on row %d, Health on %d", l.sh().lay().Tabs.Y, y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 failed", "× go.work lists every module", "F fix all")
+	if l.sh().tab != commands.TabDoctor {
+		t.Fatalf("a click on Health in the strip opened %q", l.sh().tab)
+	}
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
@@ -376,7 +398,7 @@ func TestOneClickOnAGuideOptionPicksIt(t *testing.T) {
 func TestClickingAPaletteRowRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("ctrl+p").typeText("doctor")
-	x, y := l.findAfter("Doctor", 3)
+	x, y := l.findAfter("Health (check", 3)
 	l.send(click(x+2, y))
 	l.hasNot("Command palette")
 	l.has("2 failed")
@@ -401,13 +423,16 @@ func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 	if strip := l.lines()[l.sh().lay().Tabs.Y]; strings.ContainsAny(strip, "›‹") {
 		t.Fatalf("the strip scrolls: %q", strip)
 	}
-	for _, name := range []string{"Home", "Proj", "Doctor", "Deps", "Rel"} {
-		l.has(name)
+	strip := l.lines()[l.sh().lay().Tabs.Y]
+	for _, name := range []string{"1 Home", "2 Projects", "3 Health", "4 Deps", "5 Release", "6 Settings"} {
+		if !strings.Contains(strip, name) {
+			t.Fatalf("the strip lacks %q: %q", name, strip)
+		}
 	}
-	x, y := l.findAfter("Doctor", 0)
+	x, y := l.findAfter("Health", 1)
 	l.send(click(x+1, y))
 	if l.sh().tab != commands.TabDoctor {
-		t.Fatalf("a click on Doctor opened %q", l.sh().tab)
+		t.Fatalf("a click on Health opened %q", l.sh().tab)
 	}
 }
 
@@ -436,10 +461,10 @@ func colourLab(t *testing.T, w, h int, tab string) *lab {
 func TestWithoutAModalThePointerHighlightsTheTabsAndTheFooter(t *testing.T) {
 	l := colourLab(t, 160, 50, commands.TabProjects)
 	before := l.sh().View()
-	x, y := l.find("Settings (6)")
+	x, y := l.railSpot(commands.TabSettings)
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
-		t.Fatal("the tab under the pointer shows its hover look")
+		t.Fatal("the view under the pointer shows its hover look")
 	}
 	before = l.sh().View()
 	l.send(motion(3, l.sh().lay().Footer.Y))
@@ -452,10 +477,7 @@ func TestWhileAModalIsOpenTheMouseActsOnlyOnIt(t *testing.T) {
 	for _, c := range modalCases {
 		t.Run(c.name, func(t *testing.T) {
 			l := colourLab(t, 160, 50, c.tab)
-			tx, ty := l.find("Settings (6)")
-			if ty != 0 {
-				t.Fatalf("the tab is on row %d", ty)
-			}
+			tx, ty := l.railSpot(commands.TabSettings)
 			points := [][2]int{{tx + 2, ty}, {3, l.sh().lay().Footer.Y}, {0, 0}, {159, 0}}
 			if c.button != "" {
 				bx, by := l.find(c.button)

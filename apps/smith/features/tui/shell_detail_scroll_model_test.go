@@ -35,7 +35,7 @@ func doctorLab(t *testing.T, w, h int) *lab {
 }
 
 func TestALongProblemFoldsSoTheRemedyAndTheActionsStayOnTheScreen(t *testing.T) {
-	l := doctorLab(t, 140, 30)
+	l := doctorLab(t, 170, 33)
 	l.has("How to fix", "declare dist as the output", "Actions", "[Check again (r)]", "What is wrong", "pkg01:build", "23, e shows all")
 	l.hasNot("pkg06:build")
 	v := l.view()

@@ -69,9 +69,9 @@ func TestCtrlDAndCtrlUAndTheWheelScrollHome(t *testing.T) {
 
 func TestTheArrowsMoveThroughTheButtonsOfHomeInReadingOrder(t *testing.T) {
 	l := newHomeLab(t, 160, 34)
-	l.has("[Fix (Enter)]", "[Open Doctor (3)]")
+	l.has("[Fix (Enter)]", "[Open Health (3)]")
 	l.keys("down")
-	l.has("[Fix (F)]", "[Open Doctor (Enter)]")
+	l.has("[Fix (F)]", "[Open Health (Enter)]")
 	l.keys("right")
 	if l.sh().homeSel != 2 {
 		t.Fatalf("Right moved to %d", l.sh().homeSel)
@@ -102,9 +102,9 @@ func TestTheArrowsMoveThroughTheButtonsOfHomeInReadingOrder(t *testing.T) {
 
 func TestEnterPressesTheButtonTheKeyboardIsOn(t *testing.T) {
 	l := newHomeLab(t, 160, 34)
-	l.keys("down", "enter") // Open Doctor
+	l.keys("down", "enter") // Open Health
 	if l.sh().tab != commands.TabDoctor {
-		t.Fatalf("Enter on Open Doctor showed %q", l.sh().tab)
+		t.Fatalf("Enter on Open Health showed %q", l.sh().tab)
 	}
 	l = newHomeLab(t, 160, 34)
 	l.keys("enter") // Fix: the first button, as before
