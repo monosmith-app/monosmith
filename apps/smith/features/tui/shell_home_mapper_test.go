@@ -46,20 +46,22 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 	lines := l.lines()
 	var title, fix, affected int
 	for i, line := range lines {
-		switch {
-		case strings.Contains(line, "2 checks fail, 1 can"):
+		if strings.Contains(line, "2 checks fail, 1 can") {
 			title = i
-		case strings.Contains(line, "[Fix (Enter)]"):
+		}
+		if strings.Contains(line, "[Fix (Enter)]") {
 			fix = i
-		case strings.Contains(line, "is affected by your changes"):
+		}
+		if strings.Contains(line, "is affected by your changes") {
 			affected = i
 		}
 	}
-	if title == 0 || fix <= title || affected <= fix {
+	// The buttons of an item stand at the right of its title.
+	if title == 0 || fix != title || affected <= fix {
 		t.Fatalf("the first item (row %d, buttons %d) comes before the others (row %d)", title, fix, affected)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"Enter next", "B build all 3", "w changed", "d health", "1-6 views"} {
+	for _, want := range []string{"↑/↓ move • Enter fix", "B build all 3", "w changed", "d health", "1-6 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
@@ -205,15 +207,15 @@ func TestHomeListsTheLastRunsAndAClickOpensOne(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	l.keys("b")
 	l.keys("1")
-	l.has("Recent runs", "✓ build -p orders")
+	l.has("Last run", "✓ Passed", "build -p orders", "last run")
 
 	l = healthyShell(t, false)
 	l.next = failingRun()
 	l.keys("B")
 	l.keys("1")
-	l.has("orders:build failed", "[See why (Enter)]", "[Run it again]", "× build")
+	l.has("orders:build failed", "[See why (Enter)]", "[Run it again]", "× Failed")
 
-	l.clickText("× build")
+	l.clickText("Last run")
 	if sh := l.sh(); sh.tab != commands.TabProjects || !sh.runShown() {
 		t.Fatalf("a click on the run opened %q (run panel %v)", sh.tab, sh.runShown())
 	}
@@ -308,7 +310,10 @@ func TestTheStartReadsTheReleasePlanInTheBackground(t *testing.T) {
 
 func TestHomeFitsTheLeastWidthAndReloadChecksAgain(t *testing.T) {
 	l := newHomeLab(t, 72, 24)
-	l.has("[Fix (Enter)]")
+	_, y := l.find("2 checks fail")
+	if row := strings.TrimRight(strings.TrimSuffix(strings.TrimRight(l.lines()[y], " "), "│"), " "); !strings.HasSuffix(row, "Enter") {
+		t.Fatalf("the narrow item ends in its key: %q", row)
+	}
 	for i, line := range l.lines() {
 		if w := len([]rune(line)); w > 72 {
 			t.Fatalf("line %d is %d cells: %q", i, w, line)

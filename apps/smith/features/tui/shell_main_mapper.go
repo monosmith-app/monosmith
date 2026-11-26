@@ -19,7 +19,7 @@ import (
 
 // hit says what a click on a line of the main view means.
 type hit struct {
-	// kind is "project", "task", "recent", "nav", "finding", "release", "dep", "option" or "action".
+	// kind is "project", "task", "recent", "nav", "finding", "release", "dep", "option", "homeitem" or "action".
 	kind  string
 	id    string
 	index int

@@ -17,11 +17,13 @@ func TestTheWorkspaceLineNamesTheMostUsedLanguagesInWords(t *testing.T) {
 	}
 }
 
-func TestTheSummaryLineIsTheFirstLineAndHasNoNameOrBranch(t *testing.T) {
+// Without the name of the workspace the top line is the summary alone; the
+// branch is in the title bar, not here.
+func TestTheSummaryLineIsTheFirstLineAndHasNoBranch(t *testing.T) {
 	f := Facts{ProjectsLoaded: true, Projects: 2, Languages: []string{"go", "go"}, Checked: true, DepsChecked: true}
 	text := plainLines(Page(plainTheme(), f, 100, Away))
 	all := strings.Join(text, "\n")
-	if len(text) < 2 || strings.TrimSpace(text[1]) != "2 projects (2 Go)" {
+	if len(text) < 2 || strings.TrimSpace(text[1]) != "2 projects (2 Go) · 0 changed" {
 		t.Fatalf("the first line is not the summary:\n%s", all)
 	}
 	if strings.Count(all, "projects (") != 1 {

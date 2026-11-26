@@ -1,7 +1,7 @@
 # Design: the TUI redesign
 
-Status: **in progress**. Phase 1 (theme and chrome) and phase 2 (layout) are built. The other
-phases are planned.
+Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout) and phase 3 (Home) are
+built. The other phases are planned.
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -61,7 +61,7 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
    without the palette hint and the version. Phase 2 gives the title bar its own row there.
 2. Layout: the rail of views on a wide screen, the tab strip on a narrow one, one view at a
    time. **Built** (see [Phase 2 as built](#phase-2-as-built)).
-3. Home.
+3. Home. **Built** (see [Phase 3 as built](#phase-3-as-built)).
 4. Projects.
 5. The Runs view.
 6. The command palette, and Health with the inline fix.
@@ -102,6 +102,48 @@ Deviations from the brief:
   under the list, and Release has no detail. Enter already has a meaning in those lists.
 - The VS Code extension already names the tree Health; nothing changed there. Its
   `Run Doctor` command and its `Doctor:` messages are about the `smith doctor` command.
+
+## Phase 3 as built
+
+- Home is drawn by the `dashboard` package (`dashboard.Render`). The page is wide from
+  `dashboard.WideFrom`, 88 cells of the pane, which a 120-column terminal gives. A narrower
+  pane has the narrow look of the NarrowHome screen, also inside the wide layout from 100 to 119
+  columns.
+- The top line is the workspace in bold, then, muted, `N projects (languages) · N changed since
+  <base> · last run <ago>`. The base is the ref the shell counts the affected projects from
+  (`ProjectsLoaded.Base`). A part without facts is left out, and the languages go when the
+  line is too long.
+- The four boxes are `pane.Frame` boxes joined with `lipgloss.JoinHorizontal`, in one row (five
+  lines) or a 2x2 grid (four lines, without the sub-line, as NarrowHome draws them). The row
+  fills the pane: the first boxes take the cells the division leaves. A box that loads shows the
+  spinner and `Loading…`, the waiting style of the other views. A box without facts says so
+  (`Nothing ran yet`, `Nothing changed`, `Nothing ready`, `No projects yet`).
+- The Last run box tells the newest run of the session and opens it on a click, in the run
+  panel of Projects. It replaces the line of recent runs, which the design does not draw.
+- "Needs you now" is the queue of `dashboard.Queue`, unchanged in its items, actions and keys,
+  "All good" included. The count is `1/5`. Each item has two lines; a wide page puts a blank line
+  between two items, a narrow one none, as the screens draw them. The tag is the kind of the item
+  (`Failed`, `Warning`, `Changed`, `Release`, `Updates`, `Cache`, `Setup`, `Good`), in the colour of
+  its severity.
+- The keyboard is on an item (`Up`, `Down`, `Home`, `End`) and on one of its buttons (`Left`,
+  `Right`). That button is primary and shows `(Enter)`; the others are secondary. The footer is
+  `↑/↓ move • Enter <the label of that button> • …`, through the new `commands.State.Labels`.
+- Start something is `Build all`, `Lint all`, `Run a task…` (the palette, `Ctrl+K`),
+  `Add a project`, `Compose a stack` and `Settings`. These are the actions with a key on Home today.
+  It shows on a wide page only. A workspace without projects leaves it out, because its one
+  item already offers the two buttons that add a project. The settings tip ends the page.
+- A click on a line of an item selects it, a click on a button or on the key of a narrow item
+  runs it, and the wheel scrolls the page. The page scrolls as one, as before.
+
+Deviations from the brief and the screens:
+
+- The marks stay `×` and `▲` (see phase 2). The changed item keeps the warning mark of its
+  severity; the screens draw `●`.
+- There is no "Build changed" command, so Start something has `Build all`. `Run a task…` has the
+  palette key `Ctrl+K`, because `r` reloads the view. Settings has its key `6` (no Runs view yet).
+- The screens show the button labels without parentheses (`See why enter`); the buttons keep the
+  `label (key)` form of every button of the TUI.
+- An item without a note keeps its second line empty, so every item takes two lines.
 
 ## Screens
 

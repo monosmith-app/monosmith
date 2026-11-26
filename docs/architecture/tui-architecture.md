@@ -124,10 +124,13 @@ the run part out and `Panel.PinnedRun` draws it under the scrolling body, in at 
 keyboard is above the rule (`tabPage.Footer`), since `Enter` there moves to the run button.
 
 Home has no second panel. Its keys are `home.move`, `home.scroll` and `Ctrl+U`/`Ctrl+D`
-(`shell_home_keys_use_case.go`): the keyboard is on one target of the page (`homeSel`, counted in
-reading order over the `Targets` that `dashboard.PageAt` returns), and a page taller than its pane
-scrolls (`homeTop`). `pane.WindowMarked` draws the `↑ more` and `↓ more` rows and `pane.KeepVisible`
-moves the window just enough to show the target under no marker. The footer offers `PgUp/PgDn scroll`
+(`shell_home_keys_use_case.go`): the keyboard is on one item of the list (`homeSel`) and one of its
+buttons (`homeBtn`), which `dashboard.Render` draws as a `dashboard.Choice`. `Rendered.Items` gives the
+lines of each item and `Target.Kind` says what a click does (a button, the Last run box, the text of
+an item, the key of a narrow item). A page taller than its pane scrolls (`homeTop`).
+`pane.WindowMarked` draws the `↑ more` and `↓ more` rows and `pane.KeepVisible` moves the window just
+enough to show both lines of the selected item under no marker. `commands.State.Labels` lets the
+footer name the button Enter presses (`Enter fix`). The footer offers `PgUp/PgDn scroll`
 only while the page is taller than the pane (`Reasons["home.scroll"]`).
 
 ### Where a dialog sits

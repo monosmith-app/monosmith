@@ -103,7 +103,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 				selected, s.justAdded = s.justAdded, ""
 			}
 			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
-			s.branch = msg.Branch
+			s.branch, s.base = msg.Branch, msg.Base
 			s.refreshProjectForms()
 		}
 	case doctorview.Result:

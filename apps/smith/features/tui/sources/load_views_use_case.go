@@ -103,7 +103,9 @@ type RemotePending struct {
 type ProjectsLoaded struct {
 	Projects []projectlist.Project
 	Branch   string
-	Err      error
+	// Base is the ref the affected projects are counted from.
+	Base string
+	Err  error
 }
 
 // WorkspaceSources open the workspace in dir for each view, as the CLI
@@ -278,7 +280,7 @@ func loadProjects(open func() (*session.Session, error)) ProjectsLoaded {
 		}
 		out = append(out, np)
 	}
-	return ProjectsLoaded{Projects: out, Branch: s.Git.CurrentBranch()}
+	return ProjectsLoaded{Projects: out, Branch: s.Git.CurrentBranch(), Base: base}
 }
 
 // planTasks lists the task IDs a run command line will start, in dependency

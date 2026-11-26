@@ -237,7 +237,7 @@ func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 		l.clickText("‹") // the strip scrolls: the marker leads to the tabs before
 	}
 	l.clickText("Home")
-	l.has("Fix (Enter)")
+	l.has("Needs you now")
 }
 
 // longDeps is a lab with n outdated dependencies named pkg00, pkg01, ...

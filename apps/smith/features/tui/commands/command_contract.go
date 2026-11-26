@@ -202,4 +202,7 @@ type State struct {
 	// On says, by command id, which toggle commands are on now (the checks are
 	// grouped): a command with OnFooter or OnTitle shows that text then.
 	On map[string]bool
+	// Labels say, by command id, the footer text a command shows now in place
+	// of its Footer: Enter on Home names the action of the selected item.
+	Labels map[string]string
 }

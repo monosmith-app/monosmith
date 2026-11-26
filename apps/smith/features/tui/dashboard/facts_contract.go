@@ -39,6 +39,14 @@ type Facts struct {
 	SettingsTip bool
 	// Remote is what the shell knows of the remote cache; nil when no remote is set.
 	Remote *Remote
+	// Workspace is the name of the workspace, drawn in bold at the top.
+	Workspace string
+	// Base is the ref the changes are counted from ("main"), "" when unknown.
+	Base string
+	// ReleaseLoading is true while the release plan is being read.
+	ReleaseLoading bool
+	// Tick is the frame of the spinner a box shows while its facts load.
+	Tick int
 }
 
 // RemoteState is how the remote cache answered.
@@ -86,6 +94,10 @@ type Run struct {
 	// Index is the place of the run among the recent ones, 0 for the newest; a
 	// click on it opens that run.
 	Index int
+	// Passed, Cached and Failed count the tasks of the run in each outcome.
+	Passed, Cached, Failed int
+	// Ago says how long ago the run ended ("3 min ago"), "" when unknown.
+	Ago string
 }
 
 // Ready is the next release in a few facts: how many packages leave, and the
@@ -98,4 +110,6 @@ type Ready struct {
 	Name, From, To string
 	// Commits is how many commits the named package releases (0 when unknown).
 	Commits int
+	// Major, Minor and Patch count the packages by the bump they get.
+	Major, Minor, Patch int
 }

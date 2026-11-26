@@ -343,6 +343,13 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 		if double {
 			return s.openRecent()
 		}
+	case "homeitem":
+		// A line of an item of Home: its button runs, the rest selects the item.
+		if h.id != "" {
+			return s.activate(h.id)
+		}
+		s.homeSel, s.homeBtn = h.index, 0
+		s.keepHomeVisible()
 	case "nav":
 		switch s.navAction(rx) {
 		case "older":

@@ -135,7 +135,9 @@ type Shell struct {
 	Restart     bool
 	header      string
 	branch      string
-	w, h        int
+	// base is the ref the affected projects are counted from, for Home.
+	base string
+	w, h int
 
 	inWorkspace bool
 	emptyFolder bool
@@ -241,9 +243,10 @@ type Shell struct {
 	// sideFocus is true while the keyboard is on the right panel (the detail,
 	// or the run) and not on the list beside it.
 	sideFocus bool
-	// homeSel is the button or run of Home the keyboard is on, counted in
-	// reading order; homeTop is the first line of Home shown while it scrolls.
-	homeSel, homeTop int
+	// homeSel is the item of the list of Home the keyboard is on, and homeBtn
+	// the button of that item Enter presses; homeTop is the first line of Home
+	// shown while it scrolls.
+	homeSel, homeBtn, homeTop int
 
 	confirm *dialog.Confirm
 	// releaseWaiting is a release command line that waits for the plan to be
@@ -468,6 +471,7 @@ func (s Shell) state() commands.State {
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
 		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown() && s.sideKeys(), RecentFocus: s.recentFocus && !s.sideKeys(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
+		Labels: s.homeLabels(),
 	}
 }
 

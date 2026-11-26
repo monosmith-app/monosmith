@@ -1,5 +1,7 @@
-// Package dashboard is the Home page: an attention queue. It lists what needs
-// a look, the most urgent first, each with the buttons that deal with it; the
-// first item is drawn large and its first button is what Enter runs. Under the
-// queue are the last runs, the workspace and the buttons that add a project.
+// Package dashboard is the Home page. A summary line and four summary boxes
+// (Changed, Last run, Health, Release) lead; then the list "Needs you now", an
+// attention queue of what needs a look, the most urgent first, each item with
+// the buttons that deal with it; then, on a wide page, the buttons of Start
+// something. The keyboard is on one item and one of its buttons, which Enter
+// presses.
 package dashboard
