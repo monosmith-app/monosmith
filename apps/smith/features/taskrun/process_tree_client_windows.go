@@ -11,8 +11,13 @@ import (
 var jobs sync.Map // *exec.Cmd -> windows.Handle
 
 // prepare starts the child in a new process group so Ctrl+C in the terminal
-// reaches smith first, and smith decides how to stop the tree.
-func prepare(cmd *exec.Cmd) {
+// reaches smith first, and smith decides how to stop the tree. A child on the
+// terminal stays in the console's group: a new group turns Ctrl+C off for it.
+// The job object still ends its tree with smith.
+func prepare(cmd *exec.Cmd, terminal bool) {
+	if terminal {
+		return
+	}
 	cmd.SysProcAttr = &windows.SysProcAttr{CreationFlags: windows.CREATE_NEW_PROCESS_GROUP}
 }
 

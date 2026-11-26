@@ -135,6 +135,16 @@ same task log lines are printed first and the JSON summary follows on standard o
 (checked with `2>NUL` and `>NUL`: nothing is written to standard error), so a parser must
 take the document after the log, or use `--json-events`, which prints nothing else.
 
+A single uncached task gets the terminal. When you ask for one task on one project
+(`smith run start -p web`), the task does not use the cache, and smith's input and output are
+a terminal, that task runs on the terminal itself: no `│` prefix, and it reads your keys. A
+TUI app, a REPL or a dev server with key shortcuts (Vite) then works as it does when you
+start it yourself. Ctrl+C goes to the task, and smith stops what is left of it after
+3 seconds. The tasks it depends on run first with prefixed output, as always. `-p tag:x` gets
+the same when the tag selects one project. Several tasks, a cached task, `smith build`,
+`--json`, `--json-events` or a piped input or output keep the prefixed output and give the
+task no input.
+
 ## Examples
 
 All tests, twice. The second run replays from the cache:

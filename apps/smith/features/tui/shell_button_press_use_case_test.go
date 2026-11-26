@@ -63,6 +63,13 @@ func TestTheKeyOfAButtonDoesWhatTheButtonSays(t *testing.T) {
 		}
 		l := buttonLab(t, 160, 100) // a run in progress would refuse the next key
 		l.keys(a.Shortcut)
+		if task == "start" {
+			// An app's start needs a terminal of its own: the key says which line to run there.
+			if l.lastStarted() != "" || !strings.Contains(l.sh().hint, "smith run start -p web") {
+				t.Errorf("the key %q of %s started %q, hint %q", a.Shortcut, a.Label, l.lastStarted(), l.sh().hint)
+			}
+			continue
+		}
 		if l.lastStarted() != "run "+task+" -p web" {
 			t.Errorf("the key %q of %s started %q", a.Shortcut, a.Label, l.lastStarted())
 		}
