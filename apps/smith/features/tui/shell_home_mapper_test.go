@@ -330,6 +330,32 @@ func TestHomeFitsTheLeastWidthAndReloadChecksAgain(t *testing.T) {
 	}
 }
 
+// No line of Home is wider than the screen, the four boxes close inside the
+// frame, and the buttons of Start something wrap inside it.
+func TestHomeStaysInsideItsFrameAtEveryWideWidth(t *testing.T) {
+	for _, w := range []int{120, 150, 200} {
+		l := newHomeLab(t, w, 44)
+		for i, line := range l.lines() {
+			if got := pane.Width(line); got > w {
+				t.Fatalf("%d: line %d is %d cells: %q", w, i, got, line)
+			}
+		}
+		_, y := l.find("Changed")
+		row := strings.TrimRight(l.lines()[y], " ")
+		// The rail, the four boxes and the frame each have their two borders.
+		if strings.Count(row, "│") != 12 || !strings.HasSuffix(row, "│  │") || !strings.Contains(row, "Release") {
+			t.Fatalf("%d: a box does not close inside the frame: %q", w, row)
+		}
+		showOnHome(l, "[Settings (6)]")
+		for _, want := range []string{"[Build all (B)]", "[Compose a stack (A)]", "[Settings (6)]"} {
+			_, y := l.find(want)
+			if line := strings.TrimRight(l.lines()[y], " "); !strings.HasSuffix(line, "│") || pane.Width(line) != w {
+				t.Fatalf("%d: the button row of %s runs past the frame: %q", w, want, line)
+			}
+		}
+	}
+}
+
 func TestHomeNeverSaysAllGoodWhileTheDoctorWarns(t *testing.T) {
 	l := healthyShell(t, false)
 	sh := l.sh()
