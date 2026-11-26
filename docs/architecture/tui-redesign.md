@@ -1,6 +1,7 @@
 # Design: the TUI redesign
 
-Status: **in progress**. Phase 1 (theme and chrome) is built. The other phases are planned.
+Status: **in progress**. Phase 1 (theme and chrome) and phase 2 (layout) are built. The other
+phases are planned.
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -22,7 +23,7 @@ The owner made these decisions for the whole redesign. Later phases do most of t
 | The status bar has the last command (muted), the result counts with their symbols, the time, and the branch, the version and the doctor state at the right. | 1 |
 | A wide screen has a rail of views at the left. A narrow screen has a one-line tab strip. One view shows at a time: `Enter` opens, `Esc` goes back. | 2 |
 | A Runs view on key `3`. Today the runs show in the right panel of Projects. | 5 |
-| The Doctor view is renamed Health, in the TUI and in the VS Code extension. The `smith doctor` command keeps its name. | 6 |
+| The Doctor view is renamed Health, in the TUI and in the VS Code extension. The `smith doctor` command keeps its name. | 2 |
 | The doctor fix shows inline in the detail (review, apply, check again), not as a dialog. | 6 |
 | One pull request for each phase. | all |
 
@@ -59,12 +60,48 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
    keeps the top tabs. From 120 columns the header stays at the right end of the tab row
    without the palette hint and the version. Phase 2 gives the title bar its own row there.
 2. Layout: the rail of views on a wide screen, the tab strip on a narrow one, one view at a
-   time.
+   time. **Built** (see [Phase 2 as built](#phase-2-as-built)).
 3. Home.
 4. Projects.
 5. The Runs view.
 6. The command palette, and Health with the inline fix.
 7. Then Dependencies, Release, Settings and the dialogs, once they are drawn.
+
+## Phase 2 as built
+
+- The wide layout starts at `layout.WideFrom`, 100 columns, the width from which the detail
+  already sat beside the list. Row 0 is the title bar at every width, with the palette hint
+  (`Ctrl+K`) and the version at the right. From 20 rows a wide screen keeps a blank row under
+  the title bar and one over the footer, as the screens show.
+- The rail (`rail` package) is 24 columns in a rounded frame titled `Views`, with a blank row
+  between the views when they fit (none on a short screen). It lists today's views: Home,
+  Projects, Health, Dependencies, Release and Settings, on keys 1 to 6. There is no Runs row
+  (phase 5) and no Pinned group, because the shell has no pinned projects.
+- The badges: Projects carries the run (spinner, `×n`, `✓`), Health `×n` or `▲n`, Dependencies
+  `↑n` once the registries answered, Release `✓n` when a plan can be released. A view that
+  loads shows a spinner.
+- The narrow strip is `1 Home  2 Projects  3 Health ×2  4 Deps …`; Dependencies is `Deps`
+  there, and the strip fits 80 columns.
+- Every pane is a rounded frame with its title in the top border and one cell of padding. The
+  list's right border is the divider the mouse drags. Inner dividers (Settings, the run panel)
+  meet the frame in `┬`, `┴` and `├`. The detail keeps at most 68 columns (it was 64), so its
+  text keeps 64 columns inside the frame.
+- On a narrow screen Enter opens the detail of Projects and Health in the frame, titled
+  `‹ Projects / orders`, and Esc goes back. Health used to expand a check in place there.
+- The footer is one run, `key desc • … • ? help • q quit`; the global hints go first when it
+  does not fit, then the view's last ones, then help and quit.
+- `Ctrl+K` opens the palette, as `:` and `Ctrl+P` do.
+
+Deviations from the brief:
+
+- The symbols stay `×` and `▲`. The design draws `✗` and `⚠`, but
+  `apps/smith/shared/marks` bans both in source (they overlap the next cell in common
+  fonts, and `⚠` has an emoji form), and its test guards that. The owner decides whether
+  to change that rule; the ASCII set is unchanged.
+- Deps, Release and Settings keep their narrow behaviour: Deps and Settings show their detail
+  under the list, and Release has no detail. Enter already has a meaning in those lists.
+- The VS Code extension already names the tree Health; nothing changed there. Its
+  `Run Doctor` command and its `Doctor:` messages are about the `smith doctor` command.
 
 ## Screens
 
