@@ -92,13 +92,24 @@ func hasHint(hints []string, want string) bool {
 func TestHomeNamesTheKeysThatMoveAndScrollIt(t *testing.T) {
 	s := State{View: TabHome, InWorkspace: true}
 	hints := glyphLabels(s)
-	if !hasHint(hints, "←↑↓→ move") || !hasHint(hints, "PgUp/PgDn scroll") {
+	if !hasHint(hints, "↑/↓ move") || !hasHint(hints, "PgUp/PgDn scroll") {
 		t.Fatalf("Home footer %v", hints)
 	}
 	// A page that fits has nothing to scroll: the hint leaves.
 	s.Reasons = map[string]string{"home.scroll": "the page fits on the screen"}
-	if hints := glyphLabels(s); hasHint(hints, "PgUp/PgDn scroll") || !hasHint(hints, "←↑↓→ move") {
+	if hints := glyphLabels(s); hasHint(hints, "PgUp/PgDn scroll") || !hasHint(hints, "↑/↓ move") {
 		t.Fatalf("Home footer when the page fits %v", hints)
+	}
+}
+
+func TestALabelOfTheStateNamesWhatEnterDoesOnHome(t *testing.T) {
+	s := State{View: TabHome, InWorkspace: true, Labels: map[string]string{"home.next": "see why"}}
+	hints := glyphLabels(s)
+	if !hasHint(hints, "Enter see why") || hasHint(hints, "Enter next") {
+		t.Fatalf("Home footer %v", hints)
+	}
+	if hints[0] != "↑/↓ move" || hints[1] != "Enter see why" {
+		t.Fatalf("the footer starts with the move and Enter hints: %v", hints)
 	}
 }
 

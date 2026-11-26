@@ -7,31 +7,35 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 )
 
-// homeKey moves the keyboard through the buttons and runs of Home in reading
-// order (Up and Left go back, Down and Right go on), scrolls a page taller than
-// the pane, and presses the target the keyboard is on with Enter.
+// homeKey moves the keyboard through the list of Home: Up and Down go from
+// item to item, Left and Right from button to button of the item, Home and End
+// to the first and the last item. PgUp and PgDn scroll a page taller than the
+// pane, and Enter presses the button the keyboard is on.
 func (s *Shell) homeKey(name string) tea.Cmd {
-	targets := s.homePage(s.mainInner().W, dashboard.Away).Targets
-	if s.homeCommand() == "" || len(targets) == 0 {
+	q := dashboard.Queue(s.dashboardFacts())
+	if dashboard.Primary(q) == "" {
 		return nil
 	}
-	sel := min(max(s.homeSel, 0), len(targets)-1)
+	item := min(max(s.homeSel, 0), len(q)-1)
+	btn := min(max(s.homeBtn, 0), max(len(q[item].Buttons)-1, 0))
 	switch act := commands.NavNamed(name); {
 	case act == commands.NavConfirm:
-		t := targets[sel]
-		if t.Command != "" {
-			return s.activate(t.Command)
+		if len(q[item].Buttons) == 0 {
+			return nil
 		}
-		s.recentAt = t.Run
-		return s.openRecent()
-	case act == commands.NavUp || name == "left":
-		sel--
-	case act == commands.NavDown || name == "right":
-		sel++
+		return s.activate(q[item].Buttons[btn].CommandID)
+	case act == commands.NavUp:
+		item, btn = item-1, 0
+	case act == commands.NavDown:
+		item, btn = item+1, 0
+	case name == "left":
+		btn--
+	case name == "right":
+		btn++
 	case act == commands.NavHome:
-		sel = 0
+		item, btn = 0, 0
 	case act == commands.NavEnd:
-		sel = len(targets) - 1
+		item, btn = len(q)-1, 0
 	case act == commands.NavPageUp:
 		s.pageHome(-1)
 		return nil
@@ -41,7 +45,8 @@ func (s *Shell) homeKey(name string) tea.Cmd {
 	default:
 		return nil
 	}
-	s.homeSel = min(max(sel, 0), len(targets)-1)
+	s.homeSel = min(max(item, 0), len(q)-1)
+	s.homeBtn = min(max(btn, 0), max(len(q[s.homeSel].Buttons)-1, 0))
 	s.keepHomeVisible()
 	return nil
 }
@@ -56,34 +61,23 @@ func (s *Shell) scrollHome(delta int) {
 	s.homeTop = pane.ClampTop(s.homeTop+delta, lines, s.mainInner().H)
 }
 
-// keepHomeVisible scrolls Home just enough to show the target the keyboard is on.
+// keepHomeVisible scrolls Home just enough to show both lines of the item the
+// keyboard is on. With the first item, the page shows from its top when that
+// still shows the item, so the boxes stay in view.
 func (s *Shell) keepHomeVisible() {
 	page := s.homePage(s.mainInner().W, dashboard.Away)
-	if len(page.Targets) == 0 {
+	if len(page.Items) == 0 {
 		return
 	}
-	row := page.Targets[min(max(s.homeSel, 0), len(page.Targets)-1)].Row
+	r := page.Items[min(max(s.homeSel, 0), len(page.Items)-1)]
 	total, h := len(page.Lines), s.mainInner().H
-	top := pane.KeepVisible(s.homeTop, row, total, h)
-	// Show the headline above a button too, when that costs the button no row.
-	// Near the top of the page, show the page from its first line.
-	context := max(row-homeContext, 0)
-	want := pane.KeepVisible(top, context, total, h)
-	if context <= homeContext+homeSummaryLines {
-		want = 0
-	}
-	if want < top && pane.KeepVisible(want, row, total, h) == want {
-		top = want
+	top := pane.KeepVisible(s.homeTop, r.To-1, total, h)
+	top = pane.KeepVisible(top, r.From, total, h)
+	if s.homeSel <= 0 && pane.KeepVisible(0, r.To-1, total, h) == 0 {
+		top = 0
 	}
 	s.homeTop = top
 }
-
-// homeSummaryLines is the lines of the summary of the workspace that Home may show above its first item.
-const homeSummaryLines = 2
-
-// homeContext is how many lines above a button its headline is: the title and
-// its note, which the page shows with the button when it can.
-const homeContext = 2
 
 // homeScrolls is true while the page of Home is taller than its pane.
 func (s Shell) homeScrolls() bool {

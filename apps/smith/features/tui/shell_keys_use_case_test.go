@@ -338,7 +338,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l.keys("2")
 	l.has("4 projects")
 	l.keys("1")
-	l.has("Fix (Enter)")
+	l.has("Needs you now", "2 checks fail")
 }
 
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {

@@ -64,6 +64,9 @@ func hintOf(c Command, s State) Hint {
 	if s.On[c.ID] && c.OnFooter != "" {
 		h.Label = c.OnFooter
 	}
+	if l := s.Labels[c.ID]; l != "" {
+		h.Label = l
+	}
 	// A glyph that is no key name ("1-9", "↑↓") stands for several keys.
 	if h.Glyph == "" || h.Glyph == KeyLabel(c.Keys[0]) {
 		h.Glyph, h.Key = KeyLabel(c.Keys[0]), c.Keys[0]

@@ -69,7 +69,7 @@ From top to bottom:
    (`views`, `mouse`, `palette`, `help`, `quit`), as one run:
    `key description • key description • … • ? help • q quit`. Each hint can be clicked.
    When the line is too narrow, the global hints go first, so the view keeps its own keys
-   (Home keeps `Enter next`); then the view's last hints go; `? help` and `q quit` go last.
+   (Home keeps `↑/↓ move` and `Enter fix`); then the view's last hints go; `? help` and `q quit` go last.
 5. **Status bar**: the exact command line running or last run, muted, then its result: the
    counts with their symbols and the time (`× 1 failed  ✓ 17 passed  38s`, or `× 1  ✓ 17  38s`
    on a short row). At the right: the git branch, the smith version and the health summary,
@@ -84,7 +84,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 
 | View | Key | Shows |
 |---|---|---|
-| Home | `1` | An attention queue: what needs a look, the most urgent first, each with the buttons that deal with it (see [Home](#home)). The first line says what the workspace holds (`24 projects (23 TypeScript / JavaScript, 1 Go)`; its name and branch are in the header). Under the queue: the last three runs and two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
+| Home | `1` | The workspace at a glance: a summary line, four boxes (Changed, Last run, Health, Release), the list **Needs you now** (what needs a look, the most urgent first, each with the buttons that deal with it) and, on a wide screen, the buttons of **Start something** (see [Home](#home)). |
 | Projects | `2` | The top panel is the workspace: one line with the count (`24 projects · 0 affected by the changes (●)`) and the legend of the arrows (`↑ = dependencies · ↓ = dependants`), then one line of buttons for the whole workspace: `+ New project (a)` (opens the Add wizard), `Verify (V)`, `Build (B)`, `Test (T)`, `Lint (L)`, `Typecheck (C)` and `Build release` (`smith run build --release`), each on every project, and `Clear cache` (`smith cache clear`: with a remote cache set it asks first which cache goes, the local one, the remote one (`--remote`) or both (`--all`), then shows the same question as the command line, with the store, the workspace and the count; without a remote it deletes the local cache after you confirm); a button that does not fit moves to the next line. Then every project, ordered by kind and then name, with its language. The detail pane has two parts split by a thin rule. The top part never scrolls: the project's name, kind, language and stack (beside the list it leaves out the ones the list shows as columns; opened full-screen it shows them), root, version, whether it is affected, and its dependencies and dependants as names in a line that wraps. The bottom part scrolls (`Ctrl+U` `Ctrl+D`, the wheel, or the keyboard cursor after `Tab`): the actions that apply to the project, under `Run on <project>` (its tasks, the packages, How was this resolved?, Why, Graph), then **More**: `Settings…` (the project's settings, in the [Project section](#settings) of the Settings tab), the forms that apply to it (swap a choice, environments of a web app, Tauri, Docker Hub), `Change kind…`, `Eject a tool's configuration…` and `Remove project…`, one button per line. Under them is the description of the chosen action and the one button that runs it (see [Action panels](#action-panels)). Then come its derived files (when the workspace derives files). The version reads `current → next` while the plan of the Release tab releases the project, and the current version alone otherwise; the list has the same Version column, which shortens to `→ next` when it is narrow. At the foot of the pane, under a rule, **Recent runs** lists the last three runs of this session and says how many more are kept; `Tab` or a click opens it upward to list every kept run. The list has the columns Project, Kind, Language, Stack, Version and `↑ ↓` (the number of dependencies and of dependants); a narrow pane drops Stack, Language and Kind before Version. While a task runs, or when you open a run, the detail pane shows that run instead (see [The run panel](#the-run-panel)). |
 | Health | `3` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Health detail](#the-health-detail)); fixes open the fix wizard. |
 | Dependencies | `4` | A row of chips at the top, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), limits the list to one level. Under it the summary, the warning about major releases among the chosen packages (so it shows without scrolling), and the dependencies with newer releases, grouped patch and minor, then major (columns Package, Now, Latest, Level, Kind, Projects), with the `smith deps up` command line for a selection. The one-version policy's verdict (`One version`) is in the detail beside the list; on a narrow screen it is under the list. A line under the table gives the registry page of the selected package ([Registry link](#the-registry-link-in-the-deps-view)). |
@@ -93,8 +93,29 @@ goes away by itself. A result toast belongs to the view it was raised on.
 
 ### Home
 
-Home is a queue of what needs attention, not a table of facts. Only the items that apply
-appear, in this order:
+Home has four parts, from the top:
+
+- **The summary line**: the workspace in bold, then, muted, what it holds and what happened:
+  `acme  42 projects (40 Go, 2 Python) · 7 changed since main · last run 3 min ago`. A part
+  without facts is left out, and the languages go first when the line is too long.
+- **Four boxes**, side by side on a wide screen and in a 2x2 grid on a narrow one. Each has a
+  muted label and a bold value with its mark, in the colour of its state; on a wide screen a
+  muted line under it adds the detail.
+  - **Changed**: the projects the changes affect (`● 7 projects`, `since main`), or `Nothing changed`.
+  - **Last run**: how the newest run ended: `× 1 failed` with `17 passed · 9 cached`, or `✓ 17 passed`,
+    or `⊘ Stopped`. A click on the box opens that run in the run panel of Projects. Before any run it says
+    `Nothing ran yet`.
+  - **Health**: `× 2 failed` (with the warnings under it), `▲ 2 warnings`, or `All checks pass`.
+  - **Release**: `✓ 2 ready` with the mix of bumps (`1 minor · 1 patch`), or `Nothing ready`.
+
+  A box whose facts are still loading shows a spinner and `Loading…`. A box never leaves, so the
+  grid keeps its shape.
+- **Needs you now**, with the place of the selection (`1/5`): a list of what needs attention, not a
+  table of facts. Only the items that apply appear, in the order below.
+- **Start something** (wide screens only): `Build all`, `Lint all`, `Run a task…` (the palette),
+  `Add a project`, `Compose a stack` and `Settings`, each with its key.
+
+The items of Needs you now, in their order:
 
 1. **The last run failed** (a stopped run is not a failure): `orders:build failed`, the
    task that failed (the command when no task failed). Buttons: `See why` (opens that task's
@@ -129,16 +150,18 @@ A workspace without projects shows one item with `Add a project` and `Compose a 
 While the first doctor run goes on, one item says `Running the health checks…` and nothing
 can be pressed.
 
-Every item is drawn the same way: its title in bold, an optional note under it, and its buttons on one line
-below, left-aligned under the title, never at the right. A button names its destination (`Open Health`,
-`Open Deps`) and shows its key. **Enter runs the first button of the first item**, which shows `(Enter)`;
-the footer says `Enter next`. Every button has three looks:
-at rest, under the pointer and pressed. A click on a button runs its command; a click
-elsewhere on an item does nothing.
+Every item takes two lines. The first has the mark of its severity in its colour, on a wide
+screen a tag (`Failed`, `Warning`, `Changed`, `Release`, `Updates`, …), the title in bold and, at
+the right, its buttons. The second has the note, muted. A button names its destination
+(`Open Health`, `Open Deps`) and shows its key. The selected item has an accent bar `│` at its
+left and an accent title, and its chosen button is the primary one and shows `(Enter)`; the other
+buttons are secondary. On a narrow screen an item shows only the key of its action, in the
+accent, and `Enter` on the selected one.
 
-Under the queue, `Recent runs` lists the last three runs of the session on one line (mark,
-command, duration); a click on one opens it in the run panel of Projects. The line under it names the
-workspace, its branch and what it holds, with the two buttons that add a project.
+`Up` and `Down` move from item to item, and `Left` and `Right` from button to button of the
+selected item. **Enter presses the chosen button**; the footer names it (`Enter fix`,
+`Enter see why`). A click on an item selects it, a click on a button runs its command, and the
+wheel scrolls the page. Every button has three looks: at rest, under the pointer and pressed.
 
 The release item needs the plan of the Release view. The shell reads that plan in the
 background when it starts, with the checks, and the Release view shows the same read. Home never waits for
@@ -237,7 +260,7 @@ failed, and the toast says "Cancelled". `R` runs the tasks that did not finish a
 
 | View | Key | Does |
 |---|---|---|
-| Home | `Enter` | Run the first button of the first item of the queue (`Fix`, `Test what changed`, `Build all`, …). |
+| Home | `Enter` | Press the chosen button of the selected item (at first the first button of the first item: `Fix`, `Test what changed`, `Build all`, …). |
 | any workspace view | `d` | Open Health (shown in the footer of Home and Projects). |
 | Home, Projects, Health, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; while the run panel is open the same key is `run again`. |
 | Projects | `a` | Add project (a guided form). |
@@ -259,7 +282,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Run | `,` `.` | Show the older or the newer run of this session (smith keeps the last 20). The line under the buttons, `run 2 of 5 · ‹ older  newer ›`, has the same two actions as clickable parts: `‹ older` and `newer ›` step through the runs. A part that cannot be used now (no older run, a run in progress) is faint, and a click on it says why. |
 | Projects, Recent runs | `Tab`, `Up` `Down`, `Enter` | **Recent runs** sits on the bottom rows of the pane under a rule. Closed, it shows the three newest runs (command, how it ended, how long it took, how long ago) and `N more runs` when more are kept. `Tab` or a click opens it upward to list every kept run (the last 20) with the cursor on a row; `Up` and `Down` choose a row, `Enter` or a double click opens that run in the right panel, and a single click only chooses it. `Esc` closes the list and gives the keyboard back to the projects; `Tab` closes it and moves on to the detail. |
 | Projects, Health | `Tab`, `Right`, `Left`, `Up` `Down`, `Enter` | `Tab` (or `Right`, except on a Health group header, where it unfolds the group) moves the keyboard to the detail beside the list. There `Up` and `Down` choose one of its buttons, `Enter` presses it and `PgUp` `PgDn` scroll it. `Tab`, `Left` or `Esc` gives the keyboard back to the list. With a run open, the keyboard is on the run until `Tab` gives it to the list; the run stays open. A click in a panel gives it the keyboard. |
-| Home | `Up` `Down` `Left` `Right`, `Enter`, `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` | The arrows move through the buttons and runs in reading order (`Up` and `Left` go back, `Down` and `Right` go on, `Home` and `End` jump to the first and the last); `Enter` presses the one the keyboard is on, and that one shows `(Enter)`. A page taller than the terminal scrolls: `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` and the wheel move it, the first or last row says `↑ more (PgUp, Ctrl+U)` or `↓ more (PgDn, Ctrl+D)`, and the arrows keep the target in view. |
+| Home | `Up` `Down` `Left` `Right`, `Enter`, `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` | `Up` and `Down` move through the items of Needs you now (`Home` and `End` jump to the first and the last), and `Left` and `Right` through the buttons of the selected item; `Enter` presses the chosen button, which shows `(Enter)`. A page taller than the terminal scrolls: `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` and the wheel move it, the first or last row says `↑ more (PgUp, Ctrl+U)` or `↓ more (PgDn, Ctrl+D)`, and the arrows keep the selected item in view. |
 | Health | `Enter` | Open the check in the frame (narrow terminals; Esc goes back), or unfold the detail (wide). |
 | Health | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
 | Health | `F` | Fix with doctor: the wizard on all the fixes that need no decision. |

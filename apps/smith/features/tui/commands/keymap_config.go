@@ -51,8 +51,8 @@ var (
 var all = []Command{
 	// The keys of each view's own pane come first: they win over a global key
 	// that is the same letter (Deps shows the major releases with M, which no other view uses).
-	{ID: "home.next", Group: GroupRun, Title: words.Say("commands.home.next.title"), Keys: []string{"enter"}, Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.next.footer"), Glyph: words.Say("commands.home.next.glyph")},
 	{ID: "home.move", Group: GroupRun, Title: words.Say("commands.home.move.title"), Keys: []string{"down", "up", "left", "right"}, Shortcut: words.Say("commands.home.move.shortcut"), Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.move.footer"), Glyph: words.Say("commands.home.move.glyph")},
+	{ID: "home.next", Group: GroupRun, Title: words.Say("commands.home.next.title"), Keys: []string{"enter"}, Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.next.footer"), Glyph: words.Say("commands.home.next.glyph")},
 	{ID: "home.scroll", Group: GroupRun, Title: words.Say("commands.home.scroll.title"), Keys: []string{"pgdown", "pgup"}, Shortcut: words.Say("commands.home.scroll.shortcut"), Kind: PaneKey, Views: vHome, Footer: words.Say("commands.home.scroll.footer"), Glyph: words.Say("commands.home.scroll.glyph")},
 	{ID: "home.page-up", Group: GroupViews, Title: words.Say("commands.home.page-up.title"), Keys: []string{"ctrl+u"}, Kind: ViewAction, Action: "home-up", Views: vHome},
 	{ID: "home.page-down", Group: GroupViews, Title: words.Say("commands.home.page-down.title"), Keys: []string{"ctrl+d"}, Kind: ViewAction, Action: "home-down", Views: vHome},
