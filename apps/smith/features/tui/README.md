@@ -1,7 +1,9 @@
 # tui
 
 The interactive shell a bare `smith` opens. The design is in
-[docs/architecture/tui-and-ide.md](../../../docs/architecture/tui-and-ide.md).
+[docs/architecture/tui-and-ide.md](../../../docs/architecture/tui-and-ide.md). The redesign in
+progress (palette, chrome, layout, the views one by one) is in
+[docs/architecture/tui-redesign.md](../../../docs/architecture/tui-redesign.md).
 
 ## Layout
 

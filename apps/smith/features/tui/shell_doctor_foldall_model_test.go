@@ -24,11 +24,11 @@ func foldLab(t *testing.T, w, h int) *lab {
 func TestTheFooterNamesWhatTheFoldAllKeyDoesNext(t *testing.T) {
 	for _, size := range [][2]int{{140, 34}, {110, 30}, {100, 30}} {
 		l := foldLab(t, size[0], size[1])
-		l.has("collapse all (E)")
+		l.has("E collapse all")
 		l.keys("E")
-		l.has("expand all (E)")
-		l.hasNot("collapse all (E)")
+		l.has("E expand all")
+		l.hasNot("E collapse all")
 		l.keys("E")
-		l.has("collapse all (E)")
+		l.has("E collapse all")
 	}
 }

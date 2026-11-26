@@ -68,8 +68,8 @@ func TestRunningTasksAreAnimatedByTicks(t *testing.T) {
 	l := newLab(t, true, 200, 34)
 	l.next = &scripted{lines: []string{"kit:build ▶ go build", "orders:build ▶ go build"}, hold: true, release: make(chan struct{})}
 	l.keys("b")
-	l.has("running", "0/4 0%", "stop (Ctrl+C)")
-	l.hasNot("build (b)", "[■")
+	l.has("running", "0/4 0%", "Ctrl+C stop")
+	l.hasNot("b build", "[■")
 	first := l.sh().View()
 	l.send(tickMsg{})
 	second := l.sh().View()
@@ -161,7 +161,7 @@ func TestTheLogFollowsUntilYouScrollAndFTogglesIt(t *testing.T) {
 	l.has("following", "line 119")
 	l.keys("f")
 	l.has("paused")
-	l.has("follow (f)")
+	l.has("f follow")
 	l.keys("f")
 	l.has("following")
 }
@@ -170,7 +170,7 @@ func TestRunAgainRepeatsTheLastCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("t")
 	l.keys("r")
-	l.has("run again (r)")
+	l.has("r run again")
 	if len(l.started) != 2 || l.started[0][0] != l.started[1][0] || l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %v", l.started)
 	}

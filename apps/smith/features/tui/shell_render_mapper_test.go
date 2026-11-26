@@ -41,7 +41,7 @@ func TestAt140ColumnsTheHeaderTheListAndTheDetailShareTheScreen(t *testing.T) {
 		"Projects", "Doctor", // the tabs
 		"web", "orders", "kit", "sdk", "4 projects", // the list
 		"root", "affected", "Build app", // the detail of the selected project
-		"smith 1.2.3") // the status bar
+		"1.2.3") // the status bar
 	l.hasNot("Reading the workspace")
 }
 

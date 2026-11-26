@@ -120,22 +120,22 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 failed", "× go.work lists every module", "fix all (F)")
+	l.has("2 failed", "× go.work lists every module", "F fix all")
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
 	l := newLab(t, true, 320, 34)
-	x, y := l.find("test orders (t)")
+	x, y := l.find("t test orders")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 	l = newLab(t, true, 320, 34)
-	x, y = l.find("help (?)")
+	x, y = l.find("? help")
 	l.send(click(x+1, y))
 	l.has("Keyboard shortcuts")
 	l.keys("esc")
-	x, y = l.find("mouse (m)")
+	x, y = l.find("m mouse")
 	l.send(click(x+1, y))
 	if !l.sh().mouseOff {
 		t.Fatal("clicking the m hint turns the mouse off")
@@ -145,7 +145,7 @@ func TestClickingAFooterHintPressesItsKey(t *testing.T) {
 func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 	l := newLab(t, true, 160, 34)
 	before := l.sh().View()
-	x, y := l.find("lint orders (l)")
+	x, y := l.find("l lint orders")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("hover should change how the hint is drawn")

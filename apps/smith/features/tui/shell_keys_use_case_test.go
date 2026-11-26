@@ -24,19 +24,19 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 		t.Fatalf("the views are tabs on the first row of a wide screen: %q", first)
 	}
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"build orders (b)", "test orders (t)", "lint orders (l)", "typecheck orders (c)", "changed (w)", "doctor (d)", "add project (a)", "palette (:)", "help (?)", "quit (q)", "mouse (m)"} {
+	for _, want := range []string{"b build orders", "t test orders", "l lint orders", "c typecheck orders", "w changed", "d doctor", "a add project", ": palette", "? help", "q quit", "m mouse"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
 	}
 	l.keys("3")
 	footer = l.lines()[len(l.lines())-2]
-	for _, want := range []string{"fix all (F)", "group (g)", "reload view (r)", "quit (q)"} {
+	for _, want := range []string{"F fix all", "g ungroup", "r reload view", "q quit"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the Doctor footer lacks %q: %q", want, footer)
 		}
 	}
-	if strings.Contains(footer, "changed (w)") {
+	if strings.Contains(footer, "w changed") {
 		t.Fatalf("the Doctor footer keeps the Projects keys: %q", footer)
 	}
 }
@@ -192,7 +192,7 @@ func TestQDoesNotQuitWhileARunGoesNorWhileTyping(t *testing.T) {
 	if l.quit {
 		t.Fatal("q must not quit while a run goes")
 	}
-	l.has("Ctrl+C stops it", "stop (Ctrl+C)")
+	l.has("Ctrl+C stops it", "Ctrl+C stop")
 	l.keys("ctrl+c")
 
 	l = newLab(t, true, 100, 28)
@@ -341,7 +341,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 170, 30)
 	l.keys("d")
-	l.has("× go.work lists every module", "fix all (F)", "reload view (r)")
+	l.has("× go.work lists every module", "F fix all", "r reload view")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
 	l.has("2 failed", "What is wrong", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")
@@ -445,8 +445,8 @@ func TestOutsideAWorkspaceNStartsANewWorkspaceAndCtrlNMeansNothing(t *testing.T)
 	l := newLab(t, false, 120, 30)
 	l.keys("ctrl+n")
 	l.hasNot("What should the new workspace be called?")
-	l.hasNot("add project (a)")
-	l.has("new workspace (n)")
+	l.hasNot("a add project")
+	l.has("n new workspace")
 	l.keys("n")
 	l.has("Create a workspace", "What should the new workspace be called?")
 	l.typeText("acme").keys("enter")
@@ -469,7 +469,7 @@ func TestInsideAWorkspaceNDoesNotStartAWorkspaceAndAAddsAProject(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("n")
 	l.hasNot("Create a workspace", "What should the new workspace be called?")
-	l.hasNot("new workspace (n)")
+	l.hasNot("n new workspace")
 	l.keys("a")
 	l.has("Add a project")
 }

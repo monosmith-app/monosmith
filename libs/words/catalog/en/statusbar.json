@@ -4,7 +4,10 @@
   "statusbar.passed": " passed",
   "statusbar.failed": " failed",
   "statusbar.cancelled": " cancelled",
+  "statusbar.failed_count": "{icon} {n} failed",
+  "statusbar.passed_count": "{icon} {n} passed",
+  "statusbar.count": "{icon} {n}",
+  "statusbar.joiner": "  ·  ",
   "statusbar.update": "update available",
-  "statusbar.version": "smith {version}",
   "statusbar.mouseoff": "mouse off · m turns it on"
 }

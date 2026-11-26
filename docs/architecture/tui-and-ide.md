@@ -4,6 +4,10 @@ Status: **proposal, partly built**. It extends the TUI issue (#302) and the IDE 
 (#303). Read the status box first; the sections below keep the original argument, and where
 they disagree with the box, the box is right.
 
+The redesign of the terminal shell (the MonoSmith palette, the rail of views, the Runs view,
+the Health view) is in [tui-redesign.md](tui-redesign.md), with its decisions, its tokens,
+its phases and the drawn screens.
+
 > **As built, October 2026 (smith 1.62.0), checked against the code**
 >
 > | Part of the proposal | State |
@@ -343,13 +347,15 @@ Colours are **semantic tokens**, never raw values in components:
 - Themes: dark, light and plain (no colour). `NO_COLOR` (any value) and
   `SMITH_THEME=plain` give plain; `SMITH_THEME=light` or `dark` forces one;
   with none of them the terminal decides (`COLORFGBG`, dark when unknown). The
-  light tokens keep 4.5:1 contrast on white, checked by a test. In plain, the
-  selection is bold and reverse video, and every state keeps its symbol and
-  word.
+  dark and light tokens are the MonoSmith palette (the table is in
+  [tui-redesign.md](tui-redesign.md)): every text colour keeps 4.5:1 contrast on
+  the terminal's background, the selected row, the row under the pointer and the
+  bars, checked by a test. In plain, the selection is bold and reverse video, and
+  every state keeps its symbol and word.
 - Spacing is in cells: one-cell padding in panes, two-cell gaps between buttons.
 - Borders: dialogs and overlays have one weight, rounded, with the accent colour.
-  The main screen has no box: a faint rule under the tabs and faint divisions
-  between panels (see "The main screen's frame" below). A selected or dragged
+  The main screen has no box: a rule under the tabs and divisions between panels,
+  in the border colour (see "The main screen's frame" below). A selected or dragged
   division is drawn heavy in the accent.
 - Colour is for state (success, warning, error, info, muted) and for one accent:
   the active tab, the cursor and the focused border. Titles, key labels and

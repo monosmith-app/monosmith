@@ -11,7 +11,7 @@ import (
 
 func TestTheBarShowsTheExactCommandTheResultAndTheVersion(t *testing.T) {
 	got := Render(theme.Default(), Info{Command: "smith run build -p kit", State: Passed, Result: "4/4 tasks", Version: "1.2.3"}, 100)
-	for _, want := range []string{"$ smith run build -p kit", "passed", "4/4 tasks", "smith 1.2.3"} {
+	for _, want := range []string{"$ smith run build -p kit", "passed", "4/4 tasks", "1.2.3"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %q in %q", want, got)
 		}
@@ -50,14 +50,14 @@ func TestOnANarrowScreenTheRightSideGoesFirstAndTheWidthIsExact(t *testing.T) {
 			t.Fatalf("width %d: got %d", w, pane.Width(got))
 		}
 	}
-	if got := Render(theme.Default(), in, 50); strings.Contains(got, "smith 1.2.3") {
+	if got := Render(theme.Default(), in, 50); strings.Contains(got, "1.2.3") {
 		t.Fatalf("version should be dropped at 50: %q", got)
 	}
 }
 
 func TestTheBarLeavesTheKeysToTheFooterAndTheWorkspaceToTheHeader(t *testing.T) {
 	idle := Render(theme.Default(), Info{Version: "1.2.3"}, 120)
-	for _, want := range []string{"ready", "smith 1.2.3"} {
+	for _, want := range []string{"ready", "1.2.3"} {
 		if !strings.Contains(idle, want) {
 			t.Fatalf("missing %q in %q", want, idle)
 		}
@@ -79,7 +79,7 @@ func TestAnUpdateShowsInTheBarAndItsSpanIsWhereTheWordsAre(t *testing.T) {
 	th := theme.Default()
 	in := Info{Version: "1.2.3", Update: "1.3.0"}
 	got := Render(th, in, 100)
-	if !strings.Contains(got, "update available") || !strings.Contains(got, "smith 1.2.3") {
+	if !strings.Contains(got, "update available") || !strings.Contains(got, "1.2.3") {
 		t.Fatalf("bar = %q", got)
 	}
 	first, end, ok := UpdateSpan(th, in, 100)
@@ -95,5 +95,43 @@ func TestAnUpdateShowsInTheBarAndItsSpanIsWhereTheWordsAre(t *testing.T) {
 	}
 	if _, _, ok := UpdateSpan(th, in, 30); ok {
 		t.Error("a span with no room for the right side")
+	}
+}
+
+func TestAFinishedRunShowsItsCountsWithTheirSymbolsAndTheTime(t *testing.T) {
+	th := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode})
+	in := Info{Command: "smith test --changed", State: Failed, Failed: 1, Passed: 17, Took: "38s", Result: "unused", Version: "2.64.1", Branch: "main", Health: "⚠2"}
+	got := pane.Strip(Render(th, in, 150))
+	if !strings.HasPrefix(got, " $ smith test --changed  "+th.Icons.Failed+" 1 failed  "+th.Icons.Passed+" 17 passed  38s ") {
+		t.Fatalf("left side %q", got)
+	}
+	if !strings.HasSuffix(got, "main  ·  2.64.1  ·  ⚠2 ") || strings.Contains(got, "unused") {
+		t.Fatalf("right side %q", got)
+	}
+}
+
+func TestOnANarrowBarTheCountsLoseTheirWordsAndTheRightKeepsTheVersion(t *testing.T) {
+	th := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode})
+	in := Info{Command: "smith test --changed", State: Failed, Failed: 1, Passed: 17, Took: "38s", Version: "2.64.1", Branch: "main", Health: "⚠2"}
+	got := Render(th, in, 52)
+	if pane.Width(got) != 52 {
+		t.Fatalf("width %d", pane.Width(got))
+	}
+	plain := pane.Strip(got)
+	if !strings.Contains(plain, th.Icons.Failed+" 1  "+th.Icons.Passed+" 17  38s") || strings.Contains(plain, "failed") {
+		t.Fatalf("short counts %q", plain)
+	}
+	if !strings.HasSuffix(plain, "2.64.1 ") || strings.Contains(plain, "main") {
+		t.Fatalf("the branch and the health go first, the version stays: %q", plain)
+	}
+}
+
+func TestTheCommandIsMutedAndTheCountsTakeTheirMeaning(t *testing.T) {
+	th := theme.Default()
+	got := Render(th, Info{Command: "smith test", State: Failed, Failed: 2, Passed: 3}, 120)
+	for _, want := range []string{th.Muted("$ smith test"), th.Failure(th.Icons.Failed + " 2 failed"), th.Success(th.Icons.Passed + " 3 passed")} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q in %q", want, got)
+		}
 	}
 }

@@ -13,7 +13,7 @@ type Theme struct {
 	Icons  Icons
 
 	accent, success, warning, failure, info, muted, faint, text lipgloss.Style
-	hover, bar, title                                           lipgloss.Style
+	hover, bar, title, border                                   lipgloss.Style
 	button, buttonHover, buttonActive                           lipgloss.Style
 }
 
@@ -35,7 +35,7 @@ func New(c Choice) Theme {
 	th := Theme{Tokens: t, Icons: c.Icons,
 		accent: fg(t.Accent).Bold(true), success: fg(t.Success), warning: fg(t.Warning),
 		failure: fg(t.Error).Bold(true), info: fg(t.Info), muted: fg(t.Muted), faint: fg(t.Faint),
-		text: fg(t.Text), title: lipgloss.NewStyle().Bold(true),
+		text: fg(t.Text), title: lipgloss.NewStyle().Bold(true), border: fg(t.Border),
 		bar: bg(t.Bar).Inherit(fg(t.Text)),
 	}
 	if t.Colour {
@@ -92,12 +92,13 @@ func (t Theme) ButtonActive(s string) string { return t.buttonActive.Render(s) }
 // Bold renders s in bold.
 func (t Theme) Bold(s string) string { return lipgloss.NewStyle().Bold(true).Render(s) }
 
-// Border colours the rule of a pane: the focused pane's is the accent.
+// Border colours the rule of a pane: the focused pane's is the accent, the
+// others take the Border token. Separators (the footer's •) take it too.
 func (t Theme) Border(s string, focused bool) string {
 	if focused {
 		return t.accent.Render(s)
 	}
-	return t.faint.Render(s)
+	return t.border.Render(s)
 }
 
 // Spin is the spinner frame for a tick count.

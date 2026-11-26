@@ -62,6 +62,7 @@ flowchart LR
 | [The architecture of the terminal interface](tui-architecture.md) | the shell, the keymap, pages, wizards and the runner |
 | [The architecture of the VS Code extension](vscode-architecture.md) | how the extension finds smith, talks to `smith serve` and renders views |
 | [Design: the TUI and the IDE plugins](tui-and-ide.md) | the original design, with an "as built" status box at the top |
+| [Design: the TUI redesign](tui-redesign.md) | the redesign of the terminal shell: decisions, colour tokens, phases and the drawn screens |
 
 ## Decisions and background
 

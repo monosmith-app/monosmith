@@ -23,27 +23,34 @@ type Tokens struct {
 	// Button, ButtonHover and ButtonActive are the backgrounds of a clickable
 	// item at rest, under the pointer and pressed (or the selected tab).
 	// ButtonHover is a colour between the other two. ButtonText is the text on
-	// the first two, ButtonOn the text on the pressed one.
+	// the first two, ButtonOn the text on the pressed one. Button with
+	// ButtonText is the secondary button (the Highlight background with the
+	// Text colour). ButtonActive with ButtonOn, in bold, is the primary button
+	// (the Accent background).
 	Button, ButtonHover, ButtonActive, ButtonText, ButtonOn string
 	// Colour is false for the plain theme: attributes (bold, reverse) carry
 	// the meaning instead.
 	Colour bool
 }
 
-// Dark suits a dark terminal background.
+// Dark suits a dark terminal background. It is the MonoSmith palette (see
+// docs/architecture/tui-redesign.md): every text colour keeps a contrast of
+// 4.5:1 on the terminal's background, the selected row and the bars.
 var Dark = Tokens{
-	Name: "dark", Accent: "212", Success: "114", Warning: "215", Error: "203", Info: "75",
-	Muted: "245", Faint: "240", Text: "252", Highlight: "238", RowHover: "235", Bar: "236",
-	Border: "240", Focus: "212", Colour: true,
-	Button: "#2b1948", ButtonHover: "#490ca3", ButtonActive: "#6800ff", ButtonText: "#ffffff", ButtonOn: "#ffffff",
+	Name: "dark", Accent: "#5fb6d1", Success: "#7ccf96", Warning: "#e3c16f", Error: "#ff9a90", Info: "#5fb6d1",
+	Muted: "#b0b0b0", Faint: "#a5a5a5", Text: "#d0d0d0", Highlight: "#2f3d44", RowHover: "#263238", Bar: "#303030",
+	Border: "#5a5a5a", Focus: "#5fb6d1", Colour: true,
+	Button: "#2f3d44", ButtonHover: "#3d5560", ButtonActive: "#5fb6d1", ButtonText: "#d0d0d0", ButtonOn: "#141414",
 }
 
-// Light suits a light terminal background; the colours keep a contrast of 4.5:1.
+// Light suits a light terminal background, in the same palette and with the
+// same contrast rule as Dark. Success is #1b7537, a step darker than the
+// palette's #1d7a3a, which has only 4.4:1 on the selected row.
 var Light = Tokens{
-	Name: "light", Accent: "125", Success: "28", Warning: "130", Error: "160", Info: "25",
-	Muted: "241", Faint: "243", Text: "235", Highlight: "253", RowHover: "255", Bar: "254",
-	Border: "243", Focus: "125", Colour: true,
-	Button: "#e6dcf7", ButtonHover: "#b48cf9", ButtonActive: "#6800ff", ButtonText: "#2b1948", ButtonOn: "#ffffff",
+	Name: "light", Accent: "#176a86", Success: "#1b7537", Warning: "#855600", Error: "#b3261e", Info: "#176a86",
+	Muted: "#5c5c5c", Faint: "#686868", Text: "#2b2b2b", Highlight: "#dcebf1", RowHover: "#eef5f8", Bar: "#f2f2f2",
+	Border: "#b8b8b8", Focus: "#176a86", Colour: true,
+	Button: "#dcebf1", ButtonHover: "#a9cfdd", ButtonActive: "#176a86", ButtonText: "#2b2b2b", ButtonOn: "#ffffff",
 }
 
 // Plain has no colour at all (NO_COLOR): bold and reverse video mark the

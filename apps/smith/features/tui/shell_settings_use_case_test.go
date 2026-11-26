@@ -150,7 +150,7 @@ func TestTheSettingsTabIsTheLastOfTheStripAndKeySixOpensIt(t *testing.T) {
 	}
 	l.has("Sections", "Plugins", "Style", "Workspace", "Recipes", "Forms", "Built-in plugins", "[x] go", "[x] node", "+ Install a plugin", "smith plugin install <source>")
 	footer := footerOf(l)
-	for _, want := range []string{"↑↓ move", "change (Enter)", "list/sections (Tab)", "reload view (r)", "1-6 views"} {
+	for _, want := range []string{"↑↓ move", "Enter change", "Tab list/sections", "r reload view", "1-6 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the footer lacks %q: %q", want, footer)
 		}
