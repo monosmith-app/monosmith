@@ -473,7 +473,7 @@ func TestOnANarrowScreenSettingsKeepsItsDetailUnderTheRows(t *testing.T) {
 func TestAWideSettingsScreenHasTheSectionsAndTheOpenSectionInTwoFrames(t *testing.T) {
 	l, _ := newSettingsLab(t, 150, 44)
 	l.press("7")
-	l.has("╭─ Settings ", "╭─ Plugins · smith.toml ", "▶ Plugins", "Per-project settings")
+	l.has("┬─ Settings ", "╭─ Plugins · smith.toml ", "▶ Plugins", "Per-project settings")
 	if l.sh().mainFocused() {
 		t.Fatal("the keyboard is in the open section: its frame is the focused one")
 	}

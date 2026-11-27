@@ -47,12 +47,12 @@ From top to bottom:
 2. **The views.** From 100 columns a **rail** at the left, with the heading `Views` and
    no frame, lists Home, Projects, Runs, Health, Dependencies, Release and Settings. Each
    view has its key on one row and its name on the row under it, with a blank row between
-   views. A single line at the right of the rail separates it from the panels. The open
+   views. The rail has a top rule with its title, like the Runs view, and the left border of the panel beside it separates the two, with no blank column between them. The open
    view has `▶` in the accent before its key, and both of its rows are highlighted. The key
    row ends with the view's badge (`×2` failed checks, `▲2` warnings, `↑3`
    dependencies with newer releases, `✓2` packages ready to release, the run's result on
    Runs, a spinner while the view loads). On a short screen the blank rows go first, then
-   the key and the name share one row. The rail is 15 columns wide, enough for
+   the key and the name share one row. The rail is 14 columns wide, enough for
    `Dependencies` with a blank column on each side, and cannot be resized. Under 100 columns a one-line **strip** under the title bar does the
    same: `1 Home  2 Projects  3 Runs ×1  4 Health ×2  5 Deps …`, the open view in the accent, bold and
    underlined. When the names do not fit, they are shortened, then the strip scrolls with

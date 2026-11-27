@@ -195,7 +195,8 @@ func TestEveryFrameIsTitledWithItsViewAtAnyWidth(t *testing.T) {
 			l.openTab(tab)
 			lay := l.sh().lay()
 			top := []rune(l.lines()[lay.Main.Y])
-			if edge := string(top[lay.Main.X:]); !strings.HasPrefix(edge, "╭─ "+tabTitles()[tab]+" ") {
+			// Beside the rail, the rail's top rule joins the corner with a tee.
+			if edge := string(top[lay.Main.X+1:]); !strings.HasPrefix(edge, "─ "+tabTitles()[tab]+" ") {
 				t.Errorf("%s at %d columns: the top edge of the pane is not titled %q: %q", tab, w, tabTitles()[tab], edge)
 			}
 		}

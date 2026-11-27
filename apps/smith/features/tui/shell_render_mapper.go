@@ -177,6 +177,10 @@ func (s Shell) body() []string {
 		row := ""
 		if i < len(railLines) {
 			row = railLines[i] + strings.Repeat(" ", max(l.Main.X-l.Rail.W, 0))
+			if i == 0 && l.Main.X == l.Rail.W {
+				// The rail's top rule runs into the frame: its corner becomes a tee.
+				main[0] = pane.Splice(main[0], 0, 1, s.th.Border("┬", focused))
+			}
 		}
 		row += main[i]
 		if i < len(side) {
@@ -195,22 +199,34 @@ func (s Shell) body() []string {
 // framed draws a pane at box: its lines, drawn for the inside in, with one
 // cell of padding at each side, inside a rounded frame with the title in the
 // top border. A horizontal division that runs through the padding is drawn
-// there as part of its rule.
+// there as part of its rule, in the frame's colour, and meets each side
+// border with a tee.
 func (s Shell) framed(title string, box, in layout.Rect, lines []string, focused bool, spots []splitter.Spot) []string {
 	body := make([]string, len(lines))
+	ruled := map[int]bool{}
 	for i, line := range lines {
 		y := in.Y + i
-		body[i] = s.padCell(spots, in.X-layout.Pad, y) + line + s.padCell(spots, in.X+in.W, y)
+		left, right := s.padCell(spots, in.X-layout.Pad, y, focused), s.padCell(spots, in.X+in.W, y, focused)
+		ruled[i] = left != " " && right != " "
+		body[i] = left + line + right
 	}
-	return pane.Frame(s.th, pane.CutEllipsis(title, max(box.W-6, 1)), body, box.W, box.H, focused)
+	rows := pane.Frame(s.th, pane.CutEllipsis(title, max(box.W-6, 1)), body, box.W, box.H, focused)
+	for i := range ruled {
+		if ruled[i] && i+1 < len(rows)-1 {
+			rows[i+1] = pane.Splice(rows[i+1], 0, 1, s.th.Border("├", focused))
+			rows[i+1] = pane.Splice(rows[i+1], box.W-1, 1, s.th.Border("┤", focused))
+		}
+	}
+	return rows
 }
 
-// padCell is the padding cell at (x, y): blank, or part of the rule when a
-// horizontal division runs through it to the border of the pane.
-func (s Shell) padCell(spots []splitter.Spot, x, y int) string {
+// padCell is the padding cell at (x, y): blank, or part of the rule, in the
+// colour of a frame that is focused or not, when a horizontal division runs
+// through it to the border of the pane.
+func (s Shell) padCell(spots []splitter.Spot, x, y int, focused bool) string {
 	for _, p := range spots {
 		if p.Axis == splitter.Row && p.Hit.Contains(x, y) {
-			return s.th.Border("─", false)
+			return s.th.Border("─", focused)
 		}
 	}
 	return " "

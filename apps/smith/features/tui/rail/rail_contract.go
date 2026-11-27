@@ -26,7 +26,7 @@ type Pin struct {
 // Props is everything a rail is drawn from.
 type Props struct {
 	Theme theme.Theme
-	// Title is the heading on the rail's first row.
+	// Title is set into the rule on the rail's first row.
 	Title string
 	Views []View
 	// PinnedTitle is the heading of the pinned projects, and Pinned the
@@ -36,7 +36,7 @@ type Props struct {
 	// Active is the id of the open view, Hover the id of the view under the
 	// pointer ("" for none).
 	Active, Hover string
-	// Width and Height are the cells of the rail, its rule included.
+	// Width and Height are the cells of the rail.
 	Width, Height int
 }
 

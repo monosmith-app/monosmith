@@ -25,7 +25,7 @@ func TestSlashTypesTheFilterAndTheListNarrowsAtOnce(t *testing.T) {
 	if len(listed) != 1 || listed[0].Name != "web" || l.sh().selectedProject() != "web" {
 		t.Fatalf("the filter lists %v and selects %q", listed, l.sh().selectedProject())
 	}
-	if top := mainTop(l); !strings.HasPrefix(top, "╭─ Projects 1/4 ") {
+	if top := mainTop(l); !strings.Contains(top, "─ Projects 1/4 ") {
 		t.Fatalf("the title counts the listed projects: %q", top)
 	}
 	l.has("Filter: web▏", "0 of 1 lib")
@@ -40,7 +40,7 @@ func TestSlashTypesTheFilterAndTheListNarrowsAtOnce(t *testing.T) {
 	if l.sh().list.Filter() != "" {
 		t.Fatal("Esc on the list clears the filter")
 	}
-	l.has("–  kit", "╭─ Projects ")
+	l.has("–  kit", "┬─ Projects ")
 }
 
 func TestEscWhileTypingClearsTheFilterAndBackspaceRubsOut(t *testing.T) {
