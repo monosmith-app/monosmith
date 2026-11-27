@@ -23,13 +23,18 @@ var noLinkCommands = []string{"serve", "mcp", "lsp", "prompt", "link", "update",
 // version runs behind the launcher of its package manager, then says so once,
 // when the command is done. It changes nothing in CI, without a terminal, for
 // the commands in noLinkCommands, when SMITH_NO_LINK=1 is set, when smith
-// already starts directly and when the version was linked before.
+// already starts directly (from the link, or handed off by it) and when the
+// version was linked before.
 //
 // Parameters: args are the command line; version is the running smith.
 // Returns: what to call when the command is done (it prints the line, if any), and
 // whether smith was linked by this run: the interface then offers to restart.
 func linkFirstRun(args []string, version string) (done func(), linked bool) {
 	none := func() {}
+	// A run the link handed to another version is linked already.
+	if strings.HasPrefix(os.Getenv("SMITH_LAUNCHER"), directlink.LauncherPrefix) {
+		return none, false
+	}
 	if directlink.FirstRunOff(os.Getenv) || !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stderr.Fd())) {
 		return none, false
 	}

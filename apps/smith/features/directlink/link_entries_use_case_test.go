@@ -54,7 +54,7 @@ func TestFindEntriesClassifiesTheEntriesOfTheInstallation(t *testing.T) {
 	put(t, filepath.Join(l.bin, "smith.cmd"), npmCmd)
 	put(t, filepath.Join(l.bin, "smith.ps1"), npmPs1)
 	put(t, filepath.Join(l.bin, "smith"), npmSh)
-	got := FindEntries(l.exe, "windows", RunDir(l.home), "")
+	got := FindEntries(l.exe, "windows", RunDir(l.home), "", nil)
 	kinds := map[string]Kind{}
 	for _, e := range got {
 		kinds[filepath.Base(e.Path)] = e.Kind
@@ -113,18 +113,19 @@ func TestLinkPointsEveryShimAtAHardLinkOfTheProgramAndUndoGivesThemBack(t *testi
 	}
 }
 
-func TestLinkOnAnotherSystemCallsTheInstalledProgramAndMakesNoLink(t *testing.T) {
+func TestLinkOnAnotherSystemCallsALinkInTheRunFolder(t *testing.T) {
 	l := newLab(t)
 	put(t, filepath.Join(l.bin, "smith"), npmSh)
 	report, err := Link(l.options("linux"))
-	if err != nil || report.Target != l.exe || len(report.Changed) != 1 {
+	target := filepath.Join(RunDir(l.home), "smith-2.41.0")
+	if err != nil || report.Target != target || len(report.Changed) != 1 {
 		t.Fatalf("Link = %+v, %v", report, err)
 	}
-	if _, err := os.Stat(filepath.Join(RunDir(l.home), "smith-2.41.0.exe")); err == nil {
-		t.Error("a link was made where links are not needed")
+	if !sameFile(target, l.exe) {
+		t.Error("the run folder holds no link of the installed program")
 	}
-	if !strings.Contains(read(t, filepath.Join(l.bin, "smith")), filepath.ToSlash(l.exe)) {
-		t.Error("the entry does not call the installed program")
+	if !strings.Contains(read(t, filepath.Join(l.bin, "smith")), filepath.ToSlash(target)) {
+		t.Error("the entry does not call the link")
 	}
 }
 
@@ -140,7 +141,7 @@ func TestLinkRepointsASymlinkAndUndoPointsItBack(t *testing.T) {
 	if report, err := Link(o); err != nil || len(report.Changed) != 1 {
 		t.Fatalf("Link = %+v, %v", report, err)
 	}
-	if got, _ := os.Readlink(entry); got != l.exe {
+	if got, _ := os.Readlink(entry); got != filepath.Join(RunDir(l.home), "smith-2.41.0") {
 		t.Errorf("the symlink points at %q", got)
 	}
 	if _, _, err := Undo(o); err != nil {
@@ -280,10 +281,10 @@ func TestOwnedDirsKnowThePnpmLayoutAndANativeEntryNeedsNoLink(t *testing.T) {
 			t.Errorf("ownedDirs(pnpm) lacks %q: %v", w, got)
 		}
 	}
-	if !isNativeEntry(filepath.FromSlash("C:/Python/Scripts/smith.exe")) || !isNativeEntry(filepath.FromSlash("/home/a/.local/bin/smith")) {
+	if !isNativeEntry("", filepath.FromSlash("C:/Python/Scripts/smith.exe")) || !isNativeEntry("", filepath.FromSlash("/home/a/.local/bin/smith")) {
 		t.Error("a program in a Scripts or bin folder is its own entry")
 	}
-	if isNativeEntry(filepath.FromSlash("/home/a/.npm-global/lib/node_modules/monosmith/node_modules/@monosmith/cli-linux-x64/bin/smith")) {
+	if isNativeEntry("", filepath.FromSlash("/home/a/.npm-global/lib/node_modules/monosmith/node_modules/@monosmith/cli-linux-x64/bin/smith")) {
 		t.Error("an npm install has a launcher in front")
 	}
 	l := newLab(t)
@@ -298,5 +299,157 @@ func TestOwnedDirsKnowThePnpmLayoutAndANativeEntryNeedsNoLink(t *testing.T) {
 	}
 	if Needed(o) {
 		t.Error("a native entry wants a link")
+	}
+}
+
+// launcherLab is smith installed by the npm launcher package (ADR 0101): the program
+// in <home>/versions/<version>/, and the npm entries in a folder on PATH that start
+// node_modules/monosmith/src/main.mjs.
+type launcherLab struct {
+	home, npm, exe string
+}
+
+func newLauncherLab(t *testing.T, goos string) launcherLab {
+	t.Helper()
+	root := t.TempDir()
+	name := "smith"
+	if goos == "windows" {
+		name = "smith.exe"
+	}
+	l := launcherLab{home: filepath.Join(root, ".smith"), npm: filepath.Join(root, "npm"), exe: filepath.Join(root, ".smith", "versions", "2.50.0", name)}
+	put(t, l.exe, "the program of 2.50.0")
+	return l
+}
+
+func (l launcherLab) options(goos string, path ...string) Options {
+	return Options{Home: l.home, Exe: l.exe, Version: "2.50.0", GOOS: goos, PathDirs: path}
+}
+
+const (
+	launcherCmd = "@ECHO off\r\n\"%_prog%\"  \"%dp0%\\node_modules\\monosmith\\src\\main.mjs\" %*\r\n"
+	launcherPs1 = "#!/usr/bin/env pwsh\r\n& \"node\"  \"$basedir/node_modules/monosmith/src/main.mjs\" $args\r\n"
+	launcherSh  = "#!/bin/sh\nexec node  \"$basedir/node_modules/monosmith/src/main.mjs\" \"$@\"\n"
+)
+
+func TestLinkFindsTheNpmLauncherEntriesOnPathOnWindows(t *testing.T) {
+	l := newLauncherLab(t, "windows")
+	put(t, filepath.Join(l.npm, "smith.cmd"), launcherCmd)
+	put(t, filepath.Join(l.npm, "smith.ps1"), launcherPs1)
+	put(t, filepath.Join(l.npm, "smith"), launcherSh)
+	// Another program named smith on PATH, and a folder that is not there.
+	other := filepath.Join(t.TempDir(), "tools")
+	put(t, filepath.Join(other, "smith.cmd"), "@ECHO off\r\nother-tool %*\r\n")
+	o := l.options("windows", other, l.npm, filepath.Join(l.npm, "missing"), "")
+
+	if !Needed(o) {
+		t.Fatal("a smith the npm launcher started does not want a link")
+	}
+	report, err := Link(o)
+	target := filepath.Join(RunDir(l.home), "smith-2.50.0.exe")
+	if err != nil || len(report.Changed) != 3 || report.Target != target {
+		t.Fatalf("Link = %+v, %v", report, err)
+	}
+	if !sameFile(target, l.exe) {
+		t.Error("the run folder holds no link of the installed version")
+	}
+	if got := read(t, filepath.Join(l.npm, "smith.cmd")); got != shimText(CmdShim, target) {
+		t.Errorf("smith.cmd = %q", got)
+	}
+	if read(t, filepath.Join(other, "smith.cmd")) != "@ECHO off\r\nother-tool %*\r\n" {
+		t.Error("another program named smith was changed")
+	}
+	if Needed(o) {
+		t.Error("needed after the link")
+	}
+	fromLink := o
+	fromLink.Exe = target
+	if InstalledExe(l.home, target) != l.exe || !Managed(l.home, InstalledExe(l.home, target)) {
+		t.Error("a smith that runs from the link does not know the launchers installed it")
+	}
+	if st := Check(fromLink); !st.Direct || len(st.Entries) != 3 {
+		t.Errorf("Check from the link = %+v", st)
+	}
+	if _, _, err := Undo(o); err != nil {
+		t.Fatal(err)
+	}
+	if read(t, filepath.Join(l.npm, "smith.cmd")) != launcherCmd || read(t, filepath.Join(l.npm, "smith")) != launcherSh {
+		t.Error("undo did not give the npm entries back")
+	}
+}
+
+func TestLinkRepointsTheNpmLauncherSymlinkOnUnixAndANewerVersionLinksAgain(t *testing.T) {
+	l := newLauncherLab(t, "linux")
+	main := filepath.Join(l.npm, "lib", "node_modules", "monosmith", "src", "main.mjs")
+	put(t, main, "#!/usr/bin/env node\n")
+	bin := filepath.Join(l.npm, "bin")
+	entry := filepath.Join(bin, "smith")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(main, entry); err != nil {
+		t.Skipf("no symbolic links here: %v", err)
+	}
+	o := l.options("linux", bin)
+	if report, err := Link(o); err != nil || len(report.Changed) != 1 || report.Changed[0].Kind != Symlink {
+		t.Fatalf("Link = %+v, %v", report, err)
+	}
+	first := filepath.Join(RunDir(l.home), "smith-2.50.0")
+	if got, _ := os.Readlink(entry); got != first {
+		t.Fatalf("the symlink points at %q, want %q", got, first)
+	}
+
+	// smith update installed 2.51.0, and the link handed a run to it: the entry still
+	// calls the link of 2.50.0, which is smith's and is changed again.
+	next := filepath.Join(l.home, "versions", "2.51.0", "smith")
+	put(t, next, "the program of 2.51.0")
+	n := Options{Home: l.home, Exe: next, Version: "2.51.0", GOOS: "linux", PathDirs: []string{bin}, Launcher: "link@2.50.0"}
+	if st := Check(n); !st.Direct || len(st.Entries) != 1 || st.Entries[0].Kind != Symlink {
+		t.Fatalf("Check of the next version = %+v", st)
+	}
+	if report, err := Link(n); err != nil || len(report.Changed) != 1 {
+		t.Fatalf("Link of the next version = %+v, %v", report, err)
+	}
+	if got, _ := os.Readlink(entry); got != filepath.Join(RunDir(l.home), "smith-2.51.0") {
+		t.Errorf("the symlink points at %q", got)
+	}
+	if _, _, err := Undo(n); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.Readlink(entry); got != main {
+		t.Errorf("undo pointed the symlink at %q, want the npm launcher", got)
+	}
+}
+
+func TestAProgramTheLaunchersInstalledIsNoNativeEntryAndLooksOnlyThenOnPath(t *testing.T) {
+	l := newLauncherLab(t, "windows")
+	if isNativeEntry(l.home, l.exe) {
+		t.Error("a program in the versions folder is taken for its own entry")
+	}
+	put(t, filepath.Join(l.npm, "smith.cmd"), launcherCmd)
+	dev := filepath.Join(t.TempDir(), "build", "smith.exe")
+	put(t, dev, "a program built by hand")
+	o := Options{Home: l.home, Exe: dev, Version: "dev", GOOS: "windows", PathDirs: []string{l.npm}}
+	if report, err := Link(o); err != nil || len(report.Changed) != 0 {
+		t.Fatalf("a program started by its path took the smith command over: %+v, %v", report, err)
+	}
+	if read(t, filepath.Join(l.npm, "smith.cmd")) != launcherCmd {
+		t.Error("the npm entry was changed")
+	}
+}
+
+func TestALauncherProgramOfALauncherPackageKeepsItsLauncher(t *testing.T) {
+	l := newLauncherLab(t, "windows")
+	scripts := filepath.Join(t.TempDir(), "Scripts")
+	put(t, filepath.Join(scripts, "smith.exe"), "MZ launcher of monosmith_launcher")
+	o := l.options("windows", scripts)
+	report, err := Link(o)
+	if err != nil || len(report.Changed) != 0 || len(report.Skipped) != 1 {
+		t.Fatalf("Link = %+v, %v", report, err)
+	}
+	if read(t, filepath.Join(scripts, "smith.exe")) != "MZ launcher of monosmith_launcher" {
+		t.Error("the launcher program was replaced")
+	}
+	if Needed(o) {
+		t.Error("a launcher program that is kept asks for a link at every run")
 	}
 }

@@ -59,6 +59,13 @@ type Options struct {
 	GOOS string
 	// Now is the clock; time.Now when nil.
 	Now func() time.Time
+	// PathDirs are the folders of PATH. When the running program is one the launchers
+	// installed (<home>/versions/<version>/), the smith entries of the launcher packages
+	// (npm, pnpm, pip) are looked for in them.
+	PathDirs []string
+	// Launcher is SMITH_LAUNCHER: what started this process ("npm@3.0.0", or
+	// "link@2.50.0" when the link handed the run to another version); "" for none.
+	Launcher string
 }
 
 // Report says what Link did.
@@ -75,3 +82,13 @@ type Report struct {
 
 // installed is the program the package manager put in place.
 func (o Options) installed() string { return InstalledExe(o.Home, o.Exe) }
+
+// launcherDirs are the PATH folders to look in for entries: only when the installed
+// program is one the launchers installed, so a smith started by its own path never
+// takes the smith command over.
+func (o Options) launcherDirs() []string {
+	if !Managed(o.Home, o.installed()) {
+		return nil
+	}
+	return o.PathDirs
+}

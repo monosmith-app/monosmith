@@ -29,13 +29,24 @@ func classify(path, exe, runDir, target string) (Kind, bool) {
 	}
 	if info.Mode()&os.ModeSymlink != 0 {
 		real, err := filepath.EvalSymlinks(path)
-		if err != nil || (!strings.Contains(real, ours) && !sameFile(real, exe)) {
+		switch {
+		case err != nil:
+			// The link of another version may be gone from the run folder already.
+			old, err := os.Readlink(path)
+			if err == nil && !filepath.IsAbs(old) {
+				old = filepath.Join(filepath.Dir(path), old)
+			}
+			if err == nil && inRunDir(old, runDir) {
+				return Symlink, true
+			}
 			return "", false
-		}
-		if sameFile(real, exe) {
+		case sameFile(real, exe) || (target != "" && sameFile(real, target)):
 			return Direct, true
+		case strings.Contains(real, ours) || inRunDir(real, runDir):
+			// A link that calls the program of another version is smith's too, and is changed again.
+			return Symlink, true
 		}
-		return Symlink, true
+		return "", false
 	}
 	if sameFile(path, exe) {
 		return Direct, true
@@ -66,6 +77,16 @@ func classify(path, exe, runDir, target string) (Kind, bool) {
 		return ShShim, mine
 	}
 	return "", false
+}
+
+// inRunDir is true when path is in the run folder, as written or with its own
+// links followed (a temporary folder on macOS is a link).
+func inRunDir(path, runDir string) bool {
+	if inDir(path, runDir) {
+		return true
+	}
+	real, err := filepath.EvalSymlinks(runDir)
+	return err == nil && inDir(path, real)
 }
 
 // isOurs is true when the text names the smith package.

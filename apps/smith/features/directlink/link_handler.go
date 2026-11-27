@@ -19,17 +19,16 @@ func Command(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "link",
 		Short: "Make the smith command start the program directly: faster to start, less memory",
-		Long: `A package manager (npm, pnpm, pip, dotnet) starts smith through a launcher of its own language,
+		Long: `The registry packages (npm, pnpm, PyPI, NuGet) start smith through a launcher of their own language,
 which stays alive as long as smith runs: about 110 ms slower to start and about 40 MB more memory for
-every smith process. smith link points the smith command at the program itself, whatever the manager.
-It finds the smith entries on PATH (smith.cmd, a symbolic link, a launcher program), keeps the original
-of each, and changes them.
+every smith process. smith link points the smith entries of those packages on PATH (smith.cmd, smith.ps1,
+a shell script, a symbolic link) at a hard link of smith in ~/.smith/run, and keeps the original of each.
 
-On Windows the entries call a hard link of the program in ~/.smith/run, so the installed file is never the
-one that runs and an update can replace it while smith runs in other terminals.
+The pins still work: that program runs the version SMITH_VERSION or the [workspace] smith pin asks for,
+else the newest in ~/.smith/versions, as the launcher does, and downloads a pinned version that is missing.
+smith update installs there, so the entries never change again.
 
-The first run of every version does this by itself and says so; the package manager writes its entries
-again when it updates smith, so the next version links again. SMITH_NO_LINK=1 stops that, and smith link
+The first run of a version does this by itself and says so. SMITH_NO_LINK=1 stops that, and smith link
 --undo gives the entries back. smith link is safe to run again.`,
 		Example: "  smith link\n  smith link --status\n  smith link --undo",
 		Args:    cobra.NoArgs,

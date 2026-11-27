@@ -13,7 +13,7 @@
 `smith update` asks smith's releases for the newest smith on your channel (stable, or next when
 you run a prerelease; GitHub, or the mirror in `SMITH_DOWNLOAD_URL`). A smith a launcher (npm,
 PyPI or NuGet) started lives in `~/.smith/versions/<version>/`: `smith update` downloads the new version next to
-it, checks it against the signed `checksums.txt`, and the launcher runs it from then on. A
+it, checks it against the signed `checksums.txt`, and the launcher (or the [link](link.md)) runs it from then on. A
 workspace that pins `[workspace] smith` keeps its version. For any other install it prints the
 command that matches how smith was installed (the install script, or a package from before the
 launchers: npm gets `npm i -g monosmith@latest`, and pip, uv, pipx and dotnet tool their upgrade

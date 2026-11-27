@@ -8,27 +8,26 @@ import (
 	"strings"
 )
 
-// expectedTarget is the program the entries of this version call: the link of the
-// run folder on Windows, the installed program elsewhere. It makes nothing.
+// expectedTarget is the program the entries of this version call: a link of the
+// installed program in the run folder, named for the version. It makes nothing.
 func expectedTarget(o Options) string {
-	if o.GOOS != "windows" {
-		return o.installed()
+	name := "smith-" + safeName(o.Version)
+	if o.GOOS == "windows" {
+		name += ".exe"
 	}
-	return filepath.Join(RunDir(o.Home), "smith-"+safeName(o.Version)+".exe")
+	return filepath.Join(RunDir(o.Home), name)
 }
 
-// makeTarget returns the program the entries call. On Windows it is a hard
-// link of the installed program in the run folder, named for the version, so
-// every smith of that version shares one file and the installed program is
-// never the one that runs; a copy replaces the link where the system cannot
-// link (another drive). Elsewhere it is the installed program itself.
+// makeTarget returns the program the entries call: a hard link of the installed
+// program in the run folder, named for the version, so every smith of that
+// version shares one file and the installed program is never the one that runs.
+// A program that runs from the run folder knows the link started it, and hands
+// the run to the version the workspace pins. A copy replaces the link where the
+// system cannot link (another drive).
 //
 // Parameters: o says where smith is.
 // Returns: the program to call; an error when the run folder cannot be written.
 func makeTarget(o Options) (string, error) {
-	if o.GOOS != "windows" {
-		return o.installed(), nil
-	}
 	dir := RunDir(o.Home)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err

@@ -1,5 +1,11 @@
 package directlink
 
+import "strings"
+
+// LauncherPrefix starts SMITH_LAUNCHER when the link handed the run to another
+// version: "link@<version that handed it>".
+const LauncherPrefix = "link@"
+
 // Status says how smith starts now.
 type Status struct {
 	// Version is the running smith.
@@ -20,12 +26,14 @@ type Status struct {
 // Parameters: o says where smith is.
 // Returns: the status.
 func Check(o Options) Status {
-	s := Status{Version: o.Version, Direct: RunningFromLink(o.Home, o.Exe), Installed: InstalledExe(o.Home, o.Exe)}
+	// A run the link handed to another version starts with no Node in front either.
+	direct := RunningFromLink(o.Home, o.Exe) || strings.HasPrefix(o.Launcher, LauncherPrefix)
+	s := Status{Version: o.Version, Direct: direct, Installed: InstalledExe(o.Home, o.Exe)}
 	if state, ok := LoadState(o.Home); ok {
 		s.Linked = state.Version
 	}
-	s.Entries = FindEntries(s.Installed, o.GOOS, RunDir(o.Home), expectedTarget(o))
-	if len(s.Entries) == 0 && isNativeEntry(s.Installed) {
+	s.Entries = FindEntries(s.Installed, o.GOOS, RunDir(o.Home), expectedTarget(o), o.launcherDirs())
+	if len(s.Entries) == 0 && isNativeEntry(o.Home, s.Installed) {
 		s.Direct = true
 		s.Entries = []Entry{{Path: s.Installed, Kind: Direct}}
 	}
@@ -45,8 +53,8 @@ func Needed(o Options) bool {
 	if state, ok := LoadState(o.Home); ok && state.Version == o.Version {
 		return false
 	}
-	for _, e := range FindEntries(o.installed(), o.GOOS, RunDir(o.Home), expectedTarget(o)) {
-		if e.Kind != Direct {
+	for _, e := range FindEntries(o.installed(), o.GOOS, RunDir(o.Home), expectedTarget(o), o.launcherDirs()) {
+		if e.Kind != Direct && !keepsLauncher(o, e) {
 			return true
 		}
 	}
