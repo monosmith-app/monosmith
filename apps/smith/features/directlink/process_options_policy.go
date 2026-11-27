@@ -9,7 +9,7 @@ import (
 )
 
 // ForThisProcess are the options for the smith that is running: its home, its
-// program, the PATH it was started with and the version.
+// program, the PATH it was started with, what started it and the version.
 //
 // Parameters: version is the running smith.
 // Returns: the options.
@@ -18,7 +18,10 @@ func ForThisProcess(version string) Options {
 	if real, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = real
 	}
-	return Options{Home: plugintrust.Home(), Exe: exe, Version: version, GOOS: runtime.GOOS}
+	return Options{
+		Home: plugintrust.Home(), Exe: exe, Version: version, GOOS: runtime.GOOS,
+		PathDirs: filepath.SplitList(os.Getenv("PATH")), Launcher: os.Getenv("SMITH_LAUNCHER"),
+	}
 }
 
 // FirstRunOff is true when the first run must not link: in CI, where nothing on

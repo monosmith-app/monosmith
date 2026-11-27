@@ -111,7 +111,7 @@ func run(ctx context.Context, version string, check, yes bool, in *os.File, out,
 		if err != nil {
 			return problem.New(err.Error(), "run smith update again, or download "+u.Latest+" from "+updatenotice.ReleasesURL)
 		}
-		fmt.Fprintf(out, "smith %s is installed (%s). The launcher runs it from now on; a workspace that pins [workspace] smith keeps its version.\n", u.Latest, program)
+		fmt.Fprintf(out, "smith %s is installed (%s). The smith command runs it from now on (through the launcher or the link); a workspace that pins [workspace] smith keeps its version.\n", u.Latest, program)
 		return nil
 	}
 	// A smith that runs from its link does not hold the installed file, so the update can run here.

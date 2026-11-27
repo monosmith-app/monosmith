@@ -49,12 +49,17 @@ func ownedDirs(exe string) []string {
 //
 // Parameters: exe is the installed program; goos is runtime.GOOS; runDir is the
 // folder of the links an entry already changed calls; target is the program an
-// entry of this version should call.
+// entry of this version should call; pathDirs are more folders to look in (the
+// PATH folders, for a program the launchers installed), where only an entry that
+// names the smith package or calls the run folder counts.
 // Returns: the entries, without duplicates.
-func FindEntries(exe, goos, runDir, target string) []Entry {
+func FindEntries(exe, goos, runDir, target string, pathDirs []string) []Entry {
 	var found []Entry
 	var seen []string
-	for _, dir := range ownedDirs(exe) {
+	for _, dir := range append(ownedDirs(exe), pathDirs...) {
+		if dir == "" {
+			continue
+		}
 		for _, name := range entryNames(goos) {
 			file := filepath.Join(dir, name)
 			key := strings.ToLower(file)
@@ -70,10 +75,11 @@ func FindEntries(exe, goos, runDir, target string) []Entry {
 	return found
 }
 
-// isNativeEntry is true when the installed program is the entry itself: pip puts
-// the whole program in Scripts, and the install script puts it in ~/.local/bin. No
-// launcher stands in front of it, so there is nothing to change.
-func isNativeEntry(exe string) bool {
+// isNativeEntry is true when the installed program is the entry itself: the
+// install script puts it in ~/.local/bin. No launcher stands in front of it, so
+// there is nothing to change. A program in the versions folder of home is not: a
+// launcher package starts it.
+func isNativeEntry(home, exe string) bool {
 	name := strings.ToLower(filepath.Base(exe))
-	return (name == "smith" || name == "smith.exe") && len(ownedDirs(exe)) == 0
+	return (name == "smith" || name == "smith.exe") && len(ownedDirs(exe)) == 0 && !Managed(home, exe)
 }

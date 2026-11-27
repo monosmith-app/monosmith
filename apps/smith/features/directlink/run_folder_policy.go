@@ -20,11 +20,25 @@ func StatePath(home string) string { return filepath.Join(home, stateFile) }
 // Parameters: home is the smith home; exe is the running program.
 // Returns: true for a program in the run folder.
 func RunningFromLink(home, exe string) bool {
-	if home == "" || exe == "" {
+	return home != "" && inDir(exe, RunDir(home))
+}
+
+// Managed is true when exe is a program the launchers installed:
+// <home>/versions/<version>/smith (ADR 0101).
+//
+// Parameters: home is the smith home; exe is a program.
+// Returns: true for a program in the versions folder.
+func Managed(home, exe string) bool {
+	return home != "" && inDir(exe, filepath.Join(home, "versions"))
+}
+
+// inDir is true when path is inside dir.
+func inDir(path, dir string) bool {
+	if path == "" || dir == "" {
 		return false
 	}
-	rel, err := filepath.Rel(RunDir(home), exe)
-	return err == nil && !strings.HasPrefix(rel, "..") && !filepath.IsAbs(rel)
+	rel, err := filepath.Rel(dir, path)
+	return err == nil && rel != "." && !strings.HasPrefix(rel, "..") && !filepath.IsAbs(rel)
 }
 
 // InstalledExe is the program the package manager installed: exe itself, or,

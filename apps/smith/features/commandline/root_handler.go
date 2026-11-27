@@ -2,6 +2,7 @@ package commandline
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/features/adoption"
@@ -31,6 +32,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/pydepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/features/pypolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/features/rustpolicy"
+	"github.com/monosmith-app/monosmith/apps/smith/features/versionhandoff"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/apps/smith/integrations/consolecolour"
 	"golang.org/x/term"
@@ -183,6 +185,10 @@ func canAsk(root *cobra.Command, args []string) bool {
 // interactive run (the interface, or smith doctor in a terminal) it offers,
 // once, to set up tab completion; see offerCompletion.
 func Execute(version string, args []string) int {
+	// A smith the link started runs the version the workspace pins, or the newest installed (ADR 0111).
+	if code, handed := versionhandoff.HandOff(context.Background(), versionhandoff.ForThisProcess(version), args); handed {
+		return code
+	}
 	// The colour smith and its tools print renders in a classic Windows console too.
 	consolecolour.Enable()
 	// The first run of a version points the smith command at the program itself, and says so at the end.

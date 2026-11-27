@@ -30,7 +30,7 @@ func Link(o Options) (Report, error) {
 	if o.Home == "" {
 		return Report{}, ErrNoHome
 	}
-	if isNativeEntry(o.installed()) {
+	if isNativeEntry(o.Home, o.installed()) {
 		// The program is its own entry (pip, the install script): nothing stands in front of it.
 		return Report{Target: o.installed(), Already: []Entry{{Path: o.installed(), Kind: Direct}}}, nil
 	}
@@ -43,9 +43,13 @@ func Link(o Options) (Report, error) {
 	}
 	report := Report{Target: target}
 	var changed []Entry
-	for _, e := range FindEntries(o.installed(), o.GOOS, RunDir(o.Home), target) {
+	for _, e := range FindEntries(o.installed(), o.GOOS, RunDir(o.Home), target, o.launcherDirs()) {
 		if e.Kind == Direct {
 			report.Already = append(report.Already, e)
+			continue
+		}
+		if keepsLauncher(o, e) {
+			report.Skipped = append(report.Skipped, e.Path+": a launcher program cannot call the link, so it keeps its launcher")
 			continue
 		}
 		done, already, err := point(o, e, target)
@@ -69,6 +73,14 @@ func Link(o Options) (Report, error) {
 		for _, e := range before.Entries {
 			if !containsPath(state.Entries, e.Path) {
 				state.Entries = append(state.Entries, e)
+				continue
+			}
+			// A symbolic link that called the link of another version keeps the
+			// target the package manager gave it, so undo points it back there.
+			for i, s := range state.Entries {
+				if s.Path == e.Path && s.Kind == Symlink && e.Backup != "" && inRunDir(s.Backup, RunDir(o.Home)) {
+					state.Entries[i].Backup = e.Backup
+				}
 			}
 		}
 	}
@@ -76,6 +88,13 @@ func Link(o Options) (Report, error) {
 		return report, err
 	}
 	return report, nil
+}
+
+// keepsLauncher is true for a launcher program (pip or dotnet on Windows) of a
+// launcher package: a copy of the program in its place would not run from the run
+// folder, so it could not choose the version the workspace pins.
+func keepsLauncher(o Options, e Entry) bool {
+	return e.Kind == Launcher && Managed(o.Home, o.installed())
 }
 
 // containsPath is true when an entry with this path is in the list.
