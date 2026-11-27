@@ -1,8 +1,9 @@
 # Design: the TUI redesign
 
-Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
-phase 4 (Projects), phase 5 (Runs), phase 6 (the palette and Health) and phase 7 (Dependencies and
-Release) are built. The other phases are planned.
+Status: **built**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
+phase 4 (Projects), phase 5 (Runs), phase 6 (the palette and Health), phase 7 (Dependencies and
+Release) and phase 8 (Settings, the help and the dialogs) are built. What the redesign left open is
+listed in [Left open](#left-open).
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -67,7 +68,7 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
 5. The Runs view. **Built** (see [Phase 5 as built](#phase-5-as-built)).
 6. The command palette, and Health with the inline fix. **Built** (see [Phase 6 as built](#phase-6-as-built)).
 7. Dependencies and Release. **Built** (see [Phase 7 as built](#phase-7-as-built)).
-8. Then Settings and the dialogs, once they are drawn.
+8. Settings, the help and the dialogs. **Built** (see [Phase 8 as built](#phase-8-as-built)).
 
 ## Phase 2 as built
 
@@ -392,6 +393,88 @@ Deviations from the brief and the screens:
   detail shows the commits.
 - The VS Code extension and the JetBrains plugin are unchanged: their Dependencies and Release surfaces
   are their own trees and forms.
+
+## Phase 8 as built
+
+- Settings (`settingsview`) draws its two frames itself. On a wide screen the main frame `Settings` is
+  `SectionsPane`: a blank row, each section (`▶ Workspace` on the selected background while the keyboard is
+  there, bold while it is in the open section), a blank row between them when they fit, and
+  `Per-project settings are in Projects › a project › Settings` at the foot. The frame beside it is
+  `FieldsPane`, titled `PaneTitle` (`Workspace · smith.toml`; `Style` and the sections of forms name no file).
+  The shell gives the frame of the sections 36 columns (`layout.MinList`) and the rest to the open section;
+  the divider between them is the only one of the view (the sections | rows divider and the rows | detail
+  divider are gone). Tab, Left and Right move the keyboard between the frames, and the focused frame has the
+  accent border (`mainFocused`).
+- The open section has its line about it, then its rows. Workspace and the Project section are a table with a
+  heading and a rule (Setting, Value, Default, Type; the type and then the default leave first on a narrow
+  pane). A switch is `● on` or `○ off`, a value of a fixed set ends in `▾`, an unset switch with no default is
+  `○ not decided`. Under the rows the selected row is told in a rounded box titled by its name (the setting's
+  path, the plugin, the form) with what it does and, for a setting, the command line it stands for, dim
+  (`$ smith config set <path> <value>`). Under the box a setting has `Writes smith.toml exactly as the command
+  does.` and the buttons **Save (Enter)** (primary) and **Reset to default (u)** (muted while nothing is written);
+  a click on them does what the key does.
+- An editor opens in the box, titled by what it changes, with its keys under it and the command line of the
+  value as it is typed or picked. A switch no longer flips on `Enter`: it opens the choice On, Off and, for a
+  switch with no default, Not decided (an unset), the cursor on what it is now, and nothing is written until
+  `Enter` saves the answer (ask, never impose). The plugins of the Plugins section keep their one-key switch with
+  the `undo (u)` offer.
+- Narrow (`Narrow`, `NarrowClick`): the frame lists the sections, each with a line about it (`18 on · 0 external`,
+  `57 settings, 2 set`, `theme auto · symbols auto`, else the section's About). The tab opens there
+  (`ToSections`); Enter, a click on the selected section or a double click opens one as `‹ Settings / Workspace`,
+  Enter on a field edits it, and Esc closes the editor, then goes back. The footer says `Enter open` on the
+  sections (`labels`).
+- The strip fits `7 Settings` at 80 columns with three or four badges: the fit counted a gap after the last tab,
+  which is never drawn (`tabs.renderFlat` gives the room that gap). The badge spacing is unchanged.
+- The help (`helpdialog`) is titled `Keys · <view>` (`Help.Titled`). It lists the keys by scope: `<view> view`, then
+  `Everywhere` with the menus as muted headings, each key in the accent and bold in a column of its own and what
+  it does beside it (muted with its reason when it cannot run now). Under a rule come the notes (every action is a
+  smith command, plain mode) and the mouse. The last line stays while the keys scroll:
+  `Find a command by name: Ctrl+K` and `↑/↓ scroll • Esc close`. It is up to 104 columns and 32 rows, and fits
+  80 x 30. `commands.HelpRow` and `helpdialog.HelpRow` have the new field `View`.
+- The dialogs already were rounded frames with the title in the top border, the primary button in the accent, and
+  Esc closing them; a test now checks the confirmation, the help, the palette and the dependency repair. The
+  command line a dialog runs is dim (`th.Faint`) in the confirmation, the package prompt, the release adjustment,
+  the composer plan and the tools dialog (it was bold, or in the accent). The fix wizard has `Style.Command`: the
+  dependency repair shows `$ smith deps repair`, and a doctor fix that stays a dialog (the smith.toml repair, a fix
+  outside a workspace) shows `$ smith doctor --fix --only '<check>'` over its buttons. What the dialogs do did not
+  change. The toast keeps its rounded box in the border colour.
+- An `X all N` label shows no count when no project has the task (`State.allCount`): the palette says `Lint all`, not
+  `Lint all 0`, and the footer `build all`, not `build all 0`. A count above zero shows as before.
+- The new words are in `libs/words/catalog/en/settings_page.json` and `help_page.json`; `helpdialog` joined the
+  migrated list of the words guard. `dialog.help.title`, `settingsview.sections.title`,
+  `settingsview.setting.command` and `settingsview.setting.keys.flip` left the catalog.
+
+Deviations from the brief and the screens:
+
+- The sections keep their order and their nine entries (Plugins first); the screens draw five, Workspace first.
+  The Workspace filter (`Filter: release▏`) is not built: no section had a filter, and the table scrolls.
+- The help is one column: the titles of the keys are sentences, which the screens' three columns would wrap into
+  short lines. The keys of the open view come first, as before (the screens put Everywhere first). The screens'
+  `Lists` and `Runs` columns are the menus under Everywhere.
+- A switch's choice is a column of radios, as every pick list (the screens draw them on one line); a click on one
+  picks it.
+- The buttons keep the `label (key)` form (`Save (Enter)`); the screens draw `Save enter`.
+- `WithSideDetail`, `DetailLines`, `Geometry`, `WithSizes`, `splitter.SettingsListSpot` and `SettingsDetailSpot` stay,
+  no longer used by the shell, and `ProjectClick` stays beside the new `ProjectClickAt`: removing an exported
+  symbol would force a major release. The project section in the detail of Projects still clicks without a
+  column, so its Save and Reset buttons answer the keys, not the mouse.
+- The marks stay `×` and `▲` (see phase 2).
+- The VS Code extension and the JetBrains plugin are unchanged: their settings are their own forms.
+
+## Left open
+
+What the redesign did not build, across the phases, for the owner to decide:
+
+- The marks `✗`, `⚠` and `⚡` the screens draw: `shared/marks` bans them (phases 2 to 8).
+- The pinned projects of the rail (phase 2), multi-select on Projects (phase 4), the time estimate, the log search
+  and the cache reason of the Runs view (phase 5), the Settings and Tasks groups of the palette and its command
+  editor (phase 6), the dry run of Dependencies and the per-package one-version line (phase 7), and the Workspace
+  filter of Settings (phase 8).
+- The keys the screens change (`c` check again, `d` dry run, `Space` select several): one command keeps one key.
+- Unused exported symbols kept to avoid a major release: `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows`,
+  `MinLogRows`, `releaseview.Model.Open`, and the side-detail functions of `settingsview` and `splitter`.
+- The VS Code extension and the JetBrains plugin follow none of the new layouts; only the Health name (phase 2)
+  reached them.
 
 ## Screens
 

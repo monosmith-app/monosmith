@@ -57,12 +57,11 @@ From top to bottom:
 3. **The view.** Each pane is a rounded frame with its title in the top border: the view's
    name for the list, and what the detail tells about (the project, the check, the run) for
    the detail beside it. The frame that has the keyboard has the accent border. Projects,
-   Health, Deps and Settings show a list with a **detail pane** beside it. On a narrow
-   terminal Projects and Health open the detail in place of the list when you press Enter;
-   its frame reads `‹ Projects / orders`, and Esc goes back to the list. Inside a frame,
-   thin lines divide the panels: the horizontal line between stacked panels (the rows and
-   the help of a setting, the header of the Runs view and its tasks) and the vertical line between the
-   sections and the rows of Settings, or the tasks and the log of a run, which meet the frame in tees (`┬`, `┴`, `├`). Drag the
+   Health, Deps, Release and Settings show a list with a **detail pane** beside it. On a narrow
+   terminal Enter opens the detail in place of the list; its frame reads
+   `‹ Projects / orders` (`‹ Settings / Workspace`), and Esc goes back to the list. Inside a frame,
+   thin lines divide the panels: the rule under the header of the Runs view and the vertical
+   line between the tasks and the log of a run, which meet the frame in tees (`┬`, `┴`). Drag the
    border between the list and the detail to resize them. A form on the Start view names
    itself on its first line.
 4. **Footer**: key hints for the open view, then the ones every view ends with
@@ -239,7 +238,7 @@ that does nothing. Esc never quits.
 | `Tab` | Move the keyboard to the next panel of a view that has two (Projects: the list, then the detail, where `Tab` and `Shift+Tab` change the section; Health: the list, then the detail). The footer names where `Tab` goes. |
 | `Enter` | Open or run the selection. |
 | `Esc` | Back, close, clear. |
-| `?`, `F1` | The shortcuts overlay (Up, Down, PgUp, PgDn, Home, End scroll it; Esc, `?`, `F1`, `q` or Enter close it). |
+| `?`, `F1` | The keys overlay, `Keys · <view>`: the keys of the open view first, then the keys that work everywhere by menu, then the notes and the mouse. Up, Down, PgUp, PgDn, Home, End scroll it; its last line (`Ctrl+K` finds a command by name) stays; Esc, `?`, `F1`, `q` or Enter close it. |
 | `:`, `Ctrl+K`, `Ctrl+P`, `/` | The command palette. On the list of Projects, `/` types the filter instead. |
 | `q` | Quit (not while a run is going: `Ctrl+C` stops it first). |
 | `Ctrl+C` | Stop the run in progress; pressed again, quit. A stopped run is **cancelled**, not failed (see [A stopped run](#a-stopped-run)). |
@@ -382,7 +381,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Release | `c` | Create the first release commit: `git commit --allow-empty -m "feat: first version"`, after a confirmation. Only for a package that was never released; otherwise `c` runs the typecheck. |
 | Settings | `Up` `Down` | Move in the list of sections, or in its rows. |
 | Settings | `Tab`, `Left` `Right` | Switch between the list of sections and its rows. |
-| Settings | `Space`, `Enter` | Change the selected plugin or setting. |
+| Settings | `Space`, `Enter` | Open the selected section; on a setting, open its choice or field, and `Enter` again saves it. |
 | Settings | `t` | Review the selected external plugin and trust it. |
 | Settings | `f` | Forget that an external plugin is trusted. |
 | Settings | `u` | Reset the selected setting to its default. |
@@ -682,10 +681,15 @@ An action that no file of the project takes is shown off, with the reason under 
 
 ## Settings
 
-The Settings tab (key `6`) is where you change things without leaving the interface. A list
-of sections is on the left; the open section's rows and, under them, what the selected row is
-and does are on the right. `Tab` (or `Left` and `Right`) moves between the two; a click does
-the same, and a double-click does what `Enter` does. Everything it writes is what the
+The Settings tab (key `7`) is where you change things without leaving the interface. On a
+wide screen the frame `Settings` lists the sections, with where the settings of a project are
+at its foot, and the frame beside it (`Workspace · smith.toml`) shows the open section: its
+rows, and under them a rounded box titled by the selected row with what it is, what it does
+and the command line it stands for, dim (`$ smith config set ci.devcontainer true`). `Tab` (or
+`Left` and `Right`) moves the keyboard between the two frames; a click does the same, and a
+double-click does what `Enter` does. On a narrow screen the frame lists the sections, each
+with a line about it (`57 settings, 2 set`); `Enter` opens one in the frame
+(`‹ Settings / Workspace`), `Enter` on a row changes it, and `Esc` goes back. Everything it writes is what the
 matching command writes: a test compares `smith.toml` byte for byte with the result of
 `smith plugin disable`, `smith plugin trust --pin` and `smith config set`, and comments and
 every other line stay as they are. The name, type, description, default and current value of the selected row, and the key that changes it, are in the detail beside the list on a wide screen. A setting whose default has a recorded reason shows it there
@@ -734,8 +738,12 @@ says so when one is set. `auto` means what smith did before: the terminal's back
 `TERM` decide.
 
 **Workspace.** Every setting [`smith config list`](config-list.md) knows, grouped by the
-table of `smith.toml` it belongs to, with what it does and its default. A switch shows a box
-(`[x]` or `[ ]`) and flips with `Enter` or `Space`; a setting that takes one word of a fixed set
+table of `smith.toml` it belongs to, as a table: Setting, Value, Default and Type (`switch`,
+`choice`, `ticks`, `list`, `number`, `text`). Under the box are `Writes smith.toml exactly as the
+command does.` and the buttons **Save (Enter)** and **Reset to default (u)**. A switch shows
+`● on` or `○ off`; `Enter` or `Space` opens its choice, On and Off (and Not decided, which leaves
+the setting out of `smith.toml`, for a switch with no default), with the command line of the
+highlighted answer, and nothing is written until `Enter` saves it; a setting that takes one word of a fixed set
 (`ci.attest`, `ci.audit`, `release.api_check`) opens a pick list: the arrows move, `Enter` picks, `Esc`
 cancels; a list with fixed choices (`ci.providers`) is ticked with `Space` and saved with
 `Enter`; text, numbers and lists without fixed choices (separate the items with commas) are
