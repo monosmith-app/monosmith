@@ -1,8 +1,8 @@
 # Design: the TUI redesign
 
 Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
-phase 4 (Projects), phase 5 (Runs) and phase 6 (the palette and Health) are built. The other
-phases are planned.
+phase 4 (Projects), phase 5 (Runs), phase 6 (the palette and Health) and phase 7 (Dependencies and
+Release) are built. The other phases are planned.
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -66,7 +66,8 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
 4. Projects. **Built** (see [Phase 4 as built](#phase-4-as-built)).
 5. The Runs view. **Built** (see [Phase 5 as built](#phase-5-as-built)).
 6. The command palette, and Health with the inline fix. **Built** (see [Phase 6 as built](#phase-6-as-built)).
-7. Then Dependencies, Release, Settings and the dialogs, once they are drawn.
+7. Dependencies and Release. **Built** (see [Phase 7 as built](#phase-7-as-built)).
+8. Then Settings and the dialogs, once they are drawn.
 
 ## Phase 2 as built
 
@@ -325,6 +326,72 @@ Deviations from the brief and the screens:
   nothing unasked, so `smith undo` cannot revert the fix.
 - The VS Code extension and the JetBrains plugin already call the view Health (phase 2); their
   `Doctor` labels name the `smith doctor` command, so nothing changed there.
+
+## Phase 7 as built
+
+- Dependencies (`depsview`) draws the headline `↑ 3 with newer releases · 1 patch · 1 minor · 1 major`
+  with the marked count, the chips, then two groups: `Patch and minor releases · 2 · safe to take
+  together` (success) and `Major releases · 1 · may break your code, take one at a time` (warning). Each
+  group has its column heading (Package, Now, Latest, Level, Used by; the box of the heading marks every
+  row) and a rule. A level has its mark: `●` patch (success), `●` minor (info), `▲` major (warning). The
+  Used by column shows `web +1` when the names do not fit. The body scrolls by lines around the cursor
+  row; the headline and the chips stay.
+- The box at the foot of the list (`shell_deps_buttons_mapper.go`) says what an update takes: `1 marked ·
+  axios 1.6.8 in 2 projects`, `2 marked: axios, zod`, or with nothing marked `Nothing marked: u updates
+  axios 1.6.8`. Its buttons are **Update marked (u)** (**Update axios (u)** with nothing marked),
+  **Update all safe (U)** and **Repair dependencies (H)**, which left the top of the list; a button that
+  does not fit moves to the next line. Under them the command line of `u`, dim (`$ smith deps up axios`).
+  Each button keeps its command: `u` asks with the confirmation that shows `smith deps up … --yes`, `U`
+  opens the `smith deps up` form, `H` the repair dialog.
+- The detail (`depsview.Model.Detail`, titled by the package) is the versions and the level (with the
+  warning of a major release), **Used by** with the folder of each project, **Declared as** (the kinds,
+  which left the table), **Registry** (the link and `g`/`Y`, which left the list), **One version** (the
+  policy, which shows in every package's detail) and **The same as** `$ smith deps up <package>` (with
+  `--major` for a major one, `depsview.PackageArgv`). With no package it is the policy alone; a narrow
+  screen with no package shows the policy under the list.
+- Release (`releaseview`) draws `✓ 2 packages to release · 1 minor · 1 patch · from main`, the table
+  Package, Now, Next, Bump and Why with a rule, the selected row on the Highlight background, and the
+  unchanged packages. Under it (`shell_release_page_mapper.go`) the box **Checks before release** with
+  the checks of the confirmation (`releaseconfirm.Preflight`: Health, the tests of the session, the
+  branch) and `○ Registry sign-in: checked when you release, or before with smith release --rehearse`;
+  `Nothing is published until you confirm the plan.`; the buttons `Release now (x)`, `Dry run (p)` and
+  `Release notes (n)`; their command lines, dim. While a dry run shows its output (the preview of
+  before, unchanged), the checks leave their room to it; during a release the view shows its steps as
+  before.
+- The detail of Release (`releaseview.Model.Detail`, titled `web 1.0.0 → 1.1.0`) is the bump and the
+  plugin, **Why it releases**, **Changes** (the commits, as the drill-down drew them), **Tag**,
+  **Public API** when the API check warns, and **The same as** `$ smith release --dry-run --notes`.
+- Narrow: Enter (or a click on the selected row, or a double click) opens the package in the frame,
+  `‹ Dependencies / zod` or `‹ Release / kit 0.2.0 → 0.2.1`, and Esc goes back
+  (`listWithDetailKey`, the commands `deps.open`, `deps.back`, `release.open`, `release.back`). While the
+  package is open, mark and the chips are unavailable. Beside the detail Enter does nothing.
+- The release plan and the dependency list show a spinner at once while they load (`releaseview.Model.Tick`
+  is new).
+- The new words are in `libs/words/catalog/en/deps_page.json` and `release_page.json`. The words of the
+  old summary, the Kind column, the registry label, the group headings without counts and the tag line
+  left `depsview.json` and `releaseview.json`; `release.expand` left `commands.json`.
+
+Deviations from the brief and the screens:
+
+- The marks stay `▲` and `●`; the screens draw `⚠` and `•`, which `shared/marks` bans or does not have.
+  Patch and minor share `●` and differ in colour and name.
+- The screens draw tick boxes `☐ ☑`; the list keeps `[ ]` and `[x]` of `choicerow.Box`, as every pick list.
+- The design's `smith up` is `smith deps up`, the command the actions run. There is no `smith deps up
+  --dry-run`: `--dry-run` works only with `--align`, and `--check` only reports what the view already
+  lists, so no dry-run button is drawn for Dependencies. `checked 2 min ago` is not drawn: the shell does
+  not keep the time of the load.
+- The screens' `1-3 level`, `o one version` (a detail line `✓ both use 19.1.0` per package) and `Used by`
+  with the manifest file are not built: the chips keep `e`, `p`, `n`, `M`; the policy is the workspace
+  verdict of `smith deps up --align --check`, not one per package; smith knows the project's folder, not
+  the manifest that declares the package.
+- Release has no `Publishes to` or `Commits` column: the plan does not say which registry a package goes
+  to. The column is Why (the reason of the plan). The Dry run key stays `p` (the screens draw `d`): one
+  command keeps one key. There is no `smith release -p <package>`, so The same as is the notes command.
+- `releaseview.Model.Open` stays, no longer set, and `Update` no longer opens the commits: removing an exported
+  field would force a major release. The `←→ expand/collapse` keys (`release.expand`) are gone; the
+  detail shows the commits.
+- The VS Code extension and the JetBrains plugin are unchanged: their Dependencies and Release surfaces
+  are their own trees and forms.
 
 ## Screens
 

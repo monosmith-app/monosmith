@@ -179,10 +179,11 @@ columns the list takes the whole width and Enter opens the detail; wider, the li
 sit side by side (`layout.divide_screen_algorithm.go`). Tabs shorten their names before the strip
 would scroll, and below 24 rows they become one plain row.
 
-The detail beside the list is the same panel for four tabs: the finding of Doctor, the project of Projects, the
-one-version policy of Deps and the option of Settings (`hasDetail`, `selectionPanel`). Only Projects and
-Doctor take the keyboard there (`beside`, `Tab`); in Deps and Settings the panel scrolls with `Ctrl+U` `Ctrl+D` and the wheel. Below the wide
-layout Deps and Settings keep their text under the list (`depsview.Model.Beside`, `settingsview.WithSideDetail`).
+The detail beside the list is the same panel for five tabs: the finding of Doctor, the project of Projects, the
+package of Deps (`depsview.Model.Detail`), the package of Release (`releaseview.Model.Detail`) and the option of Settings
+(`hasDetail`, `selectionPanel`). Only Projects and Doctor take the keyboard there (`beside`, `Tab`); in Deps, Release and
+Settings the panel scrolls with `Ctrl+U` `Ctrl+D` and the wheel. Below the wide layout Enter opens the detail of Deps and
+Release in the frame (`listWithDetailKey`), and Settings keeps its text under the list (`settingsview.WithSideDetail`).
 The detail of a project has two parts (`shell_detail_split_mapper.go`): the facts, drawn at the top and never scrolled, and the
 actions, which scroll and keep `keepDetailCursorVisible` in the part under the rule. Deps filters with the chips of
 `depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from
