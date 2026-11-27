@@ -37,8 +37,8 @@ module_prefix = %q
 # Pipelines to generate: "github", "azure", "gitlab", "circleci", "bitbucket", or several.
 providers = [%s]
 # A dev container (.devcontainer/devcontainer.json) with the toolchains CI
-# installs, at the same versions.
-devcontainer = true
+# installs, at the same versions. Off unless asked for.
+devcontainer = false
 
 [dependencies]
 # One version per production dependency across the workspace, and dev tools at

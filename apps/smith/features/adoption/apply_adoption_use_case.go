@@ -113,7 +113,7 @@ func Init(r Report, version string, install, eslint, commit bool, c adoptdecisio
 		}
 		fmt.Fprintf(out, "  kept your %s as %s.pre-smith\n", path, path)
 	}
-	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: providers, NoCI: len(providers) == 0, NoDevcontainer: len(providers) == 0,
+	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: providers, NoCI: len(providers) == 0,
 		NoGitattributes: c.Gitattributes != adoptdecision.GitattributesAdd, SkipAgent: c.Agent == adoptdecision.AgentSkip, NoAgent: c.Agent == adoptdecision.AgentNever,
 		Version: version, Out: out, NoCommit: true}); err != nil {
 		return err

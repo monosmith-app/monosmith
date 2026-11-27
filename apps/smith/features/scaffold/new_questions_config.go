@@ -134,9 +134,9 @@ func NewQuestions() []NewQuestion {
 			{Label: "Yes", Value: "yes", Hint: "writes .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default)"},
 			{Label: "No", Value: "no", Hint: "you can add it later with smith agent install"},
 		}},
-		{Key: AnswerDevcontainer, Prompt: "Add a dev container, so VS Code and Codespaces open this workspace with its toolchains installed?", Default: "yes", Flag: "devcontainer", Options: []NewOption{
-			{Label: "Yes", Value: "yes", Hint: "writes .devcontainer/devcontainer.json (default)"},
-			{Label: "No", Value: "no", Hint: "sets [ci] devcontainer = false in smith.toml"},
+		{Key: AnswerDevcontainer, Prompt: "Add a dev container, so VS Code and Codespaces open this workspace with its toolchains installed?", Default: "no", Flag: "devcontainer", Options: []NewOption{
+			{Label: "No", Value: "no", Hint: "leaves it out; [ci] devcontainer = false in smith.toml (default)"},
+			{Label: "Yes", Value: "yes", Hint: "writes .devcontainer/devcontainer.json"},
 		}},
 		{Key: AnswerMore, Prompt: "Change anything else? Release branch and remote, GitHub Releases, the cache.", Default: "no", Flag: "", Options: []NewOption{
 			{Label: "Keep the defaults", Value: "no", Hint: "you can change any of it later in smith.toml"},

@@ -71,7 +71,7 @@ Usage: `smith new <name> [flags]`
 | `--cache-max-mb <cache-max-mb>` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) | `2048` |
 | `--ci <ci>` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) (repeatable) | `github` |
 | `--default-stack <default-stack>` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts (repeatable) | `node=node-jest` |
-| `--devcontainer` | add .devcontainer/devcontainer.json (default) | off |
+| `--devcontainer` | add .devcontainer/devcontainer.json and set [ci] devcontainer = true | off |
 | `--dir <dir>` | directory to create the workspace in (default ./<name>) | `./<name>` |
 | `--dry-run` | show the files smith would create and the first commit, and change nothing | off |
 | `--first-commit <first-commit>` | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |  |
@@ -84,7 +84,7 @@ Usage: `smith new <name> [flags]`
 | `--namespace <namespace>` | the word every language puts before a new project's name, as in acme-core and @acme/core (default the workspace name) | the workspace name |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
 | `--no-commit` | write the files and commit nothing | off |
-| `--no-devcontainer` | leave the dev container out; sets [ci] devcontainer = false | off |
+| `--no-devcontainer` | leave the dev container out (the default); sets [ci] devcontainer = false | off |
 | `--questions` | print the questions smith new asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
 | `--recipe <recipe>` | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |  |
 | `--recipe-file <recipe-file>` | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |  |

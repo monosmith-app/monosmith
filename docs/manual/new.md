@@ -45,7 +45,7 @@ Usage: `smith new <name> [flags]`
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
 | `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
-| `--devcontainer` | boolean | off | add .devcontainer/devcontainer.json (default) |
+| `--devcontainer` | boolean | off | add .devcontainer/devcontainer.json and set [ci] devcontainer = true |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
 | `--dry-run` | boolean | off | show the files smith would create and the first commit, and change nothing |
 | `--first-commit <first-commit>` | string |  | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |
@@ -58,7 +58,7 @@ Usage: `smith new <name> [flags]`
 | `--namespace <namespace>` | string | the workspace name | the word every language puts before a new project's name, as in acme-core and @acme/core (default the workspace name) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
 | `--no-commit` | boolean | off | write the files and commit nothing |
-| `--no-devcontainer` | boolean | off | leave the dev container out; sets [ci] devcontainer = false |
+| `--no-devcontainer` | boolean | off | leave the dev container out (the default); sets [ci] devcontainer = false |
 | `--questions` | boolean | off | print the questions smith new asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
 | `--recipe-file <recipe-file>` | string |  | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |
@@ -94,7 +94,7 @@ error listed below.
 ## What smith chooses for you
 
 With `--yes` smith prints a "Chosen for you" block: the agent files, the dev
-container and the CI, each with the flag that changes it (`--no-agent`, `--no-devcontainer`,
+container and the CI, each with the flag that changes it (`--no-agent`, `--devcontainer`,
 `--ci`). In a terminal the agent files and the dev container are questions. Without a terminal and
 without `--yes`, smith refuses and names every open flag in one message (`--ci`, `--language`,
 `--architecture`, `--agent`, `--devcontainer`, `--first-commit`), because it does not choose in silence.

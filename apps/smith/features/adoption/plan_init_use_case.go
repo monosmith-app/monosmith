@@ -86,7 +86,6 @@ func PlanInit(r Report, c adoptdecision.Choices, install bool) operationplan.Pla
 		}
 	}
 	if len(providers) > 0 {
-		plan.Add("Files smith creates", operationplan.Line{Action: operationplan.Create, Path: cipipeline.DevcontainerPath, Note: "dev container with the toolchains CI installs"})
 		plan.Add("Files smith creates", operationplan.Line{Action: operationplan.Create, Path: cipipeline.InstallScriptPath, Note: "installs smith in the pipelines"})
 	}
 	if c.Agent == adoptdecision.AgentAdd {

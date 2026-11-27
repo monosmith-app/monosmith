@@ -85,7 +85,7 @@ cd acme
 ```text
 Chosen for you:
   agent files (.claude/agents/smith.md, .mcp.json, .vscode/mcp.json): written; --no-agent leaves them out
-  .devcontainer/devcontainer.json: written; --no-devcontainer leaves it out
+  .devcontainer/devcontainer.json: not written; --devcontainer adds it
   CI: github; --ci github,azure,gitlab,circleci,bitbucket changes it
 
 Go module prefix: example.com/acme (no git remote; --module-prefix <prefix> sets the real one before Go code imports it)

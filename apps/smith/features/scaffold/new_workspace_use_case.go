@@ -57,8 +57,9 @@ type NewOptions struct {
 	SkipAgent bool
 	// NoCI writes no pipeline: [ci] providers is empty.
 	NoCI bool
-	// NoDevcontainer leaves .devcontainer out and sets [ci] devcontainer = false.
-	NoDevcontainer bool
+	// Devcontainer writes .devcontainer/devcontainer.json and sets [ci]
+	// devcontainer = true. Off by default.
+	Devcontainer bool
 
 	// The answers of the questions smith new asks (NewQuestions); a zero value
 	// is the default and leaves the commented line in smith.toml.
