@@ -94,7 +94,7 @@ func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *
 	if l.sh().detailOpen {
 		t.Fatal("the detail is beside the list now")
 	}
-	l.has("Result", "Filter:")
+	l.has("Last result", "Filter:")
 }
 
 func TestTheFirstProjectIsSelectedAndShownInTheDetail(t *testing.T) {

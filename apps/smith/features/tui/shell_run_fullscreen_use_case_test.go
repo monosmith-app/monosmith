@@ -34,7 +34,7 @@ func TestTheKeyMakesTheRunFillTheTerminalUnderATopBarAndEscGoesBack(t *testing.T
 		t.Errorf("the top bar has no button to go back: %q", rows[0])
 	}
 	view := l.view()
-	for _, gone := range []string{"╭─ Views", "palette (:)", "quit (q)"} {
+	for _, gone := range []string{"Dependencies │", "palette (:)", "quit (q)"} {
 		if strings.Contains(view, gone) {
 			t.Errorf("%q is still on the screen in full screen:\n%s", gone, view)
 		}
@@ -43,7 +43,7 @@ func TestTheKeyMakesTheRunFillTheTerminalUnderATopBarAndEscGoesBack(t *testing.T
 		t.Errorf("the run is not shown:\n%s", view)
 	}
 	l.keys("esc")
-	if l.sh().fullRun() || !strings.Contains(l.view(), "╭─ Views") {
+	if l.sh().fullRun() || !strings.Contains(l.view(), "Dependencies │") {
 		t.Error("Esc did not give the screen back")
 	}
 }
