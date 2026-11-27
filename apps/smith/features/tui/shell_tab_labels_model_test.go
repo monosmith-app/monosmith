@@ -83,8 +83,8 @@ func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 
 func TestTheDoctorTabCarriesTheCountOfFailures(t *testing.T) {
 	l := newLab(t, true, 140, 30)
-	l.keys("3")
-	if text := stripText(l); !strings.Contains(text, "3 Health ×2") {
+	l.keys("4")
+	if text := stripText(l); !strings.Contains(text, "4 Health ×2") {
 		t.Fatalf("the Health tab should carry its failures:\n%s", text)
 	}
 	if x, y := l.railSpot(commands.TabDoctor); !strings.Contains(l.lines()[y][x:], "×2") {
@@ -125,18 +125,18 @@ func TestTheAddProjectWizardIsTitledAddAProject(t *testing.T) {
 	}
 }
 
-func TestADryRunNeverShowsAGreenTickOnTheProjectsTab(t *testing.T) {
+func TestADryRunNeverShowsAGreenTickOnTheRunsTab(t *testing.T) {
 	s := newLab(t, true, 140, 30).sh()
 	now := time.Now()
 	s.run = runview.NewRun([]string{"release", "--dry-run"}, nil, now)
 	s.run.End(0, false, now)
-	got := pane.Strip(s.tabBadge("projects"))
+	got := pane.Strip(s.tabBadge("runs"))
 	if strings.Contains(got, "✓") || got == "" {
 		t.Errorf("a dry run shows %q", got)
 	}
 	s.run = runview.NewRun([]string{"run", "build"}, nil, now)
 	s.run.End(0, false, now)
-	if got := pane.Strip(s.tabBadge("projects")); got != "✓" {
+	if got := pane.Strip(s.tabBadge("runs")); got != "✓" {
 		t.Errorf("a real run that passed shows %q", got)
 	}
 }
@@ -146,7 +146,7 @@ func TestATabShowsASpinnerWhileItsWorkGoesOnInTheBackground(t *testing.T) {
 	sh := l.sh()
 	sh.depsLoading = true
 	l.m = sh
-	if tabs := stripText(l); !strings.Contains(tabs, "4 Deps ⠋") {
+	if tabs := stripText(l); !strings.Contains(tabs, "5 Deps ⠋") {
 		t.Fatalf("Deps has no badge while the registries are asked: %q", tabs)
 	}
 	if !l.sh().animating() {
@@ -154,7 +154,7 @@ func TestATabShowsASpinnerWhileItsWorkGoesOnInTheBackground(t *testing.T) {
 	}
 	sh.depsLoading = false
 	l.m = sh
-	if strings.Contains(stripText(l), "4 Deps ⠋") {
+	if strings.Contains(stripText(l), "5 Deps ⠋") {
 		t.Fatal("the badge stays after the work ended")
 	}
 }

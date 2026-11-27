@@ -51,12 +51,12 @@ func TestTheKeyMakesTheRunFillTheTerminalUnderATopBarAndEscGoesBack(t *testing.T
 func TestTheEnlargeButtonAndTheTopBarButtonSwitchTheView(t *testing.T) {
 	l := runLab(t)
 	sh := l.sh()
-	in := sh.detailInner()
-	hit, ok := sh.sideContent(in.W, in.H).hits[0]
-	if !ok || len(hit.spans) != 1 || hit.spans[0].id != "x:run-fullscreen" {
+	in := sh.mainInner()
+	hit, ok := sh.runsContent(sh.runRect()).hits[0]
+	if !ok || len(hit.spans) == 0 || hit.spans[len(hit.spans)-1].id != "x:run-fullscreen" {
 		t.Fatalf("the run header has no enlarge button: %+v", hit)
 	}
-	x := in.X + hit.spans[0].from + 1
+	x := in.X + hit.spans[len(hit.spans)-1].from + 1
 	l.send(click(x, in.Y)).send(letGo(x, in.Y))
 	if !l.sh().fullRun() {
 		t.Fatalf("the + button did not enlarge the run:\n%s", l.view())
@@ -71,9 +71,9 @@ func TestTheEnlargeButtonAndTheTopBarButtonSwitchTheView(t *testing.T) {
 func TestADoubleClickOnTheOutputGoesFullScreenAndBackButNotOnAButton(t *testing.T) {
 	l := runLab(t)
 	sh := l.sh()
-	in := sh.detailInner()
+	in := sh.mainInner()
 	// A row of the log, well under the buttons.
-	x, y := in.X+4, in.Y+in.H-2
+	x, y := in.X+sh.runsGeom(sh.runRect()).logX+4, in.Y+in.H-2
 	l.send(click(x, y)).send(letGo(x, y))
 	l.advance(120 * time.Millisecond)
 	l.send(click(x, y)).send(letGo(x, y))
@@ -92,7 +92,7 @@ func TestADoubleClickOnTheOutputGoesFullScreenAndBackButNotOnAButton(t *testing.
 func TestFullScreenEndsWhenTheRunClosesAndTheViewHasNoSplitOfTheOldLayout(t *testing.T) {
 	l := runLab(t)
 	l.keys("Z")
-	l.keys("3")
+	l.keys("4")
 	if l.sh().fullRun() {
 		t.Error("full screen stayed open on another tab")
 	}

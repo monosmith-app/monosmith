@@ -3,6 +3,7 @@ package tui
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
@@ -16,8 +17,13 @@ func (s Shell) mainTitle() string {
 		listed, _ := s.list.Listed()
 		view = words.Say("tui.projects.title_filtered", "view", view, "shown", len(listed), "total", s.list.Len())
 	}
-	if s.fullRun() {
-		return s.detailTitle()
+	if s.runShown() {
+		// The Runs view names the run: "Run · smith test", or on a narrow screen
+		// "‹ Runs / smith test", the frame of an item opened in its place.
+		if s.lay().Mode == layout.Narrow && !s.fullRun() {
+			return words.Say("tui.frame.back", "view", view, "item", s.run.CommandLine())
+		}
+		return words.Say("tui.frame.run", "command", s.run.CommandLine())
 	}
 	if s.detailFull() {
 		if item := s.detailTitle(); item != "" {
@@ -28,13 +34,9 @@ func (s Shell) mainTitle() string {
 }
 
 // detailTitle is the title of the detail's frame: what the detail tells about.
-// It is the run while one is open in Projects, else the selected project, the
-// selected check, the one-version policy or the settings section; "" for a
-// view without a detail.
+// It is the selected project, the selected check, the one-version policy or the
+// settings section; "" for a view without a detail.
 func (s Shell) detailTitle() string {
-	if s.run != nil && (s.runShown() || s.fullRun()) {
-		return words.Say("tui.frame.run", "command", s.run.CommandLine())
-	}
 	switch s.tab {
 	case commands.TabProjects:
 		if p, ok := s.list.Selected(); ok && s.projMenu {

@@ -181,7 +181,7 @@ func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 
 func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
 	l := newLab(t, true, 320, 34)
-	x, y := l.find("1-6 views")
+	x, y := l.find("1-7 views")
 	l.send(click(x+1, y))
 	if l.sh().tab != "projects" || len(l.started) != 0 {
 		t.Fatal("nothing happens")
@@ -346,7 +346,7 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "x", "enter")
+	l.keys("6", "x", "enter")
 	x, y := l.find("Cancel (Esc)")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
@@ -363,7 +363,7 @@ func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 
 func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "x", "enter")
+	l.keys("6", "x", "enter")
 	l.send(click(2, 30))
 	l.hasNot("The command that will run:")
 	if len(l.started) != 0 {
@@ -373,7 +373,7 @@ func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 
 func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "x", "enter")
+	l.keys("6", "x", "enter")
 	before := l.sh().View()
 	x, y := l.find("Cancel (Esc)")
 	l.send(motion(x+2, y))
@@ -414,18 +414,16 @@ func TestTheWheelScrollsTheProjectListAndNeverMovesTheSelection(t *testing.T) {
 	}
 }
 
-func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
+func TestClickingATaskInTheRunTreeShowsItsLog(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
 	l.keys("b")
 	l.has("main.go:12")
-	x, y := l.find("✓ kit:build")
-	l.send(click(x+3, y))
-	l.has("Log: kit:build", "ok example.com/kit")
+	l.clickTask("kit:build")
+	l.has("kit:build  following", "ok example.com/kit")
 	l.hasNot("main.go:12")
-	x, y = l.find("All output")
-	l.send(click(x+3, y))
-	l.has("Log: all output", "main.go:12", "ok example.com/kit")
+	l.clickTask("")
+	l.has("All output  following", "main.go:12", "ok example.com/kit")
 }
 
 func TestOneClickOnAGuideOptionPicksIt(t *testing.T) {
@@ -466,7 +464,7 @@ func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 		t.Fatalf("the strip scrolls: %q", strip)
 	}
 	strip := l.lines()[l.sh().lay().Tabs.Y]
-	for _, name := range []string{"1 Home", "2 Projects", "3 Health", "4 Deps", "5 Release", "6 Settings"} {
+	for _, name := range []string{"1 Home", "2 Projects", "3 Runs", "4 Health", "5 Deps", "6 Release", "7 Settings"} {
 		if !strings.Contains(strip, name) {
 			t.Fatalf("the strip lacks %q: %q", name, strip)
 		}

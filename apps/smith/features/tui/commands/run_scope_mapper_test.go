@@ -10,16 +10,16 @@ func TestRunKeysActOnTheSelectionOnEveryView(t *testing.T) {
 		}
 	}
 	// The run panel of Projects is a view of its own for the keys.
-	if got := (State{View: TabProjects, RunOpen: true, InWorkspace: true, Project: "web", Projects: 23}).RunProject(); got != "web" {
+	if got := (State{View: TabRuns, RunOpen: true, InWorkspace: true, Project: "web", Projects: 23}).RunProject(); got != "web" {
 		t.Errorf("the run panel runs on %q, want web", got)
 	}
-	if got := (State{View: TabProjects, RunOpen: true, InWorkspace: true, Projects: 23}).RunProject(); got != "" {
+	if got := (State{View: TabRuns, RunOpen: true, InWorkspace: true, Projects: 23}).RunProject(); got != "" {
 		t.Errorf("with no selection a run covers the workspace, got %q", got)
 	}
 }
 
 func TestTheCapitalKeysNameEveryProjectOnEveryView(t *testing.T) {
-	for _, view := range []State{{View: TabHome}, {View: TabProjects, RunOpen: true}} {
+	for _, view := range []State{{View: TabHome}, {View: TabProjects}} {
 		s := view
 		s.InWorkspace, s.Project, s.Projects = true, "web", 23
 		hints, _ := Hints(s)

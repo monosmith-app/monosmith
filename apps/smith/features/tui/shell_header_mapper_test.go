@@ -65,7 +65,7 @@ func TestOnANarrowScreenTheStripOfViewsIsTheSecondRow(t *testing.T) {
 	if !strings.Contains(lines[0], "acme") || strings.Contains(lines[0], "Home") {
 		t.Fatalf("the title bar is alone on the first row: %q", lines[0])
 	}
-	if !strings.HasPrefix(lines[1], "1 Home  2 Projects") || !strings.Contains(lines[1], "4 Deps") || strings.Contains(lines[1], "Dependencies") {
+	if !strings.HasPrefix(lines[1], "1 Home  2 Projects") || !strings.Contains(lines[1], "5 Deps") || strings.Contains(lines[1], "Dependencies") {
 		t.Fatalf("and the strip of views on the second, with Deps short: %q", lines[1])
 	}
 	if pane.Width(lines[1]) != 80 || strings.Contains(lines[1], "›") {

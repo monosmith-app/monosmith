@@ -12,7 +12,7 @@ var (
 	busy    = State{InWorkspace: true, Running: true, View: TabProjects}
 	// withRun and withRecent are Projects while its right panel shows a run, and
 	// while the keyboard is on the list of recent runs.
-	withRun    = State{InWorkspace: true, View: TabProjects, RunOpen: true}
+	withRun    = State{InWorkspace: true, View: TabRuns, RunOpen: true}
 	withRecent = State{InWorkspace: true, View: TabProjects, RecentFocus: true}
 )
 
@@ -216,7 +216,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		if got := line(view); !strings.HasPrefix(got, want) {
 			t.Errorf("%s footer is\n%s\nwant\n%s", view, got, want)
 		}
-		if got := line(view); !strings.HasSuffix(got, "1-6 views · m mouse · : palette · ? help · q quit") {
+		if got := line(view); !strings.HasSuffix(got, "1-7 views · m mouse · : palette · ? help · q quit") {
 			t.Errorf("%s footer ends %q", view, got)
 		}
 	}
@@ -227,7 +227,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	for _, h := range v {
 		out = append(out, h.Glyph+" "+h.Label)
 	}
-	if got := strings.Join(out, " · "); !strings.HasPrefix(got, ", older · . newer · Esc back · ↑↓ task · r run again · R failed · Y copy log · f follow") {
+	if got := strings.Join(out, " · "); !strings.HasPrefix(got, "↑↓ task · Tab log · e errors only · r run again · R failed · Y copy log · f follow · w why it ran · , older · . newer · Esc back") {
 		t.Errorf("Run panel footer %q", got)
 	}
 	sections := State{InWorkspace: true, View: TabProjects, SideFocus: true, ProjectDetail: true}
@@ -331,7 +331,7 @@ func TestQuitCopyAndMouseAreSingleKeys(t *testing.T) {
 }
 
 func TestNumberKeysSwitchViewsInTheOrderOfTheTabs(t *testing.T) {
-	want := []string{TabHome, TabProjects, TabDoctor, TabDeps, TabRelease, TabSettings}
+	want := []string{TabHome, TabProjects, TabRuns, TabDoctor, TabDeps, TabRelease, TabSettings}
 	for i, tab := range want {
 		key := string(rune('1' + i))
 		if c, _, ok := ByKey(key, inside); !ok || c.Tab != tab {
@@ -381,7 +381,7 @@ func TestTheHealthListOpensACheckOnlyWhenNoDetailIsBesideIt(t *testing.T) {
 }
 
 func TestTheRunFooterDoesNotOfferFollowOrTasksBeforeAnythingRan(t *testing.T) {
-	s := State{InWorkspace: true, View: TabProjects, RunOpen: true, Reasons: map[string]string{
+	s := State{InWorkspace: true, View: TabRuns, RunOpen: true, Reasons: map[string]string{
 		"run.follow": "nothing has run yet", "run.scroll": "nothing has run yet",
 	}}
 	v, _ := Hints(s)

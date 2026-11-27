@@ -27,8 +27,8 @@ func TestATaskRunNeverHandsTheTerminalOver(t *testing.T) {
 		if len(l.started) != 1 || l.sh().quit || len(l.sh().Argv) != 0 {
 			t.Fatalf("%v: started %v, quit=%v argv=%v", keys, l.started, l.sh().quit, l.sh().Argv)
 		}
-		if l.sh().tab != "projects" || !l.sh().runShown() {
-			t.Fatalf("%v showed %q, not the run panel of Projects", keys, l.sh().tab)
+		if l.sh().tab != "runs" || !l.sh().runShown() {
+			t.Fatalf("%v showed %q, not the Runs view", keys, l.sh().tab)
 		}
 	}
 	// The palette's entries and the Home action take the same way.
@@ -45,11 +45,11 @@ func TestEveryRunOfTheSessionIsKeptAndCanBeShownAgain(t *testing.T) {
 	l.keys("b")
 	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✓ 12ms"}}
 	l.keys("t")
-	l.has("$ smith run test", "run 2 of 2", "kit:test")
+	l.has("Run · smith run test", "run 2 of 2", "kit:test")
 	l.keys(",")
-	l.has("$ smith run build", "run 1 of 2", "orders:build")
+	l.has("Run · smith run build", "run 1 of 2", "orders:build")
 	// The earlier run opens on its first failure.
-	l.has("Log: orders:build", "undefined: Foo")
+	l.has("orders:build  following", "undefined: Foo")
 	l.keys(".")
 	l.has("run 2 of 2", "kit:test")
 	l.keys(".")
@@ -206,5 +206,5 @@ func TestTheTaskThatFailedOnItsOwnIsShownBeforeOneThatWasOnlyInterrupted(t *test
 	}, exit: runner.Exit{Code: 1}}
 	l.keys("b")
 	// kit:build was running, was seen first, and was interrupted by the end.
-	l.has("Log: orders:build", "real reason")
+	l.has("orders:build  following", "real reason")
 }

@@ -38,7 +38,7 @@ func TestOnANarrowScreenEnterOpensTheProjectAndEscGoesBackToTheList(t *testing.T
 
 func TestOnANarrowScreenEnterOpensTheCheckOfHealthAndEscGoesBack(t *testing.T) {
 	l := newLab(t, true, 80, 30)
-	l.keys("3")
+	l.keys("4")
 	if top := mainTop(l); !strings.HasPrefix(top, "╭─ Health ") {
 		t.Fatalf("the list's frame is titled Health: %q", top)
 	}

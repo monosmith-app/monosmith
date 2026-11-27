@@ -120,26 +120,25 @@ func TestWhenTheListIsNotVisibleTheMetaLineStaysTheSame(t *testing.T) {
 	w.has(webMeta)
 }
 
-func TestBesideTheListTheRunPanelLeavesOutWhatTheTaskRowShows(t *testing.T) {
+func TestTheLogOfTheRunsViewSaysTheCommandAndTheStateOfTheSelectedTask(t *testing.T) {
 	for _, w := range []int{120, 140} {
 		l := newLab(t, true, w, 36)
 		l.next = failingRun()
 		l.keys("b")
-		// The row of the failed task shows its state, time and reason, so the lines
-		// under the rule say only the command; the log stays below them.
-		if got := l.sh().taskInfo(w / 2); len(got) != 1 {
-			t.Errorf("%d columns: the lines under the rule repeat the task row: %v", w, got)
+		// A row of the tree has only the mark, the name and the time, so the lines
+		// under the title of the log say the command, the state and the reason.
+		if got := l.sh().taskInfo(w / 2); len(got) != 2 {
+			t.Errorf("%d columns: the lines under the title are %v, want the command and the facts", w, got)
 		}
 		l.has("$ go build ./...", "exited with code 2")
 	}
 }
 
-func TestTheRunPanelKeepsTheStateTimeAndReasonOfTheSelectedTaskAndItsCommand(t *testing.T) {
+func TestTheNarrowRunsViewKeepsTheStateTimeAndReasonOfTheSelectedTaskAndItsCommand(t *testing.T) {
 	l := newLab(t, true, 80, 36)
 	l.next = failingRun()
-	l.keys("b")
-	// The failed task is selected: its row is cut in a panel this narrow, so the
-	// lines under the rule of the log say what the row had no room for.
+	l.keys("b", "tab")
+	// The failed task is selected: its log, behind Tab, starts with what it ran and how it ended.
 	l.has("orders:build", "$ go build ./...", "exited with code 2")
 }
 
@@ -155,7 +154,7 @@ func TestAPanelKeepsAnUnmarkedRowAndLeavesOutAMarkedOneBesideTheList(t *testing.
 func TestTheDoctorDetailDoesNotRepeatTheStateTheHighlightedRowShows(t *testing.T) {
 	for _, w := range []int{80, 120} {
 		l := newLab(t, true, w, 34)
-		l.keys("3")
+		l.keys("4")
 		if w < layout.WideFrom {
 			l.keys("enter")
 		}
@@ -200,16 +199,16 @@ func TestALongProjectNameKeepsTheLanguageOfTheListOrCutsTheName(t *testing.T) {
 	}
 }
 
-func TestTheRunPanelSaysTheReasonUnderTheRuleOnlyWhenTheTaskRowIsCutBeforeIt(t *testing.T) {
+func TestTheLogWrapsTheFactsOfTheTaskToItsWidth(t *testing.T) {
 	l := newLab(t, true, 120, 36)
 	l.next = failingRun()
 	l.keys("b")
 	sh := l.sh()
-	if got := sh.taskInfo(30); len(got) < 2 {
-		t.Fatalf("a 30 cell panel should cut the reason and say it under the rule: %v", got)
+	if got := sh.taskInfo(20); len(got) < 3 {
+		t.Fatalf("a 20 cell log should wrap the facts of the task under its command: %v", got)
 	}
-	if got := sh.taskInfo(100); len(got) != 1 {
-		t.Fatalf("a 100 cell panel shows the reason in the row and says only the command: %v", got)
+	if got := sh.taskInfo(100); len(got) != 2 {
+		t.Fatalf("a 100 cell log says the command and the facts on a line each: %v", got)
 	}
 }
 

@@ -28,8 +28,7 @@ const maxHistory = 200
 // execute runs a smith command line the way the user would from a shell:
 // commands that need a terminal hand over to it, commands that change the
 // workspace or publish ask first in a dialog that shows the line, and the
-// rest (task runs included) start at once in the run panel of Projects, which
-// captures their output and shows each task's state. confirmed is true once the dialog said yes.
+// rest (task runs included) start at once in the Runs view, which captures their output and shows each task's state. confirmed is true once the dialog said yes.
 func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	if section, ok := settingsSectionFor(argv); ok && s.inWorkspace {
 		// What plugin, recipe and config list print is the Settings tab.
@@ -144,6 +143,7 @@ func (s *Shell) start(argv []string) tea.Cmd {
 	s.formOrigin = ""
 	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
+	s.runErrors = false
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {
 		s.history = s.history[len(s.history)-maxHistory:]
 	}
@@ -153,13 +153,9 @@ func (s *Shell) start(argv []string) tea.Cmd {
 	if isRelease(argv) {
 		s.startRelease(argv)
 	}
-	// The run opens in the right panel of Projects, from whichever tab it started.
-	if contains(s.tabs, commands.TabProjects) {
-		if stayOnRelease {
-			s.runOpen = true
-		} else {
-			s.revealRun()
-		}
+	// The run opens in the Runs view, from whichever tab it started.
+	if contains(s.tabs, commands.TabRuns) && !stayOnRelease {
+		s.revealRun()
 	}
 	begin := s.sources.Start
 	return func() tea.Msg {

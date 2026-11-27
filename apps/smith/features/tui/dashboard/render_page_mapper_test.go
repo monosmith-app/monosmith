@@ -64,11 +64,11 @@ func TestHomeShowsTheSummaryTheBoxesTheListAndStartSomething(t *testing.T) {
 		"Needs you now  1/3",
 		"│ × Failed   2 checks fail, 6 can be fixed now",
 		"gradle is not on PATH · ci.yml is out of date",
-		"[Fix (Enter)]  [Open Health (3)]",
+		"[Fix (Enter)]  [Open Health (4)]",
 		"Ready to release: 8 packages, smith 1.132.0 → 1.133.0 (292 commits)",
-		"[Open Release (5)]",
+		"[Open Release (6)]",
 		"Updates not looked at yet",
-		"[Open Deps (4)]",
+		"[Open Deps (5)]",
 		"Start something",
 		"[Add a project (a)]  [Compose a stack (A)]",
 	} {
@@ -154,9 +154,9 @@ func TestEachButtonTargetCoversExactlyItsText(t *testing.T) {
 	r := Page(plainTheme(), brokenWorkspace, 140, Away)
 	text := plainLines(r)
 	want := map[string]string{
-		"ws.fix": "[Fix (Enter)]", "view.doctor": "[Open Health (3)]", "view.release": "[Open Release (5)]", "view.deps": "[Open Deps (4)]",
+		"ws.fix": "[Fix (Enter)]", "view.doctor": "[Open Health (4)]", "view.release": "[Open Release (6)]", "view.deps": "[Open Deps (5)]",
 		"run.build-all": "[Build all (B)]", "run.lint-all": "[Lint all (L)]", "file.palette": "[Run a task… (Ctrl+K)]",
-		"file.add": "[Add a project (a)]", "file.compose": "[Compose a stack (A)]", "view.settings": "[Settings (6)]",
+		"file.add": "[Add a project (a)]", "file.compose": "[Compose a stack (A)]", "view.settings": "[Settings (7)]",
 	}
 	seen := map[string]bool{}
 	for _, tg := range r.Targets {
@@ -232,11 +232,11 @@ func TestANarrowItemShowsOnlyTheKeyOfItsAction(t *testing.T) {
 	r := Page(plainTheme(), f, 80, Away)
 	text := plainLines(r)
 	for _, tg := range r.Targets {
-		if tg.Kind == TargetKey && tg.Command == "view.doctor" && textAt(text[tg.Row], tg.From, tg.To) == "3" && tg.To == 79 {
+		if tg.Kind == TargetKey && tg.Command == "view.doctor" && textAt(text[tg.Row], tg.From, tg.To) == "4" && tg.To == 79 {
 			return
 		}
 	}
-	t.Fatalf("no key 3 for Open Health:\n%s", strings.Join(text, "\n"))
+	t.Fatalf("no key 4 for Open Health:\n%s", strings.Join(text, "\n"))
 }
 
 // On a wide page every item has its buttons at the right of its title line,
@@ -274,7 +274,7 @@ func TestEveryItemHasItsButtonsAtTheRightOfItsTitleLine(t *testing.T) {
 	if cellOf(text[title+1], "gradle") != cellOf(text[title], "1 check fails") {
 		t.Errorf("the detail is not under the title:\n%s\n%s", text[title], text[title+1])
 	}
-	for _, want := range []string{"[Fix (F)]  [Open Health (3)]", "[Open Deps (4)]"} {
+	for _, want := range []string{"[Fix (F)]  [Open Health (4)]", "[Open Deps (5)]"} {
 		if !strings.Contains(all, want) {
 			t.Errorf("missing %q in\n%s", want, all)
 		}
@@ -286,7 +286,7 @@ func TestEveryItemHasItsButtonsAtTheRightOfItsTitleLine(t *testing.T) {
 
 func TestTheButtonUnderTheKeyboardIsPrimaryAndCarriesEnter(t *testing.T) {
 	th := plainTheme()
-	if all := strings.Join(plainLines(Render(th, brokenWorkspace, 140, Away, Choice{})), "\n"); !strings.Contains(all, "[Fix (Enter)]  [Open Health (3)]") {
+	if all := strings.Join(plainLines(Render(th, brokenWorkspace, 140, Away, Choice{})), "\n"); !strings.Contains(all, "[Fix (Enter)]  [Open Health (4)]") {
 		t.Fatalf("on the first item:\n%s", all)
 	}
 	// On the second button Enter moves there, and Fix gets its own key back.

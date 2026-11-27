@@ -36,14 +36,14 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 
 func TestTheDepsViewListsNewerReleasesAndThePolicy(t *testing.T) {
 	l := newLab(t, true, 170, 34)
-	l.keys("4")
+	l.keys("5")
 	l.has("3 with newer releases", "All 3 (e)", "Patch 1 (p)", "Minor 1 (n)", "Major 1 (M)", "axios", "1.6.8", "zod", "react", "web, api",
 		"One version", "every production dependency has one version", "axios (node) should be ^1.6.8 everywhere")
 }
 
 func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "space", "down", "down", "space") // axios and react
+	l.keys("5", "space", "down", "down", "space") // axios and react
 	l.has("[x] axios", "[ ] zod", "[x] react", "2 marked")
 	l.keys("u")
 	l.has("smith deps up axios react")
@@ -58,7 +58,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 
 func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "down", "enter", "y")
+	l.keys("5", "down", "enter", "y")
 	if got := l.lastStarted(); got != "deps up zod --yes" {
 		t.Fatalf("started %q", got)
 	}
@@ -66,7 +66,7 @@ func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T)
 
 func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4")
+	l.keys("5")
 	x, y := l.find("Package")
 	l.send(click(x-3, y)) // the box in the heading marks every row shown
 	l.has("[x] axios", "[x] zod", "[x] react", "3 marked")
@@ -88,7 +88,7 @@ func TestTheDepsViewSaysWhenThereIsNothingToUpdateAndWhenThePolicyIsOff(t *testi
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 		return sh
 	}()
-	l.keys("4")
+	l.keys("5")
 	l.has("Every dependency is on its latest release.", "not required")
 	l.keys("u", "v")
 	if len(l.started) != 0 || l.sh().confirm != nil {
@@ -103,13 +103,13 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{Err: errString("the registry is unreachable")} }
 		return sh
 	}()
-	l.keys("4")
+	l.keys("5")
 	l.has("the registry is unreachable")
 }
 
 func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("3") // the checks are grouped by default
+	l.keys("4") // the checks are grouped by default
 	l.has("workspace", "web  1 failed", "2 checks passed", "F fix all")
 	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
 	l.has("Check again")
@@ -129,7 +129,7 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 
 func TestTheDoctorTabListsGroupedUntilGroupingIsOff(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("3")
+	l.keys("4")
 	l.has("web  1 failed", "Docker registries of web agree")
 	l.keys("g")
 	l.hasNot("web  1 failed")
@@ -138,7 +138,7 @@ func TestTheDoctorTabListsGroupedUntilGroupingIsOff(t *testing.T) {
 
 func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5")
+	l.keys("6")
 	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "n notes")
 	l.hasNot("a1b2c3d")
 	l.keys("enter")
@@ -154,7 +154,7 @@ func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.
 
 func TestAPreviewKeepsThePlanSoTheReleaseCanStartFromIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5")
+	l.keys("6")
 	sh := l.sh()
 	sh.refreshAfter([]string{"release", "--dry-run", "--notes"})
 	if !sh.release.CanRelease() {
@@ -178,12 +178,12 @@ func TestRReloadsTheViewsThatLoadFromTheWorkspace(t *testing.T) {
 		sh.sources.Deps = func() depsview.Result { calls++; return sampleDeps }
 		return sh
 	}()
-	l.keys("4")
+	l.keys("5")
 	l.keys("r")
 	if calls != 2 {
 		t.Fatalf("the dependencies were looked up %d times, want 2", calls)
 	}
-	l.keys("3", "r")
+	l.keys("4", "r")
 	l.has("go.work lists every module")
 }
 
@@ -194,9 +194,9 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 	}{
 		{"1", "Do the suggested next action"},
 		{"2", "Open the detail of the project"},
-		{"3", "Reload this view: read the files again, run nothing"},
-		{"4", "Update the marked ones"},
-		{"5", "Print the release notes"},
+		{"4", "Reload this view: read the files again, run nothing"},
+		{"5", "Update the marked ones"},
+		{"6", "Print the release notes"},
 	}
 	for _, c := range cases {
 		l := newLab(t, true, 100, 40)
@@ -213,7 +213,7 @@ func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
 	// Nine tabs do not fit 79 cells: the long names are shortened and the strip scrolls.
 	l.has("Projects", "Health")
-	for _, key := range []string{"1", "2", "3", "4", "5"} {
+	for _, key := range []string{"1", "2", "3", "4", "5", "6", "7"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
 			if w := pane.Width(line); w != 80 {
@@ -236,7 +236,7 @@ func TestEveryTabFitsEightyColumns(t *testing.T) {
 
 func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 	l := newLab(t, true, 79, 24)
-	l.keys("4")
+	l.keys("5")
 	l.has("Deps", "3 with newer releases")
 	for i := 0; i < 8 && !strings.Contains(l.view(), "Home"); i++ {
 		l.clickText("‹") // the strip scrolls: the marker leads to the tabs before
@@ -256,7 +256,7 @@ func longDeps(t *testing.T, n int) *lab {
 	}
 	sh.sources.Deps = func() depsview.Result { return depsview.Result{Rows: rows} }
 	l.m = sh
-	l.keys("4")
+	l.keys("5")
 	l.keys("r")
 	return l
 }
@@ -372,7 +372,7 @@ func TestTheBoxInTheHeadingMarksEveryRowThenNoneAndShowsSome(t *testing.T) {
 func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
 	for key, want := range map[string][]string{
 		"2": {"Projects view", "Open the detail of the project"},
-		"4": {"Dependencies view", "Update the marked ones", "Use the same version everywhere (Align)"},
+		"5": {"Dependencies view", "Update the marked ones", "Use the same version everywhere (Align)"},
 	} {
 		l := newLab(t, true, 100, 40)
 		l.keys(key, "?")
@@ -428,7 +428,7 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 
 func TestTheDepsViewRemovesAPackageOfOneProjectWithThatProjectAsTarget(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "down", "x") // zod, declared in web only
+	l.keys("5", "down", "x") // zod, declared in web only
 	l.has("uninstall -p web zod")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v before the confirmation", l.started)
@@ -446,7 +446,7 @@ func TestTheDepsViewTargetsTheWorkspaceRootForARootPackage(t *testing.T) {
 		return depsview.Result{Rows: []depsview.Row{{Name: "@swc/core", Plugin: "node", Current: "1.0.0", Latest: "1.1.0", Level: "minor", Projects: []string{"(root)"}}}}
 	}
 	l.m = sh
-	l.keys("4", "x")
+	l.keys("5", "x")
 	l.has("uninstall -p . @swc/core", "the workspace root")
 	l.keys("y")
 	if got := l.lastStarted(); got != "uninstall -p . @swc/core --yes" {
@@ -456,7 +456,7 @@ func TestTheDepsViewTargetsTheWorkspaceRootForARootPackage(t *testing.T) {
 
 func TestTheDepsViewAsksWhichProjectsWhenSeveralDeclareThePackage(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "x") // axios, declared in web and api
+	l.keys("5", "x") // axios, declared in web and api
 	l.has("declared in more than one project", "web", "api")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v before anything was picked", l.started)
@@ -499,7 +499,7 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 
 func TestTheChipsOfDepsShowOneLevelAndTheKeysAndClicksAgree(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "n")
+	l.keys("5", "n")
 	l.has("[ ] zod")
 	l.hasNot("[ ] axios", "[ ] react")
 	l.keys("p")
@@ -514,7 +514,7 @@ func TestTheChipsOfDepsShowOneLevelAndTheKeysAndClicksAgree(t *testing.T) {
 
 func TestTheMajorWarningSitsUnderTheSummaryAndThePolicyBesideTheList(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "down", "down", "space")
+	l.keys("5", "down", "down", "space")
 	lines := l.lines()
 	var summary, warning, header int
 	for i, line := range lines {

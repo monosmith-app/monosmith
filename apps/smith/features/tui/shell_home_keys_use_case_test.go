@@ -79,7 +79,7 @@ func TestCtrlDAndCtrlUAndTheWheelScrollHome(t *testing.T) {
 
 func TestTheArrowsMoveThroughTheItemsAndTheirButtons(t *testing.T) {
 	l := newHomeLab(t, 160, 44)
-	l.has("[Fix (Enter)]", "[Open Health (3)]", "Needs you now  1/4")
+	l.has("[Fix (Enter)]", "[Open Health (4)]", "Needs you now  1/4")
 	l.keys("down")
 	l.has("[Fix (F)]", "[Test what changed (Enter)]", "Needs you now  2/4")
 	l.keys("up", "right")
@@ -173,12 +173,12 @@ func TestANarrowHomeShowsTheKeyOfEachItemAndAClickOnItRuns(t *testing.T) {
 	}
 }
 
-func TestAClickOnTheLastRunBoxOpensItInTheRunPanel(t *testing.T) {
+func TestAClickOnTheLastRunBoxOpensItInTheRunsView(t *testing.T) {
 	l := newHomeLab(t, 160, 44)
 	finishedRun(l, "run", "test")
 	l.has("Last run", "last run just now")
 	l.clickText("Last run")
-	if l.sh().tab != commands.TabProjects || !l.sh().runShown() {
+	if l.sh().tab != commands.TabRuns || !l.sh().runShown() {
 		t.Fatalf("tab %q, run shown %v", l.sh().tab, l.sh().runShown())
 	}
 }

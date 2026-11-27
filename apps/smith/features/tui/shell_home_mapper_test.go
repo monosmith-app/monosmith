@@ -35,8 +35,8 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 	if x, y := l.railSpot(commands.TabDoctor); !strings.Contains(l.lines()[y][x:], "×2") {
 		t.Fatalf("the rail carries the health: %q", l.lines()[y])
 	}
-	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Health (3)]",
-		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Open Deps (4)]", "4 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)")
+	l.has("2 checks fail, 1 can be fixed now", "go.work lists every module · Docker registries of web agree", "[Fix (Enter)]", "[Open Health (4)]",
+		"1 project is affected by your changes", "[Test what changed (w)]", "Updates not looked at yet", "[Open Deps (5)]", "4 projects (2 Go, 1 TypeScript / JavaScript, 1 Python)")
 	l.contentHasNot("Where to go", "nothing has run yet", "Next:")
 	for _, line := range strings.Split(l.content(), "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "Health") {
@@ -61,7 +61,7 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 		t.Fatalf("the first item (row %d, buttons %d) comes before the others (row %d)", title, fix, affected)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"↑/↓ move • Enter fix", "B build all 3", "w changed", "d health", "1-6 views"} {
+	for _, want := range []string{"↑/↓ move • Enter fix", "B build all 3", "w changed", "d health", "1-7 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
@@ -193,12 +193,12 @@ func TestAffectedProjectsComeBeforeABuild(t *testing.T) {
 
 func TestOutdatedDependenciesAreCountedOnceTheyAreKnown(t *testing.T) {
 	l := healthyShell(t, false)
-	l.keys("4", "1")
+	l.keys("5", "1")
 	l.has("3 dependencies have newer releases", "[Open Deps (Enter)]")
 	sh := l.sh()
 	sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 	l.m = sh
-	l.keys("4", "r", "1")
+	l.keys("5", "r", "1")
 	l.has("All good")
 	l.hasNot("newer releases", "Updates not looked at yet")
 }
@@ -216,7 +216,7 @@ func TestHomeListsTheLastRunsAndAClickOpensOne(t *testing.T) {
 	l.has("orders:build failed", "[See why (Enter)]", "[Run it again]", "× Failed")
 
 	l.clickText("Last run")
-	if sh := l.sh(); sh.tab != commands.TabProjects || !sh.runShown() {
+	if sh := l.sh(); sh.tab != commands.TabRuns || !sh.runShown() {
 		t.Fatalf("a click on the run opened %q (run panel %v)", sh.tab, sh.runShown())
 	}
 	l.has("orders:build")
@@ -236,7 +236,7 @@ func TestTheOpenRunAndRunAgainButtonsOfAFailedRun(t *testing.T) {
 	l.keys("B")
 	l.keys("1")
 	l.keys("enter")
-	if l.sh().tab != commands.TabProjects || !l.sh().runShown() {
+	if l.sh().tab != commands.TabRuns || !l.sh().runShown() {
 		t.Fatalf("Enter on a failed run opened %q", l.sh().tab)
 	}
 }
@@ -261,7 +261,7 @@ func TestTheReleaseItemAppearsWhenThePlanArrivesAndHomeNeverWaitsForIt(t *testin
 		{Project: "web", Current: "1.0.0", Next: "1.1.0", Commits: []string{"a", "b", "c"}},
 		{Project: "kit", Current: "0.2.0", Next: "0.2.1", Commits: []string{"a"}},
 	}}})
-	l.has("Ready to release: 2 packages, web 1.0.0 → 1.1.0 (3 commits)", "[Open Release (5)]")
+	l.has("Ready to release: 2 packages, web 1.0.0 → 1.1.0 (3 commits)", "[Open Release (6)]")
 	l.clickText("[Open Release")
 	if l.sh().tab != commands.TabRelease {
 		t.Fatalf("Open Release opened %q", l.sh().tab)
@@ -346,8 +346,8 @@ func TestHomeStaysInsideItsFrameAtEveryWideWidth(t *testing.T) {
 		if strings.Count(row, "│") != 12 || !strings.HasSuffix(row, "│  │") || !strings.Contains(row, "Release") {
 			t.Fatalf("%d: a box does not close inside the frame: %q", w, row)
 		}
-		showOnHome(l, "[Settings (6)]")
-		for _, want := range []string{"[Build all (B)]", "[Compose a stack (A)]", "[Settings (6)]"} {
+		showOnHome(l, "[Settings (7)]")
+		for _, want := range []string{"[Build all (B)]", "[Compose a stack (A)]", "[Settings (7)]"} {
 			_, y := l.find(want)
 			if line := strings.TrimRight(l.lines()[y], " "); !strings.HasSuffix(line, "│") || pane.Width(line) != w {
 				t.Fatalf("%d: the button row of %s runs past the frame: %q", w, want, line)

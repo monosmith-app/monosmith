@@ -35,7 +35,7 @@ func TestForcedReleaseDoesNotOfferAPackageThatWasNeverReleased(t *testing.T) {
 
 func TestForcedReleaseWithOnlyNeverReleasedPackagesShowsTheCommitInANotice(t *testing.T) {
 	l := newLab(t, true, 110, 32)
-	l.keys("5") // the plan is read
+	l.keys("6") // the plan is read
 	sh := l.sh()
 	sh.release.Plan.Unchanged = []string{"fresh"}
 	sh.release.Plan.NeverReleased = []string{"fresh"}
@@ -46,7 +46,7 @@ func TestForcedReleaseWithOnlyNeverReleasedPackagesShowsTheCommitInANotice(t *te
 
 func TestTheReleaseFooterOffersTheCommitsOnlyWhenSomethingReleases(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("5")
+	l.keys("6")
 	l.has("expand/collapse")
 	sh := l.sh()
 	sh.release.Plan.Items = nil

@@ -191,31 +191,29 @@ func TestAClickPicksTheSideThatHasTheKeyboard(t *testing.T) {
 	}
 }
 
-func TestAnOpenRunHasTheKeyboardUntilTabGivesItToTheList(t *testing.T) {
+func TestAnOpenRunHasTheKeyboardOfTheRunsViewAndKeyTwoGoesBackToTheList(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
 	l.keys("b")
 	if !l.runPanelHasKeys() {
 		t.Fatal("a run that starts does not take the keyboard")
 	}
-	l.has("Tab list")
-	l.keys("tab")
-	if l.runPanelHasKeys() || !l.sh().runShown() {
-		t.Fatal("Tab should keep the run open and give the keyboard to the list")
+	l.keys("2")
+	if l.runPanelHasKeys() || l.sh().tab != commands.TabProjects {
+		t.Fatal("2 should show the list of projects")
 	}
 	selected := l.sh().selectedProject()
 	l.keys("down")
 	if l.sh().selectedProject() == selected {
-		t.Fatal("Down did not move the project while the run stays open")
+		t.Fatal("Down did not move the project")
 	}
-	l.keys("tab") // the run
+	l.keys("3") // the run
 	if !l.runPanelHasKeys() {
-		t.Fatal("Tab did not come back to the run")
+		t.Fatal("3 did not come back to the run")
 	}
 }
 
-// runPanelHasKeys is true while the keys go to the run that is open.
-func (l *lab) runPanelHasKeys() bool { return l.sh().runShown() && l.sh().sideKeys() }
+func (l *lab) runPanelHasKeys() bool { return l.sh().runShown() }
 
 func TestOnDoctorTabAndRightMoveTheKeyboardToTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabDoctor)
