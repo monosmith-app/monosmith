@@ -718,7 +718,10 @@ The Settings tab (key `7`) is where you change things without leaving the interf
 wide screen the frame `Settings` lists the sections, with where the settings of a project are
 at its foot, and the frame beside it (`Workspace · smith.toml`) shows the open section: its
 rows, and under them a rounded box titled by the selected row with what it is, what it does
-and the command line it stands for, dim (`$ smith config set ci.devcontainer true`). `Tab` (or
+and the command line it stands for, dim (`$ smith config set ci.devcontainer true`). The frame
+of the sections keeps one width, as wide as the rail of views, and the rows take more of the
+height than the box. The top border of the box is a divider: drag it, or select it with
+`Shift`+`Up` and press `[` or `]`, to give the box more or fewer rows. `Tab` (or
 `Left` and `Right`) moves the keyboard between the two frames; a click does the same, and a
 double-click does what `Enter` does. On a narrow screen the frame lists the sections, each
 with a line about it (`57 settings, 2 set`); `Enter` opens one in the frame

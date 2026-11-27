@@ -8,7 +8,7 @@ import (
 // has one per tab (DetailID) so each view keeps its own width.
 const (
 	SettingsListID   = "settings.sections"
-	SettingsDetailID = "settings.detail"
+	SettingsDetailID = "settings.fields"
 	// RunsTreeID is the divider between the tree and the log of the Runs view;
 	// RunsRuleID the rule under its header, which does not move.
 	RunsTreeID        = "runs.tree"
@@ -58,5 +58,18 @@ func RunsTreeSpot(in layout.Rect, treeW, bodyTop, lo, hi int) Spot {
 		Hit:  layout.Rect{X: in.X + treeW, Y: in.Y + bodyTop, W: 1, H: max(in.H-bodyTop, 1)},
 		Size: treeW, Min: lo, Max: hi,
 		Origin: in.X, Sign: 1,
+	}
+}
+
+// SettingsFieldsSpot is the top border of the box under the rows of an open
+// settings section: dragging it up gives the box more rows. x and w are the
+// columns of the box, y its top row, rows the rows it has now, and lo and hi
+// bound them.
+func SettingsFieldsSpot(x, y, w, rows, lo, hi int) Spot {
+	return Spot{
+		ID: SettingsDetailID, Axis: Row,
+		Hit:  layout.Rect{X: x, Y: y, W: max(w, 1), H: 1},
+		Size: rows, Min: lo, Max: max(hi, lo),
+		Origin: y + rows, Sign: -1,
 	}
 }

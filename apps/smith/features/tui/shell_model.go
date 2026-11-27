@@ -746,6 +746,10 @@ func (s Shell) lay() layout.Layout {
 	if s.fullRun() {
 		return layout.DivideFull(s.w, s.h)
 	}
+	if s.settingsFixedList() {
+		// The list of sections keeps one width; the settings take the rest.
+		return layout.DivideFixedList(s.w, s.h, settingsview.ListWidth())
+	}
 	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth())
 }
 
