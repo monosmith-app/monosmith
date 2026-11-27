@@ -1,6 +1,8 @@
 package depsview
 
 import (
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/detail"
@@ -54,9 +56,53 @@ func (v Model) Detail(th theme.Theme, w int, root func(project string) string) [
 	if len(r.Kinds) > 0 {
 		out = append(out, detail.Section{Heading: words.Say("depspage.detail.declared"), Items: []string{strings.Join(r.Kinds, ", ")}})
 	}
+	if line := OneVersionLine(th, r); line != "" {
+		// The package's own verdict comes before the workspace's policy.
+		policy.Items = append([]string{line}, policy.Items...)
+	}
 	out = append(out, detail.Section{Heading: words.Say("depspage.detail.registry"), Items: v.registryLines(th, r, w), OneLine: true}, policy)
 	out = append(out, detail.Section{Heading: words.Say("depspage.detail.same_as"), Items: []string{th.Faint(words.Say("depspage.detail.command", "command", strings.Join(PackageArgv(r), " ")))}, OneLine: true})
 	return out
+}
+
+// OneVersionLine says whether the projects that use a package declare it at
+// one version: "✓ both use ^19.1.0" in the success colour, or "▲ web ^1.6.0 ·
+// api ^1.5.0" in the warning colour when they differ.
+//
+// Parameters: th draws; r is the package.
+// Returns: the line, "" when smith does not know how the package is declared.
+func OneVersionLine(th theme.Theme, r Row) string {
+	if len(r.Declared) == 0 {
+		return ""
+	}
+	names := slices.Sorted(maps.Keys(r.Declared))
+	specs := map[string]bool{}
+	for _, n := range names {
+		specs[r.Declared[n]] = true
+	}
+	if len(specs) == 1 {
+		spec := r.Declared[names[0]]
+		switch len(names) {
+		case 1:
+			return th.Success(th.Icons.Passed + " " + words.Say("depspage.one_version.one", "project", projectName(names[0]), "spec", spec))
+		case 2:
+			return th.Success(th.Icons.Passed + " " + words.Say("depspage.one_version.both", "spec", spec))
+		}
+		return th.Success(th.Icons.Passed + " " + words.Say("depspage.one_version.all", "count", len(names), "spec", spec))
+	}
+	parts := make([]string, 0, len(names))
+	for _, n := range names {
+		parts = append(parts, projectName(n)+" "+r.Declared[n])
+	}
+	return th.Warning(th.Icons.Warning + " " + strings.Join(parts, " · "))
+}
+
+// projectName is a project's name, or the words for the workspace root.
+func projectName(name string) string {
+	if name == "" {
+		return words.Say("depspage.one_version.root")
+	}
+	return name
 }
 
 // registryLines say where the package is on its registry, as a hyperlink where

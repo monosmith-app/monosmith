@@ -94,6 +94,29 @@ func TestManyProjectsShrinkToTheFirstAndACount(t *testing.T) {
 	}
 }
 
+func TestTheDetailSaysWhetherThePackageHasOneVersion(t *testing.T) {
+	same := Row{Name: "react", Current: "19.1.0", Latest: "19.2.0", Level: "minor", Projects: []string{"web", "kit"}, Declared: map[string]string{"web": "^19.1.0", "kit": "^19.1.0"}}
+	text := detailText(FromResult(Result{Rows: []Row{same}}), 60)
+	if !strings.Contains(text, "One version\n✓ both use ^19.1.0") {
+		t.Fatalf("both projects agree:\n%s", text)
+	}
+	th := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode})
+	for _, c := range []struct {
+		declared map[string]string
+		want     string
+	}{
+		{map[string]string{"web": "^1.6.0"}, "✓ web uses ^1.6.0"},
+		{map[string]string{"web": "^1", "kit": "^1", "": "^1"}, "✓ all 3 use ^1"},
+		{map[string]string{"web": "^1.6.0", "api": "^1.5.0"}, "▲ api ^1.5.0 · web ^1.6.0"},
+		{map[string]string{"": "^2", "web": "^1"}, "▲ the workspace root ^2 · web ^1"},
+		{nil, ""},
+	} {
+		if got := pane.Strip(OneVersionLine(th, Row{Declared: c.declared})); got != c.want {
+			t.Errorf("%v: %q, want %q", c.declared, got, c.want)
+		}
+	}
+}
+
 func TestADryRunIsTheUpdateThatWritesNothing(t *testing.T) {
 	m := FromResult(Result{Rows: []Row{{Name: "zod", Current: "3.22.0", Latest: "3.23.0", Level: "minor", Projects: []string{"web"}}}})
 	if got := strings.Join(m.DryRunArgv(), " "); got != "deps up zod --dry-run" {
