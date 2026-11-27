@@ -1092,7 +1092,7 @@ action panel, `Enter` first moves to the run button).
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
 button; click an answer of a single-choice list to pick it; double-click a project or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
-a list and never moves the selection, and a thin scrollbar in the last column of the content (a dashed line with a solid, muted thumb, `#` over `|` in the ASCII theme; beside a detail, the list's scrollbar is drawn on the divider, so one line shows there) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
+a list and never moves the selection, and a scrollbar in the last column of the content (a dashed line with a full-cell thumb `█` in the accent colour, `#` over `|` in the ASCII theme; beside a detail, the list's scrollbar is drawn on the divider, so one line shows there) shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
 (the choices of Add a project, the languages, the plugin lists of a recipe) and in the Compose a
 stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
 selection and keep it in view; a scrollbar and a line "↑ 3 more · ↓ 12 more" say what is hidden.
