@@ -553,6 +553,12 @@ func (s Shell) viewReasons() map[string]string {
 			r["doctor.foldall"] = words.Say("tui.toggle.fold_needs_groups")
 		}
 	case commands.TabDeps:
+		if s.detailFull() {
+			// The open package has no list to mark or filter: Esc goes back to it first.
+			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major"} {
+				r[id] = words.Say("depspage.reason.open")
+			}
+		}
 		if !s.deps.Loaded {
 			// Until the registries answer no key but reload has anything to act on.
 			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major", "deps.update", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
@@ -577,7 +583,6 @@ func (s Shell) viewReasons() map[string]string {
 			r["rel.notes"] = words.Say("tui.shell.there_is_no_release_to_show")
 			r["rel.release"] = words.Say("tui.shell.there_is_nothing_to_release")
 			r["release.open"] = words.Say("tui.shell.there_is_no_bump_to_show")
-			r["release.expand"] = words.Say("tui.shell.there_is_no_bump_to_show")
 		}
 		if !s.release.Empty() {
 			r["rel.why"] = words.Say("tui.release_reason.nothing_to_explain")

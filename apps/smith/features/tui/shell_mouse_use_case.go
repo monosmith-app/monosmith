@@ -373,7 +373,12 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 	case "finding":
 		s.doctor = s.doctor.SelectRow(h.index)
 	case "release":
+		again := s.release.Cursor == h.index
 		s.release = s.release.SelectRow(h.index)
+		if (again || double) && s.lay().Mode == layout.Narrow {
+			// On a narrow screen a click on the selected package opens it in the frame.
+			s.detailOpen, s.detailCursor, s.detailTop = true, 0, 0
+		}
 	case "dep":
 		inBox := rx >= depsview.BoxFrom && rx < depsview.BoxTo
 		switch {
@@ -384,7 +389,12 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 		case inBox:
 			s.deps = s.deps.TickRow(h.index, s.mouseShift)
 		default:
+			again := s.deps.Cursor == h.index
 			s.deps = s.deps.ChooseRow(h.index, s.mouseShift)
+			if (again || double) && !s.mouseShift && s.lay().Mode == layout.Narrow {
+				// On a narrow screen a click on the selected package opens it in the frame.
+				s.detailOpen, s.detailCursor, s.detailTop = true, 0, 0
+			}
 		}
 	case "option":
 		// One click picks in a single-choice list. In a list of tick boxes a click

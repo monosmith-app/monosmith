@@ -154,13 +154,19 @@ func TestWhileTheDetailHasTheKeyboardTheFooterListsItsKeysAndNotTheLists(t *test
 	}
 }
 
-func TestReleaseNamesTheKeysThatShowAndHideTheCommits(t *testing.T) {
-	hints := glyphLabels(State{View: TabRelease, InWorkspace: true})
-	if !hasHint(hints, "←→ expand/collapse") {
-		t.Fatalf("Release footer %v", hints)
+func TestNarrowReleaseNamesTheKeyThatOpensTheChanges(t *testing.T) {
+	hints := glyphLabels(State{View: TabRelease, InWorkspace: true, Narrow: true})
+	if !hasHint(hints, "Enter changes") {
+		t.Fatalf("narrow Release footer %v", hints)
 	}
-	if hints := glyphLabels(State{View: TabRelease, InWorkspace: true, Reasons: map[string]string{"release.expand": "there is no bump to show"}}); hasHint(hints, "←→ expand/collapse") {
-		t.Fatalf("nothing to expand, yet the footer offers it: %v", hints)
+	if hints := glyphLabels(State{View: TabRelease, InWorkspace: true}); hasHint(hints, "Enter changes") {
+		t.Fatalf("the wide detail shows the changes, yet the footer offers Enter: %v", hints)
+	}
+	if hints := glyphLabels(State{View: TabRelease, InWorkspace: true, Narrow: true, Reasons: map[string]string{"release.open": "there is no bump to show"}}); hasHint(hints, "Enter changes") {
+		t.Fatalf("nothing to open, yet the footer offers it: %v", hints)
+	}
+	if hints := glyphLabels(State{View: TabRelease, InWorkspace: true, Narrow: true, DetailOpen: true}); !hasHint(hints, "Esc back") {
+		t.Fatalf("the open package has no way back: %v", hints)
 	}
 }
 

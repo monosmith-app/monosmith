@@ -7,7 +7,6 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
@@ -17,9 +16,9 @@ import (
 
 // hasDetail is true for the views whose selection has a detail: the project
 // in Projects (or the run that is open there), the finding in Doctor, the
-// one-version policy in Deps and the option in Settings. Beside the list on a
-// wide screen. On a narrow one Projects and Doctor open it over the list with
-// Enter; Deps and Settings keep their text under the list.
+// package in Deps and in Release, and the option in Settings. Beside the list
+// on a wide screen. On a narrow one Projects, Doctor, Deps and Release open it
+// over the list with Enter; Settings keeps its text under the list.
 func (s Shell) hasDetail() bool {
 	if !s.inWorkspace {
 		return false
@@ -29,6 +28,8 @@ func (s Shell) hasDetail() bool {
 		return s.tab == commands.TabProjects || s.doctor.Report != nil
 	case commands.TabDeps:
 		return s.deps.Loaded && s.deps.Err == nil
+	case commands.TabRelease:
+		return s.release.CanRelease()
 	case commands.TabSettings:
 		return s.settings.Available()
 	}
@@ -172,7 +173,7 @@ func (s *Shell) pageDetail(dir int) {
 // detailIdentity changes when the selection the detail tells about changes,
 // so the scroll and the expansion start over for the next one.
 func (s Shell) detailIdentity() string {
-	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", int(s.projSection), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel, "|", s.settings.Identity())
+	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", int(s.projSection), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel, "|", s.settings.Identity(), "|", s.deps.Cursor, s.deps.Filter, "|", s.release.Cursor)
 }
 
 // forgetDetailPlace starts the detail at its top, folded, when what it shows changed.
@@ -222,7 +223,9 @@ func (s Shell) selectionPanel() detail.Panel {
 	}
 	switch s.tab {
 	case commands.TabDeps:
-		return detail.Panel{Sections: []detail.Section{{Heading: depsview.PolicyTitle(), Items: s.deps.PolicyItems(s.th)}}}
+		return detail.Panel{Sections: s.depsPanel()}
+	case commands.TabRelease:
+		return detail.Panel{Sections: s.release.Detail(s.th)}
 	case commands.TabSettings:
 		return s.settingsPanel()
 	case commands.TabDoctor:

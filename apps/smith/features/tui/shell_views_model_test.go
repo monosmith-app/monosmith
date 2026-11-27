@@ -58,7 +58,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 
 func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("5", "down", "enter", "y")
+	l.keys("5", "down", "u", "y")
 	if got := l.lastStarted(); got != "deps up zod --yes" {
 		t.Fatalf("started %q", got)
 	}
@@ -140,11 +140,11 @@ func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.
 	l := newLab(t, true, 140, 34)
 	l.keys("6")
 	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "n notes")
+	// The detail beside the plan shows the commits of the selected package.
+	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old")
+	l.keys("down")
+	l.has("dependency web releases (no commit of", "releases it)")
 	l.hasNot("a1b2c3d")
-	l.keys("enter")
-	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old cookie format")
-	l.keys("down", "enter")
-	l.has("dependency web releases (no commit of its own releases it)")
 	l.keys("n")
 	if got := l.lastStarted(); got != "release --dry-run --notes" {
 		t.Fatalf("the notes started %q", got)
@@ -304,8 +304,9 @@ func TestClickingARowAfterScrollingDoesNotCenterTheList(t *testing.T) {
 	}
 	first := ""
 	for _, line := range l.lines() {
-		if i := strings.Index(line, "pkg"); i >= 0 {
-			first = line[i : i+5]
+		// The detail beside the list is titled by the selected package: look at the rows.
+		if i := strings.Index(line, "[ ] pkg"); i >= 0 {
+			first = line[i+4 : i+9]
 			break
 		}
 	}

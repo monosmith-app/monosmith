@@ -12,8 +12,8 @@ import (
 // not push the other projects off the screen.
 const maxCommits = 12
 
-// Model shows what the next release would do, project by project. Enter
-// drills down to the commits behind the selected bump; releasing itself runs
+// Model shows what the next release would do, project by project. The detail
+// (Detail) tells the commits behind the selected bump; releasing itself runs
 // `smith release` in the run view, after a confirmation that shows the command.
 type Model struct {
 	Loaded bool
@@ -21,14 +21,16 @@ type Model struct {
 	Waited time.Duration
 	// Projects is how many projects the plan covers, set by the shell for drawing (0 when unknown).
 	Projects int
+	// Tick moves the spinner of the wait, set by the shell for drawing.
+	Tick     int
 	Plan     release.Plan
 	Blockers []string
 	Warnings []string
 	Err      error
 	// Git is what the repository says about pushing the release.
 	Git GitState
-	// Cursor is the project selected in the plan, Open is true while its
-	// commits are shown.
+	// Cursor is the project selected in the plan. Open is no longer set: the
+	// detail shows the commits of the selected project.
 	Cursor int
 	Open   bool
 	// WhyOpen is true while the explanation of an empty plan is shown.
@@ -53,8 +55,8 @@ func FromResult(r Result) Model {
 	return Model{Loaded: true, Plan: r.Plan, Blockers: r.Blockers, Warnings: r.Warnings, Err: r.Err, Git: r.Git}
 }
 
-// Update handles a key: Up, Down, Home and End choose a project, Enter shows or
-// hides its commits, Right shows them and Left hides them.
+// Update handles a key: Up, Down, Home and End choose a project. The detail
+// shows its commits, so no key opens them in the list.
 func (v Model) Update(key tea.KeyMsg) Model {
 	n := len(v.Plan.Items)
 	if !v.Loaded || v.Err != nil || len(v.Blockers) > 0 || n == 0 {
@@ -69,30 +71,16 @@ func (v Model) Update(key tea.KeyMsg) Model {
 		v.Cursor, v.Open = 0, false
 	case commands.NavEnd:
 		v.Cursor, v.Open = n-1, false
-	case commands.NavConfirm:
-		v.Open = !v.Open
-	default:
-		// Right shows the commits behind the bump, Left hides them.
-		switch key.String() {
-		case "right":
-			v.Open = true
-		case "left":
-			v.Open = false
-		}
 	}
 	return v
 }
 
-// SelectRow moves the cursor to item i and opens or closes its commits when it was already there.
+// SelectRow moves the cursor to item i.
 func (v Model) SelectRow(i int) Model {
 	if i < 0 || i >= len(v.Plan.Items) {
 		return v
 	}
-	if v.Cursor == i {
-		v.Open = !v.Open
-	} else {
-		v.Cursor, v.Open = i, false
-	}
+	v.Cursor, v.Open = i, false
 	return v
 }
 

@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/features/release"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
 )
 
@@ -23,9 +24,21 @@ func planned() Model {
 	}})
 }
 
+var plain = theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
+
 func render(m Model) string {
-	lines, _ := m.View(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII}), 120)
+	lines, _ := m.View(plain, 120)
 	return strings.Join(lines, "\n")
+}
+
+// detailText is the detail of the selected package as plain text.
+func detailText(m Model) string {
+	var out []string
+	for _, s := range m.Detail(plain) {
+		out = append(out, s.Heading)
+		out = append(out, s.Items...)
+	}
+	return pane.Strip(strings.Join(out, "\n"))
 }
 
 func press(m Model, name string) Model {
@@ -38,19 +51,21 @@ func press(m Model, name string) Model {
 	return m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 }
 
-func TestEachProjectIsAPreviewLineAndEnterShowsTheCommitsBehindItsBump(t *testing.T) {
-	m := planned()
-	out := render(m)
-	for _, want := range []string{"web", "1.0.0", "2.0.0", "major", "kit", "0.2.1", "patch", "unchanged: sdk"} {
+func TestEachProjectIsARowOfThePlanTable(t *testing.T) {
+	out := render(planned())
+	for _, want := range []string{"Package", "Now", "Next", "Bump", "Why", "web", "1.0.0", "2.0.0", "major", "kit", "0.2.1", "patch", "unchanged: sdk", "2 packages to release · 1 major · 1 patch"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
 	}
 	if strings.Contains(out, "a1b2c3d") {
-		t.Fatalf("the commits show before the drill-down:\n%s", out)
+		t.Fatalf("the commits are in the detail, not in the list:\n%s", out)
 	}
-	out = render(press(m, "enter"))
-	for _, want := range []string{"tag web@2.0.0", "a1b2c3d feat(ui,theme): dark mode", "Ada", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old format"} {
+}
+
+func TestTheDetailShowsTheCommitsBehindTheBump(t *testing.T) {
+	out := detailText(planned())
+	for _, want := range []string{"Why it releases", "3 releasing commit(s)", "Changes", "a1b2c3d feat(ui,theme): dark mode", "Ada", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old format", "Tag", "web@2.0.0", "The same as", "$ smith release --dry-run --notes"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
@@ -58,29 +73,31 @@ func TestEachProjectIsAPreviewLineAndEnterShowsTheCommitsBehindItsBump(t *testin
 	if strings.Contains(out, "a1b2c3d4e5f6") {
 		t.Fatalf("the hash is shortened like git does:\n%s", out)
 	}
+	if got := planned().DetailTitle(); got != "web 1.0.0 → 2.0.0" {
+		t.Fatalf("title %q", got)
+	}
 }
 
 func TestADependencyBumpSaysNoCommitOfItsOwnReleasesIt(t *testing.T) {
-	out := render(press(press(planned(), "down"), "enter"))
+	out := detailText(press(planned(), "down"))
 	if !strings.Contains(out, "dependency web releases (no commit of its own releases it)") {
 		t.Fatalf("%s", out)
 	}
 }
 
-func TestMovingClosesTheDrillDownAndWrapsAround(t *testing.T) {
-	m := press(planned(), "enter")
-	m = press(m, "down")
-	if m.Open || m.Cursor != 1 {
-		t.Fatalf("cursor %d open %v", m.Cursor, m.Open)
+func TestMovingWrapsAroundAndAClickOnlySelects(t *testing.T) {
+	m := press(planned(), "down")
+	if m.Cursor != 1 {
+		t.Fatalf("cursor %d", m.Cursor)
 	}
 	if m = press(m, "down"); m.Cursor != 0 {
 		t.Fatalf("down from the last wraps to the first: %d", m.Cursor)
 	}
 	if m = m.SelectRow(1); m.Cursor != 1 || m.Open {
-		t.Fatalf("a first click selects: %d %v", m.Cursor, m.Open)
+		t.Fatalf("a click selects: %d %v", m.Cursor, m.Open)
 	}
-	if m = m.SelectRow(1); !m.Open {
-		t.Fatal("a second click opens")
+	if m = m.SelectRow(1); m.Open {
+		t.Fatal("a second click selects again; the shell opens the detail")
 	}
 }
 
@@ -120,49 +137,40 @@ func TestAPlanOnAReleaseChannelSaysItReleasesPrereleases(t *testing.T) {
 	}
 }
 
-func TestEachRowShowsWhetherItsCommitsAreFoldedOrShown(t *testing.T) {
-	// The ASCII icons spell the marks as > (closed) and v (open).
-	m := planned()
-	out := render(m)
-	if strings.Count(out, "> web") != 1 || strings.Count(out, "> kit") != 1 || strings.Contains(out, "v web") {
-		t.Fatalf("a closed row shows the closed mark:\n%s", out)
+func TestOnlyTheSelectedRowHasTheCursorMark(t *testing.T) {
+	// The ASCII icons spell the cursor mark as >.
+	out := render(planned())
+	if strings.Count(out, "> web") != 1 || strings.Contains(out, "> kit") {
+		t.Fatalf("only the selected row has the mark:\n%s", out)
 	}
-	out = render(press(m, "enter"))
-	if !strings.Contains(out, "v web") || !strings.Contains(out, "> kit") {
-		t.Fatalf("only the row that is open shows the open mark:\n%s", out)
-	}
-	lines, _ := planned().View(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), 120)
-	if joined := strings.Join(lines, "\n"); !strings.Contains(joined, "▸ web") {
-		t.Fatalf("the Unicode theme draws the triangle:\n%s", joined)
+	out = render(press(planned(), "down"))
+	if strings.Contains(out, "> web") || !strings.Contains(out, "> kit") {
+		t.Fatalf("the mark follows the cursor:\n%s", out)
 	}
 }
 
-func TestRightShowsTheCommitsAndLeftHidesThem(t *testing.T) {
-	right, left := tea.KeyMsg{Type: tea.KeyRight}, tea.KeyMsg{Type: tea.KeyLeft}
-	m := planned().Update(right)
-	if !m.Open || !strings.Contains(render(m), "a1b2c3d") {
-		t.Fatalf("Right shows the commits:\n%s", render(m))
-	}
-	if again := m.Update(right); !again.Open {
-		t.Fatal("Right on an open row keeps it open")
-	}
-	m = m.Update(left)
-	if m.Open || strings.Contains(render(m), "a1b2c3d") {
-		t.Fatalf("Left hides the commits:\n%s", render(m))
-	}
-	if m = m.Update(left); m.Open || m.Cursor != 0 {
-		t.Fatalf("Left on a closed row does nothing: %+v", m)
+func TestNoKeyOpensTheCommitsInTheList(t *testing.T) {
+	for _, k := range []tea.KeyMsg{{Type: tea.KeyRight}, {Type: tea.KeyLeft}, {Type: tea.KeyEnter}} {
+		m := planned().Update(k)
+		if m.Open || m.Cursor != 0 || strings.Contains(render(m), "a1b2c3d") {
+			t.Fatalf("%s opened the commits in the list: %+v", k, m)
+		}
 	}
 }
 
-func TestUpAndDownStillMoveWhileTheArrowsOpenAndCloseRows(t *testing.T) {
-	m := planned().Update(tea.KeyMsg{Type: tea.KeyRight})
-	m = press(m, "down")
-	if m.Cursor != 1 || m.Open {
-		t.Fatalf("Down moves on and folds the row: %+v", m)
+func TestTheWaitShowsASpinner(t *testing.T) {
+	m := Model{Tick: 1}
+	lines, _ := m.View(theme.Default(), 80)
+	if got := pane.Strip(strings.Join(lines, " ")); !strings.Contains(got, "Reading the commits") || strings.TrimSpace(got)[0] == 'R' {
+		t.Fatalf("the wait starts with the spinner: %q", got)
 	}
-	m = m.Update(tea.KeyMsg{Type: tea.KeyRight})
-	if !m.Open || m.Cursor != 1 {
-		t.Fatalf("Right opens the row the cursor is on: %+v", m)
+}
+
+func TestTheBumpsHaveTheirMarks(t *testing.T) {
+	th := theme.Default()
+	for level, want := range map[string]string{"patch": th.Icons.Dot + " patch", "minor": th.Icons.Dot + " minor", "major": th.Icons.Warning + " major"} {
+		if got := pane.Strip(BumpMark(th, level)); got != want {
+			t.Errorf("%s: %q, want %q", level, got, want)
+		}
 	}
 }
