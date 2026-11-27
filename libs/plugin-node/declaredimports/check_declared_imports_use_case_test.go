@@ -122,3 +122,29 @@ func TestDevFile(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckSkipsTheImportsATsconfigPathsAliasMaps(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "apps/api/package.json", `{"name": "api", "version": "1.0.0"}`)
+	write(t, root, "apps/api/tsconfig.base.json", `{"compilerOptions": {"paths": {"@integrations": ["./src/integrations/index.ts"]}}}`)
+	write(t, root, "apps/api/tsconfig.json", `{
+  // comments, as tsconfig allows
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {"paths": {"@shared/*": ["./src/shared/*/index.ts"], "@integrations/*": ["./src/integrations/*"]}}
+}`)
+	write(t, root, "apps/api/src/features/send.use-case.ts", `
+import { required } from '@shared/validation'
+import type { WatchData } from '@shared/contracts'
+import { jira } from '@integrations'
+import { email } from '@integrations/email'
+import { logger } from '@auto/logger'
+`)
+	got, err := Check(root, "apps/api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []UndeclaredImport{{File: "src/features/send.use-case.ts", Package: "@auto/logger"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want only the package no alias maps: %+v", got, want)
+	}
+}

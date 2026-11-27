@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/tsconfigchain"
 )
 
 // Check lists the imports of the package at projectRoot (workspace-relative)
@@ -16,7 +17,8 @@ import (
 // too) or optionalDependencies declare; a
 // test, e2e, tool or config file (DevFile) may also import devDependencies,
 // the workspace root's declarations and what another workspace member declares. Node built-ins, the package's own
-// name, and vscode in a VS Code extension are always fine. Versions are not
+// name, an import a tsconfig "paths" alias of the package maps (its own code),
+// and vscode in a VS Code extension are always fine. Versions are not
 // compared, and a declaration nothing imports is not reported.
 func Check(workspaceRoot, projectRoot string) ([]UndeclaredImport, error) {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(projectRoot))
@@ -37,6 +39,7 @@ func Check(workspaceRoot, projectRoot string) ([]UndeclaredImport, error) {
 	dev := names(pkg.DevDependencies)
 	workspaceDev := names(root.Dependencies, root.DevDependencies)
 	siblings := declaredInWorkspace(workspaceRoot)
+	aliases := tsconfigchain.PathAliases(dir)
 	byFile, err := discovery.ScanFileImports(dir)
 	if err != nil {
 		return nil, err
@@ -45,7 +48,7 @@ func Check(workspaceRoot, projectRoot string) ([]UndeclaredImport, error) {
 	for file, imported := range byFile {
 		seen := map[string]bool{}
 		for _, name := range imported {
-			if seen[name] || builtins[name] || name == pkg.Name || (name == "vscode" && pkg.Engines.VSCode != "") || shipped[name] {
+			if seen[name] || builtins[name] || name == pkg.Name || tsconfigchain.Aliased(name, aliases) || (name == "vscode" && pkg.Engines.VSCode != "") || shipped[name] {
 				continue
 			}
 			seen[name] = true
