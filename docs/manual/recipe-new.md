@@ -44,7 +44,7 @@ this list, so none of them holds a list of plugin names.
 `--from-workspace` writes the recipe the workspace already follows, so a team that set its
 workspace up by hand can give the same choices to its next projects. It reads:
 
-- the language that most projects use; `--language` picks another one of the workspace's languages
+- the language that most projects use; `--lang` picks another one of the workspace's languages
 - the stack that most projects of that language use: its scaffold, toolchain, structure and deploy
   plugins
 - a task slot such as `lint` or `test` for a toolchain plugin that is the only one to provide that
@@ -77,7 +77,7 @@ Check it any time with: smith recipe check recipes/team-go.recipe.toml --all
 ```sh
 smith recipe new [path] [--force] [--from-answers <file>]
 smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] [--fixed <role=plugin>...] [--chosen <role=question:answer=plugin,...>...]
-smith recipe new [path] --from-workspace [--name <name>] [--recipe-version <x.y.z>] [--language <language>] [--force]
+smith recipe new [path] --from-workspace [--name <name>] [--recipe-version <x.y.z>] [--lang <language>] [--force]
 smith recipe new --list-levels [--json]
 ```
 
@@ -101,7 +101,7 @@ Usage: `smith recipe new [path] [flags]`
 | `--from-answers <from-answers>` | string |  | read the answers from a TOML file instead of asking (see docs/reference/recipes.md) |
 | `--from-workspace` | boolean | off | fix the plugins this workspace's projects use now, and write recipes/<name>.recipe.toml |
 | `--json` | boolean | off | with --list-levels, print the list as JSON |
-| `--language <language>` | string |  the one most projects use | with --from-workspace, the language the recipe fixes (default: the one most projects use) |
+| `-l, --lang <lang>` | string |  the one most projects use | with --from-workspace, the language the recipe fixes (default: the one most projects use) (also --language) |
 | `--list-levels` | boolean | off | list the levels and the plugins each can take, and write nothing |
 | `--name <name>` | string |  | the recipe's name; with --fixed, nothing is asked |
 | `--recipe-version <recipe-version>` | string |  | the recipe's version (0.1.0 when not given) |
@@ -179,7 +179,7 @@ lint = "eslint"
 | `open nothing.toml: ...` | The answers file does not exist. |
 | `--from-workspace needs the recipe's name: pass --name (lowercase words joined by dashes)` | There is no terminal to ask the name on. Pass `--name`. |
 | `the workspace has no projects, so there is no language to read: ...` | Add a project first, or write the recipe with the questions or `--fixed`. |
-| `no project of this workspace uses the language "rust"; the languages here are go, node` | Pass one of the languages listed to `--language`. |
+| `no project of this workspace uses the language "rust"; the languages here are go, node` | Pass one of the languages listed to `--lang`. |
 
 ## Related
 

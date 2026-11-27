@@ -125,7 +125,7 @@ func (m Model) recipeNameLines(th theme.Theme, w int) []string {
 // not one a recipe can take.
 func workspaceRecipeArgv(language, typed string) ([]string, string) {
 	name := strings.TrimSpace(typed)
-	argv := []string{"recipe", "new", "--from-workspace", "--language", language, "--name"}
+	argv := []string{"recipe", "new", "--from-workspace", "--lang", language, "--name"}
 	if name == "" {
 		return append(argv, "<name>"), words.Say("settingsview.recipe.workspace.missing")
 	}

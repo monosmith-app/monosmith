@@ -56,7 +56,7 @@ func TestEnterAsksTheNameAndHandsTheCommandToTheShell(t *testing.T) {
 	}
 	m, _ = press(m, "esc", "enter")
 	m, results = press(m, "team-go", "enter")
-	want := []string{"recipe", "new", "--from-workspace", "--language", "go", "--name", "team-go"}
+	want := []string{"recipe", "new", "--from-workspace", "--lang", "go", "--name", "team-go"}
 	if got := results[len(results)-1].Run; !slices.Equal(got, want) || m.Modal() {
 		t.Fatalf("run %v, want %v", got, want)
 	}

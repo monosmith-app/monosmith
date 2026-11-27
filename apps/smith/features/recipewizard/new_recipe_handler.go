@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspacerecipe"
+	"github.com/monosmith-app/monosmith/apps/smith/shared/commandflags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -76,7 +77,7 @@ plugins are all fixed needs no file either: --name and --fixed role=plugin
 choice the recipe's users make still needs the questions or an answers file.
 
 --from-workspace writes the recipe this workspace already follows: the
-language most projects use (--language picks another), the scaffold,
+language most projects use (--lang picks another), the scaffold,
 toolchain, structure and deploy plugins of the stack most of them use, a
 task slot such as lint or test for a toolchain plugin that alone fills it,
 and the code layout smith.toml turns on, all fixed. It prints what it fixes,
@@ -108,7 +109,7 @@ take (--json for programs, such as the forms of the interface and the editors).`
 	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role")
 	cmd.Flags().StringArrayVar(&opts.Chosen, "chosen", nil, "a role the recipe's users choose, as role=question:answer=plugin,answer=plugin (language=Which language?:python=python,csharp=dotnet; + joins plugins of one answer); repeat for each role")
 	cmd.Flags().BoolVar(&opts.FromWorkspace, "from-workspace", false, "fix the plugins this workspace's projects use now, and write recipes/<name>.recipe.toml")
-	cmd.Flags().StringVar(&opts.Language, "language", "", "with --from-workspace, the language the recipe fixes (default: the one most projects use)")
+	commandflags.AddLangFlag(cmd, &opts.Language, "", "with --from-workspace, the language the recipe fixes (default: the one most projects use)")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
 	cmd.Flags().BoolVar(&opts.ListLevels, "list-levels", false, "list the levels and the plugins each can take, and write nothing")
 	cmd.Flags().BoolVar(&opts.AsJSON, "json", false, "with --list-levels, print the list as JSON")
@@ -154,7 +155,7 @@ func Run(o Options) error {
 	var plan Plan
 	target := o.Target
 	if o.Language != "" && !o.FromWorkspace {
-		return errors.New("--language goes with --from-workspace")
+		return errors.New("--lang goes with --from-workspace")
 	}
 	switch {
 	case o.FromWorkspace:

@@ -18,7 +18,7 @@
       "synonyms": [{ "name": "language" }],
       "near": ["lng"],
       "meaning": "a programming language, by the name its plugin has",
-      "commands": ["add", "compose", "new", "plugin draft", "slices check"]
+      "commands": ["add", "compose", "new", "plugin draft", "recipe new", "slices check"]
     },
     {
       "id": "output",
