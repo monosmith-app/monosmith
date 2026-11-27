@@ -470,11 +470,11 @@ func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T)
 	long := longDeps(t, 60)
 	long.has("┆")
 	thumbRow := func(l *lab) int {
-		// The thumb is the solid line where the dashed track would be, in the
+		// The thumb is the full block where the dashed track would be, in the
 		// last column of the list's content.
 		in := l.sh().mainInner()
 		for y, line := range l.sh().mainContent(in.W, in.H).lines {
-			if r := []rune(pane.Strip(line)); len(r) == in.W && r[in.W-1] == '│' {
+			if r := []rune(pane.Strip(line)); len(r) == in.W && r[in.W-1] == '█' {
 				return y
 			}
 		}

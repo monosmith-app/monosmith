@@ -65,7 +65,7 @@ func unicodeTheme() theme.Theme {
 	return theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode})
 }
 
-func TestTheUnicodeThumbIsASolidLightLineOverADashedTrackNeverTheHeavyDivider(t *testing.T) {
+func TestTheUnicodeThumbIsAFullBlockOverADashedTrackNeverTheHeavyDivider(t *testing.T) {
 	rows := make([]string, 10)
 	for i := range rows {
 		rows[i] = strings.Repeat("x", 6)
@@ -76,7 +76,7 @@ func TestTheUnicodeThumbIsASolidLightLineOverADashedTrackNeverTheHeavyDivider(t 
 		b.WriteRune(rs[len(rs)-1])
 	}
 	got := b.String()
-	if got != "││┆┆┆┆┆┆┆┆" {
+	if got != "██┆┆┆┆┆┆┆┆" {
 		t.Fatalf("%q", got)
 	}
 	if strings.ContainsAny(got, "┃▐") {
@@ -89,11 +89,11 @@ func TestTheUnicodeThumbIsASolidLightLineOverADashedTrackNeverTheHeavyDivider(t 
 	}
 }
 
-func TestTheThumbIsMutedNotTheAccentOfASelectedDivider(t *testing.T) {
+func TestTheThumbIsInTheAccent(t *testing.T) {
 	th := theme.New(theme.Choice{Tokens: theme.Dark, Icons: theme.Unicode})
 	row := Scrollbar(th, []string{"xxxx", "xxxx"}, 4, 0, 20)[0]
 	// Where the terminal has no colour the styles print alike and this holds either way.
-	if !strings.HasSuffix(row, th.Muted("│")) {
+	if !strings.HasSuffix(row, th.Accent("█")) {
 		t.Fatalf("%q", row)
 	}
 }
