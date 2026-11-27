@@ -36,6 +36,8 @@ func fromWorkspace(t *testing.T, o Options) (string, string, error) {
 		t.Fatal(err)
 	}
 	t.Chdir(dir)
+	// smith ci names the workspace it runs in; the test's workspace is dir.
+	t.Setenv("SMITH_WORKSPACE_ROOT", dir)
 	var out bytes.Buffer
 	o.FromWorkspace, o.Facts, o.Lookup, o.Out = true, workspaceFacts(), fakeLookup, &out
 	if o.In == nil {
