@@ -311,7 +311,21 @@ func (m Model) subtitle(s Section) string {
 // right is the right pane in w by h cells: the heading, then an editor or the
 // rows and the box of the selected one.
 func (m Model) right(th theme.Theme, w, h, px, py int) paneLines {
-	p := m.rightRows(th, w, h, px, py)
+	about := m.aboutLines(th, w, h)
+	extra := len(about) - 1
+	p := m.rightRows(th, w, h-extra, px, py-extra)
+	if extra > 0 {
+		// The line about the section wraps: the rows under it move down.
+		p.lines = append(about, p.lines[1:]...)
+		moved := make(map[int]int, len(p.rowItem))
+		for row, idx := range p.rowItem {
+			moved[row+extra] = idx
+		}
+		p.rowItem = moved
+		if p.btnRow >= 0 {
+			p.btnRow += extra
+		}
+	}
 	if m.busy != "" && h >= 3 {
 		// A change is under way: the last row says so, with a spinner and the time after 2 s.
 		p.lines[h-1] = " " + th.Accent(th.Spin(m.tick)) + " " + progress.Waiting(capital(m.busy)+"…", m.waited)
@@ -320,6 +334,33 @@ func (m Model) right(th theme.Theme, w, h, px, py int) paneLines {
 		}
 	}
 	return p
+}
+
+// aboutLines wraps the line about the open section to the width w, at most
+// one row in three of the height h; the last row that fits ends with "…" when
+// the text is longer. A project section starts with its title, as no frame
+// names it.
+func (m Model) aboutLines(th theme.Theme, w, h int) []string {
+	text, title := m.section.About(), ""
+	if m.section == Project {
+		// A word as wide as the title and its gap holds their place while the text wraps.
+		title = m.titleOf(m.section)
+		text = strings.Repeat("x", ansi.StringWidth(title)+1) + " " + text
+	}
+	parts := pane.WrapWords(text, w-2)
+	if limit := max(h/3, 1); len(parts) > limit {
+		parts = parts[:limit]
+		parts[limit-1] = pane.Cut(parts[limit-1], max(w-3, 0)) + "…"
+	}
+	out := make([]string, len(parts))
+	for i, part := range parts {
+		out[i] = " " + th.Muted(part)
+	}
+	if title != "" {
+		rest := strings.TrimLeft(parts[0], "x")
+		out[0] = " " + th.Title(title) + " " + th.Muted(rest)
+	}
+	return out
 }
 
 // capital puts the first letter of a sentence in capitals.
@@ -337,11 +378,7 @@ func (m Model) tableSection() bool { return m.section == Workspace || m.section 
 func (m Model) rightRows(th theme.Theme, w, h, px, py int) paneLines {
 	p := paneLines{lines: make([]string, h), rowItem: map[int]int{}, btnRow: -1}
 	rows := p.lines
-	rows[0] = " " + th.Muted(m.section.About())
-	if m.section == Project {
-		// The section of a project is drawn where no frame names it.
-		rows[0] = " " + th.Title(m.titleOf(m.section)) + "  " + rows[0][1:]
-	}
+	rows[0] = m.aboutLines(th, w, h)[0]
 	body := h - 1
 	if body < 1 {
 		return p
