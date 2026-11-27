@@ -253,9 +253,12 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 	s.release, s.deps = releaseview.Model{}, depsview.Model{}
 	// The release item of Home is read again in the background.
 	cmds := []tea.Cmd{s.loadProjects(), s.loadRelease()}
-	if len(argv) > 0 && argv[0] == "plugin" {
-		// A plugin that came or went changes the choices a project can be built from.
-		s.choices, s.offers = choicesNotAsked, nil
+	if len(argv) > 0 && (argv[0] == "plugin" || argv[0] == "recipe") {
+		if argv[0] == "plugin" {
+			// A plugin that came or went changes the choices a project can be built from.
+			s.choices, s.offers = choicesNotAsked, nil
+		}
+		// A recipe the run wrote shows in Settings › Recipes at once.
 		var reload tea.Cmd
 		s.settings, reload = s.settings.Reload()
 		cmds = append(cmds, reload)

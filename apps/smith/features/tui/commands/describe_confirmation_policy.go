@@ -67,6 +67,9 @@ func Describe(argv []string) (title, why string) {
 		if i := slices.Index(argv, "--name"); i >= 0 && i+1 < len(argv) {
 			file = argv[i+1] + ".recipe.toml"
 		}
+		if slices.Contains(argv, "--from-workspace") {
+			return words.Say("commands.describe.recipe.workspace.title"), words.Say("commands.describe.recipe.workspace.why", "file", "recipes/"+file)
+		}
 		return words.Say("commands.describe.recipe.title"), words.Say("commands.describe.recipe.why", "file", file)
 	case verb == "plugin" && len(argv) > 1 && argv[1] == "install":
 		return words.Say("commands.describe.plugin.install.title"), words.Say("commands.describe.plugin.install.why")

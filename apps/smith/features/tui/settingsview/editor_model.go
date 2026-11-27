@@ -28,6 +28,8 @@ const (
 	editInstall
 	// editSearch asks what to look for in the plugin marketplace.
 	editSearch
+	// editRecipeName asks the name of the recipe written from the workspace.
+	editRecipeName
 )
 
 // editor is what fills the right pane while a value is being changed.
@@ -53,6 +55,8 @@ type editor struct {
 	top     int
 	plugin  string
 	trusted bool
+	// recipe is what the workspace's recipe fixes, for editRecipeName.
+	recipe WorkspaceRecipe
 	// err is why the last save was refused.
 	err string
 }
@@ -258,6 +262,19 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		return m, Result{}
 	}
 	switch e.kind {
+	case editRecipeName:
+		if name == "enter" {
+			argv, why := workspaceRecipeArgv(e.plugin, e.input.Value())
+			if why != "" {
+				e.err = why
+				m.ed = &e
+				return m, Result{}
+			}
+			m.ed = nil
+			return m, Result{Run: argv}
+		}
+		e.err = ""
+		e.input, _ = e.input.Update(msg)
 	case editSearch:
 		if name == "enter" {
 			m.ed = nil

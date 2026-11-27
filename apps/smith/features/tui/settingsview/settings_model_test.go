@@ -93,6 +93,10 @@ func sample() *fake {
 				{Path: "release.branch", Type: "string", Explanation: "The release branch.", Default: "main"},
 			},
 			Recipes: []Recipe{{Path: "team.recipe.toml", Name: "team", Version: "1.0.0"}, {Path: "old.recipe.toml", Error: "no [recipe] table"}},
+			WorkspaceRecipes: []WorkspaceRecipe{
+				{Language: "go", Projects: 3, Fixed: []string{"language=go", "structure=vertical-slices"}},
+				{Language: "node", Projects: 1, Stack: "node-jest", Fixed: []string{"language=node", "toolchain=typescript", "lint=eslint", "test=jest"}},
+			},
 		},
 	}
 }
@@ -502,7 +506,7 @@ func TestRecipesAreListedWithWhatIsWrongWithABrokenOne(t *testing.T) {
 	if !strings.Contains(out, "team.recipe.toml") || !strings.Contains(out, "old.recipe.toml") || !strings.Contains(out, "invalid") {
 		t.Fatalf("%s", out)
 	}
-	m, _ = press(m, "down")
+	m, _ = press(m, "end")
 	if !strings.Contains(text(m, 100, 28), "no [recipe] table") {
 		t.Fatal("the detail says why the recipe is invalid")
 	}

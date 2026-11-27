@@ -34,6 +34,7 @@ func TestClassify(t *testing.T) {
 		{[]string{"recipe", "new", "team.recipe.toml"}, NeedsTerminal},
 		{[]string{"recipe", "new", "team.recipe.toml", "--from-answers", "a.toml"}, Changes},
 		{[]string{"recipe", "new", "--name", "team", "--fixed", "language=python"}, Changes},
+		{[]string{"recipe", "new", "--from-workspace", "--name", "team"}, Changes},
 		{[]string{"recipe", "new"}, NeedsTerminal},
 		{[]string{"graph", "--focus", "web"}, Reads},
 		{[]string{"graph"}, Reads},

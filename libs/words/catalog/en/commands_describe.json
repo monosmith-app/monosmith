@@ -53,6 +53,8 @@
   "commands.describe.plugin.why": "This edits smith.toml.",
   "commands.describe.recipe.title": "Write a recipe",
   "commands.describe.recipe.why": "This writes {file} in the current folder, after it checks that the recipe resolves. A file that exists is not replaced.",
+  "commands.describe.recipe.workspace.title": "Create a recipe from this workspace",
+  "commands.describe.recipe.workspace.why": "This writes {file} in the workspace with the plugins its projects use now, all fixed, after it checks that the recipe resolves. A file that exists is not replaced.",
   "commands.describe.other.title": "Run smith {verb}",
   "commands.describe.other.why": "This command changes the workspace or publishes."
 }

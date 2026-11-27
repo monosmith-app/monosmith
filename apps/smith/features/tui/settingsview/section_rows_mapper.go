@@ -89,6 +89,8 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 	case kindForm:
 		f := m.forms[it.idx]
 		return "   " + pane.Cell(f.Title, 28) + th.Muted(f.Hint)
+	case kindWorkspaceRecipe, kindRecipeWizard:
+		return m.recipeActionRow(th, it)
 	case kindUpdate:
 		return "   " + pane.Cell(words.Say("settingsview.update.row", "version", m.upd.Current), 22) + m.updateState(th)
 	case kindUpdateMute:
@@ -337,6 +339,8 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 	case kindForm:
 		f := m.forms[it.idx]
 		add(th.Bold(f.Title), f.Hint, th.Muted(words.Say("settingsview.form.about")))
+	case kindWorkspaceRecipe, kindRecipeWizard:
+		add(m.recipeActionDetail(th, it)...)
 	}
 	return out
 }
@@ -353,6 +357,9 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	}
 	var keys string
 	switch e.kind {
+	case editRecipeName:
+		lines = append(lines, m.recipeNameLines(th, w)...)
+		keys = words.Say("settingsview.keys.install")
 	case editText, editInstall, editSearch:
 		if e.setting.Default != "" {
 			add(th.Muted(words.Say("settingsview.setting.default.line", "default", e.setting.Default)))
