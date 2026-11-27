@@ -312,6 +312,16 @@ func (v Model) UpArgv() []string {
 	return argv
 }
 
+// DryRunArgv is the command line that shows what UpArgv would change and
+// writes nothing (smith deps up … --dry-run); nil when UpArgv is.
+func (v Model) DryRunArgv() []string {
+	argv := v.UpArgv()
+	if argv == nil {
+		return nil
+	}
+	return append(argv, "--dry-run")
+}
+
 // AlignArgv is the command line that brings the policy's drifting dependencies
 // to one version; nil unless the policy found some.
 func (v Model) AlignArgv() []string {

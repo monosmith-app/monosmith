@@ -47,7 +47,7 @@ func (s Shell) buttonLines(buttons []viewButton, w int, under string) []buttonRo
 // depsBox is the box of actions at the foot of the Dependencies view: what is
 // marked (or what u updates when nothing is), the buttons that update it, take
 // every safe release or repair the installed dependencies, and the command
-// line the update runs, dim. Each button asks before it changes anything. under
+// lines the update and its dry run run, dim. Each button asks before it changes anything. under
 // is the id of the button under the pointer. It is empty until the view loaded.
 func (s Shell) depsBox(w int, under string) []buttonRow {
 	if !s.deps.Loaded || s.deps.Err != nil || w < 24 {
@@ -65,7 +65,7 @@ func (s Shell) depsBox(w int, under string) []buttonRow {
 				label = words.Say("depspage.button.update_one", "name", r.Name)
 			}
 		}
-		buttons = append(buttons, viewButton{"deps.update", label}, viewButton{"deps.up-all", words.Say("depspage.button.update_safe")})
+		buttons = append(buttons, viewButton{"deps.update", label}, viewButton{"deps.dry-run", words.Say("depspage.button.dry_run")}, viewButton{"deps.up-all", words.Say("depspage.button.update_safe")})
 	}
 	buttons = append(buttons, viewButton{"deps.repair", words.Say("tui.deps_repair.button")})
 	btns := s.buttonLines(buttons, w-3, under)
@@ -75,6 +75,8 @@ func (s Shell) depsBox(w int, under string) []buttonRow {
 	}
 	if argv := s.deps.UpArgv(); argv != nil {
 		body = append(body, " "+s.th.Faint(pane.Cut(words.Say("depspage.box.command", "command", strings.Join(argv, " ")), w-4)))
+		// The dry run's line, so the button says what it runs before it is pressed.
+		body = append(body, " "+s.th.Faint(pane.Cut(words.Say("depspage.box.command", "command", strings.Join(s.deps.DryRunArgv(), " ")), w-4)))
 	}
 	var out []buttonRow
 	for i, line := range pane.Frame(s.th, "", body, w, len(body)+2, false) {

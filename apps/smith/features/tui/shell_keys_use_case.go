@@ -388,6 +388,11 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute(argv, false)
 		}
 		s.say(words.Say("tui.keys.no_dependency_to_update"))
+	case "deps-dry-run":
+		if argv := s.deps.DryRunArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say(words.Say("tui.keys.no_dependency_to_update"))
 	case "deps-install":
 		return s.installDependency()
 	case "deps-remove":

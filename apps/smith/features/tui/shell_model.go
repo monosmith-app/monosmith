@@ -590,13 +590,14 @@ func (s Shell) viewReasons() map[string]string {
 		}
 		if !s.deps.Loaded {
 			// Until the registries answer no key but reload has anything to act on.
-			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major", "deps.update", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
+			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major", "deps.update", "deps.dry-run", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
 				r[id] = words.Say("tui.shell.deps_not_loaded")
 			}
 			break
 		}
 		if s.deps.UpArgv() == nil {
 			r["deps.update"] = words.Say("tui.shell.no_dependency_to_update")
+			r["deps.dry-run"] = words.Say("tui.shell.no_dependency_to_update")
 		}
 		if _, _, ok := s.deps.RemoveTargets(); !ok {
 			r["deps.remove"] = words.Say("tui.shell.no_dependency_is_selected")

@@ -93,3 +93,13 @@ func TestManyProjectsShrinkToTheFirstAndACount(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestADryRunIsTheUpdateThatWritesNothing(t *testing.T) {
+	m := FromResult(Result{Rows: []Row{{Name: "zod", Current: "3.22.0", Latest: "3.23.0", Level: "minor", Projects: []string{"web"}}}})
+	if got := strings.Join(m.DryRunArgv(), " "); got != "deps up zod --dry-run" {
+		t.Fatalf("%q", got)
+	}
+	if (Model{}).DryRunArgv() != nil {
+		t.Fatal("nothing to update is no dry run")
+	}
+}

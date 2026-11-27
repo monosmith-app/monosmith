@@ -1,0 +1,5 @@
+{
+  "commands.deps.dry-run.title": "Show what the update would change",
+  "commands.deps.dry-run.hint": "smith deps up <packages> --dry-run: each declaration it would rewrite; nothing is written",
+  "depspage.button.dry_run": "Dry run"
+}
