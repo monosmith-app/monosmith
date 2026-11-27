@@ -9,8 +9,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/features/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/fixwizard"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/toast"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -64,6 +66,9 @@ func (r *fixRun) snapshot() []string {
 // synced is the wizard with the running step's latest lines, and its whole log
 // while the full log view is open.
 func (s Shell) synced(w fixwizard.Wizard) fixwizard.Wizard {
+	if s.inlineFix() {
+		w = w.Inline(s.fixArea())
+	}
 	if s.fixing == nil {
 		return w
 	}
@@ -118,15 +123,27 @@ func (w *stepWriter) Write(p []byte) (int, error) {
 // fixApplying is true while a fix runs.
 func (s Shell) fixApplying() bool { return s.fixing != nil }
 
-// openFix starts the wizard on a planned fix.
+// openFix starts the wizard on a planned fix. A fix of the workspace shows in
+// the detail of Health (the view opens, and on a narrow screen its detail);
+// the fix of a smith.toml that does not read stays a dialog.
 func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 	if s.running() {
 		s.say(words.Say("tui.fix.a_run_is_in_progress_ctrl"))
 		return nil
 	}
+	var cmd tea.Cmd
+	if s.inWorkspace && s.repair == nil {
+		if s.tab != commands.TabDoctor {
+			cmd = s.gotoTab(commands.TabDoctor)
+		}
+		if s.lay().Mode == layout.Narrow {
+			s.detailOpen = true
+		}
+	}
+	s.fixed = nil
 	w := fixwizard.New(p, s.sources.ShowFix).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.fix = &w
-	return nil
+	return cmd
 }
 
 // fixKey sends a key to the wizard and does what it asks.
@@ -222,6 +239,10 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 		return refresh
 	}
 	what := s.fix.Resolved().Description
+	if s.inlineFix() {
+		// The detail goes on to its third step: it checks again and shows the new state.
+		s.fixed = &healthFixed{checks: s.fix.Fix.Checks, what: what}
+	}
 	s.verifying = s.fix.Fix.Checks
 	s.verifyingWhat = what
 	s.verifiedFix, s.verifiedOutput = *s.fix, lastLines(msg.run.snapshot(), verifiedOutputLines)
@@ -261,6 +282,7 @@ func (s *Shell) verifyFix(res doctorview.Result) {
 	if still := doctor.StillFailing(res.Report, checks); len(still) > 0 {
 		// The steps passed and the check still fails: show what they printed,
 		// not only a toast, so the person sees why.
+		s.fixed = nil
 		w := s.verifiedFix.FailVerify(strings.TrimPrefix(doctor.StillFailingText(still[0]), "Still not fixed: "), s.verifiedOutput).Within(s.dialogMargins()).Place(s.w, s.h)
 		s.fix = &w
 		return

@@ -110,6 +110,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			s.refreshProjectForms()
 		}
 	case doctorview.Result:
+		// Health lists the checks by state: failed, then warnings, then passed.
+		s.doctor.ByState = true
 		s.doctor = s.doctor.Replace(msg)
 		s.doctor.Extras = s.doctorExtras()
 		verified := len(s.verifying) > 0

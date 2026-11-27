@@ -264,7 +264,7 @@ func (s Shell) overlays(rows []string) []string {
 		r := s.confirm.Rect()
 		rows = pane.Overlay(rows, s.confirm.Pulse(s.tick, s.waitedForPlan()).Lines(s.th), r.X, r.Y)
 	}
-	if s.fix != nil {
+	if s.fix != nil && !s.inlineFix() {
 		r := s.fix.Rect()
 		fix := s.synced(*s.fix)
 		rows = pane.Overlay(rows, fix.Lines(s.th, s.tick), r.X, r.Y)

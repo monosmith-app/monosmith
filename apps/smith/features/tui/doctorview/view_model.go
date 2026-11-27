@@ -24,6 +24,10 @@ type Model struct {
 	// Grouped files the findings under headings, the workspace's first and then
 	// each project's; a model that is not grouped is one flat list.
 	Grouped bool
+	// ByState files the grouped findings under their state (failed, warnings,
+	// passed) instead of under their project; each row then names its project
+	// and file on a second line.
+	ByState bool
 	// Folds is what the person chose for single groups, by group (the project's
 	// name; "" is the workspace): true for open, false for closed.
 	Folds map[string]bool
@@ -77,6 +81,9 @@ func (v Model) groups() []Group {
 		groups = []Group{{Indexes: idx}}
 	} else {
 		groups = GroupByProject(v.Report.Findings, v.Projects)
+		if v.ByState {
+			groups = GroupByState(v.Report.Findings)
+		}
 	}
 	for _, g := range groups {
 		failuresFirst(v.Report.Findings, g.Indexes)
@@ -92,7 +99,7 @@ func (v Model) groups() []Group {
 			}
 		}
 		if len(keep) > 0 {
-			shown = append(shown, Group{Project: g.Project, Indexes: keep, Counted: g.Indexes})
+			shown = append(shown, Group{Project: g.Project, Indexes: keep, Counted: g.Indexes, State: g.State})
 		}
 	}
 	return shown

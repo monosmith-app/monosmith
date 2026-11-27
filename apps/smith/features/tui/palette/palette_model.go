@@ -4,8 +4,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/footer"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -34,14 +34,12 @@ type Result struct {
 
 func (e Entry) unavailable() bool { return e.Unavailable != "" }
 
-// row is one line of the list: a section heading (index -1) or a match.
-type row struct {
-	heading string
-	index   int
-}
+// selectedMark is the mark of the selected entry, the one of the Projects list.
+const selectedMark = "▶ "
 
 // Palette finds any command by typing part of its title, its command line or
-// its section. With nothing typed the commands are listed by section.
+// its section. The results are grouped under headings with their counts, and
+// each shows the command line it runs under its title.
 type Palette struct {
 	items  []Entry
 	filter textinput.Model
@@ -69,14 +67,26 @@ func (p Palette) WithEntries(entries []Entry) Palette {
 	return p
 }
 
-// matches are the entries the filter finds: titles starting with it first,
-// then titles with it as the smith word in brackets, then titles containing it, then entries whose keywords carry every typed
-// word, then hints and sections mentioning it. Nothing typed lists the usable
-// ones in section order. When nothing is found the closest three commands are
-// returned, and suggested says so.
+// typed is the search as typed, trimmed.
+func (p Palette) typed() string { return strings.TrimSpace(p.filter.Value()) }
+
+// matches are the entries in the order the list draws them (see view): the
+// cursor counts in this order.
 func (p Palette) matches() []Entry {
-	found, _ := p.search()
+	found, _ := p.view()
 	return found
+}
+
+// view is the list as drawn: the matches in their order and the rows that
+// draw them. A search lists its best match first, then the others by section,
+// then the ones that cannot be used now; nothing typed lists the usable
+// commands by section. The "Did you mean" list has no headings.
+func (p Palette) view() ([]Entry, []row) {
+	found, exact := p.search()
+	if !exact {
+		return found, flatRows(found)
+	}
+	return groupRows(found, p.typed() != "", headings{best: words.Say("palette.group.best"), unavailable: words.Say("palette.group.unavailable")})
 }
 
 // suggested is true when the filter found nothing and the list holds the
@@ -86,9 +96,14 @@ func (p Palette) suggested() bool {
 	return !exact
 }
 
-// search is matches with a flag: false when the list is the "Did you mean" one.
+// search finds the entries for the filter: titles starting with it first,
+// then titles with it as the smith word in brackets, then titles containing
+// it, then entries whose keywords carry every typed word, then hints and
+// sections mentioning it, and the unusable ones last. Nothing typed gives the
+// usable ones in section order. When nothing is found it gives the closest
+// three commands and false.
 func (p Palette) search() ([]Entry, bool) {
-	q := strings.ToLower(strings.TrimSpace(p.filter.Value()))
+	q := strings.ToLower(p.typed())
 	if q == "" {
 		var usable []Entry
 		for _, e := range p.items {
@@ -138,19 +153,27 @@ func hasAllWords(text, query string) bool {
 	return text != ""
 }
 
-// rows are the lines of the list: the matches, under their section headings
-// when nothing is typed.
-func (p Palette) rows() []row {
-	found := p.matches()
-	grouped := strings.TrimSpace(p.filter.Value()) == ""
-	var out []row
-	last := ""
-	for i, e := range found {
-		if grouped && e.Section != last && e.Section != "" {
-			out = append(out, row{heading: e.Section, index: -1})
-			last = e.Section
+// line is one line of the list area: the row of the heading or entry it draws
+// (index -1 for a heading or a note), and second for the command line of an entry.
+type line struct {
+	r      row
+	second bool
+	note   string
+}
+
+// lines are the lines of the list area: a note on top for the "Did you mean"
+// list, a heading on one line, an entry on two (its title, then its command line).
+func (p Palette) lines() []line {
+	_, rows := p.view()
+	var out []line
+	if p.suggested() && len(rows) > 0 {
+		out = append(out, line{r: row{index: -1}, note: words.Say("palette.closest", "typed", p.typed())})
+	}
+	for _, r := range rows {
+		out = append(out, line{r: r})
+		if r.index >= 0 {
+			out = append(out, line{r: r, second: true})
 		}
-		out = append(out, row{index: i})
 	}
 	return out
 }
@@ -235,90 +258,168 @@ func (p Palette) Hover(i int) Palette {
 }
 
 // RowAt maps a line of the list area (0 is the first list line, below the
-// input) to the index of the match drawn there, or -1 (a heading is no match);
-// height is the number of list lines.
+// input and its rule) to the index of the match drawn there, or -1 (a heading
+// or a note is no match). Both lines of an entry are the entry.
+//
+// Parameters: y is the line of the list area; height is the number of list lines.
+// Returns: the index of the match, or -1.
 func (p Palette) RowAt(y, height int) int {
-	rows := p.rows()
-	i := p.windowTop(rows, height) + y
-	if y < 0 || y >= height || i >= len(rows) {
+	ls := p.lines()
+	i := p.windowTop(ls, height) + y
+	if y < 0 || y >= height || i >= len(ls) {
 		return -1
 	}
-	return rows[i].index
+	return ls[i].r.index
 }
 
-// windowTop is the first row shown so that the cursor is in the window; the
-// heading above the first match of a section stays with it.
-func (p Palette) windowTop(rows []row, height int) int {
-	at := 0
-	for i, r := range rows {
-		if r.index == p.cursor {
+// At maps a line inside the palette's frame to the index of the match drawn
+// there, or -1: the input, the rules and the key hints are no match.
+//
+// Parameters: y is the line inside the frame (0 is the input); h is the number
+// of lines inside the frame, as given to Lines.
+// Returns: the index of the match, or -1.
+func (p Palette) At(y, h int) int { return p.RowAt(y-listTop, listHeight(h)) }
+
+// listTop is the first line of the list area inside the frame: under the input and its rule.
+const listTop = 2
+
+// listHeight is the number of list lines in h lines: all but the input, the
+// two rules and the key hints.
+func listHeight(h int) int { return max(h-4, 1) }
+
+// windowTop is the first line shown so that both lines of the selected entry
+// are in the window; the heading above the first entry of a group stays with it.
+func (p Palette) windowTop(ls []line, height int) int {
+	at := -1
+	for i, l := range ls {
+		if l.r.index == p.cursor && !l.second {
 			at = i
+			break
 		}
+	}
+	if at < 0 {
+		return 0
 	}
 	top := min(p.top, at)
-	if at >= top+height {
-		top = at - height + 1
+	if at+1 >= top+height {
+		top = at + 2 - height
 	}
-	if top == at && at > 0 && rows[at-1].index < 0 {
+	if top == at && at > 0 && ls[at-1].r.index < 0 {
 		top = at - 1
 	}
-	return max(top, 0)
+	return max(min(top, at), 0)
 }
 
-// Lines draws the palette in w cells and h lines: the input, the list, and a
-// footer of key hints.
+// Lines draws the palette in w cells and h lines: the input with its rule,
+// the grouped results, a rule and the key hints. The selected entry has the
+// mark ▶ and the selected background; the typed letters show in the accent in
+// every title.
+//
+// Parameters: th is the theme; w and h are the cells and lines inside the frame.
+// Returns: h lines of w cells.
 func (p Palette) Lines(th theme.Theme, w, h int) []string {
-	out := []string{th.Accent(th.Icons.Pointer+" ") + p.filter.View()}
-	height := max(h-2, 1)
+	esc := th.Muted(words.Say("palette.key.close"))
+	input := th.Accent(th.Icons.Pointer+" ") + p.filter.View()
+	if gap := w - pane.Width(input) - pane.Width(esc) - 1; gap > 0 {
+		input += strings.Repeat(" ", gap) + esc
+	}
+	out := []string{input, th.Border(strings.Repeat("─", max(w, 0)), false)}
+	height := listHeight(h)
 	found := p.matches()
-	switch {
-	case len(found) == 0:
-		out = append(out, th.Muted(words.Say("palette.empty")))
-	case p.suggested():
-		out = append(out, th.Muted(pane.Cut(words.Say("palette.closest", "typed", strings.TrimSpace(p.filter.Value())), w)))
-		height = max(height-1, 1)
+	ls := p.lines()
+	if len(found) == 0 {
+		out = append(out, th.Muted(pane.Cut(words.Say("palette.empty"), w)), "", th.Muted(pane.Cut(words.Say("palette.empty.hint"), w)))
 	}
-	rows := p.rows()
-	top := p.windowTop(rows, height)
-	for i := top; i < len(rows) && i < top+height; i++ {
-		if r := rows[i]; r.index < 0 {
-			out = append(out, " "+th.Bold(th.Accent(r.heading)))
-		} else {
-			out = append(out, p.line(th, found[r.index], r.index == p.cursor, w))
-		}
+	top := p.windowTop(ls, height)
+	for i := top; i < len(ls) && i < top+height; i++ {
+		out = append(out, p.drawLine(th, ls[i], found, w))
 	}
-	footer := words.Say("palette.footer")
-	if n := p.hidden(); n > 0 && strings.TrimSpace(p.filter.Value()) == "" {
-		footer = words.Say("palette.footer.hidden", "count", n)
-	}
-	for len(out) < h-1 {
+	for len(out) < h-2 {
 		out = append(out, "")
 	}
-	out = append(out, th.Muted(pane.Cut(footer, w)))
+	out = append(out[:max(h-2, 0)], p.bottomRule(th, w), p.keyHints(th, w))
 	return pane.Block(out, w, h)
 }
 
-func (p Palette) line(th theme.Theme, e Entry, selected bool, w int) string {
-	right, desc := e.Shortcut, e.Hint
-	if e.unavailable() {
-		right, desc = "unavailable", e.Unavailable
+// bottomRule is the rule over the key hints, with the count of the commands
+// that cannot be used now while nothing is typed.
+func (p Palette) bottomRule(th theme.Theme, w int) string {
+	n := p.hidden()
+	if n == 0 || p.typed() != "" {
+		return th.Border(strings.Repeat("─", max(w, 0)), false)
 	}
-	// The cursor mark in front (two cells), two cells after the name, one before
-	// the shortcut and one after it.
-	mark := choicerow.Cursor(th, selected)
-	lead := pane.Width(mark)
-	room := max(w-lead-2-1-1-pane.Width(e.Title)-pane.Width(right), 0)
-	if pane.Width(desc) > room {
-		// Cell already ends a cut text with its own ellipsis.
-		desc = strings.TrimRight(pane.Cell(desc, room), " ")
-		if room < 2 {
-			desc = ""
-		}
+	note := " " + words.Say("palette.footer.hidden", "count", n) + " "
+	if pane.Width(note)+4 > w {
+		return th.Border(strings.Repeat("─", max(w, 0)), false)
 	}
-	gap := max(w-lead-2-1-pane.Width(e.Title)-pane.Width(desc)-pane.Width(right), 1)
+	return th.Border("──", false) + th.Muted(note) + th.Border(strings.Repeat("─", w-2-pane.Width(note)), false)
+}
+
+// keyHints is the line of key hints, in the look of the footer.
+func (p Palette) keyHints(th theme.Theme, w int) string {
+	hints := []commands.Hint{
+		{Glyph: words.Say("palette.key.move"), Label: words.Say("palette.key.move.label")},
+		{Glyph: words.Say("palette.key.run"), Label: words.Say("palette.key.run.label")},
+		{Glyph: words.Say("palette.key.close"), Label: words.Say("palette.key.close.label")},
+	}
+	return footer.Render(th, footer.Place(th, hints, nil, w), -1, w)
+}
+
+// drawLine draws one line of the list area in w cells.
+func (p Palette) drawLine(th theme.Theme, l line, found []Entry, w int) string {
+	switch {
+	case l.note != "":
+		return th.Muted(pane.Cut(l.note, w))
+	case l.r.index < 0:
+		return pane.Fit(" "+th.Bold(th.Accent(l.r.heading))+"  "+th.Muted(words.Say("palette.group.count", "count", l.r.count)), w)
+	}
+	e := found[l.r.index]
+	selected := l.r.index == p.cursor
+	var text string
+	if l.second {
+		text = p.secondLine(th, e, w)
+	} else {
+		text = p.titleLine(th, e, selected, w)
+	}
 	if selected {
-		// The selected look of every pick list: the cursor mark and an accent label.
-		return pane.Fit(th.Accent(mark+e.Title+"  "+desc+strings.Repeat(" ", gap)+right), w)
+		return th.Selected(pane.Fit(text, w))
 	}
-	return pane.Fit(mark+e.Title+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Bold(right)+" ", w)
+	return pane.Fit(text, w)
+}
+
+// titleLine is the first line of an entry: the mark, the title with the typed
+// letters in the accent, and the shortcut at the right end.
+func (p Palette) titleLine(th theme.Theme, e Entry, selected bool, w int) string {
+	mark := "  "
+	plain := func(s string) string { return s }
+	lit := func(s string) string { return th.Bold(th.Accent(s)) }
+	if selected {
+		mark = th.Accent(selectedMark)
+		plain = th.Accent
+	}
+	right := th.Bold(e.Shortcut)
+	if e.unavailable() {
+		right = th.Muted(words.Say("palette.unavailable.tag"))
+	}
+	room := max(w-2-1-pane.Width(right)-1, 1)
+	title := e.Title
+	if pane.Width(title) > room {
+		title = strings.TrimRight(pane.Cell(title, room), " ")
+	}
+	text := mark + highlight(title, matchSpans(title, p.typed()), plain, lit)
+	gap := max(w-pane.Width(text)-pane.Width(right)-1, 1)
+	return text + strings.Repeat(" ", gap) + right
+}
+
+// secondLine is the second line of an entry: the smith command line it runs,
+// dim, or why it cannot be used now.
+func (p Palette) secondLine(th theme.Theme, e Entry, w int) string {
+	text := commandLine(e.Hint)
+	if e.unavailable() {
+		text = e.Unavailable
+	}
+	if room := max(w-4-1, 1); pane.Width(text) > room {
+		text = strings.TrimRight(pane.Cell(text, room), " ")
+	}
+	return "    " + th.Faint(text)
 }

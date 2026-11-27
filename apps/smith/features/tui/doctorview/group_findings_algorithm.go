@@ -119,3 +119,37 @@ func failuresFirst(findings []doctor.Finding, idx []int) {
 	}
 	sort.SliceStable(idx, func(a, b int) bool { return rank(findings[idx[a]]) < rank(findings[idx[b]]) })
 }
+
+// The states GroupByState files the checks under, in the order they are drawn.
+const (
+	// StateFailed is the group of the checks that failed.
+	StateFailed = "failed"
+	// StateWarning is the group of the checks that warn.
+	StateWarning = "warning"
+	// StatePassed is the group of the checks that passed.
+	StatePassed = "passed"
+)
+
+// GroupByState files each finding under its state: the failed checks first,
+// then the warnings, then the passed ones. Within a group the findings keep
+// their order, and only groups with findings appear.
+func GroupByState(findings []doctor.Finding) []Group {
+	byState := map[string][]int{}
+	for i, f := range findings {
+		switch {
+		case f.OK:
+			byState[StatePassed] = append(byState[StatePassed], i)
+		case f.Warning:
+			byState[StateWarning] = append(byState[StateWarning], i)
+		default:
+			byState[StateFailed] = append(byState[StateFailed], i)
+		}
+	}
+	var groups []Group
+	for _, s := range []string{StateFailed, StateWarning, StatePassed} {
+		if idx := byState[s]; len(idx) > 0 {
+			groups = append(groups, Group{State: s, Indexes: idx})
+		}
+	}
+	return groups
+}

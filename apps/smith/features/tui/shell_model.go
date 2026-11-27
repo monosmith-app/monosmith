@@ -291,6 +291,9 @@ type Shell struct {
 	// applied in the background.
 	fix    *fixwizard.Wizard
 	fixing *fixRun
+	// fixed is the fix of Health that was applied last: the detail shows its
+	// step Check again until the cursor moves or Esc closes it.
+	fixed *healthFixed
 	// depsRepair is set while the fix wizard walks a dependency repair.
 	depsRepair *depsRepairWalk
 	// adopt is the adopt wizard while it is open; adopting is the job it

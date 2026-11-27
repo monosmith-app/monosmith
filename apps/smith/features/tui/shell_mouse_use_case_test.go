@@ -485,7 +485,9 @@ var modalCases = []struct {
 	{"help", commands.TabProjects, "Run… (R)", func(l *lab) { l.keys("f1") }},
 	{"palette", commands.TabProjects, "Run… (R)", func(l *lab) { l.keys("ctrl+p") }},
 	{"confirmation", commands.TabRelease, "", func(l *lab) { l.keys("x", "enter") }},
-	{"fix wizard", commands.TabDoctor, "fix all", func(l *lab) { l.keys("F") }},
+	// The doctor fix shows in the detail of Health and is no modal; the
+	// dependency repair keeps the wizard as a dialog.
+	{"repair wizard", commands.TabDeps, "", func(l *lab) { (&repairFake{}).install(l); l.keys("H") }},
 }
 
 // colourLab is a lab whose theme has colour, so a hover look would show on screen.
@@ -583,8 +585,8 @@ func TestAClickOnTheFixingDialogsStopButtonStillWorks(t *testing.T) {
 	defer close(l.applyHold)
 	l.keys("f", "enter", "enter")
 	l.has("Fixing…")
-	if !l.sh().modalOpen() || !l.sh().fixApplying() {
-		t.Fatal("the fixing dialog is the modal")
+	if !l.sh().inlineFix() || !l.sh().fixApplying() {
+		t.Fatal("the fix runs in the detail of Health")
 	}
 	l.clickText("Stop")
 	cancelled := false

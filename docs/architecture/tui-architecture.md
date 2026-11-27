@@ -263,7 +263,10 @@ The doctor fix wizard (`tui/fixwizard`) is a state machine of stages: questions 
 decision), a scrollable review (files as diffs, commands, projects covered), progress with a bar,
 and a failure screen with the step's output and Retry. It renders a `doctorfix.Planned` and applies
 it through `doctorfix`, so it asks exactly what `smith doctor --fix` asks
-([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md)).
+([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md)). `Wizard.Inline(area)` draws
+it inside a part of a pane instead of as a dialog: the doctor fix of the workspace shows in the
+detail of Health (`shell_health_fix_mapper.go`), with a head of the check and the three steps; the
+repair of smith.toml and the dependency repair stay dialogs.
 
 The adopt wizard (`tui/adoptwizard`) is a second state machine layered on the first: every screen is
 a `fixwizard.Wizard`, so keys, mouse and drawing are identical. It holds no logic; steps that take

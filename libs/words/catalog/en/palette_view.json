@@ -1,0 +1,13 @@
+{
+  "palette.group.best": "Best match",
+  "palette.group.unavailable": "Not usable now",
+  "palette.group.count": "{count}",
+  "palette.unavailable.tag": "unavailable",
+  "palette.empty.hint": " Type fewer letters, or a word such as build, test or release.",
+  "palette.key.move": "↑/↓",
+  "palette.key.move.label": "move",
+  "palette.key.run": "enter",
+  "palette.key.run.label": "run",
+  "palette.key.close": "esc",
+  "palette.key.close.label": "close"
+}

@@ -17,6 +17,10 @@ const projectsListMax = 44
 // detailWidth is the width the person gave the detail of the open tab; 0 is
 // automatic. The detail of a project takes what a list of at most 44 columns
 // leaves.
+// healthListMax is the most columns the list of Health takes while a fix
+// shows in its detail, before the user moves the divider.
+const healthListMax = 48
+
 func (s Shell) detailWidth() int {
 	n, _ := s.split.Size(s.detailDivider())
 	cw := layout.ContentWidth(s.w)
@@ -25,6 +29,9 @@ func (s Shell) detailWidth() int {
 		// The list of projects needs little room; the sections of the detail
 		// (the table of tasks) take the rest.
 		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, projectsListMax))
+	case n == 0 && s.tab == commands.TabDoctor && s.inWorkspace && s.healthFixOpen():
+		// While a fix shows in the detail, its review and its steps take the room.
+		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, healthListMax))
 	}
 	return n
 }
@@ -42,7 +49,7 @@ func (s Shell) overlaid() bool { return s.belowMinimum() || s.modalOpen() }
 // acts only on the modal and the screen behind it is drawn dimmed.
 func (s Shell) modalOpen() bool {
 	return s.palOpen || s.help != nil || s.pkg != nil || s.relpick != nil || s.confirm != nil ||
-		s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil || s.cache != nil
+		(s.fix != nil && !s.inlineFix()) || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil || s.cache != nil
 }
 
 // spots are the dividers of the open tab that can be moved now, for the splitter.
@@ -115,4 +122,11 @@ func (s Shell) paintSplits(rows []string) []string {
 		rows = splitter.PaintJunctions(s.th, rows, js, p, s.split.Look(p.ID))
 	}
 	return rows
+}
+
+// healthFixOpen is true while a doctor fix of the workspace is open or was
+// just applied: the detail of Health shows it. It does not ask the layout, so
+// the layout may ask it.
+func (s Shell) healthFixOpen() bool {
+	return (s.fix != nil && s.repair == nil && s.depsRepair == nil) || s.fixed != nil
 }

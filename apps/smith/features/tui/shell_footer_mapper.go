@@ -14,6 +14,9 @@ func (s Shell) footerHints() []footer.Placed {
 	if s.modalOpen() {
 		return nil
 	}
+	if s.inlineFix() || s.fixedShown() {
+		return s.fixFooter()
+	}
 	view, tail := s.page().Footer()
 	return footer.Place(s.th, view, tail, s.w)
 }

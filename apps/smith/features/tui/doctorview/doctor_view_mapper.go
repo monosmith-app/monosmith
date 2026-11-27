@@ -44,11 +44,25 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 		if v.Grouped {
 			indent = "  "
 		}
+		var projectOf map[int]string
+		if v.ByState {
+			projectOf = v.projectsOf()
+		}
 		for _, i := range g.Indexes {
 			f := v.Report.Findings[i]
 			selected := position == v.Cursor
 			rowOf[len(lines)] = i
-			lines = append(lines, choicerow.Line(th, choicerow.Row{Lead: indent + Mark(th, f) + " ", Label: f.Title(), Selected: selected}, 0))
+			line := choicerow.Line(th, choicerow.Row{Lead: indent + Mark(th, f) + " ", Label: f.Title(), Selected: selected}, 0)
+			if _, ok := v.FixFor(f); ok && v.ByState {
+				line = withTag(line, th.Muted(words.Say("doctor.row.fix")), w)
+			}
+			lines = append(lines, line)
+			if v.ByState {
+				if where := whereLine(projectOf[i], FileOf(f)); where != "" {
+					rowOf[len(lines)] = i
+					lines = append(lines, "  "+indent+"  "+th.Muted(where))
+				}
+			}
 			if selected && v.Open && expand && !f.OK {
 				lines = append(lines, Text(th, f, 5+len(indent))...)
 			}
@@ -137,8 +151,65 @@ func suggestion(fix protocol.Fix) string {
 	return fix.Choices[0].Options[0].Label
 }
 
+// withTag puts tag at the right end of a row of w cells, when it fits.
+func withTag(line, tag string, w int) string {
+	gap := w - pane.Width(line) - pane.Width(tag) - 2
+	if gap < 1 {
+		return line
+	}
+	return line + strings.Repeat(" ", gap) + tag
+}
+
+// whereLine is the second line of a check grouped by state: its project (the
+// workspace for none) and the file it is about.
+func whereLine(project, file string) string {
+	if project == "" {
+		project = words.Say("doctor.group.workspace")
+	}
+	if file == "" {
+		return project
+	}
+	return words.Say("doctor.row.where", "project", project, "file", file)
+}
+
+// projectsOf is the project each finding is filed under, by its index ("" for
+// the workspace), as GroupByProject files them.
+func (v Model) projectsOf() map[int]string {
+	out := map[int]string{}
+	for _, g := range GroupByProject(v.Report.Findings, v.Projects) {
+		for _, i := range g.Indexes {
+			out[i] = g.Project
+		}
+	}
+	return out
+}
+
+// stateHeader is the heading of a group of one state: its fold mark, the
+// state in its colour and bold, and the count of its checks.
+func (v Model) stateHeader(th theme.Theme, g Group, open, selected bool) string {
+	counted := g.Counted
+	if counted == nil {
+		counted = g.Indexes
+	}
+	label, paint := words.Say("doctor.state.failed"), th.Failure
+	switch g.State {
+	case StateWarning:
+		label, paint = words.Say("doctor.state.warnings"), th.Warning
+	case StatePassed:
+		label, paint = words.Say("doctor.state.passed"), th.Success
+	}
+	mark := th.Icons.Closed
+	if open {
+		mark = th.Icons.Open
+	}
+	return choicerow.Line(th, choicerow.Row{Lead: mark + " ", Label: th.Bold(paint(label)) + "  " + th.Muted(words.Say("doctor.state.count", "count", len(counted))), Selected: selected}, 0)
+}
+
 // header is a group's heading: its fold mark, its name and what is wrong in it.
 func (v Model) header(th theme.Theme, g Group, open, selected bool) string {
+	if g.State != "" {
+		return v.stateHeader(th, g, open, selected)
+	}
 	name := g.Project
 	if name == "" {
 		name = words.Say("doctor.group.workspace")

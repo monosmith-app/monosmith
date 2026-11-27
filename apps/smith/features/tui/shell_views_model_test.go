@@ -109,8 +109,8 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 
 func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4") // the checks are grouped by default
-	l.has("workspace", "web  1 failed", "2 checks passed", "F fix all")
+	l.keys("4") // the checks are grouped by state by default
+	l.has("Failed  2", "web · apps/web/Dockerfile", "2 checks passed", "F fix all")
 	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
 	l.has("Check again")
 	l.keys("f")
@@ -118,7 +118,7 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 		t.Fatal("a finding without a fix opened a wizard")
 	}
 	l.has("no fix")
-	l.keys("down", "down") // past web's heading
+	l.keys("down") // the next failed check
 	l.has("f fix", "[Fix (f)]", "write web's registry", "writes apps/web/Dockerfile")
 	l.keys("f") // web's Docker finding
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile")
@@ -130,9 +130,9 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 func TestTheDoctorTabListsGroupedUntilGroupingIsOff(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4")
-	l.has("web  1 failed", "Docker registries of web agree")
+	l.has("Failed  2", "Docker registries of web agree")
 	l.keys("g")
-	l.hasNot("web  1 failed")
+	l.hasNot("Failed  2")
 	l.has("Docker registries of web agree")
 }
 

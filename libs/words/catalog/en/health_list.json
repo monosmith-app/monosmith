@@ -1,0 +1,8 @@
+{
+  "doctor.row.fix": "fix",
+  "doctor.row.where": "{project} · {file}",
+  "doctor.state.failed": "Failed",
+  "doctor.state.warnings": "Warnings",
+  "doctor.state.passed": "Passed",
+  "doctor.state.count": "{count}"
+}

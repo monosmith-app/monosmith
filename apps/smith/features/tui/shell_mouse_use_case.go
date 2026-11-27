@@ -164,7 +164,7 @@ func (s *Shell) hover(x, y int) {
 	case s.palOpen:
 		box := s.paletteBox()
 		if box.Contains(x, y) {
-			s.pal = s.pal.Hover(s.pal.RowAt(y-box.Y-2, max(box.H-5, 1)))
+			s.pal = s.pal.Hover(s.pal.At(y-box.Y-1, box.H-2))
 		}
 	}
 }
@@ -176,6 +176,13 @@ func (s *Shell) click(x, y int) tea.Cmd {
 	s.lastClick = press
 	if double {
 		s.lastClick = pointer.Click{}
+	}
+	if s.inlineFix() && !s.fixArea().Contains(x, y) {
+		// A click beside the fix in the detail of Health leaves it, unless a step runs.
+		if s.fixApplying() {
+			return nil
+		}
+		s.fix = nil
 	}
 	switch {
 	case s.compose != nil:
@@ -220,7 +227,7 @@ func (s *Shell) click(x, y int) tea.Cmd {
 			s.pal = s.pal.Reset()
 			return nil
 		}
-		if i := s.pal.RowAt(y-box.Y-2, max(box.H-5, 1)); i >= 0 {
+		if i := s.pal.At(y-box.Y-1, box.H-2); i >= 0 {
 			p, res := s.pal.Choose(i)
 			s.pal = p
 			return s.afterPalette(res)
