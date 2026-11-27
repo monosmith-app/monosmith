@@ -169,6 +169,8 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		// The sizes of the panels are kept in the same file as the other choices.
 		Splits: prefs.Splits, SaveSplits: saveSplits,
 		CommitOperationsSet: commitSet, CommitChoice: prefs.CommitChoices[workspaceRoot], SaveCommitChoice: commitChoiceSaver(workspaceRoot),
+		// The pinned projects are the person's own, kept by workspace beside the other choices.
+		Pins: prefs.Pins[workspaceRoot], SavePins: pinsSaver(workspaceRoot),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
 	// A newer smith that is already known: the status bar says it, the first time the

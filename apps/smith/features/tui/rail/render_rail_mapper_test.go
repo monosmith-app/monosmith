@@ -115,3 +115,54 @@ func TestTinySizesDoNotPanic(t *testing.T) {
 		}
 	}
 }
+
+func TestThePinnedProjectsFollowTheViewsUnderTheirHeading(t *testing.T) {
+	p := plainProps(20)
+	p.PinnedTitle = "Pinned"
+	p.Pinned = []Pin{{ID: "pin:orders", Mark: "×", Label: "orders", Kind: "app"}, {ID: "pin:kit", Mark: "–", Label: "kit", Kind: "lib"}}
+	r := Render(p)
+	lines := plain(r.Lines)
+	want := map[int]string{
+		9:  "│                      │",
+		10: "│ Pinned               │",
+		11: "│                      │",
+		12: "│ × orders         app │",
+		13: "│ – kit            lib │",
+	}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Fatalf("row %d = %q, want %q\n%s", i, lines[i], w, strings.Join(lines, "\n"))
+		}
+	}
+	if r.At(12) != "pin:orders" || r.At(13) != "pin:kit" || r.At(10) != "" {
+		t.Fatalf("a pinned row gives back its id: %v", r.Rows)
+	}
+}
+
+func TestPinsThatDoNotFitAreLeftOut(t *testing.T) {
+	p := plainProps(12)
+	p.PinnedTitle = "Pinned"
+	for _, n := range []string{"a", "b", "c", "d", "e", "f", "g"} {
+		p.Pinned = append(p.Pinned, Pin{ID: "pin:" + n, Mark: "✓", Label: n, Kind: "lib"})
+	}
+	lines := plain(Render(p).Lines)
+	if len(lines) != 12 || !strings.HasPrefix(lines[11], "╰") {
+		t.Fatalf("the frame keeps its rows:\n%s", strings.Join(lines, "\n"))
+	}
+	for i, l := range lines {
+		if pane.Width(l) != 24 {
+			t.Fatalf("row %d is %d cells: %q", i, pane.Width(l), l)
+		}
+	}
+}
+
+func TestTheHoveredPinIsOnTheHover(t *testing.T) {
+	p := plainProps(20)
+	p.PinnedTitle = "Pinned"
+	p.Pinned = []Pin{{ID: "pin:kit", Mark: "–", Label: "kit", Kind: "lib"}}
+	plainRow := Render(p).Lines[12]
+	p.Hover = "pin:kit"
+	if Render(p).Lines[12] == plainRow {
+		t.Fatal("the pin under the pointer looks like any other")
+	}
+}

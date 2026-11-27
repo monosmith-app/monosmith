@@ -1,0 +1,9 @@
+{
+  "commands.projects.pin.title": "Pin the project to the rail",
+  "commands.projects.pin.title.on": "Unpin the project from the rail",
+  "commands.projects.pin.hint": "Shows the project under Pinned in the rail, for you only: smith.toml does not change",
+  "tui.pins.pinned": "Pinned {project} to the rail. Only you see it: smith.toml does not change.",
+  "tui.pins.unpinned": "Unpinned {project}.",
+  "tui.pins.missing": "{project} is not in the workspace any more.",
+  "tui.rail.pinned": "Pinned"
+}

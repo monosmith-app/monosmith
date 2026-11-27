@@ -112,6 +112,11 @@ type Config struct {
 	Environments []string
 	// Hyperlinks is true when the terminal draws OSC 8 hyperlinks (see package hyperlink).
 	Hyperlinks bool
+	// Pins are the projects the person pinned to the rail in this workspace, in
+	// order; SavePins keeps them when they change (nil keeps none). They live in
+	// the person's own preferences, never in the workspace.
+	Pins     []string
+	SavePins func(pins []string)
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -379,6 +384,9 @@ type Shell struct {
 	taskAt, projRunAt int
 	// filtering is true while the filter line of Projects has the keyboard.
 	filtering bool
+	// pins are the projects pinned to the rail, in order; savePins keeps them.
+	pins     []string
+	savePins func([]string)
 	// wsRoot is the folder of the workspace, which the projects' roots are relative to.
 	wsRoot string
 	// zoom is set while the detail fills the pane on a wide screen (z).
@@ -437,6 +445,7 @@ func NewShell(cfg Config) Shell {
 	}
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
 	sh.hyperlinks = cfg.Hyperlinks
+	sh.pins, sh.savePins = append([]string(nil), cfg.Pins...), cfg.SavePins
 	sh.commitSet, sh.commitChoice, sh.saveCommit = cfg.CommitOperationsSet, cfg.CommitChoice, cfg.SaveCommitChoice
 	if cfg.Repair != nil {
 		sh.repair = cfg.Repair
@@ -500,6 +509,7 @@ func (s Shell) toggles() map[string]bool {
 		"doctor.passed":   s.doctor.Shows(doctorview.FilterPassed),
 		"run.errors":      s.runErrors,
 		"run.switch":      s.runOnLog,
+		"projects.pin":    s.pinned(s.selectedProject()),
 	}
 }
 

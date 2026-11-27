@@ -51,7 +51,7 @@ var paletteSections = map[string]string{
 	"run.typecheck": SectionBuild, "run.typecheck-all": SectionBuild, "run.verify": SectionBuild, "run.affected": SectionBuild, "run.stop": SectionBuild,
 
 	"file.add": SectionProjects, "proj.swap": SectionProjects, "proj.remove": SectionProjects, "proj.affected": SectionProjects, "proj.graph": SectionProjects,
-	"projects.install-package": SectionProjects, "projects.remove-package": SectionProjects,
+	"projects.install-package": SectionProjects, "projects.remove-package": SectionProjects, "projects.pin": SectionProjects,
 
 	"proj.install": SectionDependencies, "deps.update": SectionDependencies, "deps.align": SectionDependencies, "deps.one-version": SectionDependencies, "deps.repair": SectionDependencies,
 

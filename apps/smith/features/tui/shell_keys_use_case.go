@@ -356,6 +356,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.openProjectSettings()
 	case "run-menu":
 		s.openRunMenu()
+	case "pin":
+		s.togglePin(project)
 	case "open-folder":
 		return s.openProjectFolder()
 	case "graph":
