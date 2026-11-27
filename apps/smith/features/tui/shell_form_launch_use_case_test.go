@@ -62,16 +62,29 @@ func (l *lab) withProjectTasks(tasks ...string) *lab {
 	return l
 }
 
-// toDoctorExtra moves the Doctor cursor to the check doctor does not run.
-func (l *lab) toDoctorExtra() {
+// toDoctorExtra moves the Doctor cursor to the check doctor does not run that
+// has the title.
+func (l *lab) toDoctorExtra(title string) {
 	l.t.Helper()
-	for range 10 {
-		if l.sh().onDoctorExtra() {
+	for range 12 {
+		if e, ok := l.sh().doctor.SelectedExtra(); ok && e.Title == title {
 			return
 		}
 		l.keys("down")
 	}
-	l.t.Fatal("the keys never reach the slice check row")
+	l.t.Fatalf("the keys never reach the %q row", title)
+}
+
+func TestEnterOnTheVerifyRowRunsSmithVerifyWithNoQuestion(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("4")
+	l.send(boundaryResult())
+	l.has("Checks doctor does not run itself", "Verify the workspace as CI does", "Enter runs smith verify")
+	l.toDoctorExtra("Verify the workspace as CI does")
+	l.keys("enter")
+	if got := l.lastStarted(); got != "verify" {
+		t.Fatalf("Enter started %q, not smith verify", got)
+	}
 }
 
 func TestEnterOnTheSliceCheckRowRunsTheTaskOfEveryProjectWithNoQuestion(t *testing.T) {
@@ -79,7 +92,7 @@ func TestEnterOnTheSliceCheckRowRunsTheTaskOfEveryProjectWithNoQuestion(t *testi
 	l.keys("4")
 	l.send(boundaryResult())
 	l.has("Checks doctor does not run itself", "Vertical-slice layout", "Enter runs slice-check")
-	l.toDoctorExtra()
+	l.toDoctorExtra("Vertical-slice layout")
 	l.has("Doctor does not run this check itself", "Run this check now")
 	l.keys("enter")
 	if l.sh().tab == commands.TabGuide {
@@ -96,7 +109,7 @@ func TestAWorkspaceWithGoAndNodeChecksTheLayoutWithBothTasks(t *testing.T) {
 	l.keys("4")
 	l.send(boundaryResult())
 	l.has("Enter runs slice-check and lint")
-	l.toDoctorExtra()
+	l.toDoctorExtra("Vertical-slice layout")
 	l.clickText("Run this check now")
 	if got := l.lastStarted(); got != "run slice-check lint" {
 		t.Fatalf("the button started %q: the Node packages need lint, the checker refuses node", got)
@@ -107,18 +120,19 @@ func TestANodeOnlyWorkspaceChecksTheLayoutWithLint(t *testing.T) {
 	l := newLab(t, true, 140, 34).withProjectTasks("lint")
 	l.keys("4")
 	l.send(boundaryResult())
-	l.toDoctorExtra()
+	l.toDoctorExtra("Vertical-slice layout")
 	l.keys("enter")
 	if got := l.lastStarted(); got != "run lint" {
 		t.Fatalf("Enter started %q, not lint", got)
 	}
 }
 
-func TestWithoutSliceCheckOrLintDoctorListsNoExtraCheck(t *testing.T) {
+func TestWithoutSliceCheckOrLintDoctorListsOnlyVerifyAsAnExtraCheck(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4")
 	l.send(boundaryResult())
-	l.hasNot("Checks doctor does not run itself")
+	l.has("Checks doctor does not run itself", "Verify the workspace as CI does")
+	l.hasNot("Vertical-slice layout")
 }
 
 func TestAFindingAboutAFileHasAWhyButtonThatOpensTheWhyFormForIt(t *testing.T) {

@@ -16,7 +16,7 @@ type Result struct {
 	Err      error
 }
 
-// Extra is a check doctor does not run itself (the vertical-slice layout),
+// Extra is a check doctor does not run itself (smith verify, the vertical-slice layout),
 // listed under the findings as a row that runs it now. Run is the smith
 // command line that runs it, with no question ("run slice-check").
 type Extra struct {

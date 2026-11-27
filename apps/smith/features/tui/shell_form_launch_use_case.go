@@ -30,8 +30,14 @@ func (s *Shell) openFormFor(id string, answers map[string][]string) tea.Cmd {
 }
 
 // doctorExtras are the checks the Doctor tab lists after the findings because
-// doctor does not run them: the vertical-slice layout, when a project can run it.
+// doctor does not run them: smith verify, as CI runs it, and the vertical-slice
+// layout, when a project can run it.
 func (s Shell) doctorExtras() []doctorview.Extra {
+	extras := []doctorview.Extra{{
+		Title: words.Say("doctor.extra.verify"),
+		Hint:  words.Say("doctor.extra.verify.hint"),
+		Run:   []string{"verify"},
+	}}
 	var tasks []string
 	if s.anyProjectHas(sliceTask, "") {
 		tasks = append(tasks, sliceTask)
@@ -42,13 +48,13 @@ func (s Shell) doctorExtras() []doctorview.Extra {
 		tasks = append(tasks, "lint")
 	}
 	if len(tasks) == 0 {
-		return nil
+		return extras
 	}
-	return []doctorview.Extra{{
+	return append(extras, doctorview.Extra{
 		Title: words.Say("doctor.extra.slices"),
 		Hint:  words.Say("doctor.extra.slices.hint", "tasks", strings.Join(tasks, " and ")),
 		Run:   append([]string{"run"}, tasks...),
-	}}
+	})
 }
 
 // anyProjectHas is true when a project of the workspace has the task; a
