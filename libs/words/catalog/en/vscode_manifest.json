@@ -1,8 +1,6 @@
 {
   "vscode.package.display-name": "MonoSmith",
   "vscode.package.description": "Run the tasks of a MonoSmith workspace from VS Code: projects and what the changes affect, health, dependencies, release preview, failures in the Problems panel.",
-  "vscode.view-container.monosmith-health.title": "MonoSmith Health",
-  "vscode.view.release.name": "Release Preview",
   "vscode.command.refresh.title": "Refresh",
   "vscode.command.run-task.title": "Run Task",
   "vscode.command.run-selected.title": "Run Focused Task",

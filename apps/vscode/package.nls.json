@@ -1258,8 +1258,6 @@
   "vscode.undo-change.undo": "Undo",
   "vscode.undo-change.undoing-a-change": "undoing a change",
   "vscode.untrusted-workspace.description": "In a workspace that is not trusted, MonoSmith does not run the smith inside the workspace (node_modules/.bin or .smith/bin) and does not run tasks. It shows the projects with the smith from your monosmith.path user setting or the PATH.",
-  "vscode.view-container.monosmith-health.title": "MonoSmith Health",
-  "vscode.view.release.name": "Release Preview",
   "vscode.walkthrough.description": "Run the tasks of your workspace, see what the changes affect and keep it healthy.",
   "vscode.walkthrough.monosmith-start-affected.description": "Run one task in the projects the changes affect: the rest is not touched, and what did not change comes from the cache.\n[Run affected](command:monosmith.runAffected)",
   "vscode.walkthrough.monosmith-start-affected.title": "Run only what changed",
