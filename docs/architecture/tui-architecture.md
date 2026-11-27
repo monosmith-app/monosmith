@@ -191,6 +191,12 @@ actions, which scroll and keep `keepDetailCursorVisible` in the part under the r
 `depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from
 the plan of the Release tab (`pendingNext`), never computed again.
 
+The list of Projects keeps the projects picked with Space (`Shell.picked`) apart from its cursor. The
+shell gives them to the keymap as `State.Picked`, only on Projects, so the footer and the palette name the
+selection (`commands.scope.picked`) and a run key starts `Command.TaskArgvAcross`: one `smith run <task>` with a
+`-p` for each picked project. `projects.unselect` (Esc) has `NeedsPicked`, so it is out of the footer and of the
+key check while nothing is picked. The box of the selection is `shell_pick_box_mapper.go`.
+
 Views load lazily: Doctor, Deps and Release load on first open; Doctor also starts in the
 background when the shell opens, so the status bar shows its counts before any tab is visited.
 
@@ -288,6 +294,7 @@ before the terminal would ask.
 | Setting | Effect | Code |
 |---|---|---|
 | the choice saved in the Settings tab (`$SMITH_HOME/tui.json`: `theme`, `icons`) | tokens and symbols, under the variables below | `userprefs`, `theme.ChooseWith` |
+| the pinned projects (`$SMITH_HOME/tui.json`: `pins`, by workspace root) | the Pinned group of the rail | `userprefs.Preferences.Pins`, `pins_repository.go`, `rail.Pin` |
 | `NO_COLOR` (any value) | plain tokens | `theme.Choose` |
 | `SMITH_THEME=light\|dark\|plain` | forces tokens; `plain` also requests plain mode | `theme.Choose`, `screenreader.Plain` |
 | terminal background | decides light or dark when `SMITH_THEME` is unset | `theme/dark_background_policy.go` |

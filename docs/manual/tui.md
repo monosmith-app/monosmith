@@ -54,6 +54,12 @@ From top to bottom:
    same: `1 Home  2 Projects  3 Runs ×1  4 Health ×2  5 Deps …`, the open view in the accent, bold and
    underlined. When the names do not fit, they are shortened, then the strip scrolls with
    `‹` and `›`. A click on a row of the rail or a tab of the strip opens the view.
+   Under the views the rail has the **Pinned** projects: `P` on Projects pins the selected
+   project, and `P` again unpins it (the palette has `Pin the project to the rail`). Each pin
+   shows the mark of its last run, its name and its kind (`✓ web  app`), and a click on it opens
+   it in Projects. The pins are yours: smith keeps them by workspace in `tui.json` in the smith
+   home, never in `smith.toml` or another file of the workspace. The strip of a narrow screen has
+   no room for them.
 3. **The view.** Each pane is a rounded frame with its title in the top border: the view's
    name for the list, and what the detail tells about (the project, the check, the run) for
    the detail beside it. The frame that has the keyboard has the accent border. Projects,
@@ -190,7 +196,18 @@ has the mark of the last run of the project in this session (`✓` passed, `×` 
 `»` skipped, `⊘` stopped, a spinner while it runs), the name, the language (and the kind and the
 version when the list has the room) muted, and `● changed` in the accent when the current
 changes touch it. The selected row has `▶` and the Highlight background, its name in the accent
-and bold. The last line is the legend of the marks. The keys of the whole workspace (`a` add a
+and bold. The last line is the legend of the marks.
+
+**Several projects at once.** `Space` selects the project under the cursor and moves down, and
+`Space` on a selected project clears it. While projects are selected, each row starts with its box
+(`[x]` or `[ ]`), the count line starts with `2 selected`, and a box over the legend names them,
+with a button for each task that one of them has (`Build (b)`, `Test (t)`, `Lint (l)`,
+`Typecheck (c)`) and the command line, dim: `$ smith run build -p orders -p web`. The keys `b`, `t`,
+`l`, `c` and `Ctrl+B` then run on every selected project in one run, which opens in the Runs view;
+the footer says `b build 2 selected`. `Esc` clears the selection (a second `Esc` clears the filter).
+The selection counts only on Projects: on another view the run keys act on the selected project.
+
+The keys of the whole workspace (`a` add a
 project, `V` verify, `B` `T` `L` `C` build, test, lint and typecheck every project) are in the
 footer and in the palette.
 
@@ -217,7 +234,7 @@ is in the accent, bold and underlined. `Tab`, the side arrows or a click change 
   [Settings](#settings)): the values that the manifest owns, read-only, then the settings of the
   project with the same editors as the Workspace section.
 
-The footer follows the keyboard. On the list it is `Tab detail • / filter • R run… • b build orders • …`
+The footer follows the keyboard. On the list it is `Tab detail • / filter • Space select • R run… • b build orders • …`
 (a narrow screen has `Enter detail`); in the detail it is `Tab section • Enter run • Esc back • R run… • …`.
 
 

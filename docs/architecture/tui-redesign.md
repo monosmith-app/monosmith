@@ -3,7 +3,7 @@
 Status: **built**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
 phase 4 (Projects), phase 5 (Runs), phase 6 (the palette and Health), phase 7 (Dependencies and
 Release) and phase 8 (Settings, the help and the dialogs) are built. What the redesign left open is
-listed in [Left open](#left-open).
+listed in [Left open](#left-open), and what was built of it since in [Follow-up as built](#follow-up-as-built).
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -461,12 +461,40 @@ Deviations from the brief and the screens:
 - The marks stay `×` and `▲` (see phase 2).
 - The VS Code extension and the JetBrains plugin are unchanged: their settings are their own forms.
 
+## Follow-up as built
+
+These items of the left-open list were built after phase 8.
+
+- Pinned projects (`rail.Props.Pinned`, `rail.Pin`): under the views, after a blank row, the muted bold heading
+  `Pinned`, a blank row when the rail has the room, then one row per pin: the mark of its last run, the name and the
+  kind, muted, at the right. A pin that does not fit is not drawn; a pin of a project that left the workspace is kept
+  but not drawn. `P` on Projects (`projects.pin`, also in the palette, `Unpin the project from the rail` while it is
+  pinned) pins or unpins the selected project; a click on a pin opens Projects on it and clears a filter that hides it.
+  The owner decided the pins are per person: they are in `tui.json` in the smith home (`userprefs.Preferences.Pins`,
+  by workspace root), never in `smith.toml` or a file git sees.
+- Multi-select on Projects: `Space` (`projects.select`) selects the row and moves down, `[x]` and `[ ]` boxes lead
+  every row while projects are selected, the count line starts with `N selected`, and a box over the legend lists
+  them with the buttons of their tasks and the dim command line (`$ smith run build -p a -p b`). The run keys and
+  the buttons run `smith run <task> -p a -p b` (`Command.TaskArgvAcross`), which opens in the Runs view. `Esc`
+  (`projects.unselect`, `NeedsPicked`) clears the selection before the filter. The new words are in
+  `libs/words/catalog/en/projects_pick.json`.
+
+Deviations:
+
+- The narrow strip has no Pinned group: it is one line. A narrow screen pins and unpins with `P`, and shows the pins
+  once it is wide.
+- The selection keeps the `[ ]`/`[x]` boxes of every pick list (the screens draw no mark for it), and it counts only
+  on Projects: on another view `b` still builds the selected project, so a key never runs projects the person cannot see.
+- A project without the task is passed on with `-p` too: `smith run` skips the projects that lack a task. The buttons
+  offer only the tasks one of the selected projects has.
+- The pin key is `P`: the screens draw no key for it, and `p` is taken by the project tasks (`package`).
+
 ## Left open
 
 What the redesign did not build, across the phases, for the owner to decide:
 
 - The marks `✗`, `⚠` and `⚡` the screens draw: `shared/marks` bans them (phases 2 to 8).
-- The pinned projects of the rail (phase 2), multi-select on Projects (phase 4), the time estimate, the log search
+- The time estimate, the log search
   and the cache reason of the Runs view (phase 5), the Settings and Tasks groups of the palette and its command
   editor (phase 6), the dry run of Dependencies and the per-package one-version line (phase 7), and the Workspace
   filter of Settings (phase 8).
