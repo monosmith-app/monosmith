@@ -159,20 +159,3 @@ func (l Layout) DetailInner() Rect { return DetailFrame.Inside(l.Detail) }
 
 // HasDetail says whether the detail is on screen beside the list.
 func (l Layout) HasDetail() bool { return l.Detail.W > 0 }
-
-// InlineHeaderFrom was the width from which the header shared the row of the
-// tabs. The title bar now always has its own row, so no width puts it inline;
-// the constant stays so the layout package keeps its exported names.
-const InlineHeaderFrom = 0
-
-// DivideShared is DivideWith. The header no longer shares the row of the tabs,
-// so inline is ignored.
-//
-// Parameters: width and height are the terminal's size; withDetail asks for
-// the detail; detailW is the chosen detail width, 0 for the automatic one;
-// inline is ignored.
-// Returns: the layout.
-func DivideShared(width, height int, withDetail bool, detailW int, inline bool) Layout {
-	_ = inline
-	return DivideWith(width, height, withDetail, detailW)
-}

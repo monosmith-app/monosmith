@@ -185,7 +185,7 @@ package of Deps (`depsview.Model.Detail`), the package of Release (`releaseview.
 Settings the panel scrolls with `Ctrl+U` `Ctrl+D` and the wheel. Below the wide layout Enter opens the detail of Deps and
 Release in the frame (`listWithDetailKey`). Settings draws both frames itself: `settingsview.SectionsPane` in the main
 frame and `FieldsPane` in the detail frame (`settingsFields`, `settingsFieldsClick`), or `Narrow` alone below the wide
-layout; the box of the selected row sits under its rows, so `WithSideDetail` and `DetailLines` are no longer used.
+layout; the box of the selected row sits under its rows. smith 3.0.0 removed `WithSideDetail`.
 The detail of a project has two parts (`shell_detail_split_mapper.go`): the facts, drawn at the top and never scrolled, and the
 actions, which scroll and keep `keepDetailCursorVisible` in the part under the rule. Deps filters with the chips of
 `depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from

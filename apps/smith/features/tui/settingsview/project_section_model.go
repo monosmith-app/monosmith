@@ -19,7 +19,7 @@ func (m Model) ProjectPane(th theme.Theme, w, h, px, py int) []string {
 	if m.project == nil || w < 1 || h < 1 {
 		return pane.Block(nil, max(w, 0), max(h, 0))
 	}
-	m.section, m.onItems, m.sideDetail = Project, true, false
+	m.section, m.onItems = Project, true
 	return pane.Block(m.right(th, w, h, px, py).lines, w, h)
 }
 
