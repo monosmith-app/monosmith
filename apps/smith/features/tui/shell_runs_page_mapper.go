@@ -650,6 +650,12 @@ func (s Shell) taskInfo(w int) []string {
 	for _, part := range pane.Wrap(s.th.Muted(s.taskDetail(t, s.now())), max(w-2, 4), 0) {
 		out = append(out, pane.Fit(" "+part, w))
 	}
+	if t.Miss != "" && t.Status != runview.Cached {
+		// Why the cache did not answer, as smith why-miss would say it.
+		for _, part := range pane.Wrap(s.th.Muted(words.Say("runpage.log.miss", "why", t.Miss)), max(w-2, 4), 0) {
+			out = append(out, pane.Fit(" "+part, w))
+		}
+	}
 	return out
 }
 

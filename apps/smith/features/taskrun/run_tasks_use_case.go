@@ -208,6 +208,10 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	r.opts.Events.Emit(runevents.Event{Event: runevents.TaskStarted, Task: t.ID})
 	key, inputs := r.key(t)
 	prefix := t.ID + " │ "
+	var miss *runevents.Miss
+	if t.Def.Cache && r.opts.NoCache {
+		miss = &runevents.Miss{Reason: runevents.MissOff}
+	}
 	if t.Def.Cache && !r.opts.NoCache && r.opts.Storage != nil {
 		source := taskcache.SourceOf(r.opts.Storage, key)
 		if entry, err := taskcache.Lookup(r.opts.Storage, key); err == nil {
@@ -223,6 +227,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration, Source: source}
 			}
 		}
+		miss = missOf(r.opts.Storage, t.ID, inputs)
 	}
 
 	if t.Fixing {
@@ -254,7 +259,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		var err error
 		if app, err = r.startServe(ctx, t, key); err != nil {
 			r.say("%s × %v\n", t.ID, err)
-			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error()}
+			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error(), Miss: miss}
 		}
 	}
 	// The attached task writes to the terminal itself: out stays empty.
@@ -279,7 +284,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		if hint := FailureHint(string(out.Plain()), r.opts.Root); hint != "" {
 			r.say("%s → %s\n", t.ID, hint)
 		}
-		return Result{Task: t.ID, Status: Failed, Key: key, Duration: took, Reason: reason}
+		return Result{Task: t.ID, Status: Failed, Key: key, Duration: took, Reason: reason, Miss: miss}
 	}
 	if len(t.Def.Ship) > 0 {
 		// After the tool, before the cache: the entry holds the shipped files.
@@ -293,7 +298,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		}
 	}
 	r.say("%s ✓ %s\n", t.ID, took.Round(time.Millisecond))
-	return Result{Task: t.ID, Status: Succeeded, Key: key, Duration: took}
+	return Result{Task: t.ID, Status: Succeeded, Key: key, Duration: took, Miss: miss}
 }
 
 // key computes the task's cache key once the tasks it depends on have run.
@@ -390,7 +395,7 @@ func (r *runner) outputOf(task string) func(string) {
 // finishedEvent is the task.finished event of a result.
 func finishedEvent(res Result) runevents.Event {
 	status := map[Status]runevents.Status{Succeeded: runevents.Passed, Cached: runevents.Cached, Failed: runevents.Failed, Skipped: runevents.Skipped}[res.Status]
-	return runevents.Event{Event: runevents.TaskFinished, Task: res.Task, Status: status, DurationMs: res.Duration.Milliseconds(), CacheKey: res.Key, Reason: res.Reason, Source: string(res.Source)}
+	return runevents.Event{Event: runevents.TaskFinished, Task: res.Task, Status: status, DurationMs: res.Duration.Milliseconds(), CacheKey: res.Key, Reason: res.Reason, Source: string(res.Source), Miss: res.Miss}
 }
 
 // hitLabel is what a replayed task's line says after its mark: "from cache",

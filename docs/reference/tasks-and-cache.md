@@ -313,6 +313,11 @@ variables (names only), the projects upstream whose sources changed, the
 dependency tasks whose keys changed, a new smith or plugin version, and a new
 toolchain (`toolchain  node 20.11.0 → 22.3.0`). It runs nothing; `--json` prints the same report.
 
+A run says the same in short for each task it runs: the `task.finished` event of
+`--json-events` carries `miss` (see [serve.md](serve.md)), and the terminal
+interface shows it as `miss · 2 files changed` in the Tasks of a project and
+`Cache miss: 2 files changed` over the log of the task.
+
 Everything goes through a `Storage` interface (`Has/Get/Put/Delete/Walk/Touch`)
 with a conformance test. It stores three kinds (`ac`, `cas`, `last`); the
 remote backends below implement the same interface.

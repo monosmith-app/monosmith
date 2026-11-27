@@ -1,0 +1,18 @@
+{
+  "runview.miss.no_entry": "no entry yet",
+  "runview.miss.key": "the key changed",
+  "runview.miss.off": "the cache was off (--no-cache)",
+  "runview.miss.inputs": "the inputs changed",
+  "runview.miss.files.one": "{count} file changed",
+  "runview.miss.files.other": "{count} files changed",
+  "runview.miss.what.command": "the command changed",
+  "runview.miss.what.env": "a variable changed",
+  "runview.miss.what.upstream": "a task it needs changed",
+  "runview.miss.what.dependency": "a dependency changed",
+  "runview.miss.what.tool": "smith changed",
+  "runview.miss.what.toolchain": "the toolchain changed",
+  "runview.miss.what.serve": "the served app changed",
+  "runview.miss.what.platform": "the platform changed",
+  "tui.projects.cache.miss_why": "miss · {why}",
+  "runpage.log.miss": "Cache miss: {why}"
+}

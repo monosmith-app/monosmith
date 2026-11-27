@@ -74,10 +74,42 @@ type Event struct {
 	// Source is the cache tier that served a cached task: "local" or
 	// "remote". It is empty for a task that was not replayed.
 	Source string `json:"source,omitempty"`
+	// Miss says why a task that uses the cache ran instead of being restored;
+	// nil for a cached task, a task that does not use the cache, or when the
+	// cache could not say.
+	Miss *Miss `json:"miss,omitempty"`
 
 	// run.finished
 	OK      *bool    `json:"ok,omitempty"`
 	Summary *Summary `json:"summary,omitempty"`
+}
+
+// MissReason names why the cache had no entry for a task.
+type MissReason string
+
+// The reasons of a cache miss.
+const (
+	// MissNoEntry: the task never had a cached run (or it was pruned).
+	MissNoEntry MissReason = "no-entry"
+	// MissInputs: inputs of the key changed since the last cached run;
+	// Miss.Files and Miss.Changed say which.
+	MissInputs MissReason = "inputs-changed"
+	// MissKey: the key changed, but the last cached run kept no record of its
+	// inputs to compare with (or none of them differ).
+	MissKey MissReason = "key-changed"
+	// MissOff: the run was asked not to use the cache (--no-cache).
+	MissOff MissReason = "no-cache"
+)
+
+// Miss is why a task ran instead of being restored from the cache.
+type Miss struct {
+	Reason MissReason `json:"reason"`
+	// Files is how many input files changed (MissInputs).
+	Files int `json:"files,omitempty"`
+	// Changed are the other kinds of input that changed, each once, in the
+	// order smith why-miss lists them: "command", "env", "upstream",
+	// "dependency", "tool", "toolchain", "serve" or "platform".
+	Changed []string `json:"changed,omitempty"`
 }
 
 // Summary is the count of how the tasks of a run ended.

@@ -210,6 +210,9 @@ func cacheWords(t *runview.Task) string {
 		}
 		return words.Say("tui.projects.cache.hit")
 	case runview.Passed, runview.Failed:
+		if t.Miss != "" {
+			return words.Say("tui.projects.cache.miss_why", "why", t.Miss)
+		}
 		return words.Say("tui.projects.cache.miss")
 	}
 	return ""
