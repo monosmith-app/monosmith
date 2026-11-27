@@ -30,6 +30,9 @@ func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
 	s.keepSelection()
 	s.forgetDetailPlace()
+	if load := s.syncProjectSettings(); load != nil {
+		cmd = tea.Batch(cmd, load)
+	}
 	s.settings = s.settings.WithSideDetail(s.tab == commands.TabSettings && s.lay().HasDetail())
 	s.refreshPalette()
 	s.trackWait()
@@ -102,8 +105,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 				// The project a finished add made is the one the next keys act on.
 				selected, s.justAdded = s.justAdded, ""
 			}
-			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
-			s.branch, s.base = msg.Branch, msg.Base
+			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected).WithFilter(s.list.Filter())
+			s.branch, s.base, s.wsRoot = msg.Branch, msg.Base, msg.Root
 			s.refreshProjectForms()
 		}
 	case doctorview.Result:

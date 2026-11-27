@@ -104,7 +104,7 @@ func TestTheDetailOfAProjectShowsOnlyTheFormsThatApplyToIt(t *testing.T) {
 }
 
 func TestMoreHoldsChangeKindEjectAndRemoveUnderTheProjectActions(t *testing.T) {
-	l := projectActionsLab(t).pick("web")
+	l := projectActionsLab(t).pick("web").keys("R")
 	l.has("More", "Change kind…", "Eject a tool's configuration…", "Remove project…", "How was this resolved?")
 	ids := l.actionIDs()
 	if got := ids[len(ids)-3:]; !slices.Equal(got, []string{"x:kind", "x:eject", "proj.remove"}) {
@@ -126,7 +126,7 @@ func TestWithoutTheirFormsKindEjectAndAddTauriHaveNoButton(t *testing.T) {
 }
 
 func TestTheRemoveButtonOpensTheRemoveFormOnTheSelectedProject(t *testing.T) {
-	l := projectActionsLab(t).pick("web")
+	l := projectActionsLab(t).pick("web").keys("R")
 	l.runDetailAction("[Remove project…")
 	if l.sh().tab != commands.TabGuide || l.sh().guide.Title() != "Remove a project" {
 		t.Fatalf("the click opened %q on %s", l.sh().guide.Title(), l.sh().tab)

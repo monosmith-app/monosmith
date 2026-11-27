@@ -27,14 +27,11 @@ func TestHomeComposeButtonStartsTheComposer(t *testing.T) {
 	l.has("Compose a stack", "Reading what your plugins offer")
 }
 
-func TestProjectsListStartsWithANewProjectButtonAndTheAKey(t *testing.T) {
+func TestProjectsKeepsTheAKeyOfNewProjectWithoutItsButton(t *testing.T) {
+	// The buttons of the workspace left the list: the key, the footer and the palette keep them.
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
-	l.has("[+ New project (a)]")
+	l.hasNot("[+ New project (a)]")
 	newLab(t, true, 260, 34).openTab(commands.TabProjects).has("a add project")
-	l.clickText("[+ New project")
-	l.has("What are you building?")
-
-	l = newLab(t, true, 140, 34).openTab(commands.TabProjects)
 	l.keys("a")
 	l.has("What are you building?")
 }

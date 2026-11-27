@@ -145,6 +145,10 @@ type Command struct {
 	// NeedsSideNext makes the command work only where Tab goes to the right
 	// panel next; NotSideNext only where it goes elsewhere (to the recent runs).
 	NeedsSideNext, NotSideNext bool
+	// NeedsProjectDetail makes the command work only while the keyboard is in
+	// the sections of the detail of a project (Tasks, Dependencies, Runs,
+	// Settings); NotInProjectDetail only while it is elsewhere.
+	NeedsProjectDetail, NotInProjectDetail bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
 	// Yields gives the key to a command of every view while the command has a
@@ -173,6 +177,9 @@ type State struct {
 	// SideFocus is true while the keyboard is on the right panel beside the
 	// list; SideNext when Tab would move it there next.
 	SideFocus, SideNext bool
+	// ProjectDetail is true while the keyboard is in the sections of the
+	// detail of a project, beside the list or in its place.
+	ProjectDetail bool
 	// RunFailed is true when the run shown ended with a failed task: the keys
 	// that answer a failure (run again, copy the log) lead the footer.
 	RunFailed bool

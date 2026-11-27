@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/toast"
@@ -41,26 +42,26 @@ func TestAt140ColumnsTheTitleBarTheRailTheListAndTheDetailShareTheScreen(t *test
 	l.hasNot("File ", "View ", "Help ", "Apps", "Libs") // no menu bar, no tree, no permanent side panel
 	l.has("acme", "main",                               // the header
 		"Projects", "Health", // the rail of views
-		"web", "orders", "kit", "sdk", "4 projects", // the list
-		"root", "affected", "Build app", // the detail of the selected project
+		"web", "orders", "kit", "sdk", "Filter:", "APPS", // the list
+		"apps/orders · app", "Last result", "Run… (R)", // the detail of the selected project
 		"1.2.3") // the status bar
 	l.hasNot("Reading the workspace")
 }
 
 func TestAt100ColumnsTheDetailIsStillBesideTheList(t *testing.T) {
-	newLab(t, true, 100, 30).has("root", "Build app", "4 projects")
+	newLab(t, true, 100, 30).has("apps/orders", "Result", "Filter:") // a narrow detail says Result for Last result
 }
 
 func TestBelow100ColumnsOnlyTheListIsShown(t *testing.T) {
 	l := newLab(t, true, 99, 30)
-	l.has("4 projects", "web")
-	l.hasNot("Build app", "language") // the detail opens with Enter
-	newLab(t, true, 80, 26).hasNot("Build app")
+	l.has("Filter:", "web")
+	l.hasNot("Last result", "Run… (R)") // the detail opens with Enter
+	newLab(t, true, 80, 26).hasNot("Last result")
 }
 
 func TestAtTheSupportedFloorEveryProjectIsStillListed(t *testing.T) {
 	l := newLab(t, true, 72, 24)
-	l.has("4 projects", "orders", "web", "kit", "sdk")
+	l.has("Filter:", "orders", "web", "kit", "sdk")
 }
 
 func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
@@ -71,16 +72,16 @@ func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
 
 func TestTheInterfaceFollowsEveryResize(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("Build app")
+	l.has("Last result")
 	l.send(tea.WindowSizeMsg{Width: 90, Height: 20})
-	l.hasNot("Build app")
+	l.hasNot("Last result")
 	if got := len(strings.Split(l.sh().View(), "\n")); got != 20 {
 		t.Fatalf("%d lines after the resize", got)
 	}
 	l.send(tea.WindowSizeMsg{Width: 72, Height: 20})
-	l.has("4 projects")
+	l.has("Filter:")
 	l.send(tea.WindowSizeMsg{Width: 140, Height: 34})
-	l.has("Build app")
+	l.has("Last result")
 }
 
 func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *testing.T) {
@@ -93,12 +94,14 @@ func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *
 	if l.sh().detailOpen {
 		t.Fatal("the detail is beside the list now")
 	}
-	l.has("Build app", "4 projects")
+	l.has("Result", "Filter:")
 }
 
 func TestTheFirstProjectIsSelectedAndShownInTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("orders", "root", "go", "Run on orders", "Build app", "turns the source into what gets shipped", "Test app", "How was this resolved?")
+	l.has("╭─ orders ", "apps/orders · app · go", "Task", "Last result", "Time", "Cache", "Key", "build", "test", "– not run")
+	l.keys("R") // the Run… menu tells what each task does
+	l.has("Run on orders", "Build app", "turns the source into what gets shipped", "Test app", "How was this resolved?")
 }
 
 func TestALongPathInTheDetailIsShortenedInTheMiddle(t *testing.T) {
@@ -319,7 +322,9 @@ func TestEveryDividerIsHeldAndDrawnHeavyOnItsNewCellsAt80And120Columns(t *testin
 }
 
 // marked is true for a row the list shows as selected: in reverse video or with the pointer.
-func marked(row string) bool { return strings.Contains(row, "7m") || strings.Contains(row, "›") }
+func marked(row string) bool {
+	return strings.Contains(row, "7m") || strings.Contains(row, "›") || strings.Contains(row, projectpage.Pointer)
+}
 
 func TestAClickInAListSelectsTheRowUnderItAt80And120Columns(t *testing.T) {
 	for _, w := range []int{80, 120} {

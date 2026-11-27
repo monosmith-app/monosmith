@@ -85,7 +85,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | View | Key | Shows |
 |---|---|---|
 | Home | `1` | The workspace at a glance: a summary line, four boxes (Changed, Last run, Health, Release), the list **Needs you now** (what needs a look, the most urgent first, each with the buttons that deal with it) and, on a wide screen, the buttons of **Start something** (see [Home](#home)). |
-| Projects | `2` | The top panel is the workspace: one line with the count (`24 projects · 0 affected by the changes (●)`) and the legend of the arrows (`↑ = dependencies · ↓ = dependants`), then one line of buttons for the whole workspace: `+ New project (a)` (opens the Add wizard), `Verify (V)`, `Build (B)`, `Test (T)`, `Lint (L)`, `Typecheck (C)` and `Build release` (`smith run build --release`), each on every project, and `Clear cache` (`smith cache clear`: with a remote cache set it asks first which cache goes, the local one, the remote one (`--remote`) or both (`--all`), then shows the same question as the command line, with the store, the workspace and the count; without a remote it deletes the local cache after you confirm); a button that does not fit moves to the next line. Then every project, ordered by kind and then name, with its language. The detail pane has two parts split by a thin rule. The top part never scrolls: the project's name, kind, language and stack (beside the list it leaves out the ones the list shows as columns; opened full-screen it shows them), root, version, whether it is affected, and its dependencies and dependants as names in a line that wraps. The bottom part scrolls (`Ctrl+U` `Ctrl+D`, the wheel, or the keyboard cursor after `Tab`): the actions that apply to the project, under `Run on <project>` (its tasks, the packages, How was this resolved?, Why, Graph), then **More**: `Settings…` (the project's settings, in the [Project section](#settings) of the Settings tab), the forms that apply to it (swap a choice, environments of a web app, Tauri, Docker Hub), `Change kind…`, `Eject a tool's configuration…` and `Remove project…`, one button per line. Under them is the description of the chosen action and the one button that runs it (see [Action panels](#action-panels)). Then come its derived files (when the workspace derives files). The version reads `current → next` while the plan of the Release tab releases the project, and the current version alone otherwise; the list has the same Version column, which shortens to `→ next` when it is narrow. At the foot of the pane, under a rule, **Recent runs** lists the last three runs of this session and says how many more are kept; `Tab` or a click opens it upward to list every kept run. The list has the columns Project, Kind, Language, Stack, Version and `↑ ↓` (the number of dependencies and of dependants); a narrow pane drops Stack, Language and Kind before Version. While a task runs, or when you open a run, the detail pane shows that run instead (see [The run panel](#the-run-panel)). |
+| Projects | `2` | The projects grouped by kind, with a filter, and the detail of the selected project in four sections: Tasks, Dependencies, Runs and Settings (see [Projects](#projects)). |
 | Health | `3` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Health detail](#the-health-detail)); fixes open the fix wizard. |
 | Dependencies | `4` | A row of chips at the top, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), limits the list to one level. Under it the summary, the warning about major releases among the chosen packages (so it shows without scrolling), and the dependencies with newer releases, grouped patch and minor, then major (columns Package, Now, Latest, Level, Kind, Projects), with the `smith deps up` command line for a selection. The one-version policy's verdict (`One version`) is in the detail beside the list; on a narrow screen it is under the list. A line under the table gives the registry page of the selected package ([Registry link](#the-registry-link-in-the-deps-view)). |
 | Release | `5` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump, and a button `Release now (x)` that releases it. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
@@ -171,6 +171,56 @@ that changes the workspace, the plan is read again in the background.
 Health and Release load the first time you open them; Deps and Settings load their data on first open too.
 `r` reads a view again.
 
+### Projects
+
+The view has the list of projects and the detail of the selected project. On a screen of 100
+columns or more the detail is beside the list; the list takes two fifths of the room, at most 44
+columns. On a narrower screen `Enter` opens the detail in place of the list, with the title
+`‹ Projects / orders`, and `Esc` goes back.
+
+**The list.** The first line is the filter: `Filter: kind:app▏`. Press `/` to type it. Each
+letter narrows the list at once. `Enter` keeps the filter, and `Esc` clears it (while you type,
+and on the list). A filter is words that a project must all pass: `kind:app` keeps the kinds that
+start with `app`, `lang:go` the languages that start with `go`, `changed` the projects that the
+current changes touch, and any other word the projects whose name, kind or language holds it. The
+title of the frame then counts them: `Projects 7/42`. The second line counts the projects of each
+kind, muted: `4 of 12 apps · 3 of 30 libs · 7 changed` (without a filter: `12 apps · 30 libs`).
+Then the projects come under a heading for each kind (`APPS 4`, `LIBS 3`, `PACKAGES 1`). Each row
+has the mark of the last run of the project in this session (`✓` passed, `×` failed, `–` not run,
+`»` skipped, `⊘` stopped, a spinner while it runs), the name, the language (and the kind and the
+version when the list has the room) muted, and `● changed` in the accent when the current
+changes touch it. The selected row has `▶` and the Highlight background, its name in the accent
+and bold. The last line is the legend of the marks. The keys of the whole workspace (`a` add a
+project, `V` verify, `B` `T` `L` `C` build, test, lint and typecheck every project) are in the
+footer and in the palette.
+
+**The detail.** The top of the detail does not scroll. Its first line is muted:
+`apps/orders · app · go · 0.4.0 → 0.5.0  ● changed` (the folder, the kind, the language, the stack,
+the version, and `current → next` while the Release view releases the project). At the right are
+the buttons `Run… (R)` and `Open`. `Run…` opens the Run… menu: every action of the project, its
+tasks first, in an [action panel](#action-panels); `Esc` closes it. `Open` opens the folder of the
+project with the program of the system. Under them are the tabs of the four sections; the open one
+is in the accent, bold and underlined. `Tab`, the side arrows or a click change the section.
+
+- **Tasks** is a table: Task, Last result (its mark and its words), Time, Cache (`hit`, `hit ·
+  remote`, `miss`, or `never cached` for a task that smith does not cache) and Key. `Up` and `Down`
+  choose a task, and `Enter` or a double click runs it, as its key does. A task that needs a
+  terminal of its own (`start`) says `own terminal`, and a line under the table says that smith
+  leaves the screen while it runs.
+- **Dependencies** has two boxes, **Uses** (the projects it imports) and **Used by** (the projects
+  that import it, with "a change here tests them too"), then the buttons `Install a package… (+)`
+  and `Remove a package… (-)`, and the derived files of the project when the workspace derives files.
+- **Runs** lists the runs of this session that ran a task of the project, newest first: the mark, the
+  tasks, the result, the time and how long ago. `Enter` or a double click opens the run in the run
+  panel.
+- **Settings** is the editor of the `[projects.<name>]` table of `smith.toml` (see
+  [Settings](#settings)): the values that the manifest owns, read-only, then the settings of the
+  project with the same editors as the Workspace section.
+
+The footer follows the keyboard. On the list it is `Tab detail • / filter • R run… • b build orders • …`
+(a narrow screen has `Enter detail`); in the detail it is `Tab section • Enter run • Esc back • R run… • …`.
+
+
 ## Keys
 
 Every key is a single key; none needs a modifier except the Ctrl combinations noted. No key
@@ -184,12 +234,12 @@ that does nothing. Esc never quits.
 |---|---|
 | `1` to `6` | Show Home, Projects, Health, Dependencies, Release, Settings. |
 | `Up` `Down`, `j` `k` | Move in a list. |
-| `Left` `Right` | Move between buttons on Home. In Projects and Health, `Right` moves the keyboard to the detail and `Left` back to the list. In Release, `Right` shows the commits behind a bump and `Left` hides them. |
-| `Tab` | Move the keyboard to the next panel of a view that has two (Projects: the list, then Recent runs, then the detail; Health: the list, then the detail). The footer names where `Tab` goes. |
+| `Left` `Right` | Move between buttons on Home. In Projects, `Right` moves the keyboard to the detail, and there `Left` and `Right` change the section. In Health, `Right` moves the keyboard to the detail and `Left` back to the list. In Release, `Right` shows the commits behind a bump and `Left` hides them. |
+| `Tab` | Move the keyboard to the next panel of a view that has two (Projects: the list, then the detail, where `Tab` and `Shift+Tab` change the section; Health: the list, then the detail). The footer names where `Tab` goes. |
 | `Enter` | Open or run the selection. |
 | `Esc` | Back, close, clear. |
 | `?`, `F1` | The shortcuts overlay (Up, Down, PgUp, PgDn, Home, End scroll it; Esc, `?`, `F1`, `q` or Enter close it). |
-| `:`, `Ctrl+K`, `Ctrl+P`, `/` | The command palette. |
+| `:`, `Ctrl+K`, `Ctrl+P`, `/` | The command palette. On the list of Projects, `/` types the filter instead. |
 | `q` | Quit (not while a run is going: `Ctrl+C` stops it first). |
 | `Ctrl+C` | Stop the run in progress; pressed again, quit. A stopped run is **cancelled**, not failed (see [A stopped run](#a-stopped-run)). |
 | `m` | Turn the mouse on or off. Off lets the terminal select text itself; with it on, a plain drag selects too (see Select text). |
@@ -245,7 +295,7 @@ the panel has:
 A failed run opens with its first failed task chosen, so the log says why. Starting a run
 from any view (a key, a Home button, the palette) switches to Projects with the panel open.
 `Esc` shows all output, and `Esc` again, or `Back`, shows the project again; the run goes on,
-and Recent runs under the list opens it again. On a narrow terminal the panel replaces the list
+and the Runs section of the project opens it again. On a narrow terminal the panel replaces the list
 and `Esc` goes back to it. Home has `See why` and `Run it again`; they open the panel too.
 
 ### A stopped run
@@ -269,19 +319,19 @@ failed, and the toast says "Cancelled". `R` runs the tasks that did not finish a
 | any workspace view | `i` | Install everything every project declares, as after a fresh clone (asks to confirm the command). To add one package use `+`. |
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, run panel | `Z`, the `+` button, a double click on the output | Show the run output on the whole terminal, with only a top bar. The `-` button of the top bar, `Esc`, `Z` and a double click on the output give the screen back. A double click on a button does not. |
-| Projects | `e`, `o`, `g` | The buttons of the detail: How was this resolved? (`smith explain` of the project), Why (who owns its files) and Graph (the dependencies and the dependants). A project with derived files also has `E` explain them, `u` update them, `K` keep my edit, `O` own the files I edited and `r` replace them. `+` and `-` install and remove a package. A task with no key of its own takes a free letter shown on its button. The buttons of the well-known tasks (`build`, `test`, `lint`, `typecheck`, `package`) name what the task does to the kind of the project: `Build app`, `Test library`, `Package app`, `Package library`, and `Pack for publishing` for a project of kind `package`, because `package` is also a kind. The hint under the button keeps the raw task name (`smith run package`). Any other task (`stage-web`, `package-dmg`) reads `Run <task>`. The keys do not change. |
-| Projects | (buttons only) | Under **More**, the detail opens `Settings…` (the settings of `[projects.<name>]`) and the forms that apply to the selected project, each one on that project. They have no key, and the palette keeps its entries. A project with a stack has `Change my test tool or linter (Swap a choice)…`. A Node app has `Add environments to a web app…` and `Remove environments from a web app…`. A Tauri app (one with a `tauri-build` task) has `Make the icons of a Tauri app…`. A Node app that is not a Tauri app yet has `Make it a Tauri desktop app…` (`smith tauri add`). An app with an `image` task has `Set the Docker Hub descriptions…`. Last come `Change kind…` (`smith kind`), `Eject a tool's configuration…` (`smith eject`) and `Remove project…`. A button that does not apply to the project does not show. Each form shows the plan or the command line and asks before it changes anything. |
+| Projects | `e`, `o`, `g` | The actions of the Run… menu (`R`): How was this resolved? (`smith explain` of the project), Why (who owns its files) and Graph (the dependencies and the dependants). A project with derived files also has `E` explain them, `u` update them, `K` keep my edit, `O` own the files I edited and `r` replace them. `+` and `-` install and remove a package. A task with no key of its own takes a free letter, shown in the Key column of the Tasks section and on its button in the menu. The buttons of the well-known tasks (`build`, `test`, `lint`, `typecheck`, `package`) name what the task does to the kind of the project: `Build app`, `Test library`, `Package app`, `Package library`, and `Pack for publishing` for a project of kind `package`, because `package` is also a kind. The hint under the button keeps the raw task name (`smith run package`). Any other task (`stage-web`, `package-dmg`) reads `Run <task>`. The keys do not change. |
+| Projects | (buttons only) | Under **More**, the Run… menu opens `Settings…` (the Settings section of the detail) and the forms that apply to the selected project, each one on that project. They have no key. The palette lists them for the selected project, with the project's name. A project with a stack has `Change my test tool or linter (Swap a choice)…`. A Node app has `Add environments to a web app…` and `Remove environments from a web app…`. A Tauri app (one with a `tauri-build` task) has `Make the icons of a Tauri app…`. A Node app that is not a Tauri app yet has `Make it a Tauri desktop app…` (`smith tauri add`). An app with an `image` task has `Set the Docker Hub descriptions…`. Last come `Change kind…` (`smith kind`), `Eject a tool's configuration…` (`smith eject`) and `Remove project…`. A button that does not apply to the project does not show. Each form shows the plan or the command line and asks before it changes anything. |
 | Projects, Run, Health, Settings | `\` `|`, `[` `]` | `\` selects the next divider between two panels and `|` the previous one. `Shift`+arrows select one too. `[` moves it left or up and `]` right or down. `Tab` picks the next divider and `Esc` lets go. With one divider, `[` and `]` need no selection. Drag a divider with the mouse to do the same. A divider you drag goes back to its resting look when
 you let go; a divider you select with the keys stays lit until `Esc`. Each view keeps its sizes in the preferences file. |
-| Projects, Health, Deps, Settings | `Ctrl+U` `Ctrl+D` | Scroll the detail (in Projects its bottom part: the top part stays). |
+| Projects, Health, Deps, Settings | `Ctrl+U` `Ctrl+D` | Scroll the detail (in Projects the open section: the top of the detail stays). |
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
 | Run | `w` | On a task that ran (not one replayed from the cache), open the **Why would a task run again?** form with the task filled in: `Enter` runs `smith why-miss <project:task>`. On a cached task, or one that did not run, the key says why it does nothing. Outside the run panel `w` still runs the affected projects. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
 | Run panel | `Esc` | Show all output; press it again to go back to the project (the run goes on in the background). The `Back (Esc)` button does the same. |
 | Run | `,` `.` | Show the older or the newer run of this session (smith keeps the last 20). The line under the buttons, `run 2 of 5 · ‹ older  newer ›`, has the same two actions as clickable parts: `‹ older` and `newer ›` step through the runs. A part that cannot be used now (no older run, a run in progress) is faint, and a click on it says why. |
-| Projects, Recent runs | `Tab`, `Up` `Down`, `Enter` | **Recent runs** sits on the bottom rows of the pane under a rule. Closed, it shows the three newest runs (command, how it ended, how long it took, how long ago) and `N more runs` when more are kept. `Tab` or a click opens it upward to list every kept run (the last 20) with the cursor on a row; `Up` and `Down` choose a row, `Enter` or a double click opens that run in the right panel, and a single click only chooses it. `Esc` closes the list and gives the keyboard back to the projects; `Tab` closes it and moves on to the detail. |
-| Projects, Health | `Tab`, `Right`, `Left`, `Up` `Down`, `Enter` | `Tab` (or `Right`, except on a Health group header, where it unfolds the group) moves the keyboard to the detail beside the list. There `Up` and `Down` choose one of its buttons, `Enter` presses it and `PgUp` `PgDn` scroll it. `Tab`, `Left` or `Esc` gives the keyboard back to the list. With a run open, the keyboard is on the run until `Tab` gives it to the list; the run stays open. A click in a panel gives it the keyboard. |
+| Projects, the detail | `Tab` `Shift+Tab`, `Left` `Right`, `Up` `Down`, `Enter`, `Esc`, `R` | In the detail of a project, `Tab` and `Right` show the next section and `Shift+Tab` and `Left` the one before. `Up` and `Down` choose a task (Tasks) or a run (Runs), and scroll Dependencies. `Enter` runs the chosen task as its key does, or opens the chosen run in the run panel. In Settings the keys are those of the editor (`Enter` changes the chosen setting). `Esc` gives the keyboard back to the list, or closes the detail that fills the pane. `R` opens the Run… menu, and `Esc` closes it. |
+| Projects, Health | `Tab`, `Right`, `Left`, `Up` `Down`, `Enter` | `Tab` (or `Right`, except on a Health group header, where it unfolds the group) moves the keyboard to the detail beside the list (in Projects, see the row above). There `Up` and `Down` choose one of its buttons, `Enter` presses it and `PgUp` `PgDn` scroll it. `Tab`, `Left` or `Esc` gives the keyboard back to the list. With a run open, the keyboard is on the run until `Tab` gives it to the list; the run stays open. A click in a panel gives it the keyboard. |
 | Home | `Up` `Down` `Left` `Right`, `Enter`, `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` | `Up` and `Down` move through the items of Needs you now (`Home` and `End` jump to the first and the last), and `Left` and `Right` through the buttons of the selected item; `Enter` presses the chosen button, which shows `(Enter)`. A page taller than the terminal scrolls: `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` and the wheel move it, the first or last row says `↑ more (PgUp, Ctrl+U)` or `↓ more (PgDn, Ctrl+D)`, and the arrows keep the selected item in view. |
 | Health | `Enter` | Open the check in the frame (narrow terminals; Esc goes back), or unfold the detail (wide). |
 | Health | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
@@ -670,9 +720,9 @@ from the schema of `smith.toml`, so the extensions show the same ones. The value
 stays in the editor when it is refused. `u` removes the setting, so it has its default.
 `plugins.enabled` is edited in Plugins, and stacks, tasks and projects are edited in the file.
 
-**Project.** The settings of one project, the `[projects.<name>]` table. The section is
-in the list only after **Settings…** under **More** in the detail of a project on the Projects tab opens
-it, and its name is the project's. The first rows are the values that the project's
+**Project.** The settings of one project, the `[projects.<name>]` table. They are not in this
+tab: they are the Settings section of the detail of a project on the Projects tab (see
+[Projects](#projects)), with the heading `Project <name>`. The first rows are the values that the project's
 manifest owns (name, version, language, kind and folder; for a project that `smith.toml`
 declares, name and version). They are read-only: the detail names the file that holds each
 one, and `Enter` says to change it there. The next rows are the settings of the table, with
@@ -914,7 +964,7 @@ prints `→ smith <command line>`.
 ## Action panels
 
 A detail pane with two or more actions, of which at least one has a description, shows its actions
-in two parts. This rule is the same in every detail pane: Projects (the tasks and the More forms) and
+in two parts. This rule is the same in every detail pane: the Run… menu of a project (its tasks and the More forms) and
 Health (Fix, Run this check now, Check again, Why).
 
 1. **The top part** is one compact button per line, with no description. A button here only chooses
@@ -941,7 +991,7 @@ view draws its buttons in the view, not in a detail pane.
 
 ## The mouse
 
-**Buttons.** Every action in a detail pane, and the buttons of the Projects list (`New project`,
+**Buttons.** Every action in a detail pane, the buttons of the detail of a project (`Run…`, `Open`) and of an empty Projects list (`New project`,
 `Compose a stack`) and of the run panel (`Back`, `Stop`, `Run again`, `Run unfinished`, `Copy log`), is a button that shows its key in
 parentheses, for example `Test app (t)`. A button has three looks. It rests; it is lit while the
 pointer is over it; and it is pressed while you hold the mouse button on it. The action runs when you
@@ -976,7 +1026,7 @@ release adjust list, the Settings editors and the commit box of a confirmation. 
 keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. Every
 other list marks its selected row the same way, with no background: the list of projects, the
 sections and rows of Settings, the command palette, the Deps rows, the task rows of the run panel,
-the recent runs (under the projects and on Home, where the mark sits in the gap before the run) and
+the runs of the Runs section of a project, the tasks of its Tasks section, the runs on Home (where the mark sits in the gap before the run) and
 the rows of the Install packages box; a status mark keeps its colour. A Settings list that does not have the keyboard keeps the mark in bold. A box reads
 `[ ]`, `[x]` or `[-]` (part ticked, or cannot be ticked), and a one-of-several choice reads `( )`
 or `(●)`. A row that cannot be chosen now is muted. The row under the pointer takes the row hover

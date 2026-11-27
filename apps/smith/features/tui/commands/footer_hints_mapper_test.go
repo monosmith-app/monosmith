@@ -114,23 +114,18 @@ func TestALabelOfTheStateNamesWhatEnterDoesOnHome(t *testing.T) {
 }
 
 func TestTabNamesWhereItGoesNext(t *testing.T) {
-	list := State{View: TabProjects, InWorkspace: true, Projects: 3}
-	if hints := glyphLabels(list); !hasHint(hints, "Tab recent runs") || hasHint(hints, "Tab detail") {
-		t.Fatalf("from the list with runs: %v", hints)
+	list := State{View: TabProjects, InWorkspace: true, Projects: 3, SideNext: true}
+	if hints := glyphLabels(list); !hasHint(hints, "Tab detail") || hasHint(hints, "Tab section") {
+		t.Fatalf("from the list, with the detail beside: %v", hints)
 	}
-	noRuns := list
-	noRuns.SideNext, noRuns.Reasons = true, map[string]string{"run.recent-focus": "nothing has run yet"}
-	if hints := glyphLabels(noRuns); !hasHint(hints, "Tab detail") || hasHint(hints, "Tab recent runs") {
-		t.Fatalf("from the list without runs: %v", hints)
+	alone := list
+	alone.SideNext = false
+	if hints := glyphLabels(alone); hasHint(hints, "Tab detail") || hasHint(hints, "Tab section") {
+		t.Fatalf("from the list, nothing beside: %v", hints)
 	}
-	recent := list
-	recent.RecentFocus, recent.SideNext = true, true
-	if hints := glyphLabels(recent); !hasHint(hints, "Tab detail") || hasHint(hints, "Tab projects") || !hasHint(hints, "↑↓ choose run") {
-		t.Fatalf("from the recent runs, with the detail beside: %v", hints)
-	}
-	recent.SideNext, recent.On = false, map[string]bool{"run.recent-focus": true}
-	if hints := glyphLabels(recent); !hasHint(hints, "Tab projects") || hasHint(hints, "Tab detail") {
-		t.Fatalf("from the recent runs, nothing beside: %v", hints)
+	sections := State{View: TabProjects, InWorkspace: true, Projects: 3, SideFocus: true, ProjectDetail: true}
+	if hints := glyphLabels(sections); !hasHint(hints, "Tab section") || hasHint(hints, "Tab list") || hasHint(hints, "Tab detail") {
+		t.Fatalf("from the sections of the detail: %v", hints)
 	}
 	doctor := State{View: TabDoctor, InWorkspace: true, SideNext: true}
 	if hints := glyphLabels(doctor); !hasHint(hints, "Tab detail") {

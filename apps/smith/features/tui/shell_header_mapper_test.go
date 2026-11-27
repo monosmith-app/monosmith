@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -101,15 +102,15 @@ func TestAHeaderTooLongForItsRowEndsWithAnEllipsis(t *testing.T) {
 	}
 }
 
-func TestTheWorkspaceButtonsOfferToClearTheCache(t *testing.T) {
+func TestThePaletteOfProjectsOffersTheWorkspaceActionsTheListHeldBefore(t *testing.T) {
 	l := newLab(t, true, 160, 30)
 	var ids []string
-	for _, row := range l.sh().workspaceButtons(200, "") {
-		for _, sp := range row.hit.spans {
-			ids = append(ids, sp.id)
-		}
+	for _, e := range l.sh().pal.Entries() {
+		ids = append(ids, e.ID)
 	}
-	if len(ids) == 0 || ids[len(ids)-1] != "ws.cache-clear" {
-		t.Fatalf("the last workspace button deletes the local cache: %v", ids)
+	for _, want := range []string{"file.add", "run.verify", "run.build-all", "run.test-all", "run.lint-all", "run.typecheck-all", "run.build-release-all", "ws.cache-clear"} {
+		if !slices.Contains(ids, want) {
+			t.Fatalf("the palette lacks %s: %v", want, ids)
+		}
 	}
 }

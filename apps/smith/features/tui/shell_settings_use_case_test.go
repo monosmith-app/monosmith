@@ -344,7 +344,7 @@ func TestTheSettingsTabCarriesNoColourInThePlainTheme(t *testing.T) {
 
 func TestTheMouseOpensTheTabPicksASectionAndADoubleClickTurnsAPluginOff(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 40)
-	x, y := l.find("Settings")
+	x, y := l.railSpot(commands.TabSettings)
 	l.sendPatiently(click(x+1, y))
 	if l.sh().tab != commands.TabSettings {
 		t.Fatalf("a click on the tab opens it: %q", l.sh().tab)

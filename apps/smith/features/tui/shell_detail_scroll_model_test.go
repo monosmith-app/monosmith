@@ -156,9 +156,9 @@ func TestOnANarrowScreenZoomSwitchesBetweenTheListAndTheDetail(t *testing.T) {
 func TestZoomWorksInTheProjectsViewToo(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	l.keys("z")
-	l.has("Run on orders")
+	l.has("‹ Projects / orders", "Last result")
 	l.keys("z")
-	l.has("projects ·")
+	l.has("Filter:")
 }
 
 func TestTheDetailKeysAreInTheHelp(t *testing.T) {

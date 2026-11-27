@@ -38,5 +38,7 @@
   "commands.reason.nosidefocus": "the detail does not have the keyboard (press Tab)",
   "commands.reason.insidefocus": "the detail has the keyboard (press Tab to leave it)",
   "commands.reason.nosidenext": "Tab does not go to the detail from here",
-  "commands.reason.sidenext": "Tab goes to the detail from here"
+  "commands.reason.sidenext": "Tab goes to the detail from here",
+  "commands.reason.noprojectdetail": "the keyboard is in the list: Tab moves it to the detail",
+  "commands.reason.inprojectdetail": "the keyboard is in the sections of the detail"
 }

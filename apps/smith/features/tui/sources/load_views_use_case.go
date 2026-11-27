@@ -105,6 +105,8 @@ type ProjectsLoaded struct {
 	Branch   string
 	// Base is the ref the affected projects are counted from.
 	Base string
+	// Root is the workspace's folder: the projects' roots are relative to it.
+	Root string
 	Err  error
 }
 
@@ -280,7 +282,7 @@ func loadProjects(open func() (*session.Session, error)) ProjectsLoaded {
 		}
 		out = append(out, np)
 	}
-	return ProjectsLoaded{Projects: out, Branch: s.Git.CurrentBranch(), Base: base}
+	return ProjectsLoaded{Projects: out, Branch: s.Git.CurrentBranch(), Base: base, Root: s.Root}
 }
 
 // planTasks lists the task IDs a run command line will start, in dependency

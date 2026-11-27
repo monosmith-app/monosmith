@@ -26,7 +26,7 @@ func TestOnANarrowScreenEnterOpensTheProjectAndEscGoesBackToTheList(t *testing.T
 	if top := mainTop(l); !strings.HasPrefix(top, "╭─ ‹ Projects / "+name+" ") {
 		t.Fatalf("the detail's frame names the way back: %q", top)
 	}
-	l.has("Build app")
+	l.has("Last result")
 	l.keys("esc")
 	if l.sh().detailOpen {
 		t.Fatal("Esc did not go back to the list")

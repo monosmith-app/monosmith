@@ -283,9 +283,26 @@ func indent(lines []string) []string {
 func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 	plain := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
 	f := m.frame(plain, w, h, -1, -1)
+	if x < f.listW {
+		if m.ed == nil {
+			if s, ok := f.rowSection[y]; ok {
+				m.section, m.onItems = s, double
+				m.note = ""
+			}
+		}
+		return m, Result{}
+	}
+	return m.clickItem(f.rowItem, y, double)
+}
+
+// clickItem is a click on row y of the right pane, whose rows stand for the
+// items of rowItem: a value of the open editor, or a row of the section.
+func (m Model) clickItem(rowItem map[int]int, y int, double bool) (Model, Result) {
+	i, ok := rowItem[y]
 	if m.ed != nil {
 		// Only the rows of a path finder take a click while a value is edited.
-		if i, ok := f.rowItem[y]; ok && m.ed.finder != nil && x >= f.listW {
+		switch {
+		case ok && m.ed.finder != nil:
 			e := *m.ed
 			sel := e.finder.Select(i)
 			e.finder = &sel
@@ -293,13 +310,13 @@ func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 			if double {
 				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
 			}
-		} else if ok && m.ed.kind == editChoose && x >= f.listW {
+		case ok && m.ed.kind == editChoose:
 			// A click on a value of a pick list picks it, as in every single-choice list.
 			e := *m.ed
 			e.at = i
 			m.ed = &e
 			return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
-		} else if ok && m.ed.kind == editMulti && x >= f.listW {
+		case ok && m.ed.kind == editMulti:
 			// A click on a tick box row puts the cursor there and ticks or unticks it, as Space does.
 			e := *m.ed
 			e.at = i
@@ -308,15 +325,8 @@ func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 		}
 		return m, Result{}
 	}
-	if x < f.listW {
-		if s, ok := f.rowSection[y]; ok {
-			m.section, m.onItems = s, double
-			m.note = ""
-		}
-		return m, Result{}
-	}
-	if idx, ok := f.rowItem[y]; ok {
-		m.cursor[m.section], m.onItems = idx, true
+	if ok {
+		m.cursor[m.section], m.onItems = i, true
 		m.note = ""
 		if double {
 			return m.activate()

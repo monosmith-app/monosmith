@@ -146,7 +146,10 @@ func TestCachedTasksAreShownAsCached(t *testing.T) {
 	l.next = &scripted{lines: []string{"kit:build ✓ from cache", "orders:build ✓ from cache", "web:build ✓ from cache", "sdk:test ✓ from cache", "✓ 4/4 tasks succeeded (4 from cache) in 10ms"}}
 	l.keys("b")
 	l.has("cached", "≈", "4 cached", "passed")
-	l.hasNot("failed")
+	// Only the legend of the list says "failed": it explains the mark.
+	if strings.Contains(strings.ReplaceAll(l.view(), "× failed", ""), "failed") {
+		t.Fatalf("a cached run says failed:\n%s", l.view())
+	}
 }
 
 func TestTheLogFollowsUntilYouScrollAndFTogglesIt(t *testing.T) {
@@ -186,14 +189,8 @@ func TestTheProjectsListMarksTheLastResultOfEachProject(t *testing.T) {
 	l.next = failingRun()
 	l.keys("b")
 	l.keys("2")
-	_, y := l.find("○ orders")
-	if row := l.lines()[y]; !strings.Contains(row, "×") {
-		t.Fatalf("orders failed but its row says %q", row)
-	}
-	_, y = l.find("○ kit")
-	if row := l.lines()[y]; !strings.Contains(row, "✓") {
-		t.Fatalf("kit passed but its row says %q", row)
-	}
+	// The mark leads the row: × for orders, which failed, and ✓ for kit, which passed.
+	l.has("×  orders", "✓  kit", "»  web", "✓  sdk") // sdk passed from the cache, web was skipped
 }
 
 func TestEveryRunIsKeptInTheCommandLog(t *testing.T) {
@@ -252,8 +249,10 @@ func TestEscOnAFinishedRunGoesBackToTheProjectAndEnterOnARecentRunOpensItAgain(t
 	l.keys("b")
 	l.has("passed")
 	closeRunPanel(l)
-	l.has("Recent runs", "Verify (V)")
-	l.keys("tab", "enter")
+	l.has("Filter:", "Last result")
+	l.keys("down", "down") // kit, whose build ran
+	l.clickText("Runs")
+	l.keys("enter")
 	l.has("passed", "Back (Esc)")
-	l.hasNot("Install a package") // the right panel shows the run, not the project
+	l.hasNot("Last result") // the right panel shows the run, not the project
 }

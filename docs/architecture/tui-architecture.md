@@ -41,7 +41,7 @@ flowchart TD
   keymap --> help["help overlay<br/>help_rows_mapper.go"]
   keymap --> palette["tui/palette"]
   shell --> pages["Page interface<br/>page_contract.go"]
-  pages --> views["dashboard, projectlist, runview+logview,<br/>doctorview, depsview, releaseview, guide"]
+  pages --> views["dashboard, projectlist, projectpage, runview+logview,<br/>doctorview, depsview, releaseview, guide"]
   shell --> dialogs["dialog (confirm, help)<br/>fixwizard, adoptwizard"]
   shell --> exec["execute(argv)"]
   exec -->|"catalog.Classify"| classify["libs/actions/catalog"]
@@ -57,7 +57,7 @@ flowchart TD
 | `tui/theme` | tokens (dark, light, plain), icons (Unicode, ASCII), the theme chosen from the environment |
 | `tui/layout`, `pane`, `tabs`, `footer`, `statusbar`, `toast`, `detail` | geometry and drawing of the pieces |
 | `tui/dialog`, `helpdialog`, `palette`, `guide` | the confirmation dialog, the shortcuts overlay, the command palette, guided forms |
-| `tui/dashboard`, `projectlist`, `runview`, `logview`, `doctorview`, `depsview`, `releaseview` | the views |
+| `tui/dashboard`, `projectlist`, `projectpage`, `runview`, `logview`, `doctorview`, `depsview`, `releaseview` | the views |
 | `tui/fixwizard`, `tui/adoptwizard` | the doctor fix dialog and the adopt dialog |
 | `tui/composer` | the screen of `smith compose` and of the first question of `add` ("What are you building?"), over the catalogue of the `compose` slice ([ADR 0076](decisions/0076-one-composer-for-the-stack-of-a-project.md), [ADR 0078](decisions/0078-the-first-run-is-a-set-of-choices-not-a-manual.md)) |
 | `tui/resultdialog` | the dialog that closes a run that changed the workspace: what happened and the next steps as choices, the first being the one that does nothing (leave uncommitted, install a missing tool, check again) |
@@ -97,13 +97,17 @@ and help but never run by the shell: the open view handles them.
 
 A view with two panels (Projects and Doctor beside their detail) has one more piece of state, and the
 keymap reads it the same way as the run panel: `State.SideFocus` (the keyboard is on the right panel),
-`State.SideNext` (Tab goes to the right panel next, not to the recent runs) and `State.RecentFocus`.
-A command says where it works with `NeedsSideFocus`, `NotInSideFocus`, `NeedsSideNext` and `NotSideNext`
-(like `NeedsRecentFocus`), so the footer, the help and the key dispatch agree. The shell sets them in
-`state()` from `sideFocus` and `recentFocus` (`shell_focus_use_case.go`): `sideKeys()` says whether the
-keys go to the detail or the run, `beside()` whether the detail is beside the list at all. The cycle of
-Tab in Projects is list, recent runs (when a run is kept), detail, list; in Doctor it is list, detail.
-`Right` and `Left` do the same as `Tab` where they have no other meaning (a Doctor group header folds).
+`State.SideNext` (Tab goes to the right panel next) and `State.ProjectDetail` (the keyboard is in the
+sections of the detail of a project). A command says where it works with `NeedsSideFocus`,
+`NotInSideFocus`, `NeedsSideNext`, `NotSideNext`, `NeedsProjectDetail` and `NotInProjectDetail`, so the
+footer, the help and the key dispatch agree. The shell sets them in `state()` from `sideFocus`
+(`shell_focus_use_case.go`) and `projectKeys()` (`shell_projects_page_mapper.go`): `sideKeys()` says
+whether the keys go to the detail or the run, `beside()` whether the detail is beside the list at all.
+Tab in Doctor goes from the list to the detail and back. In Projects it goes from the list to the
+detail, and there Tab, Shift+Tab, Left and Right change the section; Esc goes back to the list.
+`State.RecentFocus` stays in the contract, but no view sets it now: the runs of a project are its
+Runs section. `Right` and `Left` do the same as `Tab` where they have no other meaning (a Doctor group
+header folds).
 A run that opens takes the keyboard (`revealRun`), a click gives it to the panel it lands on.
 
 ### The action panel of a detail

@@ -6,6 +6,12 @@ import (
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
+// buttonRow is a line of buttons and what a click on each of them does.
+type buttonRow struct {
+	line string
+	hit  hit
+}
+
 // depsButtons is the line of buttons above the dependency list: the repair of
 // the installed dependencies, which opens its own dialog. under is the id of
 // the button under the pointer.

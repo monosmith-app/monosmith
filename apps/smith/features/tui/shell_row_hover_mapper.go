@@ -8,11 +8,12 @@ import (
 )
 
 // rowHoverKinds are the hits of a whole row that a click selects or ticks: a
-// project, a task, a recent run, a check, a release item, a dependency and an
+// project, a task, a recent run, a task or a run of the detail of a project, a check, a release item, a dependency and an
 // option of a form. Under the pointer they take the one row hover look of the
 // theme. Buttons ("action", "choose", "nav") draw their own hover look.
 var rowHoverKinds = map[string]bool{
 	"project": true, "task": true, "recent": true, "finding": true, "release": true, "dep": true, "option": true,
+	"ptask": true, "prun": true,
 }
 
 // withRowHover draws the row of c under the pointer in the row hover look, when
@@ -41,6 +42,10 @@ func (s Shell) selectedHit(h hit) bool {
 		return h.id == s.runSel
 	case "recent":
 		return h.index == s.recentAt
+	case "ptask":
+		return h.index == s.taskAt && s.projectKeys()
+	case "prun":
+		return h.index == s.projRunAt && s.projectKeys()
 	case "finding":
 		return s.doctor.IsCursorRow(h.index)
 	case "release":

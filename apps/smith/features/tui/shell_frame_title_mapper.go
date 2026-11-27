@@ -11,6 +11,11 @@ import (
 // on a narrow screen, or zoomed on a wide one). Esc goes back to the list.
 func (s Shell) mainTitle() string {
 	view := s.viewName(s.tab)
+	if s.tab == commands.TabProjects && s.list.Filter() != "" {
+		// A filter lists some of the projects: the title says how many of all.
+		listed, _ := s.list.Listed()
+		view = words.Say("tui.projects.title_filtered", "view", view, "shown", len(listed), "total", s.list.Len())
+	}
 	if s.fullRun() {
 		return s.detailTitle()
 	}
@@ -32,7 +37,9 @@ func (s Shell) detailTitle() string {
 	}
 	switch s.tab {
 	case commands.TabProjects:
-		if p, ok := s.list.Selected(); ok {
+		if p, ok := s.list.Selected(); ok && s.projMenu {
+			return words.Say("tui.projects.menu_title", "name", p.Name)
+		} else if ok {
 			return p.Name
 		}
 		return words.Say("tui.detail.workspace")

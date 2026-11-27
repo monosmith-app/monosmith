@@ -223,13 +223,16 @@ func derivedLab(t *testing.T) *lab {
 	sh := l.sh()
 	sh.list = projectlist.New(projects).SelectProject("web")
 	l.m = sh
-	return l
+	// The actions on the derived files are in the Run… menu of the project.
+	return l.keys("R")
 }
 
 func TestTheProjectDetailListsItsDerivedFilesInPlainWords(t *testing.T) {
 	l := derivedLab(t)
-	l.has("Derived files (2 need action)", "apps/web/jest.config.js", "out of date", "apps/web/package.json", "edited by hand", "up to date")
 	l.has("Explain the derived files", "Update the derived files", "Keep my edit of a derived file", "Own the files I edited")
+	// The files themselves are in the Dependencies section.
+	l.keys("esc").clickText("Dependencies")
+	l.has("Derived files (2 need action)", "apps/web/jest.config.js", "out of date", "apps/web/package.json", "edited by hand", "up to date")
 }
 
 func TestAProjectWithoutDerivedFilesHasNoSuchSection(t *testing.T) {

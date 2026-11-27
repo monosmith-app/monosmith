@@ -324,7 +324,7 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 	case "project":
 		// A project clicked shows its own detail: a run that was open goes on in
 		// the background and stays in the list of recent runs.
-		s.runOpen, s.recentFocus = false, false
+		s.runOpen = false
 		s.list = s.list.SelectProject(h.id)
 		s.detailCursor = 0
 		if double {
@@ -334,15 +334,23 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 		s.runSel = h.id
 		s.keepRunVisible()
 	case "recent":
+		// A run on Home opens at one click, in the run panel of Projects.
 		s.recentAt = h.index
-		if s.tab == commands.TabHome {
-			// A run on Home opens at one click, in the run panel of Projects.
-			return s.openRecent()
-		}
-		s.recentFocus = true
+		return s.openRecent()
+	case "ptask":
+		// A task of the Tasks section: a click chooses it, a double click runs it.
+		s.taskAt = h.index
 		if double {
-			return s.openRecent()
+			return s.runTaskAt()
 		}
+	case "prun":
+		// A run of the Runs section: a click chooses it, a double click opens it.
+		s.projRunAt = h.index
+		if double {
+			return s.openProjectRun()
+		}
+	case "psettings":
+		return s.projectSettingsClick(h.index, double)
 	case "homeitem":
 		// A line of an item of Home: its button runs, the rest selects the item.
 		if h.id != "" {
@@ -496,6 +504,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 // wheelSide scrolls what the right panel shows: the log of the run (or its task
 // list, above the log) while a run is open, else the detail.
 func (s *Shell) wheelSide(y, dir int) {
+	if s.projectPage() {
+		s.scrollProjectDetail(dir * wheelStep)
+		return
+	}
 	if !s.runShown() {
 		s.scrollDetail(dir * wheelStep)
 		return

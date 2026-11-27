@@ -22,7 +22,8 @@ func buttonLab(t *testing.T, w, h int) *lab {
 	sh.th = theme.Default()
 	sh.list = projectlist.New(projects).SelectProject("web")
 	l.m = sh
-	return l
+	// The buttons of the project are in its Run… menu.
+	return l.keys("R")
 }
 
 // runButton chooses the action labelled label in the split detail and returns
@@ -139,8 +140,7 @@ func TestAPressOnOneButtonReleasedOnAnotherRunsNothing(t *testing.T) {
 }
 
 func TestTheKeyboardCursorOfTheOpenDetailKeepsItsMark(t *testing.T) {
-	l := buttonLab(t, 90, 60)
-	l.keys("enter") // the detail fills the pane
+	l := buttonLab(t, 90, 60) // R opened the Run… menu, which fills the pane on a narrow screen
 	if !l.sh().detailOpen {
 		t.Fatal("the detail is open")
 	}
@@ -204,12 +204,15 @@ func TestEveryFrameIsTitledWithItsViewAtAnyWidth(t *testing.T) {
 func TestTheProjectsListHasNoOnLineAndItsRowIsGivenToTheList(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.hasNot("On: ")
-	l.has("4 projects")
+	const count = "2 apps · 1 lib · 1 package · 1 changed"
 	in := l.sh().mainInner()
-	if got := strings.TrimSpace(string([]rune(l.lines()[in.Y])[in.X:])); !strings.HasPrefix(got, "4 projects") {
-		t.Fatalf("the count line is the first line of the pane, got %q", got)
+	if got := strings.TrimSpace(string([]rune(l.lines()[in.Y])[in.X:])); !strings.HasPrefix(got, "Filter:") {
+		t.Fatalf("the filter line is the first line of the pane, got %q", got)
 	}
-	if strings.Count(l.view(), "4 projects") != 1 {
+	if got := strings.TrimSpace(string([]rune(l.lines()[in.Y+1])[in.X:])); !strings.HasPrefix(got, count) {
+		t.Fatalf("the count line is the second line of the pane, got %q", got)
+	}
+	if strings.Count(l.view(), count) != 1 {
 		t.Fatal("the count is said once")
 	}
 }

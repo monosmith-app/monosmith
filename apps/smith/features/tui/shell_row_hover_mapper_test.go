@@ -17,7 +17,7 @@ func inColour(t *testing.T) {
 func TestARowUnderThePointerTakesTheRowHoverLookAndLosesItWhenThePointerLeaves(t *testing.T) {
 	inColour(t)
 	l := buttonLab(t, 160, 40)
-	x, y := l.find("○ kit")
+	x, y := l.find("–  kit")
 	rest := l.rawRow(y)
 	l.send(motion(x+1, y))
 	if l.rawRow(y) == rest {
@@ -26,7 +26,7 @@ func TestARowUnderThePointerTakesTheRowHoverLookAndLosesItWhenThePointerLeaves(t
 	if want := l.sh().th.RowHover(""); want == "" {
 		t.Fatal("the colour theme has a row hover look")
 	}
-	l.send(motion(0, y))
+	l.send(motion(l.sh().lay().Main.X, y)) // the border of the list, on no row
 	if got := l.rawRow(y); got != rest {
 		t.Fatalf("the row must be back at rest:\n%q\n%q", got, rest)
 	}
@@ -35,7 +35,7 @@ func TestARowUnderThePointerTakesTheRowHoverLookAndLosesItWhenThePointerLeaves(t
 func TestTheSelectedRowKeepsItsOwnLookUnderThePointer(t *testing.T) {
 	inColour(t)
 	l := buttonLab(t, 160, 40)
-	x, y := l.find("● web")
+	x, y := l.find("–  web")
 	rest := l.rawRow(y)
 	l.send(motion(x+1, y))
 	if got := l.rawRow(y); got != rest {
@@ -45,7 +45,7 @@ func TestTheSelectedRowKeepsItsOwnLookUnderThePointer(t *testing.T) {
 
 func TestNoRowBehindADialogLooksHovered(t *testing.T) {
 	l := buttonLab(t, 160, 40)
-	x, y := l.find("○ kit")
+	x, y := l.find("–  kit")
 	l.keys("?") // the shortcuts overlay is a modal
 	if !l.sh().modalOpen() {
 		t.Skip("the help overlay is not a modal in this lab")

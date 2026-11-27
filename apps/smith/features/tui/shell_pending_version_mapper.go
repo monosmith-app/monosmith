@@ -27,13 +27,3 @@ func (s Shell) versionOf(p projectlist.Project, w int) string {
 	}
 	return projectlist.VersionText(current, next, w)
 }
-
-// hasVersions is true when some project has a version or a pending release.
-func (s Shell) hasVersions() bool {
-	for _, p := range s.list.Projects() {
-		if _, next := s.pendingNext(p.Name); p.Version != "" || next != "" {
-			return true
-		}
-	}
-	return false
-}

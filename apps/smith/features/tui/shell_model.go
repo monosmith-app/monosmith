@@ -26,6 +26,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pointer"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/resultdialog"
@@ -234,12 +235,8 @@ type Shell struct {
 	// runs are the runs of the session, oldest first; runAt is the one shown (run).
 	runs  []*runview.Run
 	runAt int
-	// recentAt is the row chosen in the list of recent runs under the projects
-	// (0 is the newest run); recentFocus is true while the keyboard moves in
-	// that list and not in the list of projects; the list is unfolded upward to
-	// show every run kept while it is true.
-	recentAt    int
-	recentFocus bool
+	// recentAt is the run a click on Home opens (0 is the newest run).
+	recentAt int
 	// sideFocus is true while the keyboard is on the right panel (the detail,
 	// or the run) and not on the list beside it.
 	sideFocus bool
@@ -367,6 +364,17 @@ type Shell struct {
 	// detailOnRun puts the keyboard on the run button of a split detail instead.
 	detailCursor int
 	detailOnRun  bool
+	// projSection is the open section of the detail of a project; projMenu is
+	// true while the detail shows the Run… menu (every action of the project)
+	// in its place. taskAt and projRunAt are the rows the keyboard is on in the
+	// Tasks and the Runs sections.
+	projSection       projectpage.Section
+	projMenu          bool
+	taskAt, projRunAt int
+	// filtering is true while the filter line of Projects has the keyboard.
+	filtering bool
+	// wsRoot is the folder of the workspace, which the projects' roots are relative to.
+	wsRoot string
 	// zoom is set while the detail fills the pane on a wide screen (z).
 	zoom bool
 	// runFull is set while the run output fills the whole terminal under a top bar (Z).
@@ -469,9 +477,9 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown() && s.sideKeys(), RecentFocus: s.recentFocus && !s.sideKeys(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown() && s.sideKeys(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
-		Labels: s.homeLabels(),
+		Labels: s.labels(),
 	}
 }
 
@@ -479,12 +487,11 @@ func (s Shell) state() commands.State {
 // then name what the key does next ("ungroup", "collapse all").
 func (s Shell) toggles() map[string]bool {
 	return map[string]bool{
-		"doctor.group":     s.doctor.Grouped,
-		"doctor.foldall":   s.doctor.Grouped && s.doctor.AllOpen(),
-		"run.recent-focus": s.recentFocus,
-		"doctor.failed":    s.doctor.Shows(doctorview.FilterFailed),
-		"doctor.warnings":  s.doctor.Shows(doctorview.FilterWarnings),
-		"doctor.passed":    s.doctor.Shows(doctorview.FilterPassed),
+		"doctor.group":    s.doctor.Grouped,
+		"doctor.foldall":  s.doctor.Grouped && s.doctor.AllOpen(),
+		"doctor.failed":   s.doctor.Shows(doctorview.FilterFailed),
+		"doctor.warnings": s.doctor.Shows(doctorview.FilterWarnings),
+		"doctor.passed":   s.doctor.Shows(doctorview.FilterPassed),
 	}
 }
 
@@ -574,6 +581,10 @@ func (s Shell) viewReasons() map[string]string {
 		for id, why := range s.settings.Reasons() {
 			r[id] = why
 		}
+	case commands.TabProjects:
+		for id, why := range s.projectReasons() {
+			r[id] = why
+		}
 	case commands.TabHome:
 		if s.homeCommand() == "" {
 			r["home.next"] = words.Say("tui.shell.nothing_to_do_yet")
@@ -620,7 +631,7 @@ func (s *Shell) refreshPalette() {
 	for _, e := range commands.PaletteEntries(st) {
 		entries = append(entries, palette.Entry{ID: e.ID, Section: e.Section, Title: e.Title, Hint: e.Hint, Shortcut: e.Shortcut, Keywords: e.Keywords, Unavailable: e.Unavailable})
 	}
-	s.pal = s.pal.WithEntries(entries)
+	s.pal = s.pal.WithEntries(s.withProjectEntries(entries))
 }
 
 // Init implements tea.Model: it loads the project list in the background.
