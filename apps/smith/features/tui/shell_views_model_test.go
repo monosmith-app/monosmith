@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"strconv"
 	"strings"
 	"testing"
@@ -533,5 +534,44 @@ func TestTheMajorWarningSitsUnderTheSummaryAndThePolicyBesideTheList(t *testing.
 	}
 	if !strings.Contains(lines[summary], "│") && !strings.Contains(l.view(), "One version") {
 		t.Fatal("the policy is not beside the list")
+	}
+}
+
+// barOf finds the scrollbar of the main panel on the screen: its column and
+// the bar as the screen shows it.
+func barOf(t *testing.T, l *lab) (int, pane.Bar) {
+	t.Helper()
+	lines := l.lines()
+	in := l.sh().mainInner()
+	for y := in.Y; y < in.Y+in.H; y++ {
+		for x := in.X + in.W - 2; x <= in.X+in.W; x++ {
+			if b, ok := l.sh().barAt(x, y); ok {
+				return x, b
+			}
+		}
+	}
+	t.Fatalf("no scrollbar on the screen:\n%s", strings.Join(lines, "\n"))
+	return 0, pane.Bar{}
+}
+
+func TestAPressOnTheTrackMovesTheThumbThereAndADragCarriesIt(t *testing.T) {
+	l := longDeps(t, 60)
+	x, b := barOf(t, l)
+	if b.At != 0 {
+		t.Fatalf("the thumb starts at the top, got %+v", b)
+	}
+	// A press at the foot of the track brings the thumb to the foot.
+	l.send(tea.MouseMsg{X: x, Y: b.Top + b.H - 1, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	if _, after := barOf(t, l); after.At != after.H-after.Size {
+		t.Fatalf("a press at the foot leaves the thumb at %d of %d (size %d)", after.At, after.H, after.Size)
+	}
+	// Dragging back to the top carries the thumb with the pointer.
+	l.send(tea.MouseMsg{X: x, Y: b.Top - 5, Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft})
+	if _, after := barOf(t, l); after.At != 0 {
+		t.Fatalf("a drag to the top leaves the thumb at %d", after.At)
+	}
+	l.send(tea.MouseMsg{X: x, Y: b.Top, Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft})
+	if l.sh().drag != nil {
+		t.Fatal("the release lets the thumb go")
 	}
 }

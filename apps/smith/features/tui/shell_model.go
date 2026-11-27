@@ -377,6 +377,8 @@ type Shell struct {
 	// that lookup does not start another.
 	pressed string
 	probing bool
+	// drag is the scrollbar thumb the mouse holds, nil when it holds none.
+	drag *barDrag
 	// hoverAt is a pointer motion with no button held that waits for the next
 	// hover frame, and hoverWaits is set while that frame is on its way (see
 	// deferHover). reuseFrame is set when the last event changed nothing on

@@ -66,6 +66,9 @@ func (s *Shell) applyHover() tea.Cmd {
 
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 	e := tea.MouseEvent(msg)
+	if cmd, ok := s.scrollbarMouse(e); ok {
+		return cmd
+	}
 	if s.modalOpen() {
 		return s.modalMouse(e)
 	}
