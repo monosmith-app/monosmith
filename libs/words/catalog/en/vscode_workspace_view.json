@@ -32,5 +32,14 @@
   "vscode.workspace-view.passed": "Passed{took}.",
   "vscode.workspace-view.failed": "Failed{took}.",
   "vscode.workspace-view.skipped": "Skipped.",
-  "vscode.workspace-view.reason": "Reason: {reason}."
+  "vscode.workspace-view.reason": "Reason: {reason}.",
+  "vscode.workspace-view.section-tasks": "Tasks",
+  "vscode.workspace-view.section-dependencies": "Dependencies",
+  "vscode.workspace-view.section-runs": "Runs",
+  "vscode.workspace-view.section-settings": "Settings",
+  "vscode.workspace-view.none": "none",
+  "vscode.workspace-view.uses": "Uses",
+  "vscode.workspace-view.install-a-package": "Install a package",
+  "vscode.workspace-view.unlink-a-library": "Unlink a library",
+  "vscode.workspace-view.change-a-project-setting": "Change a project setting"
 }

@@ -7,5 +7,8 @@
   "vscode.release-preview.prerelease-versions": "prerelease versions",
   "vscode.release-preview.the-tag-the-release-creates": "The tag the release creates.",
   "vscode.release-preview.forced": "Forced.",
-  "vscode.release-preview.dry-run": "Dry run:"
+  "vscode.release-preview.dry-run": "Dry run:",
+  "vscode.release-preview.release-now": "Release now",
+  "vscode.release-preview.to-release.one": "{count} package to release",
+  "vscode.release-preview.to-release.other": "{count} packages to release"
 }
