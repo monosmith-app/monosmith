@@ -1,0 +1,22 @@
+{
+  "releasepage.column.package": "Package",
+  "releasepage.column.now": "Now",
+  "releasepage.column.next": "Next",
+  "releasepage.column.bump": "Bump",
+  "releasepage.column.why": "Why",
+  "releasepage.from": "from {branch}",
+  "releasepage.detail.title": "{project} {from} → {to}",
+  "releasepage.detail.plugin": "plugin {plugin}",
+  "releasepage.detail.why": "Why it releases",
+  "releasepage.detail.changes": "Changes",
+  "releasepage.detail.tag": "Tag",
+  "releasepage.detail.api": "Public API",
+  "releasepage.detail.same_as": "The same as",
+  "releasepage.detail.command": "$ smith release --dry-run --notes",
+  "releasepage.checks.title": "Checks before release",
+  "releasepage.checks.registry": "Registry sign-in: checked when you release, or before with smith release --rehearse",
+  "releasepage.confirm_note": "Nothing is published until you confirm the plan.",
+  "releasepage.button.preview": "Dry run",
+  "releasepage.button.notes": "Release notes",
+  "releasepage.commands": "$ smith release · $ smith release --dry-run"
+}

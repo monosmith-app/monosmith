@@ -78,12 +78,13 @@ func (v Model) headlineRows(th theme.Theme, w int) (lines []string, spans [][]Fi
 }
 
 // HeadlineSpans are the chips on each line at the top of the view, for the
-// shell to turn a click into the key of the chip. There are none while the view
-// has no release to filter.
+// shell to turn a click into the key of the chip, indexed by the line of the
+// view: the chips sit under the headline and its blank line, so the first two
+// entries are empty. There are none while the view has no release to filter.
 func (v Model) HeadlineSpans(th theme.Theme, w int) [][]FilterSpan {
 	if !v.Loaded || v.Err != nil || len(v.All) == 0 {
 		return nil
 	}
 	_, spans := v.headlineRows(th, w)
-	return spans
+	return append([][]FilterSpan{nil, nil}, spans...)
 }

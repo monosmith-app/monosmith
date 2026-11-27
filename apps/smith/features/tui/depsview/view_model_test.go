@@ -40,7 +40,7 @@ func render(m Model, w, h int) []string {
 
 func TestSafeAndMajorReleasesAreSeparatedAndExplained(t *testing.T) {
 	text := strings.Join(render(sample(), 90, 40), "\n")
-	for _, want := range []string{"safe to take together", "Patch and minor releases: safe to take together", "Major releases: may break your code"} {
+	for _, want := range []string{"safe to take together", "Patch and minor releases · 18 · safe to take together", "Major releases · 4 · may break your code"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q:\n%s", want, text)
 		}
@@ -74,10 +74,10 @@ func TestColumnsStayInsideTheirWidth(t *testing.T) {
 	}
 }
 
-func TestKindColumnFitsEightyColumns(t *testing.T) {
+func TestTheKindsShowInTheDetail(t *testing.T) {
 	m := FromResult(Result{Rows: []Row{{Name: "zod", Current: "3.22.0", Latest: "3.24.1", Level: "minor", Kinds: []string{"dev", "prod"}, Projects: []string{"web", "api"}}}})
-	text := strings.Join(render(m, 80, 30), "\n")
-	for _, want := range []string{"Kind", "dev, prod"} {
+	text := detailText(m, 76)
+	for _, want := range []string{"Declared as", "dev, prod"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q:\n%s", want, text)
 		}

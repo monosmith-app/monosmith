@@ -634,9 +634,11 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		}
 		return s.projectsKey(name)
 	case commands.TabDeps:
-		s.deps = s.deps.Update(msg, s.listPage())
+		_, selected := s.deps.Selected()
+		return s.listWithDetailKey(msg, selected, func() { s.deps = s.deps.Update(msg, s.listPage()) })
 	case commands.TabRelease:
-		s.release = s.release.Update(msg)
+		_, selected := s.release.Selected()
+		return s.listWithDetailKey(msg, selected && s.release.CanRelease(), func() { s.release = s.release.Update(msg) })
 	case commands.TabSettings:
 		return s.settingsKey(msg)
 	case commands.TabDoctor:
@@ -721,6 +723,25 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		}
 		return cmd
 	}
+	return nil
+}
+
+// listWithDetailKey sends a key to a list whose detail opens over it on a
+// narrow screen (Dependencies, Release): Enter opens the selected item there,
+// titled "‹ View / item", the detail's keys work while it is open and Esc goes
+// back. Beside the detail Enter does nothing, as the detail shows the item.
+// Every other key goes to the list (move).
+func (s *Shell) listWithDetailKey(msg tea.KeyMsg, selected bool, move func()) tea.Cmd {
+	switch {
+	case s.detailFull():
+		return s.detailKey(msg.String())
+	case commands.NavNamed(msg.String()) == commands.NavConfirm:
+		if selected && s.lay().Mode == layout.Narrow {
+			s.detailOpen, s.detailCursor, s.detailTop = true, 0, 0
+		}
+		return nil
+	}
+	move()
 	return nil
 }
 

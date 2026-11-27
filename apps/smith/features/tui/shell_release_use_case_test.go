@@ -181,24 +181,21 @@ func TestTheFirstCommitKeyDoesNotShadowTypecheckWhenThereIsAPlan(t *testing.T) {
 	}
 }
 
-func TestAReleaseRowShowsWhetherItsCommitsAreFoldedAndTheArrowsToggleThem(t *testing.T) {
+func TestAClickOnAReleaseRowSelectsItAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("6")
-	l.has("▸ web", "▸ kit", "←→ expand/collapse")
-	l.hasNot("▾ web", "dark mode")
-	l.keys("right")
-	l.has("▾ web", "▸ kit", "dark mode")
-	l.keys("left")
-	l.has("▸ web")
-	l.hasNot("▾ web", "dark mode")
-	// A click on the row still shows and hides the commits.
-	x, y := l.find("▸ web")
+	l.has("web 1.0.0 → 1.1.0", "dark mode")
+	x, y := l.find("kit ")
 	l.send(click(x, y))
 	l.send(letGo(x, y))
-	l.has("▾ web")
-	l.send(click(x, y))
-	l.send(letGo(x, y))
-	l.has("▸ web")
+	if c := l.sh().release.Cursor; c != 1 {
+		t.Fatalf("cursor %d after the click on kit", c)
+	}
+	l.has("kit 0.2.0 → 0.2.1", "dependency web releases")
+	l.hasNot("dark mode")
+	if l.sh().detailFull() {
+		t.Fatal("beside the plan a click does not open the detail over it")
+	}
 }
 
 func TestOnDepsTheUpAndDownArrowsMoveTheSelection(t *testing.T) {

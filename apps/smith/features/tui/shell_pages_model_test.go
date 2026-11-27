@@ -152,7 +152,7 @@ func TestTheReleaseFooterOffersReleaseOnlyWhenThereIsSomethingToRelease(t *testi
 	if footer := footerOf(l); !strings.Contains(footer, "x release") || !strings.Contains(footer, "n notes") {
 		t.Fatalf("with a plan: %q", footer)
 	}
-	l.has("2 packages to release (1 minor · 1 patch)")
+	l.has("2 packages to release · 1 minor · 1 patch")
 }
 
 func TestLongNamesAreShortenedInTheMiddleInDepsAndRelease(t *testing.T) {
@@ -164,10 +164,15 @@ func TestLongNamesAreShortenedInTheMiddleInDepsAndRelease(t *testing.T) {
 	}
 	l.m = sh
 	l.keys("5")
-	l.has("@acme-pl")
-	l.has("-react")
-	l.hasNot(long)
-	if !strings.Contains(l.view(), "…") {
-		t.Fatalf("the name is cut with an ellipsis in the middle:\n%s", l.view())
+	// The row of the list cuts the name in the middle; the detail and the box
+	// beside and under it name the package in full.
+	row := ""
+	for _, line := range l.mainLines() {
+		if strings.Contains(line, "1.0.0") {
+			row = line
+		}
+	}
+	if !strings.Contains(row, "@acme-pl") || !strings.Contains(row, "-react") || strings.Contains(row, long) || !strings.Contains(row, "…") {
+		t.Fatalf("the name is cut with an ellipsis in the middle: %q", row)
 	}
 }

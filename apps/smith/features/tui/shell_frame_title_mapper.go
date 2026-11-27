@@ -2,7 +2,6 @@ package tui
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -34,8 +33,9 @@ func (s Shell) mainTitle() string {
 }
 
 // detailTitle is the title of the detail's frame: what the detail tells about.
-// It is the selected project, the selected check, the one-version policy or the
-// settings section; "" for a view without a detail.
+// It is the selected project, the selected check, the selected package (or the
+// one-version policy), the selected release or the settings section; "" for a
+// view without a detail.
 func (s Shell) detailTitle() string {
 	switch s.tab {
 	case commands.TabProjects:
@@ -60,7 +60,9 @@ func (s Shell) detailTitle() string {
 		}
 		return words.Say("tui.detail.workspace")
 	case commands.TabDeps:
-		return depsview.PolicyTitle()
+		return s.deps.DetailTitle()
+	case commands.TabRelease:
+		return s.release.DetailTitle()
 	case commands.TabSettings:
 		return s.settings.Section().Title()
 	}

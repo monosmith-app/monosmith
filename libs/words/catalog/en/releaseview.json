@@ -10,7 +10,6 @@
   "releaseview.nothing": "Nothing to release",
   "releaseview.headline.one": "{count} package to release",
   "releaseview.headline.other": "{count} packages to release",
-  "releaseview.tag": "tag {tag} · {level} bump · plugin {plugin}",
   "releaseview.nocommit": "{reason} (no commit of its own releases it)",
   "releaseview.more": "… and {count} more (smith release --dry-run --notes lists them all)",
   "releaseview.breaking": "BREAKING: {note}"

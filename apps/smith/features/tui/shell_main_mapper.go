@@ -114,46 +114,74 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, lines[:fixed]...)
 		c.lines = append(c.lines, pane.Scrollbar(s.th, scrolled, w, top, total)...)
 	case commands.TabRelease:
+		if s.detailFull() {
+			// On a narrow screen Enter opened the selected package in the frame.
+			return s.sideContent(w, h)
+		}
 		release := s.release
-		release.Waited, release.Projects = s.waited(), len(s.list.Projects())
-		release.Button, release.FirstButton = s.releaseViewButton("rel.release", "tui.release_confirm.run"), s.releaseViewButton("rel.first", "tui.release_empty.first_button")
+		release.Waited, release.Projects, release.Tick = s.waited(), len(s.list.Projects()), s.tick
+		release.Button, release.FirstButton = "", s.releaseViewButton("rel.first", "tui.release_empty.first_button")
 		lines, rowOf := release.View(s.th, w)
 		for row, i := range rowOf {
 			switch i {
-			case releaseview.RowRelease:
-				c.hits[len(c.lines)+row] = hit{kind: "action", id: "rel.release"}
 			case releaseview.RowFirst:
-				c.hits[len(c.lines)+row] = hit{kind: "action", id: "rel.first"}
+				c.hits[row] = hit{kind: "action", id: "rel.first"}
 			case releaseview.RowWhy:
-				c.hits[len(c.lines)+row] = hit{kind: "action", id: "rel.why"}
+				c.hits[row] = hit{kind: "action", id: "rel.why"}
 			default:
-				c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
+				c.hits[row] = hit{kind: "release", index: i}
 			}
 		}
-		c.lines = append(c.lines, lines...)
+		c.lines = lines
+		for _, row := range s.releaseRows(w) {
+			if row.hit.kind != "" {
+				c.hits[len(c.lines)] = row.hit
+			}
+			c.lines = append(c.lines, row.line)
+		}
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
-		for _, row := range s.depsButtons(w, s.actionAt(s.mouseX, s.mouseY)) {
-			c.hits[len(c.lines)] = row.hit
-			c.lines = append(c.lines, row.line)
+		if s.detailFull() {
+			// On a narrow screen Enter opened the selected package in the frame.
+			return s.sideContent(w, h)
 		}
 		deps := s.deps
 		deps.Waited, deps.Projects, deps.Tick, deps.Links = s.waited(), len(s.list.Projects()), s.tick, s.hyperlinks
 		deps.Beside = s.lay().HasDetail()
 		deps.Under, deps.Pressed = depsview.FilterOf(s.actionAt(s.mouseX, s.mouseY)), depsview.FilterOf(s.pressed)
-		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))
+		box := s.depsBox(w, s.actionAt(s.mouseX, s.mouseY))
+		listH := h
+		if len(box) > 0 {
+			listH = max(h-len(box)-1, 3)
+		}
+		lines, rowOf := deps.View(s.th, w, listH)
 		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
+			c.hits[row] = hit{kind: "dep", index: i}
 		}
 		// The chips at the top answer a click with their own key.
 		for line, spans := range deps.HeadlineSpans(s.th, w) {
+			if len(spans) == 0 {
+				continue
+			}
 			chips := hit{kind: "action"}
 			for _, sp := range spans {
 				chips.spans = append(chips.spans, hitSpan{from: sp.From, to: sp.To, id: sp.Filter.CommandID()})
 			}
-			c.hits[len(c.lines)+line] = chips
+			c.hits[line] = chips
 		}
-		c.lines = append(c.lines, lines...)
+		c.lines = lines
+		if len(box) > 0 {
+			// The box of the actions stands at the foot of the pane, under the list.
+			for len(c.lines) < h-len(box) {
+				c.lines = append(c.lines, "")
+			}
+			for _, row := range box {
+				if row.hit.kind != "" {
+					c.hits[len(c.lines)] = row.hit
+				}
+				c.lines = append(c.lines, row.line)
+			}
+		}
 	case commands.TabSettings:
 		in := s.mainInner()
 		c.lines = s.settings.WithSideDetail(s.lay().HasDetail()).Pulse(s.tick, s.settingsWaited()).View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)

@@ -15,7 +15,7 @@ func TestGOpensTheRegistryPageOfTheSelectedDependencyAndCopiesTheLink(t *testing
 	sh.clip = &out
 	l.m = sh
 	l.keys("5")
-	l.has("Registry: "+axiosPage, "g opens it in your browser")
+	l.has(axiosPage, "g opens it in your browser")
 	if len(l.opened) != 0 {
 		t.Fatalf("a browser opened before any key: %v", l.opened)
 	}

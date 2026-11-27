@@ -6,16 +6,15 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/hyperlink"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
-	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
-// Model lists the dependencies that have newer releases, patch before
-// minor before major, and the one-version policy's verdict. A row of chips at
-// the top (All, Patch, Minor, Major) limits the list to one level. Space marks
-// a row; updating ends as `smith deps up <packages>`, aligning as `smith deps up --align`.
+// Model lists the dependencies that have newer releases in two groups, the
+// patch and minor releases (safe to take together) before the major ones, and
+// the one-version policy's verdict. A row of chips at the top (All, Patch,
+// Minor, Major) limits the list to one level. Space marks a row; updating ends
+// as `smith deps up <packages>`, aligning as `smith deps up --align`. The detail
+// (Detail) tells about the package under the cursor.
 type Model struct {
 	Loaded bool
 	// Waited is how long the load has taken so far, set by the shell for drawing.
@@ -34,8 +33,8 @@ type Model struct {
 	// Under and Pressed are the chip under the pointer and the one held down,
 	// set by the shell for drawing.
 	Under, Pressed Filter
-	// Beside is true when the shell draws the one-version policy in the detail
-	// beside the list, so the list leaves it out; set by the shell for drawing.
+	// Beside is true when the shell draws the detail beside the list, so the
+	// list never draws the one-version policy; set by the shell for drawing.
 	Beside bool
 	// Links is true when the terminal draws hyperlinks (see package hyperlink),
 	// set by the shell for drawing.
@@ -115,22 +114,6 @@ func (v Model) Selected() (row Row, ok bool) {
 		return Row{}, false
 	}
 	return v.Rows[v.Cursor], true
-}
-
-// registryLines say where the selected package is on its registry, as a
-// hyperlink where the terminal draws one, and which keys open and copy the
-// address. A package whose page cannot be known says so.
-func (v Model) registryLines(th theme.Theme, w int) []string {
-	r, ok := v.Selected()
-	if !ok {
-		return nil
-	}
-	label := words.Say("depsview.registry.label")
-	if r.URL == "" {
-		return []string{th.Muted(label + words.Say("depsview.registry.unknown", "name", r.Name))}
-	}
-	text := pane.MiddleTruncate(r.URL, max(w-pane.Width(label), 10))
-	return []string{label + hyperlink.Link(r.URL, th.Info(text), v.Links), th.Muted(words.Say("depsview.registry.keys"))}
 }
 
 // Wheel scrolls the list by delta rows; the cursor and the marks stay.
