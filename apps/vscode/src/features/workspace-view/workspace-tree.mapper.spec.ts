@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { WorkspaceSnapshot } from '../../shared/workspace/index.ts'
-import { countProjects, describeAffected, describeFilter, formatDuration, toTree, type TaskFacts, type TreeFolder } from './workspace-tree.mapper.ts'
+import { countProjects, describeAffected, describeFilter, formatDuration, toTree, type ProjectRun, type TaskFacts, type TreeFolder, type TreeNode } from './workspace-tree.mapper.ts'
+
+/** The task rows of a project: the rows of its Tasks section. */
+const tasksOf = (project: TreeNode | undefined): TreeNode[] => project?.children.find((child) => child.kind === 'section' && child.label === 'Tasks')?.children ?? []
+/** One section of a project. */
+const sectionOf = (project: TreeNode | undefined, label: string): TreeNode | undefined => project?.children.find((child) => child.kind === 'section' && child.label === label)
 
 const snapshot: WorkspaceSnapshot = {
   projects: [
@@ -14,6 +19,8 @@ const single: TreeFolder[] = [{ root: '/repo', name: 'repo', snapshot }]
 const none = (): undefined => undefined
 const only = (task: string, facts: TaskFacts) => (_root: string, id: string): TaskFacts | undefined => (id === task ? facts : undefined)
 const coreTest = (facts: TaskFacts) => only('core:test', facts)
+/** One failed run of web:build in /repo. */
+const webRuns = (root: string, project: string): ProjectRun[] => (root === '/repo' && project === 'web' ? [{ id: 'ide-1', tasks: 'build', status: 'failed', note: '2.1s · just now' }] : [])
 
 describe('toTree', () => {
   it('groups by kind and sorts the projects by name', () => {
@@ -47,7 +54,7 @@ describe('toTree', () => {
       ['core:lint', { status: 'failed', reason: 'exited with code 1' }],
     ])
     const core = toTree(single, (_root, task) => facts.get(task))[1]?.children[0]
-    expect(core?.children).toMatchObject([
+    expect(tasksOf(core)).toMatchObject([
       { id: 'task:/repo:core:test', task: 'test', status: 'passed', description: '1.2s', icon: 'pass', hasLog: true, root: '/repo' },
       { id: 'task:/repo:core:lint', status: 'failed', description: 'exited with code 1', icon: 'error' },
     ])
@@ -55,13 +62,13 @@ describe('toTree', () => {
 
   it('does not repeat the status word of a cached task, and a task never run has the play icon', () => {
     const core = toTree(single, coreTest({ status: 'cached' }))[1]?.children[0]
-    expect(core?.children[0]).toMatchObject({ status: 'cached', description: '', icon: 'history' })
-    expect(core?.children[1]).toMatchObject({ description: '', icon: 'play' })
-    expect(core?.children[1]?.status).toBeUndefined()
+    expect(tasksOf(core)[0]).toMatchObject({ status: 'cached', description: '', icon: 'history' })
+    expect(tasksOf(core)[1]).toMatchObject({ description: '', icon: 'play' })
+    expect(tasksOf(core)[1]?.status).toBeUndefined()
   })
 
   it('tells the last result, the duration and the cache hit in the tooltip', () => {
-    const children = toTree(single, (_root, task) => (task === 'core:test' ? { status: 'cached' } : { status: 'passed', durationMs: 2500, time: '2026-10-20T06:05:59Z' }))[1]?.children[0]?.children
+    const children = tasksOf(toTree(single, (_root, task) => (task === 'core:test' ? { status: 'cached' } : { status: 'passed', durationMs: 2500, time: '2026-10-20T06:05:59Z' }))[1]?.children[0])
     expect(children?.[0]?.tooltip).toContain('Cache hit')
     expect(children?.[1]?.tooltip).toContain('Passed in 2.5s.')
     expect(children?.[1]?.tooltip).toContain('Last run:')
@@ -75,8 +82,8 @@ describe('toTree', () => {
   it('says what a project and a task are to a screen reader', () => {
     const core = toTree(single, coreTest({ status: 'failed', durationMs: 900 }))[1]?.children[0]
     expect(core?.spoken).toBe('core, go, affected by the changes, 2 tasks')
-    expect(core?.children[0]?.spoken).toBe('core test, failed in 900ms. Press Enter to run.')
-    expect(core?.children[1]?.spoken).toContain('not run yet')
+    expect(tasksOf(core)[0]?.spoken).toBe('core test, failed in 900ms. Press Enter to run.')
+    expect(tasksOf(core)[1]?.spoken).toContain('not run yet')
   })
 
   it('lists the projects a group and a project stand for, to run all their tasks', () => {
@@ -95,13 +102,13 @@ describe('toTree', () => {
       const tree = toTree(single, none, { text: 'COR', affectedOnly: false })
       expect(tree.map((group) => group.label)).toEqual(['libs'])
       expect(tree[0]?.children[0]).toMatchObject({ label: 'core', reveal: false })
-      expect(tree[0]?.children[0]?.children).toHaveLength(2)
+      expect(tasksOf(tree[0]?.children[0])).toHaveLength(2)
     })
 
     it('keeps a project for a task the text names, with that task only, open', () => {
       const tree = toTree(single, none, { text: 'lint', affectedOnly: false })
       expect(tree[0]?.children[0]).toMatchObject({ label: 'core', reveal: true })
-      expect(tree[0]?.children[0]?.children.map((task) => task.label)).toEqual(['lint'])
+      expect(tasksOf(tree[0]?.children[0]).map((task) => task.label)).toEqual(['lint'])
     })
 
     it('matches the language', () => {
@@ -151,7 +158,7 @@ describe('toTree', () => {
     it('hands each task the facts of its own folder', () => {
       const both: TreeFolder[] = [{ root: '/a', name: 'a', snapshot }, { root: '/b', name: 'b', snapshot }]
       const tree = toTree(both, (root, task) => (root === '/a' && task === 'web:build' ? { status: 'passed' } : undefined))
-      const statusIn = (index: number) => tree[index]?.children[0]?.children[1]?.children[0]?.status
+      const statusIn = (index: number) => tasksOf(tree[index]?.children[0]?.children[1])[0]?.status
       expect(statusIn(0)).toBe('passed')
       expect(statusIn(1)).toBeUndefined()
     })
@@ -227,7 +234,58 @@ describe('the environments of a web app', () => {
 
   it('adds nothing under a project that is not a web app, or when smith listed none', () => {
     const tree = toTree(folders, none)
-    expect(tree[0]?.children[0]?.children).toEqual([])
-    expect(toTree(single, none)[0]?.children[1]?.children.map((child) => child.kind)).toEqual(['task'])
+    expect(tree[0]?.children[0]?.children.map((child) => child.kind)).not.toContain('environments')
+    expect(toTree(single, none)[0]?.children[1]?.children.map((child) => child.kind)).toEqual(['section', 'section', 'section', 'section'])
+  })
+})
+
+describe('the sections of a project', () => {
+  it('are Tasks, Dependencies, Runs and Settings, with Tasks open', () => {
+    const web = toTree(single, none)[0]?.children[1]
+    expect(web?.children.map((child) => [child.label, child.open])).toEqual([['Tasks', true], ['Dependencies', false], ['Runs', false], ['Settings', false]])
+    expect(sectionOf(web, 'Tasks')?.description).toBe('1')
+  })
+
+  it('say what a project uses and what uses it, and offer to change that with the smith command', () => {
+    const core = toTree(single, none)[1]?.children[0]
+    const rows = sectionOf(core, 'Dependencies')?.children ?? []
+    expect(rows.map((row) => [row.label, row.description])).toEqual([
+      ['Uses', 'none'],
+      ['Used by', 'web'],
+      ['Install a package', '$ smith install -p core <package>'],
+      ['Unlink a library', '$ smith uninstall -p core <library>'],
+    ])
+    expect(rows[2]).toMatchObject({ kind: 'action', command: 'monosmith.installPackage', argument: { kind: 'project', project: 'core', root: '/repo' } })
+  })
+
+  it('list the runs of the session that ran a task of the project, each opening in Runs', () => {
+    const web = toTree(single, none, undefined, webRuns)[0]?.children[1]
+    expect(sectionOf(web, 'Runs')?.children).toMatchObject([{ kind: 'run', label: 'build', description: '2.1s · just now', icon: 'error', color: 'charts.red', command: 'monosmith.runs.open', argument: 'ide-1' }])
+    expect(sectionOf(toTree(single, none)[0]?.children[1], 'Runs')?.children.map((row) => row.label)).toEqual(['Nothing ran yet'])
+  })
+
+  it('open the project settings with the smith command shown', () => {
+    const rows = sectionOf(toTree(single, none)[0]?.children[1], 'Settings')?.children ?? []
+    expect(rows).toMatchObject([{ kind: 'action', command: 'monosmith.projectSettings', description: '$ smith config set -p web <setting> <value>', argument: { kind: 'project', project: 'web' } }])
+  })
+})
+
+describe('the mark of a project', () => {
+  it('is the worst state of its tasks in the last run, in its colour', () => {
+    const facts = new Map<string, TaskFacts>([['core:test', { status: 'passed' }], ['core:lint', { status: 'failed' }]])
+    expect(toTree(single, (_root, task) => facts.get(task))[1]?.children[0]).toMatchObject({ icon: 'error', color: 'charts.red' })
+    expect(toTree(single, coreTest({ status: 'passed' }))[1]?.children[0]).toMatchObject({ icon: 'pass', color: 'charts.green' })
+  })
+
+  it('is the icon of its kind before any run', () => {
+    expect(toTree(single, none)[1]?.children[0]?.color).toBeUndefined()
+  })
+})
+
+describe('the filter words of the terminal', () => {
+  it('read kind:, lang: and changed', () => {
+    expect(countProjects(toTree(single, none, { text: 'kind:app', affectedOnly: false }))).toBe(2)
+    expect(countProjects(toTree(single, none, { text: 'lang:go kind:lib', affectedOnly: false }))).toBe(1)
+    expect(countProjects(toTree(single, none, { text: 'changed', affectedOnly: false }))).toBe(1)
   })
 })

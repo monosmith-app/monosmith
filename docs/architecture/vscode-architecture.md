@@ -17,7 +17,7 @@ the terminal and CI give the same answer ([ADR 0025](decisions/0025-ide-plugins-
 [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md)). Everything the extension knows
 about a workspace comes from `smith serve` answers: it parses no manifest and reads no `smith.toml`.
 Where it acts on the workspace, it asks smith to act: a doctor fix is `doctor.fix`, an update is the
-command `smith up <name>` opened in a terminal, because smith serve has no method to update through
+command `smith deps up <name>` opened in a terminal, because smith serve has no method to update through
 the editor and the editor never rewrites a manifest itself.
 
 ## Context and containers
@@ -37,7 +37,7 @@ flowchart LR
   main --> out
   client <-->|"stdin/stdout<br/>one JSON message per line"| serve["smith serve<br/>(one per folder with smith.toml)"]
   serve --> engine["smith engine<br/>(Go): workspace, plugins, cache"]
-  main -->|"terminal commands:<br/>smith up, smith release"| term["VS Code terminal"]
+  main -->|"terminal commands:<br/>smith deps up, smith release"| term["VS Code terminal"]
 ```
 
 `smith serve` speaks JSON-RPC 2.0 on its standard input and output, one JSON message per line, and
@@ -62,8 +62,12 @@ the `vscode` API is a `*.client.ts`; the rest runs without VS Code and is unit t
 | `task-run`, `quick-pick` | plan and run tasks (`run`, `cancel`), keep the status of each task, choose what to run, the status bar menu |
 | `task-provider` | VS Code tasks of type `smith`, and the problem matchers declared in `package.json` |
 | `task-output` | parse failures of `tsc`, ESLint, go, gcc, ruff and rustc into Problems entries, make paths in output clickable, keep each task's last log as a document |
-| `health` | `doctor`, the Health tree, the fix preview and `doctor.fix` |
-| `dependencies`, `release-preview` | `updates` and `release.preview` as trees |
+| `health` | `doctor`, the Health tree by state, the fix in three steps (review, apply, check again) and `doctor.fix` |
+| `dependencies`, `release-preview` | `updates` and `release.preview` as trees with the terminal's groups and detail; `smith deps up` and the release dry run and notes; the checks before release (`releaseChecks`) |
+| `home-view` | the Home tree: the boxes, Needs you now (`homeQueue`, the rules of the terminal's queue) and Start something, from what the extension already holds (`toHomeFacts`) |
+| `runs-view` | the runs of the session from the event stream (`createRunHistory`) and the Runs tree (`toRunRows`), the runs of a project (`projectRuns`) and the state of the tests (`testsState`) |
+| `settings-view` | `config.list`, `plugins` and `recipe.list` as the Settings tree; a setting opens the guided `smith config set` on it |
+| `command-palette` | `MonoSmith: Commands…`: every command grouped as the terminal's palette, with the smith command line of each (`COMMAND_LINES`, checked against `package.json` by a test) |
 | `project-insight` | `explain` and `graph` rendered as documents |
 | `empty-folder` | find a folder with no files and offer `smith new --here` in a terminal (`findBlankFolders`, `toNewArguments`) |
 | `adopt-offer` | find a folder that holds a repository smith can bring in, and offer a bare `smith` (its screen asks how far to go) or `smith adopt --dry-run` in a terminal (`findRepositoryOffers`, `toAdoptArguments`) |

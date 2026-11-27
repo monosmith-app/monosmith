@@ -64,28 +64,34 @@
           "title": "%vscode.package.display-name%",
           "icon": "media/monosmith.svg"
         }
-      ],
-      "panel": [
-        {
-          "id": "monosmithHealth",
-          "title": "%vscode.view-container.monosmith-health.title%",
-          "icon": "media/monosmith.svg"
-        }
       ]
     },
     "views": {
-      "monosmithHealth": [
-        {
-          "id": "monosmith.health",
-          "name": "%commands.section.health%",
-          "when": "monosmith.state == ready"
-        }
-      ],
       "monosmith": [
+        {
+          "id": "monosmith.home",
+          "name": "%commands.view.home.title%",
+          "when": "monosmith.state == ready",
+          "initialSize": 2
+        },
         {
           "id": "monosmith.projects",
           "name": "%commands.view.projects.title%",
           "initialSize": 3
+        },
+        {
+          "id": "monosmith.runs",
+          "name": "%commands.view.runs.title%",
+          "when": "monosmith.state == ready",
+          "visibility": "collapsed",
+          "initialSize": 2
+        },
+        {
+          "id": "monosmith.health",
+          "name": "%commands.section.health%",
+          "when": "monosmith.state == ready",
+          "visibility": "collapsed",
+          "initialSize": 2
         },
         {
           "id": "monosmith.dependencies",
@@ -96,7 +102,14 @@
         },
         {
           "id": "monosmith.release",
-          "name": "%vscode.view.release.name%",
+          "name": "%commands.view.release.title%",
+          "when": "monosmith.state == ready",
+          "visibility": "collapsed",
+          "initialSize": 2
+        },
+        {
+          "id": "monosmith.settings",
+          "name": "%commands.view.settings.title%",
           "when": "monosmith.state == ready",
           "visibility": "collapsed",
           "initialSize": 2
@@ -651,6 +664,114 @@
         "title": "%vscode.command.plugin-install.title%",
         "category": "%vscode.package.display-name%",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "monosmith.commands",
+        "title": "%vscode.command.commands.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(list-selection)"
+      },
+      {
+        "command": "monosmith.buildAll",
+        "title": "%vscode.command.build-all.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "monosmith.lintAll",
+        "title": "%vscode.command.lint-all.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "monosmith.testChanged",
+        "title": "%vscode.command.test-changed.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(target)"
+      },
+      {
+        "command": "monosmith.runs.open",
+        "title": "%vscode.command.runs-open.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(history)"
+      },
+      {
+        "command": "monosmith.runs.showLog",
+        "title": "%vscode.command.runs-show-log.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(output)"
+      },
+      {
+        "command": "monosmith.runs.errorsOnly.on",
+        "title": "%vscode.command.runs-errors-only-on.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "monosmith.runs.errorsOnly.off",
+        "title": "%vscode.command.runs-errors-only-off.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(filter-filled)"
+      },
+      {
+        "command": "monosmith.dependencies.updateSafe",
+        "title": "%vscode.command.dependencies-update-safe.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(arrow-circle-up)"
+      },
+      {
+        "command": "monosmith.dependencies.repair",
+        "title": "%vscode.command.dependencies-repair.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "monosmith.dependencies.openRegistry",
+        "title": "%vscode.command.dependencies-open-registry.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "monosmith.release.dryRun",
+        "title": "%vscode.command.release-dry-run.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "monosmith.release.notes",
+        "title": "%vscode.command.release-notes.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(note)"
+      },
+      {
+        "command": "monosmith.settings.refresh",
+        "title": "%vscode.command.settings-refresh.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "monosmith.settings.change",
+        "title": "%vscode.command.settings-change.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "monosmith.settings.reset",
+        "title": "%vscode.command.settings-reset.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "monosmith.settings.plugin",
+        "title": "%vscode.command.settings-plugin.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "monosmith.settings.openRecipe",
+        "title": "%vscode.command.settings-open-recipe.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(go-to-file)"
       }
     ],
     "menus": {
@@ -969,6 +1090,71 @@
           "command": "monosmith.pluginInstall",
           "when": "view == monosmith.projects && monosmith.state == ready",
           "group": "6_more@28"
+        },
+        {
+          "command": "monosmith.commands",
+          "when": "view == monosmith.home",
+          "group": "navigation@0"
+        },
+        {
+          "command": "monosmith.refresh",
+          "when": "view == monosmith.home",
+          "group": "navigation@1"
+        },
+        {
+          "command": "monosmith.runs.errorsOnly.on",
+          "when": "view == monosmith.runs && !monosmith.runs.errorsOnly",
+          "group": "navigation@0"
+        },
+        {
+          "command": "monosmith.runs.errorsOnly.off",
+          "when": "view == monosmith.runs && monosmith.runs.errorsOnly",
+          "group": "navigation@0"
+        },
+        {
+          "command": "monosmith.rerunLast",
+          "when": "view == monosmith.runs && monosmith.hasLastRun && !monosmith.running",
+          "group": "navigation@1"
+        },
+        {
+          "command": "monosmith.cancelRun",
+          "when": "view == monosmith.runs && monosmith.running",
+          "group": "navigation@2"
+        },
+        {
+          "command": "monosmith.showOutput",
+          "when": "view == monosmith.runs",
+          "group": "navigation@3"
+        },
+        {
+          "command": "monosmith.dependencies.updateSafe",
+          "when": "view == monosmith.dependencies",
+          "group": "navigation@0"
+        },
+        {
+          "command": "monosmith.dependencies.repair",
+          "when": "view == monosmith.dependencies",
+          "group": "navigation@3"
+        },
+        {
+          "command": "monosmith.release.dryRun",
+          "when": "view == monosmith.release",
+          "group": "navigation@2"
+        },
+        {
+          "command": "monosmith.release.notes",
+          "when": "view == monosmith.release",
+          "group": "navigation@3"
+        },
+        {
+          "command": "monosmith.settings.refresh",
+          "when": "view == monosmith.settings",
+          "group": "navigation@1"
+        },
+        {
+          "command": "monosmith.configSet",
+          "when": "view == monosmith.settings",
+          "group": "navigation@0"
         }
       ],
       "view/item/context": [
@@ -1104,13 +1290,43 @@
         },
         {
           "command": "monosmith.dependencies.update",
-          "when": "view == monosmith.dependencies && viewItem == dependency",
+          "when": "view == monosmith.dependencies && viewItem =~ /^dependency(\\.major)?$/",
           "group": "inline@1"
         },
         {
           "command": "monosmith.dependencies.update",
-          "when": "view == monosmith.dependencies && viewItem == dependency",
+          "when": "view == monosmith.dependencies && viewItem =~ /^dependency(\\.major)?$/",
           "group": "0_update@1"
+        },
+        {
+          "command": "monosmith.runs.showLog",
+          "when": "view == monosmith.runs && viewItem == run.task",
+          "group": "inline@1"
+        },
+        {
+          "command": "monosmith.cancelRun",
+          "when": "view == monosmith.runs && viewItem == run.running",
+          "group": "inline@1"
+        },
+        {
+          "command": "monosmith.settings.reset",
+          "when": "view == monosmith.settings && viewItem == setting.set",
+          "group": "inline@1"
+        },
+        {
+          "command": "monosmith.settings.change",
+          "when": "view == monosmith.settings && viewItem =~ /^setting(\\.set)?$/",
+          "group": "0_setting@1"
+        },
+        {
+          "command": "monosmith.settings.reset",
+          "when": "view == monosmith.settings && viewItem == setting.set",
+          "group": "0_setting@2"
+        },
+        {
+          "command": "monosmith.settings.plugin",
+          "when": "view == monosmith.settings && viewItem == setting.plugin",
+          "group": "inline@1"
         }
       ],
       "explorer/context": [
@@ -1499,6 +1715,62 @@
         {
           "command": "monosmith.pluginInstall",
           "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.runs.showLog",
+          "when": "false"
+        },
+        {
+          "command": "monosmith.settings.change",
+          "when": "false"
+        },
+        {
+          "command": "monosmith.settings.reset",
+          "when": "false"
+        },
+        {
+          "command": "monosmith.settings.plugin",
+          "when": "false"
+        },
+        {
+          "command": "monosmith.settings.openRecipe",
+          "when": "false"
+        },
+        {
+          "command": "monosmith.dependencies.openRegistry",
+          "when": "false"
+        },
+        {
+          "command": "monosmith.buildAll",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.lintAll",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.testChanged",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.dependencies.updateSafe",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.dependencies.repair",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.release.dryRun",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.release.notes",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.settings.refresh",
+          "when": "monosmith.state == ready"
         }
       ]
     },
@@ -1570,6 +1842,11 @@
         "command": "monosmith.cancelRun",
         "key": "ctrl+alt+m c",
         "when": "monosmith.running"
+      },
+      {
+        "command": "monosmith.commands",
+        "key": "ctrl+alt+m p",
+        "when": "monosmith.state == ready"
       }
     ],
     "viewsWelcome": [

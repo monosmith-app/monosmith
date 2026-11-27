@@ -13,13 +13,15 @@ VS Code 1.140 or newer. An older editor keeps the version it has and does not of
 
 ## What you get
 
-- **Projects view.** Apps, libs and packages, each with its language. A dot
-  marks a project the changes affect (and is left out when every project is
-  affected, since it would tell nothing; the title says `all 6 affected`).
-  Under a project, its tasks, each with an icon for how it ended, how long it
-  took, and a tooltip with the last result and whether it came from the cache.
-  A **filter** (the search button) narrows the view by project, task or
-  language as you type, and **Show Affected Only** keeps the affected projects.
+- **Projects view.** Apps, libs and packages, each with its language and the
+  mark of its last run. A dot marks a project the changes affect (and is left
+  out when every project is affected, since it would tell nothing; the title
+  says `all 6 affected`). Under a project are the sections Tasks, Dependencies,
+  Runs and Settings. Each task has an icon for how it ended, how long it took,
+  and a tooltip with the last result and whether it came from the cache. A
+  **filter** (the search button) narrows the view as you type, with the words
+  of the terminal (`kind:app`, `lang:go`, `changed`), and **Show Affected Only**
+  keeps the affected projects.
   A multi-root workspace gets one section per folder that has a `smith.toml`.
 
   ![A project with the tasks of its last run: passed with a duration, failed with the reason](https://github.com/monosmith-app/monosmith/raw/main/apps/vscode/media/screenshot-tasks.png)
@@ -45,16 +47,34 @@ VS Code 1.140 or newer. An older editor keeps the version it has and does not of
 - **Output of every task.** The MonoSmith output channel shows the exact
   command and the task output as it arrives. **Show Task Output** on a task
   row (also a failed one) opens the last log of that task as a document.
-- **Health.** The checks of `smith doctor` that failed or warn, each with the
-  problem and the remedy. **Fix** shows the changes smith proposes and applies
-  them only after you agree.
-- **Dependencies.** What has a newer release, grouped patch, minor and major,
-  and the tools smith pins. **Run smith up** opens `smith up` in a terminal;
-  **Update** on a dependency asks first, then runs `smith up <name>` there.
-  Smith has no method to update through the editor, so the editor never
-  rewrites a manifest itself.
-- **Release Preview.** What `smith release` would publish: each package with
-  the version it moves to, why, its tag and the commits. It publishes nothing.
+- **The views of the terminal interface.** The side bar has the seven views of
+  `smith`, in its order: Home, Projects, Runs, Health, Dependencies, Release
+  and Settings. Every row that does something shows the smith command line it
+  stands for, and every change asks first.
+- **Home.** What needs you now: the boxes Changed, Last run, Health and Release,
+  then the queue (a failed run, failing checks, changed projects, a release
+  that is ready, updates), each item with its buttons and their commands, then
+  Start something.
+- **Runs.** A run you start opens here: its state, how far it is, its tasks
+  grouped by project, **Show Errors Only**, and the log of a task on a click.
+- **Commands…** (`Ctrl+Alt+M P`). Every command in one list, grouped as the
+  terminal's palette, each with the smith command line it runs.
+- **Health.** The checks of `smith doctor`, grouped Failed, Warnings and
+  Passed, each with its project and file, the problem and the remedy. **Fix**
+  goes through the three steps of the terminal (review, apply, check again)
+  and applies nothing before you agree.
+- **Dependencies.** What has a newer release: patch and minor releases, safe
+  to take together, then the major ones, and the tools smith pins. Each package
+  has its detail and its `smith deps up` command. **Update**, **Update All
+  Safe** and **Repair Dependencies** ask first, then run the command in a
+  terminal. Smith has no method to update through the editor, so the editor
+  never rewrites a manifest itself.
+- **Release.** What `smith release` would publish: each package with the
+  version it moves to, why, its changes and its tag, then the checks before
+  release and **Release now**, **Dry run** and **Release notes**. Nothing is
+  published before you confirm the plan.
+- **Settings.** The settings of `smith.toml` with their value, type and
+  `smith config set` command, the plugins, the recipes and the guided forms.
   On a release channel (a branch that publishes `next` or `beta`), the first row
   says **Release channel next**, with the notice of smith: the versions are
   prereleases and the stable version stays the latest. The view title repeats

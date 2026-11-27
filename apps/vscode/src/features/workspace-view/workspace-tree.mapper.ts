@@ -1,15 +1,18 @@
 import type { TaskResult } from '../task-run/index.ts'
 import type { WorkspaceProject, WorkspaceSnapshot } from '../../shared/workspace/index.ts'
-import { say } from '../../shared/words/index.ts'
+import { filterProject } from './project-filter.policy.ts'
+import { say, type WordKey } from '../../shared/words/index.ts'
 
 /** One row of the MonoSmith view. */
 export interface TreeNode {
   id:          string
-  kind:        'folder' | 'group' | 'project' | 'task' | 'action' | 'environments' | 'environment'
+  kind:        'folder' | 'group' | 'project' | 'task' | 'action' | 'environments' | 'environment' | 'section' | 'note' | 'run'
   label:       string
   description: string
   /** A codicon id; the view tints it for a project. */
   icon:        string
+  /** A theme colour id for the icon, such as `charts.red` for a project whose last run failed. */
+  color?:      string
   /** The folder the row belongs to. */
   root:        string
   /** The projects a folder, group or project row stands for. */
@@ -25,8 +28,12 @@ export interface TreeNode {
   hasLog?:     boolean
   /** Open the row, because the filter matched something under it. */
   reveal?:     boolean
-  /** The command an `action` row runs when it is chosen. */
+  /** The command an `action` or `run` row runs when it is chosen. */
   command?:    string
+  /** What the command of an `action` or `run` row is given instead of the row: the project row, or the id of a run. */
+  argument?:   unknown
+  /** A `section` row that shows open: the Tasks section of a project. */
+  open?:       boolean
   /** What a screen reader says for the row. */
   spoken:      string
   /** What the pointer says for the row. */
@@ -59,6 +66,21 @@ export interface TreeFolder {
 /** What the last run did to a task, and whether its output was kept. */
 export type TaskFacts = TaskResult & { hasLog?: boolean }
 
+/** A run of the session that ran a task of a project, for the Runs section of the project. */
+export interface ProjectRun {
+  /** The id of the run, which opens it in the Runs view. */
+  id:     string
+  /** The project's tasks in the run: `build test`. */
+  tasks:  string
+  /** The worst status of those tasks. */
+  status: TaskResult['status']
+  /** How long it took and how long ago: `2.1s · 3 min ago`. */
+  note:   string
+}
+
+/** The runs of a project in a folder, the newest first. */
+export type RunsOf = (root: string, project: string) => readonly ProjectRun[]
+
 /** How the person narrowed the view. */
 export interface ViewFilter {
   /** Text a project or task name (or language) must contain; empty shows all. */
@@ -74,6 +96,16 @@ const GROUPS: Array<{ kind: string, label: string, icon: string }> = [
   { kind: 'lib', label: 'libs', icon: 'library' },
   { kind: 'package', label: 'packages', icon: 'package' },
 ]
+
+const STATUS_COLORS: Partial<Record<TaskResult['status'], string>> = {
+  running: 'charts.blue',
+  passed:  'charts.green',
+  failed:  'charts.red',
+  cached:  'charts.green',
+}
+
+/** The worst first: the mark of a project is the worst state of its tasks. */
+const WORST_FIRST: Array<TaskResult['status']> = ['failed', 'running', 'queued', 'skipped', 'passed', 'cached']
 
 const STATUS_ICONS: Record<TaskResult['status'], string> = {
   queued:  'circle-outline',
@@ -99,14 +131,15 @@ const STATUS_ICONS: Record<TaskResult['status'], string> = {
  * @param factsOf - what the last run did to a task id (`api:build`) in a folder
  * @param filter - how the person narrowed the view
  */
-export function toTree (folders: readonly TreeFolder[], factsOf: (root: string, task: string) => TaskFacts | undefined, filter: ViewFilter = NO_FILTER): TreeNode[] {
+export function toTree (folders: readonly TreeFolder[], factsOf: (root: string, task: string) => TaskFacts | undefined, filter: ViewFilter = NO_FILTER, runsOf: RunsOf = () => []): TreeNode[] {
   if (folders.every((folder) => folder.snapshot === undefined)) return []
   const first = folders[0]
   const narrowed = filter.text.trim() !== '' || filter.affectedOnly
-  if (folders.length === 1 && first?.snapshot !== undefined) return [...agentRow(first, narrowed), ...toGroups(first.root, first.snapshot, factsOf, filter, first.webApps)]
+  const facts: Facts = { factsOf, runsOf }
+  if (folders.length === 1 && first?.snapshot !== undefined) return [...agentRow(first, narrowed), ...toGroups(first.root, first.snapshot, facts, filter, first.webApps)]
 
   return folders.flatMap((folder): TreeNode[] => {
-    const children = folder.snapshot === undefined ? [] : [...agentRow(folder, narrowed), ...toGroups(folder.root, folder.snapshot, factsOf, filter, folder.webApps)]
+    const children = folder.snapshot === undefined ? [] : [...agentRow(folder, narrowed), ...toGroups(folder.root, folder.snapshot, facts, filter, folder.webApps)]
     if (narrowed && children.length === 0) return []
     const projects = folder.snapshot?.projects.map((project) => project.name) ?? []
     const description = folder.snapshot === undefined ? (folder.note ?? '') : `${projects.length} projects`
@@ -175,24 +208,30 @@ export function countProjects (nodes: readonly TreeNode[]): number {
   return nodes.reduce((sum, node) => sum + (node.kind === 'project' ? 1 : countProjects(node.children)), 0)
 }
 
-function toGroups (root: string, snapshot: WorkspaceSnapshot, factsOf: (root: string, task: string) => TaskFacts | undefined, filter: ViewFilter, webApps: readonly WebAppEnvironments[] = []): TreeNode[] {
+/** What the rows of a folder are drawn from, beside its snapshot. */
+interface Facts {
+  factsOf: (root: string, task: string) => TaskFacts | undefined
+  runsOf:  RunsOf
+}
+
+function toGroups (root: string, snapshot: WorkspaceSnapshot, facts: Facts, filter: ViewFilter, webApps: readonly WebAppEnvironments[] = []): TreeNode[] {
   const known = new Set(GROUPS.map((group) => group.kind))
   const groups = [
     ...GROUPS,
     ...[...new Set(snapshot.projects.map((p) => p.kind))].filter((kind) => !known.has(kind)).map((kind) => ({ kind, label: kind, icon: 'folder' })),
   ]
   const everyAffected = snapshot.projects.length > 0 && snapshot.projects.every((project) => snapshot.affected.has(project.name))
-  const needle = filter.text.trim().toLowerCase()
 
   return groups.flatMap((group) => {
     const projects = snapshot.projects.filter((project) => project.kind === group.kind).sort((a, b) => a.name.localeCompare(b.name))
     const children = projects.flatMap((project): TreeNode[] => {
       const affected = snapshot.affected.has(project.name)
       if (!affected && filter.affectedOnly) return []
-      const nameMatches = needle === '' || project.name.toLowerCase().includes(needle) || project.language.toLowerCase().includes(needle)
-      const tasks = nameMatches ? project.tasks : project.tasks.filter((task) => task.toLowerCase().includes(needle))
+      const kept = filterProject({ ...project, affected }, filter.text)
+      if (kept === undefined) return []
+      const usedBy = snapshot.projects.filter((other) => other.deps.includes(project.name)).map((other) => other.name).sort((a, b) => a.localeCompare(b))
 
-      return !nameMatches && tasks.length === 0 ? [] : [withEnvironments(toProject(root, project, tasks, { affected, dot: affected && !everyAffected, reveal: !nameMatches }, factsOf), webApps.find((app) => app.project === project.name))]
+      return [withEnvironments(toProject(root, project, kept.tasks, { affected, dot: affected && !everyAffected, reveal: kept.reveal, usedBy }, facts), webApps.find((app) => app.project === project.name))]
     })
     if (children.length === 0) return []
 
@@ -211,16 +250,22 @@ function toGroups (root: string, snapshot: WorkspaceSnapshot, factsOf: (root: st
   })
 }
 
-function toProject (root: string, project: WorkspaceProject, tasks: readonly string[], shown: { affected: boolean, dot: boolean, reveal: boolean }, factsOf: (root: string, task: string) => TaskFacts | undefined): TreeNode {
+function toProject (root: string, project: WorkspaceProject, tasks: readonly string[], shown: { affected: boolean, dot: boolean, reveal: boolean, usedBy: readonly string[] }, facts: Facts): TreeNode {
   const language = project.language === '' ? 'project' : project.language
   const taskCount = `${project.tasks.length} ${say(project.tasks.length === 1 ? 'vscode.status-bar.task' : 'vscode.status-bar.tasks')}`
+  const statuses = new Set(project.tasks.flatMap((task) => facts.factsOf(root, `${project.name}:${task}`)?.status ?? []))
+  const worst = WORST_FIRST.find((status) => statuses.has(status))
+  const color = worst === undefined ? undefined : STATUS_COLORS[worst]
+  const row: TreeNode = { id: `project:${root}:${project.name}`, kind: 'project', label: project.name, description: '', icon: '', root, projects: [project.name], project: project.name, spoken: '', tooltip: '', children: [] }
 
   return {
     id:          `project:${root}:${project.name}`,
     kind:        'project',
     label:       project.name,
     description: project.language,
-    icon:        GROUPS.find((group) => group.kind === project.kind)?.icon ?? 'folder',
+    // The mark of the last run that touched one of its tasks, as the terminal's list shows it; the kind's icon before that.
+    icon:        worst === undefined ? (GROUPS.find((group) => group.kind === project.kind)?.icon ?? 'folder') : STATUS_ICONS[worst],
+    ...(color !== undefined && { color }),
     root,
     projects:    [project.name],
     project:     project.name,
@@ -235,8 +280,99 @@ function toProject (root: string, project: WorkspaceProject, tasks: readonly str
       say(shown.affected ? 'vscode.workspace-view.affected-by-the-changes-3' : 'vscode.workspace-view.not-affected-by-the-changes'),
       project.tasks.length > 0 ? say('vscode.workspace-view.run-all-its-tasks-from-the') : '',
     ].filter(Boolean).join('\n'),
-    children: tasks.map((task) => toTask(root, project.name, task, factsOf(root, `${project.name}:${task}`))),
+    children: [
+      section(row, 'tasks', 'vscode.workspace-view.section-tasks', String(tasks.length), tasks.map((task) => toTask(root, project.name, task, facts.factsOf(root, `${project.name}:${task}`))), true),
+      section(row, 'dependencies', 'vscode.workspace-view.section-dependencies', '', dependencyRows(row, project.deps, shown.usedBy)),
+      section(row, 'runs', 'vscode.workspace-view.section-runs', '', runRows(row, facts.runsOf(root, project.name))),
+      section(row, 'settings', 'vscode.workspace-view.section-settings', '', settingsRows(row)),
+    ],
   }
+}
+
+const SECTION_ICONS: Record<string, string> = { tasks: 'checklist', dependencies: 'references', runs: 'history', settings: 'settings-gear' }
+
+/** A section of a project, as the tabs of the project's detail in the terminal: Tasks, Dependencies, Runs, Settings. */
+function section (project: TreeNode, name: string, label: WordKey, description: string, children: TreeNode[], open = false): TreeNode {
+  return {
+    id:       `${project.id}:${name}`,
+    kind:     'section',
+    label:    say(label),
+    description,
+    icon:     SECTION_ICONS[name] ?? 'list-unordered',
+    root:     project.root,
+    projects: project.projects,
+    ...(project.project !== undefined && { project: project.project }),
+    open,
+    spoken:   `${project.label} ${say(label)}`,
+    tooltip:  `${project.label}: ${say(label)}`,
+    children,
+  }
+}
+
+/** A row of a section that says something and does nothing. */
+function noteRow (project: TreeNode, id: string, label: string, description: string, icon: string): TreeNode {
+  return { id: `${project.id}:${id}`, kind: 'note', label, description, icon, root: project.root, projects: project.projects, spoken: `${label} ${description}`.trim(), tooltip: `${label} ${description}`.trim(), children: [] }
+}
+
+/** A row of a section that runs a command on the project, with the smith command line beside it. */
+function actionRow (project: TreeNode, id: string, label: WordKey, command: string, line: string, icon: string): TreeNode {
+  return {
+    id:          `${project.id}:${id}`,
+    kind:        'action',
+    label:       say(label),
+    description: `$ ${line}`,
+    icon,
+    root:        project.root,
+    projects:    project.projects,
+    ...(project.project !== undefined && { project: project.project }),
+    command,
+    // The command reads the project from a project row, as from the menu of the project.
+    argument:    { id: project.id, kind: 'project', label: project.label, root: project.root, projects: project.projects, project: project.project },
+    spoken:      `${say(label)}: ${line}`,
+    tooltip:     `$ ${line}`,
+    children:    [],
+  }
+}
+
+/** Uses and Used by, then the actions that change what the project depends on. */
+function dependencyRows (project: TreeNode, uses: readonly string[], usedBy: readonly string[]): TreeNode[] {
+  const none = say('vscode.workspace-view.none')
+  const name = project.project ?? project.label
+
+  return [
+    noteRow(project, 'uses', say('vscode.workspace-view.uses'), uses.length === 0 ? none : uses.join(' · '), 'arrow-right'),
+    noteRow(project, 'used-by', say('depspage.detail.used_by'), usedBy.length === 0 ? none : usedBy.join(' · '), 'arrow-left'),
+    actionRow(project, 'install', 'vscode.workspace-view.install-a-package', 'monosmith.installPackage', `smith install -p ${name} <package>`, 'add'),
+    actionRow(project, 'unlink', 'vscode.workspace-view.unlink-a-library', 'monosmith.unlinkLibrary', `smith uninstall -p ${name} <library>`, 'remove'),
+  ]
+}
+
+/** The runs of the session that ran a task of the project; each opens in the Runs view. */
+function runRows (project: TreeNode, runs: readonly ProjectRun[]): TreeNode[] {
+  if (runs.length === 0) return [noteRow(project, 'no-runs', say('runpage.empty.title'), '', 'circle-outline')]
+
+  return runs.map((run): TreeNode => ({
+    id:          `${project.id}:run:${run.id}`,
+    kind:        'run',
+    label:       run.tasks,
+    description: run.note,
+    icon:        STATUS_ICONS[run.status],
+    ...(STATUS_COLORS[run.status] !== undefined && { color: STATUS_COLORS[run.status] }),
+    root:        project.root,
+    projects:    project.projects,
+    command:     'monosmith.runs.open',
+    argument:    run.id,
+    spoken:      `${run.tasks}, ${run.status}, ${run.note}`,
+    tooltip:     `${run.tasks}: ${run.status}\n${run.note}`,
+    children:    [],
+  }))
+}
+
+/** The Project section of the settings, which smith reads and writes per project. */
+function settingsRows (project: TreeNode): TreeNode[] {
+  const name = project.project ?? project.label
+
+  return [actionRow(project, 'settings', 'vscode.workspace-view.change-a-project-setting', 'monosmith.projectSettings', `smith config set -p ${name} <setting> <value>`, 'edit')]
 }
 
 /**

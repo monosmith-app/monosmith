@@ -1,3 +1,5 @@
 export { readReleasePreview } from './read-release-preview.use-case.ts'
+export { releaseChecks, type ReleaseCheck, type ReleaseFacts } from './release-checks.policy.ts'
 export { explanationLines, toReleaseRows } from './release-tree.mapper.ts'
 export type { ReleasePreview, ReleaseResult } from './release-report.contract.ts'
+export { showReleasePlan } from './show-release-plan.handler.ts'

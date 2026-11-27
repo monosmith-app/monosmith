@@ -1,6 +1,6 @@
 export { sayDoctor, summarizeDoctor, type DoctorSummary } from './doctor-report.mapper.ts'
 export { fixFinding, type FixFindingDeps, type FixFindingOutcome } from './fix-finding.use-case.ts'
-export { confirmFix, pickFixAnswer, tellFixOutcome } from './fix-finding-prompts.client.ts'
+export { confirmFix, pickFixAnswer, tellFixChecked, tellFixOutcome } from './fix-finding-prompts.client.ts'
 export { fixDoctor, type FixOutcome } from './fix-doctor.use-case.ts'
 export { parseFixPreview, type FixPreview } from './fix-preview.mapper.ts'
 export { toHealthRows } from './health-tree.mapper.ts'

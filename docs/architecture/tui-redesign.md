@@ -2,8 +2,9 @@
 
 Status: **built**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
 phase 4 (Projects), phase 5 (Runs), phase 6 (the palette and Health), phase 7 (Dependencies and
-Release) and phase 8 (Settings, the help and the dialogs) are built. What the redesign left open is
-listed in [Left open](#left-open).
+Release) and phase 8 (Settings, the help and the dialogs) are built. The VS Code extension has the
+same views ([VS Code as built](#vs-code-as-built)). What the redesign left open is listed in
+[Left open](#left-open).
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -461,6 +462,65 @@ Deviations from the brief and the screens:
 - The marks stay `×` and `▲` (see phase 2).
 - The VS Code extension and the JetBrains plugin are unchanged: their settings are their own forms.
 
+## VS Code as built
+
+The VS Code extension (`apps/vscode`) took the views of the redesign in the editor's own idiom:
+tree views in the MonoSmith side bar, the editor's theme colours (`charts.*`) and codicons, and
+the editor's dialogs, quick picks and pages. The JetBrains plugin follows in a later pull request.
+
+- The side bar holds the seven views in the order of the rail: Home, Projects, Runs, Health,
+  Dependencies, Release, Settings (`package.json` `contributes.views.monosmith`). Health left its
+  panel. Release Preview is named Release. Home and Projects show open; the others are collapsed
+  and show only when smith is ready.
+- Each view is a list view of the shared `list-view` slice, except Projects (`workspace-view`). The
+  rows are plain values made by a mapper per view (`home-view`, `runs-view`, `health`,
+  `dependencies`, `release-preview`, `settings-view`), and the mappers are tested. A row that does
+  something names the smith command it stands for in its description or its tooltip.
+- **Home** (`home-view`): the four boxes as rows, Needs you now (`homeQueue`, the rules of
+  `dashboard.Queue`) with each item's buttons as rows, and Start something. Doctor and the release
+  plan start in the background the first time Home shows. The texts are the terminal's catalogue
+  keys (`dashboard.*`), claimed in `libs/words/surface/vscode.json`.
+- **Projects**: the mark of the last run is the project's icon; the filter is `filterProject`
+  (the words of `projectlist.Matches`); the sections Tasks, Dependencies, Runs and Settings are rows
+  under the project, Tasks open.
+- **Runs** (`runs-view`): `createRunHistory` keeps 20 runs of the session from the event stream; a
+  run started from the editor opens there without the keyboard (`ListView.reveal`). The view shows
+  the progress bar of the editor while a run goes. Errors only is a title button with a context key.
+- **Health**: grouped by state, the project and file of each check (`fileOf`, the rule of
+  `doctorview.FileOf`), the fix in three steps: the review opens as a page beside the code, the
+  modal asks to apply, and doctor runs again and says whether the check passes now and that nothing
+  was committed.
+- **Dependencies**: the safe and major groups of `depsview`, the package detail as rows, and
+  marking as the tree's own multi-select. The updates are `smith deps up`, opened in a terminal
+  after a yes that shows the command.
+- **Release**: the plan, the detail of each package, the checks before release
+  (`releaseChecks`: Health and the tests of the session) and the three actions.
+- **Settings** (`settings-view`): Plugins, Architecture, Workspace, Recipes, Assistants, CI and
+  Forms. A setting row opens the guided `smith config set` on that setting
+  (`settingRowAnswers`), so the value is asked and the command is confirmed first.
+- **The palette**: `MonoSmith: Commands…` (`Ctrl+Alt+M P`) lists every command in the sections of
+  `commands.PaletteEntries`, each with its smith command line under its title. The line of each
+  command is in `command-palette/command-lines.config.ts`; a test fails when a command of
+  `package.json` has no entry there.
+
+Deviations, and what smith does not give the extension:
+
+- The branch check before a release is left out: `smith serve` gives no git facts (branch,
+  upstream, commits ahead), and the extension runs no git of its own.
+- The Plugins section cannot show which plugins are on: `plugins` (`smith plugin list --json`) has
+  no on/off field. A plugin row asks On or Off, each with its command.
+- The Cache column of Tasks, the cache reason of a task and the time estimate of a run are not
+  shown, as in the terminal (no reason in the run output, no history of task times).
+- The Run unfinished button of the terminal is not built: a run plan of the editor is tasks across
+  projects, not a list of task ids.
+- The remote cache item and the tab-completion item of the Home queue are not built: `smith serve`
+  has no method for the remote cache, and the extension offers tab completion as its own notice.
+- Style (the terminal's theme and symbols) has no section: VS Code uses its own theme.
+- The fix review opens as a page and the apply is a modal question. A tree view has no inline
+  detail, so the review cannot sit inside the view as in the terminal.
+- The keys of the terminal (`1`-`7`, `f`, `x`, `u`) are not bound. VS Code gives each view a
+  Focus command, which the palette lists under Go to.
+
 ## Left open
 
 What the redesign did not build, across the phases, for the owner to decide:
@@ -473,8 +533,8 @@ What the redesign did not build, across the phases, for the owner to decide:
 - The keys the screens change (`c` check again, `d` dry run, `Space` select several): one command keeps one key.
 - Unused exported symbols kept to avoid a major release: `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows`,
   `MinLogRows`, `releaseview.Model.Open`, and the side-detail functions of `settingsview` and `splitter`.
-- The VS Code extension and the JetBrains plugin follow none of the new layouts; only the Health name (phase 2)
-  reached them.
+- The VS Code extension follows the new views (see [VS Code as built](#vs-code-as-built)). The JetBrains plugin
+  follows none of the new layouts; only the Health name (phase 2) reached it.
 
 ## Screens
 

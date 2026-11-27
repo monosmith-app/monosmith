@@ -1,5 +1,5 @@
 export { readUpdates } from './read-updates.use-case.ts'
-export { pickArguments, updateArguments } from './update-arguments.policy.ts'
-export { toDependencyRows } from './updates-tree.mapper.ts'
+export { pickArguments, repairArguments, updateArguments } from './update-arguments.policy.ts'
+export { isRewritable, toDependencyRows } from './updates-tree.mapper.ts'
 export type { DependencyUpdate, ToolUpdate, UpdatesReport, UpdateSite } from './updates-report.contract.ts'
-export { runUp, updateDependency } from './dependencies.handler.ts'
+export { openRegistry, repairDependencies, runUp, updateDependency, updateSafe } from './dependencies.handler.ts'

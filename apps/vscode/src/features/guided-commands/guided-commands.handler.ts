@@ -6,6 +6,7 @@ import { toTextDocument } from '../derive-files/index.ts'
 import { describeFailure } from '../../shared/smith-run/index.ts'
 import { environmentAnswers } from './environment-answers.mapper.ts'
 import { projectRowAnswers } from './project-row-answers.mapper.ts'
+import { settingRowAnswers } from './setting-row-answers.mapper.ts'
 import type { GuidedCommand } from './guided-command.contract.ts'
 import { askGuidedStep, confirmGuided, tellDivergencesFailure, tellGuidedOutcome } from './guided-prompts.client.ts'
 import { parseWebApps } from './guided-sources.mapper.ts'
@@ -29,7 +30,7 @@ export async function guidedHere (host: CommandHost, showPage: (name: string, te
     show:      async (title, text) => { await showPage(`${spec.id}.md`, toTextDocument(title, text)) },
     confirm:   confirmGuided,
     askCommit: async () => await askCommitBox(spec.title),
-  }, { ...environmentAnswers(spec.id, argument), ...projectRowAnswers(spec.id, argument) })
+  }, { ...environmentAnswers(spec.id, argument), ...projectRowAnswers(spec.id, argument), ...settingRowAnswers(spec.id, argument) })
   host.report(spec.title, state, outcome)
   tellGuidedOutcome(spec.title, outcome, host.note)
   if (outcome.kind === 'done') await host.refreshFolder(state.root, 'full', false)

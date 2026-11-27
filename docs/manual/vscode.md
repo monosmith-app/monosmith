@@ -1,7 +1,7 @@
 # The MonoSmith VS Code extension
 
 The MonoSmith extension runs the tasks of a smith workspace from VS Code. It adds an
-activity-bar container with four views (Projects, Health, Dependencies, Release Preview),
+activity-bar container with the seven views of the terminal interface (Home, Projects, Runs, Health, Dependencies, Release, Settings), a list of every command with its smith command line,
 commands and keyboard shortcuts to run tasks, a `smith` task type with problem matchers, a
 status-bar item and a walkthrough. It does not carry smith: it starts the `smith` your team
 installed and talks to it with [`smith serve`](serve.md), so the editor, the terminal and
@@ -36,16 +36,44 @@ is ignored while the workspace is untrusted.
 
 ## Views
 
-All views are in the **MonoSmith** container of the activity bar. Health, Dependencies and
-Release Preview appear (collapsed) only when smith is ready.
+All views are in the **MonoSmith** container of the activity bar, with the names and the order
+of the terminal interface: **Home, Projects, Runs, Health, Dependencies, Release, Settings**.
+Home and Projects show open. The other views show collapsed, and only when smith is ready.
+Every row that does something names the smith command line it stands for, and every command
+that changes the workspace asks first and shows that command.
+
+### Home
+
+What needs you now, as the Home of the terminal shows it. The four boxes come first: **Changed**
+(the projects your changes affect), **Last run**, **Health** and **Release**. A click on a box
+opens its view. **Needs you now** follows: a failed run (See why, Run it again), checks that fail
+or warn (Fix, Open Health), changed projects (Test what changed, `smith run lint test
+--affected`), a release that is ready (Open Release) and the updates (Open Deps). A click on an
+item runs its first button. The buttons are the rows under the item, each with its smith
+command. When nothing asks for attention, the first item is **All good** with **Build all**.
+**Start something** ends the view: Build all, Lint all, Run a task…, Add a project, Compose a
+stack and Settings.
+
+Home reads nothing of its own. Doctor and the release plan start in the background the first
+time Home shows, as the terminal starts them with the shell. The updates stay "not looked at
+yet" until the Dependencies view opens, because that view asks the registries.
 
 ### Projects
 
 Apps, libs and packages with their language. A dot marks a project the changes affect (left
-out when every project is affected; the title then says `all N affected`). Under a project, its
-tasks, each with an icon for how it ended, how long it took, and a tooltip with the last result
-and whether it came from the cache. A multi-root workspace gets one section per folder that has
-a `smith.toml`.
+out when every project is affected; the title then says `all N affected`). The icon of a
+project is the mark of its last run: the worst state of its tasks (failed, running, passed).
+Before a run, the icon is the icon of its kind. A multi-root workspace gets one section per
+folder that has a `smith.toml`.
+
+Under a project are the four sections of the terminal's project detail:
+
+| Section | Holds |
+|---|---|
+| Tasks (open) | the tasks, each with an icon for how it ended, how long it took, and a tooltip with the last result and whether it came from the cache |
+| Dependencies | **Uses** and **Used by**, then **Install a package** (`smith install -p <project> <package>`) and **Unlink a library** |
+| Runs | the runs of this session that ran a task of the project; a click opens the run in Runs |
+| Settings | **Change a project setting** (`smith config set -p <project> <setting> <value>`) |
 
 When smith is not usable the view says why instead of staying empty, with buttons:
 
@@ -73,14 +101,40 @@ Row actions: on a task, **Run Task** (inline and context menu) and, when it has 
 Task Output**; on a project, group or folder, **Run All Tasks**; on a project, **Explain
 Project** and **Show Project Graph**. Enter on a row runs it (`Run Focused Task`).
 
-The filter narrows the view by project, task or language as you type; it is remembered per
-workspace.
+The filter narrows the view as you type, and it is remembered per workspace. It reads the
+words of the terminal's filter: `kind:<prefix>` (`kind:app`), `lang:<prefix>` (`lang:go`),
+`changed` (the projects the changes affect), and any part of a name, a kind, a language or a
+task. Every word must match.
+
+### Runs
+
+The runs you start from the editor open here, as a run started anywhere opens the Runs view of
+the terminal. The editor keeps the keyboard. The newest run is open: its state and its tasks
+(`Failed 4 tasks`), how far it is (`3/4 75%`) and how long it took. The command line is in the
+title and the tooltip. Under it are **All output** (the MonoSmith output channel) and the tasks
+grouped by project, each with its mark, its time, `hit` for a cached task, or the reason it did
+not pass. A click on a task opens its log as a document. A progress bar runs on the view while
+the run goes. **Runs this session** holds the older runs (smith keeps 20, in memory).
+
+Title-bar buttons: **Show Errors Only** / **Show All Tasks** (the terminal's `e`), **Re-run
+Last**, **Cancel Run** (while running) and **Show Output**.
 
 ### Health
 
-The checks of `smith doctor` that failed or warn, each with the problem and the remedy.
-**Fix Health Problems…** (shown when a fix exists) shows the changes smith proposes and
-applies them only after you agree. **Refresh Health** reads again.
+The checks of `smith doctor`, grouped by state as the terminal groups them: **Failed**, then
+**Warnings**, each heading with its count, then **Passed**, closed. Each check says its project
+(or `workspace`) and its file, and `fix` when smith can fix it. Under it are the problem, the
+remedy and the fix.
+
+The fix has the three steps of the terminal's inline fix (`1 Review ── 2 Apply ── 3 Check
+again`). A click on **Fix: …** asks the questions of the fix. Then smith's review opens beside the
+code, and the question asks whether to apply it. After the fix, doctor runs again and the
+message says whether the check passes now, that nothing was committed, and offers **Check
+again**. The **The same as** row shows the command for a terminal:
+`smith doctor --fix --only '<fix>'`.
+
+**Fix Health Problems…** (shown when a fix exists) shows the changes smith proposes and applies
+them only after you agree. **Refresh Health** reads again.
 
 When `[derive] enabled = true` is set in `smith.toml`, a **Derived files** row follows the
 checks. It says how many files are up to date, or lists each file that needs action with its
@@ -103,20 +157,53 @@ Each action names its effect and asks first. Commit the file together with `smit
 
 ### Dependencies
 
-What has a newer release, grouped patch, minor and major, and the tools smith pins.
-**Run smith up…** opens `smith up` in a terminal. **Update Dependency…** on a dependency asks
-first, then runs `smith up <name>` in a terminal. The editor never rewrites a manifest
-itself: smith has no method for it in the editor protocol.
+What has a newer release, in the two groups of the terminal: **Patch and minor releases**, safe
+to take together, and **Major releases**, to take one at a time. The title says the headline
+(`↑ 3 with newer releases · 1 patch · 1 minor · 1 major`). A row says the versions, the level and
+where the package is used. Under it is the package's detail: the versions, a warning for a
+major release, **Used by** (each file that declares it), **Declared as**, **Registry** (a click
+opens the page), **The same as** (`smith deps up <package>`, with `--major` for a major release)
+and **Update <package>**. The tools smith pins come last.
 
-### Release Preview
+**Update Dependency…** asks first and shows the command, then runs `smith deps up <names>` in a
+terminal. Select several rows (Ctrl or Shift and a click) to update them in one command, as the
+terminal's marked packages. **Update All Safe…** does the same for every patch and minor release.
+**Repair Dependencies…** opens `smith deps repair` in a terminal after a yes; smith asks there
+what to repair. **Run smith deps up…** opens the picker of `smith deps up`. The editor never
+rewrites a manifest itself: smith has no method for it in the editor protocol.
 
-What `smith release` would publish: each package with the version it moves to, why, its tag
-and the commits. It publishes nothing. **Refresh Release Preview** reads again.
+### Release
+
+What `smith release` would publish, as the terminal's Release view shows it. The title says
+`✓ 2 packages to release · 1 minor · 1 patch`. Each package has the version it moves to and,
+under it, why it releases, its changes (the commits), its tag and **The same as**
+(`smith release --dry-run --notes`). Then come the **Checks before release** (Health, the tests of
+this session, and the registry sign-in, which smith checks when you release), the note that
+nothing is published until you confirm, and the actions with their commands: **Release now**
+(`smith release`, which shows the plan and asks), **Dry run** and **Release notes** (each opens a
+page). **Refresh Release Preview** reads again.
 
 On a release channel (see [`smith release`](release.md)), the first row reads **Release channel
 `next`** and carries the notice of smith: the versions are prereleases, published under the
 channel tag, and the stable version stays the latest. The title of the view repeats it
 (`2 to release · channel next`), so nobody mistakes a prerelease line for the stable one.
+
+### Settings
+
+The sections of the terminal's Settings view. **Workspace** is open: every setting of
+`smith.toml` that `smith config list` knows, each with its value (`● on`, `○ off`, `○ not decided`
+for a switch with no value, `risky ▾` for a fixed set, or the default), its type, and in the
+tooltip what it does, why the default is what it is, and the command it stands for
+(`smith config set <setting> <value>`). A click opens **Change a Setting of smith.toml…** on that
+setting: the value is asked, and the confirmation shows the command before smith writes the
+file, as the command does. A set setting has **Reset to Default…** (`smith config unset`).
+
+**Plugins** lists the plugins; a click asks On or Off, each with its command, then the
+confirmation. **Recipes** lists the recipes of the workspace, with what is wrong with a file that
+is not a recipe; a click opens the file. **Architecture**, **Assistants**, **CI** and **Forms**
+open the matching guided commands. Per-project settings are in Projects, under a project, in
+Settings. The colour theme of the terminal (its Style section) has no place here: VS Code uses
+its own theme.
 
 ### Explain and graph pages
 
@@ -203,7 +290,7 @@ hidden there.
 | `monosmith.health.refresh` | Refresh Health | |
 | `monosmith.health.fix` | Fix Health Problems… | |
 | `monosmith.dependencies.refresh` | Refresh Dependencies | |
-| `monosmith.dependencies.up` | Run smith up… | |
+| `monosmith.dependencies.up` | Run smith deps up… | |
 | `monosmith.dependencies.update` | Update Dependency… | A row action; hidden from the palette. |
 | `monosmith.release.refresh` | Refresh Release Preview | |
 | `monosmith.addProject` | Add Project… | Quick picks, the plan of `smith add --dry-run`, then the add. |
@@ -216,6 +303,19 @@ hidden there.
 | `monosmith.derive.adopt` | Adopt Edit of Derived File | Same. |
 | `monosmith.derive.eject` | Eject Derived File (Own It) | Same. |
 | `monosmith.openWalkthrough` | Open Getting Started | Open the walkthrough. |
+| `monosmith.commands` | Commands… | Every command in one list, grouped as the terminal's palette (Start, Build, Projects, Dependencies, Release, Health, Go to, Help), each with the smith command line it runs under its title. |
+| `monosmith.buildAll` | Build All | `smith run build` in every project, after a yes. |
+| `monosmith.lintAll` | Lint All | `smith run lint` in every project, after a yes. |
+| `monosmith.testChanged` | Lint and Test What Changed | `smith run lint test --affected`. |
+| `monosmith.runs.open` | Open the Run | Show a run in the Runs view, the newest when none is given. |
+| `monosmith.runs.showLog` | Show the Log of This Task | A row action of Runs; hidden from the palette. |
+| `monosmith.runs.errorsOnly.on` / `.off` | Show Errors Only / Show All Tasks | Narrow the Runs view to the failed tasks, or widen it again. |
+| `monosmith.dependencies.updateSafe` | Update All Safe… | `smith deps up <every patch and minor release>` in a terminal, after a yes. |
+| `monosmith.dependencies.repair` | Repair Dependencies… | `smith deps repair` in a terminal, after a yes. |
+| `monosmith.release.dryRun` | Release Dry Run | The output of `smith release --dry-run` as a page. |
+| `monosmith.release.notes` | Release Notes | The output of `smith release --dry-run --notes` as a page. |
+| `monosmith.settings.refresh` | Refresh Settings | |
+| `monosmith.settings.change`, `.reset`, `.plugin`, `.openRecipe` | | Row actions of Settings; hidden from the palette. Change and reset open **Change a Setting of smith.toml…** and **Reset a Setting…** on that setting; the plugin row asks On or Off, each with its command, then the confirmation. |
 
 `Re-run Last`, `Cancel Run` and similar commands are enabled by the context keys
 `monosmith.hasLastRun` and `monosmith.running`; the palette shows the others only when
@@ -230,6 +330,7 @@ hidden there.
 | `Ctrl+Alt+M A` | Run Affected | ready |
 | `Ctrl+Alt+M R` | Re-run Last | ready, there is a last run, nothing is running |
 | `Ctrl+Alt+M C` | Cancel Run | a run is going |
+| `Ctrl+Alt+M P` | Commands… | ready |
 
 ## Status bar
 

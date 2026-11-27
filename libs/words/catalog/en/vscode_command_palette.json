@@ -1,0 +1,7 @@
+{
+  "vscode.command-palette.title": "MonoSmith: commands",
+  "vscode.command-palette.placeholder": "Type a command. Under each one is the smith command line it runs.",
+  "vscode.command-palette.go-to": "Go to {view}",
+  "vscode.command-palette.a-view": "A view of the MonoSmith side bar",
+  "vscode.command-palette.in-the-editor": "In the editor only: no smith command"
+}
