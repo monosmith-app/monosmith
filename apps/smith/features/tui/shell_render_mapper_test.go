@@ -254,8 +254,14 @@ func TestEveryPaneIsARoundedFrameWithItsTitleInTheTopBorder(t *testing.T) {
 			if lay.HasDetail() {
 				boxes = append(boxes, lay.Detail)
 			}
-			if lay.Rail.W > 0 {
-				boxes = append(boxes, lay.Rail)
+			if r := lay.Rail; r.W > 0 {
+				// The rail has no frame: a single rule runs down its last column.
+				for y := top; y <= bottom; y++ {
+					if c := []rune(lines[y])[r.X+r.W-1]; c != '│' {
+						t.Errorf("%s at %d: row %d of the rail has %q, not the rule", tc.name, w, y, c)
+						break
+					}
+				}
 			}
 			tees := map[int]bool{}
 			for _, j := range splitter.Junctions(sh.spots(), top, bottom) {

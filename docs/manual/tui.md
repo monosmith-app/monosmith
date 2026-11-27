@@ -44,19 +44,23 @@ From top to bottom:
    background with a 5 second timeout, so the screen never waits. There is no mark without a
    remote. At the right are the palette hint (`⌕ Type a command, project or task  Ctrl+K`,
    or `Ctrl+K commands` on a short row) and `smith <version>`.
-2. **The views.** From 100 columns a **rail** at the left, in a rounded frame titled
-   `Views`, lists Home, Projects, Runs, Health, Dependencies, Release and Settings, one per row
-   with a blank row between them. The open view has `▶` in the accent on the highlighted
-   row. Each row ends with the view's badge (`×2` failed checks, `▲2` warnings, `↑3`
+2. **The views.** From 100 columns a **rail** at the left, with the heading `Views` and
+   no frame, lists Home, Projects, Runs, Health, Dependencies, Release and Settings. Each
+   view has its key on one row and its name on the row under it, with a blank row between
+   views. A single line at the right of the rail separates it from the panels. The open
+   view has `▶` in the accent before its key, and both of its rows are highlighted. The key
+   row ends with the view's badge (`×2` failed checks, `▲2` warnings, `↑3`
    dependencies with newer releases, `✓2` packages ready to release, the run's result on
-   Runs, a spinner while the view loads) and its key. The rail is 24 columns wide and
-   cannot be resized. Under 100 columns a one-line **strip** under the title bar does the
+   Runs, a spinner while the view loads). On a short screen the blank rows go first, then
+   the key and the name share one row. The rail is 15 columns wide, enough for
+   `Dependencies` with a blank column on each side, and cannot be resized. Under 100 columns a one-line **strip** under the title bar does the
    same: `1 Home  2 Projects  3 Runs ×1  4 Health ×2  5 Deps …`, the open view in the accent, bold and
    underlined. When the names do not fit, they are shortened, then the strip scrolls with
    `‹` and `›`. A click on a row of the rail or a tab of the strip opens the view.
    Under the views the rail has the **Pinned** projects: `P` on Projects pins the selected
    project, and `P` again unpins it (the palette has `Pin the project to the rail`). Each pin
-   shows the mark of its last run, its name and its kind (`✓ web  app`), and a click on it opens
+   shows the mark of its last run, its name and, when it fits, its kind (`✓ web app`). A long
+   name is shortened with `…`. A click on a pin opens
    it in Projects. The pins are yours: smith keeps them by workspace in `tui.json` in the smith
    home, never in `smith.toml` or another file of the workspace. The strip of a narrow screen has
    no room for them.

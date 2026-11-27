@@ -10,7 +10,7 @@ func TestAt140ColumnsTheRailTheListAndTheDetailShareTheWidth(t *testing.T) {
 	if l.Rail.X != 0 || l.Rail.W != RailWidth || l.Main.X != RailWidth+1 {
 		t.Fatalf("the rail is %d columns at the left, then a blank column: %+v", RailWidth, l)
 	}
-	if l.Main.W+l.Detail.W != ContentWidth(140) || l.Main.X+l.Main.W != l.Detail.X || l.Detail.X+l.Detail.W != 140 || l.Detail.W != 46 {
+	if l.Main.W+l.Detail.W != ContentWidth(140) || l.Main.X+l.Main.W != l.Detail.X || l.Detail.X+l.Detail.W != 140 || l.Detail.W != 49 {
 		t.Fatalf("the frames must fill the content width: %+v", l)
 	}
 	// The title bar is the first row, a blank row parts it from the frames, and
@@ -47,7 +47,7 @@ func TestBelow100ColumnsThereIsOnlyOnePane(t *testing.T) {
 			t.Fatalf("width %d: %+v", w, l)
 		}
 	}
-	if l := Divide(100, 30, true); l.Mode != Wide || l.Detail.W != 38 || l.Main.W != 37 || l.Rail.W != RailWidth {
+	if l := Divide(100, 30, true); l.Mode != Wide || l.Detail.W != 38 || l.Main.W != 46 || l.Rail.W != RailWidth {
 		t.Fatalf("100 columns is the wide layout: %+v", l)
 	}
 }
@@ -70,7 +70,7 @@ func TestAreaAtFindsTheOwnerOfACell(t *testing.T) {
 		x, y int
 		want Area
 	}{
-		{5, 0, Header}, {5, 1, Nowhere}, {5, 2, Rail}, {24, 5, Nowhere}, {30, 2, Main}, {5, 38, Footer}, {5, 39, StatusBar}, {40, 5, Main}, {139, 5, Detail}, {200, 5, Nowhere},
+		{5, 0, Header}, {5, 1, Nowhere}, {5, 2, Rail}, {RailWidth, 5, Nowhere}, {30, 2, Main}, {5, 38, Footer}, {5, 39, StatusBar}, {40, 5, Main}, {139, 5, Detail}, {200, 5, Nowhere},
 	}
 	for _, c := range cases {
 		if got := l.AreaAt(c.x, c.y); got != c.want {
