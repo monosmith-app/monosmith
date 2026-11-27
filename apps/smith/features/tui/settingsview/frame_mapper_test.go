@@ -176,3 +176,18 @@ func TestThePanesFitTheirAreaAtTheScreenSizes(t *testing.T) {
 		}
 	}
 }
+
+func TestTheLineAboutASectionWrapsInANarrowPaneAndPushesTheRowsDown(t *testing.T) {
+	m := opened(t, sample()).Show(Forms)
+	lines := m.FieldsPane(plainTheme(), 26, 30, -1, -1)
+	if len(lines) != 30 {
+		t.Fatalf("%d lines", len(lines))
+	}
+	first, second := strings.TrimSpace(pane.Strip(lines[0])), strings.TrimSpace(pane.Strip(lines[1]))
+	if first+" "+second != "guided forms that run a smith command" {
+		t.Fatalf("the line about Forms wraps over two rows, got %q / %q", first, second)
+	}
+	if strings.TrimSpace(pane.Strip(lines[2])) != "Guided forms" {
+		t.Fatalf("the rows follow the wrapped line:\n%s", paneText(lines))
+	}
+}
