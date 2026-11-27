@@ -145,6 +145,8 @@ func (s *Shell) chooseDetail(i int) {
 // project, else the detail of the selection (the Run… menu of a project is one).
 func (s Shell) sideContent(w, h int) content {
 	switch {
+	case s.tab == commands.TabSettings && s.inWorkspace:
+		return s.settingsFields(w, h)
 	case s.projectPage():
 		return s.projectDetailContent(w, h)
 	case s.inlineFix() || s.fixedShown():

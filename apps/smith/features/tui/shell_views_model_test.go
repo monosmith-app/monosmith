@@ -205,7 +205,7 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 		l.keys("end") // the keys every view shares are last
 		l.has("? / F1", "Esc", "Mouse")
 		l.keys("?")
-		l.hasNot("Keyboard shortcuts")
+		l.hasNot("Keys · ")
 	}
 }
 

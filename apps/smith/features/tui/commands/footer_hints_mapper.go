@@ -84,14 +84,15 @@ func scopedLabel(c Command, s State) string {
 	if c.Kind != RunTask {
 		return c.Footer
 	}
+	n, counted := s.allCount(c.Task)
 	switch {
-	case c.All && s.Projects > 0:
-		return c.Footer + " " + strconv.Itoa(s.countFor(c.Task))
+	case c.All && counted:
+		return c.Footer + " " + strconv.Itoa(n)
 	case !c.All && c.ScopeInFooter && s.RunProject() != "":
 		return c.Footer + " " + ansi.Truncate(s.RunProject(), maxScopeName, "…")
-	case !c.All && c.ScopeInFooter && s.Projects > 0:
+	case !c.All && c.ScopeInFooter && counted:
 		// Off the Projects view the key runs on the whole workspace.
-		return words.Say("commands.footer.all", "label", c.Footer, "count", s.countFor(c.Task))
+		return words.Say("commands.footer.all", "label", c.Footer, "count", n)
 	}
 	return c.Footer
 }

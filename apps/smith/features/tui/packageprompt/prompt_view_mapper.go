@@ -132,7 +132,8 @@ func (p Prompt) Lines(th theme.Theme) []string {
 		case !p.remove && l == p.devLine():
 			l = focusable(l, focusDev)
 		case strings.HasPrefix(l, "  $ "):
-			l = choicerow.Cursor(th, false) + th.Bold(l)
+			// The command line that will run is dim, as in every dialog that runs one.
+			l = choicerow.Cursor(th, false) + th.Faint(l)
 		default:
 			l = choicerow.Cursor(th, false) + l
 		}

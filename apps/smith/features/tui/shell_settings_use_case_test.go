@@ -148,7 +148,7 @@ func TestTheSettingsTabIsTheLastOfTheStripAndKeySixOpensIt(t *testing.T) {
 	if l.sh().tab != commands.TabSettings {
 		t.Fatalf("on %q", l.sh().tab)
 	}
-	l.has("Sections", "Plugins", "Style", "Workspace", "Recipes", "Forms", "Built-in plugins", "[x] go", "[x] node", "+ Install a plugin", "smith plugin install <source>")
+	l.has("Per-project settings", "Plugins · smith.toml", "Plugins", "Style", "Workspace", "Recipes", "Forms", "Built-in plugins", "[x] go", "[x] node", "+ Install a plugin", "smith plugin install <source>")
 	footer := footerOf(l)
 	for _, want := range []string{"↑↓ move", "Enter change", "Tab list/sections", "r reload view", "1-7 views"} {
 		if !strings.Contains(footer, want) {
@@ -184,6 +184,14 @@ func TestChangingASettingInTheTabWritesWhatConfigSetWrites(t *testing.T) {
 	l.has("workspace.name", `"acme"`, "default")
 	l.walkTo(t, "ci.devcontainer")
 	l.press("space")
+	// A switch is a choice the person makes: nothing is written before Enter.
+	l.has("( ) On", "Off (the default)", "$ smith config set ci.devcontainer false")
+	if got := tomlOf(t, ws.dir); got != settingsToml {
+		t.Fatalf("opening the switch wrote smith.toml:\n%s", got)
+	}
+	l.press("up")
+	l.has("$ smith config set ci.devcontainer true")
+	l.press("enter")
 	l.has("ci.devcontainer = true")
 	want := cliTwin(t, configedit.Command(nil), "set", "ci.devcontainer", "true")
 	if got := tomlOf(t, ws.dir); got != want {
@@ -210,12 +218,16 @@ func (l *lab) walkTo(t *testing.T, text string) {
 	t.Fatalf("no row %q was ever selected:\n%s", text, l.view())
 }
 
-// selectedLine is the row the pointer of the right pane is on.
+// selectedLine is the row the pointer of the open section is on: in the frame
+// beside the sections on a wide screen, in the one frame on a narrow one.
 func (l *lab) selectedLine() string {
-	for _, line := range l.mainLines() {
-		// "sections │ options" inside the frame: the options are the second part.
-		if parts := strings.SplitN(line, "│", 3); len(parts) >= 2 && strings.HasPrefix(parts[1], " › ") {
-			return parts[1]
+	lines := l.mainLines()
+	if l.sh().lay().HasDetail() {
+		lines = l.inside(l.sh().detailInner())
+	}
+	for _, line := range lines {
+		if strings.HasPrefix(line, " › ") {
+			return line
 		}
 	}
 	return ""
@@ -454,5 +466,102 @@ func TestOnANarrowScreenSettingsKeepsItsDetailUnderTheRows(t *testing.T) {
 	}
 	l.keys("tab")
 	l.keys("down")
-	l.has("Sections")
+	// The open section has the box of the selected row under its rows.
+	l.has("‹ Settings / Plugins", "Enter or Space turns it on or off", "╭─ ")
+}
+
+func TestAWideSettingsScreenHasTheSectionsAndTheOpenSectionInTwoFrames(t *testing.T) {
+	l, _ := newSettingsLab(t, 150, 44)
+	l.press("7")
+	l.has("╭─ Settings ", "╭─ Plugins · smith.toml ", "▶ Plugins", "Per-project settings are in")
+	if l.sh().mainFocused() {
+		t.Fatal("the keyboard is in the open section: its frame is the focused one")
+	}
+	l.press("left", "down", "down", "down")
+	l.has("╭─ Workspace · smith.toml ")
+	if !l.sh().mainFocused() {
+		t.Fatal("on the sections the frame of the sections is the focused one")
+	}
+	l.press("enter")
+	l.has("Setting", "Value", "Default", "Type", "Writes smith.toml exactly as the command does.", "[Save (Enter)]")
+}
+
+func TestAClickInTheFrameOfTheOpenSectionSelectsARowAndADoubleClickEditsIt(t *testing.T) {
+	l, _ := newSettingsLab(t, 150, 44)
+	l.press("7", "left", "down", "down", "down", "enter")
+	x, y := l.find("workspace.name")
+	l.sendPatiently(click(x+1, y))
+	if !strings.Contains(l.selectedLine(), "workspace.name") {
+		t.Fatalf("the click selects the row: %q", l.selectedLine())
+	}
+	l.doubleClickPatiently(x+1, y)
+	if !l.sh().editing() {
+		t.Fatal("a double click opens the editor of the row")
+	}
+	l.has("╭─ workspace.name ", "Enter saves · Esc cancels")
+	l.send(letGo(x+1, y))
+	l.press("esc")
+	if l.sh().editing() {
+		t.Fatal("Esc closes the editor")
+	}
+	x, y = l.find("[Save (Enter)]")
+	l.sendPatiently(click(x+2, y))
+	if !l.sh().editing() {
+		t.Fatal("a click on Save opens the editor, as Enter does")
+	}
+}
+
+func TestOnANarrowScreenEnterOpensASectionEnterEditsAFieldAndEscGoesBack(t *testing.T) {
+	l, ws := newSettingsLab(t, 80, 30)
+	l.press("7")
+	l.has("╭─ Settings ", "▶ Plugins", "Workspace", "settings, ")
+	l.press("down", "down", "down", "enter")
+	l.has("╭─ ‹ Settings / Workspace ", "workspace.allowed_outputs")
+	l.walkTo(t, "release.branch")
+	l.press("enter")
+	if !l.sh().editing() {
+		t.Fatal("Enter on a field edits it")
+	}
+	l.press("esc")
+	if l.sh().editing() || tomlOf(t, ws.dir) != settingsToml {
+		t.Fatal("Esc closes the editor and writes nothing")
+	}
+	l.has("‹ Settings / Workspace")
+	l.press("esc")
+	l.has("╭─ Settings ", "▶ Workspace")
+	l.hasNot("‹ Settings /")
+}
+
+func TestTheSettingsScreensFitTheDesignSizes(t *testing.T) {
+	for _, sz := range [][2]int{{80, 30}, {120, 40}, {150, 44}} {
+		for name, keys := range map[string][]string{
+			"sections":  {"left"},
+			"workspace": {"left", "down", "down", "down", "enter"},
+			"editor":    {"left", "down", "down", "down", "enter", "enter"},
+			"help":      {"left", "down", "down", "down", "enter", "?"},
+		} {
+			l, _ := newSettingsLab(t, sz[0], sz[1])
+			l.press("7")
+			l.press(keys...)
+			lines := strings.Split(l.sh().View(), "\n")
+			if len(lines) != sz[1] {
+				t.Fatalf("%s at %v: %d lines", name, sz, len(lines))
+			}
+			for i, line := range lines {
+				if w := pane.Width(line); w != sz[0] {
+					t.Fatalf("%s at %v: line %d is %d cells wide: %q", name, sz, i, w, pane.Strip(line))
+				}
+			}
+		}
+	}
+}
+
+func TestTheNarrowStripSpellsSettingsInFullWithThreeBadges(t *testing.T) {
+	l, _ := newSettingsLab(t, 80, 30)
+	l.next = failingRun()
+	l.keys("b")
+	strip := l.lines()[l.sh().lay().Tabs.Y]
+	if !strings.Contains(strip, "×") || !strings.Contains(strip, "7 Settings") {
+		t.Fatalf("the strip shortens Settings: %q", strip)
+	}
 }

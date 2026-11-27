@@ -1,0 +1,12 @@
+{
+  "helppage.title": "Keys · {view}",
+  "helppage.title.unnamed": "Keys",
+  "helppage.scope.everywhere": "Everywhere",
+  "helppage.scope.view": "{view} view",
+  "helppage.scope.view.unnamed": "This view",
+  "helppage.note.commands": "Every action is a smith command: the status bar shows the last one that ran.",
+  "helppage.note.plain": "Plain mode (NO_COLOR or SMITH_THEME=plain) keeps every symbol, so no state is told by colour alone.",
+  "helppage.foot.find": "Find a command by name:",
+  "helppage.foot.scroll": "scroll",
+  "helppage.foot.close": "close"
+}

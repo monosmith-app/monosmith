@@ -352,7 +352,12 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 	for len(out) < r.H-4 {
 		out = append(out, row(""))
 	}
-	out = append(out, row(""))
+	if w.style.Command != "" && !w.inline {
+		// The row over the buttons says what the dialog stands for, dim.
+		out = append(out, row(th.Faint("$ "+w.style.Command)))
+	} else {
+		out = append(out, row(""))
+	}
 	line := ""
 	spans := w.spansIn(th, inner)
 	col := 0

@@ -90,7 +90,8 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	tail := c.tailLinesIn(th)
 	for i, l := range tail {
 		if i >= len(tail)-len(c.cmdLines) {
-			l = th.Bold(l)
+			// The command line that will run is dim, as in every dialog that runs one.
+			l = th.Faint(l)
 		}
 		rows = append(rows, row(l))
 	}

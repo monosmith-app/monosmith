@@ -29,6 +29,9 @@ func (s Shell) detailWidth() int {
 		// The list of projects needs little room; the sections of the detail
 		// (the table of tasks) take the rest.
 		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, projectsListMax))
+	case n == 0 && s.tab == commands.TabSettings && s.inWorkspace:
+		// The sections need a narrow frame; the settings of the open one take the rest.
+		return layout.ClampDetailWidth(cw, cw-layout.MinList)
 	case n == 0 && s.tab == commands.TabDoctor && s.inWorkspace && s.healthFixOpen():
 		// While a fix shows in the detail, its review and its steps take the room.
 		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, healthListMax))
@@ -73,8 +76,7 @@ func (s Shell) spots() []splitter.Spot {
 func (s Shell) dividers() []splitter.Spot {
 	var out []splitter.Spot
 	l := s.lay()
-	// Settings has dividers of its own: they come first, so the first key selects the one inside the tab.
-	if l.HasDetail() && s.tab != commands.TabSettings {
+	if l.HasDetail() {
 		out = append(out, splitter.DetailSpot(s.tab, l, s.w))
 	}
 	in := l.Main.Inner()
@@ -86,16 +88,6 @@ func (s Shell) dividers() []splitter.Spot {
 		if !g.narrow {
 			out = append(out, splitter.RunsTreeSpot(in, g.treeW, g.bodyTop, runsTreeMin, max(w-runsLogMin, runsTreeMin)))
 		}
-	case s.detailFull():
-	case s.tab == commands.TabSettings:
-		g := s.settings.WithSideDetail(l.HasDetail()).Geometry(in.W, in.H)
-		out = append(out, splitter.SettingsListSpot(in, g.ListW, g.ListMin, g.ListMax))
-		if g.SepRow >= 0 {
-			out = append(out, splitter.SettingsDetailSpot(in, g.ListW, g.SepRow, g.DetailRows, g.DetailMin, g.DetailMax))
-		}
-	}
-	if l.HasDetail() && s.tab == commands.TabSettings {
-		out = append(out, splitter.DetailSpot(s.tab, l, s.w))
 	}
 	return out
 }

@@ -99,7 +99,8 @@ func (m Model) Lines(th theme.Theme) []string {
 	tail := m.tailLines(inner)
 	for i, l := range tail {
 		if i >= 2 {
-			l = th.Bold(l)
+			// The command line that will run is dim, as in every dialog that runs one.
+			l = th.Faint(l)
 		}
 		rows = append(rows, row(l))
 	}

@@ -52,12 +52,14 @@ func look(p Props, t Tab, name string) string {
 func renderFlat(p Props) Strip {
 	th := p.Theme
 	avail := p.Width
-	short := shortened(th, p.Tabs, p.ShortenOrder, avail, func(inner int) int { return inner + gapW })
+	// Each tab is counted with the gap after it, and the last one draws none:
+	// the room has that gap more, so the names fit as far as they are drawn.
+	short := shortened(th, p.Tabs, p.ShortenOrder, avail+gapW, func(inner int) int { return inner + gapW })
 	widths := make([]int, len(p.Tabs))
 	for i, t := range p.Tabs {
 		widths[i] = t.planned(th, short[t.ID]) + gapW
 	}
-	start, end := window(widths, activeIndex(p), avail)
+	start, end := window(widths, activeIndex(p), avail+gapW)
 
 	var b strings.Builder
 	var spans []Span

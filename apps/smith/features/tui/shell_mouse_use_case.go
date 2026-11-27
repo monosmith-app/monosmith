@@ -271,6 +271,9 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		}
 	case layout.Detail:
 		in := s.detailInner()
+		if in.Contains(x, y) && s.tab == commands.TabSettings {
+			return s.settingsFieldsClick(in.W, in.H-s.toastRows(in.H), x-in.X, y-in.Y, double)
+		}
 		if in.Contains(x, y) {
 			// The click lands on the rows as they were drawn: the cursor mark of a detail
 			// that has the keyboard changes how its notes wrap. The keyboard moves after.
@@ -521,6 +524,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 // wheelSide scrolls what the right panel shows: the sections of a project, or
 // the detail.
 func (s *Shell) wheelSide(y, dir int) {
+	if s.tab == commands.TabSettings {
+		s.settings = s.settings.Wheel(dir)
+		return
+	}
 	if s.runShown() {
 		s.wheelRuns(s.mouseX, y, dir)
 		return

@@ -183,8 +183,15 @@ func (s Shell) mainContent(w, h int) content {
 			}
 		}
 	case commands.TabSettings:
+		// A wide screen lists the sections in this frame and the open section in
+		// the frame beside it; a narrow one shows one of them at a time.
 		in := s.mainInner()
-		c.lines = s.settings.WithSideDetail(s.lay().HasDetail()).Pulse(s.tick, s.settingsWaited()).View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
+		tab := s.settings.Pulse(s.tick, s.settingsWaited())
+		if s.lay().HasDetail() {
+			c.lines = tab.SectionsPane(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
+		} else {
+			c.lines = tab.Narrow(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
+		}
 	case commands.TabGuide:
 		broken := s.brokenConfigBanner(w)
 		banner := append(broken, s.adoptBanner(w)...)

@@ -1,6 +1,8 @@
 package settingsview
 
 import (
+	"fmt"
+
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"slices"
 	"strings"
@@ -139,6 +141,31 @@ func newChooser(st Setting) *editor {
 		now = st.Current[0]
 	}
 	if i := slices.Index(e.choices, now); i >= 0 {
+		e.current, e.at = i, i
+	}
+	return e
+}
+
+// newSwitch edits a switch as a presented choice: On and Off, and Not decided
+// (the setting left unset) for a switch with no default. The cursor starts on
+// what the switch is now; nothing is written until Enter saves the choice.
+func newSwitch(st Setting) *editor {
+	shown := st
+	shown.Choices = []Option{
+		{Value: words.Say("settingspage.switch.on"), Default: st.Default == "true"},
+		{Value: words.Say("settingspage.switch.off"), Default: st.Default == "false"},
+	}
+	choices := []string{"true", "false"}
+	if st.Default == "" {
+		shown.Choices = append([]Option{{Value: words.Say("settingspage.switch.undecided"), Description: words.Say("settingspage.switch.undecided.about")}}, shown.Choices...)
+		choices = append([]string{""}, choices...)
+	}
+	e := &editor{kind: editChoose, title: st.Path, about: st.Explanation, setting: shown, choices: choices, current: -1}
+	now := ""
+	if st.Set || st.Default != "" {
+		now = fmt.Sprint(boolValue(st))
+	}
+	if i := slices.Index(choices, now); i >= 0 {
 		e.current, e.at = i, i
 	}
 	return e
@@ -289,6 +316,15 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		case commands.NavConfirm:
 			e.err = ""
 			m.ed = &e
+			if e.choices[e.at] == "" {
+				// Not decided: the switch is left unset, which writes only when a value is there.
+				if !e.setting.Set {
+					m.ed = nil
+					return m, Result{}
+				}
+				m = m.begin(words.Say("settingsview.busy.resetting", "path", e.setting.Path), false)
+				return m, Result{Cmd: m.unsetSetting(e.setting.Path)}
+			}
 			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}

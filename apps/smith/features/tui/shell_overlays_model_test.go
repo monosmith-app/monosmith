@@ -118,7 +118,7 @@ func TestBehindAModalTheViewIsEmptiedSoNoHalfWordsShowAtItsEdges(t *testing.T) {
 	l.keys("f1")
 	// The list and the detail are gone; the tabs and the frame stay.
 	l.hasNot("apps/orders · app", "Last result")
-	l.has("Projects", "Keyboard shortcuts")
+	l.has("Projects", "Keys · ")
 	l.keys("esc")
 	l.has("apps/orders · app", "Last result")
 }
@@ -188,5 +188,54 @@ func TestAToastNeverCoversTheBorderOfADialog(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Every dialog is a rounded frame with its title in the top border, and Esc
+// closes it.
+func TestEveryDialogIsARoundedFrameTitledInItsBorderAndEscClosesIt(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		open  func(l *lab)
+		title string
+	}{
+		{"confirm", func(l *lab) { l.ask("upgrade") }, "╭─ Upgrade the workspace "},
+		{"help", func(l *lab) { l.keys("?") }, "╭─ Keys · Home "},
+		{"palette", func(l *lab) { l.keys("ctrl+k") }, "╭─ "},
+		{"deps repair", func(l *lab) {
+			(&repairFake{}).install(l)
+			l.openTab(commands.TabDeps)
+			l.keys("H")
+		}, "╭─ "},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			l := newHomeLab(t, 150, 44)
+			tc.open(l)
+			if !l.sh().modalOpen() {
+				t.Fatal("the dialog is open")
+			}
+			l.has(tc.title)
+			l.keys("esc")
+			if l.sh().modalOpen() {
+				t.Fatal("Esc closes the dialog")
+			}
+		})
+	}
+}
+
+// A dialog that runs a smith command shows its command line, dim.
+func TestADialogShowsTheCommandItRunsDim(t *testing.T) {
+	l := newHomeLab(t, 150, 44)
+	l.ask("upgrade")
+	if raw := l.sh().View(); !strings.Contains(raw, l.sh().th.Faint("  $ smith upgrade --yes")) {
+		t.Fatalf("the command line of the confirmation is not dim:\n%s", l.view())
+	}
+	l.keys("esc")
+	(&repairFake{}).install(l)
+	l.openTab(commands.TabDeps)
+	l.keys("H")
+	l.has("$ smith deps repair")
+	if raw := l.sh().View(); !strings.Contains(raw, l.sh().th.Faint("$ smith deps repair")) {
+		t.Fatal("the command line of the repair is not dim")
 	}
 }

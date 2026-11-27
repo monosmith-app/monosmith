@@ -71,3 +71,18 @@ func TestAnUnfixableSmithTomlKeepsTheOldMessage(t *testing.T) {
 		t.Errorf("the message changed: %q", got)
 	}
 }
+
+// The repair of smith.toml stays a dialog; it shows the doctor command that does the same, dim.
+func TestTheRepairDialogShowsTheDoctorCommandItStandsFor(t *testing.T) {
+	l, _ := repairLab(t)
+	l.sh().repair.Fix.Checks = []string{"smith.toml uses current keys"}
+	l.keys("enter")
+	l.has("$ smith doctor --fix --only 'smith.toml uses current keys'")
+	if raw := l.sh().View(); !strings.Contains(raw, l.sh().th.Faint("$ smith doctor --fix --only 'smith.toml uses current keys'")) {
+		t.Fatal("the command line is not dim")
+	}
+	l.keys("esc")
+	if l.sh().fix != nil {
+		t.Fatal("Esc closes the dialog")
+	}
+}

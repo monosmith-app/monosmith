@@ -38,6 +38,10 @@ type Style struct {
 	// option's label shows the text as it is typed. The caller reads it with
 	// Wizard.Text.
 	Input string
+	// Command is the smith command line the dialog does the work of
+	// ("smith deps repair"): the dialog shows it dim over its buttons, so the
+	// person can do the same in a terminal. "" shows none.
+	Command string
 }
 
 func (s Style) name() string {

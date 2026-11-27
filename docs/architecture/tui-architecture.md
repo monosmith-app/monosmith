@@ -56,7 +56,7 @@ flowchart TD
 | `tui/commands` | the keymap and everything computed from it: availability, footer hints, help rows, key labels, parsing a run request |
 | `tui/theme` | tokens (dark, light, plain), icons (Unicode, ASCII), the theme chosen from the environment |
 | `tui/layout`, `pane`, `tabs`, `footer`, `statusbar`, `toast`, `detail` | geometry and drawing of the pieces |
-| `tui/dialog`, `helpdialog`, `palette`, `guide` | the confirmation dialog, the shortcuts overlay, the command palette, guided forms |
+| `tui/dialog`, `helpdialog`, `palette`, `guide` | the confirmation dialog, the keys overlay (by scope: the open view, then everywhere), the command palette, guided forms |
 | `tui/dashboard`, `projectlist`, `projectpage`, `runview`, `logview`, `doctorview`, `depsview`, `releaseview` | the views |
 | `tui/fixwizard`, `tui/adoptwizard` | the doctor fix dialog and the adopt dialog |
 | `tui/composer` | the screen of `smith compose` and of the first question of `add` ("What are you building?"), over the catalogue of the `compose` slice ([ADR 0076](decisions/0076-one-composer-for-the-stack-of-a-project.md), [ADR 0078](decisions/0078-the-first-run-is-a-set-of-choices-not-a-manual.md)) |
@@ -183,7 +183,9 @@ The detail beside the list is the same panel for five tabs: the finding of Docto
 package of Deps (`depsview.Model.Detail`), the package of Release (`releaseview.Model.Detail`) and the option of Settings
 (`hasDetail`, `selectionPanel`). Only Projects and Doctor take the keyboard there (`beside`, `Tab`); in Deps, Release and
 Settings the panel scrolls with `Ctrl+U` `Ctrl+D` and the wheel. Below the wide layout Enter opens the detail of Deps and
-Release in the frame (`listWithDetailKey`), and Settings keeps its text under the list (`settingsview.WithSideDetail`).
+Release in the frame (`listWithDetailKey`). Settings draws both frames itself: `settingsview.SectionsPane` in the main
+frame and `FieldsPane` in the detail frame (`settingsFields`, `settingsFieldsClick`), or `Narrow` alone below the wide
+layout; the box of the selected row sits under its rows, so `WithSideDetail` and `DetailLines` are no longer used.
 The detail of a project has two parts (`shell_detail_split_mapper.go`): the facts, drawn at the top and never scrolled, and the
 actions, which scroll and keep `keepDetailCursorVisible` in the part under the rule. Deps filters with the chips of
 `depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from

@@ -159,3 +159,26 @@ func TestTinyWidthsDoNotPanic(t *testing.T) {
 		Render(props(w, "run"))
 	}
 }
+
+func TestSevenViewsWithThreeBadgesKeepTheirFullNamesAt80Columns(t *testing.T) {
+	views := []Tab{
+		{ID: "home", Label: "Home", Key: "1"},
+		{ID: "projects", Label: "Projects", Short: "Proj", Key: "2"},
+		{ID: "runs", Label: "Runs", Key: "3", Reserve: 3, Badge: "×1"},
+		{ID: "health", Label: "Health", Key: "4", Reserve: 3, Badge: "▲2"},
+		{ID: "deps", Label: "Deps", Key: "5", Reserve: 3, Badge: "↑3"},
+		{ID: "release", Label: "Release", Short: "Rel", Key: "6", Reserve: 3},
+		{ID: "settings", Label: "Settings", Short: "Sett", Key: "7"},
+	}
+	p := Props{Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), Tabs: views, Active: "home", Width: 80,
+		ShortenOrder: []string{"settings", "release", "projects"}}
+	got := plain(Render(p).Lines)[0]
+	if !strings.Contains(got, "7 Settings") || !strings.Contains(got, "2 Projects") || pane.Width(got) != 80 {
+		t.Fatalf("the last tab's gap is not drawn, so every name fits: %q", got)
+	}
+	views[5].Badge = "✓2"
+	p.Tabs = views
+	if got := plain(Render(p).Lines)[0]; !strings.Contains(got, "7 Settings") {
+		t.Fatalf("a fourth badge fits in the room kept for it: %q", got)
+	}
+}

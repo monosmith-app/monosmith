@@ -2,7 +2,6 @@ package settingsview
 
 import (
 	"errors"
-	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -175,13 +174,14 @@ func (m Model) activate() (Model, Result) {
 	return m, Result{}
 }
 
-// editSetting changes a setting the way its type asks: a switch flips, a
-// fixed list is ticked, one value of a fixed set is picked, anything else is typed.
+// editSetting opens the editor a setting's type asks for, so the change is a
+// choice the person makes and saves with Enter: a switch is On, Off or Not
+// decided, a fixed list is ticked, one value of a fixed set is picked, anything
+// else is typed.
 func (m Model) editSetting(st Setting) (Model, Result) {
 	switch {
 	case st.Type == "boolean":
-		m = m.begin(words.Say("settingsview.busy.saving", "path", st.Path), false)
-		return m, Result{Cmd: m.setSetting(st.Path, []string{fmt.Sprint(!boolValue(st))})}
+		m.ed = newSwitch(st)
 	case st.Type == "array" && len(st.Choices) > 0:
 		m.ed = newPicker(st)
 	case st.Type == "string" && len(st.Choices) > 0:

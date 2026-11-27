@@ -3,6 +3,8 @@ package settingsview
 import (
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 )
 
 var webRef = ProjectRef{Name: "web", Root: "apps/web", Language: "node", Kind: "app", Version: "1.2.0"}
@@ -103,9 +105,13 @@ func TestAProjectSettingIsWrittenAtItsPathAndTheSectionReadsItAgain(t *testing.T
 func TestAProjectSettingTheValidatorsRefuseShowsTheirMessageInTheEditor(t *testing.T) {
 	f, m := openedProject(t)
 	f.setErr = errTest("smith.toml: web and api all set bare_tags, but only one project can tag releases with the bare version")
-	m, _ = press(m, "down", "down", "enter") // bare_tags flips at once
-	if !strings.Contains(m.note, "only one project") {
-		t.Fatalf("note %q", m.note)
+	m, _ = press(m, "down", "down", "enter") // bare_tags: the switch is a choice
+	if !m.Modal() {
+		t.Fatal("Enter on a switch presents its choice")
+	}
+	m, _ = press(m, "down", "enter") // from Not decided to On, saved
+	if out := pane.Strip(strings.Join(m.ProjectPane(plainTheme(), 100, 30, -1, -1), "\n")); !m.Modal() || !strings.Contains(out, "only one project") {
+		t.Fatalf("the refusal shows in the open choice:\n%s", out)
 	}
 }
 

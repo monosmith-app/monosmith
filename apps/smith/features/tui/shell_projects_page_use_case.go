@@ -328,9 +328,12 @@ func (s Shell) projectReasons() map[string]string {
 
 // labels name, for the footer, what a key does now in place of its usual
 // words: Enter on Home names its action, Enter in the sections of a project
-// runs, opens or changes.
+// runs, opens or changes, and Enter on the list of Settings opens a section.
 func (s Shell) labels() map[string]string {
 	l := s.homeLabels()
+	if s.tab == commands.TabSettings && s.settings.OnSections() && !s.settings.Modal() {
+		return map[string]string{"settings.change": words.Say("commands.projects.detail-enter.footer.open")}
+	}
 	if !s.projectKeys() {
 		return l
 	}

@@ -39,3 +39,24 @@ func TestThePaletteListsTheSelectedProjectsOwnTasks(t *testing.T) {
 		}
 	}
 }
+
+func TestAnAllLabelShowsNoCountWhenNoProjectHasTheTask(t *testing.T) {
+	s := State{View: TabHome, InWorkspace: true, Projects: 4, TaskProjects: map[string]int{"build": 3}}
+	titles := map[string]string{}
+	for _, e := range PaletteEntries(s) {
+		titles[e.ID] = e.Title
+	}
+	if got := titles["run.lint-all"]; got != "Lint all" {
+		t.Errorf("no project lints: %q, want no count", got)
+	}
+	if got := titles["run.build-all"]; got != "Build all 3" {
+		t.Errorf("the other labels keep their count: %q", got)
+	}
+	build, _ := ByID("run.build-all")
+	if got := scopedLabel(build, State{Projects: 4, TaskProjects: map[string]int{}}); got != build.Footer {
+		t.Errorf("the footer shows no zero either: %q", got)
+	}
+	if got := scopedLabel(build, s); got != build.Footer+" 3" {
+		t.Errorf("the footer keeps a count above zero: %q", got)
+	}
+}

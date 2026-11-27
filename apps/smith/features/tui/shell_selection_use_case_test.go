@@ -159,8 +159,8 @@ func TestInSettingsADragFromTheSectionsNeverReachesTheDetail(t *testing.T) {
 	l.keys("7")
 	out := copying(l)
 	x, y := l.find("Recipes")
-	// Recipes, Assistants, CI, Forms: the drag ends on the last section.
-	l.send(click(x, y)).send(drag(130, y+3)).send(letGo(130, y+3))
+	// Recipes, Assistants, CI, Forms, a blank row between each: the drag ends on the last section.
+	l.send(click(x, y)).send(drag(130, y+6)).send(letGo(130, y+6))
 	got := l.copied(t, out)
 	if !strings.Contains(got, "Recipes") || !strings.Contains(got, "Forms") {
 		t.Fatalf("the sections are copied: %q", got)
@@ -172,15 +172,15 @@ func TestInSettingsADragFromTheSectionsNeverReachesTheDetail(t *testing.T) {
 	}
 }
 
-func TestInSettingsADragInTheDetailStaysAboveTheSeparator(t *testing.T) {
+func TestInSettingsADragInTheDetailStaysInItsFrame(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 30)
 	l.keys("7")
 	out := copying(l)
 	x, y := l.find("[x] go")
-	l.send(click(x, y)).send(drag(x+5, 27)).send(letGo(x+5, 27))
+	l.send(click(x, y)).send(drag(20, y+2)).send(letGo(20, y+2))
 	got := l.copied(t, out)
-	if strings.Contains(got, "support for a language") || strings.Contains(got, "Sections") {
-		t.Fatalf("the rows above the separator and the text below it are separate regions: %q", got)
+	if !strings.Contains(got, "go") || strings.Contains(got, "Per-project") || strings.Contains(got, "Workspace") {
+		t.Fatalf("the open section and the list of sections are separate frames: %q", got)
 	}
 }
 

@@ -67,15 +67,19 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 	case kindIcons:
 		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(iconsAbout[it.key]))
 	case kindSetting:
-		st := m.settingAt(it)
-		if st.Type == "boolean" {
-			// A switch shows its state as a box, then the word the file holds.
-			return "   " + pane.Cell(st.label(), m.pathWidth(w)) + choicerow.Box(boolValue(st), false) + " " + shownValue(th, st)
-		}
-		return "   " + pane.Cell(st.label(), m.pathWidth(w)) + shownValue(th, st)
+		return m.settingRow(th, m.settingAt(it), w)
 	case kindFact:
 		f := m.proj.Facts[it.idx]
-		return "   " + pane.Cell(f.Key, m.pathWidth(w)) + f.Value
+		pw := m.pathWidth(w)
+		cols := m.columns(w - 3 - pw)
+		row := "   " + pane.Cell(f.Key, pw) + pane.Cell(f.Value, cols[0])
+		if len(cols) > 1 {
+			row += pane.Cell(th.Muted(f.Source), cols[1])
+		}
+		if len(cols) > 2 {
+			row += th.Muted(words.Say("settingspage.type.fact"))
+		}
+		return row
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
 		if r.Error != "" {
@@ -91,6 +95,72 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "   " + choicerow.Box(m.upd.Muted, false) + " " + words.Say("settingsview.update.mute")
 	}
 	return ""
+}
+
+// settingRow is a setting as a row of the table: its name, what it is now (a
+// switch as ● on or ○ off, one of a fixed set with ▾), its default and its type,
+// as far as the width allows.
+func (m Model) settingRow(th theme.Theme, st Setting, w int) string {
+	pw := m.pathWidth(w)
+	cols := m.columns(w - 3 - pw)
+	row := "   " + pane.Cell(st.label(), pw) + pane.Cell(tableValue(th, st), cols[0])
+	if len(cols) > 1 {
+		def := st.Default
+		if def == "" {
+			def = words.Say("settingspage.value.undecided")
+		}
+		row += pane.Cell(th.Muted(def), cols[1])
+	}
+	if len(cols) > 2 {
+		row += th.Muted(typeName(st))
+	}
+	return row
+}
+
+// tableValue is the Value cell of a setting: a switch shows its state with the
+// mark of a radio, a value of a fixed set says it is picked from a list.
+func tableValue(th theme.Theme, st Setting) string {
+	switch {
+	case st.Type == "boolean" && !st.Set && st.Default == "":
+		return th.Muted(th.Icons.Queued + " " + words.Say("settingspage.value.undecided"))
+	case st.Type == "boolean" && boolValue(st):
+		v := th.Icons.Dot + " " + words.Say("settingsview.row.on")
+		if !st.Set {
+			return th.Muted(v)
+		}
+		return th.Success(v)
+	case st.Type == "boolean":
+		return th.Muted(th.Icons.Queued + " " + words.Say("settingsview.row.off"))
+	case st.Type == "string" && len(st.Choices) > 0:
+		return shownValue(th, st) + " " + th.Muted(th.Icons.Open)
+	}
+	return shownValue(th, st)
+}
+
+// typeName is the Type cell of a setting: switch, choice, list, number or text.
+func typeName(st Setting) string {
+	switch {
+	case st.Type == "boolean":
+		return words.Say("settingspage.type.switch")
+	case len(st.Choices) > 0 && st.Type == "array":
+		return words.Say("settingspage.type.ticks")
+	case len(st.Choices) > 0:
+		return words.Say("settingspage.type.choice")
+	case st.Type == "array":
+		return words.Say("settingspage.type.list")
+	case st.Type == "integer" || st.Type == "number":
+		return words.Say("settingspage.type.number")
+	}
+	return words.Say("settingspage.type.text")
+}
+
+// configLine is the command line that writes a setting with values, or that
+// resets it when values is empty: what Save runs, in this process.
+func configLine(path string, values []string) string {
+	if len(values) == 0 || (len(values) == 1 && values[0] == "") {
+		return "$ smith config unset " + path // words:literal
+	}
+	return "$ smith config set " + path + " " + strings.Join(values, " ") // words:literal
 }
 
 // pathWidth is the width of the setting names: the longest, up to half the pane.
@@ -141,8 +211,6 @@ func (m Model) emptyList(th theme.Theme, w int) []string {
 	}
 	return []string{"", " " + th.Muted(words.Say("settingsview.empty.list"))}
 }
-
-func (m Model) emptyDetail(th theme.Theme, w int) []string { return nil }
 
 // detail tells about the row: what it is, what it does, which key changes it.
 func (m Model) detail(th theme.Theme, it item, w int) []string {
@@ -233,7 +301,8 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		add(th.Muted(words.Say("settingsview.fact.source", "file", f.Source)))
 	case kindSetting:
 		st := m.settingAt(it)
-		add(th.Bold(st.Path)+th.Muted("  "+st.Type), st.Explanation)
+		// The box this sits in is titled by the path, and the table says the type.
+		add(st.Explanation)
 		if st.Default != "" {
 			add(th.Muted(words.Say("settingsview.setting.default")) + st.Default)
 		}
@@ -251,7 +320,8 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 			now += th.Muted(words.Say("settingsview.setting.isdefault"))
 		}
 		keys := enterKey(st) + resetTail(st)
-		add(th.Muted(words.Say("settingsview.setting.now"))+now, th.Muted(words.Say("settingsview.setting.command", "keys", keys, "path", st.Path)))
+		add(th.Muted(words.Say("settingsview.setting.now"))+now, th.Muted(keys))
+		add("", th.Faint(configLine(st.Path, nowValues(st))))
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
 		add(th.Bold(r.Path))
@@ -278,7 +348,6 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	rowOf = map[int]int{}
 	add := func(s string) { lines = append(lines, pane.Wrap(" "+s, max(w, 4), 1)...) }
 	lines = append(lines, "")
-	add(th.Bold(e.title))
 	if e.about != "" {
 		add(th.Muted(e.about))
 	}
@@ -356,6 +425,10 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 			keys = words.Say("settingsview.keys.more", "keys", keys)
 		}
 	}
+	if e.kind == editText || e.kind == editChoose || e.kind == editMulti {
+		// The command line the change stands for, as the person would type it.
+		lines = append(lines, "", " "+th.Faint(configLine(e.setting.Path, e.values())))
+	}
 	if e.err != "" {
 		lines = append(lines, "")
 		lines = append(lines, indent(pane.Wrap(th.Failure(e.err), max(w-2, 4), 0))...)
@@ -386,15 +459,13 @@ func optionText(th theme.Theme, o Option) string {
 	return label + th.Muted(" - "+hint)
 }
 
-// enterKey says what Enter does to a setting: a switch flips, a value of a fixed
-// set is picked, anything else is changed.
+// enterKey says what Enter does to a setting: a switch or a value of a fixed
+// set is picked from a list, anything else is changed.
 func enterKey(st Setting) string {
 	switch {
 	case st.Path == "cache.remote":
 		return words.Say("settingsview.setting.keys.cache-setup")
-	case st.Type == "boolean":
-		return words.Say("settingsview.setting.keys.flip")
-	case st.Type == "string" && len(st.Choices) > 0:
+	case st.Type == "boolean" || (st.Type == "string" && len(st.Choices) > 0):
 		return words.Say("settingsview.setting.keys.pick")
 	}
 	return words.Say("settingsview.setting.keys.change")
@@ -407,6 +478,21 @@ func resetTail(st Setting) string {
 		return ""
 	}
 	return words.Say("settingsview.setting.keys.reset")
+}
+
+// nowValues are the values a setting has now, for its command line: the ones
+// written, else its default.
+func nowValues(st Setting) []string {
+	if st.Set && len(st.Current) > 0 {
+		return st.Current
+	}
+	if st.Type == "boolean" && st.Default != "" {
+		return []string{st.Default}
+	}
+	if st.Set {
+		return []string{st.Value}
+	}
+	return []string{"<" + typeName(st) + ">"}
 }
 
 // shownValue is what a setting is now: the value written in smith.toml, or,

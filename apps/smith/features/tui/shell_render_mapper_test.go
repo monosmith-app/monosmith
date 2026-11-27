@@ -429,20 +429,22 @@ func TestInThePlainThemeTheDimmingIsTheFaintAttributeAndOnlyBehindAModal(t *test
 }
 
 func TestTheJunctionTakesTheColourOfItsDividerWhileItIsSelectedOrHeld(t *testing.T) {
-	l, _ := newSettingsLab(t, 140, 30)
-	l.keys("7")
+	l := newLab(t, true, 140, 30)
+	l.next = failingRun()
+	l.keys("b")
 	var sp splitter.Spot
 	for _, p := range l.sh().spots() {
-		if p.ID == splitter.SettingsListID {
+		if p.ID == splitter.RunsTreeID {
 			sp = p
 		}
 	}
 	if sp.ID == "" {
-		t.Fatal("Settings has a divider between its sections and its options")
+		t.Fatal("Runs has a divider between its tree and its log")
 	}
-	x, rule := sp.Hit.X, l.sh().lay().Main.Y
+	// The divider meets the bottom border of the frame in a tee.
+	x, rule := sp.Hit.X, l.sh().lay().Main.Y+l.sh().lay().Main.H-1
 	th := l.sh().th
-	rest, accent, active := th.Border("┬", true), th.Accent("┬"), th.ButtonActive("┬")
+	rest, accent, active := th.Border("┴", true), th.Accent("┴"), th.ButtonActive("┴")
 	cell := func() string { return cellAt(l.rawRow(rule), x) }
 	if cell() != rest {
 		t.Fatalf("at rest the tee is in the frame's colour: %q, want %q", cell(), rest)
@@ -458,11 +460,11 @@ func TestTheJunctionTakesTheColourOfItsDividerWhileItIsSelectedOrHeld(t *testing
 	if cell() != rest {
 		t.Fatalf("let go of by the keys: the tee returns to the frame's colour: %q", cell())
 	}
-	l.send(click(x, rule+4))
+	l.send(click(x, rule-4))
 	if cell() != active {
 		t.Fatalf("held: the tee is in the held colour: %q, want %q", cell(), active)
 	}
-	l.send(letGo(x, rule+4))
+	l.send(letGo(x, rule-4))
 	if cell() != rest {
 		t.Fatalf("released: the tee returns to the frame's colour: %q, want %q", cell(), rest)
 	}

@@ -65,11 +65,31 @@ func (s Shell) settingsRefusal(key string) string {
 	return ""
 }
 
-// settingsClick gives the tab a click at (x, y) of its body.
+// settingsClick gives the tab a click at (x, y) of its frame: the list of
+// sections on a wide screen, the sections or the open section on a narrow one.
 func (s *Shell) settingsClick(w, h, x, y int, double bool) tea.Cmd {
+	if s.lay().HasDetail() {
+		s.settings = s.settings.SectionsClick(w, h, y, double)
+		return nil
+	}
 	var res settingsview.Result
-	s.settings, res = s.settings.WithSideDetail(s.lay().HasDetail()).Click(w, h, x, y, double)
+	s.settings, res = s.settings.NarrowClick(w, h, x, y, double)
 	return s.settingsResult(res)
+}
+
+// settingsFieldsClick gives the open section, in the frame beside the list of
+// sections, a click at (x, y) of its body.
+func (s *Shell) settingsFieldsClick(w, h, x, y int, double bool) tea.Cmd {
+	var res settingsview.Result
+	s.settings, res = s.settings.FieldsClick(w, h, x, y, double)
+	return s.settingsResult(res)
+}
+
+// settingsFields is the open section drawn in the frame beside the list of
+// sections, w by h cells.
+func (s Shell) settingsFields(w, h int) content {
+	r := s.detailInner()
+	return content{lines: s.settings.Pulse(s.tick, s.settingsWaited()).FieldsPane(s.th, w, h, s.mouseX-r.X, s.mouseY-r.Y), hits: map[int]hit{}}
 }
 
 // settingsMsg takes what the tab's background work reports.
