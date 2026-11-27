@@ -81,13 +81,17 @@ func TestPlanInitShowsWhatMovesWhatIsCreatedAndWhatIsEditedWithADiff(t *testing.
 	text := out.String()
 	for _, want := range []string{
 		"Pipelines of yours", ".github/workflows/ci.yml.pre-smith",
-		"create  smith.toml", "create  .gitattributes", "create  .devcontainer/devcontainer.json",
+		"create  smith.toml", "create  .gitattributes",
 		"change  package.json", "+  \"workspaces\"", "change  .gitignore", "+node_modules/",
 		"change  .mcp.json",
 	} {
 		if !strings.Contains(text, want) {
 			t.Errorf("the plan lacks %q:\n%s", want, text)
 		}
+	}
+	// The dev container is off by default: adopting does not create it.
+	if strings.Contains(text, ".devcontainer/devcontainer.json") {
+		t.Errorf("the plan creates a dev container nobody asked for:\n%s", text)
 	}
 	// Skipping the agent and the line endings leaves both out of the plan.
 	c.Agent, c.Gitattributes = adoptdecision.AgentSkip, adoptdecision.GitattributesSkip

@@ -454,7 +454,7 @@ version `go.work` names and golangci-lint, the .NET 10 SDK, a JDK 21; actions
 are pinned to a major.
 Generated pipelines install smith at `[workspace] smith`, or else at the version that generated them.
 
-With `[ci] devcontainer = true` (which `smith new` sets), smith also writes
+With `[ci] devcontainer = true` (off by default; `smith new --devcontainer` sets it), smith also writes
 `.devcontainer/devcontainer.json`: a base image plus one dev container
 feature per toolchain, at the versions CI installs, and a post-create command
 that installs the same smith and runs `smith ci setup`. Like the pipelines, it

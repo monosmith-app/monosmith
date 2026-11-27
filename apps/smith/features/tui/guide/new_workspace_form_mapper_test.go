@@ -102,7 +102,7 @@ func TestCustomiseAsksTheSixQuestionsAndKeepsTheirDefaults(t *testing.T) {
 
 func TestTheDefaultsAreListedWithHowToChangeEachAndWhatCIMeans(t *testing.T) {
 	step := setupStep()
-	for _, want := range []string{"CI = where your tests run on every push", "CI: GitHub Actions", "language: decide later", "code layout: vertical-slices", "agent files: yes", "dev container: yes", "change it later", "smith still asks what the first commit holds"} {
+	for _, want := range []string{"CI = where your tests run on every push", "CI: GitHub Actions", "language: decide later", "code layout: vertical-slices", "agent files: yes", "dev container: no", "change it later", "smith still asks what the first commit holds"} {
 		if !strings.Contains(step.Note, want) {
 			t.Errorf("the defaults screen lacks %q:\n%s", want, step.Note)
 		}
