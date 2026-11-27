@@ -44,3 +44,15 @@ func TestWithoutAHomeNothingIsKept(t *testing.T) {
 		t.Fatal("saving with no home must say so")
 	}
 }
+
+func TestPinsAreKeptByWorkspace(t *testing.T) {
+	home := t.TempDir()
+	want := Preferences{Pins: map[string][]string{"/w/a": {"web", "kit"}, "/w/b": {"sdk"}}}
+	if err := Save(home, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(home)
+	if err != nil || !reflect.DeepEqual(got.Pins, want.Pins) {
+		t.Fatalf("%+v, %v", got, err)
+	}
+}

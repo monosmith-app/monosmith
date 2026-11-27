@@ -191,6 +191,17 @@ actions, which scroll and keep `keepDetailCursorVisible` in the part under the r
 `depsview.Filter`, drawn like the Doctor ones (`HeadlineSpans`). The pending version of a project is read from
 the plan of the Release tab (`pendingNext`), never computed again.
 
+The list of Projects keeps the projects picked with Space (`Shell.picked`) apart from its cursor. The
+shell gives them to the keymap as `State.Picked`, only on Projects, so the footer and the palette name the
+selection (`commands.scope.picked`) and a run key starts `Command.TaskArgvAcross`: one `smith run <task>` with a
+`-p` for each picked project. `projects.unselect` (Esc) has `NeedsPicked`, so it is out of the footer and of the
+key check while nothing is picked. The box of the selection is `shell_pick_box_mapper.go`.
+
+The Dependencies box (`shell_deps_buttons_mapper.go`) offers **Dry run (D)**, `deps.dry-run`, which runs
+`depsview.Model.DryRunArgv` (`smith deps up … --dry-run`); the action catalogue classifies `deps up --dry-run` as
+reading, so it runs without a confirmation. The detail's `One version` starts with `depsview.OneVersionLine`, read
+from `Row.Declared` (the spec of each declaration, filled from the update's sites).
+
 Views load lazily: Doctor, Deps and Release load on first open; Doctor also starts in the
 background when the shell opens, so the status bar shows its counts before any tab is visited.
 
@@ -244,6 +255,15 @@ typed. Full logs stay reachable: `Y` puts them on the clipboard, `m` turns mouse
 the terminal selects text with a plain drag, and `smith run ...` with the copied command line
 prints them in any terminal.
 
+The header's estimate is `shell_run_estimate_use_case.go`: `keepDurations` adds each passed task
+to `rundurations.History` (the last `rundurations.Keep` times per task) when a run ends and saves it
+with `Config.SaveDurations`, which `tui_handler.go` points at `rundurations.Save` in
+`session.LocalCacheDir`; `timeLeft` asks `rundurations.Estimate`. The search of the log is
+`shell_log_search_use_case.go` over the package `logsearch` (`Find`, `Highlight`) and
+`logview.Log.ShowRow`; `State.LogSearch` and `Command.NeedsLogSearch` keep `n`/`N` out of the way
+while there is no search. The cache miss reason comes from the run engine (`taskrun.missOf`, the
+`miss` of `task.finished`) through `runview.MissText` to `runview.Task.Miss`.
+
 ### runview reads events, and text as a fallback
 
 For a task run the shell starts the child with `--json-events`
@@ -288,6 +308,7 @@ before the terminal would ask.
 | Setting | Effect | Code |
 |---|---|---|
 | the choice saved in the Settings tab (`$SMITH_HOME/tui.json`: `theme`, `icons`) | tokens and symbols, under the variables below | `userprefs`, `theme.ChooseWith` |
+| the pinned projects (`$SMITH_HOME/tui.json`: `pins`, by workspace root) | the Pinned group of the rail | `userprefs.Preferences.Pins`, `pins_repository.go`, `rail.Pin` |
 | `NO_COLOR` (any value) | plain tokens | `theme.Choose` |
 | `SMITH_THEME=light\|dark\|plain` | forces tokens; `plain` also requests plain mode | `theme.Choose`, `screenreader.Plain` |
 | terminal background | decides light or dark when `SMITH_THEME` is unset | `theme/dark_background_policy.go` |

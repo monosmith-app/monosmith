@@ -20,7 +20,15 @@ func Load(open func() (*session.Session, error)) Result {
 	}
 	var out Result
 	for _, u := range report.Updates {
-		out.Rows = append(out.Rows, Row{Name: u.Name, Plugin: u.Plugin, Current: u.Current, Latest: u.Latest, Level: u.Level, Kinds: u.Kinds, Projects: u.Projects(), URL: u.URL})
+		declared := map[string]string{}
+		for _, site := range u.Sites {
+			if spec, ok := declared[site.Project]; ok && spec != site.Spec {
+				declared[site.Project] = spec + ", " + site.Spec
+				continue
+			}
+			declared[site.Project] = site.Spec
+		}
+		out.Rows = append(out.Rows, Row{Name: u.Name, Plugin: u.Plugin, Current: u.Current, Latest: u.Latest, Level: u.Level, Kinds: u.Kinds, Projects: u.Projects(), URL: u.URL, Declared: declared})
 	}
 	for _, f := range dependencies.CheckOneVersionPolicy(s) {
 		out.Policy = append(out.Policy, PolicyLine{Check: f.Check, OK: f.OK, Warning: f.Warning, Detail: f.Detail, Remedy: f.Remedy})

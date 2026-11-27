@@ -85,6 +85,26 @@ func (c Command) TaskArgv(project string) []string {
 	return argv
 }
 
+// TaskArgvAcross builds the command line a RunTask command starts on several
+// projects at once: smith run <task> -p a -p b, with --release for a release
+// build. With no project it is TaskArgv on every project.
+//
+// Parameters: projects are the names, in the order they are given.
+// Returns: the smith arguments.
+func (c Command) TaskArgvAcross(projects []string) []string {
+	if len(projects) == 0 {
+		return c.TaskArgv("")
+	}
+	argv := []string{"run", c.Task}
+	for _, p := range projects {
+		argv = append(argv, flagvocabulary.Arg("project"), p)
+	}
+	if c.Release {
+		argv = append(argv, flagvocabulary.Arg("release"))
+	}
+	return argv
+}
+
 // inlineProjects reads the "--project=a,b" form of the project flag (in any of
 // its spellings) and returns the names; nil when arg is not that form.
 func inlineProjects(arg string) []string {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/lintfix"
+	"github.com/monosmith-app/monosmith/apps/smith/features/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/features/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/features/taskgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/shared/marks"
@@ -35,6 +36,9 @@ type Result struct {
 	// Source is the tier that served a cached task: "local" or "remote".
 	// It is empty for a task that was not replayed.
 	Source taskcache.Source `json:"source,omitempty"`
+	// Miss is why a task that uses the cache ran instead of being restored;
+	// nil when that does not apply or the cache could not say.
+	Miss *runevents.Miss `json:"miss,omitempty"`
 }
 
 // Summary is the outcome of a run.

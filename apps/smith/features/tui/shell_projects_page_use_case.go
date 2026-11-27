@@ -46,7 +46,10 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 		}
 		s.focusSide()
 	case commands.NavCancel:
-		if s.list.Filter() != "" {
+		// Esc lets the picked projects go first, then clears the filter.
+		if len(s.picked) > 0 {
+			s.picked = nil
+		} else if s.list.Filter() != "" {
 			s.list = s.list.WithFilter("")
 		}
 	case commands.NavNext:
@@ -57,6 +60,8 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 			s.focusSide()
 		case "/":
 			s.filtering = true
+		case " ":
+			s.togglePick()
 		}
 	}
 	return nil
@@ -333,6 +338,10 @@ func (s Shell) labels() map[string]string {
 	l := s.homeLabels()
 	if s.tab == commands.TabSettings && s.settings.OnSections() && !s.settings.Modal() {
 		return map[string]string{"settings.change": words.Say("commands.projects.detail-enter.footer.open")}
+	}
+	if s.tab == commands.TabRuns && s.logQuery != "" {
+		// Esc clears the search of the log first.
+		return map[string]string{"run.all-output": words.Say("runpage.search.clear")}
 	}
 	if !s.projectKeys() {
 		return l

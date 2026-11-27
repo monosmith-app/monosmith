@@ -25,6 +25,9 @@ type Task struct {
 	Reason   string
 	// Remote is true for a cached task that the remote cache served.
 	Remote bool
+	// Miss says why a task that uses the cache ran instead of being restored
+	// ("2 files changed"); "" when smith did not say.
+	Miss string
 	// Log is what the task wrote.
 	Log []string
 	// order is the first-seen position, to keep the list stable.
@@ -105,6 +108,7 @@ func (r *Run) Feed(line string, now time.Time) Event {
 		}
 		t.Status, t.Duration, t.Reason = ev.Status, ev.Duration, ev.Text
 		t.Remote = ev.Status == Cached && ev.Remote
+		t.Miss = ev.Miss
 		if ev.Status == Cached {
 			t.Reason = ""
 			if t.Remote {

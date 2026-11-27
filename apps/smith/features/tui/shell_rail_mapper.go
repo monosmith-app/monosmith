@@ -1,7 +1,10 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/rail"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
@@ -25,6 +28,7 @@ func (s Shell) renderRail(hover string) rail.Rail {
 	}
 	return rail.Render(rail.Props{
 		Theme: s.th, Title: words.Say("tui.rail.title"), Views: s.railViews(),
+		PinnedTitle: words.Say("tui.rail.pinned"), Pinned: s.railPins(),
 		Active: s.tab, Hover: hover, Width: l.Rail.W, Height: l.Rail.H,
 	})
 }
@@ -38,4 +42,31 @@ func (s Shell) hoveredRail() string {
 		return ""
 	}
 	return s.railAt(s.mouseY)
+}
+
+// pinPrefix starts the id of a pinned project's row of the rail.
+const pinPrefix = "pin:"
+
+// railPins are the pinned projects that are in the workspace, in the order
+// they were pinned, each with how its tasks last ran and its kind. A pin of a
+// project that is gone is kept, but not drawn.
+func (s Shell) railPins() []rail.Pin {
+	var out []rail.Pin
+	for _, name := range s.pins {
+		p, ok := s.list.Project(name)
+		if !ok {
+			continue
+		}
+		out = append(out, rail.Pin{ID: pinPrefix + name, Mark: projectpage.Glyph(s.th, s.projectMark(name), s.tick), Label: name, Kind: p.Kind})
+	}
+	return out
+}
+
+// pinOf is the project of a pinned row's id, or "" for a view's id.
+func pinOf(id string) string {
+	name, _ := strings.CutPrefix(id, pinPrefix)
+	if name == id {
+		return ""
+	}
+	return name
 }

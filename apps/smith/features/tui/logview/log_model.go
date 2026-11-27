@@ -44,6 +44,21 @@ func (l Log) Page(dir, total, h int) Log { return l.Scroll(dir*max(h-1, 1), tota
 func (l Log) Home() Log { return Log{top: 0, paused: true} }
 func (l Log) End() Log  { return Log{} }
 
+// ShowRow scrolls so row is on screen: a row already shown keeps the view, any
+// other comes to the middle. The log then pauses unless it shows its end.
+//
+// Parameters: row is the row to show; total is the rows of the log; h the
+// rows of the view.
+// Returns: the scrolled log.
+func (l Log) ShowRow(row, total, h int) Log {
+	top := l.Top(total, h)
+	if row >= top && row < top+h {
+		return l
+	}
+	top = pane.ClampTop(row-h/2, total, h)
+	return Log{top: top, paused: top < max(total-h, 0)}
+}
+
 // Toggle pauses a following log where it is, or resumes following.
 func (l Log) Toggle(total, h int) Log {
 	if l.paused {

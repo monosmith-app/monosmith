@@ -331,6 +331,9 @@ func (s Shell) runsHead(w int) ([]string, map[int]hit) {
 	if took := progress.Elapsed(s.run.RunTime(s.now())); took != "" {
 		state += "  " + s.th.Muted(took)
 	}
+	if left, ok := s.timeLeft(); ok {
+		state += s.th.Muted(words.Say("runpage.estimate", "time", left))
+	}
 	var ctl []string
 	var ctlHits []hit
 	if row, spans, bw := s.runButtonRow(); pane.Width(state)+2+bw <= w {
@@ -607,9 +610,14 @@ func (s Shell) logColumn(g runsGeom, w int) []string {
 	if !s.log.Following() {
 		follow = words.Say("runpage.log.paused")
 	}
-	out := []string{pane.Fit(" "+s.th.Title(title)+"  "+s.th.Muted(follow), w)}
+	head := " " + s.th.Title(title) + "  " + s.th.Muted(follow)
+	rows := logview.Rows(s.th, s.logLines(), w-logPad)
+	if search := s.searchLine(rows); search != "" {
+		head += "  " + search
+	}
+	out := []string{pane.Fit(head, w)}
 	out = append(out, s.taskInfo(w)...)
-	for _, line := range s.log.Render(s.th, logview.Rows(s.th, s.logLines(), w-logPad), w-logPad, g.logRows) {
+	for _, line := range s.log.Render(s.th, s.litRows(rows), w-logPad, g.logRows) {
 		out = append(out, strings.Repeat(" ", logPad)+line)
 	}
 	return out
@@ -649,6 +657,12 @@ func (s Shell) taskInfo(w int) []string {
 	}
 	for _, part := range pane.Wrap(s.th.Muted(s.taskDetail(t, s.now())), max(w-2, 4), 0) {
 		out = append(out, pane.Fit(" "+part, w))
+	}
+	if t.Miss != "" && t.Status != runview.Cached {
+		// Why the cache did not answer, as smith why-miss would say it.
+		for _, part := range pane.Wrap(s.th.Muted(words.Say("runpage.log.miss", "why", t.Miss)), max(w-2, 4), 0) {
+			out = append(out, pane.Fit(" "+part, w))
+		}
 	}
 	return out
 }

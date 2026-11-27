@@ -1,0 +1,7 @@
+{
+  "dependencies.up.dry_run.head.one": "Dry run: {count} declaration would change.",
+  "dependencies.up.dry_run.head.other": "Dry run: {count} declarations would change.",
+  "dependencies.up.dry_run.site": "  {file}  {name}  {from} → {to}",
+  "dependencies.up.dry_run.install": "Then smith would install the new versions (--no-install leaves that out).",
+  "dependencies.up.dry_run.nothing": "Nothing was changed: run the same command without --dry-run to take the update."
+}

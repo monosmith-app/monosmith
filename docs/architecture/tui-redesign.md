@@ -4,7 +4,7 @@ Status: **built**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
 phase 4 (Projects), phase 5 (Runs), phase 6 (the palette and Health), phase 7 (Dependencies and
 Release) and phase 8 (Settings, the help and the dialogs) are built. The VS Code extension has the
 same views ([VS Code as built](#vs-code-as-built)). What the redesign left open is listed in
-[Left open](#left-open).
+[Left open](#left-open), and what was built of it since in [Follow-up as built](#follow-up-as-built).
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -462,6 +462,68 @@ Deviations from the brief and the screens:
 - The marks stay `×` and `▲` (see phase 2).
 - The VS Code extension and the JetBrains plugin are unchanged: their settings are their own forms.
 
+## Follow-up as built
+
+These items of the left-open list were built after phase 8.
+
+- Pinned projects (`rail.Props.Pinned`, `rail.Pin`): under the views, after a blank row, the muted bold heading
+  `Pinned`, a blank row when the rail has the room, then one row per pin: the mark of its last run, the name and the
+  kind, muted, at the right. A pin that does not fit is not drawn; a pin of a project that left the workspace is kept
+  but not drawn. `P` on Projects (`projects.pin`, also in the palette, `Unpin the project from the rail` while it is
+  pinned) pins or unpins the selected project; a click on a pin opens Projects on it and clears a filter that hides it.
+  The owner decided the pins are per person: they are in `tui.json` in the smith home (`userprefs.Preferences.Pins`,
+  by workspace root), never in `smith.toml` or a file git sees.
+- Multi-select on Projects: `Space` (`projects.select`) selects the row and moves down, `[x]` and `[ ]` boxes lead
+  every row while projects are selected, the count line starts with `N selected`, and a box over the legend lists
+  them with the buttons of their tasks and the dim command line (`$ smith run build -p a -p b`). The run keys and
+  the buttons run `smith run <task> -p a -p b` (`Command.TaskArgvAcross`), which opens in the Runs view. `Esc`
+  (`projects.unselect`, `NeedsPicked`) clears the selection before the filter. The new words are in
+  `libs/words/catalog/en/projects_pick.json`.
+
+- The time estimate of the Runs view: `· about 20s left` after the time while a run goes. The owner decided the
+  durations live only in the workspace's local cache, which git ignores (`<local cache>/tui-durations.json`,
+  `rundurations`), never in the remote cache. Each task keeps its last five passed times; the estimate is the
+  median of each task left, less what a running one spent, divided by the tasks running at once. A task with no
+  history gives no estimate.
+- The log search: `/` (`run.search`) types `Search: text▏  1 of 3` in the log's title, the matches are in the accent and
+  bold and the current one is also on the selected background, `n`/`N` (`run.search-next`) go round the matches and
+  scroll to them, `Esc` clears the search first.
+- The cache miss reason: the run engine now says why a task that uses the cache ran (`runevents.Miss`, the `miss`
+  field of `task.finished`: `no-entry`, `inputs-changed` with the count of files and the other kinds, `key-changed`,
+  `no-cache`). The Runs view shows `Cache miss: 2 files changed` over the log of the task, and the Tasks table of a
+  project `miss · 2 files changed`. The new words are in `libs/words/catalog/en/runs_follow_up.json`.
+
+- The dry run of Dependencies: `smith deps up` (and `smith up`) take `--dry-run` for an update, not only with `--align`.
+  It prints each declaration the update would rewrite (`apps/web/package.json  axios  ^1.6.0 → ^1.6.8`), whether it
+  would install, and that nothing changed; with no package named it is what `--yes` would take. The action catalogue
+  classifies it as reading. The Dependencies box has **Dry run (D)** (`deps.dry-run`, also in the palette) and its
+  command line, dim, under the one of the update; it runs at once and opens in the Runs view.
+- The per-package one-version line: the detail's `One version` starts with `✓ both use ^19.1.0` (`web uses …`, `all 3
+  use …`), or `▲ api ^1.5.0 · web ^1.6.0` in the warning colour when the projects differ, read from the declarations of
+  the update (`depsview.Row.Declared`). The workspace's policy lines follow it. The new words are in
+  `libs/words/catalog/en/deps_dry_run.json` and `dependencies_dry_run.json`.
+
+Deviations:
+
+- The dry run key is `D`: `d` opens Health everywhere and one command keeps one key. The screens' footer `o one version`
+  and `1-3 level` stay as they were (phase 7). The one-version line covers the packages with a newer release only: the
+  view lists no other package.
+- The estimate counts only passed tasks (a cached, failed or stopped one says nothing about how long it takes), and
+  it shares the work by the tasks running now, not by the parallelism smith may reach later.
+- The screens' `Errors only   Full log   / search` line is not drawn: `e` already filters the tree, and the search
+  shows in the title of the log. `n` and `N` come after `Esc back` in the footer, so a narrow footer drops them first;
+  the help lists them.
+- The cache line is over the log, with the task's facts, not under it: the bottom of the log is where it grows.
+  The screens' `in src/Orders since the last pass` is not said: the engine counts the files, it does not group
+  them by folder; `smith why-miss` (`w`) lists them.
+- The narrow strip has no Pinned group: it is one line. A narrow screen pins and unpins with `P`, and shows the pins
+  once it is wide.
+- The selection keeps the `[ ]`/`[x]` boxes of every pick list (the screens draw no mark for it), and it counts only
+  on Projects: on another view `b` still builds the selected project, so a key never runs projects the person cannot see.
+- A project without the task is passed on with `-p` too: `smith run` skips the projects that lack a task. The buttons
+  offer only the tasks one of the selected projects has.
+- The pin key is `P`: the screens draw no key for it, and `p` is taken by the project tasks (`package`).
+
 ## VS Code as built
 
 The VS Code extension (`apps/vscode`) took the views of the redesign in the editor's own idiom:
@@ -510,7 +572,7 @@ Deviations, and what smith does not give the extension:
 - The Plugins section cannot show which plugins are on: `plugins` (`smith plugin list --json`) has
   no on/off field. A plugin row asks On or Off, each with its command.
 - The Cache column of Tasks, the cache reason of a task and the time estimate of a run are not
-  shown, as in the terminal (no reason in the run output, no history of task times).
+  shown yet: the terminal got them after this pull request ([Follow-up as built](#follow-up-as-built)).
 - The Run unfinished button of the terminal is not built: a run plan of the editor is tasks across
   projects, not a list of task ids.
 - The remote cache item and the tab-completion item of the Home queue are not built: `smith serve`
@@ -526,11 +588,9 @@ Deviations, and what smith does not give the extension:
 What the redesign did not build, across the phases, for the owner to decide:
 
 - The marks `✗`, `⚠` and `⚡` the screens draw: `shared/marks` bans them (phases 2 to 8).
-- The pinned projects of the rail (phase 2), multi-select on Projects (phase 4), the time estimate, the log search
-  and the cache reason of the Runs view (phase 5), the Settings and Tasks groups of the palette and its command
-  editor (phase 6), the dry run of Dependencies and the per-package one-version line (phase 7), and the Workspace
-  filter of Settings (phase 8).
-- The keys the screens change (`c` check again, `d` dry run, `Space` select several): one command keeps one key.
+- The Settings and Tasks groups of the palette and its command
+  editor (phase 6), and the Workspace filter of Settings (phase 8).
+- The keys the screens change (`c` check again, `d` dry run): one command keeps one key.
 - Unused exported symbols kept to avoid a major release: `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows`,
   `MinLogRows`, `releaseview.Model.Open`, and the side-detail functions of `settingsview` and `splitter`.
 - The VS Code extension follows the new views (see [VS Code as built](#vs-code-as-built)). The JetBrains plugin

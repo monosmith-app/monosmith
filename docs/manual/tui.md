@@ -54,6 +54,12 @@ From top to bottom:
    same: `1 Home  2 Projects  3 Runs ×1  4 Health ×2  5 Deps …`, the open view in the accent, bold and
    underlined. When the names do not fit, they are shortened, then the strip scrolls with
    `‹` and `›`. A click on a row of the rail or a tab of the strip opens the view.
+   Under the views the rail has the **Pinned** projects: `P` on Projects pins the selected
+   project, and `P` again unpins it (the palette has `Pin the project to the rail`). Each pin
+   shows the mark of its last run, its name and its kind (`✓ web  app`), and a click on it opens
+   it in Projects. The pins are yours: smith keeps them by workspace in `tui.json` in the smith
+   home, never in `smith.toml` or another file of the workspace. The strip of a narrow screen has
+   no room for them.
 3. **The view.** Each pane is a rounded frame with its title in the top border: the view's
    name for the list, and what the detail tells about (the project, the check, the run) for
    the detail beside it. The frame that has the keyboard has the accent border. Projects,
@@ -87,7 +93,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | Projects | `2` | The projects grouped by kind, with a filter, and the detail of the selected project in four sections: Tasks, Dependencies, Runs and Settings (see [Projects](#projects)). |
 | Runs | `3` | The run going now, or one of the runs of this session: the header (what runs, the time, the progress bar and the counts), the tasks grouped by project and the log of the chosen task (see [The Runs view](#the-runs-view)). |
 | Health | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Health detail](#the-health-detail)); fixes open the fix wizard. |
-| Dependencies | `5` | The headline `↑ 3 with newer releases · 1 patch · 1 minor · 1 major` and how many are marked, then a row of chips, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), which limits the list to one level. The warning about major releases among the chosen packages shows under the chips, without scrolling. The list has two groups, each with its count, its column heading (Package, Now, Latest, Level, Used by) and a rule: `Patch and minor releases · 2 · safe to take together`, then `Major releases · 1 · may break your code, take one at a time`. A level has its mark: `●` patch, `●` minor, `▲` major. A box at the foot says what an update takes (`1 marked · axios 1.6.8 in 2 projects`, or with nothing marked the package under the cursor), the buttons **Update marked (u)** (or **Update <package> (u)**), **Update all safe (U)** and **Repair dependencies (H)**, and the `smith deps up` command line, dim. Each button asks before it changes anything. The detail beside the list tells the selected package: its versions and level, the projects that use it with their folders, how they declare it, its registry page ([Registry link](#the-registry-link-in-the-deps-view)), the one-version policy (`One version`) and `The same as $ smith deps up <package>`. On a narrow screen `Enter` (or a click on the selected row) opens that detail in the frame, `‹ Dependencies / <package>`, and `Esc` goes back. |
+| Dependencies | `5` | The headline `↑ 3 with newer releases · 1 patch · 1 minor · 1 major` and how many are marked, then a row of chips, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), which limits the list to one level. The warning about major releases among the chosen packages shows under the chips, without scrolling. The list has two groups, each with its count, its column heading (Package, Now, Latest, Level, Used by) and a rule: `Patch and minor releases · 2 · safe to take together`, then `Major releases · 1 · may break your code, take one at a time`. A level has its mark: `●` patch, `●` minor, `▲` major. A box at the foot says what an update takes (`1 marked · axios 1.6.8 in 2 projects`, or with nothing marked the package under the cursor), the buttons **Update marked (u)** (or **Update <package> (u)**), **Dry run (D)**, **Update all safe (U)** and **Repair dependencies (H)**, and the command lines of the update and of its dry run, dim (`$ smith deps up axios`, `$ smith deps up axios --dry-run`). Each button that changes something asks first; **Dry run** writes nothing, so it runs at once and its output (each declaration the update would rewrite) opens in the Runs view. The detail beside the list tells the selected package: its versions and level, the projects that use it with their folders, how they declare it, its registry page ([Registry link](#the-registry-link-in-the-deps-view)), `One version`: whether the projects declare the package at one version (`✓ both use ^19.1.0`, or `▲ api ^1.5.0 · web ^1.6.0` when they differ), then the workspace's one-version policy, and `The same as $ smith deps up <package>`. On a narrow screen `Enter` (or a click on the selected row) opens that detail in the frame, `‹ Dependencies / <package>`, and `Esc` goes back. |
 | Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)): the headline `✓ 2 packages to release · 1 minor · 1 patch · from main`, then the table Package, Now, Next, Bump and Why, and the packages that do not change. Under it the box **Checks before release** (Health, the last test run of the session, the branch, and the registry sign-in that `smith release --rehearse` checks), `Nothing is published until you confirm the plan.`, the buttons `Release now (x)`, `Dry run (p)` and `Release notes (n)`, and their command lines, dim. The detail beside the plan tells the selected package: its bump, why it releases, the commits behind the bump, its tag and `The same as $ smith release --dry-run --notes`. On a narrow screen `Enter` (or a click on the selected row) opens it in the frame, `‹ Release / kit 1.3.2 → 1.4.0`, and `Esc` goes back. While a dry run shows its output, the checks leave their room to it. On a release channel branch the view says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; what the selected row is and does is in the detail beside the list (under the list on a narrow screen); see [Settings](#settings). |
 
@@ -190,7 +196,18 @@ has the mark of the last run of the project in this session (`✓` passed, `×` 
 `»` skipped, `⊘` stopped, a spinner while it runs), the name, the language (and the kind and the
 version when the list has the room) muted, and `● changed` in the accent when the current
 changes touch it. The selected row has `▶` and the Highlight background, its name in the accent
-and bold. The last line is the legend of the marks. The keys of the whole workspace (`a` add a
+and bold. The last line is the legend of the marks.
+
+**Several projects at once.** `Space` selects the project under the cursor and moves down, and
+`Space` on a selected project clears it. While projects are selected, each row starts with its box
+(`[x]` or `[ ]`), the count line starts with `2 selected`, and a box over the legend names them,
+with a button for each task that one of them has (`Build (b)`, `Test (t)`, `Lint (l)`,
+`Typecheck (c)`) and the command line, dim: `$ smith run build -p orders -p web`. The keys `b`, `t`,
+`l`, `c` and `Ctrl+B` then run on every selected project in one run, which opens in the Runs view;
+the footer says `b build 2 selected`. `Esc` clears the selection (a second `Esc` clears the filter).
+The selection counts only on Projects: on another view the run keys act on the selected project.
+
+The keys of the whole workspace (`a` add a
 project, `V` verify, `B` `T` `L` `C` build, test, lint and typecheck every project) are in the
 footer and in the palette.
 
@@ -217,7 +234,7 @@ is in the accent, bold and underlined. `Tab`, the side arrows or a click change 
   [Settings](#settings)): the values that the manifest owns, read-only, then the settings of the
   project with the same editors as the Workspace section.
 
-The footer follows the keyboard. On the list it is `Tab detail • / filter • R run… • b build orders • …`
+The footer follows the keyboard. On the list it is `Tab detail • / filter • Space select • R run… • b build orders • …`
 (a narrow screen has `Enter detail`); in the detail it is `Tab section • Enter run • Esc back • R run… • …`.
 
 
@@ -284,7 +301,8 @@ opens it. Its frame is titled `Run · smith run test -p orders` (`‹ Runs / smi
 orders` on a narrow screen). From the top it has:
 
 - the header: a spinner (or the mark of how it ended), what runs (`Running 18 tasks`,
-  `Failed 4 tasks`) and the time, with the buttons at the right: `Back (Esc)`,
+  `Failed 4 tasks`) and the time, then, while it runs, `· about 20s left` when every task left
+  ran before (see below), with the buttons at the right: `Back (Esc)`,
   `Stop (Ctrl+C)` (faint once nothing runs), `Run again (r)`, `Run unfinished (R)` (only when
   a task did not finish), `Copy log (Y)` and `+ (Z)`, which fills the terminal;
 - the line `run 2 of 5 · ‹ older  newer ›` when the session has more than one run (the keys
@@ -295,7 +313,21 @@ orders` on a narrow screen). From the top it has:
   project and its tasks under `├─` and `└─`, each with its mark, its time and `hit` or
   `remote` when the cache gave it), and at the right the log of the chosen task under its
   title, which says if it follows or is paused, the command the task ran and its state,
-  time and reason. Drag the line between them to resize them.
+  time and reason. A task that uses the cache and ran says why the cache did not answer:
+  `Cache miss: 2 files changed` (or `no entry yet`, `the command changed`, `the key changed`,
+  `the cache was off (--no-cache)`); the Tasks of a project say `miss · 2 files changed`. Drag the
+  line between them to resize them.
+
+**The time left.** smith keeps how long each task took when it passed, the last five times,
+in `tui-durations.json` in the workspace's local cache folder (`.smith/cache`, which git
+ignores; never the remote cache). While a run goes, the header adds `· about 20s left`: the
+typical time of each task left, less what a running task already spent, shared by the tasks
+that run at once. A task that never passed before gives no estimate, so the line is left out.
+
+**Search the log.** `/` types a search over the log shown: `Search: panic▏  1 of 3` in its title,
+each match in the accent and bold, the one you are on also on the selected background. `Enter`
+keeps the search, `n` goes to the next match and `N` to the one before, round the end, and the log
+scrolls to it. `Esc` clears the search (then it shows all output, then goes back).
 
 Under the tasks, **Runs this session** lists the runs smith kept (the newest first, at most
 five rows): a click opens one. smith keeps the runs of this session only, in memory; they go
@@ -364,6 +396,7 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Deps | `Space` | Mark or unmark a dependency. |
 | Deps | `e`, `p`, `n`, `M` | Show every release, only the patch, only the minor or only the major ones (the chips at the top). Marks stay when the filter changes; the box in the heading marks the rows shown, or unmarks them when all are marked. |
 | Deps | `u` | Update the marked ones, or the package under the cursor when none is marked (`smith deps up`), after a confirmation that shows the command. The **Update** button in the box under the list does the same. |
+| Deps | `D` | Dry run: what `u` would change, written nowhere (`smith deps up <packages> --dry-run`). It needs no confirmation; the output opens in the Runs view. The **Dry run** button does the same. |
 | Deps | `Enter`, `Esc` | On a narrow screen, open the package under the cursor in the frame (`‹ Dependencies / <package>`) and go back. Beside the detail `Enter` does nothing: the detail shows the package already. |
 | Deps | `g` | Open the registry page of the package under the cursor in your browser, and copy the link. It does nothing when no page is known. |
 | Deps | `Y` | Copy the registry link of the package under the cursor. |

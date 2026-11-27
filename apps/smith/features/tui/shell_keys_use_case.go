@@ -40,6 +40,7 @@ func mouseHelp() []string {
 // letters (t, f, u) are its own.
 func (s Shell) editing() bool {
 	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Modal()) ||
+		(s.tab == commands.TabRuns && s.logTyping) ||
 		(s.tab == commands.TabProjects && (s.filtering || (s.projectKeys() && s.projSection == projectpage.Settings)))
 }
 
@@ -102,6 +103,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 			s.quit = true
 		}
 		return nil
+	}
+	if s.logTyping && s.tab == commands.TabRuns {
+		// The search line of the log has the keyboard: every key types or ends it.
+		return s.logSearchKey(msg)
 	}
 	if s.filtering && s.tab == commands.TabProjects {
 		// The filter line has the keyboard: every key types or ends it.
@@ -356,6 +361,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.openProjectSettings()
 	case "run-menu":
 		s.openRunMenu()
+	case "pin":
+		s.togglePin(project)
 	case "open-folder":
 		return s.openProjectFolder()
 	case "graph":
@@ -378,6 +385,11 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		s.say(words.Say("tui.keys.this_check_has_no_fix_its"))
 	case "deps-up":
 		if argv := s.deps.UpArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say(words.Say("tui.keys.no_dependency_to_update"))
+	case "deps-dry-run":
+		if argv := s.deps.DryRunArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say(words.Say("tui.keys.no_dependency_to_update"))
@@ -452,7 +464,12 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Execute:
 		return s.execute(c.Argv, false)
 	case commands.RunTask:
-		project := s.state().RunProject()
+		st := s.state()
+		if !c.All && len(st.Picked) > 0 {
+			// The picked projects of the list run together: one smith run with a -p for each.
+			return s.execute(c.TaskArgvAcross(st.Picked), false)
+		}
+		project := st.RunProject()
 		if c.All {
 			project = ""
 		}
@@ -825,6 +842,22 @@ func (s *Shell) runKey(name string) tea.Cmd {
 		return nil
 	}
 	onLog := narrow && s.runOnLog
+	switch name {
+	case "/":
+		s.logTyping = true
+		if narrow {
+			s.runOnLog = true
+		}
+		return nil
+	case "n", "N": // words:literal
+		s.stepMatch(map[string]int{"n": 1, "N": -1}[name]) // words:literal
+		return nil
+	}
+	if commands.NavNamed(name) == commands.NavCancel && s.logQuery != "" {
+		// Esc clears the search before it shows all output or goes back.
+		s.logQuery, s.logAt = "", 0
+		return nil
+	}
 	switch commands.NavNamed(name) {
 	case commands.NavUp:
 		if onLog {

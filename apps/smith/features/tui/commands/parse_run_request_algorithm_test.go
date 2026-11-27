@@ -70,3 +70,20 @@ func TestThePaletteOffersTheReleaseBuild(t *testing.T) {
 		t.Errorf("the selected project: %q", projects["run.build-release"])
 	}
 }
+
+func TestARunAcrossProjectsNamesEachWithItsOwnFlag(t *testing.T) {
+	build, _ := ByID("run.build")
+	if got := build.TaskArgvAcross([]string{"web", "kit"}); !reflect.DeepEqual(got, []string{"run", "build", "-p", "web", "-p", "kit"}) {
+		t.Fatalf("%v", got)
+	}
+	release, _ := ByID("run.build-release")
+	if got := release.TaskArgvAcross([]string{"web"}); !reflect.DeepEqual(got, []string{"run", "build", "-p", "web", "--release"}) {
+		t.Fatalf("%v", got)
+	}
+	if got := build.TaskArgvAcross(nil); !reflect.DeepEqual(got, build.TaskArgv("")) {
+		t.Fatalf("no project is every project: %v", got)
+	}
+	if req, ok := ParseRun(build.TaskArgvAcross([]string{"web", "kit"})); !ok || !reflect.DeepEqual(req.Projects, []string{"web", "kit"}) {
+		t.Fatalf("the line reads back: %+v", req)
+	}
+}

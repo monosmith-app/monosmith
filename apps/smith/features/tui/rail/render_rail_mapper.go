@@ -11,7 +11,9 @@ import (
 // rail is too short for them). The open view has the mark "▶ " in the accent,
 // in bold, and its row is on the Highlight background; the view under the
 // pointer is on the hover background. Each row ends with the view's badge and
-// its key.
+// its key. Under the views, after a blank row, come the pinned projects under
+// their muted bold heading: each one with its mark, its name and its kind, as
+// many as the rail has rows for.
 //
 // Parameters: p is what the rail is drawn from.
 // Returns: the rail, exactly p.Height lines of p.Width cells, and the view of
@@ -36,6 +38,7 @@ func Render(p Props) Rail {
 		body[y] = row(p, v, inner)
 		out.Rows[y+1] = v.ID
 	}
+	pinned(p, body, out.Rows, len(p.Views)*step, step, inner)
 	out.Lines = pane.Frame(p.Theme, p.Title, body, p.Width, p.Height, false)
 	return out
 }
@@ -63,4 +66,39 @@ func row(p Props, v View, inner int) string {
 		line = th.RowHover(line)
 	}
 	return " " + line + " "
+}
+
+// pinned draws the heading and the pinned projects into body from line from
+// on: a blank line, the heading, a blank line when step leaves room for it,
+// then one project per line while lines are left.
+func pinned(p Props, body []string, rows map[int]string, from, step, inner int) {
+	if len(p.Pinned) == 0 {
+		return
+	}
+	th := p.Theme
+	y := from + 1
+	if step == 1 {
+		y = from
+	}
+	if y >= len(body)-1 {
+		return
+	}
+	body[y] = " " + pane.Fit(th.Muted(th.Bold(pane.CutEllipsis(p.PinnedTitle, max(inner-2, 1)))), max(inner-2, 0)) + " "
+	y += step
+	for _, pin := range p.Pinned {
+		if y >= len(body) {
+			return
+		}
+		room := max(inner-2, 0)
+		kind := th.Muted(pin.Kind)
+		left := pin.Mark + " " + pane.CutEllipsis(pin.Label, max(room-pane.Width(pin.Mark)-pane.Width(pin.Kind)-2, 1))
+		gap := max(room-pane.Width(left)-pane.Width(pin.Kind), 1)
+		line := pane.Fit(left+strings.Repeat(" ", gap)+kind, room)
+		if pin.ID == p.Hover {
+			line = th.RowHover(line)
+		}
+		body[y] = " " + line + " "
+		rows[y+1] = pin.ID
+		y++
+	}
 }

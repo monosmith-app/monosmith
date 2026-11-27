@@ -261,6 +261,9 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		return s.tabClick(x)
 	case layout.Rail:
 		if id := s.railAt(y); id != "" {
+			if name := pinOf(id); name != "" {
+				return s.openPinned(name)
+			}
 			return s.gotoTab(id)
 		}
 		return nil

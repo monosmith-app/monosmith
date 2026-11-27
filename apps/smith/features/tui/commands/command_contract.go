@@ -157,6 +157,12 @@ type Command struct {
 	Yields bool
 	// NeedsContent hides the command in a folder that holds nothing, where there is nothing for it to work on.
 	NeedsContent bool
+	// NeedsPicked makes the command work only while projects are picked in the
+	// list of Projects (State.Picked).
+	NeedsPicked bool
+	// NeedsLogSearch makes the command work only while the log of the Runs view
+	// has a search (State.LogSearch).
+	NeedsLogSearch bool
 }
 
 // State is what decides whether a command is available.
@@ -187,6 +193,9 @@ type State struct {
 	// TaskSelected is true when the run panel shows the log of one task: Esc then
 	// goes back to all output.
 	TaskSelected bool
+	// LogSearch is true while the log of the Runs view has a search: n and N go
+	// from match to match.
+	LogSearch bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// BrokenConfig is true when smith.toml exists but cannot be read: the
@@ -197,6 +206,10 @@ type State struct {
 	// the scope of a run with them.
 	Project  string
 	Projects int
+	// Picked are the projects chosen with Space in the list of Projects, in the
+	// order of the list; while there are any, the run keys of one project act on
+	// all of them.
+	Picked []string
 	// TaskProjects counts, by task name, the projects that have the task: ll
 	// runs only those. A nil map means every project.
 	TaskProjects map[string]int

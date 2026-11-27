@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/choicerow"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
 	"github.com/monosmith-app/monosmith/libs/words/words"
@@ -41,7 +42,11 @@ func ListHead(th theme.Theme, in ListInput, w int) []string {
 	default:
 		filter += in.Filter
 	}
-	return []string{pane.Fit(pane.CutEllipsis(filter, w), w), pane.Fit(pane.CutEllipsis(th.Muted(countLine(in)), w), w)}
+	count := th.Muted(countLine(in))
+	if in.Picked > 0 {
+		count = th.Accent(th.Bold(words.Say("projectpage.picked.count", "count", in.Picked))) + th.Muted(" · ") + count
+	}
+	return []string{pane.Fit(pane.CutEllipsis(filter, w), w), pane.Fit(pane.CutEllipsis(count, w), w)}
 }
 
 // countLine says how many projects of each kind the list shows: "N of M apps"
@@ -77,7 +82,8 @@ func countLine(in ListInput) string {
 // pointer of the selected row, the last-run mark, the name, the language
 // (and the kind and the version when there is room) in muted text, and the
 // changed mark in the accent. The selected row is on the Highlight
-// background with its name in the accent and bold.
+// background with its name in the accent and bold. While projects are picked,
+// every row starts with its tick box ([x] in the accent for a picked one).
 //
 // Parameters: th is the theme; in is what the list shows; w is the width.
 // Returns: the lines, the Index of the row on each line, and the line of the
@@ -90,7 +96,11 @@ func ListBody(th theme.Theme, in ListInput, w int) (lines []string, rowOf map[in
 		}
 		return lines, rowOf, -1
 	}
-	cols := listColumns(in.Rows, w)
+	box := 0
+	if in.Picked > 0 {
+		box = boxW
+	}
+	cols := listColumns(in.Rows, w-box)
 	kind, count := "", map[string]int{}
 	for _, r := range in.Rows {
 		count[r.Kind]++
@@ -104,7 +114,7 @@ func ListBody(th theme.Theme, in ListInput, w int) (lines []string, rowOf map[in
 			selected = len(lines)
 		}
 		rowOf[len(lines)] = r.Index
-		lines = append(lines, listRow(th, r, cols, w, r.Index == in.Selected, in.Tick))
+		lines = append(lines, listRow(th, r, cols, w, r.Index == in.Selected, in.Tick, box > 0))
 	}
 	return lines, rowOf, selected
 }
@@ -124,8 +134,12 @@ type columns struct {
 	changed int
 }
 
-// leadW is the pointer, the mark and the two spaces after it.
-const leadW = 5
+// leadW is the pointer, the mark and the two spaces after it; boxW is the tick
+// box of a picked row and the space after it.
+const (
+	leadW = 5
+	boxW  = 4
+)
 
 // listColumns fits the columns into w cells: the name and the changed mark
 // always, then the language, the kind and the version while they fit.
@@ -161,7 +175,7 @@ func listColumns(rows []ListRow, w int) columns {
 }
 
 // listRow draws one project in w cells.
-func listRow(th theme.Theme, r ListRow, c columns, w int, selected bool, tick int) string {
+func listRow(th theme.Theme, r ListRow, c columns, w int, selected bool, tick int, boxes bool) string {
 	name := pane.Cell(r.Name, c.name)
 	if selected {
 		name = th.Accent(th.Bold(name))
@@ -169,6 +183,13 @@ func listRow(th theme.Theme, r ListRow, c columns, w int, selected bool, tick in
 	line := "  "
 	if selected {
 		line = th.Accent(Pointer)
+	}
+	if boxes {
+		box := choicerow.Box(r.Picked, false)
+		if r.Picked {
+			box = th.Accent(box)
+		}
+		line += box + " "
 	}
 	line += Glyph(th, r.Mark, tick) + "  " + name
 	if c.kind > 0 {

@@ -171,6 +171,9 @@ are updated without a prompt; --yes takes every update. Without a terminal
 (or with --check) up only reports. A last section compares the tools smith
 pins (Node.js, Python, Go, golangci-lint) with their newest releases.
 
+With --dry-run up shows each declaration it would rewrite, and whether it
+would install, and writes nothing: the same plan, before you take it.
+
 Every project that declares a package is updated in the same change. With
 --align nothing is updated: the packages named (or, with none, every one)
 that projects declare at different versions are brought to one, as smith sync
@@ -178,6 +181,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 		Example: `  smith up              # pick in the terminal
   smith up zod jest     # exactly these, in every project that uses them
   smith up --yes        # everything
+  smith up zod --dry-run  # what updating zod would change, without writing
   smith up --align axios
   smith up --json`,
 		RunE: func(cmd *cobra.Command, names []string) error {
@@ -229,7 +233,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 				// Named packages are the whole plan: the others are not listed, nor are the pinned tools.
 				PrintUp(out, UpReport{Updates: chosen})
 				fmt.Fprintln(out, "\n"+UpdateSummary(chosen))
-			case yes && !check:
+			case (yes || dryRun) && !check:
 			case check || !interactive():
 				fmt.Fprintln(out, "\nReport only: pick with smith up in a terminal, name packages, or pass --yes.")
 				return nil
@@ -250,7 +254,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 			if majors := Majors(chosen); len(majors) > 0 && !major {
 				// A major update can break the project, so it is a choice of its own.
 				switch {
-				case yes || len(names) > 0 && !operationplan.ShouldAsk(operationplan.DetectEnvironment(), false):
+				case yes || dryRun || len(names) > 0 && !operationplan.ShouldAsk(operationplan.DetectEnvironment(), false):
 					fmt.Fprintf(out, "Left out: %s. A major update can break the project; read its release notes, then add --major to take it.\n", describeMajors(majors))
 					chosen = WithoutMajors(chosen)
 				case len(names) > 0:
@@ -266,6 +270,10 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 					return nil
 				}
 			}
+			if dryRun {
+				PrintDryRun(out, chosen, !noInstall)
+				return nil
+			}
 			files, err := Apply(s, chosen, !noInstall)
 			if err != nil {
 				return err
@@ -278,7 +286,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 	cmd.Flags().BoolVar(&check, "check", false, "report only; never prompt, never write")
 	commandflags.AddYesFlag(cmd, &yes, "take every patch and minor update without prompting; major updates stay out unless --major is given")
 	cmd.Flags().BoolVar(&major, "major", false, "also take major updates (with --yes or named packages), and with --align let a declaration move to another major version")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "with --align: show the plan and change nothing")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what the update would change (each declaration it rewrites) and write nothing; with --align, the plan")
 	cmd.Flags().StringVar(&prefer, "prefer", "", "with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest)")
 	cmd.Flags().StringSliceVar(&to, "to", nil, "with --align: the version of one dependency, as <name>=<version>")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the updates and tools as JSON; never write")

@@ -23,10 +23,20 @@ leaves it out, lists it ("name 1.2.0 -> 3.0.0") and says that `--major` takes it
 name that has only a major update asks in a terminal and needs `--major` without one. With
 `--align`, the plan and the questions are those of `smith sync`.
 
+## See the change first
+
+`--dry-run` shows what the update would change and writes nothing: each declaration it would
+rewrite (`apps/web/package.json  axios  ^1.6.0 → ^1.6.8`), whether it would install, and
+`Nothing was changed`. It takes the same packages and flags as the update: `smith up zod
+--dry-run` is what `smith up zod` would do, and with no package named it is what `--yes` would
+take (patch and minor updates; `--major` adds the major ones). With `--align` it shows the plan
+of `smith sync`. The Dependencies view of the terminal interface has a **Dry run (D)** button that
+runs `smith deps up <packages> --dry-run`.
+
 ## Synopsis
 
 ```sh
-smith up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--align [--dry-run] [--prefer highest|lowest|installed] [--to <name>=<version>]]
+smith up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--dry-run] [--align [--prefer highest|lowest|installed] [--to <name>=<version>]]
 ```
 
 ## Arguments and flags
@@ -45,7 +55,7 @@ Usage: `smith up [packages...] [flags]`
 | `--align` | boolean | off | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ |
 | `--check` | boolean | off | report only; never prompt, never write |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
-| `--dry-run` | boolean | off | with --align: show the plan and change nothing |
+| `--dry-run` | boolean | off | show what the update would change (each declaration it rewrites) and write nothing; with --align, the plan |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
 | `--major` | boolean | off | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version |
 | `--no-install` | boolean | off | rewrite the manifests without installing (also --skip-install) |

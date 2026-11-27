@@ -22,7 +22,7 @@ the other fields depend on the kind and are absent otherwise.
 | `task.queued` | `task` | once per task, right after `run.started` |
 | `task.started` | `task` | the task got a slot; it is about to run, or to be replayed from the cache |
 | `task.output` | `task`, `stream`, `line`, `styled` | one line the task wrote, without its newline; a cached task replays its log the same way. `line` is always plain text. `styled` is the same line with SGR colour codes, and comes only when the line has colour and the run was handed tool colour (`SMITH_TOOL_COLOR=1`, as the terminal interface does) |
-| `task.finished` | `task`, `status`, `durationMs`, `cacheKey`, `reason` | the task ended |
+| `task.finished` | `task`, `status`, `durationMs`, `cacheKey`, `reason`, `source`, `miss` | the task ended |
 | `run.finished` | `ok`, `summary` | the run ended; the last event |
 
 - `run` identifies the run. `seq` counts that run's events from 1, so a client
@@ -33,6 +33,14 @@ the other fields depend on the kind and are absent otherwise.
   earlier failure (--bail)`); so does a failed one (`exited with code 3`). A
   task that is skipped is queued and finished, and never started.
 - `durationMs` is how long the task ran (0 for a cached or skipped one).
+- `miss` says why a task that uses the cache ran instead of being restored:
+  `{"reason": "no-entry"}` (it never had a cached run, or it was pruned),
+  `{"reason": "inputs-changed", "files": 2, "changed": ["command"]}` (the input
+  files that changed are counted; `changed` names each other kind once, as
+  `smith why-miss` does), `{"reason": "key-changed"}` (the last cached run kept
+  no record of its inputs, or none differ) or `{"reason": "no-cache"}`
+  (`--no-cache`). It is left out for a cached task, a task that does not use the
+  cache, and when the cache could not be read.
   `cacheKey` is the task's cache key, the same one `smith why-miss` explains.
 - `stream` is `stdout`, `stderr` or `combined`. A task's two streams arrive
   merged, as a terminal shows them, and are `combined`; a command run by

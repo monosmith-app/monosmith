@@ -12,6 +12,8 @@ type ListRow struct {
 	Mark Mark
 	// Changed is true when the current changes touch the project.
 	Changed bool
+	// Picked is true when the person picked the project with Space.
+	Picked bool
 }
 
 // ListInput is what the list of projects is drawn from.
@@ -32,4 +34,7 @@ type ListInput struct {
 	// running project.
 	Selected int
 	Tick     int
+	// Picked is how many projects the person picked with Space; while it is
+	// above zero every row shows its tick box and the count line leads with it.
+	Picked int
 }

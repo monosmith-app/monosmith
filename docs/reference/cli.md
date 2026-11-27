@@ -683,7 +683,7 @@ Usage: `smith up [packages...] [flags]`
 | `--align` | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ | off |
 | `--check` | report only; never prompt, never write | off |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
-| `--dry-run` | with --align: show the plan and change nothing | off |
+| `--dry-run` | show what the update would change (each declaration it rewrites) and write nothing; with --align, the plan | off |
 | `--json` | print the updates and tools as JSON; never write | off |
 | `--major` | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version | off |
 | `--no-install` | rewrite the manifests without installing (also --skip-install) | off |

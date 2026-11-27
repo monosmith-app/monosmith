@@ -12,9 +12,11 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/features/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/features/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/features/session"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/hyperlink"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/rundurations"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/screenreader"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/settingssource"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/sources"
@@ -95,7 +97,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	name := words.Say("tui.tui.no_workspace")
 	inside := false
 	enabled := pluginhost.BuiltinNames()
-	problem, commitOps, commitSet, workspaceRoot := "", false, false, ""
+	problem, commitOps, commitSet, workspaceRoot, cacheDir := "", false, false, "", ""
 	var environments []string
 	if root, err := workspace.FindRoot("."); err == nil {
 		cfg, err := workspace.Load(root)
@@ -107,6 +109,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 			inside = true
 			commitOps = cfg.Workspace.CommitOperations
 			workspaceRoot = root
+			cacheDir = session.LocalCacheDir(root, cfg, os.Getenv)
 			if _, set, err := configedit.Get(root, "workspace.commit_operations"); err == nil {
 				commitSet = set
 			}
@@ -169,6 +172,8 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		// The sizes of the panels are kept in the same file as the other choices.
 		Splits: prefs.Splits, SaveSplits: saveSplits,
 		CommitOperationsSet: commitSet, CommitChoice: prefs.CommitChoices[workspaceRoot], SaveCommitChoice: commitChoiceSaver(workspaceRoot),
+		// The pinned projects are the person's own, kept by workspace beside the other choices.
+		Pins: prefs.Pins[workspaceRoot], SavePins: pinsSaver(workspaceRoot),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
 	// A newer smith that is already known: the status bar says it, the first time the
@@ -189,6 +194,10 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		s.CompletionWanted, s.DeclineCompletion = sources.CompletionOffer(pluginhost.Home())
 		cfg.Sources = &s
 		cfg.Start = start
+		// The time each task took lives in the workspace's local cache, which git
+		// ignores, for the estimate of the Runs view; never in the remote cache.
+		cfg.Durations = rundurations.Load(cacheDir)
+		cfg.SaveDurations = func(h rundurations.History) { _ = rundurations.Save(cacheDir, h) }
 	} else if problem == "" {
 		cfg.Adopt = sources.AdoptionOpener(".", version)
 		outside := sources.OutsideSources(".")

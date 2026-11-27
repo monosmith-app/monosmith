@@ -13,6 +13,9 @@ type Row struct {
 	Projects []string
 	// URL is the package's page on its registry; empty when smith cannot know it.
 	URL string
+	// Declared is how each project declares the package (its spec, "^1.6.0"),
+	// by project name, "" for the workspace root; nil when it is not known.
+	Declared map[string]string
 }
 
 // PolicyLine is one result of the one-version policy.

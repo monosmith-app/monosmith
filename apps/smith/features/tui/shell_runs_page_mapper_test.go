@@ -265,3 +265,22 @@ func TestTheChosenTaskHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T) {
 		t.Fatalf("%d rows carry the cursor mark, want 1 (chosen %q)", marked, l.sh().runSel)
 	}
 }
+
+func TestTheReasonOfACacheMissShowsInTheLogAndTheTasksTable(t *testing.T) {
+	l := newLab(t, true, 150, 44)
+	l.next = &scripted{lines: []string{
+		`{"event":"task.started","task":"web:build"}`,
+		`{"event":"task.finished","task":"web:build","status":"passed","durationMs":1200,"miss":{"reason":"inputs-changed","files":2}}`,
+	}}
+	l.openTab(commands.TabProjects)
+	sh := l.sh()
+	sh.list = sh.list.SelectProject("web")
+	l.m = sh
+	l.keys("b")
+	sh = l.sh()
+	sh.runSel = "web:build"
+	l.m = sh
+	l.has("Cache miss: 2 files changed")
+	l.openTab(commands.TabProjects)
+	l.has("miss · 2 files changed")
+}

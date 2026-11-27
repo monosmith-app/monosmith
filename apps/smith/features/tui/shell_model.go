@@ -30,6 +30,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/resultdialog"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/rundurations"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/selection"
@@ -112,6 +113,16 @@ type Config struct {
 	Environments []string
 	// Hyperlinks is true when the terminal draws OSC 8 hyperlinks (see package hyperlink).
 	Hyperlinks bool
+	// Pins are the projects the person pinned to the rail in this workspace, in
+	// order; SavePins keeps them when they change (nil keeps none). They live in
+	// the person's own preferences, never in the workspace.
+	Pins     []string
+	SavePins func(pins []string)
+	// Durations are how long the tasks took in their last runs, for the time
+	// estimate of the Runs view; SaveDurations keeps them after a run (nil keeps
+	// none). They live in the workspace's local cache, never in the remote one.
+	Durations     rundurations.History
+	SaveDurations func(rundurations.History)
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -223,6 +234,15 @@ type Shell struct {
 	proc runner.Handle
 	// stopping is set once Ctrl+C asked the run to stop.
 	stopping bool
+	// logQuery is the text the log of the Runs view searches (/); logTyping is
+	// true while the person types it, and logAt is the match the log is on.
+	logQuery  string
+	logTyping bool
+	logAt     int
+	// durations are how long the tasks took before, for the estimate of a run;
+	// saveDurations keeps them when a run adds to them.
+	durations     rundurations.History
+	saveDurations func(rundurations.History)
 	// runSel is the task whose log is shown ("" for all output); runTop scrolls the task list.
 	runSel string
 	// runErrors is true while the tree of the Runs view keeps only the failed
@@ -379,6 +399,12 @@ type Shell struct {
 	taskAt, projRunAt int
 	// filtering is true while the filter line of Projects has the keyboard.
 	filtering bool
+	// picked are the projects chosen with Space in the list of Projects, by
+	// name: the run keys act on all of them. Esc clears them.
+	picked map[string]bool
+	// pins are the projects pinned to the rail, in order; savePins keeps them.
+	pins     []string
+	savePins func([]string)
 	// wsRoot is the folder of the workspace, which the projects' roots are relative to.
 	wsRoot string
 	// zoom is set while the detail fills the pane on a wide screen (z).
@@ -437,6 +463,8 @@ func NewShell(cfg Config) Shell {
 	}
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
 	sh.hyperlinks = cfg.Hyperlinks
+	sh.pins, sh.savePins = append([]string(nil), cfg.Pins...), cfg.SavePins
+	sh.durations, sh.saveDurations = cfg.Durations, cfg.SaveDurations
 	sh.commitSet, sh.commitChoice, sh.saveCommit = cfg.CommitOperationsSet, cfg.CommitChoice, cfg.SaveCommitChoice
 	if cfg.Repair != nil {
 		sh.repair = cfg.Repair
@@ -483,9 +511,9 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", LogSearch: s.logQuery != "" && s.runShown(), EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
-		Labels: s.labels(),
+		Labels: s.labels(), Picked: s.pickedNames(),
 	}
 }
 
@@ -500,6 +528,7 @@ func (s Shell) toggles() map[string]bool {
 		"doctor.passed":   s.doctor.Shows(doctorview.FilterPassed),
 		"run.errors":      s.runErrors,
 		"run.switch":      s.runOnLog,
+		"projects.pin":    s.pinned(s.selectedProject()),
 	}
 }
 
@@ -561,13 +590,14 @@ func (s Shell) viewReasons() map[string]string {
 		}
 		if !s.deps.Loaded {
 			// Until the registries answer no key but reload has anything to act on.
-			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major", "deps.update", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
+			for _, id := range []string{"deps.mark", "deps.filter-all", "deps.filter-patch", "deps.filter-minor", "deps.filter-major", "deps.update", "deps.dry-run", "deps.install", "deps.remove", "deps.align", "deps.one-version"} {
 				r[id] = words.Say("tui.shell.deps_not_loaded")
 			}
 			break
 		}
 		if s.deps.UpArgv() == nil {
 			r["deps.update"] = words.Say("tui.shell.no_dependency_to_update")
+			r["deps.dry-run"] = words.Say("tui.shell.no_dependency_to_update")
 		}
 		if _, _, ok := s.deps.RemoveTargets(); !ok {
 			r["deps.remove"] = words.Say("tui.shell.no_dependency_is_selected")

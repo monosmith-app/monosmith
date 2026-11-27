@@ -79,4 +79,7 @@ type Event struct {
 	// Hidden is set for an event that says something to the state but has no
 	// line of its own in the log.
 	Hidden bool
+	// Miss says why a task that uses the cache ran (a Finish of the event
+	// stream): "2 files changed", "no entry yet"; "" when smith did not say.
+	Miss string
 }

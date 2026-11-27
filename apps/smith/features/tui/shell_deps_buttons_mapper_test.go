@@ -103,3 +103,33 @@ func TestTheDepsAndReleaseViewsFitEverySize(t *testing.T) {
 		}
 	}
 }
+
+func TestTheDryRunButtonShowsItsCommandAndRunsIt(t *testing.T) {
+	l := newLab(t, true, 150, 44)
+	l.openTab(commands.TabDeps)
+	l.has("Dry run (D)", "$ smith deps up axios --dry-run")
+	l.keys("D")
+	if got := l.lastStarted(); got != "deps up axios --dry-run" {
+		t.Fatalf("D runs the dry run at once, with no question: %q", got)
+	}
+	if l.sh().confirm != nil {
+		t.Fatal("a dry run writes nothing, so it asks nothing")
+	}
+}
+
+func TestTheDryRunFitsEveryScreen(t *testing.T) {
+	for _, size := range [][2]int{{80, 30}, {120, 40}, {150, 44}} {
+		l := newLab(t, true, size[0], size[1])
+		l.openTab(commands.TabDeps)
+		lines := l.lines()
+		if len(lines) != size[1] {
+			t.Fatalf("%v: %d rows", size, len(lines))
+		}
+		for y, line := range lines {
+			if pane.Width(line) != size[0] {
+				t.Fatalf("%v: row %d is %d cells: %q", size, y, pane.Width(line), line)
+			}
+		}
+		l.has("Dry run (D)")
+	}
+}

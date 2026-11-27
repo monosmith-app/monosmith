@@ -18,6 +18,10 @@ type Preferences struct {
 	// undone?" that are kept for the person only, by workspace root: "no" or
 	// "ask". A "yes" is written in smith.toml, where smith reads it.
 	CommitChoices map[string]string `json:"commitChoices,omitempty"`
+	// Pins are the projects the person pinned to the rail, by workspace root, in
+	// the order they were pinned. They are the person's own: they never go into
+	// smith.toml or any file of the workspace.
+	Pins map[string][]string `json:"pins,omitempty"`
 	// CompletionOffer is what the person answered to "Set up tab completion?":
 	// "no" (never ask again), "later" (ask again after CompletionAskAfter) or
 	// "installed" (smith wrote the completion script). "" means not asked yet.
