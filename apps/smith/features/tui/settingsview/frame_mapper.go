@@ -400,21 +400,16 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) paneLines {
 	}
 	list := m.items(m.section)
 	cursor := m.cursor[m.section]
-	head := 0
-	if m.tableSection() && body >= 8 && len(list) > 0 {
+	if head, _ := m.chrome(list, cursor, body); head > 0 {
 		// The column heading and its rule stay at the top; the rows scroll under them.
 		rows[1] = m.tableHead(th, w)
 		rows[2] = th.Faint(" " + strings.Repeat("─", max(w-2, 0)))
-		head = 2
 	}
 	all, lineOf := m.listLines(th, list, w, cursor)
 	if len(all) == 0 {
 		all = m.emptyList(th, w)
 	}
-	foot := 0
-	if m.tableSection() && body-head >= 8 && cursor < len(list) && list[cursor].kind == kindSetting {
-		foot = 1
-	}
+	head, foot := m.chrome(list, cursor, body)
 	listH, detailH, noteRow := m.rowSplit(body - head - foot)
 	top := 0
 	if cursor < len(lineOf) {
@@ -621,7 +616,8 @@ func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
 	}
 	avail := body - noteRow
 	if avail >= 9 {
-		detailH = min(detailWant[m.section], avail-5)
+		// The rows to change take more room than the text about the selected one.
+		detailH = min(detailWant[m.section], avail*2/5)
 		if m.detailRows > 0 {
 			detailH = pane.Clamp(m.detailRows, minDetailRows, avail-5)
 		}
@@ -632,6 +628,63 @@ func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
 	}
 	return listH, detailH, noteRow
 }
+
+// chrome is the rows above and below the list of the open section in a body
+// of body rows: the column heading and its rule of a table (head), and the row
+// of the Save and Reset buttons of a setting (foot).
+func (m Model) chrome(list []item, cursor, body int) (head, foot int) {
+	if m.tableSection() && body >= 8 && len(list) > 0 {
+		head = 2
+	}
+	if m.tableSection() && body-head >= 8 && cursor < len(list) && list[cursor].kind == kindSetting {
+		foot = 1
+	}
+	return head, foot
+}
+
+// DetailRule is where the box under the rows of the open section starts in
+// FieldsPane of w by h cells, so a divider there can give the box more or
+// fewer rows.
+//
+// Parameters: th is the theme; w and h are the size of the pane.
+// Returns: row is the box's top row in the pane; rows is the rows the box has
+// now; lo and hi bound them; ok is false while no box shows (an editor is open,
+// the section cannot show, or the pane is too short).
+func (m Model) DetailRule(th theme.Theme, w, h int) (row, rows, lo, hi int, ok bool) {
+	if w < 1 || m.ed != nil {
+		return 0, 0, 0, 0, false
+	}
+	if _, blocked := m.unavailable(th, w); blocked {
+		return 0, 0, 0, 0, false
+	}
+	extra := len(m.aboutLines(th, w, h)) - 1
+	body := h - extra - 1
+	list := m.items(m.section)
+	head, foot := m.chrome(list, m.cursor[m.section], body)
+	listH, detailH, noteRow := m.rowSplit(body - head - foot)
+	if detailH == 0 {
+		return 0, 0, 0, 0, false
+	}
+	avail := body - head - foot - noteRow
+	return extra + 1 + head + listH, detailH, minDetailRows, avail - 5, true
+}
+
+// ListWidth is the width of the frame of the list of sections beside the open
+// one: the longest name with its mark, and at least listFrameMin, so the hint
+// at its foot keeps "Per-project settings" on one row.
+//
+// Returns: the width in columns, frame included.
+func ListWidth() int {
+	longest := 0
+	for _, s := range Sections {
+		longest = max(longest, ansi.StringWidth(s.Title()))
+	}
+	// The mark, a space at the end, the borders and their padding.
+	return max(longest+ansi.StringWidth(selectedMark)+1+4, listFrameMin)
+}
+
+// listFrameMin is the least width of the frame of the list of sections.
+const listFrameMin = 26
 
 // The least the list of sections, the right pane and the detail may be.
 const (

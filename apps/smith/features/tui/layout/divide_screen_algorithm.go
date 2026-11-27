@@ -159,3 +159,22 @@ func (l Layout) DetailInner() Rect { return DetailFrame.Inside(l.Detail) }
 
 // HasDetail says whether the detail is on screen beside the list.
 func (l Layout) HasDetail() bool { return l.Detail.W > 0 }
+
+// DivideFixedList is DivideWith with the list kept listW columns wide on a wide
+// screen, and the detail beside it given the rest (at least MinDetail). A
+// narrow screen gets the layout DivideWith gives it.
+//
+// Parameters: width and height are the terminal's size; listW is the width of
+// the list's frame.
+// Returns: the layout.
+func DivideFixedList(width, height, listW int) Layout {
+	l := DivideWith(width, height, true, 0)
+	if l.Mode != Wide {
+		return l
+	}
+	cw := ContentWidth(width)
+	main := pane.Clamp(listW, 1, max(cw-MinDetail, 1))
+	l.Main.W = main
+	l.Detail = Rect{l.Main.X + main, l.Main.Y, cw - main, l.Main.H}
+	return l
+}

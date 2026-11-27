@@ -29,9 +29,6 @@ func (s Shell) detailWidth() int {
 		// The list of projects needs little room; the sections of the detail
 		// (the table of tasks) take the rest.
 		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, projectsListMax))
-	case n == 0 && s.tab == commands.TabSettings && s.inWorkspace:
-		// The sections need a narrow frame; the settings of the open one take the rest.
-		return layout.ClampDetailWidth(cw, cw-layout.MinList)
 	case n == 0 && s.tab == commands.TabDoctor && s.inWorkspace && s.healthFixOpen():
 		// While a fix shows in the detail, its review and its steps take the room.
 		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, healthListMax))
@@ -62,8 +59,9 @@ func (s Shell) spots() []splitter.Spot {
 	}
 	var out []splitter.Spot
 	for _, p := range s.dividers() {
-		// The rule under the header of the Runs view is drawn, never moved.
-		if p.ID != splitter.RunsRuleID {
+		// The rule under the header of the Runs view is drawn, never moved, and
+		// so is the border of the list of settings sections, which keeps one width.
+		if p.ID != splitter.RunsRuleID && (!s.settingsFixedList() || p.ID != s.detailDivider()) {
 			out = append(out, p)
 		}
 	}
@@ -81,6 +79,11 @@ func (s Shell) dividers() []splitter.Spot {
 	}
 	in := l.Main.Inner()
 	switch {
+	case s.settingsFixedList():
+		r := s.detailInner()
+		if row, rows, lo, hi, ok := s.settings.DetailRule(s.th, r.W, r.H); ok {
+			out = append(out, splitter.SettingsFieldsSpot(r.X, r.Y+row, r.W, rows, lo, hi))
+		}
 	case s.runShown():
 		w, h := s.runRect()
 		g := s.runsGeom(w, h)
@@ -121,4 +124,12 @@ func (s Shell) paintSplits(rows []string) []string {
 // the layout may ask it.
 func (s Shell) healthFixOpen() bool {
 	return (s.fix != nil && s.repair == nil && s.depsRepair == nil) || s.fixed != nil
+}
+
+// settingsFixedList is true while the Settings tab shows its list of sections
+// beside the open one: the list then keeps one width and the box under the
+// rows of the open section can be given more or fewer rows.
+func (s Shell) settingsFixedList() bool {
+	return s.tab == commands.TabSettings && s.inWorkspace && s.hasDetail() && !s.zoomed() &&
+		s.w >= layout.WideFrom && !s.fullRun()
 }

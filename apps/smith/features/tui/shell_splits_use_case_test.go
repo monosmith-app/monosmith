@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/splitter"
 )
 
@@ -120,24 +120,56 @@ func TestDraggingTheRunDividerResizesTheTaskTree(t *testing.T) {
 	}
 }
 
-func TestTheSettingsDividerMovesWithTheKeys(t *testing.T) {
+func TestTheListOfSettingsSectionsKeepsOneWidth(t *testing.T) {
+	for _, w := range []int{140, 200} {
+		l, _ := newSettingsLab(t, w, 40)
+		l.keys("7")
+		if got := l.sh().lay().Main.W; got != settingsview.ListWidth() {
+			t.Fatalf("at %d columns the frame of the sections is %d wide, want %d", w, got, settingsview.ListWidth())
+		}
+	}
+}
+
+func TestTheOpenSectionGivesTheRowsMoreRoomThanTheBox(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
 	l.keys("7")
-	before := l.sh().lay().Main.W
-	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
-	l.keys("]")
-	if after := l.sh().lay().Main.W; after != before+splitter.Step {
-		t.Fatalf("the frame of the sections is %d wide, want %d", after, before+splitter.Step)
+	r := l.sh().detailInner()
+	row, rows, _, _, ok := l.sh().settings.DetailRule(l.sh().th, r.W, r.H)
+	if !ok || rows >= row {
+		t.Fatalf("the box starts at row %d with %d rows: the rows above it should have more", row, rows)
+	}
+}
+
+func TestTheSettingsBoxGrowsWithTheKeysAndTheMouse(t *testing.T) {
+	l, _ := newSettingsLab(t, 140, 40)
+	l.keys("7")
+	spots := l.sh().spots()
+	if len(spots) != 1 || spots[0].ID != splitter.SettingsDetailID {
+		t.Fatalf("Settings has %d dividers: %+v", len(spots), spots)
+	}
+	before := spots[0].Size
+	// The divider is horizontal: Shift+↑ selects it and [ moves it up.
+	l.send(tea.KeyMsg{Type: tea.KeyShiftUp})
+	l.keys("[")
+	after := l.sh().spots()[0]
+	if after.Size != before+splitter.Step {
+		t.Fatalf("the keys give the box %d rows, want %d", after.Size, before+splitter.Step)
+	}
+	l.keys("esc")
+	x, y := after.Hit.X+2, after.Hit.Y
+	l.send(click(x, y)).send(drag(x, y-2)).send(letGo(x, y-2))
+	if got := l.sh().spots()[0].Size; got != after.Size+2 {
+		t.Fatalf("dragging the top of the box 2 rows up gives it %d rows, want %d", got, after.Size+2)
 	}
 }
 
 func TestBackslashSelectsTheNextDividerAndTheBarThePrevious(t *testing.T) {
-	// Settings has one divider, between its two frames: the keys wrap round it.
-	// splitter's own tests walk a screen with several.
+	// Settings has one divider, the top of the box of the selected row: the
+	// keys wrap round it. splitter's own tests walk a screen with several.
 	l, _ := newSettingsLab(t, 140, 40)
 	l.keys("7")
 	spots := l.sh().spots()
-	if len(spots) != 1 || spots[0].ID != splitter.DetailID(commands.TabSettings) {
+	if len(spots) != 1 || spots[0].ID != splitter.SettingsDetailID {
 		t.Fatalf("Settings has %d dividers: %+v", len(spots), spots)
 	}
 	l.keys(`\`)
