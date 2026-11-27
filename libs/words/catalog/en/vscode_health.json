@@ -31,5 +31,9 @@
   "vscode.health.doctor": "Doctor: {join}.",
   "vscode.health.pass-yes": "Pass --yes",
   "vscode.health.fix-2": "Fix: {remedy}",
-  "vscode.health.fix-3": "Fix: {description}"
+  "vscode.health.fix-3": "Fix: {description}",
+  "vscode.health.workspace": "workspace",
+  "vscode.health.passed-word": "passed",
+  "vscode.health.review-is-open-beside": "Step 2 of 3: apply. The review is open beside the code. Nothing is changed until you apply, and nothing is committed. {line}",
+  "vscode.health.fix-checked": "MonoSmith: step 3 of 3, check again. {state} {committed}"
 }

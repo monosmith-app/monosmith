@@ -27,13 +27,17 @@ import { createWorkspaceHere } from './features/new-workspace/index.ts'
 import { setContextKey } from './shared/context-keys/index.ts'
 import { createCommandHost } from './shared/command-host/index.ts'
 import { connectFolder, createFolderRegistry, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './shared/folder-session/index.ts'
-import { doctor, fixFindingRow, fixHealth, readHealth, toHealthRows, type HealthReading, type HealthView } from './features/health/index.ts'
-import { readUpdates, runUp, toDependencyRows, updateDependency } from './features/dependencies/index.ts'
-import { createListView, loadAcross, type ListNode, type ListResult } from './shared/list-view/index.ts'
+import { doctor, fixFindingRow, fixHealth, readHealth, toHealthRows, type DoctorReport, type HealthReading, type HealthView } from './features/health/index.ts'
+import { openRegistry, readUpdates, repairDependencies, runUp, toDependencyRows, updateDependency, updateSafe, type UpdatesReport } from './features/dependencies/index.ts'
+import { createListView, loadAcross, readFolderData, tagWithFolder, type ListNode, type ListResult } from './shared/list-view/index.ts'
 import { createInsightDocuments, showInsight } from './features/project-insight/index.ts'
 import { pickTask, pickTaskName, showStatusMenu } from './features/quick-pick/index.ts'
 import { releaseHere } from './features/release-flow/index.ts'
-import { explanationLines, readReleasePreview, toReleaseRows } from './features/release-preview/index.ts'
+import { explanationLines, readReleasePreview, releaseChecks, showReleasePlan, toReleaseRows, type ReleasePreview } from './features/release-preview/index.ts'
+import { toHomeFacts, toHomeRows } from './features/home-view/index.ts'
+import { createRunHistory, projectRuns, testsState, toRunRows, type RunsFilter } from './features/runs-view/index.ts'
+import { pickPluginSwitch, readSettingsSections, toSettingsRows } from './features/settings-view/index.ts'
+import { showCommandPalette, type PaletteView } from './features/command-palette/index.ts'
 import { readSettings } from './shared/settings/index.ts'
 import { registerSmithTasks, type TaskFolder } from './features/task-provider/index.ts'
 import {
@@ -50,12 +54,22 @@ import {
   cancelRun, createLastRunStore, createTaskStatusStore, describeEvent, describePlan, runTasks, toRunPlan,
   type RunEvent, type RunPlan, type RunTarget, type TaskStatusStore,
 } from './features/task-run/index.ts'
-import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapshot } from './shared/workspace/index.ts'
+import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceProject, type WorkspaceSnapshot } from './shared/workspace/index.ts'
 import { findSmithRoots, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged } from './shared/workspace-folders/index.ts'
 import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter, type WebAppEnvironments } from './features/workspace-view/index.ts'
 import { isWorkspaceTrusted, onTrustGranted } from './shared/workspace-trust/index.ts'
 import { say } from './shared/words/index.ts'
 
+/** The views of the MonoSmith side bar, in the order of the terminal interface's rail. */
+const VIEWS: readonly PaletteView[] = [
+  { id: 'monosmith.home', name: say('commands.view.home.title') },
+  { id: 'monosmith.projects', name: say('commands.view.projects.title') },
+  { id: 'monosmith.runs', name: say('commands.view.runs.title') },
+  { id: 'monosmith.health', name: say('commands.section.health') },
+  { id: 'monosmith.dependencies', name: say('commands.view.deps.title') },
+  { id: 'monosmith.release', name: say('commands.view.release.title') },
+  { id: 'monosmith.settings', name: say('commands.view.settings.title') },
+]
 const INSTALL_COMMAND = 'npm i -D monosmith'
 const UPDATE_COMMAND = 'npm i -D monosmith@latest'
 const FILTER_KEY = 'monosmith.filter'
@@ -114,6 +128,18 @@ function options (): { bail: boolean, noCache: boolean, parallel: number } {
   return { bail, noCache, parallel }
 }
 
+/** The values of a map, as a list. */
+function valuesOf<T> (map: ReadonlyMap<string, T>): T[] {
+  return Array.from(map, ([, value]) => value)
+}
+
+/** The run options of the settings, as the fields of a plan. */
+function taskFlags (): Partial<RunPlan> {
+  const { bail, noCache, parallel } = options()
+
+  return { ...(bail && { bail: true }), ...(noCache && { noCache: true }), ...(parallel > 0 && { parallel }) }
+}
+
 function taskFolders (): TaskFolder[] {
   const found: TaskFolder[] = []
   for (const state of ready()) {
@@ -165,8 +191,17 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
     return result === undefined ? undefined : { ...result, hasLog: logs.has(logKey(root, task)) }
   }
+  const history = createRunHistory()
+  const runsFilter: RunsFilter = { errorsOnly: false }
+  const healthReports = new Map<string, DoctorReport>()
+  const healthErrors = new Map<string, string>()
+  const releasePreviews = new Map<string, ReleasePreview>()
+  const updateReports = new Map<string, UpdatesReport>()
+  let healthLoaded = false
+  let releaseLoaded = false
+  let depsLoaded = false
   const stored = context.workspaceState.get<ViewFilter>(FILTER_KEY)
-  const tree = createWorkspaceTree(factsOf, { text: stored?.text ?? '', affectedOnly: stored?.affectedOnly ?? false })
+  const tree = createWorkspaceTree(factsOf, { text: stored?.text ?? '', affectedOnly: stored?.affectedOnly ?? false }, (root, project) => projectRuns(history.runs(), root, project, Date.now()))
   const diagnostics = createTaskDiagnostics()
   const logDocs = createTaskLogDocuments(logs)
   const insight = createInsightDocuments()
@@ -230,6 +265,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ...(webApps.has(state.root) && { webApps: webApps.get(state.root) }),
     })))
     paint()
+    home.invalidate()
   }
 
   const warnAboutSkew = async (state: FolderState): Promise<void> => {
@@ -284,6 +320,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (scope === 'full') {
       health.invalidate()
       release.invalidate()
+      settings.invalidate()
       if (!quiet) dependencies.invalidate()
     } else {
       release.invalidate()
@@ -476,25 +513,51 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     void setContextKey('monosmith.running', true)
     paint()
     output.show(true)
+    // The run opens in the Runs view, as a run started anywhere in the terminal interface does; the editor keeps the keyboard.
+    history.begin(root, runId, `smith run ${plan.tasks.join(' ')}`, Date.now())
+    void runs.redraw().then(async () => { await runs.reveal(`run:${runId}`) })
     const store = statusOf(root)
+    let ok = false
     try {
       let command = say('vscode.main.smith-run')
-      const result = await runTasks(session.connection, { ...plan, runId }, (event) => {
+      const result = await vscode.window.withProgress({ location: { viewId: 'monosmith.runs' } }, async () => await runTasks(session.connection, { ...plan, runId }, (event) => {
         store.apply(event)
         const line = describeEvent(event)
         if (line !== undefined) output.appendLine(line)
         if (event.event === 'run.started') command = event.command ?? command
         keepOutput(root, event, command)
-      })
+        if (history.apply(event, Date.now())) redrawRuns()
+      }))
+      ok = result.ok
       if (!result.ok) void vscode.window.showWarningMessage(say('vscode.main.monosmith-did-not-pass-see-the', { label }), say('vscode.health.show-output')).then((choice) => { if (choice === say('vscode.health.show-output')) output.show() })
     } catch (error) {
       note(say('vscode.commit-changes.monosmith', { part: error instanceof Error ? error.message : String(error) }))
     } finally {
       activeRun = undefined
+      history.end(runId, ok, Date.now())
+      void runs.redraw()
+      home.invalidate()
       void setContextKey('monosmith.running', false)
       paint()
       void refreshFolder(root, 'affected', true)
     }
+  }
+
+  // Many events come close together: the Runs view is drawn again at most every quarter second.
+  let runsTimer: ReturnType<typeof setTimeout> | undefined
+  const redrawRuns = (): void => {
+    if (runsTimer !== undefined) return
+    runsTimer = setTimeout(() => {
+      runsTimer = undefined
+      void runs.redraw()
+    }, 250)
+  }
+
+  /** Runs tasks in the folder the person picks (the only one, when there is one). */
+  const runInFolder = async (plan: (projects: readonly WorkspaceProject[]) => RunPlan | undefined, confirm: boolean): Promise<void> => {
+    const state = await host.pickReadyFolder()
+    if (state === undefined) return
+    await run(state.root, plan(state.snapshot?.projects ?? []), confirm)
   }
 
   const runTarget = async (root: string, target: RunTarget, confirm = false): Promise<void> => {
@@ -505,7 +568,8 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const runNode = async (node: TreeNode | undefined): Promise<void> => {
     if (node?.kind === 'task' && node.project !== undefined && node.task !== undefined) {
       await runTarget(node.root, { kind: 'task', project: node.project, task: node.task })
-    } else if (node === undefined) {
+    } else if (node === undefined || !Array.isArray((node as Partial<TreeNode>).projects)) {
+      // No row of the Projects view (the palette, or a row of Home): ask what to run.
       const picked = await pickTask(readyWorkspaces())
       if (picked !== undefined) await runTarget(picked.root, picked.target)
     } else {
@@ -544,17 +608,28 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     load:  async () => {
       fixableRoots.clear()
       deriveReports.clear()
+      healthReports.clear()
+      healthErrors.clear()
 
       return await loadAcross(ready, say('vscode.main.smith-is-not-running-so-there'), async (state, connection) => {
-        const reading: HealthReading = await readHealth(connection)
+        let reading: HealthReading
+        try {
+          reading = await readHealth(connection)
+        } catch (error) {
+          healthErrors.set(state.root, error instanceof Error ? error.message : String(error))
+          throw error
+        }
+        healthReports.set(state.root, reading.report)
         if (reading.preview !== undefined) fixableRoots.add(state.root)
 
         return await withDerivedFiles(state, toHealthRows(reading.report, reading.preview))
       })
     },
     loaded: () => {
+      healthLoaded = true
       void setContextKey('monosmith.fixable', fixableRoots.size > 0)
       void setContextKey('monosmith.derivedPaths', [...deriveReports].flatMap(([root, report]) => report.files.map((file) => vscode.Uri.file(join(root, file.path)).fsPath)))
+      home.invalidate()
     },
   })
   const healthView: HealthView = {
@@ -564,21 +639,104 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   }
   const deriveView: DeriveView = { reports: deriveReports, reload: healthView.reload }
   const dependencies = createListView({
-    id:    'monosmith.dependencies',
-    title: say('commands.view.deps.title'),
-    load:  async () => await loadAcross(ready, say('vscode.main.smith-is-not-running-so-dependencies'), async (_state, connection) => toDependencyRows(await readUpdates(connection))),
+    id:            'monosmith.dependencies',
+    title:         say('commands.view.deps.title'),
+    canSelectMany: true,
+    load:          async () => {
+      updateReports.clear()
+
+      return await loadAcross(ready, say('vscode.main.smith-is-not-running-so-dependencies'), async (state, connection) => {
+        const report = await readUpdates(connection)
+        updateReports.set(state.root, report)
+
+        return toDependencyRows(report)
+      })
+    },
+    loaded: () => {
+      depsLoaded = true
+      home.invalidate()
+    },
+  })
+  /** The checks before release, from what Health and the runs of the session already know. */
+  const checksBeforeRelease = (): ReturnType<typeof releaseChecks> => releaseChecks({
+    ...(healthLoaded && { findings: valuesOf(healthReports).flatMap((report) => report.findings ?? []).filter((finding) => !finding.ok).length }),
+    tests: testsState(history.runs()),
   })
   const release = createListView({
     id:    'monosmith.release',
-    title: say('vscode.view.release.name'),
-    load:  async () => await loadAcross(ready, say('vscode.main.smith-is-not-running-so-there-2'), async (state, connection) => {
-      const preview = await readReleasePreview(connection)
-      if ((preview.results ?? []).length > 0 || preview.error !== undefined) return toReleaseRows(preview)
-      const said = await smithIn(state, false)(['release', '--dry-run'])
+    title: say('commands.view.release.title'),
+    load:  async () => {
+      releasePreviews.clear()
 
-      return toReleaseRows(preview, said.code === 0 ? explanationLines(said.stdout) : [])
-    }),
+      return await loadAcross(ready, say('vscode.main.smith-is-not-running-so-there-2'), async (state, connection) => {
+        const preview = await readReleasePreview(connection)
+        releasePreviews.set(state.root, preview)
+        if ((preview.results ?? []).length > 0 || preview.error !== undefined) return toReleaseRows(preview, [], checksBeforeRelease())
+        const said = await smithIn(state, false)(['release', '--dry-run'])
+
+        return toReleaseRows(preview, said.code === 0 ? explanationLines(said.stdout) : [])
+      })
+    },
+    loaded: () => {
+      releaseLoaded = true
+      home.invalidate()
+    },
   })
+  const home = createListView({
+    id:    'monosmith.home',
+    title: say('commands.view.home.title'),
+    load:  async () => {
+      // Home never waits: doctor and the release plan start in the background the first time it shows, as the terminal starts them with the shell.
+      if (!healthLoaded && ready().length > 0) void health.reload()
+      if (!releaseLoaded && ready().length > 0) void release.reload()
+      const errors = valuesOf(healthErrors)
+
+      return toHomeRows(toHomeFacts({
+        workspaces: readyWorkspaces(),
+        folders:    states().length,
+        ...(healthLoaded && errors.length === 0 && { reports: valuesOf(healthReports) }),
+        ...(errors.length > 0 && { healthError: errors.join(' ') }),
+        ...(releaseLoaded && { previews: valuesOf(releasePreviews) }),
+        ...(depsLoaded && { updates: valuesOf(updateReports) }),
+        ...(history.runs()[0] !== undefined && { last: history.runs()[0] }),
+        now:        Date.now(),
+      }))
+    },
+  })
+  const runs = createListView({
+    id:    'monosmith.runs',
+    title: say('commands.view.runs.title'),
+    load:  async () => {
+      const rows = toRunRows(history.runs(), Date.now(), runsFilter)
+      // Each run's rows carry the folder it ran in, so the log of a task opens from the right folder.
+      const tag = (node: ListNode): ListNode => {
+        const found = history.find(node.id.slice('run:'.length))
+
+        return found === undefined ? node : (tagWithFolder([node], found.root)[0] ?? node)
+      }
+
+      return { ...rows, nodes: rows.nodes.map((node) => (node.id === 'runs:session' ? { ...node, children: (node.children ?? []).map((child) => tag(child)) } : tag(node))) }
+    },
+  })
+  const settings = createListView({
+    id:    'monosmith.settings',
+    title: say('commands.view.settings.title'),
+    load:  async () => await loadAcross(ready, say('vscode.main.smith-is-not-running-so-there'), async (_state, connection) => toSettingsRows(await readSettingsSections(connection))),
+  })
+  /** Opens a run in the Runs view: the one given, else the newest. */
+  const openRun = async (argument: unknown): Promise<void> => {
+    const id = typeof argument === 'string' ? argument : history.runs()[0]?.id
+    await runs.redraw()
+    if (id === undefined) await vscode.commands.executeCommand('monosmith.runs.focus')
+    else await runs.reveal(`run:${id}`)
+  }
+  const setErrorsOnly = async (on: boolean): Promise<void> => {
+    runsFilter.errorsOnly = on
+    void setContextKey('monosmith.runs.errorsOnly', on)
+    await runs.redraw()
+  }
+  /** The folder and the value a row of a list view carries. */
+  const rowOf = (argument: unknown): { root: string, data: string } | undefined => readFolderData((argument as ListNode | undefined)?.data)
 
   const setFilter = (next: ViewFilter): void => {
     tree.setFilter(next)
@@ -604,9 +762,12 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     output,
     bar,
     tree,
+    home,
+    runs,
     health,
     dependencies,
     release,
+    settings,
     diagnostics,
     deriveProblems,
     logDocs,
@@ -707,11 +868,55 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.derive.eject', async (argument) => { await deriveFile(host, insight, deriveView, argument, 'eject') }),
     command('monosmith.health.refresh', async () => { await health.reload() }),
     command('monosmith.health.fix', async () => { await fixHealth(host, healthView) }),
-    command<unknown>('monosmith.health.fixFinding', async (argument) => { await fixFindingRow(host, healthView, argument) }),
+    command<unknown>('monosmith.health.fixFinding', async (argument) => { await fixFindingRow(host, healthView, argument, showPage) }),
     command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
     command('monosmith.dependencies.up', async () => { await runUp(host) }),
-    command<ListNode>('monosmith.dependencies.update', async (node) => { await updateDependency(host, node) }),
+    vscode.commands.registerCommand('monosmith.dependencies.update', async (node?: ListNode, selected?: ListNode[]) => {
+      try {
+        await updateDependency(host, node, selected ?? dependencies.selection())
+      } catch (error) {
+        fail(error)
+      }
+    }),
+    command('monosmith.dependencies.updateSafe', async () => { await updateSafe(host, updateReports) }),
+    command('monosmith.dependencies.repair', async () => { await repairDependencies(host) }),
+    command<ListNode>('monosmith.dependencies.openRegistry', async (node) => { await openRegistry(node) }),
     command('monosmith.release.refresh', async () => { await release.reload() }),
+    command<unknown>('monosmith.release.dryRun', async (argument) => { await showReleasePlan(host, showPage, argument, false) }),
+    command<unknown>('monosmith.release.notes', async (argument) => { await showReleasePlan(host, showPage, argument, true) }),
+    command('monosmith.buildAll', async () => { await runInFolder((projects) => toRunPlan({ kind: 'all', task: 'build' }, projects, options()), true) }),
+    command('monosmith.lintAll', async () => { await runInFolder((projects) => toRunPlan({ kind: 'all', task: 'lint' }, projects, options()), true) }),
+    command('monosmith.testChanged', async () => { await runInFolder(() => ({ tasks: ['lint', 'test'], affected: true, ...taskFlags() }), false) }),
+    command<unknown>('monosmith.runs.open', openRun),
+    command<unknown>('monosmith.runs.showLog', async (argument) => {
+      const row = rowOf(argument)
+      if (row === undefined) return
+      if (logs.has(logKey(row.root, row.data))) await logDocs.open(row.root, row.data)
+      else void vscode.window.showInformationMessage(say('vscode.main.monosmith-has-not-run-since-the', { task: row.data }))
+    }),
+    command('monosmith.runs.errorsOnly.on', async () => { await setErrorsOnly(true) }),
+    command('monosmith.runs.errorsOnly.off', async () => { await setErrorsOnly(false) }),
+    command('monosmith.settings.refresh', async () => { await settings.reload() }),
+    command<unknown>('monosmith.settings.change', async (argument) => {
+      const row = rowOf(argument)
+      if (row !== undefined) await vscode.commands.executeCommand('monosmith.configSet', { root: row.root, setting: row.data })
+    }),
+    command<unknown>('monosmith.settings.reset', async (argument) => {
+      const row = rowOf(argument)
+      if (row !== undefined) await vscode.commands.executeCommand('monosmith.configUnset', { root: row.root, setting: row.data })
+    }),
+    command<unknown>('monosmith.settings.plugin', async (argument) => {
+      const row = rowOf(argument)
+      const picked = row === undefined ? undefined : await pickPluginSwitch(row.data)
+      if (row !== undefined && picked !== undefined) await vscode.commands.executeCommand(picked, { root: row.root, plugin: row.data })
+    }),
+    command<unknown>('monosmith.settings.openRecipe', async (argument) => {
+      const row = rowOf(argument)
+      if (row !== undefined) await vscode.window.showTextDocument(vscode.Uri.file(isAbsolute(row.data) ? row.data : join(row.root, row.data)))
+    }),
+    command('monosmith.commands', async () => {
+      await showCommandPalette((context.extension.packageJSON as { contributes: { commands: Array<{ command: string, title: string }> } }).contributes.commands, VIEWS)
+    }),
     command('monosmith.explainProject', async (node) => { await showInsight(host, insight, node, 'explain') }),
     command('monosmith.showGraph', async (node) => { await showInsight(host, insight, node, 'graph') }),
     command('monosmith.showTaskOutput', async (node) => {
@@ -737,6 +942,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   void setContextKey('monosmith.running', false)
   void setContextKey('monosmith.hasLastRun', false)
   void setContextKey('monosmith.selectionKind', '')
+  void setContextKey('monosmith.runs.errorsOnly', false)
   discover()
 
   return {

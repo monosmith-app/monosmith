@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import {
   countProjects, describeAffected, describeFilter, toTree,
-  type TaskFacts, type TreeFolder, type TreeNode, type ViewFilter,
+  type RunsOf, type TaskFacts, type TreeFolder, type TreeNode, type ViewFilter,
 } from './workspace-tree.mapper.ts'
 import { say } from '../../shared/words/index.ts'
 
@@ -17,6 +17,7 @@ function dotUri (node: TreeNode): vscode.Uri {
 function collapsibleState (node: TreeNode): vscode.TreeItemCollapsibleState {
   if (node.kind === 'task' || node.children.length === 0) return vscode.TreeItemCollapsibleState.None
   if (node.kind === 'environments') return vscode.TreeItemCollapsibleState.Collapsed
+  if (node.kind === 'section') return node.open === true ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed
   if (node.kind === 'project') return node.reveal === true ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed
 
   return vscode.TreeItemCollapsibleState.Expanded
@@ -45,7 +46,7 @@ export interface WorkspaceTree extends vscode.Disposable {
  * @param factsOf - what the last run did to a task id (`api:build`) in a folder
  * @param initial - how the view was narrowed last time
  */
-export function createWorkspaceTree (factsOf: (root: string, task: string) => TaskFacts | undefined, initial?: ViewFilter): WorkspaceTree {
+export function createWorkspaceTree (factsOf: (root: string, task: string) => TaskFacts | undefined, initial?: ViewFilter, runsOf?: RunsOf): WorkspaceTree {
   const changed = new vscode.EventEmitter<TreeNode | undefined>()
   const decorations = new vscode.EventEmitter<vscode.Uri[]>()
   let folders: readonly TreeFolder[] = []
@@ -63,12 +64,12 @@ export function createWorkspaceTree (factsOf: (root: string, task: string) => Ta
       item.contextValue = node.kind === 'task' && node.hasLog === true ? 'task.log' : node.kind
       item.tooltip = node.tooltip
       item.accessibilityInformation = { label: node.spoken }
-      item.iconPath = new vscode.ThemeIcon(node.icon)
+      item.iconPath = new vscode.ThemeIcon(node.icon, node.color === undefined ? undefined : new vscode.ThemeColor(node.color))
       if (node.kind === 'project') {
         item.resourceUri = dotUri(node)
       }
-      if (node.kind === 'action' && node.command !== undefined) {
-        item.command = { command: node.command, title: node.label, arguments: [node] }
+      if ((node.kind === 'action' || node.kind === 'run') && node.command !== undefined) {
+        item.command = { command: node.command, title: node.label, arguments: [node.argument ?? node] }
       }
 
       return item
@@ -87,7 +88,7 @@ export function createWorkspaceTree (factsOf: (root: string, task: string) => Ta
 
   const rebuild = (): void => {
     const before = dotUris(roots)
-    roots = toTree(folders, factsOf, narrowed)
+    roots = toTree(folders, factsOf, narrowed, runsOf)
     view.description = describeAffected(folders) || undefined
     // With nothing to list the welcome text is static, so the reason smith failed goes in the message above it.
     const why = roots.length === 0 && folders.length === 1 ? folders[0]?.note : undefined

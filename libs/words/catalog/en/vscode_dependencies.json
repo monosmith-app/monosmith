@@ -10,5 +10,9 @@
   "vscode.dependencies.is-pinned-at-is-out": "{name} is pinned at {pinned}; {latest} is out.",
   "vscode.dependencies.every-dependency-is-up-to-date": "Every dependency is up to date.",
   "vscode.dependencies.update-2": "update",
-  "vscode.dependencies.updates": "updates"
+  "vscode.dependencies.updates": "updates",
+  "vscode.dependencies.nothing-safe": "MonoSmith: no patch or minor release can be updated here. A major release is updated one at a time.",
+  "vscode.dependencies.open-repair": "Open the repair",
+  "vscode.dependencies.repair-question": "MonoSmith: open the dependency repair in a terminal?",
+  "vscode.dependencies.repair-detail": "smith asks there what to repair: prune, a clean install, a new lockfile or the download cache. It shows the plan before it changes anything."
 }

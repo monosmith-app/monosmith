@@ -18,19 +18,35 @@ export async function pickFixAnswer (question: string, labels: string[]): Promis
 }
 
 /**
- * Shows what the fix would change and asks.
+ * Step 2 of the fix: asks whether to apply what the review shows. The command line it stands for is part of the question.
  * @param review - smith's review: diffs, commands and the plan each command prints
  * @param description - the fix
+ * @param shownBeside - true when the review is open beside the code, so the question only points at it
  * @returns whether the person agreed
  */
-export async function confirmFix (review: string, description: string): Promise<boolean> {
+export async function confirmFix (review: string, description: string, shownBeside = false): Promise<boolean> {
+  const line = say('tui.detail.or_in_a_terminal_smith_doctor', { check: description })
   const choice = await vscode.window.showWarningMessage(
     say('vscode.health.monosmith', { description }),
-    { modal: true, detail: say('vscode.health.nothing-is-changed-until-you-apply', { review }) },
+    { modal: true, detail: shownBeside ? say('vscode.health.review-is-open-beside', { line }) : say('vscode.health.nothing-is-changed-until-you-apply', { review }) },
     say('fixwizard.style.apply'),
   )
 
   return choice === say('fixwizard.style.apply')
+}
+
+/**
+ * Step 3 of the fix: says whether the check passes now that the fix is applied, that nothing was
+ * committed, and offers to check again.
+ * @param outcome - the applied fix
+ * @param still - true when doctor still reports the check
+ */
+export function tellFixChecked (outcome: Extract<FixFindingOutcome, { kind: 'fixed' }>, still: boolean): void {
+  const state = say(still ? 'healthfix.still' : 'healthfix.passes')
+  const message = say('vscode.health.fix-checked', { state, committed: say('tui.capture.not_committed_review_with_git_status') })
+  const again = say('healthfix.step.check')
+  const shown = still || outcome.incomplete ? vscode.window.showWarningMessage(message, again) : vscode.window.showInformationMessage(message, again)
+  void shown.then(async (choice) => { if (choice === again) await vscode.commands.executeCommand('monosmith.health.refresh') })
 }
 
 /**

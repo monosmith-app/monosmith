@@ -22,7 +22,7 @@ its phases and the drawn screens.
 > | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands stay in the run panel of Projects (captured, with live status per task); only a command that asks questions takes the terminal |
 > | Recipes in the interface | partly: the Settings tab lists the workspace's recipes and whether each is valid; `a` opens a guided form, and the recipe's choices are asked by `smith add` |
 > | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
-> | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
+> | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path`. Since November 2026 it has the seven views of the redesigned shell (Home, Projects, Runs, Health, Dependencies, Release, Settings) and a command list with the smith command line of each command ([VS Code as built](tui-redesign.md#vs-code-as-built)) |
 > | `smith lsp` (completion and validation of `smith.toml` and recipes) | **planned, not built** (issue #303); there is no such command |
 > | JetBrains plugin | a first slice is built, `apps/jetbrains` ([README](../../apps/jetbrains/README.md)): a tool window with the projects and tasks from `smith projects --json`, and a task run that prints its command line first. It does not use `smith serve` or settings yet; it is not published to the Marketplace |
 > | A `smith` version range in `smith.toml` | not built; still an open question below |
@@ -450,16 +450,23 @@ sandbox does not allow.
 
 ### What the IDE shows
 
-The same functions as the terminal interface, in the editor's own style:
+The same functions as the terminal interface, in the editor's own style. The table is the
+original proposal; the VS Code extension as built has the views of the redesigned shell, in
+the same order and with the same names:
 
-| Area | Terminal | IDE |
+| View | Terminal | VS Code as built |
 |---|---|---|
-| Workspace | Navigator tree | Side-bar view of projects, tasks, plugins and recipes |
-| Run | Output pane | Output panel with a task tree; problem matchers turn failures into editor problems |
-| Install | A form in the main view | A command and a view; a package picker for the project's ecosystem |
-| Doctor | Home and Doctor tabs | Problems panel, with fixes as quick fixes on the files they concern |
-| Recipes | `smith recipe`, `smith add` (the palette lists them) | New project from a recipe, with the choices as a form |
-| Release | Release tab | A release preview view and the command |
+| Home | the boxes, Needs you now, Start something | the `monosmith.home` tree: the boxes as rows, the queue with each item's buttons as rows, Start something |
+| Projects | the list by kind with the filter, the detail with Tasks, Dependencies, Runs, Settings | the `monosmith.projects` tree: the mark of the last run, the same filter words, the four sections under each project |
+| Runs | the header, the task tree by project, Errors only, the log | the `monosmith.runs` tree, the editor's progress bar, Show Errors Only, the log of a task as a document |
+| Health | the checks by state, the inline fix | the `monosmith.health` tree by state; the fix's review as a page, the apply as a modal question, then check again |
+| Dependencies | the safe and major groups, the package detail, the update buttons | the `monosmith.dependencies` tree with multi-select; the updates run `smith deps up` in a terminal after a yes |
+| Release | the plan, the checks before release, the detail, the actions | the `monosmith.release` tree with the checks and the actions; Release now asks with the plan |
+| Settings | the sections and fields with the smith.toml key and the command | the `monosmith.settings` tree; a field opens the guided `smith config set` on it |
+| Palette | `Ctrl+K`, each entry with its command line | `MonoSmith: Commands…` (`Ctrl+Alt+M P`), each entry with its command line |
+
+The Problems panel, the problem matchers and the task type stay as before. The JetBrains plugin
+follows in a later pull request.
 
 ## Reconciling "never acts by itself"
 

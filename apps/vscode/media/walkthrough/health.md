@@ -1,7 +1,10 @@
-# Health, dependencies and release
+# Home, runs, health, dependencies, release and settings
 
-Three views sit under the projects.
+The side bar has the views of the terminal interface, in its order: Home, Projects, Runs, Health, Dependencies, Release and Settings.
 
-- **Health** lists the checks of `smith doctor` that failed or warn, each with the problem and the remedy. **Fix** shows the changes smith proposes and applies them only after you agree.
-- **Dependencies** lists what has a newer release, grouped patch, minor and major. **Run smith up** opens it in a terminal; **Update** on a row asks first.
-- **Release Preview** shows what `smith release` would publish. It publishes nothing.
+- **Home** says what needs you now. Each item has its buttons, and each button shows the smith command it runs.
+- **Runs** opens on every run you start: its tasks by project, and the log of a task on a click.
+- **Health** groups the checks of `smith doctor` as Failed, Warnings and Passed. **Fix** shows the review, applies it only after you agree, and checks again.
+- **Dependencies** lists what has a newer release: the patch and minor releases first, then the major ones. **Update** asks first and shows the `smith deps up` command.
+- **Release** shows what `smith release` would publish and the checks before a release. It publishes nothing until you confirm.
+- **Settings** lists the settings of `smith.toml` with their `smith config set` command.

@@ -9,11 +9,12 @@ import * as vscode from 'vscode'
  * project, group or folder), `monosmith.hasLastRun` (a run was started
  * before, so it can be run again), `monosmith.affectedOnly` and
  * `monosmith.filtered` (the view is narrowed to the affected projects, or by a
- * text), `monosmith.fixable` (the doctor proposes fixes) and
+ * text), `monosmith.fixable` (the doctor proposes fixes),
+ * `monosmith.runs.errorsOnly` (the Runs view shows the failed tasks only) and
  * `monosmith.derivedPaths` (the absolute paths of the derived files that need
  * action, which a menu tests with `resourcePath in monosmith.derivedPaths`).
  */
-export type ContextKey = 'monosmith.noProjects' | 'monosmith.running' | 'monosmith.state' | 'monosmith.repoKind' | 'monosmith.selectionKind' | 'monosmith.hasLastRun' | 'monosmith.affectedOnly' | 'monosmith.filtered' | 'monosmith.fixable' | 'monosmith.derivedPaths'
+export type ContextKey = 'monosmith.noProjects' | 'monosmith.running' | 'monosmith.state' | 'monosmith.repoKind' | 'monosmith.selectionKind' | 'monosmith.hasLastRun' | 'monosmith.affectedOnly' | 'monosmith.filtered' | 'monosmith.fixable' | 'monosmith.derivedPaths' | 'monosmith.runs.errorsOnly'
 
 /** Sets a context key. */
 export async function setContextKey (key: ContextKey, value: boolean | string | string[]): Promise<void> {

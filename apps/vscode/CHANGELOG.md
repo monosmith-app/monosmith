@@ -7,6 +7,20 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- The views of the terminal interface: the side bar holds Home, Projects, Runs, Health, Dependencies, Release and Settings, in that order and with those names. Every row that does something shows the smith command line it stands for, and every change asks first.
+- Home: the boxes Changed, Last run, Health and Release, then Needs you now (a failed run, failing and warning checks, changed projects, a release that is ready, updates) with the buttons of each item, then Start something (Build all, Lint all, Run a task…, Add a project, Compose a stack, Settings).
+- Runs: a run started from the editor opens here, with its state, its progress, its tasks grouped by project, Show Errors Only, and the log of a task on a click. The older runs of the session are under Runs this session.
+- Settings: Workspace lists every setting of smith.toml with its value, type and `smith config set` command; a click opens the change on that setting, and a set setting can be reset. Plugins, Recipes, Architecture, Assistants, CI and Forms follow.
+- Commands… (`Ctrl+Alt+M P`): every command in one list, grouped as the terminal's palette, each with the smith command line it runs.
+- Build All, Lint All, Lint and Test What Changed, Update All Safe…, Repair Dependencies…, Release Dry Run and Release Notes.
+
+### Changed
+
+- Projects: a project shows the mark of its last run, and holds the sections Tasks, Dependencies (Uses, Used by, Install a package, Unlink a library), Runs and Settings. The filter reads `kind:`, `lang:` and `changed`, as the terminal's filter does.
+- Health moved from its panel into the side bar. It groups the checks Failed, Warnings and Passed, says the project and the file of each check, and the fix goes through review, apply and check again; the message after a fix says whether the check passes now and that nothing was committed.
+- Dependencies: the groups are the patch and minor releases (safe together) and the major ones; each package has its detail and its `smith deps up` command, with `--major` for a major release. Several selected rows update in one command. The updates run `smith deps up` (the same as `smith up`).
+- Release Preview is named Release, as in the terminal. Each package has why it releases, its changes, its tag and its command; the checks before release and the actions follow.
+
 - Cache: Set Up the Remote Cache in a Terminal: runs `smith cache setup` in a MonoSmith terminal, where each cloud command is shown and confirmed before it runs and the key goes to the clipboard unseen.
 - Tab completion: "Set Up Tab Completion" runs `smith completion install` in a MonoSmith terminal, where the files are listed and the question is asked. The extension offers it once (Set up, Not now, Don't ask again) when `smith completion status --json` says it is not set up.
 - Convert an Nx or Turborepo Workspace with Your Choices: asks the level and, at the full level, lint, tests, build and pipelines from `smith convert --questions --json`, shows the plan with the files it deletes, asks the unticked commit box, then converts.

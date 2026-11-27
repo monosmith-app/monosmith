@@ -1,0 +1,22 @@
+{
+  "vscode.settings-view.on": "on",
+  "vscode.settings-view.off": "off",
+  "vscode.settings-view.none": "none",
+  "vscode.settings-view.default-value": "default: {value}",
+  "vscode.settings-view.why-default": "Why the default:",
+  "vscode.settings-view.plugins.one": "{count} plugin",
+  "vscode.settings-view.plugins.other": "{count} plugins",
+  "vscode.settings-view.switch-plugin": "MonoSmith: switch {plugin} on or off",
+  "vscode.settings-view.switch-plugin-hint": "Each answer shows the smith command it runs. The next step shows it again and asks.",
+  "vscode.settings-view.install-plugin": "Install a plugin from the marketplace",
+  "vscode.settings-view.choose-architecture": "Choose the architecture",
+  "vscode.settings-view.new-recipe": "New recipe",
+  "vscode.settings-view.install-agent": "Install the MonoSmith agent",
+  "vscode.settings-view.connect-assistant": "Connect smith to a coding assistant",
+  "vscode.settings-view.regenerate-ci": "Regenerate the CI pipelines",
+  "vscode.settings-view.add-pipeline": "Add a ready-made pipeline",
+  "vscode.settings-view.remove-project": "Remove a project",
+  "vscode.settings-view.change-kind": "Make a project an app, library or package",
+  "vscode.settings-view.swap-choice": "Swap a choice of a project",
+  "vscode.settings-view.sync-versions": "Sync dependency versions"
+}
