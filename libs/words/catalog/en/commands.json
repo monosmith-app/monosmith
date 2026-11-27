@@ -129,7 +129,7 @@
   "commands.settings.move.shortcut": "Up Down / j k",
   "commands.settings.move.glyph": "↑↓",
   "commands.settings.move.footer": "move",
-  "commands.settings.change.title": "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed",
+  "commands.settings.change.title": "Open the selected section, or change the selected plugin or setting: pick or type the value, then Enter saves it",
   "commands.settings.change.footer": "change",
   "commands.settings.sections.title": "Switch between the list of sections and its rows",
   "commands.settings.sections.shortcut": "Tab / Left Right",

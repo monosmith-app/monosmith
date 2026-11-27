@@ -156,7 +156,7 @@ func TestClickingAFooterHintPressesItsKey(t *testing.T) {
 	l = newLab(t, true, 320, 34)
 	x, y = l.find("? help")
 	l.send(click(x+1, y))
-	l.has("Keyboard shortcuts")
+	l.has("Keys · ")
 	l.keys("esc")
 	x, y = l.find("m mouse")
 	l.send(click(x+1, y))
@@ -451,9 +451,9 @@ func TestClickingAPaletteRowRunsIt(t *testing.T) {
 func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("f1")
-	l.has("Keyboard shortcuts")
+	l.has("Keys · ")
 	l.send(click(1, 32))
-	l.hasNot("Keyboard shortcuts")
+	l.hasNot("Keys · ")
 }
 
 func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {

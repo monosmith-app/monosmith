@@ -24,6 +24,10 @@ func (s Shell) mainTitle() string {
 		}
 		return words.Say("tui.frame.run", "command", s.run.CommandLine())
 	}
+	if s.tab == commands.TabSettings && !s.lay().HasDetail() && !s.settings.OnSections() {
+		// On a narrow screen Enter opened the section in the frame; Esc goes back.
+		return words.Say("tui.frame.back", "view", view, "item", s.settings.Section().Title())
+	}
 	if s.detailFull() {
 		if item := s.detailTitle(); item != "" {
 			return words.Say("tui.frame.back", "view", view, "item", item)
@@ -64,11 +68,17 @@ func (s Shell) detailTitle() string {
 	case commands.TabRelease:
 		return s.release.DetailTitle()
 	case commands.TabSettings:
-		return s.settings.Section().Title()
+		return s.settings.PaneTitle()
 	}
 	return ""
 }
 
 // mainFocused is true while the main frame has the keyboard: always, unless
 // the detail beside it has it.
-func (s Shell) mainFocused() bool { return s.detailFull() || !s.sideKeys() }
+func (s Shell) mainFocused() bool {
+	if s.tab == commands.TabSettings && s.lay().HasDetail() {
+		// The keyboard is in the list of sections or in the open section beside it.
+		return s.settings.OnSections()
+	}
+	return s.detailFull() || !s.sideKeys()
+}

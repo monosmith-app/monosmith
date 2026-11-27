@@ -33,6 +33,7 @@ func depsRepairStyle(noRetry bool) fixwizard.Style {
 		Verb:         words.Say("tui.deps_repair.verb"),
 		Working:      words.Say("tui.deps_repair.working"),
 		Apply:        words.Say("tui.deps_repair.apply"),
+		Command:      "smith deps repair", // words:literal
 		NoRetry:      noRetry,
 		NoSuggestion: true,
 	}

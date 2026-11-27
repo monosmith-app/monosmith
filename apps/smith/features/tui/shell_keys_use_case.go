@@ -552,7 +552,7 @@ func (s *Shell) openHelp() {
 	for _, r := range commands.HelpRows(s.state(), tabTitles()[s.tab]) {
 		rows = append(rows, helpdialog.HelpRow(r))
 	}
-	h := helpdialog.NewHelp(rows, mouseHelp()).Within(s.dialogMargins()).Place(s.w, s.h)
+	h := helpdialog.NewHelp(rows, mouseHelp()).Titled(tabTitles()[s.tab]).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.help = &h
 }
 
@@ -583,6 +583,10 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		// The settings of a project are in the detail of Projects, not in the tab.
 		var cmd tea.Cmd
 		s.settings, cmd = s.settings.CloseProject().Open()
+		if !s.lay().HasDetail() {
+			// A narrow screen opens on the list of sections; Enter opens one.
+			s.settings = s.settings.ToSections()
+		}
 		return cmd
 	case commands.TabRelease:
 		if !s.release.Loaded {

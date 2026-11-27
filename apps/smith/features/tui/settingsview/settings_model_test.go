@@ -180,7 +180,7 @@ func TestThePluginsSectionListsTheBuiltInTheExternalAndTheInstalledPlugins(t *te
 	m := opened(t, sample())
 	out := text(m, 100, 28)
 	for _, want := range []string{
-		"Sections", "Plugins", "Architecture", "Style", "Workspace", "Recipes", "Forms",
+		"Per-project", "Plugins", "Architecture", "Style", "Workspace", "Recipes", "Forms",
 		"Built-in plugins", "[x] go", "[x] node", "[ ] python",
 		"External plugins this workspace uses", "widget", "not trusted",
 		"Installed on the search path", "kiwi", "1.2.0",
@@ -313,11 +313,18 @@ func TestInstallTakesTheDigestAfterTheSourceAndRefusesAnEmptyField(t *testing.T)
 	}
 }
 
-func TestABooleanSettingFlipsOnSpaceAndItsDefaultIsRespected(t *testing.T) {
+func TestABooleanSettingIsAChoiceOnSpaceAndItsDefaultIsRespected(t *testing.T) {
 	f := sample()
 	m := opened(t, f)
 	m, _ = press(m, "left", "down", "down", "down", "right") // Workspace section
-	press(m, " ")                                            // ci.devcontainer, unset, default false
+	m, _ = press(m, " ")                                     // ci.devcontainer, unset, default false
+	if !m.Modal() || len(f.calls) != 0 {
+		t.Fatalf("Space presents the choice and writes nothing: modal %v, calls %v", m.Modal(), f.calls)
+	}
+	if out := text(m, 100, 28); !strings.Contains(out, "(●) Off (the default)") && !strings.Contains(out, "(*) Off (the default)") {
+		t.Fatalf("the choice starts on the default:\n%s", out)
+	}
+	press(m, "up", "enter") // On
 	if got := strings.Join(f.calls, ";"); got != "set ci.devcontainer true" {
 		t.Fatalf("calls: %q", got)
 	}
@@ -536,11 +543,15 @@ func TestAClickSelectsASectionOrARowAndADoubleClickChangesIt(t *testing.T) {
 	f := sample()
 	m := opened(t, f)
 	w, h := 100, 28
-	m, _ = m.Click(w, h, 2, 4, false) // Workspace in the list
+	rowOf := map[Section]int{}
+	for y, s := range m.frame(plainTheme(), w, h, -1, -1).rowSection {
+		rowOf[s] = y
+	}
+	m, _ = m.Click(w, h, 2, rowOf[Workspace], false) // Workspace in the list
 	if m.Section() != Workspace || m.onItems {
 		t.Fatalf("section %v onItems=%v", m.Section(), m.onItems)
 	}
-	m, _ = m.Click(w, h, 2, 1, false) // Plugins
+	m, _ = m.Click(w, h, 2, rowOf[Plugins], false) // Plugins
 	row := 0
 	for y := 1; y < h; y++ {
 		if idx, ok := m.frame(plainTheme(), w, h, -1, -1).rowItem[y]; ok && idx == 1 {
@@ -625,7 +636,7 @@ func TestAnUnsetSettingShowsItsDefaultValueAndASetOneShowsItsOwn(t *testing.T) {
 		rows = append(rows, strings.Join(strings.Fields(l), " "))
 	}
 	screenText := strings.Join(rows, "\n")
-	for _, want := range []string{"ci.devcontainer [ ] false", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
+	for _, want := range []string{"ci.devcontainer ○ off false switch", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
 		if !strings.Contains(screenText, want) {
 			t.Fatalf("the list lacks %q:\n%s", want, screenText)
 		}
@@ -844,18 +855,22 @@ func TestEscLeavesThePickListWithoutWriting(t *testing.T) {
 	}
 }
 
-func TestASwitchShowsABoxAndEnterFlipsIt(t *testing.T) {
+func TestASwitchShowsItsStateAndEnterPresentsTheChoice(t *testing.T) {
 	f := sample()
 	m := opened(t, f).Show(Workspace)
-	if out := text(m, 100, 28); !strings.Contains(out, "[ ] false") {
-		t.Fatalf("no box on the switch:\n%s", out)
+	if out := text(m, 100, 28); !strings.Contains(out, "○ off") {
+		t.Fatalf("no state on the switch:\n%s", out)
+	}
+	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Enter picks a value") {
+		t.Fatalf("the detail does not say what Enter does:\n%s", lines)
 	}
 	m, _ = press(m, "enter")
-	if got := f.calls[len(f.calls)-1]; got != "set ci.devcontainer true" {
-		t.Fatalf("saved %q", got)
+	if !m.Modal() || len(f.calls) != 0 {
+		t.Fatalf("Enter presents On and Off and writes nothing: %v", f.calls)
 	}
-	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Enter flips it") {
-		t.Fatalf("the detail does not say what Enter does:\n%s", lines)
+	m, _ = press(m, "up", "enter")
+	if got := f.calls[len(f.calls)-1]; got != "set ci.devcontainer true" || m.Modal() {
+		t.Fatalf("saved %q, modal %v", got, m.Modal())
 	}
 }
 

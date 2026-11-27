@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/splitter"
 )
 
@@ -119,42 +120,33 @@ func TestDraggingTheRunDividerResizesTheTaskTree(t *testing.T) {
 	}
 }
 
-func TestTheSettingsDividersMoveWithTheKeys(t *testing.T) {
+func TestTheSettingsDividerMovesWithTheKeys(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
 	l.keys("7")
-	in := l.sh().mainInner()
-	before := l.sh().settings.Geometry(in.W, in.H)
+	before := l.sh().lay().Main.W
 	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
 	l.keys("]")
-	after := l.sh().settings.Geometry(in.W, in.H)
-	if after.ListW != before.ListW+splitter.Step {
-		t.Fatalf("the list of sections is %d wide, want %d", after.ListW, before.ListW+splitter.Step)
-	}
-	if after.SepRow < 0 {
-		t.Skip("the section has no detail to resize")
-	}
-	l.send(tea.KeyMsg{Type: tea.KeyShiftDown})
-	l.keys("]")
-	moved := l.sh().settings.Geometry(in.W, in.H)
-	if moved.DetailRows != after.DetailRows-splitter.Step && moved.DetailRows != moved.DetailMin {
-		t.Fatalf("moving the row divider down shrinks the detail: %d -> %d", after.DetailRows, moved.DetailRows)
+	if after := l.sh().lay().Main.W; after != before+splitter.Step {
+		t.Fatalf("the frame of the sections is %d wide, want %d", after, before+splitter.Step)
 	}
 }
 
 func TestBackslashSelectsTheNextDividerAndTheBarThePrevious(t *testing.T) {
+	// Settings has one divider, between its two frames: the keys wrap round it.
+	// splitter's own tests walk a screen with several.
 	l, _ := newSettingsLab(t, 140, 40)
 	l.keys("7")
 	spots := l.sh().spots()
-	if len(spots) < 2 {
-		t.Fatalf("Settings has %d dividers", len(spots))
+	if len(spots) != 1 || spots[0].ID != splitter.DetailID(commands.TabSettings) {
+		t.Fatalf("Settings has %d dividers: %+v", len(spots), spots)
 	}
 	l.keys(`\`)
 	if l.sh().split.Selected != spots[0].ID {
 		t.Fatalf("first: %q", l.sh().split.Selected)
 	}
 	l.keys(`\`)
-	if l.sh().split.Selected != spots[1].ID {
-		t.Fatalf("second: %q", l.sh().split.Selected)
+	if l.sh().split.Selected != spots[0].ID {
+		t.Fatalf("the next wraps round to the one there is: %q", l.sh().split.Selected)
 	}
 	l.keys("|")
 	if l.sh().split.Selected != spots[0].ID {

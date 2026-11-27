@@ -285,7 +285,7 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 44)
 	l.keys("f1")
 	// The keys of the open view come first: Projects has its filter and its sections.
-	l.has("Keyboard shortcuts", "Filter the list of projects", "Run… every action of the selected project")
+	l.has("Keys · ", "Filter the list of projects", "Run… every action of the selected project")
 	seen := map[string]bool{}
 	for range 6 {
 		for _, want := range []string{"Move in a list", "Build all", "Stop", "Ctrl+C"} {
@@ -303,9 +303,9 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l.has(": / Ctrl+K", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
 	l.hasNot("Right-click", "Alt+", "F10", "menu")
 	l.keys("esc")
-	l.hasNot("Keyboard shortcuts")
+	l.hasNot("Keys · ")
 	l.keys("?")
-	l.has("Keyboard shortcuts")
+	l.has("Keys · ")
 }
 
 func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {

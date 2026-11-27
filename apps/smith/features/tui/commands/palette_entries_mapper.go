@@ -106,14 +106,14 @@ func PaletteEntries(s State) []PaletteEntry {
 func paletteText(c Command, s State) (title, hint string) {
 	switch {
 	case c.Kind == RunTask && c.All:
-		if s.Projects > 0 {
-			return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(c.TaskArgv(""))
+		if n, ok := s.allCount(c.Task); ok {
+			return words.Say("commands.palette.all.count", "verb", c.verb(), "count", n), Line(c.TaskArgv(""))
 		}
 		return words.Say("commands.palette.all", "verb", c.verb()), Line(c.TaskArgv(""))
 	case c.Kind == RunTask:
 		if s.RunProject() == "" {
-			if s.Projects > 0 {
-				return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(c.TaskArgv(""))
+			if n, ok := s.allCount(c.Task); ok {
+				return words.Say("commands.palette.all.count", "verb", c.verb(), "count", n), Line(c.TaskArgv(""))
 			}
 			return words.Say("commands.palette.all", "verb", c.verb()), Line(c.TaskArgv(""))
 		}

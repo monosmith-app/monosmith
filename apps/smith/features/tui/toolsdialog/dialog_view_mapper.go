@@ -143,7 +143,7 @@ func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) {
 	p := m.current()
 	lines = headLines(th, p, inner)
-	lines = append(lines, words.Say("toolsdialog.admin.needs"), "  "+th.Bold(strings.Join(m.opt.Command, " ")))
+	lines = append(lines, words.Say("toolsdialog.admin.needs"), "  "+th.Faint("$ "+strings.Join(m.opt.Command, " ")))
 	how := words.Say("toolsdialog.admin.system")
 	if len(m.opt.Command) > 0 && m.opt.Command[0] == "sudo" {
 		how = words.Say("toolsdialog.admin.sudo")

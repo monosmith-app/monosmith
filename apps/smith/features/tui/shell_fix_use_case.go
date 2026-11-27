@@ -141,7 +141,12 @@ func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 		}
 	}
 	s.fixed = nil
-	w := fixwizard.New(p, s.sources.ShowFix).Within(s.dialogMargins()).Place(s.w, s.h)
+	w := fixwizard.New(p, s.sources.ShowFix)
+	if (!s.inWorkspace || s.repair != nil) && len(p.Checks) == 1 {
+		// A fix that stays a dialog shows the command that does the same, dim.
+		w = w.Styled(fixwizard.Style{Command: "smith doctor --fix --only '" + p.Checks[0] + "'"}) // words:literal
+	}
+	w = w.Within(s.dialogMargins()).Place(s.w, s.h)
 	s.fix = &w
 	return cmd
 }

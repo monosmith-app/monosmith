@@ -20,25 +20,38 @@ func (m Model) ProjectPane(th theme.Theme, w, h, px, py int) []string {
 		return pane.Block(nil, max(w, 0), max(h, 0))
 	}
 	m.section, m.onItems, m.sideDetail = Project, true, false
-	lines, _ := m.right(th, w, h, px, py)
-	return pane.Block(lines, w, h)
+	return pane.Block(m.right(th, w, h, px, py).lines, w, h)
 }
 
 // ProjectClick is a click at row y of the pane ProjectPane draws in w by h
 // cells: it selects a row, or picks a value of the open editor; a double
-// click does what Enter does.
+// click does what Enter does. It knows no column, so it presses no button:
+// ProjectClickAt does.
 //
 // Parameters: w and h are the size of the pane; y is the row; double is true
 // for a double click.
 // Returns: the tab, and what the click asks the shell to do.
 func (m Model) ProjectClick(w, h, y int, double bool) (Model, Result) {
+	return m.ProjectClickAt(w, h, -1, y, double)
+}
+
+// ProjectClickAt is ProjectClick at the cell (x, y): a click on the Save or the
+// Reset button under the box of a setting presses it.
+//
+// Parameters: w and h are the size of the pane; x and y are the cell; double
+// is true for a double click.
+// Returns: the tab, and what the click asks the shell to do.
+func (m Model) ProjectClickAt(w, h, x, y int, double bool) (Model, Result) {
 	if m.project == nil {
 		return m, Result{}
 	}
 	m.section, m.onItems = Project, true
 	plain := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
-	_, rowItem := m.rightRows(plain, w, h, -1, -1)
-	return m.clickItem(rowItem, y, double)
+	p := m.rightRows(plain, w, h, -1, -1)
+	if y == p.btnRow {
+		return m.pressButton(p.btns, x)
+	}
+	return m.clickItem(p.rowItem, y, double)
 }
 
 // ProjectKey gives a key to the Project section that ProjectPane draws: the

@@ -7,6 +7,5 @@
   "dialog.command.will": "The command that will run:",
   "dialog.command.running": "The command that is running:",
   "dialog.help.mouse": "Mouse",
-  "dialog.help.disabled": "Disabled: {reason}",
-  "dialog.help.title": "Keyboard shortcuts · ↑↓ scroll · Esc closes"
+  "dialog.help.disabled": "Disabled: {reason}"
 }

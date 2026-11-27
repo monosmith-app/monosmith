@@ -335,7 +335,7 @@ func (m Model) planBody(th theme.Theme, inner int) (lines, foot []string) {
 			lines = append(lines, pane.Wrap(one, inner, 4)...)
 		}
 	}
-	add(th.Bold(words.Say("composer.plan.run")), "  "+th.Accent(p.Command), "")
+	add(th.Bold(words.Say("composer.plan.run")), "  "+th.Faint("$ "+p.Command), "")
 	if len(p.Files) > 0 {
 		add(th.Bold(words.Say("composer.plan.writes")))
 		for _, f := range p.Files {

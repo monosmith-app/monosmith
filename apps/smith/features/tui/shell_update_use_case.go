@@ -33,7 +33,6 @@ func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if load := s.syncProjectSettings(); load != nil {
 		cmd = tea.Batch(cmd, load)
 	}
-	s.settings = s.settings.WithSideDetail(s.tab == commands.TabSettings && s.lay().HasDetail())
 	s.refreshPalette()
 	s.trackWait()
 	if s.quit {
