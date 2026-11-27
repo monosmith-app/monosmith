@@ -868,13 +868,15 @@ a move in the list leaves it. When the check still fails, the detail shows why a
 footer lists the keys of the step. The list gets more room for the detail while a fix shows in it.
 
 Under the checks, **Checks doctor does not run itself** lists the checks that only run on request:
-**Vertical-slice layout**. `Enter` on the row, or the **Run this check now** button of its detail,
-runs the check at once, with no question. It runs `slice-check`, the cached task of each project in a
+**Verify the workspace as CI does** and **Vertical-slice layout**. `Enter` on a row, or the
+**Run this check now** button of its detail, runs the check at once, with no question. The verify
+row runs `smith verify`: the boundaries, then lint, typecheck, test and build of every project, and
+a check that no tracked file changed. The slice row runs `slice-check`, the cached task of each project in a
 language the checker knows (Go, Python, Rust and others), and `lint` when the workspace has Node
 projects, because ESLint's vertical-slices rules check a Node project's layout as part of its lint.
 A workspace with a Go app and Node packages runs `smith run slice-check lint`. Each project's
-result, and the output of a failure, show in the Runs view. The row is absent when no project has
-either task.
+result, and the output of a failure, show in the Runs view. The slice row is absent when no project
+has either task.
 
 ## Wizards
 

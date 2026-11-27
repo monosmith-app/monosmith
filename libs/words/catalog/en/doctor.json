@@ -10,6 +10,8 @@
   "doctor.passed.line": "{count} checks passed",
   "doctor.passed.hint": "Enter or p shows them",
   "doctor.extra.heading": "Checks doctor does not run itself",
+  "doctor.extra.verify": "Verify the workspace as CI does",
+  "doctor.extra.verify.hint": "Enter runs smith verify",
   "doctor.extra.slices": "Vertical-slice layout",
   "doctor.extra.slices.hint": "Enter runs {tasks}",
   "doctor.remedy.prefix": "→ ",
