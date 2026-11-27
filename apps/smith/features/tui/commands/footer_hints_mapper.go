@@ -88,6 +88,8 @@ func scopedLabel(c Command, s State) string {
 	switch {
 	case c.All && counted:
 		return c.Footer + " " + strconv.Itoa(n)
+	case !c.All && c.ScopeInFooter && len(s.Picked) > 0:
+		return c.Footer + " " + words.Say("commands.scope.picked", "count", len(s.Picked))
 	case !c.All && c.ScopeInFooter && s.RunProject() != "":
 		return c.Footer + " " + ansi.Truncate(s.RunProject(), maxScopeName, "…")
 	case !c.All && c.ScopeInFooter && counted:

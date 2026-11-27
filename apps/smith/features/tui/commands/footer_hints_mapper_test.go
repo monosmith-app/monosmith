@@ -186,3 +186,26 @@ func TestTheArrowKeysAreNeverACommandOfTheirOwn(t *testing.T) {
 		t.Errorf("ctrl+u on Home is %+v", c)
 	}
 }
+
+func TestTheRunKeysNameThePickedProjectsAndEscClearsThem(t *testing.T) {
+	s := State{View: TabProjects, InWorkspace: true, Project: "web", Projects: 4, Picked: []string{"web", "kit"}}
+	labels := map[string]string{}
+	view, _ := Hints(s)
+	for _, h := range view {
+		labels[h.Glyph] = h.Label
+	}
+	if labels["b"] != "build 2 selected" || labels["Esc"] != "clear selection" || labels["Space"] != "select" {
+		t.Fatalf("footer: %v", labels)
+	}
+	s.Picked = nil
+	view, _ = Hints(s)
+	for _, h := range view {
+		if h.Label == "clear selection" {
+			t.Fatal("with nothing picked Esc has nothing to clear")
+		}
+	}
+	unselect, _ := ByID("projects.unselect")
+	if unselect.Unavailable(s) == "" {
+		t.Fatal("the clear command says why it cannot work")
+	}
+}

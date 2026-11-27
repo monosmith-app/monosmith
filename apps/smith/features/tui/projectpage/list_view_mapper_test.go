@@ -125,3 +125,22 @@ func TestAnEmptyFilterResultSaysHowToClearIt(t *testing.T) {
 		t.Fatalf("lines %q rows %v selected %d", lines, rowOf, sel)
 	}
 }
+
+func TestPickedProjectsShowTheirTickBoxAndTheCountLeadsTheHead(t *testing.T) {
+	in := sampleList()
+	in.Rows[0].Picked, in.Rows[2].Picked = true, true
+	in.Picked = 2
+	lines, _, _ := ListBody(plain, in, 60)
+	for i, want := range map[int]string{1: "[x] ×  orders", 2: "[ ] ✓  web", 4: "[x] –  kit", 6: "[ ] ✓  sdk"} {
+		if got := pane.Strip(lines[i]); !strings.Contains(got, want) || pane.Width(lines[i]) != 60 {
+			t.Fatalf("line %d is %q, want %q in 60 cells", i, got, want)
+		}
+	}
+	if head := pane.Strip(ListHead(plain, in, 60)[1]); !strings.HasPrefix(head, "2 selected · 2 apps") {
+		t.Fatalf("the count line leads with the selection: %q", head)
+	}
+	in.Picked = 0
+	if lines, _, _ := ListBody(plain, in, 60); strings.Contains(pane.Strip(lines[1]), "[") {
+		t.Fatalf("with nothing picked no row has a box: %q", pane.Strip(lines[1]))
+	}
+}

@@ -42,6 +42,8 @@ func (c Command) Unavailable(s State) string {
 		return words.Say("commands.reason.noprojectdetail")
 	case c.NotInProjectDetail && s.ProjectDetail:
 		return words.Say("commands.reason.inprojectdetail")
+	case c.NeedsPicked && len(s.Picked) == 0:
+		return words.Say("commands.reason.nopicked")
 	case c.NeedsIdle && s.Running:
 		return words.Say("commands.reason.running", "shortcut", ShortcutOf("run.stop"))
 	}
@@ -68,7 +70,8 @@ func (c Command) gated(s State) bool {
 		(!c.NeedsRecentFocus || s.RecentFocus) && (!c.NotInRecentFocus || !s.RecentFocus) &&
 		(!c.NeedsSideFocus || s.SideFocus) && (!c.NotInSideFocus || !s.SideFocus) &&
 		(!c.NeedsSideNext || s.SideNext) && (!c.NotSideNext || !s.SideNext) &&
-		(!c.NeedsProjectDetail || s.ProjectDetail) && (!c.NotInProjectDetail || !s.ProjectDetail)
+		(!c.NeedsProjectDetail || s.ProjectDetail) && (!c.NotInProjectDetail || !s.ProjectDetail) &&
+		(!c.NeedsPicked || len(s.Picked) > 0)
 }
 
 // Visible reports whether the command is listed at all in this state (a

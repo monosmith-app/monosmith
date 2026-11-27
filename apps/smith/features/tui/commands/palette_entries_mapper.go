@@ -110,6 +110,8 @@ func paletteText(c Command, s State) (title, hint string) {
 			return words.Say("commands.palette.all.count", "verb", c.verb(), "count", n), Line(c.TaskArgv(""))
 		}
 		return words.Say("commands.palette.all", "verb", c.verb()), Line(c.TaskArgv(""))
+	case c.Kind == RunTask && len(s.Picked) > 0:
+		return c.verb() + " " + words.Say("commands.scope.picked", "count", len(s.Picked)), Line(c.TaskArgvAcross(s.Picked))
 	case c.Kind == RunTask:
 		if s.RunProject() == "" {
 			if n, ok := s.allCount(c.Task); ok {

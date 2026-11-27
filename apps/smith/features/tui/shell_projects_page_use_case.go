@@ -46,7 +46,10 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 		}
 		s.focusSide()
 	case commands.NavCancel:
-		if s.list.Filter() != "" {
+		// Esc lets the picked projects go first, then clears the filter.
+		if len(s.picked) > 0 {
+			s.picked = nil
+		} else if s.list.Filter() != "" {
 			s.list = s.list.WithFilter("")
 		}
 	case commands.NavNext:
@@ -57,6 +60,8 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 			s.focusSide()
 		case "/":
 			s.filtering = true
+		case " ":
+			s.togglePick()
 		}
 	}
 	return nil

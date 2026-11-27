@@ -384,6 +384,9 @@ type Shell struct {
 	taskAt, projRunAt int
 	// filtering is true while the filter line of Projects has the keyboard.
 	filtering bool
+	// picked are the projects chosen with Space in the list of Projects, by
+	// name: the run keys act on all of them. Esc clears them.
+	picked map[string]bool
 	// pins are the projects pinned to the rail, in order; savePins keeps them.
 	pins     []string
 	savePins func([]string)
@@ -494,7 +497,7 @@ func (s Shell) state() commands.State {
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
 		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
-		Labels: s.labels(),
+		Labels: s.labels(), Picked: s.pickedNames(),
 	}
 }
 

@@ -44,7 +44,12 @@ func (s Shell) projectsContent(w, h int) content {
 	in := s.listInput()
 	c.lines = append(projectpage.ListHead(s.th, in, w), "")
 	body, rowOf, sel := projectpage.ListBody(s.th, in, w)
-	avail := max(h-len(c.lines)-2, 1)
+	box := s.pickBox(w, under)
+	if h-len(c.lines)-2-len(box) < 3 {
+		// A short list keeps its rows: the keys still run the picked projects.
+		box = nil
+	}
+	avail := max(h-len(c.lines)-2-len(box), 1)
 	top := s.projScroll.Show(max(sel, 0), avail, len(body))
 	first := len(c.lines)
 	for i := top; i < len(body) && i < top+avail; i++ {
@@ -54,8 +59,14 @@ func (s Shell) projectsContent(w, h int) content {
 		c.lines = append(c.lines, body[i])
 	}
 	copy(c.lines[first:], pane.Scrollbar(s.th, c.lines[first:], w, top, len(body)))
-	for len(c.lines) < h-1 {
+	for len(c.lines) < h-1-len(box) {
 		c.lines = append(c.lines, "")
+	}
+	for _, b := range box {
+		if len(b.hit.spans) > 0 {
+			c.hits[len(c.lines)] = b.hit
+		}
+		c.lines = append(c.lines, b.line)
 	}
 	c.lines = append(c.lines, projectpage.Legend(s.th, w))
 	return c
@@ -81,9 +92,10 @@ func (s Shell) listInput() projectpage.ListInput {
 	for i, p := range listed {
 		in.Rows = append(in.Rows, projectpage.ListRow{
 			Index: indexes[i], Name: p.Name, Kind: p.Kind, Language: p.Language, Version: s.versionOf(p, projectlist.VersionW-1),
-			Mark: s.projectMark(p.Name), Changed: p.Affected,
+			Mark: s.projectMark(p.Name), Changed: p.Affected, Picked: s.picked[p.Name],
 		})
 	}
+	in.Picked = len(s.pickedNames())
 	return in
 }
 

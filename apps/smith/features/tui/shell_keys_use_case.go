@@ -454,7 +454,12 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Execute:
 		return s.execute(c.Argv, false)
 	case commands.RunTask:
-		project := s.state().RunProject()
+		st := s.state()
+		if !c.All && len(st.Picked) > 0 {
+			// The picked projects of the list run together: one smith run with a -p for each.
+			return s.execute(c.TaskArgvAcross(st.Picked), false)
+		}
+		project := st.RunProject()
 		if c.All {
 			project = ""
 		}

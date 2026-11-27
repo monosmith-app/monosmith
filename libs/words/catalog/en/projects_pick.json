@@ -1,0 +1,14 @@
+{
+  "commands.projects.select.title": "Select the project, to run a task on several at once",
+  "commands.projects.select.shortcut": "Space",
+  "commands.projects.select.footer": "select",
+  "commands.projects.unselect.title": "Clear the selected projects",
+  "commands.projects.unselect.footer": "clear selection",
+  "commands.scope.picked": "{count} selected",
+  "projectpage.picked.count": "{count} selected",
+  "commands.reason.nopicked": "no project is selected: Space selects one",
+  "tui.pick.box": "{count} selected: {names}",
+  "tui.pick.command": "$ {command}",
+  "tui.pick.no_task": "None of them has a build, test, lint or typecheck task.",
+  "tui.pick.clear": "{key} clears the selection"
+}
