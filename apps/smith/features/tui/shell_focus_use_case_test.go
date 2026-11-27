@@ -8,24 +8,25 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 )
 
 func TestTabMovesTheKeyboardBetweenTheListAndTheDetailOfProjects(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
-	l.has("Tab detail")
+	l.has("Tab detail", "/ filter")
 	l.keys("tab")
 	if !l.sh().sideFocus {
 		t.Fatal("Tab did not move the keyboard to the detail")
 	}
-	l.has("Tab list", "↑↓ choose", "Enter go to run")
-	l.keys("enter")
-	l.has("Enter run")
-	l.hasNot("go to run")
-	l.keys("up")
-	l.hasNot("Tab detail")
+	l.has("Tab section", "Enter run", "Esc back")
+	l.hasNot("Tab detail", "/ filter")
 	l.keys("tab")
+	if !l.sh().sideFocus || l.sh().projSection != projectpage.Dependencies {
+		t.Fatalf("a second Tab must show the next section: side %v, section %d", l.sh().sideFocus, l.sh().projSection)
+	}
+	l.keys("esc")
 	if l.sh().sideFocus {
-		t.Fatal("a second Tab did not give the keyboard back to the list")
+		t.Fatal("Esc did not give the keyboard back to the list")
 	}
 	l.has("Tab detail")
 }
@@ -33,7 +34,7 @@ func TestTabMovesTheKeyboardBetweenTheListAndTheDetailOfProjects(t *testing.T) {
 func TestOnAShortScreenTheRunButtonOfTheDetailStaysInView(t *testing.T) {
 	for _, h := range []int{14, 18, 34} {
 		l := newLab(t, true, 140, h).openTab(commands.TabProjects)
-		l.keys("tab")
+		l.keys("tab", "R") // the Run… menu
 		r := l.sh().detailRect()
 		c := l.sh().detailContent(r.W, r.H)
 		shown := false
@@ -66,20 +67,28 @@ func TestRightAndLeftMoveTheKeyboardAcrossTheListAndTheDetail(t *testing.T) {
 	if !l.sh().sideFocus {
 		t.Fatal("Right did not move the keyboard to the detail")
 	}
+	// In the detail the side arrows change the section; Esc goes back to the list.
 	l.keys("left")
-	if l.sh().sideFocus {
-		t.Fatal("Left did not give the keyboard back to the list")
+	if !l.sh().sideFocus || l.sh().projSection != projectpage.Settings {
+		t.Fatalf("Left in the detail must show the previous section: side %v, section %d", l.sh().sideFocus, l.sh().projSection)
 	}
-	l.keys("right", "esc")
+	l.keys("right")
+	if l.sh().projSection != projectpage.Tasks {
+		t.Fatalf("Right must show the next section, got %d", l.sh().projSection)
+	}
+	l.keys("esc")
 	if l.sh().sideFocus {
 		t.Fatal("Esc did not give the keyboard back to the list")
 	}
 }
 
-func TestInTheDetailTheArrowsChooseAnActionAndEnterRunsIt(t *testing.T) {
+func TestInTheRunMenuTheArrowsChooseAnActionAndEnterRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
 	selected := l.sh().selectedProject()
-	l.keys("tab", "down")
+	l.keys("R", "down")
+	if !l.sh().projMenu || !l.sh().sideFocus {
+		t.Fatalf("R did not open the Run… menu with the keyboard in it: menu %v, side %v", l.sh().projMenu, l.sh().sideFocus)
+	}
 	if l.sh().selectedProject() != selected {
 		t.Fatalf("Down in the detail moved the project to %q", l.sh().selectedProject())
 	}
@@ -102,6 +111,34 @@ func TestInTheDetailTheArrowsChooseAnActionAndEnterRunsIt(t *testing.T) {
 	}
 }
 
+func TestEscClosesTheRunMenuAndTheSectionsComeBack(t *testing.T) {
+	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
+	l.keys("R")
+	l.has("Run on " + l.sh().selectedProject())
+	l.keys("esc")
+	if l.sh().projMenu || !l.sh().sideFocus {
+		t.Fatalf("Esc must close the menu and keep the keyboard in the detail: menu %v, side %v", l.sh().projMenu, l.sh().sideFocus)
+	}
+	l.has("Last result")
+	l.hasNot("Run on ")
+}
+
+func TestInTheTasksSectionTheArrowsChooseATaskAndEnterRunsIt(t *testing.T) {
+	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
+	selected := l.sh().selectedProject()
+	l.keys("tab", "down", "down")
+	if l.sh().taskAt != 1 {
+		t.Fatalf("the cursor is on task %d, want the last (1)", l.sh().taskAt)
+	}
+	if l.sh().selectedProject() != selected {
+		t.Fatal("Down in the detail moved the project")
+	}
+	l.keys("enter")
+	if got := l.lastStarted(); got != "run test -p "+selected {
+		t.Fatalf("Enter started %q", got)
+	}
+}
+
 func TestInTheListTheArrowsStillMoveTheProjectAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
 	first := l.sh().selectedProject()
@@ -109,43 +146,40 @@ func TestInTheListTheArrowsStillMoveTheProjectAndTheDetailFollows(t *testing.T) 
 	if l.sh().selectedProject() == first {
 		t.Fatal("Down did not move in the list")
 	}
-	l.has("Run on " + l.sh().selectedProject())
+	p, _ := l.sh().list.Selected()
+	l.has(p.Root + " · " + p.Kind)
 }
 
-func TestTabGoesFromTheListToTheRecentRunsToTheDetailAndBack(t *testing.T) {
+func TestTabGoesFromTheListToTheDetailWhereItShowsTheNextSection(t *testing.T) {
 	l := projectsWithRuns(t, 140, 34, 5)
-	step := func(recent, side bool, name string) {
-		t.Helper()
+	l.keys("tab")
+	if !l.sh().sideFocus || l.sh().projSection != projectpage.Tasks {
+		t.Fatalf("from the list: side %v, section %d", l.sh().sideFocus, l.sh().projSection)
+	}
+	for _, want := range []projectpage.Section{projectpage.Dependencies, projectpage.Runs, projectpage.Settings, projectpage.Tasks} {
 		l.keys("tab")
-		if l.sh().recentFocus != recent || l.sh().sideFocus != side {
-			t.Fatalf("%s: recent %v, side %v", name, l.sh().recentFocus, l.sh().sideFocus)
+		if !l.sh().sideFocus || l.sh().projSection != want {
+			t.Fatalf("Tab showed section %d, want %d", l.sh().projSection, want)
 		}
 	}
-	step(true, false, "from the list")
-	step(false, true, "from the recent runs")
-	step(false, false, "from the detail")
+	l.keys("shift+tab")
+	if l.sh().projSection != projectpage.Settings {
+		t.Fatalf("Shift+Tab showed section %d, want Settings", l.sh().projSection)
+	}
 }
 
-func TestOnANarrowScreenTabSwitchesBetweenTheListAndTheRecentRunsOnly(t *testing.T) {
-	l := projectsWithRuns(t, 80, 30, 5)
-	l.keys("tab")
-	if !l.sh().recentFocus {
-		t.Fatal("Tab did not reach the recent runs")
-	}
-	l.keys("tab")
-	if l.sh().recentFocus || l.sh().sideFocus {
-		t.Fatalf("back on the list: recent %v, side %v", l.sh().recentFocus, l.sh().sideFocus)
-	}
-	l = newLab(t, true, 80, 30).openTab(commands.TabProjects)
-	l.keys("tab", "right")
-	if l.sh().sideFocus || l.sh().recentFocus {
-		t.Fatal("with nothing beside the list and no run, Tab and Right do nothing")
+func TestOnANarrowScreenTabAndRightDoNothingInTheList(t *testing.T) {
+	for _, l := range []*lab{projectsWithRuns(t, 80, 30, 5), newLab(t, true, 80, 30).openTab(commands.TabProjects)} {
+		l.keys("tab", "right")
+		if l.sh().sideFocus || l.sh().detailOpen {
+			t.Fatal("with nothing beside the list, Tab and Right do nothing")
+		}
 	}
 }
 
 func TestAClickPicksTheSideThatHasTheKeyboard(t *testing.T) {
 	l := newLab(t, true, 140, 34).openTab(commands.TabProjects)
-	x, y := l.find("Run on")
+	x, y := l.find("Last result")
 	l.send(click(x, y))
 	if !l.sh().sideFocus {
 		t.Fatal("a click in the detail did not give it the keyboard")
@@ -174,7 +208,6 @@ func TestAnOpenRunHasTheKeyboardUntilTabGivesItToTheList(t *testing.T) {
 	if l.sh().selectedProject() == selected {
 		t.Fatal("Down did not move the project while the run stays open")
 	}
-	l.keys("tab") // the recent runs
 	l.keys("tab") // the run
 	if !l.runPanelHasKeys() {
 		t.Fatal("Tab did not come back to the run")
@@ -261,7 +294,7 @@ func manyTasks(t *testing.T, w, h, n int) *lab {
 
 func TestTheDetailScrollsToFollowTheCursorDownAndUp(t *testing.T) {
 	l := manyTasks(t, 140, 20, 12)
-	l.keys("tab")
+	l.keys("R") // the Run… menu has a button for each task
 	l.hasNot("task11")
 	seen := false
 	for i := 0; i < 14; i++ {
@@ -291,7 +324,7 @@ func TestTheDetailScrollsToFollowTheCursorDownAndUp(t *testing.T) {
 
 func TestTheDetailShowsTheDescriptionOfTheActionTheCursorReaches(t *testing.T) {
 	l := manyTasks(t, 140, 20, 12)
-	l.keys("tab", "down", "down", "down", "down", "down", "down")
+	l.keys("R", "down", "down", "down", "down", "down", "down")
 	a := l.sh().detailActions()[l.sh().detailCursor]
 	r := l.sh().detailRect()
 	panel := l.sh().detailPanel()
@@ -305,6 +338,19 @@ func TestTheDetailShowsTheDescriptionOfTheActionTheCursorReaches(t *testing.T) {
 			t.Fatalf("row %d of %q is outside the window at %d of %d rows", row, a.Label, l.sh().detailTop, r.H)
 		}
 	}
+}
+
+func TestTheTasksTableScrollsToFollowTheCursor(t *testing.T) {
+	l := manyTasks(t, 140, 16, 20)
+	l.keys("tab")
+	l.hasNot("task19")
+	for range 19 {
+		l.keys("down")
+		if !strings.Contains(l.view(), fmt.Sprintf("task%02d", l.sh().taskAt)) {
+			t.Fatalf("task%02d, at the cursor, is out of view:\n%s", l.sh().taskAt, l.view())
+		}
+	}
+	l.has("task19")
 }
 
 func TestDoctorDetailScrollsToFollowTheCursorToo(t *testing.T) {

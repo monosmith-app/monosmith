@@ -206,7 +206,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		return strings.Join(out, " · ")
 	}
 	for view, want := range map[string]string{
-		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d health · a add project · z zoom · y copy",
+		TabProjects: "/ filter · Enter detail · R run… · b build · B build all · t test · l lint · c typecheck · w changed · d health · a add project · z zoom · y copy",
 		TabDoctor:   "Enter open · f fix · F fix all · E expand all · g group · r reload view · x show failed · w show warnings · p show passed · b build · B build all · t test · z zoom · y copy",
 		TabHome:     "↑/↓ move · Enter next · PgUp/PgDn scroll · r reload view · b build · B build all · t test · w changed · d health",
 		TabDeps:     "Space mark · u update · g registry · i install · x remove · v align · o one version · U update all · S sync · r reload view · b build · B build all · t test · y copy",
@@ -230,15 +230,14 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	if got := strings.Join(out, " · "); !strings.HasPrefix(got, ", older · . newer · Esc back · ↑↓ task · r run again · R failed · Y copy log · f follow") {
 		t.Errorf("Run panel footer %q", got)
 	}
-	recent := withRecent
-	recent.Narrow, recent.On = true, map[string]bool{"run.recent-focus": true}
-	v, _ = Hints(recent)
+	sections := State{InWorkspace: true, View: TabProjects, SideFocus: true, ProjectDetail: true}
+	v, _ = Hints(sections)
 	out = nil
 	for _, h := range v {
 		out = append(out, h.Glyph+" "+h.Label)
 	}
-	if got := strings.Join(out, " · "); !strings.HasPrefix(got, "↑↓ choose run · Enter open · Tab projects") {
-		t.Errorf("recent runs footer %q", got)
+	if got := strings.Join(out, " · "); !strings.HasPrefix(got, "Tab section · Enter run · Esc back · R run…") {
+		t.Errorf("sections of the detail footer %q", got)
 	}
 }
 

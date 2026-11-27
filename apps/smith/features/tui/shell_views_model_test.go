@@ -12,7 +12,11 @@ import (
 
 func TestTheProjectsViewShowsStackNeedsAndWhatIsAffected(t *testing.T) {
 	l := newLab(t, true, 170, 34)
-	l.has("4 projects", "1 affected", "Stack", "node-vitest", "Language")
+	l.has("1 changed", "● changed", "node")
+	l.keys("down") // web: its stack is in the meta line of the detail
+	l.has("node-vitest")
+	l.clickText("Dependencies")
+	l.has("Uses", "kit", "Used by")
 }
 
 func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
@@ -22,6 +26,7 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 		t.Fatalf("b started %q", got)
 	}
 	l.clickText("Back (Esc)") // the run panel gives the right side back to the project
+	l.keys("R")               // the Run… menu
 	l.runDetailAction("Graph: dependencies and dependants")
 	if got := l.lastStarted(); got != "graph --focus orders" {
 		t.Fatalf("the graph action started %q", got)
@@ -398,15 +403,16 @@ func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testi
 
 func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("Install a package…", "Remove a package…")
-	l.runDetailAction("Install a package")
+	l.clickText("Dependencies")
+	l.has("Install a package… (+)", "Remove a package… (-)")
+	l.clickText("Install a package")
 	l.has("Install packages")
 	l.keys("esc")
 	l.hasNot("Install packages")
 	if len(l.started) != 0 {
 		t.Fatalf("cancelling started %v", l.started)
 	}
-	l.runDetailAction("Remove a package")
+	l.clickText("Remove a package")
 	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
 	// Removing asks once more, with the command line and what it touches.

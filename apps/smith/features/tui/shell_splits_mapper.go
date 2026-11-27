@@ -3,20 +3,31 @@ package tui
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/splitter"
 )
 
 // detailDivider is the id of the divider beside the detail of the open tab.
 func (s Shell) detailDivider() string { return splitter.DetailID(s.tab) }
 
+// projectsListMax is the most columns the list of projects takes beside the
+// detail while the person has not moved the divider.
+const projectsListMax = 44
+
 // detailWidth is the width the person gave the detail of the open tab; 0 is
 // automatic. A run open beside the projects takes half the screen unless the
-// person chose a width: its log needs the room.
+// person chose a width: its log needs the room. The detail of a project takes
+// what a list of at most 44 columns leaves.
 func (s Shell) detailWidth() int {
 	n, _ := s.split.Size(s.detailDivider())
-	if n == 0 && s.runWanted() {
-		cw := layout.ContentWidth(s.w)
+	cw := layout.ContentWidth(s.w)
+	switch {
+	case n == 0 && s.runWanted():
 		return layout.ClampDetailWidth(cw, cw/2)
+	case n == 0 && s.tab == commands.TabProjects && s.inWorkspace:
+		// The list of projects needs little room; the sections of the detail
+		// (the table of tasks) take the rest.
+		return layout.ClampDetailWidth(cw, cw-pane.Clamp(cw*2/5, layout.MinList, projectsListMax))
 	}
 	return n
 }

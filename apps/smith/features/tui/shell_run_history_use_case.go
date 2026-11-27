@@ -122,18 +122,9 @@ func (s *Shell) copyLog() {
 	s.copyText(strings.Join(plain, "\n"))
 }
 
-// runReasons are why the keys of the run panel and of the recent runs cannot
-// work now ("" keys are fine).
+// runReasons are why the keys of the run panel cannot work now ("" keys are fine).
 func (s Shell) runReasons() map[string]string {
 	r := map[string]string{}
-	if len(s.runs) == 0 {
-		none := words.Say("tui.run_history.nothing_has_run")
-		r["run.recent-focus"] = none
-	}
-	if s.detailFull() {
-		// The list of projects is not on screen, so there is no list of runs either.
-		r["run.recent-focus"] = words.Say("commands.reason.besidelist")
-	}
 	if s.run == nil {
 		return r
 	}

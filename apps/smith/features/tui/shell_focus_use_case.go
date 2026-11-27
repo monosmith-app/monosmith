@@ -18,23 +18,18 @@ func (s Shell) beside() bool {
 func (s Shell) sideKeys() bool { return s.detailFull() || (s.sideFocus && s.beside()) }
 
 // sideNext is true where Tab moves the keyboard to the right panel next: from
-// the list when no run is kept, and from the recent runs.
-func (s Shell) sideNext() bool {
-	if !s.beside() || s.sideFocus {
-		return false
-	}
-	return s.tab == commands.TabDoctor || s.recentFocus || len(s.runs) == 0
-}
+// the list beside it.
+func (s Shell) sideNext() bool { return s.beside() && !s.sideFocus }
 
 // focusSide moves the keyboard to the right panel when it is beside the list.
 func (s *Shell) focusSide() {
 	if s.beside() {
-		s.sideFocus, s.recentFocus = true, false
+		s.sideFocus = true
 	}
 }
 
 // focusList gives the keyboard back to the list of projects (or of checks).
-func (s *Shell) focusList() { s.sideFocus, s.recentFocus = false, false }
+func (s *Shell) focusList() { s.sideFocus = false }
 
 // keepDetailCursorVisible scrolls the detail just enough to show the action the
 // keyboard cursor is on, its button and the lines that say what it does, under
@@ -45,7 +40,7 @@ func (s *Shell) keepDetailCursorVisible() {
 		return
 	}
 	r := s.detailRect()
-	_, bodyH := s.detailSplit(r.W, r.H)
+	bodyH := r.H
 	// Drawn with the cursor mark, as the panel is: the mark narrows the notes.
 	panel := s.detailPanel()
 	panel.Cursor = s.detailCursorID(panel)

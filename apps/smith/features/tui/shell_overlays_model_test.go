@@ -114,13 +114,13 @@ func TestPaletteFitsInsideTheFrameAt80x24(t *testing.T) {
 func TestBehindAModalTheViewIsEmptiedSoNoHalfWordsShowAtItsEdges(t *testing.T) {
 	l := newLab(t, true, 140, 42)
 	l.openTab(commands.TabProjects)
-	l.has("root", "affected")
+	l.has("apps/orders · app", "Last result")
 	l.keys("f1")
 	// The list and the detail are gone; the tabs and the frame stay.
-	l.hasNot("root", "Run build")
+	l.hasNot("apps/orders · app", "Last result")
 	l.has("Projects", "Keyboard shortcuts")
 	l.keys("esc")
-	l.has("root", "affected")
+	l.has("apps/orders · app", "Last result")
 }
 
 func TestAToastSitsInsideTheContentAreaAndNeverOnTheFrame(t *testing.T) {

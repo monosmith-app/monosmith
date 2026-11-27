@@ -87,41 +87,37 @@ func detailLabels(s Shell) map[string]bool {
 	return got
 }
 
-func TestBesideTheListTheProjectDetailLeavesOutKindLanguageAndStack(t *testing.T) {
-	for _, w := range []int{150, 170} {
+// webMeta is the meta line of the detail of web: its path, kind, language and stack.
+const webMeta = "apps/web · app · node · node-vitest (ESLint and Vitest tasks)"
+
+func TestTheMetaLineOfTheDetailSaysThePathKindLanguageAndStackAtEveryWidth(t *testing.T) {
+	for _, w := range []int{100, 120, 150, 170} {
 		l := newLab(t, true, w, 34)
 		l.keys("down") // web, which has a stack
-		got := detailLabels(l.sh())
-		for _, gone := range []string{"kind", "language", "stack"} {
-			if got[gone] {
-				t.Errorf("%d columns: the detail says %q, the list has it as a column", w, gone)
-			}
+		if got := detailLabels(l.sh()); len(got) == 0 {
+			t.Fatalf("%d columns: the Run… menu of web is empty", w)
 		}
-		for _, kept := range []string{"root", "affected"} {
-			if !got[kept] {
-				t.Errorf("%d columns: the detail lost %q, which the list does not show", w, kept)
-			}
+		if w >= 150 {
+			l.has(webMeta, "● changed")
+		} else {
+			// A detail of 40 columns cuts the line with an ellipsis; its start stays.
+			l.has("apps/web · app · node")
 		}
-		l.hasNot("language")
 	}
 }
 
-func TestWhenTheListIsNotVisibleTheProjectDetailKeepsKindLanguageAndStack(t *testing.T) {
+func TestWhenTheListIsNotVisibleTheMetaLineStaysTheSame(t *testing.T) {
 	// Narrow: the detail is opened over the list with Enter.
 	l := newLab(t, true, 80, 30)
-	l.keys("down")
-	if got := detailLabels(l.sh()); !got["kind"] || !got["language"] || !got["stack"] || !got["root"] {
-		t.Fatalf("80 columns: %v", got)
-	}
-	l.keys("enter")
-	l.has("kind", "language", "stack", "root")
+	l.keys("down", "enter")
+	l.has("‹ Projects / web", "apps/web · app · node")
 	// Wide, with the detail zoomed over the list.
 	w := newLab(t, true, 120, 34)
 	w.keys("down", "z")
 	if !w.sh().detailFull() {
 		t.Fatal("z did not zoom the detail")
 	}
-	w.has("kind", "language", "stack", "root")
+	w.has(webMeta)
 }
 
 func TestBesideTheListTheRunPanelLeavesOutWhatTheTaskRowShows(t *testing.T) {
@@ -178,31 +174,29 @@ func TestTheDoctorDetailDoesNotRepeatTheStateTheHighlightedRowShows(t *testing.T
 	}
 }
 
-func TestTheProjectDetailKeepsAFactWhenTheListIsTooNarrowToDrawItsColumn(t *testing.T) {
-	var dropped, drawn bool
-	// A project with a long name squeezes the columns after it: that is how the
-	// table runs out of room now that it has no Tasks column to give way.
-	for w, long := 100, false; w <= 150; w, long = w+5*btoi(long), !long {
+func TestALongProjectNameKeepsTheLanguageOfTheListOrCutsTheName(t *testing.T) {
+	// A project with a long name squeezes the columns after it: the name gives way
+	// with an ellipsis, and every row still fits the list.
+	for _, w := range []int{100, 120, 150} {
 		l := newLab(t, true, w, 34)
-		if long {
-			projects := append([]projectlist.Project(nil), sampleProjects...)
-			projects[1].Name = "a-project-with-a-very-long-name-indeed"
-			sh := l.sh()
-			sh.list = projectlist.New(projects)
-			l.m = sh
-		}
-		l.keys("down")
-		got := detailLabels(l.sh())
-		for _, c := range []struct{ label, header string }{{"kind", "Kind"}, {"language", "Language"}, {"stack", "Stack"}} {
-			inList := strings.Contains(l.view(), c.header+" ")
-			if got[c.label] == inList {
-				t.Errorf("%d columns: list has %s column=%v, detail has %s row=%v", w, c.header, inList, c.label, got[c.label])
+		projects := append([]projectlist.Project(nil), sampleProjects...)
+		projects[1].Name = "a-project-with-a-very-long-name-indeed"
+		sh := l.sh()
+		sh.list = projectlist.New(projects)
+		l.m = sh
+		in := l.sh().mainInner()
+		for _, line := range l.inside(in) {
+			if pane.Width(line) > in.W {
+				t.Fatalf("%d columns: a row is wider than the list: %q", w, line)
 			}
-			dropped, drawn = dropped || !inList, drawn || inList
 		}
-	}
-	if !dropped || !drawn {
-		t.Fatalf("the widths did not cover both cases (dropped %v, drawn %v)", dropped, drawn)
+		list := strings.Join(l.inside(in), "\n")
+		if !strings.Contains(list, "a-project-with") || !strings.Contains(list, "python") {
+			t.Fatalf("%d columns: the list lost the name or a language:\n%s", w, list)
+		}
+		if strings.Contains(list, "a-project-with-a-very-long-name-indeed") {
+			t.Fatalf("%d columns: the long name is not cut:\n%s", w, list)
+		}
 	}
 }
 
@@ -254,13 +248,6 @@ func TestTheDoctorDetailFoldsBuildMetadataAndSaysEachThingOnce(t *testing.T) {
 }
 
 // btoi is 1 for true and 0 for false.
-func btoi(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func TestTaskButtonsSayWhatTheTaskDoesToTheKindOfProject(t *testing.T) {
 	for _, tc := range []struct{ task, kind, want string }{
 		{"build", "app", "Build app"}, {"build", "lib", "Build library"}, {"build", "package", "Build package"},
@@ -293,7 +280,7 @@ func TestTheDetailNamesTheKindInItsTaskButtonsAndKeepsTheRawTaskInTheHint(t *tes
 		t.Fatalf("the Package app button changed its id or key: %+v", actions[2])
 	}
 	// The same task on a library. The clicks moved the keyboard to the detail: Esc gives it back to the list.
-	l.keys("esc", "down") // kit, a library
+	l.keys("esc", "esc", "down", "R") // close the menu, back to the list, kit (a library), its menu
 	l.has("Build library (b)", "Test library (t)")
 	l.hasNot("Package app")
 }

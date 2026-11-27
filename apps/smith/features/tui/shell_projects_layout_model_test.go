@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/release"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
 )
 
@@ -28,7 +29,7 @@ func TestTheSelectedProjectHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T
 	sel := l.sh().list.SelectedName()
 	marked := 0
 	for _, line := range l.mainLines() {
-		if i := strings.Index(line, "› "); i >= 0 && i < 4 {
+		if i := strings.Index(line, projectpage.Pointer); i >= 0 && i < 4 {
 			marked++
 			if !strings.Contains(line, sel) {
 				t.Fatalf("the mark is on another row: %q (selected %s)", line, sel)
@@ -41,63 +42,55 @@ func TestTheSelectedProjectHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T
 	l.keys("down")
 	next := l.sh().list.SelectedName()
 	for _, line := range l.mainLines() {
-		row := strings.TrimLeft(line, " ›")
-		if (strings.HasPrefix(row, "○ "+next+" ") || strings.HasPrefix(row, "● "+next+" ")) && !strings.Contains(line, "› ") {
+		row := strings.TrimLeft(line, " ▶")
+		if strings.HasPrefix(row, "–  "+next+" ") && !strings.Contains(line, projectpage.Pointer) {
 			t.Fatalf("the mark did not follow the selection to %s: %q", next, line)
 		}
 	}
 }
 
 func TestAPendingReleaseShowsAsCurrentArrowNextInTheListAndTheDetail(t *testing.T) {
+	// Beside the list the meta line of the detail of orders says it.
 	l := newLab(t, true, 140, 34)
 	pendingRelease(l)
-	l.has("Version", "0.4.0 → 0.5.0") // the list column, and the detail of the selected orders
-	lines := strings.Join(l.lines(), "\n")
-	if strings.Count(lines, "0.4.0 → 0.5.0") < 2 {
-		t.Fatalf("the list and the detail both say it:\n%s", lines)
+	l.has("apps/orders · app · go · 0.4.0 → 0.5.0")
+	// The list of a narrow screen has the room for a column of versions.
+	n := newLab(t, true, 80, 30)
+	pendingRelease(n)
+	lines := strings.Join(n.lines(), "\n")
+	if !strings.Contains(lines, "0.4.0 → 0.5.0") {
+		t.Fatalf("the list says the pending release:\n%s", lines)
 	}
 	if strings.Contains(lines, "0.4.0 → 0.4.0") {
 		t.Fatalf("web has no pending release:\n%s", lines)
 	}
 }
 
-func TestTheWorkspaceActionsAreOneLineNextToNewProjectAndWrapWhenNarrow(t *testing.T) {
-	l := newLab(t, true, 170, 34)
-	var line string
-	for _, s := range l.lines() {
-		if strings.Contains(s, "New project") {
-			line = s
-		}
+func TestTheListHasNoRowOfWorkspaceButtonsAndTheFooterKeepsTheirKeys(t *testing.T) {
+	for _, w := range []int{130, 170} {
+		l := newLab(t, true, w, 34)
+		l.hasNot("New project (a)", "Verify (V)", "Build (B)", "Typecheck (C)")
+		l.has("B build all")
 	}
-	for _, want := range []string{"New project (a)", "Verify (V)", "Build (B)", "Test (T)", "Lint (L)", "Typecheck (C)"} {
-		if !strings.Contains(line, want) {
-			t.Fatalf("%q is not on the line of New project:\n%s", want, line)
-		}
-	}
-	l = newLab(t, true, 130, 34)
-	l.has("Verify (V)", "Typecheck (C)") // still all there: a button that does not fit starts a new line
 }
 
-func TestTheSummaryAndTheLegendShareALine(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	for _, s := range l.lines() {
-		if strings.Contains(s, "affected by the changes") {
-			if !strings.Contains(s, "= dependencies") {
-				t.Fatalf("the legend is not on the line of the summary: %q", s)
-			}
-			return
+func TestTheLegendIsTheLastRowOfTheList(t *testing.T) {
+	for _, size := range [][2]int{{140, 34}, {80, 30}} {
+		l := newLab(t, true, size[0], size[1])
+		lines := l.mainLines()
+		if last := lines[len(lines)-1]; !strings.Contains(last, "✓ passed  × failed  – not run  ● changed") {
+			t.Fatalf("%v: the last row of the list is %q", size, last)
 		}
 	}
-	t.Fatal("no summary line")
 }
 
-func TestTheFixedTopOfTheProjectDetailStaysWhileTheActionsScroll(t *testing.T) {
-	l := newLab(t, true, 170, 25)
-	l.keys("down") // web: dependencies, a stack and many actions
-	l.has("dependencies", "root")
-	for range 12 {
-		l.keys("tab", "down")
+func TestTheTopOfTheProjectDetailStaysWhileTheTasksScroll(t *testing.T) {
+	l := manyTasks(t, 170, 18, 20)
+	l.keys("tab")
+	l.has("apps/orders · app", "Tasks    Dependencies    Runs    Settings")
+	for range 19 {
+		l.keys("down")
 	}
-	l.has("dependencies", "root") // the facts did not scroll away with the actions
-	l.has("Graph")
+	l.has("task19")
+	l.has("apps/orders · app", "Tasks    Dependencies    Runs    Settings", "Run… (R)") // the top did not scroll away
 }

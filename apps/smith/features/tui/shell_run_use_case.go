@@ -156,7 +156,7 @@ func (s *Shell) start(argv []string) tea.Cmd {
 	// The run opens in the right panel of Projects, from whichever tab it started.
 	if contains(s.tabs, commands.TabProjects) {
 		if stayOnRelease {
-			s.runOpen, s.recentFocus = true, false
+			s.runOpen = true
 		} else {
 			s.revealRun()
 		}

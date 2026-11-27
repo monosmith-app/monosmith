@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
 )
 
@@ -31,7 +32,7 @@ func TestPointerMotionIsDrawnOnceAFrameNotOnceACell(t *testing.T) {
 	inColour(t)
 	l := buttonLab(t, 160, 40)
 	before := l.sh().View()
-	x, y := l.find("○ kit")
+	x, y := l.find("–  kit")
 	// A sweep of the pointer: each motion is kept for the next hover frame, and
 	// the screen is not drawn again until that frame.
 	m, cmd := l.m.Update(motion(1, 1))
@@ -189,21 +190,22 @@ func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
 
 func TestClickingARowSelectsItAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.find("● web")
+	x, y := l.find("–  web")
 	l.send(click(x+2, y))
-	l.has("dependencies", "kit", "affected", "yes")
+	l.has("apps/web · app · node", "● changed")
 	if l.sh().list.SelectedName() != "web" {
 		t.Fatalf("selected %q", l.sh().list.SelectedName())
 	}
 }
 
-func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
+func TestClickingATaskActionOfTheRunMenuRunsItOnTheProject(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.find("● web")
+	x, y := l.find("–  web")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
 		t.Fatal("selecting a project must not run anything")
 	}
+	l.clickText("Run… (R)")
 	tx, ty := l.find("Test app")
 	l.send(click(tx+2, ty)).send(letGo(tx+2, ty))
 	if len(l.started) != 0 {
@@ -217,15 +219,17 @@ func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 
 func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
 	l := newLab(t, true, 90, 30)
-	x, y := l.find("○ kit")
-	l.hasNot("Test library")
+	x, y := l.find("–  kit")
+	l.hasNot("libs/kit · lib")
 	l.send(click(x+2, y))
-	l.hasNot("Test library")
+	l.hasNot("libs/kit · lib")
 	l.advance(2 * time.Second)
 	l.doubleClick(x+2, y)
-	l.has("dependants", "Test library")
-	// A click on an action of the detail chooses it; the run button under the rule does it.
-	l.runDetailAction("Test library")
+	l.has("libs/kit · lib", "Last result")
+	// A double click on a task of the table runs it.
+	tx, ty := l.find("test ")
+	l.advance(2 * time.Second)
+	l.doubleClick(tx+1, ty)
 	if l.lastStarted() != "run test -p kit" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -234,7 +238,7 @@ func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
 func TestRightClickOpensNoMenu(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	before := l.view()
-	x, y := l.find("● web")
+	x, y := l.find("–  web")
 	l.send(rightClick(x+2, y))
 	l.send(rightClick(5, 4))
 	if l.view() != before {
@@ -266,7 +270,7 @@ func TestTheResultToastLeavesWithTheScreenItWasRaisedOn(t *testing.T) {
 
 func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("4 projects")
+	l.has("Filter:")
 	l.hasNot("Build orders")
 	l.keys("ctrl+p").typeText("Build all").keys("enter")
 	if l.lastStarted() != "run build" {
@@ -274,8 +278,9 @@ func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 	}
 }
 
-func TestClickingAnActionOfTheDetailRunsIt(t *testing.T) {
+func TestClickingAnActionOfTheRunMenuRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
+	l.keys("R")
 	x, y := l.findAfter("Test app", 3)
 	l.send(click(x+3, y)).send(letGo(x+3, y))
 	x, y = l.findLast("Test app")
@@ -287,9 +292,46 @@ func TestClickingAnActionOfTheDetailRunsIt(t *testing.T) {
 
 func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.find("○ kit")
+	x, y := l.find("–  kit")
 	l.send(click(x+2, y))
-	l.has("dependants")
+	l.has("libs/kit · lib")
+}
+
+func TestADoubleClickOnATaskOfTheTasksSectionRunsIt(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	x, y := l.find("test ")
+	l.send(click(x+1, y))
+	if len(l.started) != 0 || l.sh().taskAt != 1 {
+		t.Fatalf("a click chooses the task: task %d, started %v", l.sh().taskAt, l.started)
+	}
+	l.advance(time.Second)
+	l.doubleClick(x+1, y)
+	if l.lastStarted() != "run test -p orders" {
+		t.Fatalf("started %q", l.lastStarted())
+	}
+}
+
+func TestAClickOnASectionTabShowsIt(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	for _, c := range []struct {
+		tab  string
+		sec  projectpage.Section
+		text string
+	}{{"Dependencies", projectpage.Dependencies, "Used by"}, {"Runs", projectpage.Runs, "No run of this project"}, {"Settings", projectpage.Settings, ""}, {"Tasks", projectpage.Tasks, "Last result"}} {
+		x, y := l.findAfter(c.tab, 3)
+		if c.tab == "Settings" {
+			// The rail has a Settings row too: the tab is the one in the detail.
+			x, y = l.findAfter("Runs", 3)
+			x += len("Runs") + 4
+		}
+		l.send(click(x+1, y)).send(letGo(x+1, y))
+		if l.sh().projSection != c.sec {
+			t.Fatalf("a click on %s showed section %d", c.tab, l.sh().projSection)
+		}
+		if c.text != "" {
+			l.has(c.text)
+		}
+	}
 }
 
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
@@ -442,8 +484,8 @@ var modalCases = []struct {
 	name, tab, button string
 	open              func(l *lab)
 }{
-	{"help", commands.TabProjects, "New project", func(l *lab) { l.keys("f1") }},
-	{"palette", commands.TabProjects, "New project", func(l *lab) { l.keys("ctrl+p") }},
+	{"help", commands.TabProjects, "Run… (R)", func(l *lab) { l.keys("f1") }},
+	{"palette", commands.TabProjects, "Run… (R)", func(l *lab) { l.keys("ctrl+p") }},
 	{"confirmation", commands.TabRelease, "", func(l *lab) { l.keys("x", "enter") }},
 	{"fix wizard", commands.TabDoctor, "fix all", func(l *lab) { l.keys("F") }},
 }

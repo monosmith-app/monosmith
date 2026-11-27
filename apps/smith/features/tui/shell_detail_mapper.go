@@ -67,8 +67,7 @@ func (s Shell) detailContent(w, h int) content {
 		panel.Cursor = s.detailCursorID(panel)
 	}
 	split := panel.Splits()
-	// The fixed top of a project's detail (see detailSplit) is drawn above the body that scrolls.
-	top, h := s.detailSplit(w, h)
+	var top []string
 	panel, h, limit := s.pinRun(panel, w, h)
 	all, rows := panel.View(s.th, w, "")
 	_, hits := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
@@ -142,19 +141,26 @@ func (s *Shell) chooseDetail(i int) {
 }
 
 // sideContent is what the right panel shows: the run while one is open in
-// Projects, else the detail of the selection.
+// Projects, the sections of the selected project, else the detail of the
+// selection (the Run… menu of a project is one).
 func (s Shell) sideContent(w, h int) content {
-	if s.runShown() {
+	switch {
+	case s.runShown():
 		return s.runPanelContent(w, h)
+	case s.projectPage():
+		return s.projectDetailContent(w, h)
 	}
 	return s.detailContent(w, h)
 }
 
 // scrollDetail moves the detail by delta lines, never past its ends.
 func (s *Shell) scrollDetail(delta int) {
+	if s.projectPage() {
+		s.scrollProjectDetail(delta)
+		return
+	}
 	r := s.detailRect()
-	_, h := s.detailSplit(r.W, r.H)
-	panel, h, _ := s.pinRun(s.detailPanel(), r.W, h)
+	panel, h, _ := s.pinRun(s.detailPanel(), r.W, r.H)
 	lines, _ := panel.View(s.th, r.W, "")
 	s.detailTop = pane.ClampTop(s.detailTop+delta, len(lines), h)
 }
@@ -167,7 +173,7 @@ func (s *Shell) pageDetail(dir int) {
 // detailIdentity changes when the selection the detail tells about changes,
 // so the scroll and the expansion start over for the next one.
 func (s Shell) detailIdentity() string {
-	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel, "|", s.settings.Identity())
+	return fmt.Sprint(s.tab, "|", s.list.SelectedName(), "|", int(s.projSection), "|", s.doctor.Cursor, s.doctor.Grouped, s.doctor.All, len(s.doctor.Folds), s.doctor.ShowPassed, s.doctor.HideFailed, s.doctor.HideWarnings, "|", s.runSel, "|", s.settings.Identity())
 }
 
 // forgetDetailPlace starts the detail at its top, folded, when what it shows changed.
@@ -176,6 +182,7 @@ func (s *Shell) forgetDetailPlace() {
 		if s.detailFor != "" {
 			// Another selection has other actions: its first one is the chosen one.
 			s.chooseDetail(0)
+			s.taskAt, s.projRunAt = 0, 0
 		}
 		s.detailFor, s.detailTop, s.detailAll = id, 0, false
 	}
@@ -197,9 +204,6 @@ func (s *Shell) zoomDetail() {
 // detailPanel describes what is selected in the open view.
 func (s Shell) detailPanel() detail.Panel {
 	p := s.selectionPanel()
-	if s.splitsDetail() {
-		_, p = splitPanel(p)
-	}
 	p.Expanded = s.detailAll
 	p.ListVisible = !s.detailFull() && s.lay().HasDetail()
 	p.Actions = s.withKeys(p.Actions)
@@ -240,36 +244,13 @@ func (s Shell) settingsPanel() detail.Panel {
 	return detail.Panel{Sections: []detail.Section{{Items: lines}}}
 }
 
-// projectPanel describes the selected project, its tasks and what it can do.
+// projectPanel is the Run… menu of the selected project: the buttons that run
+// its tasks, then what else can be done to it (packages, how it was resolved,
+// who owns its files, its derived files), and under More the forms about it.
 func (s Shell) projectPanel() detail.Panel {
 	p, ok := s.list.Selected()
 	if !ok {
 		return s.workspacePanel()
-	}
-	// The table beside the detail has the Kind, Language and Stack columns when
-	// it has the room for them.
-	cols := s.projectColumns(s.mainInner().W)
-	rows := []detail.Row{{Label: "kind", Value: p.Kind, ShownByList: cols.Kind}, {Label: "language", Value: p.Language, ShownByList: cols.Lang}}
-	if p.Stack != "" {
-		rows = append(rows, detail.Row{Label: "stack", Value: stackText(p.Stack), ShownByList: cols.Stack})
-	}
-	rows = append(rows, detail.Row{Label: "root", Value: p.Root})
-	if v := s.versionOf(p, 1<<10); v != "" {
-		// The pending release of the Release tab shows as "current → next".
-		rows = append(rows, detail.Row{Label: "version", Value: v})
-	}
-	rows = append(rows, detail.Row{Label: "affected", Value: yesNoMark(s, p.Affected)})
-	// The neighbours are names in a line that wraps, which takes fewer rows than a list.
-	if len(p.Deps) > 0 {
-		rows = append(rows, detail.Row{Label: words.Say("tui.detail.row.dependencies"), Value: strings.Join(p.Deps, ", ")})
-	}
-	if len(p.Dependents) > 0 {
-		rows = append(rows, detail.Row{Label: words.Say("tui.detail.row.dependants"), Value: strings.Join(p.Dependents, ", ")})
-	}
-	secs := []detail.Section{{Heading: p.Name, Rows: rows}}
-	var after []detail.Section
-	if sec, ok := s.derivedSection(p); ok {
-		after = append(after, sec)
 	}
 	var actions []detail.Action
 	keys := s.taskKeys(p)
@@ -297,7 +278,7 @@ func (s Shell) projectPanel() detail.Panel {
 	// The forms about the project have no key: they are under More, after the keyed actions.
 	more := append([]detail.Action{{ID: "x:settings", Label: words.Say("tui.detail.project_settings"), Hint: words.Say("tui.detail.project_settings_hint", "name", p.Name)}}, s.projectFormActions(p)...)
 	more = append(more, s.projectMoreActions()...)
-	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title, More: more, MoreTitle: words.Say("tui.detail.more"), After: after}
+	return detail.Panel{Actions: actions, ActionsTitle: title, More: more, MoreTitle: words.Say("tui.detail.more")}
 }
 
 // taskHint says in plain words what running a task does, what has to run
@@ -335,7 +316,8 @@ var taskMeanings = map[string]string{
 	"audit":      "tui.detail.task.audit",
 }
 
-// stackMeanings are the catalog key of what a stack gives a project, for the stack row.
+// stackMeanings are the catalog key of what a stack gives a project, for the
+// meta line of the detail.
 var stackMeanings = map[string]string{
 	"node-jest":   "tui.detail.stack.node_jest",
 	"node-vitest": "tui.detail.stack.node_vitest",

@@ -112,7 +112,7 @@ func TestTheTabsAreASingleRowOnAnyHeight(t *testing.T) {
 		if got := len(l.sh().tabStrip().Lines); got != 1 {
 			t.Fatalf("%d rows: the strip has %d rows", rows, got)
 		}
-		l.has("4 projects") // the count is said once, in the line under the tabs
+		l.has("2 apps · 1 lib") // the count is said once, in the line under the filter
 	}
 }
 

@@ -12,7 +12,8 @@ The pieces that stand alone are subfeatures with their own `doc.go`: `commands`
 truncation), `dialog`, `palette`, `tabs` (the one-line strip of views under the
 title bar of a narrow screen), `rail` (the framed list of views at the left of a wide
 screen), `footer`, `statusbar`, `toast`, the
-views (`dashboard`, `doctorview` (the Health view), `depsview`, `releaseview`, `projectlist`,
+views (`dashboard`, `doctorview` (the Health view), `depsview`, `releaseview`, `projectlist` (the projects, their filter and the cursor), `projectpage`
+(the Projects view: the list grouped by kind and the sections of the detail of a project),
 `detail`, `runview`, `logview`, `guide`, `settingsview` (the Settings tab; its detail is drawn in the side panel of the shell, `WithSideDetail`)), `settingssource` (what the Settings
 tab reads, and the functions it calls, which are the ones `smith plugin` and `smith config` call), `userprefs` (the
 person's theme and symbols, kept in the smith home), `fixwizard` (the doctor fix dialog),
@@ -43,7 +44,7 @@ claims a key by asking for it in code; the editors claim theirs in `libs/words/s
 ## The run panel
 
 There is no Run tab. While a task runs, or when the user opens a past run, the right panel of Projects
-shows the run (`shell_run_panel_mapper.go`); Recent runs sits on the bottom rows of the list's pane (three runs, or all of them while it has the keyboard). Esc or Back shows the
+shows the run (`shell_run_panel_mapper.go`); the Runs section of the detail of a project lists the runs that ran its tasks, and Enter opens one there. Esc or Back shows the
 project again. What follows holds for that panel.
 
 Every task run (build, test, lint, typecheck, `run <task>`, "Lint all", "changed", from the keys,
@@ -94,7 +95,8 @@ project come from `derive.BuildPlan` (`sources/load_derived_files_use_case.go`),
   `keys`, `mouse`, `runs` and `render` packages take and return), which is a
   rewrite of the model and its tests, not a move.
 - **Done already:** everything that does not touch `Shell` was moved out
-  (generated forms to `guide`, the Projects columns to `projectlist`, loading
+  (generated forms to `guide`, the Projects list and its filter to `projectlist`, what
+  the Projects view draws to `projectpage`, loading
   the views to `sources`).
 - **Temporary.** Removal condition: when the shell state becomes a value passed
   to functions (the `Page` interface in `page_contract.go` is the first step:

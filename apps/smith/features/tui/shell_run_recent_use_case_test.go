@@ -13,25 +13,25 @@ func closeRunPanel(l *lab) {
 	}
 }
 
-func TestTheRecentRunsUnderTheListOpenTheChosenOneInThePanel(t *testing.T) {
+func TestTheRunsSectionOpensTheChosenRunInThePanel(t *testing.T) {
 	l := newLab(t, true, 130, 36)
 	l.next = failingRun()
 	l.keys("b")
-	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✓ 12ms"}}
+	l.next = &scripted{lines: []string{"orders:test ▶ go test", "orders:test │ PASS", "orders:test ✓ 12ms"}}
 	l.keys("t")
 	closeRunPanel(l)
-	l.has("Recent runs", "smith run test", "passed", "smith run build", "failed", "just now")
+	l.clickText("Runs")
+	l.has("✓ test", "passed", "× build", "failed", "just now")
 	l.hasNot("Command log")
-	// The newest run is chosen; Tab moves to the list, Down to the older run and Enter opens it.
-	l.keys("tab", "down", "enter")
+	// The newest run is chosen; Down moves to the older run and Enter opens it.
+	l.keys("down", "enter")
 	l.has("run 1 of 2", "$ smith run build")
 	// A click on a row only chooses it; a double click opens it.
 	closeRunPanel(l)
-	x, y := l.find("✓ passed")
+	x, y := l.find("✓ test")
 	l.send(click(x, y))
-	l.has("Recent runs")
-	if l.sh().recentAt != 0 || l.sh().runShown() {
-		t.Fatalf("the click chose row %d (run panel %v)", l.sh().recentAt, l.sh().runShown())
+	if l.sh().projRunAt != 0 || l.sh().runShown() {
+		t.Fatalf("the click chose row %d (run panel %v)", l.sh().projRunAt, l.sh().runShown())
 	}
 	l.advance(time.Second)
 	l.doubleClick(x, y)
@@ -53,7 +53,7 @@ func TestTheRunHeaderStepsThroughTheRunsWithTheMouse(t *testing.T) {
 	l.clickText("newer ›")
 	l.has("run 2 of 2")
 	l.clickText("Back (Esc)")
-	l.has("Recent runs", "Verify (V)")
+	l.has("Filter:", "Result")
 }
 
 func TestTheRunFooterNamesTheKeysThatMoveBetweenRuns(t *testing.T) {
@@ -65,8 +65,8 @@ func TestTheRunFooterNamesTheKeysThatMoveBetweenRuns(t *testing.T) {
 		t.Fatalf("run footer %q", f)
 	}
 	closeRunPanel(l)
-	l.keys("tab")
-	if f := footerOf(l); !strings.Contains(f, "↑↓ choose run") || !strings.Contains(f, "Enter open") || strings.Contains(f, "follow") {
-		t.Fatalf("recent runs footer %q", f)
+	l.clickText("Runs")
+	if f := footerOf(l); !strings.Contains(f, "Tab section") || !strings.Contains(f, "Enter open") || strings.Contains(f, "follow") {
+		t.Fatalf("runs section footer %q", f)
 	}
 }

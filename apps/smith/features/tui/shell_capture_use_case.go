@@ -58,9 +58,10 @@ type capturedMsg struct {
 // openedMsg says whether the system opened the report.
 type openedMsg struct {
 	path string
-	// link is true when path is an address the failure dialog opened, not the report.
-	link bool
-	err  error
+	// link is true when path is an address the failure dialog opened, not the
+	// report; folder is true when it is the folder of a project.
+	link, folder bool
+	err          error
 }
 
 // capture runs a smith command line in the background and reports its text as
@@ -548,6 +549,14 @@ func (s *Shell) reportWritten(argv []string) tea.Cmd {
 
 // opened tells the person where the report is.
 func (s *Shell) opened(msg openedMsg) {
+	if msg.folder {
+		if msg.err != nil {
+			s.notify(words.Say("tui.projects.open_failed", "path", msg.path, "err", msg.err), toast.Warning)
+			return
+		}
+		s.say(words.Say("tui.projects.opened", "path", msg.path))
+		return
+	}
 	if msg.link {
 		if msg.err != nil {
 			s.notify(words.Say("tui.capture.could_not_open_the_page_the"), toast.Warning)

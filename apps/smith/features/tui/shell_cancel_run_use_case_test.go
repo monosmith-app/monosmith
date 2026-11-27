@@ -18,7 +18,10 @@ func TestAStoppedRunIsCancelledAndNotFailed(t *testing.T) {
 	l.has("Stopping")
 	l.send(outputMsg{proc: p, exit: &runner.Exit{Code: 1, Cancelled: true}})
 	l.hasNot("Stopping", "100%")
-	l.hasNot("× ")
+	// No task is red: the only failure mark on screen is the one the legend of the list explains.
+	if view := strings.ReplaceAll(l.view(), "× failed", ""); strings.Contains(view, "× ") {
+		t.Fatalf("a stopped task is shown as failed:\n%s", view)
+	}
 	l.has("done,", "skipped", "cancelled")
 	c := l.sh().run.Counts()
 	if c.Failed != 0 || c.Cancelled != 1 {

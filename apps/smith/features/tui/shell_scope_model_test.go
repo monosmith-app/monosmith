@@ -65,14 +65,14 @@ func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {
 	l.has("orders · build")
 }
 
-func TestTheProjectDetailOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
+func TestOnProjectsTheKeyThatBuildsEverythingStaysWithoutItsButton(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.openTab("projects")
-	l.has("Verify (V)", "Build (B)", "Test (T)", "Lint (L)", "Typecheck (C)")
-	l.hasNot("Run on every project", "in the list")
-	l.clickText("Build (B)")
+	l.hasNot("Verify (V)", "Build (B)", "Run on every project", "in the list")
+	l.has("B build all")
+	l.keys("B")
 	if got := l.lastStarted(); got != "run build" {
-		t.Fatalf("the button started %q", got)
+		t.Fatalf("the key started %q", got)
 	}
 }
 

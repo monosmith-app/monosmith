@@ -72,12 +72,11 @@ func TestDRechecksTheWorkspace(t *testing.T) {
 	l.has("2 failed", "2 checks passed")
 }
 
-func TestEnterBesideTheDetailChangesNothing(t *testing.T) {
+func TestEnterBesideTheDetailMovesTheKeyboardToItAndRunsNothing(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	before := l.view()
 	l.keys("enter")
-	if l.view() != before || len(l.started) != 0 || l.sh().detailOpen {
-		t.Fatalf("the detail is already beside the list: %v", l.started)
+	if len(l.started) != 0 || l.sh().detailOpen || !l.sh().sideFocus {
+		t.Fatalf("Enter on the list must give the keyboard to the detail beside it: started %v, open %v, side %v", l.started, l.sh().detailOpen, l.sh().sideFocus)
 	}
 }
 
@@ -285,10 +284,21 @@ func TestHelpTellsHowToSelectTextAndHasNoStaleKeys(t *testing.T) {
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 44)
 	l.keys("f1")
-	l.has("Keyboard shortcuts", "Move in a list")
-	l.keys("pgdown")
-	l.has("Build all", "Stop", "Ctrl+C")
-	l.keys("pgup")
+	// The keys of the open view come first: Projects has its filter and its sections.
+	l.has("Keyboard shortcuts", "Filter the list of projects", "Run… every action of the selected project")
+	seen := map[string]bool{}
+	for range 6 {
+		for _, want := range []string{"Move in a list", "Build all", "Stop", "Ctrl+C"} {
+			seen[want] = seen[want] || strings.Contains(l.view(), want)
+		}
+		l.keys("pgdown")
+	}
+	for _, want := range []string{"Move in a list", "Build all", "Stop", "Ctrl+C"} {
+		if !seen[want] {
+			t.Fatalf("the shortcuts never list %q", want)
+		}
+	}
+	l.keys("home")
 	l.keys("end")
 	l.has(": / Ctrl+K", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
 	l.hasNot("Right-click", "Alt+", "F10", "menu")
@@ -300,18 +310,18 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 
 func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 	l := newLab(t, true, 90, 30)
-	l.hasNot("Build app")   // the detail is not open
+	l.hasNot("Last result") // the detail is not open
 	l.keys("down", "enter") // web
 	if !l.sh().detailOpen {
 		t.Fatal("Enter should open the detail")
 	}
-	l.has("dependencies", "Build app", "Test app")
+	l.has("apps/web · app", "Last result", "build", "test")
 	l.keys("esc")
 	if l.sh().detailOpen {
 		t.Fatal("Esc should go back to the list")
 	}
-	l.has("4 projects")
-	l.keys("enter", "down", "enter", "enter") // the second action: Test app, on web; Enter moves to its run button, then runs it
+	l.has("Filter:")
+	l.keys("enter", "down", "enter") // the second task: test, on web
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -320,11 +330,10 @@ func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
 func TestAtTheSupportedFloorTheDetailStillOpensFullWidth(t *testing.T) {
 	l := newLab(t, true, 72, 24)
 	l.keys("enter")
-	l.has("orders", "Build app", "How was this resolved?")
+	l.has("orders", "Tasks", "Last result")
 	l.keys("esc")
-	l.has("4 projects", "Project", "Language")
-	l.hasNot("Tasks")
-	l.hasNot("Build app")
+	l.has("Filter:", "APPS", "LIBS")
+	l.hasNot("Tasks", "Last result")
 }
 
 func TestNumberedShortcutsSwitchTabs(t *testing.T) {
@@ -336,7 +345,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l.keys("4")
 	l.has("3 with newer releases")
 	l.keys("2")
-	l.has("4 projects")
+	l.has("Filter:")
 	l.keys("1")
 	l.has("Needs you now", "2 checks fail")
 }

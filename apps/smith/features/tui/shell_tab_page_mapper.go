@@ -52,7 +52,7 @@ func (s Shell) guideModalName() string {
 func (p tabPage) Footer() (view, tail []commands.Hint) {
 	view, tail = commands.Hints(p.sh.state())
 	s := p.sh
-	if s.sideKeys() && !s.detailOnRun && !s.runShown() && s.detailPanel().Splits() {
+	if s.sideKeys() && !s.detailOnRun && !s.runShown() && !s.projectKeys() && s.detailPanel().Splits() {
 		for i, h := range view {
 			if h.Key == "enter" && h.Label == words.Say("commands.side.open.footer") {
 				view[i].Label = words.Say("commands.side.open.footer.chooser")

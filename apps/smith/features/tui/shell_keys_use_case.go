@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/helpdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectpage"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runhistory"
@@ -33,9 +34,12 @@ func mouseHelp() []string {
 	}
 }
 
-// editing is true while a text field has the keyboard.
+// editing is true while a text field has the keyboard: a form, the editor of
+// Settings, the filter of Projects, or the Settings section of a project, whose
+// letters (t, f, u) are its own.
 func (s Shell) editing() bool {
-	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Modal())
+	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Modal()) ||
+		(s.tab == commands.TabProjects && (s.filtering || (s.projectKeys() && s.projSection == projectpage.Settings)))
 }
 
 // formOpen is true while a guided form is open: its keys are the form's.
@@ -97,6 +101,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 			s.quit = true
 		}
 		return nil
+	}
+	if s.filtering && s.tab == commands.TabProjects {
+		// The filter line has the keyboard: every key types or ends it.
+		return s.filterKey(msg)
 	}
 	if name == "q" && !s.editing() {
 		switch {
@@ -274,6 +282,11 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		cmd, _ := s.runSelectedExtra()
 		return cmd
 	}
+	if sec, ok := projectpage.SectionOf("x:" + action); ok {
+		// A tab of the detail of a project.
+		s.showSection(sec)
+		return s.syncProjectSettings()
+	}
 	if task, ok := strings.CutPrefix(action, "run:"); ok {
 		if project == "" {
 			return nil
@@ -336,6 +349,10 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.openPresentedForm(formTauriAdd, s.projectsWhere(canAddTauri))
 	case "settings":
 		return s.openProjectSettings()
+	case "run-menu":
+		s.openRunMenu()
+	case "open-folder":
+		return s.openProjectFolder()
 	case "graph":
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)
@@ -548,7 +565,7 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		// A form opened from a tab gives the person back to it when it ends or is cancelled.
 		s.formOrigin = s.tab
 	}
-	s.tab, s.detailOpen, s.zoom, s.runFull = id, false, false, false
+	s.tab, s.detailOpen, s.zoom, s.runFull, s.filtering = id, false, false, false, false
 	s.selection = s.selection.Clear()
 	switch id {
 	case commands.TabDoctor:
@@ -558,8 +575,9 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabSettings:
+		// The settings of a project are in the detail of Projects, not in the tab.
 		var cmd tea.Cmd
-		s.settings, cmd = s.settings.Open()
+		s.settings, cmd = s.settings.CloseProject().Open()
 		return cmd
 	case commands.TabRelease:
 		if !s.release.Loaded {
@@ -606,10 +624,8 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		switch {
 		case s.runShown() && s.sideKeys():
 			return s.runKey(name)
-		case s.recentFocus && !s.detailFull():
-			return s.recentKey(name)
 		case s.sideKeys():
-			return s.detailKey(name)
+			return s.projectDetailKey(msg)
 		}
 		return s.projectsKey(name)
 	case commands.TabDeps:
@@ -702,61 +718,6 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 func (s Shell) onDoctorFinding() bool {
 	_, ok := s.doctor.Selected()
 	return ok && !s.doctor.OnHeader() && !s.doctor.OnPassedLine()
-}
-
-// projectsKey moves in the list of projects. Enter opens the detail over the
-// list when it is not beside it.
-func (s *Shell) projectsKey(name string) tea.Cmd {
-	switch commands.NavNamed(name) {
-	case commands.NavUp:
-		s.list = s.list.Move(-1)
-	case commands.NavDown:
-		s.list = s.list.Move(1)
-	case commands.NavPageUp:
-		s.list = s.list.Page(-1, s.listPage())
-	case commands.NavPageDown:
-		s.list = s.list.Page(1, s.listPage())
-	case commands.NavHome:
-		s.list = s.list.Home()
-	case commands.NavEnd:
-		s.list = s.list.End()
-	case commands.NavConfirm:
-		if s.lay().Mode == layout.Narrow && s.list.Len() > 0 {
-			s.runOpen, s.detailOpen, s.detailCursor = false, true, 0
-		}
-	case commands.NavNext:
-		if len(s.runs) > 0 {
-			s.recentFocus = true
-		} else {
-			s.focusSide()
-		}
-	default:
-		if name == "right" {
-			s.focusSide()
-		}
-	}
-	return nil
-}
-
-// recentKey moves in the list of recent runs under the projects: arrows choose,
-// Enter opens the run in the right panel, Esc or Left give the keyboard back to
-// the projects, and Tab moves it on to the right panel (or back to the projects
-// when none is beside the list). The list is open while it has the keyboard.
-func (s *Shell) recentKey(name string) tea.Cmd {
-	switch act := commands.NavNamed(name); {
-	case act == commands.NavUp:
-		s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), -1)
-	case act == commands.NavDown:
-		s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), 1)
-	case act == commands.NavConfirm:
-		return s.openRecent()
-	case act == commands.NavNext || name == "right":
-		s.recentFocus = false
-		s.focusSide()
-	case act == commands.NavCancel || name == "left":
-		s.recentFocus = false
-	}
-	return nil
 }
 
 // detailKey moves between the actions of the detail (it fills the pane, or the
