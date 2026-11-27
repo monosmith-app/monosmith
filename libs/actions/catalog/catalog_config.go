@@ -65,8 +65,9 @@ var catalog = []Action{
 	{Command: []string{"sync"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}},
 	{Command: []string{"deps"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
 	{Command: []string{"deps", "repair"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
-	{Command: []string{"deps", "up"}, Plan: "--check", Asks: true, Safety: Changes, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
+	{Command: []string{"deps", "up"}, Plan: "--check", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
 	{Command: []string{"up"}, Safety: NeedsTerminal, Terminal: "bare `smith up` is an interactive picker; the shell shows the same candidates in its Dependencies tab and never hands this over", Variants: []Variant{
+		{When: []string{"--dry-run"}, Safety: Reads},
 		{When: []string{"--yes"}, Safety: Changes},
 		{When: []string{"--check", "--json"}, Safety: Reads},
 	}},

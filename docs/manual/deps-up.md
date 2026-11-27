@@ -27,7 +27,7 @@ name that has only a major update asks in a terminal and needs `--major` without
 ## Synopsis
 
 ```sh
-smith deps up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--align [--dry-run] [--prefer highest|lowest|installed] [--to <name>=<version>]]
+smith deps up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--dry-run] [--align [--prefer highest|lowest|installed] [--to <name>=<version>]]
 ```
 
 ## Arguments and flags
@@ -46,7 +46,7 @@ Usage: `smith deps up [packages...] [flags]`
 | `--align` | boolean | off | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ |
 | `--check` | boolean | off | report only; never prompt, never write |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
-| `--dry-run` | boolean | off | with --align: show the plan and change nothing |
+| `--dry-run` | boolean | off | show what the update would change (each declaration it rewrites) and write nothing; with --align, the plan |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
 | `--major` | boolean | off | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version |
 | `--no-install` | boolean | off | rewrite the manifests without installing (also --skip-install) |
