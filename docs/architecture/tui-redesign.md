@@ -1,7 +1,8 @@
 # Design: the TUI redesign
 
 Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
-phase 4 (Projects) and phase 5 (Runs) are built. The other phases are planned.
+phase 4 (Projects), phase 5 (Runs) and phase 6 (the palette and Health) are built. The other
+phases are planned.
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -64,7 +65,7 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
 3. Home. **Built** (see [Phase 3 as built](#phase-3-as-built)).
 4. Projects. **Built** (see [Phase 4 as built](#phase-4-as-built)).
 5. The Runs view. **Built** (see [Phase 5 as built](#phase-5-as-built)).
-6. The command palette, and Health with the inline fix.
+6. The command palette, and Health with the inline fix. **Built** (see [Phase 6 as built](#phase-6-as-built)).
 7. Then Dependencies, Release, Settings and the dialogs, once they are drawn.
 
 ## Phase 2 as built
@@ -266,6 +267,64 @@ Deviations from the brief and the screens:
 - `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows` and `MinLogRows` of `splitter` stay, unused,
   because removing an exported symbol would force a major release.
 - The VS Code extension and the JetBrains plugin are unchanged: they have their own run output.
+
+## Phase 6 as built
+
+- The palette (`palette` package) groups its results under headings with their counts (`Build  13`).
+  With nothing typed the groups are the sections of `commands.PaletteEntries` (Start, Build,
+  Projects, Dependencies, Release, Health, Go to, Help). A search puts its first usable match under
+  **Best match**, the other matches under their sections in the order they first show, and the
+  commands that cannot be used now under **Not usable now**, with their reason on the second line.
+  The cursor counts in that drawn order (`groupRows`).
+- Each entry has two lines: the title with its key at the right, then the command line in the faint
+  colour. A hint `smith <command>: what it does` shows only `smith <command>`; a hint that is no
+  command line shows as it is (`commandLine`). The typed text (or each typed word) is lit in the
+  accent and bold in the title (`matchSpans`). The selected entry has `▶ ` and the selected
+  background.
+- The input line has `esc` at its right and a rule under it; the list ends with a rule (it carries
+  `N more not usable here` while nothing is typed) and the key hints in the footer style
+  (`↑/↓ move • enter run • esc close`). Nothing found says `no command matches` and how to find
+  more; a typo still offers the closest commands (`Did you mean`).
+- `Palette.At(y, h)` maps a line inside the frame to an entry (both of its lines); the shell uses it
+  for the hover and the click. `RowAt` stays, for the list area.
+- Health lists the checks by state (`doctorview.GroupByState`, `Model.ByState`, which the shell
+  sets): Failed, Warnings, then Passed when shown, each heading in its colour with its count. Each
+  check has a second muted line with its project (or `workspace`) and its file (`FileOf`), and `fix`
+  at the right when it has a fix. `g` still turns the groups off; the grouping by project stays in
+  `doctorview` for the model's own use.
+- The fix shows in the detail (`fixwizard.Wizard.Inline`): the wizard keeps its phases, keys and
+  `doctorfix` machinery, and draws without a frame, its title on its first line and its buttons from
+  the left, with no Cancel (the footer says Esc). The head over it is the state line
+  (`doctorview.StateLine`), what is wrong (three lines at most), `or in a terminal: smith doctor
+  --fix --only '<check>'` and `doctorview.Steps` (`1 Review ── 2 Apply ── 3 Check again`).
+- After the fix ran the detail shows step 3: `Checking again…` while doctor runs, then the new
+  state of the check, what was applied, `Not committed: review with git status` and
+  **Check again (r)**. Esc or a move in the list leaves it. A check that still fails opens the
+  failure of the wizard in the detail, as before in the dialog.
+- The inline fix is no modal: the screen is not dimmed, the footer lists the keys of the step, a
+  click beside the fix leaves it (not while a step runs). The smith.toml repair and the dependency
+  repair keep the dialog. While a fix shows, the Health list takes two fifths of the width, at most
+  48 columns, so the detail has the room of the screens.
+- `F`, the palette's Fix with doctor and Home's Fix button open the Health view first. On a narrow
+  screen the fix opens in the frame `‹ Health / <check>`; Esc closes the fix, then the check.
+- The new words are in `libs/words/catalog/en/palette_view.json`, `health_list.json` and
+  `healthfix.json`. `palette.footer` left the catalog.
+
+Deviations from the brief and the screens:
+
+- The marks stay `×` and `▲`; the screens draw `✗` and `⚠`, which `shared/marks` bans.
+- The palette has no Settings group and no Tasks group: `commands.PaletteEntries` has no such
+  sections, and the project's own tasks are in Build, as before. The screens' `tab edit the command
+  first` is not built: the palette has no command editor.
+- The detail of a check before `f` keeps its action panel (Fix, Check again, Why); the review shows
+  once the fix is open, because building the review reads the files.
+- The check-again key is `r` (`view.reload`), as before; the screens draw `c`, and one command keeps
+  one key. `x review all` is `F` (fix all), as before: `x` is the filter of the failed checks.
+- The wizard keeps its own button labels (`Apply (Enter)`, `Show changes (d)`); the screens draw
+  `Apply fix f` and `Not now esc`. The note `Undo with smith undo` is not shown: smith commits
+  nothing unasked, so `smith undo` cannot revert the fix.
+- The VS Code extension and the JetBrains plugin already call the view Health (phase 2); their
+  `Doctor` labels name the `smith doctor` command, so nothing changed there.
 
 ## Screens
 

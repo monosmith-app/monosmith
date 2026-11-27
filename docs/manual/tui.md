@@ -431,10 +431,15 @@ of each update in [`smith up --json`](up.md).
 ### In the palette
 
 `:`, `Ctrl+K`, `Ctrl+P` or `/` opens a palette: type to find a command; Up, Down, PgUp and PgDn choose,
-Enter picks, Esc or `Ctrl+C` closes. There is one line per intent, in plain words, grouped
-under Build, Projects, Dependencies, Release and Health (then Go to and Help), each with its
-key at the right and the command it runs as a muted hint. What cannot work now is hidden
-until you type; searching finds it with the reason. Nothing is typed as a raw command line:
+Enter picks, Esc or `Ctrl+C` closes. There is one entry per intent, in plain words, grouped
+under Start, Build, Projects, Dependencies, Release and Health (then Go to and Help), each heading
+with the number of its entries. An entry has two lines: its title with its key at the right, then,
+dim, the smith command line it runs (`smith run test -p orders`), so the palette also teaches the
+commands. The selected entry has `▶` and the selected background, and the letters you typed show
+in the accent. A search lists its **Best match** first, then the other matches by section, then
+**Not usable now**: what cannot work now is hidden until you type, and searching finds it with the
+reason. When nothing matches, the palette says so and offers the closest commands. The last line
+holds the keys (`↑/↓ move • enter run • esc close`); a click on either line of an entry runs it. Nothing is typed as a raw command line:
 a command that needs an answer opens its own form, such as Install a package (project
 preselected, then the packages) or Add project. Commands that have no key are reached here:
 Regenerate CI pipelines (asks to confirm), Info, Show what changed (`smith affected`),
@@ -781,6 +786,11 @@ Home points at the tab (`New here? ...`) until you have opened it once; that is 
 
 ## The Health list
 
+The checks are grouped by state: **Failed**, then **Warnings**, then **Passed** (when shown), each
+heading with its count; `Enter` on a heading folds it and `g` turns the groups off. Each check has
+two lines: its mark and name, with `fix` at the right when smith can fix it, then its project (or
+`workspace`) and the file it is about.
+
 The first line of the Health view holds three filter buttons, one for each state: `× 2 failed (x)`,
 `▲ 1 warning (w)` and `✓ 20 passed (p)`. Each is a toggle: click it or press its key. A filter that is
 off hides the checks of that state in every group; the group headings still count all of their
@@ -800,6 +810,21 @@ The detail of the selected check has four parts, always in this order, and each 
 
 `PgUp` and `PgDn` scroll the detail (`↑ more` and `↓ more` tell when there is more). Under 100 columns, `z` shows the detail alone.
 
+### The fix in the detail
+
+`f` (or the Fix button) shows the fix in the detail itself, not in a dialog. On a narrow screen
+`Enter` opens the check in the frame (`‹ Health / <check>`), `f` shows its fix there and `Esc` goes
+back. The top of the detail says the state of the check (`× Failed · web`), what is wrong, the same
+fix in a terminal, and the three steps `1 Review ── 2 Apply ── 3 Check again` with the current one
+lit. Under them is the fix itself, with the keys of [the doctor fix wizard](#the-doctor-fix-wizard):
+its questions, then the review of what it changes. Nothing changes until you press `Enter` on the
+review (or click **Apply**): a fix is always a choice you confirm. `Esc` leaves the fix and a click
+beside it in the list does the same, except while a step runs. After the fix ran, doctor checks again
+and the detail shows the third step: the new state of the check (`✓ The check passes now.`), what was
+applied, that nothing is committed, and **Check again (r)**, which runs every check again. `Esc` or
+a move in the list leaves it. When the check still fails, the detail shows why and **Retry**. The
+footer lists the keys of the step. The list gets more room for the detail while a fix shows in it.
+
 Under the checks, **Checks doctor does not run itself** lists the checks that only run on request:
 **Vertical-slice layout**. `Enter` on the row, or the **Run this check now** button of its detail,
 runs the check at once, with no question. It runs `slice-check`, the cached task of each project in a
@@ -813,7 +838,9 @@ either task.
 
 ### The doctor fix wizard
 
-Opened by `f` or `F` in Health, or by **Fix smith.toml** on the Start menu when `smith.toml` uses a renamed key (the same fix as `smith doctor --fix` makes; after it is applied the shell starts again inside the workspace). It is the interactive form of
+Opened by `f` or `F` in Health, where it shows in the detail (see
+[The fix in the detail](#the-fix-in-the-detail)), or by **Fix smith.toml** on the Start menu, where
+it is a dialog when `smith.toml` uses a renamed key (the same fix as `smith doctor --fix` makes; after it is applied the shell starts again inside the workspace). It is the interactive form of
 [`smith doctor --fix`](doctor.md) and asks the same questions.
 
 1. **Questions.** A fix may ask something (install the missing tool, or remove the script?).
