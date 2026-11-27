@@ -5,7 +5,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runhistory"
 	"github.com/monosmith-app/monosmith/libs/words/words"
@@ -37,8 +36,8 @@ func (s Shell) navLine(w int) string {
 // or "newer"), or "" when x is on plain text.
 func (s Shell) navAction(x int) string { return runhistory.ActionAt(s.navParts(), x) }
 
-// openRecent opens the run chosen in the list of recent runs in the right panel
-// of Projects. A run in progress keeps the panel: only it can be opened then.
+// openRecent opens the run chosen in a list of recent runs in the Runs view. A
+// run in progress keeps the view: only it can be opened then.
 func (s *Shell) openRecent() tea.Cmd {
 	at := len(s.runs) - 1 - s.recentAt
 	if s.running() && at != len(s.runs)-1 {
@@ -49,21 +48,25 @@ func (s *Shell) openRecent() tea.Cmd {
 	return s.revealRun()
 }
 
-// revealRun shows the run panel: Projects opens with the panel beside the list,
-// or over it on a narrow screen (where Esc goes back). The keyboard moves to
-// the run.
+// revealRun opens the Runs view on the run shown, from whichever view it was
+// started or opened; Esc goes back to that view. A narrow screen shows the tasks.
 func (s *Shell) revealRun() tea.Cmd {
-	cmd := s.gotoTab(commands.TabProjects)
-	s.runOpen, s.sideFocus = true, true
-	if s.lay().Mode == layout.Narrow {
-		s.detailOpen, s.detailCursor = true, 0
+	if s.tab != commands.TabRuns {
+		s.runFrom = s.tab
 	}
+	cmd := s.gotoTab(commands.TabRuns)
+	s.runOnLog = false
 	s.keepRunVisible()
 	return cmd
 }
 
-// closeRun gives the right panel back to the detail of the project. The run
-// goes on, and the list of recent runs opens it again.
-func (s *Shell) closeRun() {
-	s.runOpen, s.detailOpen, s.zoom, s.runFull, s.detailTop, s.sideFocus = false, false, false, false, 0, false
+// closeRun leaves the Runs view for the view the run was opened from (Home when
+// there is none). The run goes on, and key 3 opens it again.
+func (s *Shell) closeRun() tea.Cmd {
+	to := s.runFrom
+	if to == "" || to == commands.TabRuns || !s.canShow(to) {
+		to = commands.TabHome
+	}
+	s.runFrom = ""
+	return s.gotoTab(to)
 }

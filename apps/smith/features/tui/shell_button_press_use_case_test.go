@@ -179,7 +179,7 @@ func TestEveryActionOfTheRunAndDoctorDetailsShowsAKey(t *testing.T) {
 			t.Errorf("Run: %s has no key", a.label)
 		}
 	}
-	l.keys("3")
+	l.keys("4")
 	for _, a := range l.sh().detailPanel().Actions {
 		if a.Shortcut == "" {
 			t.Errorf("Doctor: %s has no key", a.Label)

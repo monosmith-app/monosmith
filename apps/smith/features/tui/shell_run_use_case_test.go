@@ -24,15 +24,6 @@ func failingRun() *scripted {
 	}, exit: runner.Exit{Code: 1}}
 }
 
-func rowOf(l *lab, text string) int {
-	for i, line := range l.lines() {
-		if strings.Contains(line, text) {
-			return i
-		}
-	}
-	return -1
-}
-
 func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	l := newLab(t, true, 210, 36)
 	l.next = failingRun()
@@ -40,20 +31,19 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	if l.lastStarted() != "run build -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
-	l.has("$ smith run build", "failed", "4/4 100%", "orders:build", "exited with code 2", "kit:build", "passed", "106ms",
-		"web:build", "skipped", "because orders:build did not succeed", "sdk:test")
-	// Failures come first in the list.
-	if rowOf(l, "orders:build  ") > rowOf(l, "kit:build  ") && rowOf(l, "kit:build  ") > 0 {
-		t.Fatalf("a failure must be listed before a pass:\n%s", l.view())
-	}
+	l.has("Run · smith run build", "Failed 4 tasks", "4/4 100%", "× 1 failed", "✓ 1 passed", "≈ 1 cached", "orders", "kit", "106ms",
+		"exited with code 2", "sdk")
 	// The failing task's log is shown without asking.
-	l.has("Log: orders:build", "main.go:12: undefined: Foo")
+	l.has("orders:build  following", "main.go:12: undefined: Foo")
 	l.hasNot("ok example.com/kit")
+	// A skipped task says why when it is chosen.
+	l.clickTask("web:build")
+	l.has("skipped", "because orders:build did not succeed")
 	// The tab carries a badge, the status bar the result, the Projects list a mark.
-	if strip := stripText(l); !strings.Contains(strip, "2 Projects ×1") {
-		t.Fatalf("the Projects tab carries the failures: %q", strip)
+	if strip := stripText(l); !strings.Contains(strip, "3 Runs ×1") {
+		t.Fatalf("the Runs tab carries the failures: %q", strip)
 	}
-	if x, y := l.railSpot(commands.TabProjects); !strings.Contains(l.lines()[y][x:], "×1") {
+	if x, y := l.railSpot(commands.TabRuns); !strings.Contains(l.lines()[y][x:], "×1") {
 		t.Fatalf("and so does its row of the rail: %q", l.lines()[y])
 	}
 }

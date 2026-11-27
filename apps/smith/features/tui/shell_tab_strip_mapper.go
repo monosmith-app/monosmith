@@ -26,6 +26,10 @@ var shortOrder = []string{commands.TabSettings, commands.TabRelease, commands.Ta
 // which names are spelled out.
 const badgeRoom = 3
 
+// badged are the views that can carry a badge; only they reserve its room, so
+// the seven views fit 80 columns with their full names.
+var badged = map[string]bool{commands.TabRuns: true, commands.TabDoctor: true, commands.TabDeps: true, commands.TabRelease: true}
+
 // tabStrip is the row of views.
 func (s Shell) tabStrip() tabs.Strip { return s.renderStrip(s.hoveredTab()) }
 
@@ -38,7 +42,10 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 func (s Shell) stripAt(width int, hover string) tabs.Strip {
 	list := make([]tabs.Tab, 0, len(s.tabs))
 	for _, id := range s.tabs {
-		t := tabs.Tab{ID: id, Label: s.viewName(id), Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id), Reserve: badgeRoom}
+		t := tabs.Tab{ID: id, Label: s.viewName(id), Short: shortTitles()[id], Key: commands.ShortcutOf("view." + id), Badge: s.tabBadge(id)}
+		if badged[id] {
+			t.Reserve = badgeRoom
+		}
 		if id == commands.TabDeps {
 			// The strip must fit 80 columns: it says Deps.
 			t.Label = words.Say("tui.tab.deps_short")
@@ -62,16 +69,16 @@ func (s Shell) viewName(id string) string {
 }
 
 // tabBadge is the mark after a view's name in the strip and the rail: how the
-// run is going (Projects, which holds the run panel), what doctor found, how
+// run is going (Runs), what doctor found, how
 // many dependencies have a newer release and how many packages are ready to
 // release.
 func (s Shell) tabBadge(id string) string {
-	if id != commands.TabProjects && s.tabBusy(id) {
+	if id != commands.TabRuns && s.tabBusy(id) {
 		// Work for the tab goes on in the background: a spinner says so.
 		return s.th.Info(s.th.Spin(s.tick))
 	}
 	switch id {
-	case commands.TabProjects:
+	case commands.TabRuns:
 		switch {
 		case s.running():
 			return s.th.Info(s.th.Spin(s.tick))

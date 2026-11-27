@@ -13,7 +13,8 @@ type Junction struct {
 // vertical division that starts under the top border of row top ends in a tee
 // (┬) in it, one that ends over the bottom border of row bottom in a tee (┴)
 // in it, and a horizontal division that starts, ends or crosses a vertical one
-// has a tee or a cross there (├, ┤, ┼). The divider beside the detail is the
+// has a tee or a cross there (├, ┤, ┼). A vertical division that starts on the
+// row under a horizontal one has a tee (┬) in it. The divider beside the detail is the
 // border of the list's frame: it meets nothing, so it has no junction.
 //
 // Parameters: spots are the dividers; top and bottom are the rows of the
@@ -32,6 +33,11 @@ func Junctions(spots []Spot, top, bottom int) []Junction {
 			out = append(out, Junction{X: c.Hit.X, Y: bottom, Glyph: "┴"})
 		}
 		for _, r := range spots {
+			if r.Axis == Row && r.Hit.Y == c.Hit.Y-1 && c.Hit.X > r.Hit.X && c.Hit.X < r.Hit.X+r.Hit.W-1 {
+				// A vertical division that starts right under a horizontal one.
+				out = append(out, Junction{X: c.Hit.X, Y: r.Hit.Y, Glyph: "┬"})
+				continue
+			}
 			if r.Axis != Row || r.Hit.Y < c.Hit.Y || r.Hit.Y >= c.Hit.Y+c.Hit.H {
 				continue
 			}

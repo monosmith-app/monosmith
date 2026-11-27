@@ -15,15 +15,12 @@ func (s Shell) detailDivider() string { return splitter.DetailID(s.tab) }
 const projectsListMax = 44
 
 // detailWidth is the width the person gave the detail of the open tab; 0 is
-// automatic. A run open beside the projects takes half the screen unless the
-// person chose a width: its log needs the room. The detail of a project takes
-// what a list of at most 44 columns leaves.
+// automatic. The detail of a project takes what a list of at most 44 columns
+// leaves.
 func (s Shell) detailWidth() int {
 	n, _ := s.split.Size(s.detailDivider())
 	cw := layout.ContentWidth(s.w)
 	switch {
-	case n == 0 && s.runWanted():
-		return layout.ClampDetailWidth(cw, cw/2)
 	case n == 0 && s.tab == commands.TabProjects && s.inWorkspace:
 		// The list of projects needs little room; the sections of the detail
 		// (the table of tasks) take the rest.
@@ -53,7 +50,14 @@ func (s Shell) spots() []splitter.Spot {
 	if s.splitBlocked() {
 		return nil
 	}
-	return s.dividers()
+	var out []splitter.Spot
+	for _, p := range s.dividers() {
+		// The rule under the header of the Runs view is drawn, never moved.
+		if p.ID != splitter.RunsRuleID {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // dividers are the divisions of the open tab as drawn, whether or not they can
@@ -68,11 +72,14 @@ func (s Shell) dividers() []splitter.Spot {
 	}
 	in := l.Main.Inner()
 	switch {
-	case s.detailFull():
 	case s.runShown():
-		r := s.detailRect()
-		g := s.runGeom(r.W, r.H)
-		out = append(out, splitter.RunListSpot(r, g.listTop, g.sepRow, g.listRows))
+		w, h := s.runRect()
+		g := s.runsGeom(w, h)
+		out = append(out, splitter.RunsRuleSpot(in, g.ruleRow))
+		if !g.narrow {
+			out = append(out, splitter.RunsTreeSpot(in, g.treeW, g.bodyTop, runsTreeMin, max(w-runsLogMin, runsTreeMin)))
+		}
+	case s.detailFull():
 	case s.tab == commands.TabSettings:
 		g := s.settings.WithSideDetail(l.HasDetail()).Geometry(in.W, in.H)
 		out = append(out, splitter.SettingsListSpot(in, g.ListW, g.ListMin, g.ListMax))

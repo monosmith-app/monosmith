@@ -15,14 +15,15 @@ func TestARunOpenKeepsTheScreenWhenTheTerminalGetsNarrowAndWideAgain(t *testing.
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
 	l.keys("b")
-	l.has("Back (Esc)", "Filter:") // the run beside the list
+	l.has("Back (Esc)", "└─") // the tree beside the log
+	l.hasNot("tab switches")
 	l.send(tea.WindowSizeMsg{Width: 80, Height: 34})
-	l.has("Back (Esc)")
-	l.hasNot("Filter:")
+	l.has("tab switches", "Run again (r)") // a narrow screen keeps the buttons that answer the run
 	l.send(tea.WindowSizeMsg{Width: 140, Height: 34})
-	l.has("Back (Esc)", "Filter:")
-	if l.sh().detailOpen {
-		t.Fatal("beside the list the run is not the detail that fills the pane")
+	l.has("Back (Esc)", "└─")
+	l.hasNot("tab switches")
+	if l.sh().tab != commands.TabRuns || l.sh().detailOpen {
+		t.Fatal("the Runs view stays open, with no detail over it")
 	}
 }
 

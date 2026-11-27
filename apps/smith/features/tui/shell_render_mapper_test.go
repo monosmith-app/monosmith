@@ -166,15 +166,15 @@ func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 		"idle":           func(*lab) {},
 		"palette":        func(l *lab) { l.keys("ctrl+p") },
 		"help":           func(l *lab) { l.keys("f1") },
-		"confirm":        func(l *lab) { l.keys("5", "x", "enter") },
-		"release choice": func(l *lab) { l.keys("5", "x") },
+		"confirm":        func(l *lab) { l.keys("6", "x", "enter") },
+		"release choice": func(l *lab) { l.keys("6", "x") },
 		"run": func(l *lab) {
 			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✓ 1s", "x:y │ z"}}
 			l.keys("b")
 		},
 		"home":   func(l *lab) { l.keys("1") },
-		"doctor": func(l *lab) { l.keys("3") },
-		"deps":   func(l *lab) { l.keys("4") },
+		"doctor": func(l *lab) { l.keys("4") },
+		"deps":   func(l *lab) { l.keys("5") },
 		"guide":  func(l *lab) { l.keys("a") },
 	}
 	for name, prep := range prepare {
@@ -220,7 +220,7 @@ var frameTabs = []struct {
 	{"doctor", func(t *testing.T, w, h int) *lab { return newLab(t, true, w, h).openTab(commands.TabDoctor) }},
 	{"settings", func(t *testing.T, w, h int) *lab {
 		l, _ := newSettingsLab(t, w, h)
-		return l.keys("6")
+		return l.keys("7")
 	}},
 	{"home", func(t *testing.T, w, h int) *lab { return newHomeLab(t, w, h) }},
 }
@@ -335,8 +335,8 @@ func TestAClickInAListSelectsTheRowUnderItAt80And120Columns(t *testing.T) {
 			case "projects":
 				text = l.sh().list.Projects()[1].Name
 			case "run":
-				sh := l.sh()
-				text = sh.runIDs()[2]
+				// The failed task is selected: a click on All output selects that row.
+				text = "All output"
 			}
 			x, y := l.find(text)
 			if marked(l.rawRow(y)) {
@@ -378,7 +378,7 @@ func TestTheWheelScrollsTheListFromItsLastRowAt80And120Columns(t *testing.T) {
 		}
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{Rows: rows} }
 		l.m = sh
-		l.keys("4", "r")
+		l.keys("5", "r")
 		last := l.sh().mainInner().Y + l.sh().mainInner().H - 1
 		if lay := l.sh().lay(); last != lay.Main.Y+lay.Main.H-2 {
 			t.Fatalf("at %d the content ends on row %d, the frame's bottom border is on %d", w, last, lay.Main.Y+lay.Main.H-1)
@@ -430,7 +430,7 @@ func TestInThePlainThemeTheDimmingIsTheFaintAttributeAndOnlyBehindAModal(t *test
 
 func TestTheJunctionTakesTheColourOfItsDividerWhileItIsSelectedOrHeld(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 30)
-	l.keys("6")
+	l.keys("7")
 	var sp splitter.Spot
 	for _, p := range l.sh().spots() {
 		if p.ID == splitter.SettingsListID {

@@ -34,7 +34,7 @@ func (s *Shell) showRun(at int) {
 	if at < 0 || at >= len(s.runs) || s.running() {
 		return
 	}
-	s.runAt, s.run, s.runOpen = at, s.runs[at], true
+	s.runAt, s.run, s.runErrors = at, s.runs[at], false
 	s.recentAt = len(s.runs) - 1 - at
 	s.runSel, s.runTop, s.log = s.firstFailed(), 0, logview.Log{}
 	s.keepRunVisible()

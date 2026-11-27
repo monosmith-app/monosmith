@@ -65,6 +65,7 @@ const (
 const (
 	TabHome     = "home"
 	TabProjects = "projects"
+	TabRuns     = "runs"
 	TabDoctor   = "doctor"
 	TabDeps     = "deps"
 	TabRelease  = "release"
@@ -133,8 +134,8 @@ type Command struct {
 	// NeedsNarrowList and NeedsDetailOpen are for the keys of the narrow
 	// layout, where the detail is opened over the list and closed again.
 	NeedsNarrowList, NeedsDetailOpen bool
-	// NeedsRunPanel makes the command work only while the Projects view shows a
-	// run in its right panel; NotInRunPanel only while it does not.
+	// NeedsRunPanel makes the command work only while the Runs view shows a run;
+	// NotInRunPanel only while it does not.
 	NeedsRunPanel, NotInRunPanel bool
 	// NeedsRecentFocus makes the command work only while the keyboard is on the
 	// list of recent runs; NotInRecentFocus only while it is not.
@@ -171,7 +172,7 @@ type State struct {
 	Narrow, DetailOpen bool
 	// Running is true while a command is running in the run panel.
 	Running bool
-	// RunOpen is true while the right panel of Projects shows a run; RecentFocus
+	// RunOpen is true while the Runs view shows a run; RecentFocus
 	// while the keyboard is on the list of recent runs under the projects.
 	RunOpen, RecentFocus bool
 	// SideFocus is true while the keyboard is on the right panel beside the

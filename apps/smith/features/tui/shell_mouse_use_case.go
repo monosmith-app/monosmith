@@ -322,9 +322,7 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 	}
 	switch h.kind {
 	case "project":
-		// A project clicked shows its own detail: a run that was open goes on in
-		// the background and stays in the list of recent runs.
-		s.runOpen = false
+		// A project clicked shows its own detail.
 		s.list = s.list.SelectProject(h.id)
 		s.detailCursor = 0
 		if double {
@@ -334,7 +332,7 @@ func (s *Shell) clickHit(c content, rx, ry int, double bool) tea.Cmd {
 		s.runSel = h.id
 		s.keepRunVisible()
 	case "recent":
-		// A run on Home opens at one click, in the run panel of Projects.
+		// A run on Home, or in the list of the Runs view, opens at one click.
 		s.recentAt = h.index
 		return s.openRecent()
 	case "ptask":
@@ -490,6 +488,8 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		case commands.TabGuide:
 			// The wheel scrolls the list of the question; the selection stays.
 			s.guide = s.guide.Wheel(dir * wheelStep)
+		case commands.TabRuns:
+			s.wheelRuns(x, y, dir)
 		case commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
@@ -501,22 +501,16 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	return nil
 }
 
-// wheelSide scrolls what the right panel shows: the log of the run (or its task
-// list, above the log) while a run is open, else the detail.
+// wheelSide scrolls what the right panel shows: the sections of a project, or
+// the detail.
 func (s *Shell) wheelSide(y, dir int) {
+	if s.runShown() {
+		s.wheelRuns(s.mouseX, y, dir)
+		return
+	}
 	if s.projectPage() {
 		s.scrollProjectDetail(dir * wheelStep)
 		return
 	}
-	if !s.runShown() {
-		s.scrollDetail(dir * wheelStep)
-		return
-	}
-	r := s.detailRect()
-	g := s.runGeom(r.W, r.H)
-	if y-r.Y >= g.logTop {
-		s.log = s.log.Scroll(dir*wheelStep, s.logTotal(), g.logRows)
-		return
-	}
-	s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
+	s.scrollDetail(dir * wheelStep)
 }

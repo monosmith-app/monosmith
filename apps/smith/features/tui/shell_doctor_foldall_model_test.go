@@ -17,7 +17,7 @@ func foldLab(t *testing.T, w, h int) *lab {
 		fs = append(fs, doctor.Finding{Finding: protocol.Finding{Check: fmt.Sprintf("check %d", i), Problem: fmt.Sprintf("problem %d", i), Project: fmt.Sprintf("pkg%d", i), Warning: true, Detail: "d", Remedy: "r"}, Source: "node"})
 	}
 	l.send(doctorview.Result{Report: doctor.Report{Warnings: 6, Findings: fs}})
-	l.keys("3")
+	l.keys("4")
 	return l
 }
 

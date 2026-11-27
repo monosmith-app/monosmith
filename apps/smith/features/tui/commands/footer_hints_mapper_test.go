@@ -46,7 +46,7 @@ func TestWhileATextBoxIsOpenTheFooterShowsOnlyHowToEndIt(t *testing.T) {
 }
 
 func TestOnAFailedRunTheFooterLeadsWithRunAgainAndCopyLog(t *testing.T) {
-	view, _ := Hints(State{View: TabProjects, RunOpen: true, InWorkspace: true, RunFailed: true, Projects: 3})
+	view, _ := Hints(State{View: TabRuns, RunOpen: true, InWorkspace: true, RunFailed: true, Projects: 3})
 	if len(view) < 2 || view[0].Label != "run again" || view[1].Label != "copy log" {
 		t.Fatalf("%+v", view)
 	}
@@ -62,10 +62,10 @@ func TestTheEscLabelSaysWhatEscDoesInTheRunPanel(t *testing.T) {
 		}
 		return ""
 	}
-	if got := label(State{View: TabProjects, RunOpen: true, InWorkspace: true, TaskSelected: true}); got != "all output" {
+	if got := label(State{View: TabRuns, RunOpen: true, InWorkspace: true, TaskSelected: true}); got != "all output" {
 		t.Errorf("with a task shown Esc is %q", got)
 	}
-	if got := label(State{View: TabProjects, RunOpen: true, InWorkspace: true}); got != "back" {
+	if got := label(State{View: TabRuns, RunOpen: true, InWorkspace: true}); got != "back" {
 		t.Errorf("with all output shown Esc is %q", got)
 	}
 }
@@ -147,9 +147,9 @@ func TestWhileTheDetailHasTheKeyboardTheFooterListsItsKeysAndNotTheLists(t *test
 			}
 		}
 	}
-	// With a run open the run's own keys lead, and Tab gives the keyboard back.
-	hints := glyphLabels(State{View: TabProjects, InWorkspace: true, SideFocus: true, RunOpen: true, Projects: 3})
-	if !hasHint(hints, "Tab list") || hasHint(hints, "↑↓ choose") || !hasHint(hints, "↑↓ task") {
+	// In the Runs view the run's own keys lead; it has no list to give the keyboard back to.
+	hints := glyphLabels(State{View: TabRuns, InWorkspace: true, RunOpen: true, Projects: 3})
+	if hasHint(hints, "Tab list") || hasHint(hints, "↑↓ choose") || !hasHint(hints, "↑↓ task") {
 		t.Errorf("run open: %v", hints)
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runhistory"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runpage"
 	"github.com/monosmith-app/monosmith/libs/words/words"
 )
 
@@ -331,7 +332,11 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 	case "run-older", "run-newer":
 		s.stepRun(map[string]int{"run-older": -1, "run-newer": 1}[action])
 	case "run-back":
-		s.closeRun()
+		return s.closeRun()
+	case "run-errors":
+		s.toggleRunErrors()
+	case "run-tasks", "run-log":
+		s.runOnLog = action == "run-log"
 	case "run-fullscreen":
 		s.toggleFullRun()
 	case "why-failed":
@@ -620,10 +625,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	switch s.tab {
 	case commands.TabHome:
 		return s.homeKey(name)
+	case commands.TabRuns:
+		return s.runKey(name)
 	case commands.TabProjects:
 		switch {
-		case s.runShown() && s.sideKeys():
-			return s.runKey(name)
 		case s.sideKeys():
 			return s.projectDetailKey(msg)
 		}
@@ -769,29 +774,48 @@ func (s *Shell) runChosen() tea.Cmd {
 	return nil
 }
 
-// runKey moves in the run panel: the task list and the log.
+// runKey moves in the Runs view: Up and Down choose a task in the tree (or
+// scroll the log a narrow screen shows), the page keys scroll the log, Tab
+// switches between the tasks and the log on a narrow screen, and Esc shows all
+// output, then goes back to the view the run was opened from.
 func (s *Shell) runKey(name string) tea.Cmd {
 	if s.run == nil {
-		return nil
-	}
-	ids := s.runIDs()
-	if name == "left" || commands.NavNamed(name) == commands.NavNext {
-		// Beside the list, the keyboard goes back to the list; the run stays open.
-		if s.beside() {
-			s.focusList()
+		if commands.NavNamed(name) == commands.NavCancel {
+			return s.closeRun()
 		}
 		return nil
 	}
+	ids := s.runIDs()
+	narrow := s.runsNarrow()
+	if name == "tab" || name == "shift+tab" {
+		if narrow {
+			s.runOnLog = !s.runOnLog
+		}
+		return nil
+	}
+	onLog := narrow && s.runOnLog
 	switch commands.NavNamed(name) {
 	case commands.NavUp:
+		if onLog {
+			s.log = s.log.Scroll(-1, s.logTotal(), s.logHeight())
+			return nil
+		}
 		s.runSel = runhistory.StepSelection(ids, s.runSel, -1)
 	case commands.NavDown:
-		s.runSel = runhistory.StepSelection(ids, s.runSel, 1)
-	case commands.NavCancel:
-		// The first Esc shows all output; the next goes back to the project.
-		if s.runSel == "" {
-			s.closeRun()
+		if onLog {
+			s.log = s.log.Scroll(1, s.logTotal(), s.logHeight())
 			return nil
+		}
+		s.runSel = runhistory.StepSelection(ids, s.runSel, 1)
+	case commands.NavConfirm:
+		if narrow {
+			// Enter on a task of a narrow screen shows its log.
+			s.runOnLog = true
+		}
+	case commands.NavCancel:
+		// The first Esc shows all output; the next goes back.
+		if s.runSel == "" {
+			return s.closeRun()
 		}
 		s.runSel = ""
 	case commands.NavPageUp:
@@ -807,20 +831,14 @@ func (s *Shell) runKey(name string) tea.Cmd {
 	return nil
 }
 
-// runIDs are the choices in the run panel's list: "" (all output), then the
-// tasks in the order they are drawn.
-func (s *Shell) runIDs() []string {
-	ids := []string{""}
-	if s.run != nil {
-		for _, t := range s.run.Ordered() {
-			ids = append(ids, t.ID)
-		}
-	}
-	return ids
+// runIDs are the choices in the tree of the Runs view: "" (all output), then
+// the tasks in the order the tree draws them.
+func (s Shell) runIDs() []string {
+	return append([]string{""}, runpage.TaskIDs(s.runTree())...)
 }
 
 // logLines are the lines of the log being shown: one task's, or everything.
-func (s *Shell) logLines() []string {
+func (s Shell) logLines() []string {
 	if s.run == nil {
 		return nil
 	}

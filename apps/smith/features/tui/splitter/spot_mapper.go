@@ -5,11 +5,18 @@ import (
 )
 
 // The ids of the dividers a screen has besides the one beside the detail, which
-// has one per tab (DetailID) so each view keeps its own width.
+// has one per tab (DetailID) so each view keeps its own width. RunListID,
+// MinLogRows and MinRunListRows belong to the run panel that Projects had before
+// the Runs view; no screen draws that divider now, and they stay for callers of
+// this package.
 const (
-	RunListID         = "run.list"
-	SettingsListID    = "settings.sections"
-	SettingsDetailID  = "settings.detail"
+	RunListID        = "run.list"
+	SettingsListID   = "settings.sections"
+	SettingsDetailID = "settings.detail"
+	// RunsTreeID is the divider between the tree and the log of the Runs view;
+	// RunsRuleID the rule under its header, which does not move.
+	RunsTreeID        = "runs.tree"
+	RunsRuleID        = "runs.rule"
 	detailDividerTail = ".detail"
 	// MinLogRows is the rows the run log keeps; MinRunListRows the rows of the run list.
 	MinLogRows     = 2
@@ -53,6 +60,31 @@ func RunListSpot(in layout.Rect, listTop, sepRow, listRows int) Spot {
 		Hit:  layout.Rect{X: x, Y: in.Y + sepRow, W: rightEdge(in) - x, H: 1},
 		Size: listRows, Min: MinRunListRows, Max: max(avail-MinLogRows, MinRunListRows),
 		Origin: in.Y + listTop, Sign: 1,
+	}
+}
+
+// RunsRuleSpot is the rule under the header of the Runs view, in the area in,
+// at row ruleRow of it. It runs over the padding from border to border and does
+// not move: its size is fixed.
+func RunsRuleSpot(in layout.Rect, ruleRow int) Spot {
+	x := in.X - layout.Pad
+	return Spot{
+		ID: RunsRuleID, Axis: Row,
+		Hit:  layout.Rect{X: x, Y: in.Y + ruleRow, W: rightEdge(in) - x, H: 1},
+		Size: ruleRow, Min: ruleRow, Max: ruleRow,
+		Origin: in.Y, Sign: 1,
+	}
+}
+
+// RunsTreeSpot is the column between the tree of tasks and the log of the Runs
+// view, in the area in: treeW cells from its left edge, from the row under the
+// rule (bodyTop) to the bottom. lo and hi bound the cells of the tree.
+func RunsTreeSpot(in layout.Rect, treeW, bodyTop, lo, hi int) Spot {
+	return Spot{
+		ID: RunsTreeID, Axis: Column,
+		Hit:  layout.Rect{X: in.X + treeW, Y: in.Y + bodyTop, W: 1, H: max(in.H-bodyTop, 1)},
+		Size: treeW, Min: lo, Max: hi,
+		Origin: in.X, Sign: 1,
 	}
 }
 

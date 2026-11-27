@@ -14,7 +14,7 @@ func TestGOpensTheRegistryPageOfTheSelectedDependencyAndCopiesTheLink(t *testing
 	sh := l.sh()
 	sh.clip = &out
 	l.m = sh
-	l.keys("4")
+	l.keys("5")
 	l.has("Registry: "+axiosPage, "g opens it in your browser")
 	if len(l.opened) != 0 {
 		t.Fatalf("a browser opened before any key: %v", l.opened)
@@ -30,7 +30,7 @@ func TestGOpensTheRegistryPageOfTheSelectedDependencyAndCopiesTheLink(t *testing
 
 func TestGOnAPackageWithoutAPageOpensNothingAndSaysWhy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "down", "g") // zod has no page in the sample
+	l.keys("5", "down", "g") // zod has no page in the sample
 	if len(l.opened) != 0 {
 		t.Fatalf("opened %v", l.opened)
 	}
@@ -43,7 +43,7 @@ func TestShiftYCopiesOnlyTheLinkOnTheDepsView(t *testing.T) {
 	sh := l.sh()
 	sh.clip = &out
 	l.m = sh
-	l.keys("4", "Y")
+	l.keys("5", "Y")
 	if len(l.opened) != 0 {
 		t.Fatalf("copying must not open a browser: %v", l.opened)
 	}

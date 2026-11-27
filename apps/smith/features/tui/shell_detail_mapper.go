@@ -140,13 +140,10 @@ func (s *Shell) chooseDetail(i int) {
 	s.detailCursor, s.detailOnRun = i, false
 }
 
-// sideContent is what the right panel shows: the run while one is open in
-// Projects, the sections of the selected project, else the detail of the
-// selection (the Run… menu of a project is one).
+// sideContent is what the right panel shows: the sections of the selected
+// project, else the detail of the selection (the Run… menu of a project is one).
 func (s Shell) sideContent(w, h int) content {
 	switch {
-	case s.runShown():
-		return s.runPanelContent(w, h)
 	case s.projectPage():
 		return s.projectDetailContent(w, h)
 	}

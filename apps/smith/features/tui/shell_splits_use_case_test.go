@@ -106,22 +106,22 @@ func TestAnOpenDialogHidesTheDividers(t *testing.T) {
 	}
 }
 
-func TestDraggingTheRunDividerResizesTheTaskList(t *testing.T) {
+func TestDraggingTheRunDividerResizesTheTaskTree(t *testing.T) {
 	l := newLab(t, true, 140, 36)
 	l.next = failingRun()
 	l.keys("b")
-	in := l.sh().detailRect()
-	before := l.sh().runGeom(in.W, in.H).listRows
-	sepY := in.Y + l.sh().runGeom(in.W, in.H).sepRow
-	l.send(click(in.X+3, sepY)).send(drag(in.X+3, sepY-2)).send(letGo(in.X+3, sepY-2))
-	if got := l.sh().runGeom(in.W, in.H).listRows; got != before-2 {
-		t.Fatalf("dragging the divider up 2 rows takes 2 from the task list: %d -> %d", before, got)
+	in := l.sh().mainInner()
+	g := l.sh().runsGeom(l.sh().runRect())
+	x, y := in.X+g.treeW, in.Y+g.bodyTop+3
+	l.send(click(x, y)).send(drag(x+4, y)).send(letGo(x+4, y))
+	if got := l.sh().runsGeom(l.sh().runRect()).treeW; got != g.treeW+4 {
+		t.Fatalf("dragging the divider 4 columns right gives the tree 4 more: %d -> %d", g.treeW, got)
 	}
 }
 
 func TestTheSettingsDividersMoveWithTheKeys(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
-	l.keys("6")
+	l.keys("7")
 	in := l.sh().mainInner()
 	before := l.sh().settings.Geometry(in.W, in.H)
 	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
@@ -142,19 +142,22 @@ func TestTheSettingsDividersMoveWithTheKeys(t *testing.T) {
 }
 
 func TestBackslashSelectsTheNextDividerAndTheBarThePrevious(t *testing.T) {
-	l := newLab(t, true, 140, 36)
-	l.next = failingRun()
-	l.keys("b")
+	l, _ := newSettingsLab(t, 140, 40)
+	l.keys("7")
+	spots := l.sh().spots()
+	if len(spots) < 2 {
+		t.Fatalf("Settings has %d dividers", len(spots))
+	}
 	l.keys(`\`)
-	if l.sh().split.Selected != "projects.detail" {
+	if l.sh().split.Selected != spots[0].ID {
 		t.Fatalf("first: %q", l.sh().split.Selected)
 	}
 	l.keys(`\`)
-	if l.sh().split.Selected != "run.list" {
+	if l.sh().split.Selected != spots[1].ID {
 		t.Fatalf("second: %q", l.sh().split.Selected)
 	}
 	l.keys("|")
-	if l.sh().split.Selected != "projects.detail" {
+	if l.sh().split.Selected != spots[0].ID {
 		t.Fatalf("the bar goes back: %q", l.sh().split.Selected)
 	}
 }

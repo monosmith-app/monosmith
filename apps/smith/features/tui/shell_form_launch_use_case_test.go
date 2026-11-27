@@ -40,7 +40,7 @@ func boundaryResult() doctorview.Result {
 
 func TestABoundaryFindingHasAButtonThatRunsSmithBoundariesNow(t *testing.T) {
 	l := newLab(t, true, 140, 34).withCheckForms()
-	l.keys("3")
+	l.keys("4")
 	l.send(boundaryResult())
 	l.has("Run this check now")
 	l.runDetailAction("Run this check now")
@@ -76,7 +76,7 @@ func (l *lab) toDoctorExtra() {
 
 func TestEnterOnTheSliceCheckRowRunsTheTaskOfEveryProjectWithNoQuestion(t *testing.T) {
 	l := newLab(t, true, 140, 34).withCheckForms().withProjectTasks("slice-check")
-	l.keys("3")
+	l.keys("4")
 	l.send(boundaryResult())
 	l.has("Checks doctor does not run itself", "Vertical-slice layout", "Enter runs slice-check")
 	l.toDoctorExtra()
@@ -93,7 +93,7 @@ func TestEnterOnTheSliceCheckRowRunsTheTaskOfEveryProjectWithNoQuestion(t *testi
 func TestAWorkspaceWithGoAndNodeChecksTheLayoutWithBothTasks(t *testing.T) {
 	// The first sample project is node: its lint carries the ESLint slice rules.
 	l := newLab(t, true, 140, 34).withProjectTasks("slice-check", "lint")
-	l.keys("3")
+	l.keys("4")
 	l.send(boundaryResult())
 	l.has("Enter runs slice-check and lint")
 	l.toDoctorExtra()
@@ -105,7 +105,7 @@ func TestAWorkspaceWithGoAndNodeChecksTheLayoutWithBothTasks(t *testing.T) {
 
 func TestANodeOnlyWorkspaceChecksTheLayoutWithLint(t *testing.T) {
 	l := newLab(t, true, 140, 34).withProjectTasks("lint")
-	l.keys("3")
+	l.keys("4")
 	l.send(boundaryResult())
 	l.toDoctorExtra()
 	l.keys("enter")
@@ -116,14 +116,14 @@ func TestANodeOnlyWorkspaceChecksTheLayoutWithLint(t *testing.T) {
 
 func TestWithoutSliceCheckOrLintDoctorListsNoExtraCheck(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("3")
+	l.keys("4")
 	l.send(boundaryResult())
 	l.hasNot("Checks doctor does not run itself")
 }
 
 func TestAFindingAboutAFileHasAWhyButtonThatOpensTheWhyFormForIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("3")
+	l.keys("4")
 	for range 10 {
 		if f, ok := l.sh().doctor.Selected(); ok && f.Check == "Docker registries of web agree" {
 			break
@@ -144,7 +144,7 @@ func TestAFindingAboutAFileHasAWhyButtonThatOpensTheWhyFormForIt(t *testing.T) {
 
 func TestAFindingAboutNoFileHasNoWhyButton(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("3")
+	l.keys("4")
 	if f, ok := l.sh().doctor.Selected(); !ok || f.Check != "go.work lists every module" {
 		t.Fatalf("the cursor starts on %q", f.Check)
 	}
@@ -158,7 +158,7 @@ func TestWOnATaskThatRanOpensWhyMissForItAndOnACachedOneSaysWhyNot(t *testing.T)
 	if !l.runPanelHasKeys() {
 		t.Fatal("the run panel does not have the keyboard")
 	}
-	l.keys("down") // web:build, from the cache: cached tasks are listed before passed ones
+	l.keys("down", "down") // web:build, from the cache: the tree lists kit, then web
 	if l.sh().runSel != "web:build" {
 		t.Fatalf("selected %q", l.sh().runSel)
 	}
@@ -167,7 +167,7 @@ func TestWOnATaskThatRanOpensWhyMissForItAndOnACachedOneSaysWhyNot(t *testing.T)
 	if l.sh().tab == commands.TabGuide {
 		t.Fatal("w opened a form for a task that did not run")
 	}
-	l.keys("down")
+	l.keys("up")
 	l.keys("w")
 	if l.sh().guide.Title() != "Why would a task run again?" {
 		t.Fatalf("w opened %q", l.sh().guide.Title())
@@ -194,7 +194,10 @@ func TestVerifyRunsSmithVerifyAndTheRunPanelListsItsTasks(t *testing.T) {
 	if got := l.lastStarted(); got != "verify" {
 		t.Fatalf("V started %q", got)
 	}
-	l.has("kit:lint", "web:test")
+	if ids := strings.Join(l.sh().runIDs(), " "); ids != " kit:lint web:test" {
+		t.Fatalf("the tree lists %q", ids)
+	}
+	l.has("lint", "test")
 	if c := l.sh().run.Counts(); c.Passed != 1 || c.Failed != 1 {
 		t.Fatalf("%+v", c)
 	}

@@ -31,11 +31,14 @@ var (
 	vDeps     = []string{TabDeps}
 	vGuide    = []string{TabGuide}
 	vSettings = []string{TabSettings}
+	vRuns     = []string{TabRuns}
+	// vStop are the views whose footer names the key that stops a run.
+	vStop = []string{TabHome, TabProjects, TabRuns, TabDoctor, TabDeps, TabRelease}
 	// vReloadable are the views that read something and can read it again.
 	vReloadable = []string{TabHome, TabDoctor, TabRelease, TabDeps, TabSettings}
 	// vWorkspace are the views of a workspace where the run keys are shown.
 	vWorkspace = []string{TabHome, TabProjects, TabDoctor, TabDeps, TabRelease}
-	vCopy      = []string{TabProjects, TabDoctor, TabDeps}
+	vCopy      = []string{TabProjects, TabRuns, TabDoctor, TabDeps}
 	// vSplit are the views whose selection has a detail pane beside the list.
 	vSplit = []string{TabProjects, TabDoctor}
 	// vSide are the views whose side panel scrolls with Ctrl+U and Ctrl+D: the
@@ -64,20 +67,21 @@ var all = []Command{
 	{ID: "side.move", Group: GroupViews, Title: words.Say("commands.side.move.title"), Keys: []string{"down", "up"}, Shortcut: words.Say("commands.side.move.shortcut"), Kind: PaneKey, Views: vSplit, NeedsSideFocus: true, NotInRunPanel: true, NotInProjectDetail: true, Footer: words.Say("commands.side.move.footer"), Glyph: words.Say("commands.side.move.glyph")},
 	{ID: "side.open", Group: GroupViews, Title: words.Say("commands.side.open.title"), Keys: []string{"enter"}, Kind: PaneKey, Views: vSplit, NeedsSideFocus: true, NotInRunPanel: true, NotInProjectDetail: true, Footer: words.Say("commands.side.open.footer"), Glyph: words.Say("commands.side.open.glyph")},
 
-	// The run panel and the list of recent runs sit in the Projects view. They come
-	// before the keys of the projects: while a run is open its r means "run again",
-	// not "replace the derived file".
-	{ID: "run.older", Group: GroupRun, Title: words.Say("commands.run.older.title"), Hint: words.Say("commands.run.older.hint"), Keys: []string{","}, Kind: ViewAction, Action: "run-older", Views: vProjects, NeedsRunPanel: true, NeedsIdle: true, Footer: words.Say("commands.run.older.footer")},
-	{ID: "run.newer", Group: GroupRun, Title: words.Say("commands.run.newer.title"), Keys: []string{"."}, Kind: ViewAction, Action: "run-newer", Views: vProjects, NeedsRunPanel: true, NeedsIdle: true, Footer: words.Say("commands.run.newer.footer")},
-	{ID: "run.all-output", Group: GroupRun, Title: words.Say("commands.run.all-output.title"), Keys: []string{"esc"}, Kind: PaneKey, Views: vProjects, NeedsRunPanel: true, Footer: words.Say("commands.run.all-output.footer"), TaskFooter: words.Say("commands.run.all-output.footer.task")},
-	{ID: "run.scroll", Group: GroupRun, Title: words.Say("commands.run.scroll.title"), Keys: []string{"down", "up", "pgdown", "pgup"}, Shortcut: words.Say("commands.run.scroll.shortcut"), Glyph: words.Say("commands.run.scroll.glyph"), Kind: PaneKey, Views: vProjects, NeedsRunPanel: true, Footer: words.Say("commands.run.scroll.footer")},
-	{ID: "run.again", Group: GroupRun, Title: words.Say("commands.run.again.title"), Hint: words.Say("commands.run.again.hint"), Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vProjects, NeedsRunPanel: true, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.run.again.footer")},
-	{ID: "run.again-failed", Group: GroupRun, Title: words.Say("commands.run.again-failed.title"), Hint: words.Say("commands.run.again-failed.hint"), Keys: []string{"R"}, Kind: ViewAction, Action: "rerun-failed", Views: vProjects, NeedsRunPanel: true, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.run.again-failed.footer")}, // words:literal
-	{ID: "run.fullscreen", Group: GroupRun, Title: words.Say("commands.run.fullscreen.title"), Hint: words.Say("commands.run.fullscreen.hint"), Keys: []string{"Z"}, Kind: ViewAction, Action: "run-fullscreen", Views: vProjects, NeedsRunPanel: true},                                                                                                   // words:literal
-	{ID: "run.copy-log", Group: GroupRun, Title: words.Say("commands.run.copy-log.title"), Hint: words.Say("commands.run.copy-log.hint"), Keys: []string{"Y"}, Kind: ViewAction, Action: "copy-log", Views: vProjects, NeedsRunPanel: true, Footer: words.Say("commands.run.copy-log.footer")},                                                            // words:literal
-	{ID: "run.follow", Group: GroupRun, Title: words.Say("commands.run.follow.title"), Hint: words.Say("commands.run.follow.hint"), Keys: []string{"f"}, Kind: Follow, Views: vProjects, NeedsRunPanel: true, Footer: words.Say("commands.run.follow.footer")},
+	// The keys of the Runs view. While a run is shown its r means "run again" and
+	// its e "errors only".
+	{ID: "run.scroll", Group: GroupRun, Title: words.Say("commands.run.scroll.title"), Keys: []string{"down", "up", "pgdown", "pgup"}, Shortcut: words.Say("commands.run.scroll.shortcut"), Glyph: words.Say("commands.run.scroll.glyph"), Kind: PaneKey, Views: vRuns, NeedsRunPanel: true, Footer: words.Say("commands.run.scroll.footer")},
+	{ID: "run.switch", Group: GroupRun, Title: words.Say("commands.run.switch.title"), Keys: []string{"tab"}, Kind: PaneKey, Views: vRuns, NeedsRunPanel: true, NeedsNarrowList: true, Footer: words.Say("commands.run.switch.footer"), OnFooter: words.Say("commands.run.switch.footer.on")},
+	{ID: "run.errors", Group: GroupRun, Title: words.Say("commands.run.errors.title"), Hint: words.Say("commands.run.errors.hint"), Keys: []string{"e"}, Kind: ViewAction, Action: "run-errors", Views: vRuns, NeedsRunPanel: true, Footer: words.Say("commands.run.errors.footer"), OnFooter: words.Say("commands.run.errors.footer.on"), OnTitle: words.Say("commands.run.errors.title.on")},
+	{ID: "run.again", Group: GroupRun, Title: words.Say("commands.run.again.title"), Hint: words.Say("commands.run.again.hint"), Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRuns, NeedsRunPanel: true, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.run.again.footer")},
+	{ID: "run.again-failed", Group: GroupRun, Title: words.Say("commands.run.again-failed.title"), Hint: words.Say("commands.run.again-failed.hint"), Keys: []string{"R"}, Kind: ViewAction, Action: "rerun-failed", Views: vRuns, NeedsRunPanel: true, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.run.again-failed.footer")}, // words:literal
+	{ID: "run.copy-log", Group: GroupRun, Title: words.Say("commands.run.copy-log.title"), Hint: words.Say("commands.run.copy-log.hint"), Keys: []string{"Y"}, Kind: ViewAction, Action: "copy-log", Views: vRuns, NeedsRunPanel: true, Footer: words.Say("commands.run.copy-log.footer")},                                                            // words:literal
+	{ID: "run.follow", Group: GroupRun, Title: words.Say("commands.run.follow.title"), Hint: words.Say("commands.run.follow.hint"), Keys: []string{"f"}, Kind: Follow, Views: vRuns, NeedsRunPanel: true, Footer: words.Say("commands.run.follow.footer")},
 	// w on a task that ran (not replayed from the cache) asks why it missed the cache.
-	{ID: "run.why-miss", Group: GroupRun, Title: words.Say("commands.run.why-miss.title"), Hint: words.Say("commands.run.why-miss.hint"), Keys: []string{"w"}, Kind: ViewAction, Action: "why-miss", Views: vProjects, NeedsRunPanel: true, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.run.why-miss.footer")},
+	{ID: "run.why-miss", Group: GroupRun, Title: words.Say("commands.run.why-miss.title"), Hint: words.Say("commands.run.why-miss.hint"), Keys: []string{"w"}, Kind: ViewAction, Action: "why-miss", Views: vRuns, NeedsRunPanel: true, NeedsWorkspace: true, NeedsIdle: true, Footer: words.Say("commands.run.why-miss.footer")},
+	{ID: "run.older", Group: GroupRun, Title: words.Say("commands.run.older.title"), Hint: words.Say("commands.run.older.hint"), Keys: []string{","}, Kind: ViewAction, Action: "run-older", Views: vRuns, NeedsRunPanel: true, NeedsIdle: true, Footer: words.Say("commands.run.older.footer")},
+	{ID: "run.newer", Group: GroupRun, Title: words.Say("commands.run.newer.title"), Keys: []string{"."}, Kind: ViewAction, Action: "run-newer", Views: vRuns, NeedsRunPanel: true, NeedsIdle: true, Footer: words.Say("commands.run.newer.footer")},
+	{ID: "run.all-output", Group: GroupRun, Title: words.Say("commands.run.all-output.title"), Keys: []string{"esc"}, Kind: PaneKey, Views: vRuns, NeedsRunPanel: true, Footer: words.Say("commands.run.all-output.footer"), TaskFooter: words.Say("commands.run.all-output.footer.task")},
+	{ID: "run.fullscreen", Group: GroupRun, Title: words.Say("commands.run.fullscreen.title"), Hint: words.Say("commands.run.fullscreen.hint"), Keys: []string{"Z"}, Kind: ViewAction, Action: "run-fullscreen", Views: vRuns, NeedsRunPanel: true}, // words:literal
 
 	{ID: "projects.move", Group: GroupRun, Title: words.Say("commands.projects.move.title"), Keys: []string{"down", "up", "j", "k"}, Shortcut: words.Say("commands.projects.move.shortcut"), Kind: PaneKey, Views: vProjects, NotInRunPanel: true, NotInRecentFocus: true, NotInSideFocus: true},
 	{ID: "projects.filter", Group: GroupRun, Title: words.Say("commands.projects.filter.title"), Keys: []string{"/"}, Kind: PaneKey, Views: vProjects, NotInSideFocus: true, NotInRunPanel: true, NotInProjectDetail: true, Footer: words.Say("commands.projects.filter.footer")},
@@ -167,7 +171,7 @@ var all = []Command{
 	{ID: "run.lint-all", Group: GroupRun, Title: words.Say("commands.run.lint-all.title"), Hint: words.Say("commands.run.lint-all.hint"), Keys: []string{"L"}, Kind: RunTask, Task: "lint", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}},                          // words:literal
 	{ID: "run.typecheck-all", Group: GroupRun, Title: words.Say("commands.run.typecheck-all.title"), Hint: words.Say("commands.run.typecheck-all.hint"), Keys: []string{"C"}, Kind: RunTask, Task: "typecheck", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"typecheck"}}, // words:literal
 	{ID: "run.verify", Group: GroupRun, Title: words.Say("commands.run.verify.title"), Hint: words.Say("commands.run.verify.hint"), Keys: []string{"V"}, Kind: Execute, Argv: []string{"verify"}, NeedsWorkspace: true, NeedsIdle: true},                                                           // words:literal
-	{ID: "run.stop", Group: GroupRun, Title: words.Say("commands.run.stop.title"), Hint: words.Say("commands.run.stop.hint"), Keys: []string{"ctrl+c"}, Kind: Stop, NeedsRunning: true, Footer: words.Say("commands.run.stop.footer"), ShowIn: vWorkspace},
+	{ID: "run.stop", Group: GroupRun, Title: words.Say("commands.run.stop.title"), Hint: words.Say("commands.run.stop.hint"), Keys: []string{"ctrl+c"}, Kind: Stop, NeedsRunning: true, Footer: words.Say("commands.run.stop.footer"), ShowIn: vStop},
 
 	// Workspace
 	{ID: "ws.doctor", Group: GroupWorkspace, Title: words.Say("commands.ws.doctor.title"), Hint: words.Say("commands.ws.doctor.hint"), Keys: []string{"d"}, Kind: OpenDoctor, NeedsWorkspace: true, Presents: []string{"doctor"}, Footer: words.Say("commands.ws.doctor.footer"), ShowIn: []string{TabHome, TabProjects}},
@@ -228,12 +232,13 @@ var all = []Command{
 	// Views: the number is the position in the tab row.
 	{ID: "view.home", Group: GroupViews, Title: words.Say("commands.view.home.title"), Hint: words.Say("commands.view.home.hint"), Keys: []string{"1"}, Glyph: words.Say("commands.view.home.glyph"), Kind: ShowTab, Tab: TabHome, NeedsWorkspace: true, Footer: words.Say("commands.view.home.footer"), Tail: true},
 	{ID: "view.projects", Group: GroupViews, Title: words.Say("commands.view.projects.title"), Keys: []string{"2"}, Kind: ShowTab, Tab: TabProjects, NeedsWorkspace: true, Presents: []string{"projects"}},
-	{ID: "view.doctor", Group: GroupViews, Title: words.Say("commands.view.doctor.title"), Keys: []string{"3"}, Kind: ShowTab, Tab: TabDoctor, NeedsWorkspace: true},
-	{ID: "view.deps", Group: GroupViews, Title: words.Say("commands.view.deps.title"), Hint: words.Say("commands.view.deps.hint"), Keys: []string{"4"}, Kind: ShowTab, Tab: TabDeps, NeedsWorkspace: true, Presents: []string{"up"}},
-	{ID: "view.release", Group: GroupViews, Title: words.Say("commands.view.release.title"), Hint: words.Say("commands.view.release.hint"), Keys: []string{"5"}, Kind: ShowTab, Tab: TabRelease, NeedsWorkspace: true, Presents: []string{"release"}},
+	{ID: "view.runs", Group: GroupViews, Title: words.Say("commands.view.runs.title"), Hint: words.Say("commands.view.runs.hint"), Keys: []string{"3"}, Kind: ShowTab, Tab: TabRuns, NeedsWorkspace: true},
+	{ID: "view.doctor", Group: GroupViews, Title: words.Say("commands.view.doctor.title"), Keys: []string{"4"}, Kind: ShowTab, Tab: TabDoctor, NeedsWorkspace: true},
+	{ID: "view.deps", Group: GroupViews, Title: words.Say("commands.view.deps.title"), Hint: words.Say("commands.view.deps.hint"), Keys: []string{"5"}, Kind: ShowTab, Tab: TabDeps, NeedsWorkspace: true, Presents: []string{"up"}},
+	{ID: "view.release", Group: GroupViews, Title: words.Say("commands.view.release.title"), Hint: words.Say("commands.view.release.hint"), Keys: []string{"6"}, Kind: ShowTab, Tab: TabRelease, NeedsWorkspace: true, Presents: []string{"release"}},
 	// The Settings tab is where plugins, recipes and smith.toml settings are
 	// listed and changed (smith plugin, recipe and config in the terminal).
-	{ID: "view.settings", Group: GroupViews, Title: words.Say("commands.view.settings.title"), Hint: words.Say("commands.view.settings.hint"), Keys: []string{"6"}, Kind: ShowTab, Tab: TabSettings, NeedsWorkspace: true, Presents: []string{"plugin", "plugin enable", "plugin disable", "recipe", "config", "config set", "config unset"}}, // words:literal
+	{ID: "view.settings", Group: GroupViews, Title: words.Say("commands.view.settings.title"), Hint: words.Say("commands.view.settings.hint"), Keys: []string{"7"}, Kind: ShowTab, Tab: TabSettings, NeedsWorkspace: true, Presents: []string{"plugin", "plugin enable", "plugin disable", "recipe", "config", "config set", "config unset"}}, // words:literal
 	{ID: "detail.zoom", Group: GroupViews, Title: words.Say("commands.detail.zoom.title"), Hint: words.Say("commands.detail.zoom.hint"), Keys: []string{"z"}, Kind: ViewAction, Action: "detail-zoom", Views: vZoom, Footer: words.Say("commands.detail.zoom.footer")},
 	{ID: "detail.expand", Group: GroupViews, Title: words.Say("commands.detail.expand.title"), Keys: []string{"e"}, Kind: ViewAction, Action: "detail-expand", Views: vDoctor},
 	{ID: "split.right", Group: GroupViews, Title: words.Say("commands.split.right.title"), Hint: words.Say("commands.split.right.hint"), Keys: []string{"]"}, Kind: ViewAction, Action: "split-right", Views: vSplitters},

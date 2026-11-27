@@ -41,7 +41,7 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 			return nil
 		}
 		if s.lay().Mode == layout.Narrow {
-			s.runOpen, s.detailOpen, s.detailCursor = false, true, 0
+			s.detailOpen, s.detailCursor = true, 0
 			return nil
 		}
 		s.focusSide()
@@ -212,7 +212,7 @@ func (s *Shell) openRunMenu() {
 	s.projMenu, s.detailTop = true, 0
 	s.chooseDetail(0)
 	if s.lay().Mode == layout.Narrow {
-		s.runOpen, s.detailOpen = false, true
+		s.detailOpen = true
 		return
 	}
 	s.focusSide()
@@ -227,7 +227,7 @@ func (s *Shell) openProjectSettings() tea.Cmd {
 	}
 	s.showSection(projectpage.Settings)
 	if s.lay().Mode == layout.Narrow {
-		s.runOpen, s.detailOpen = false, true
+		s.detailOpen = true
 	} else {
 		s.focusSide()
 	}

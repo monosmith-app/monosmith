@@ -39,7 +39,7 @@ func TestCheckAgainKeepsTheListAndSaysItIsCheckingThenSaysWhatItFound(t *testing
 	l := newLab(t, true, 140, 34)
 	release := l.slowDoctor(twoFindings())
 	defer close(release)
-	l.keys("3", "r")
+	l.keys("4", "r")
 	l.has("Check again (r)", "first check")
 	l.keys("down")
 	l.keys("w")
@@ -63,7 +63,7 @@ func TestTheCheckAgainButtonAnswersAClick(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	release := l.slowDoctor(twoFindings())
 	defer close(release)
-	l.keys("3", "r")
+	l.keys("4", "r")
 	l.clickText("Check again (r)")
 	if !l.sh().doctor.Loading {
 		t.Fatal("the click did not start a check")
@@ -77,7 +77,7 @@ func TestTheListSaysItIsCheckingAgainRightAfterAFixEnds(t *testing.T) {
 		Fix: &protocol.Fix{Description: "write x", Safe: true, Files: []protocol.FileEdit{{Path: "x.txt", Content: "x\n"}}},
 	}}}}})
 	defer close(release)
-	l.keys("3", "r", "f", "enter")
+	l.keys("4", "r", "f", "enter")
 	l.has("Checking again…", "a file is missing")
 	if !l.sh().doctor.Loading {
 		t.Fatal("doctor is out and the list does not say so")
@@ -95,7 +95,7 @@ func TestTheDoctorFilterButtonsStayAtTheTopWhileTheChecksScroll(t *testing.T) {
 		sh := l.sh()
 		sh.sources.Doctor = func() doctorview.Result { return res }
 		l.m = sh
-		l.keys("3", "r")
+		l.keys("4", "r")
 		row := func() int {
 			for i, line := range l.lines() {
 				if strings.Contains(line, "60 failed") {

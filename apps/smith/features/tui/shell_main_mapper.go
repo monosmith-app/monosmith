@@ -67,6 +67,8 @@ func (s Shell) mainContent(w, h int) content {
 		return s.projectsContent(w, h)
 	case commands.TabHome:
 		return s.homeContent(w, h)
+	case commands.TabRuns:
+		return s.runsContent(w, h)
 	case commands.TabDoctor:
 		if s.detailFull() {
 			return s.detailContent(w, h)
@@ -179,8 +181,6 @@ func withLines(c content, lines ...string) content {
 	c.lines = append(c.lines, lines...)
 	return c
 }
-
-func pad(s string, w int) string { return pane.Fit(s, w) }
 
 // statusRank orders the states by how much they matter to a project's mark.
 var statusRank = map[runview.Status]int{runview.Failed: 0, runview.Running: 1, runview.Queued: 2, runview.Cancelled: 3, runview.Skipped: 3, runview.Cached: 4, runview.Passed: 5}

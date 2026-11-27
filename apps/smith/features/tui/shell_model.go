@@ -45,7 +45,7 @@ import (
 // tabTitles are the names of the tabs, by tab id.
 func tabTitles() map[string]string {
 	return map[string]string{
-		commands.TabHome: words.Say("tui.tab.home"), commands.TabProjects: words.Say("tui.tab.projects"), commands.TabDoctor: words.Say("tui.tab.doctor"),
+		commands.TabHome: words.Say("tui.tab.home"), commands.TabProjects: words.Say("tui.tab.projects"), commands.TabRuns: words.Say("tui.tab.runs"), commands.TabDoctor: words.Say("tui.tab.doctor"),
 		commands.TabDeps: words.Say("tui.tab.deps"), commands.TabRelease: words.Say("tui.tab.release"), commands.TabSettings: words.Say("tui.tab.settings"), commands.TabGuide: words.Say("tui.tab.guide"),
 	}
 }
@@ -120,7 +120,7 @@ type Config struct {
 // status bar that fill the terminal, usable with the keyboard (single keys,
 // see package commands) and the mouse. Whatever it does is a smith
 // command line, shown in the status bar and logged, run as a child process in
-// the run panel of Projects, and confirmed first when it changes the workspace or publishes.
+// the Runs view, and confirmed first when it changes the workspace or publishes.
 type Shell struct {
 	th      theme.Theme
 	version string
@@ -225,13 +225,16 @@ type Shell struct {
 	stopping bool
 	// runSel is the task whose log is shown ("" for all output); runTop scrolls the task list.
 	runSel string
-	// runOpen is true while the right panel of Projects shows the run (a run
-	// that starts opens it, a recent run is opened into it; Esc or Back closes it).
-	runOpen bool
-	runTop  int
-	log     logview.Log
-	lastArg []string
-	history []string
+	// runErrors is true while the tree of the Runs view keeps only the failed
+	// tasks (e); runOnLog while a narrow Runs view shows the log instead of the
+	// tasks (Tab); runFrom is the view a run was opened from, which Esc goes back to.
+	runErrors bool
+	runOnLog  bool
+	runFrom   string
+	runTop    int
+	log       logview.Log
+	lastArg   []string
+	history   []string
 	// runs are the runs of the session, oldest first; runAt is the one shown (run).
 	runs  []*runview.Run
 	runAt int
@@ -477,7 +480,7 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown() && s.sideKeys(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
 		Labels: s.labels(),
 	}
@@ -492,6 +495,8 @@ func (s Shell) toggles() map[string]bool {
 		"doctor.failed":   s.doctor.Shows(doctorview.FilterFailed),
 		"doctor.warnings": s.doctor.Shows(doctorview.FilterWarnings),
 		"doctor.passed":   s.doctor.Shows(doctorview.FilterPassed),
+		"run.errors":      s.runErrors,
+		"run.switch":      s.runOnLog,
 	}
 }
 
@@ -602,22 +607,19 @@ func (s Shell) viewReasons() map[string]string {
 
 func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
 
-// runShown is true while the right panel of the open Projects view shows a run.
-func (s Shell) runShown() bool {
-	return s.runWanted() && (s.detailFull() || s.lay().HasDetail())
-}
+// runShown is true while the Runs view is open and has a run to show.
+func (s Shell) runShown() bool { return s.runWanted() }
 
-// runWanted is true while the open view is Projects and a run is open for it,
-// whether or not the screen has room to draw it beside the list. It is the
-// layout's own question, so it never asks the layout.
+// runWanted is true while the open view is Runs and a run is there to show. It
+// never asks the layout, so the layout can ask it.
 func (s Shell) runWanted() bool {
-	return s.runOpen && s.run != nil && s.tab == commands.TabProjects && s.inWorkspace
+	return s.run != nil && s.tab == commands.TabRuns && s.inWorkspace
 }
 
 // tabList is the tabs of the strip: the views of a workspace; outside one, only the guide.
 func (s Shell) tabList() []string {
 	if s.inWorkspace {
-		return []string{commands.TabHome, commands.TabProjects, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings}
+		return []string{commands.TabHome, commands.TabProjects, commands.TabRuns, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings}
 	}
 	return []string{commands.TabGuide}
 }
