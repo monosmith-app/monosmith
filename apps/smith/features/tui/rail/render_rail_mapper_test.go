@@ -25,7 +25,7 @@ func views() []View {
 }
 
 func plainProps(h int) Props {
-	return Props{Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), Title: "Views", Views: views(), Active: "projects", Width: 15, Height: h}
+	return Props{Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}), Title: "Views", Views: views(), Active: "projects", Width: 14, Height: h}
 }
 
 func plain(lines []string) []string {
@@ -36,31 +36,31 @@ func plain(lines []string) []string {
 	return out
 }
 
-func TestTheRailHasNoFrameAndEachViewHasItsKeyAboveItsName(t *testing.T) {
+func TestTheRailHasATitledTopRuleAndEachViewHasItsKeyAboveItsName(t *testing.T) {
 	r := Render(plainProps(14))
 	lines := plain(r.Lines)
 	if len(lines) != 14 {
 		t.Fatalf("rows: %d", len(lines))
 	}
 	for i, l := range lines {
-		if pane.Width(l) != 15 || !strings.HasSuffix(l, "│") {
-			t.Fatalf("row %d is not 15 cells ending in the rule: %q", i, l)
+		if pane.Width(l) != 14 || strings.Contains(l, "│") {
+			t.Fatalf("row %d is not 14 cells without a side rule: %q", i, l)
 		}
 	}
 	want := []string{
-		" Views        │",
-		"              │",
-		"   1          │",
-		" Home         │",
-		"              │",
-		" ▶ 2       ×1 │",
-		" Projects     │",
-		"              │",
-		"   3       ▲2 │",
-		" Health       │",
-		"              │",
-		"   4       ↑3 │",
-		" Dependencies │",
+		"─ Views ──────",
+		"              ",
+		"   1          ",
+		" Home         ",
+		"              ",
+		" ▶ 2       ×1 ",
+		" Projects     ",
+		"              ",
+		"   3       ▲2 ",
+		" Health       ",
+		"              ",
+		"   4       ↑3 ",
+		" Dependencies ",
 	}
 	for i, w := range want {
 		if lines[i] != w {
@@ -102,7 +102,7 @@ func TestTheOpenViewIsOnTheHighlightAndTheHoveredOneOnTheHover(t *testing.T) {
 	if !strings.Contains(r.Lines[5], p.Theme.Accent("▶ ")) {
 		t.Fatalf("the open view's mark is in the accent: %q", r.Lines[5])
 	}
-	rest := Render(Props{Theme: p.Theme, Title: p.Title, Views: p.Views, Width: 15, Height: 14})
+	rest := Render(Props{Theme: p.Theme, Title: p.Title, Views: p.Views, Width: 14, Height: 14})
 	if r.Lines[5] == rest.Lines[5] || r.Lines[6] == rest.Lines[6] {
 		t.Fatal("both rows of the open view must be drawn differently from a resting one")
 	}
@@ -129,11 +129,11 @@ func TestThePinnedProjectsFollowTheViewsUnderTheirHeading(t *testing.T) {
 	r := Render(p)
 	lines := plain(r.Lines)
 	want := map[int]string{
-		13: "              │",
-		14: " Pinned       │",
-		15: "              │",
-		16: " × orders app │",
-		17: " – devops-si… │",
+		13: "              ",
+		14: " Pinned       ",
+		15: "              ",
+		16: " × orders app ",
+		17: " – devops-si… ",
 	}
 	for i, w := range want {
 		if lines[i] != w {
@@ -156,7 +156,7 @@ func TestPinsThatDoNotFitAreLeftOut(t *testing.T) {
 		t.Fatalf("the rail keeps its rows:\n%s", strings.Join(lines, "\n"))
 	}
 	for i, l := range lines {
-		if pane.Width(l) != 15 {
+		if pane.Width(l) != 14 {
 			t.Fatalf("row %d is %d cells: %q", i, pane.Width(l), l)
 		}
 	}

@@ -6,11 +6,11 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/pane"
 )
 
-// Render draws the rail without a frame: the title on the first row, a blank
-// row, then each view on two rows, its key above its name, with a blank row
+// Render draws the rail without a frame: a rule with the title on the first
+// row, like the top border of a pane, a blank row, then each view on two rows, its key above its name, with a blank row
 // between views. A shorter rail drops the blank rows, and a rail shorter
-// still puts the key and the name on one row. A single rule in the Border
-// colour runs down the last column. The open view has the mark "▶ " in the
+// still puts the key and the name on one row. The rail has no side rule: the
+// frame beside it parts it from the panes. The open view has the mark "▶ " in the
 // accent before its key, and its rows are on the Highlight background; the
 // view under the pointer is on the hover background. The key row ends with
 // the view's badge. Under the views, after a blank row, come the pinned
@@ -26,10 +26,10 @@ func Render(p Props) Rail {
 		out.Lines = pane.Block(nil, max(p.Width, 0), max(p.Height, 0))
 		return out
 	}
-	inner, rows := p.Width-1, p.Height
+	inner, rows := p.Width, p.Height
 	room := max(inner-2, 0)
 	body := make([]string, rows)
-	body[0] = pad(p.Theme.Title(pane.CutEllipsis(p.Title, max(room, 1))), room)
+	body[0] = topRule(p, inner)
 	step := 3
 	switch {
 	case rows >= 2+3*len(p.Views)-1:
@@ -61,15 +61,21 @@ func Render(p Props) Rail {
 		y--
 	}
 	pinned(p, body, out.Rows, y, step, room)
-	rule := p.Theme.Border("│", false)
 	for i, l := range body {
 		if l == "" {
-			l = strings.Repeat(" ", inner)
+			body[i] = strings.Repeat(" ", inner)
 		}
-		body[i] = l + rule
 	}
 	out.Lines = body
 	return out
+}
+
+// topRule is the first row of the rail, w cells: "─ " and the muted title,
+// then the rule to the end, in the Border colour of a pane at rest.
+func topRule(p Props, w int) string {
+	th := p.Theme
+	label := " " + pane.CutEllipsis(p.Title, max(w-3, 1)) + " "
+	return pane.Fit(th.Border("─", false)+th.Muted(label)+th.Border(strings.Repeat("─", max(w-1-pane.Width(label), 0)), false), w)
 }
 
 // pad is s fitted to room cells, with a blank cell on each side.

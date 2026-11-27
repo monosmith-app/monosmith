@@ -254,14 +254,17 @@ func TestEveryPaneIsARoundedFrameWithItsTitleInTheTopBorder(t *testing.T) {
 			if lay.HasDetail() {
 				boxes = append(boxes, lay.Detail)
 			}
+			corner := '╭'
 			if r := lay.Rail; r.W > 0 {
-				// The rail has no frame: a single rule runs down its last column.
-				for y := top; y <= bottom; y++ {
-					if c := []rune(lines[y])[r.X+r.W-1]; c != '│' {
-						t.Errorf("%s at %d: row %d of the rail has %q, not the rule", tc.name, w, y, c)
-						break
-					}
+				// The rail has no frame: a titled rule on its top row runs into the
+				// frame beside it, whose corner becomes a tee.
+				if row := []rune(lines[top]); row[r.X] != '─' || row[r.X+r.W-1] != '─' || !strings.Contains(string(row[:r.W]), "Views") {
+					t.Errorf("%s at %d: the rail has no titled top rule: %q", tc.name, w, lines[top])
 				}
+				if r.X+r.W != lay.Main.X {
+					t.Errorf("%s at %d: the frame does not follow the rail: %+v", tc.name, w, lay)
+				}
+				corner = '┬'
 			}
 			tees := map[int]bool{}
 			for _, j := range splitter.Junctions(sh.spots(), top, bottom) {
@@ -269,14 +272,20 @@ func TestEveryPaneIsARoundedFrameWithItsTitleInTheTopBorder(t *testing.T) {
 			}
 			for _, r := range boxes {
 				cell := func(x, y int) rune { return []rune(lines[y])[x] }
-				if cell(r.X, top) != '╭' || cell(r.X+r.W-1, top) != '╮' || cell(r.X, bottom) != '╰' || cell(r.X+r.W-1, bottom) != '╯' {
+				first := '╭'
+				if r == lay.Main {
+					first = corner
+				}
+				if cell(r.X, top) != first || cell(r.X+r.W-1, top) != '╮' || cell(r.X, bottom) != '╰' || cell(r.X+r.W-1, bottom) != '╯' {
 					t.Errorf("%s at %d: the frame at %+v has no rounded corners:\n%s", tc.name, w, r, l.view())
 				}
 				if cell(r.X+1, top) != '─' || cell(r.X+2, top) != ' ' {
 					t.Errorf("%s at %d: the frame at %+v has no title in its top border: %q", tc.name, w, r, lines[top])
 				}
 				for y := top + 1; y < bottom; y++ {
-					if cell(r.X, y) != '│' || cell(r.X+r.W-1, y) != '│' {
+					// A rule across the pane meets the side borders with tees.
+					tee := cell(r.X, y) == '├' && cell(r.X+r.W-1, y) == '┤'
+					if !tee && (cell(r.X, y) != '│' || cell(r.X+r.W-1, y) != '│') {
 						t.Errorf("%s at %d: row %d of the frame at %+v has no side borders: %q", tc.name, w, y, r, lines[y])
 						break
 					}

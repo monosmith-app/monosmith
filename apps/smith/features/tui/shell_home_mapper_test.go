@@ -342,8 +342,8 @@ func TestHomeStaysInsideItsFrameAtEveryWideWidth(t *testing.T) {
 		}
 		_, y := l.find("Changed")
 		row := strings.TrimRight(l.lines()[y], " ")
-		// The rail has its rule, and the four boxes and the frame their two borders.
-		if strings.Count(row, "│") != 11 || !strings.HasSuffix(row, "│  │") || !strings.Contains(row, "Release") {
+		// The four boxes and the frame each have their two borders.
+		if strings.Count(row, "│") != 10 || !strings.HasSuffix(row, "│  │") || !strings.Contains(row, "Release") {
 			t.Fatalf("%d: a box does not close inside the frame: %q", w, row)
 		}
 		showOnHome(l, "[Settings (7)]")

@@ -427,7 +427,7 @@ func (s Shell) runsContent(w, h int) content {
 	for len(c.lines) < g.ruleRow {
 		c.lines = append(c.lines, "")
 	}
-	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), true))
+	c.lines = append(c.lines, s.th.Border(strings.Repeat("─", w), s.mainFocused()))
 	left, leftHits := s.treeColumn(g, w)
 	if g.narrow {
 		col := left

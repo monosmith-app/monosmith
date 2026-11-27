@@ -71,7 +71,7 @@ func TestTheListOfProjectsFitsItsFrameAtEveryWidth(t *testing.T) {
 }
 
 func TestBesideTheListTheDetailOfAProjectTakesWhatTheListLeaves(t *testing.T) {
-	for _, c := range []struct{ w, list int }{{150, 44}, {120, 41}, {100, 36}} {
+	for _, c := range []struct{ w, list int }{{150, 44}, {120, 42}, {100, 36}} {
 		l := newLab(t, true, c.w, 30)
 		if got := l.sh().lay().Main.W; got != c.list {
 			t.Fatalf("%d columns: the list is %d wide, want %d", c.w, got, c.list)
