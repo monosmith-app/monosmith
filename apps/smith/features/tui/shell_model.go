@@ -234,6 +234,11 @@ type Shell struct {
 	proc runner.Handle
 	// stopping is set once Ctrl+C asked the run to stop.
 	stopping bool
+	// logQuery is the text the log of the Runs view searches (/); logTyping is
+	// true while the person types it, and logAt is the match the log is on.
+	logQuery  string
+	logTyping bool
+	logAt     int
 	// durations are how long the tasks took before, for the estimate of a run;
 	// saveDurations keeps them when a run adds to them.
 	durations     rundurations.History
@@ -506,7 +511,7 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), RunOpen: s.runShown(), SideFocus: s.sideFocus && s.beside(), SideNext: s.sideNext(), ProjectDetail: s.projectKeys(), RunFailed: s.runFailed(), TaskSelected: s.runSel != "", LogSearch: s.logQuery != "" && s.runShown(), EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(), On: s.toggles(),
 		Labels: s.labels(), Picked: s.pickedNames(),
 	}

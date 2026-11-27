@@ -339,6 +339,10 @@ func (s Shell) labels() map[string]string {
 	if s.tab == commands.TabSettings && s.settings.OnSections() && !s.settings.Modal() {
 		return map[string]string{"settings.change": words.Say("commands.projects.detail-enter.footer.open")}
 	}
+	if s.tab == commands.TabRuns && s.logQuery != "" {
+		// Esc clears the search of the log first.
+		return map[string]string{"run.all-output": words.Say("runpage.search.clear")}
+	}
 	if !s.projectKeys() {
 		return l
 	}

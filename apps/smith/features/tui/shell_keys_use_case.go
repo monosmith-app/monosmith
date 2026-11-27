@@ -40,6 +40,7 @@ func mouseHelp() []string {
 // letters (t, f, u) are its own.
 func (s Shell) editing() bool {
 	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Modal()) ||
+		(s.tab == commands.TabRuns && s.logTyping) ||
 		(s.tab == commands.TabProjects && (s.filtering || (s.projectKeys() && s.projSection == projectpage.Settings)))
 }
 
@@ -102,6 +103,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 			s.quit = true
 		}
 		return nil
+	}
+	if s.logTyping && s.tab == commands.TabRuns {
+		// The search line of the log has the keyboard: every key types or ends it.
+		return s.logSearchKey(msg)
 	}
 	if s.filtering && s.tab == commands.TabProjects {
 		// The filter line has the keyboard: every key types or ends it.
@@ -832,6 +837,22 @@ func (s *Shell) runKey(name string) tea.Cmd {
 		return nil
 	}
 	onLog := narrow && s.runOnLog
+	switch name {
+	case "/":
+		s.logTyping = true
+		if narrow {
+			s.runOnLog = true
+		}
+		return nil
+	case "n", "N": // words:literal
+		s.stepMatch(map[string]int{"n": 1, "N": -1}[name]) // words:literal
+		return nil
+	}
+	if commands.NavNamed(name) == commands.NavCancel && s.logQuery != "" {
+		// Esc clears the search before it shows all output or goes back.
+		s.logQuery, s.logAt = "", 0
+		return nil
+	}
 	switch commands.NavNamed(name) {
 	case commands.NavUp:
 		if onLog {

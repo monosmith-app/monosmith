@@ -116,3 +116,18 @@ func TestTheStatusGlyphsOfTheOutputAreTheThemesOwn(t *testing.T) {
 		t.Fatalf("%q", text)
 	}
 }
+
+func TestShowRowBringsARowIntoViewAndPauses(t *testing.T) {
+	var l Log
+	l = l.ShowRow(10, 100, 20)
+	if top := l.Top(100, 20); top != 0 || l.Following() {
+		t.Fatalf("row 10 comes to the middle: top %d, following %v", top, l.Following())
+	}
+	l = l.ShowRow(15, 100, 20)
+	if l.Top(100, 20) != 0 {
+		t.Fatal("a row on screen keeps the view")
+	}
+	if l = (Log{}).ShowRow(98, 100, 20); !l.Following() {
+		t.Fatal("a row at the end follows the end")
+	}
+}

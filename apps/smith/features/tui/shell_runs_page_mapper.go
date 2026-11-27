@@ -610,9 +610,14 @@ func (s Shell) logColumn(g runsGeom, w int) []string {
 	if !s.log.Following() {
 		follow = words.Say("runpage.log.paused")
 	}
-	out := []string{pane.Fit(" "+s.th.Title(title)+"  "+s.th.Muted(follow), w)}
+	head := " " + s.th.Title(title) + "  " + s.th.Muted(follow)
+	rows := logview.Rows(s.th, s.logLines(), w-logPad)
+	if search := s.searchLine(rows); search != "" {
+		head += "  " + search
+	}
+	out := []string{pane.Fit(head, w)}
 	out = append(out, s.taskInfo(w)...)
-	for _, line := range s.log.Render(s.th, logview.Rows(s.th, s.logLines(), w-logPad), w-logPad, g.logRows) {
+	for _, line := range s.log.Render(s.th, s.litRows(rows), w-logPad, g.logRows) {
 		out = append(out, strings.Repeat(" ", logPad)+line)
 	}
 	return out

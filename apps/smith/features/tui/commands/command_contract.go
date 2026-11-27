@@ -160,6 +160,9 @@ type Command struct {
 	// NeedsPicked makes the command work only while projects are picked in the
 	// list of Projects (State.Picked).
 	NeedsPicked bool
+	// NeedsLogSearch makes the command work only while the log of the Runs view
+	// has a search (State.LogSearch).
+	NeedsLogSearch bool
 }
 
 // State is what decides whether a command is available.
@@ -190,6 +193,9 @@ type State struct {
 	// TaskSelected is true when the run panel shows the log of one task: Esc then
 	// goes back to all output.
 	TaskSelected bool
+	// LogSearch is true while the log of the Runs view has a search: n and N go
+	// from match to match.
+	LogSearch bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// BrokenConfig is true when smith.toml exists but cannot be read: the
