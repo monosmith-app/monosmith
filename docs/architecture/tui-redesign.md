@@ -1,7 +1,7 @@
 # Design: the TUI redesign
 
-Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout) and phase 3 (Home) are
-built. The other phases are planned.
+Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home) and
+phase 4 (Projects) are built. The other phases are planned.
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -62,7 +62,7 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
 2. Layout: the rail of views on a wide screen, the tab strip on a narrow one, one view at a
    time. **Built** (see [Phase 2 as built](#phase-2-as-built)).
 3. Home. **Built** (see [Phase 3 as built](#phase-3-as-built)).
-4. Projects.
+4. Projects. **Built** (see [Phase 4 as built](#phase-4-as-built)).
 5. The Runs view.
 6. The command palette, and Health with the inline fix.
 7. Then Dependencies, Release, Settings and the dialogs, once they are drawn.
@@ -144,6 +144,71 @@ Deviations from the brief and the screens:
 - The screens show the button labels without parentheses (`See why enter`); the buttons keep the
   `label (key)` form of every button of the TUI.
 - An item without a note keeps its second line empty, so every item takes two lines.
+
+## Phase 4 as built
+
+- The `projectpage` package draws the view from plain values (`ListHead`, `ListBody`, `Legend`,
+  `Head`, `TaskTable`, `RunList`, `Uses`); the shell gives it its state
+  (`shell_projects_page_mapper.go`) and handles its keys and clicks
+  (`shell_projects_page_use_case.go`).
+- The list is the filter line, the muted count line, the projects under muted bold headings with
+  their count (`APPS 2`, `LIBS 1`, `PACKAGES 1`, then other kinds in capitals) and the legend on the
+  last row. A row is the last-run mark, the name, the language (the kind and the version too when
+  the list has the room) in muted text and `● changed` in the accent. The selected row is `▶ ` on
+  the Highlight background with the name in the accent and bold.
+- The filter is new: the shell had none. `/` on the list types it, Enter keeps it, Esc clears it.
+  Its words are `kind:<prefix>`, `lang:<prefix>`, `changed` and any text of the name, kind or
+  language (`projectlist.Matches`). The frame title is `Projects 7/42` while a filter is set, and a
+  reload keeps the filter.
+- The mark is the worst state of the project's tasks in the newest run of the session that ran one
+  of them: `✓` passed or cached, `×` failed, `–` not run (`Icons.NotRun`, `-` in ASCII), `»`
+  skipped, `⊘` stopped, the spinner while it runs.
+- The list takes two fifths of the content width, from 36 to 44 columns; the detail takes the rest,
+  81 columns at 150. A run beside the list still takes half, and a divider the person moved wins.
+- The detail has a top that never scrolls: `path · kind · language · stack · version` muted, with
+  `● changed`, and the buttons `Run… (R)` (primary) and `Open` at the right (on the next line when
+  they do not fit), a blank line, the tabs and a rule. `Open` opens the folder with
+  `sources.Open`; it is left out when the shell has no such source.
+- Run… shows the Run… menu in the detail: the action panel the detail had before (the task buttons,
+  the packages, Explain, Why, Graph, the derived files, and under More the settings, the forms,
+  Change kind, Eject and Remove). Esc closes it. The palette lists the same actions of the selected
+  project (`How was this resolved? (orders)`).
+- The tabs are Tasks, Dependencies (Deps on a narrow screen), Runs and Settings. Tab, Shift+Tab,
+  Left and Right change them while the detail has the keyboard, and a click on one shows it.
+- Tasks is the table Task, Last result (Result under 64 columns), Time, Cache and Key, with a header
+  and a rule as `bubbles/table` draws them. Enter or a double click runs the task as its key does. A
+  `start` task says `own terminal` and a line under the table explains it.
+- Dependencies has the boxes Uses and Used by (two rows under 60 columns), the buttons Install a
+  package and Remove a package, and the derived files, which the detail showed before.
+- Runs lists the runs of the session that ran a task of the project: mark, tasks, result, time and
+  how long ago. Enter or a double click opens one in the run panel.
+- Settings is the Project section of `settingsview`, drawn alone (`ProjectPane`, `ProjectKey`,
+  `ProjectClick`). The Settings tab no longer lists it: opening the tab forgets the project
+  (`CloseProject`). While the section has the keyboard its letters are its own (`t`, `f`, `u`).
+- The footer on the list is `Tab detail • / filter • R run… • b build orders • …` (`Enter detail` on
+  a narrow screen); in the detail it is `Tab section • Enter run • Esc back • R run… • …`, with
+  `Enter open` in Runs and `Enter change` in Settings. The new state is `State.ProjectDetail` with the
+  command fields `NeedsProjectDetail` and `NotInProjectDetail`.
+
+Deviations from the brief and the screens:
+
+- The marks stay `×` and `–`; the screens draw `✗`, which `shared/marks` bans.
+- The shell had no filter and no multi-select. The filter is new. Space selects nothing: running
+  several chosen projects together is not built.
+- The `↑ ↓` columns of dependency counts are gone: the Dependencies section names them.
+- The row of workspace buttons (New project, Verify, Build, Test, Lint, Typecheck, Build release,
+  Clear cache) left the list. Their keys (`a`, `V`, `B`, `T`, `L`, `C`), the footer and the palette
+  keep them. An empty workspace still shows New project and Compose a stack.
+- The block of recent runs under the list is gone: the runs of a project are its Runs section, and
+  Home has the last run. The commands `run.recent-focus`, `run.recent-move` and `run.open-recent`
+  went with it.
+- Run… has the key `R` (shift+r): `r` is already Replace the files I edited. Open has no key: `o` is
+  Why and `O` is Own the files I edited.
+- Enter on the wide list moves the keyboard to the detail; it does not run the task, as the footer of
+  the screen (`enter run test`) draws.
+- The Tasks section shows the table only. The screens also draw Uses, Used by and Recent runs under
+  it; those are the Dependencies and Runs sections.
+- The Cache column says `miss`, without the reason: the run output does not give it to the shell.
 
 ## Screens
 
