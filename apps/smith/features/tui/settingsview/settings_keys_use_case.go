@@ -170,6 +170,14 @@ func (m Model) activate() (Model, Result) {
 		m.note = words.Say("settingsview.note.installed")
 	case kindRecipe:
 		m.note = words.Say("settingsview.note.recipe")
+	case kindWorkspaceRecipe:
+		if it.idx < 0 {
+			m.note = words.Say("settingsview.recipe.workspace.none", "reason", m.snap.WorkspaceRecipeErr)
+			return m, Result{}
+		}
+		m.ed = newRecipeName(m.snap.WorkspaceRecipes[it.idx])
+	case kindRecipeWizard:
+		return m, Result{Form: m.forms[it.idx].Title}
 	}
 	return m, Result{}
 }

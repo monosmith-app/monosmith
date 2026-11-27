@@ -798,8 +798,22 @@ line, and the table when nothing is left in it. `root`, `language` and `kind` ar
 only of a declared project. A value that the validators refuse stays in the editor with
 their reason (for example, only one project can set `bare_tags`).
 
-**Recipes.** The `*.recipe.toml` files in the workspace, with their name and version and why
+**Recipes.** Two actions come first, under **Create a recipe**:
+
+- **Create a recipe from this workspace** writes the recipe the workspace already follows
+  ([`smith recipe new --from-workspace`](recipe-new.md#a-recipe-from-this-workspace)). A workspace
+  whose projects use several languages has one row for each language, the main one first. The
+  detail shows the projects and the stack it reads, and each role the recipe fixes. `Enter` asks
+  the recipe's name and shows the command line under the field. A second `Enter` hands the command
+  to the run panel, which shows it and the file it writes before it runs. The file is
+  `recipes/<name>.recipe.toml`, at version 0.1.0, and an existing file is not replaced. A workspace
+  without projects shows the row with the reason.
+- **Recipe creation wizard** opens the **Write a recipe** form, the one the palette and the Start
+  tab list.
+
+Under them are the `*.recipe.toml` files in the workspace, with their name and version and why
 one is not valid; [`smith recipe check <file>`](recipe-check.md) shows what a recipe would use.
+After a `smith recipe` command runs, the list is read again.
 
 **Assistants.** The forms that connect smith to a coding assistant (`smith mcp install`) and
 install the agent files (`smith agent install`). `Enter` opens the form, the same one the Start

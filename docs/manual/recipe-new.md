@@ -39,11 +39,45 @@ each plugin with `name` and `description`) and `fits`, which names, for each lan
 the plugins of every other level that fit it. The forms of the interface and of the editors read
 this list, so none of them holds a list of plugin names.
 
+## A recipe from this workspace
+
+`--from-workspace` writes the recipe the workspace already follows, so a team that set its
+workspace up by hand can give the same choices to its next projects. It reads:
+
+- the language that most projects use; `--language` picks another one of the workspace's languages
+- the stack that most projects of that language use: its scaffold, toolchain, structure and deploy
+  plugins
+- a task slot such as `lint` or `test` for a toolchain plugin that is the only one to provide that
+  task, when the slots keep the order the toolchain applies in; otherwise the plugin stays in `toolchain`
+- the code layout that smith.toml turns on (`[conventions.<architecture>]`), when it checks that language
+
+Every role is fixed, and the recipe has no choices. The command prints what it fixes before it
+writes. On a terminal it asks the language (when the projects use several), the name and the
+version (0.1.0 when left empty). Without a terminal, `--name` is needed. The file is
+`recipes/<name>.recipe.toml` in the workspace, or the path you give. An existing file is replaced
+only with `--force`; the command does not ask. `--from-workspace` does not go with
+`--from-answers`, `--fixed` or `--chosen`. The Settings tab of the interface has the same action
+(**Settings › Recipes › Create a recipe from this workspace**).
+
+```sh
+smith recipe new --from-workspace --name team-go
+```
+
+```text
+From this workspace (26 go project(s), no stack, the language plugin alone), the recipe fixes:
+  language   go
+  structure  vertical-slices
+
+Wrote recipes/team-go.recipe.toml (recipe team-go 0.1.0).
+Check it any time with: smith recipe check recipes/team-go.recipe.toml --all
+```
+
 ## Synopsis
 
 ```sh
 smith recipe new [path] [--force] [--from-answers <file>]
 smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] [--fixed <role=plugin>...] [--chosen <role=question:answer=plugin,...>...]
+smith recipe new [path] --from-workspace [--name <name>] [--recipe-version <x.y.z>] [--language <language>] [--force]
 smith recipe new --list-levels [--json]
 ```
 
@@ -65,7 +99,9 @@ Usage: `smith recipe new [path] [flags]`
 | `--fixed <fixed>` | string, repeatable |  | fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role |
 | `--force` | boolean | off | replace the file if it exists |
 | `--from-answers <from-answers>` | string |  | read the answers from a TOML file instead of asking (see docs/reference/recipes.md) |
+| `--from-workspace` | boolean | off | fix the plugins this workspace's projects use now, and write recipes/<name>.recipe.toml |
 | `--json` | boolean | off | with --list-levels, print the list as JSON |
+| `--language <language>` | string |  the one most projects use | with --from-workspace, the language the recipe fixes (default: the one most projects use) |
 | `--list-levels` | boolean | off | list the levels and the plugins each can take, and write nothing |
 | `--name <name>` | string |  | the recipe's name; with --fixed, nothing is asked |
 | `--recipe-version <recipe-version>` | string |  | the recipe's version (0.1.0 when not given) |
@@ -81,11 +117,13 @@ The answers file is TOML: `name`, `version`, an optional `extends`, `[choices.<n
 | Code | Meaning |
 |---|---|
 | 0 | The recipe was written. |
-| 1 | No terminal and no `--from-answers`, the answers do not resolve, the file exists without `--force`, or the answers file cannot be read. |
+| 1 | No terminal and no `--from-answers`, the answers do not resolve, the file exists without `--force`, the answers file cannot be read, or `--from-workspace` finds nothing to read. |
 
 ## Files and environment
 
-Writes `<name>.recipe.toml` (or `path`). Reads the answers file and the parent recipe.
+Writes `<name>.recipe.toml` (or `path`); with `--from-workspace`, `recipes/<name>.recipe.toml` in
+the workspace. Reads the answers file and the parent recipe, and with `--from-workspace` the
+workspace's `smith.toml` and projects.
 
 ## Examples
 
@@ -139,6 +177,9 @@ lint = "eslint"
 | `the recipe file exists: team.recipe.toml` | Pass `--force`, or choose another path. |
 | `smith recipe new asks questions, and there is no terminal to ask them on: write the answers in a file and use --from-answers (docs/reference/recipes.md)` | Use `--from-answers`. |
 | `open nothing.toml: ...` | The answers file does not exist. |
+| `--from-workspace needs the recipe's name: pass --name (lowercase words joined by dashes)` | There is no terminal to ask the name on. Pass `--name`. |
+| `the workspace has no projects, so there is no language to read: ...` | Add a project first, or write the recipe with the questions or `--fixed`. |
+| `no project of this workspace uses the language "rust"; the languages here are go, node` | Pass one of the languages listed to `--language`. |
 
 ## Related
 

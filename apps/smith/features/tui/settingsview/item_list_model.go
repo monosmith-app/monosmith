@@ -70,8 +70,22 @@ type Form struct{ Title, Hint, Presents string }
 // formsOf are the forms a section lists besides its own rows, in the order of
 // sectionForms; a form the workspace does not offer is left out.
 func (m Model) formsOf(s Section) []int {
+	return m.formsFor(sectionForms[s])
+}
+
+// formIndex is the place of the form that presents id in the tab's forms,
+// or -1 when the workspace does not offer it.
+func (m Model) formIndex(id string) int {
+	if found := m.formsFor([]string{id}); len(found) > 0 {
+		return found[0]
+	}
+	return -1
+}
+
+// formsFor are the places of the forms that present ids, in their order.
+func (m Model) formsFor(ids []string) []int {
 	var out []int
-	for _, id := range sectionForms[s] {
+	for _, id := range ids {
 		for i, f := range m.forms {
 			if f.Presents == id {
 				out = append(out, i)
@@ -100,6 +114,12 @@ const (
 	kindUpdateMute
 	// kindFact is a value of a project that its manifest owns: shown, not changed.
 	kindFact
+	// kindWorkspaceRecipe writes the recipe the workspace follows for one
+	// language (smith recipe new --from-workspace); idx -1 is the row that
+	// says why there is none.
+	kindWorkspaceRecipe
+	// kindRecipeWizard opens the Write a recipe form; idx is the form.
+	kindRecipeWizard
 )
 
 // item is one selectable row of a section; group is the heading it sits under.
@@ -152,6 +172,16 @@ func (m Model) items(s Section) []item {
 			add(kindSetting, words.Say("settingsview.group.project", "table", m.projectTable()), st.Path, i)
 		}
 	case Recipes:
+		create := words.Say("settingsview.group.recipe_create")
+		if len(m.snap.WorkspaceRecipes) == 0 {
+			add(kindWorkspaceRecipe, create, "", -1)
+		}
+		for i, r := range m.snap.WorkspaceRecipes {
+			add(kindWorkspaceRecipe, create, r.Language, i)
+		}
+		if i := m.formIndex(recipeWizardForm); i >= 0 {
+			add(kindRecipeWizard, create, recipeWizardForm, i)
+		}
 		for i, r := range m.snap.Recipes {
 			add(kindRecipe, words.Say("settingsview.group.recipes"), r.Path, i)
 		}

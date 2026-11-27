@@ -113,7 +113,7 @@ var catalog = []Action{
 	{Command: []string{"plugin", "enable"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"plugin", "disable"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"recipe"}, Safety: Reads},
-	{Command: []string{"recipe", "new"}, Safety: NeedsTerminal, Terminal: "a questionnaire; the shell has a guided form that collects the answers and runs it with --from-answers", Variants: []Variant{{When: []string{"--list-levels"}, Safety: Reads}, {When: []string{"--from-answers", "--fixed", "--name"}, Safety: Changes}}, NotInServe: noMethodYet},
+	{Command: []string{"recipe", "new"}, Safety: NeedsTerminal, Terminal: "a questionnaire; the shell has a guided form that collects the answers and runs it with --from-answers", Variants: []Variant{{When: []string{"--list-levels"}, Safety: Reads}, {When: []string{"--from-answers", "--fixed", "--name", "--from-workspace"}, Safety: Changes}}, NotInServe: noMethodYet},
 	{Command: []string{"mcp"}, Safety: NeedsTerminal, Terminal: "it serves the MCP protocol on the terminal streams", NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
 	{Command: []string{"mcp", "install"}, Safety: Changes, Asks: true, NotInMCP: agentInstall, NotInServe: noMethodYet},
 	{Command: []string{"agent"}, Safety: NeedsTerminal, Terminal: "it starts Claude Code, an interactive program that owns the terminal", NotInTUI: ownTerminal, NotInMCP: "starts Claude Code on the terminal", NotInServe: "starts Claude Code on the terminal"},

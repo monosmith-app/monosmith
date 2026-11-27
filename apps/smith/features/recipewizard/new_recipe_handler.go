@@ -11,6 +11,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspacerecipe"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -26,6 +27,13 @@ type Options struct {
 	// are all fixed (see PlanFromFlags); with Name, Fixed or Chosen set, nothing is asked.
 	Name, RecipeVersion, Extends string
 	Fixed, Chosen                []string
+	// FromWorkspace fixes the levels the workspace already uses (package
+	// workspacerecipe); Language picks the language when it has several
+	// (empty: the one most projects use).
+	FromWorkspace bool
+	Language      string
+	// Facts replaces what --from-workspace reads from the workspace, for tests.
+	Facts *workspacerecipe.Facts
 	// Force replaces an existing file without asking.
 	Force bool
 	// ListLevels prints the levels and the plugins of each instead of writing
@@ -67,12 +75,22 @@ plugins are all fixed needs no file either: --name and --fixed role=plugin
 (as often as needed) write it, which is what the interface's form runs. A
 choice the recipe's users make still needs the questions or an answers file.
 
+--from-workspace writes the recipe this workspace already follows: the
+language most projects use (--language picks another), the scaffold,
+toolchain, structure and deploy plugins of the stack most of them use, a
+task slot such as lint or test for a toolchain plugin that alone fills it,
+and the code layout smith.toml turns on, all fixed. It prints what it fixes,
+asks the name and the version on a terminal (--name and --recipe-version
+without one) and writes recipes/<name>.recipe.toml in the workspace. An
+existing file is replaced only with --force.
+
 --list-levels writes nothing: it lists the levels and the plugins each can
 take (--json for programs, such as the forms of the interface and the editors).`,
 		Example: `  smith recipe new
   smith recipe new recipes/team/team.recipe.toml
   smith recipe new --from-answers answers.toml
-  smith recipe new --name team --fixed language=python --fixed lint=ruff`,
+  smith recipe new --name team --fixed language=python --fixed lint=ruff
+  smith recipe new --from-workspace --name team-go`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 1 {
@@ -89,6 +107,8 @@ take (--json for programs, such as the forms of the interface and the editors).`
 	cmd.Flags().StringVar(&opts.Extends, "extends", "", "the recipe this one extends: a path from the new file, or an https URL")
 	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role")
 	cmd.Flags().StringArrayVar(&opts.Chosen, "chosen", nil, "a role the recipe's users choose, as role=question:answer=plugin,answer=plugin (language=Which language?:python=python,csharp=dotnet; + joins plugins of one answer); repeat for each role")
+	cmd.Flags().BoolVar(&opts.FromWorkspace, "from-workspace", false, "fix the plugins this workspace's projects use now, and write recipes/<name>.recipe.toml")
+	cmd.Flags().StringVar(&opts.Language, "language", "", "with --from-workspace, the language the recipe fixes (default: the one most projects use)")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
 	cmd.Flags().BoolVar(&opts.ListLevels, "list-levels", false, "list the levels and the plugins each can take, and write nothing")
 	cmd.Flags().BoolVar(&opts.AsJSON, "json", false, "with --list-levels, print the list as JSON")
@@ -132,7 +152,20 @@ func Run(o Options) error {
 	}
 
 	var plan Plan
+	target := o.Target
+	if o.Language != "" && !o.FromWorkspace {
+		return errors.New("--language goes with --from-workspace")
+	}
 	switch {
+	case o.FromWorkspace:
+		var at string
+		var err error
+		if plan, at, err = planFromWorkspace(o, root, in); err != nil {
+			return err
+		}
+		if target == "" {
+			target = at
+		}
 	case o.FromAnswers != "":
 		data, err := os.ReadFile(o.FromAnswers)
 		if err != nil {
@@ -171,7 +204,6 @@ func Run(o Options) error {
 		return errors.New("smith recipe new asks questions, and there is no terminal to ask them on: write the answers in a file and use --from-answers (docs/reference/recipes.md)")
 	}
 
-	target := o.Target
 	if target == "" {
 		target = plan.Name + ".recipe.toml"
 	}
@@ -182,7 +214,14 @@ func Run(o Options) error {
 	if err != nil {
 		return fmt.Errorf("nothing was written: %w", err)
 	}
-	if err := Write(target, text, o.Force); errors.Is(err, ErrExists) && o.Interactive {
+	if o.FromWorkspace {
+		text = strings.Replace(text, "created with `smith recipe new`", "created from the workspace with `smith recipe new --from-workspace`", 1)
+	}
+	err = Write(target, text, o.Force)
+	if errors.Is(err, ErrExists) && o.FromWorkspace {
+		return fmt.Errorf("%w; nothing was written: pass --force to replace it", err)
+	}
+	if errors.Is(err, ErrExists) && o.Interactive {
 		fmt.Fprintf(o.Out, "%s exists. Replace it? [y/N]: ", target)
 		answer, _ := in.ReadString('\n')
 		if strings.ToLower(strings.TrimSpace(answer)) != "y" {

@@ -19,6 +19,12 @@ type Snapshot struct {
 	// Settings are every setting `smith config list` knows.
 	Settings []Setting
 	Recipes  []Recipe
+	// WorkspaceRecipes are the recipes the workspace already follows, one for
+	// each language its projects use, the main language first: what
+	// `smith recipe new --from-workspace` fixes. WorkspaceRecipeErr says why
+	// there are none (no projects, a workspace that does not open).
+	WorkspaceRecipes   []WorkspaceRecipe
+	WorkspaceRecipeErr string
 	// Architectures are the choices of the Architecture section, and
 	// Architecture the name of the one the workspace uses.
 	Architectures []ArchitectureChoice
@@ -149,6 +155,18 @@ type Fact struct {
 	Key, Value string
 	// Explanation says what it is and where to change it; Source is the file.
 	Explanation, Source string
+}
+
+// WorkspaceRecipe is the recipe the workspace follows for one language.
+type WorkspaceRecipe struct {
+	// Language is the language plugin; Projects how many projects use it.
+	Language string
+	Projects int
+	// Stack is the stack most of those projects use; empty for none.
+	Stack string
+	// Fixed are the levels the recipe fixes, as level=plugin or
+	// level=plugin,plugin.
+	Fixed []string
 }
 
 // Recipe is a recipe file of the workspace.

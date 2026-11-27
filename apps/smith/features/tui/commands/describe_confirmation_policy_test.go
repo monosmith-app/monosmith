@@ -12,6 +12,13 @@ func TestDescribeRecipeNewNamesTheFileItWrites(t *testing.T) {
 	}
 }
 
+func TestDescribeRecipeFromWorkspaceNamesTheFileInRecipes(t *testing.T) {
+	title, why := Describe([]string{"recipe", "new", "--from-workspace", "--language", "go", "--name", "team-go"})
+	if title != "Create a recipe from this workspace" || !strings.Contains(why, "recipes/team-go.recipe.toml") {
+		t.Fatalf("title %q, why %q", title, why)
+	}
+}
+
 func TestABareInstallSaysItInstallsEverythingAndPointsToTheSinglePackageForm(t *testing.T) {
 	title, why := Describe([]string{"install"})
 	if title != "Install everything" {

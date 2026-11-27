@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/recipecatalog"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/workspace"
+	"github.com/monosmith-app/monosmith/apps/smith/features/workspacerecipe"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -103,6 +104,15 @@ func ReadSnapshot(root, version string) settingsview.Snapshot {
 		snap.Settings = append(snap.Settings, viewSetting(f, value, set))
 	}
 
+	if facts, err := workspacerecipe.Load(root, version); err != nil {
+		snap.WorkspaceRecipeErr = err.Error()
+	} else if readings := workspacerecipe.ReadEach(facts); len(readings) == 0 {
+		snap.WorkspaceRecipeErr = workspacerecipe.ErrNoProjects.Error()
+	} else {
+		for _, r := range readings {
+			snap.WorkspaceRecipes = append(snap.WorkspaceRecipes, settingsview.WorkspaceRecipe{Language: r.Language, Projects: r.Projects, Stack: r.StackName, Fixed: r.Fixed})
+		}
+	}
 	if listed, err := recipecatalog.ListRecipes(root); err == nil {
 		for _, r := range listed {
 			snap.Recipes = append(snap.Recipes, settingsview.Recipe{Path: r.Path, Name: r.Name, Version: r.Version, Extends: r.Extends, Error: r.Error})
