@@ -492,8 +492,21 @@ These items of the left-open list were built after phase 8.
   `no-cache`). The Runs view shows `Cache miss: 2 files changed` over the log of the task, and the Tasks table of a
   project `miss · 2 files changed`. The new words are in `libs/words/catalog/en/runs_follow_up.json`.
 
+- The dry run of Dependencies: `smith deps up` (and `smith up`) take `--dry-run` for an update, not only with `--align`.
+  It prints each declaration the update would rewrite (`apps/web/package.json  axios  ^1.6.0 → ^1.6.8`), whether it
+  would install, and that nothing changed; with no package named it is what `--yes` would take. The action catalogue
+  classifies it as reading. The Dependencies box has **Dry run (D)** (`deps.dry-run`, also in the palette) and its
+  command line, dim, under the one of the update; it runs at once and opens in the Runs view.
+- The per-package one-version line: the detail's `One version` starts with `✓ both use ^19.1.0` (`web uses …`, `all 3
+  use …`), or `▲ api ^1.5.0 · web ^1.6.0` in the warning colour when the projects differ, read from the declarations of
+  the update (`depsview.Row.Declared`). The workspace's policy lines follow it. The new words are in
+  `libs/words/catalog/en/deps_dry_run.json` and `dependencies_dry_run.json`.
+
 Deviations:
 
+- The dry run key is `D`: `d` opens Health everywhere and one command keeps one key. The screens' footer `o one version`
+  and `1-3 level` stay as they were (phase 7). The one-version line covers the packages with a newer release only: the
+  view lists no other package.
 - The estimate counts only passed tasks (a cached, failed or stopped one says nothing about how long it takes), and
   it shares the work by the tasks running now, not by the parallelism smith may reach later.
 - The screens' `Errors only   Full log   / search` line is not drawn: `e` already filters the tree, and the search
@@ -516,8 +529,7 @@ What the redesign did not build, across the phases, for the owner to decide:
 
 - The marks `✗`, `⚠` and `⚡` the screens draw: `shared/marks` bans them (phases 2 to 8).
 - The Settings and Tasks groups of the palette and its command
-  editor (phase 6), the dry run of Dependencies and the per-package one-version line (phase 7), and the Workspace
-  filter of Settings (phase 8).
+  editor (phase 6), and the Workspace filter of Settings (phase 8).
 - The keys the screens change (`c` check again, `d` dry run): one command keeps one key.
 - Unused exported symbols kept to avoid a major release: `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows`,
   `MinLogRows`, `releaseview.Model.Open`, and the side-detail functions of `settingsview` and `splitter`.

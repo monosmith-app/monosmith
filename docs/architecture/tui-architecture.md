@@ -197,6 +197,11 @@ selection (`commands.scope.picked`) and a run key starts `Command.TaskArgvAcross
 `-p` for each picked project. `projects.unselect` (Esc) has `NeedsPicked`, so it is out of the footer and of the
 key check while nothing is picked. The box of the selection is `shell_pick_box_mapper.go`.
 
+The Dependencies box (`shell_deps_buttons_mapper.go`) offers **Dry run (D)**, `deps.dry-run`, which runs
+`depsview.Model.DryRunArgv` (`smith deps up … --dry-run`); the action catalogue classifies `deps up --dry-run` as
+reading, so it runs without a confirmation. The detail's `One version` starts with `depsview.OneVersionLine`, read
+from `Row.Declared` (the spec of each declaration, filled from the update's sites).
+
 Views load lazily: Doctor, Deps and Release load on first open; Doctor also starts in the
 background when the shell opens, so the status bar shows its counts before any tab is visited.
 
