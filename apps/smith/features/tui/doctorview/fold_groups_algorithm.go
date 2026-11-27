@@ -76,7 +76,7 @@ func (v Model) groupOpen(g Group) bool {
 	if !v.Grouped {
 		return true
 	}
-	if open, set := v.Folds[g.Project]; set {
+	if open, set := v.Folds[g.key()]; set {
 		return open
 	}
 	return v.All >= 0
@@ -118,7 +118,7 @@ func (v Model) setGroup(g Group, open bool) Model {
 	for k, o := range v.Folds {
 		folds[k] = o
 	}
-	folds[g.Project] = open
+	folds[g.key()] = open
 	v.Folds = folds
 	return v
 }

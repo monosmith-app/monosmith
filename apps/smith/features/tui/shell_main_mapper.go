@@ -71,7 +71,7 @@ func (s Shell) mainContent(w, h int) content {
 		return s.runsContent(w, h)
 	case commands.TabDoctor:
 		if s.detailFull() {
-			return s.detailContent(w, h)
+			return s.sideContent(w, h)
 		}
 		// Beside the list the detail tells a check in full; alone, the list expands it.
 		doctor := s.doctor

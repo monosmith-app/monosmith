@@ -201,7 +201,7 @@ func TestTheSelectedCommandHasTheCursorMarkOfEveryPickListAndOnlyIt(t *testing.T
 	marked := 0
 	for _, l := range lines[1:] {
 		plain := pane.Strip(l)
-		if strings.HasPrefix(plain, "› ") {
+		if strings.HasPrefix(plain, selectedMark) {
 			marked++
 			if !strings.Contains(plain, "Build web") {
 				t.Fatalf("the mark is on another row: %q", plain)

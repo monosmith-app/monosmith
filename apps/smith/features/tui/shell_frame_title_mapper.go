@@ -46,6 +46,12 @@ func (s Shell) detailTitle() string {
 		}
 		return words.Say("tui.detail.workspace")
 	case commands.TabDoctor:
+		if checks := s.shownFixChecks(); len(checks) > 0 {
+			// The detail shows a fix: it is titled by the check the fix is about.
+			if f, ok := s.fixFinding(checks); ok {
+				return f.Check
+			}
+		}
 		if f, ok := s.doctor.Selected(); ok {
 			return f.Check
 		}

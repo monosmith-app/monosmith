@@ -66,6 +66,9 @@ type Wizard struct {
 	// margins are the rows above and below the dialog that stay free.
 	margins layout.Margins
 	hover   int
+	// inline says the wizard is drawn inside area, in a pane and not as a dialog (see Inline).
+	inline bool
+	area   layout.Rect
 	// overOption is 1 + the index of the option under the pointer, 0 for none.
 	overOption int
 }
@@ -119,6 +122,22 @@ func (w Wizard) Place(sw, sh int) Wizard {
 	w.sw, w.sh = sw, sh
 	return w
 }
+
+// Inline draws the wizard inside area, a part of a pane, instead of as a
+// dialog over the screen: Lines gives area.H lines of area.W cells with no
+// frame, the title on the first line and the buttons from the left on the last
+// one, and the clicks, the hover and the scrolling use area. Within and Place
+// no longer move it.
+//
+// Parameters: area is where the wizard is drawn on the screen.
+// Returns: the wizard drawn inline.
+func (w Wizard) Inline(area layout.Rect) Wizard {
+	w.inline, w.area = true, area
+	return w
+}
+
+// IsInline reports whether the wizard is drawn inside a pane (see Inline).
+func (w Wizard) IsInline() bool { return w.inline }
 
 // resolve answers the questions with the answers so far and moves to the
 // next question, or to the review once none is left.

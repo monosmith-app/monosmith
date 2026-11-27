@@ -5,8 +5,9 @@ package doctorview
 // grouping, the passed checks and the cursor where the user left them.
 func (v Model) Replace(r Result) Model {
 	next := FromResult(r)
-	next.Extras = v.Extras
+	next.Extras, next.ByState = v.Extras, v.ByState
 	if r.Err != nil || v.Report == nil {
+		next.Cursor = next.firstFinding()
 		return next
 	}
 	next.Grouped, next.ShowPassed, next.Folds, next.All = v.Grouped, v.ShowPassed, v.Folds, v.All

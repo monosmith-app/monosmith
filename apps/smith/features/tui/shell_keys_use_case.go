@@ -640,6 +640,11 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	case commands.TabSettings:
 		return s.settingsKey(msg)
 	case commands.TabDoctor:
+		if s.fixedShown() && name == "esc" {
+			// Esc leaves the step Check again of the fix that was applied.
+			s.fixed = nil
+			return nil
+		}
 		switch {
 		case s.sideKeys():
 			return s.detailKey(name)
@@ -657,6 +662,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			// that hides the passed checks it shows them, as that line says.
 			s.detailAll = !s.detailAll
 		default:
+			s.fixed = nil
 			s.doctor = s.doctor.Update(msg)
 		}
 	case commands.TabGuide:

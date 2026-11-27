@@ -58,10 +58,18 @@ func (w Wizard) buttons() []action {
 }
 
 // navButtons are Back, when a screen before exists, and Cancel. Esc goes back
-// when it can, so Cancel takes Ctrl+C then, and Esc on the first screen.
+// when it can, so Cancel takes Ctrl+C then, and Esc on the first screen. An
+// inline wizard has no Cancel: its footer says Esc.
 func (w Wizard) navButtons() []action {
 	if w.canGoBack() || w.style.Back {
+		if w.inline {
+			// Inside a pane the footer says how to leave: Esc.
+			return []action{{words.Say("fixwizard.button.back"), "b"}}
+		}
 		return []action{{words.Say("fixwizard.button.back"), "b"}, {words.Say("fixwizard.button.cancel"), "ctrl+c"}}
+	}
+	if w.inline {
+		return nil
 	}
 	return []action{{words.Say("fixwizard.button.cancel"), "esc"}}
 }
@@ -76,11 +84,23 @@ func (w Wizard) spansIn(th theme.Theme, inner int) [][2]int {
 	for _, b := range w.buttons() {
 		labels, keys = append(labels, b.label), append(keys, b.key)
 	}
-	return button.RowSpans(th, labels, keys, inner)
+	spans := button.RowSpans(th, labels, keys, inner)
+	if w.inline && len(spans) > 0 {
+		// Inside a pane the buttons start at the left, under the text.
+		shift := spans[0][0] - 2
+		for i := range spans {
+			spans[i][0] -= shift
+			spans[i][1] -= shift
+		}
+	}
+	return spans
 }
 
 // width is the dialog's width on the screen it was placed on.
 func (w Wizard) width() int {
+	if w.inline {
+		return w.area.W + 2
+	}
 	if w.sw < 30 {
 		return max(w.sw, 6)
 	}
@@ -92,6 +112,11 @@ func (w Wizard) visible() int { return max(w.Rect().H-4, 1) }
 
 // Rect is where the dialog sits.
 func (w Wizard) Rect() layout.Rect {
+	if w.inline {
+		// The rect of a dialog whose top border is the title line of the area
+		// and whose side borders are just outside it.
+		return layout.Rect{X: w.area.X - 1, Y: w.area.Y, W: w.area.W + 2, H: max(w.area.H+1, 3)}
+	}
 	width := w.width()
 	h := max(w.margins.Room(w.sh), 5)
 	if !w.LogOpen() {
@@ -344,6 +369,9 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 		col = spans[i][1] - 2
 	}
 	out = append(out, row(line))
+	if w.inline {
+		return append([]string{pane.Fit(" "+th.Bold(w.title()), w.area.W)}, out...)
+	}
 	return pane.Frame(th, w.title(), out, r.W, r.H, true)
 }
 

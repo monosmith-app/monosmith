@@ -146,6 +146,8 @@ func (s Shell) sideContent(w, h int) content {
 	switch {
 	case s.projectPage():
 		return s.projectDetailContent(w, h)
+	case s.inlineFix() || s.fixedShown():
+		return s.healthFixContent(w, h)
 	}
 	return s.detailContent(w, h)
 }

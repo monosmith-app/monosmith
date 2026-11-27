@@ -73,10 +73,10 @@ func TestHomeLeadsWithTheFirstThingToFixAndItsKey(t *testing.T) {
 
 func TestEnterAndAClickDoTheSuggestedAction(t *testing.T) {
 	l := newHomeLab(t, 140, 34)
-	// With a fix ready the suggestion opens the fix wizard, not the Doctor
-	// tab and not a non-interactive `doctor --fix`.
+	// With a fix ready the suggestion opens the fix in the detail of Health,
+	// not a non-interactive `doctor --fix`.
 	l.keys("enter")
-	if l.sh().fix == nil || l.sh().tab != commands.TabHome || len(l.started) != 0 {
+	if l.sh().fix == nil || !l.sh().inlineFix() || l.sh().tab != commands.TabDoctor || len(l.started) != 0 {
 		t.Fatalf("Enter did the next action: wizard %v, tab %q, started %v", l.sh().fix != nil, l.sh().tab, l.started)
 	}
 	l.has("Fix · review", "Apply (Enter)")

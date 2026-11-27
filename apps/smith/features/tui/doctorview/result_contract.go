@@ -27,9 +27,21 @@ type Extra struct {
 // Group is the findings that belong together: a project's, or the
 // workspace's when Project is empty. Indexes point into the report's findings.
 // Counted, when set, points at every finding of the group before the filters
-// hid any: the heading counts those, not only the rows drawn.
+// hid any: the heading counts those, not only the rows drawn. State, when set,
+// makes it the group of one state (StateFailed, StateWarning, StatePassed)
+// instead of a project's.
 type Group struct {
 	Project string
 	Indexes []int
 	Counted []int
+	State   string
+}
+
+// key names the group in Model.Folds: the project's name, or the state of a
+// group of one state.
+func (g Group) key() string {
+	if g.State != "" {
+		return "state:" + g.State // words:literal
+	}
+	return g.Project
 }

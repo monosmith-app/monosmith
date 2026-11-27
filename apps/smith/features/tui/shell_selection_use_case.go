@@ -148,7 +148,7 @@ func (s Shell) modalRect() (layout.Rect, bool) {
 	case s.confirm != nil:
 		return s.confirm.Rect(), true
 	case s.fix != nil:
-		return s.fix.Rect(), true
+		return s.synced(*s.fix).Rect(), true
 	case s.adopt != nil:
 		return s.adopt.Rect(), true
 	case s.compose != nil:
