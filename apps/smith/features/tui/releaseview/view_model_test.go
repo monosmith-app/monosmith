@@ -93,10 +93,10 @@ func TestMovingWrapsAroundAndAClickOnlySelects(t *testing.T) {
 	if m = press(m, "down"); m.Cursor != 0 {
 		t.Fatalf("down from the last wraps to the first: %d", m.Cursor)
 	}
-	if m = m.SelectRow(1); m.Cursor != 1 || m.Open {
-		t.Fatalf("a click selects: %d %v", m.Cursor, m.Open)
+	if m = m.SelectRow(1); m.Cursor != 1 {
+		t.Fatalf("a click selects: %d", m.Cursor)
 	}
-	if m = m.SelectRow(1); m.Open {
+	if m = m.SelectRow(1); m.Cursor != 1 {
 		t.Fatal("a second click selects again; the shell opens the detail")
 	}
 }
@@ -106,7 +106,7 @@ func TestOnlyAPlanWithoutBlockersCanBeReleasedOrDrilledInto(t *testing.T) {
 		t.Fatal("a plan with items can be released")
 	}
 	blocked := FromResult(Result{Plan: planned().Plan, Blockers: []string{"tag web@1.0.0 is missing"}})
-	if blocked.CanRelease() || press(blocked, "enter").Open {
+	if blocked.CanRelease() || press(blocked, "enter").Cursor != 0 {
 		t.Fatal("a blocked release offers nothing")
 	}
 	if out := render(blocked); !strings.Contains(out, "The release is blocked") {
@@ -152,7 +152,7 @@ func TestOnlyTheSelectedRowHasTheCursorMark(t *testing.T) {
 func TestNoKeyOpensTheCommitsInTheList(t *testing.T) {
 	for _, k := range []tea.KeyMsg{{Type: tea.KeyRight}, {Type: tea.KeyLeft}, {Type: tea.KeyEnter}} {
 		m := planned().Update(k)
-		if m.Open || m.Cursor != 0 || strings.Contains(render(m), "a1b2c3d") {
+		if m.Cursor != 0 || strings.Contains(render(m), "a1b2c3d") {
 			t.Fatalf("%s opened the commits in the list: %+v", k, m)
 		}
 	}

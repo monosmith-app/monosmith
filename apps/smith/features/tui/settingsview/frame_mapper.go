@@ -583,7 +583,7 @@ func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
 		noteRow = 1
 	}
 	avail := body - noteRow
-	if avail >= 9 && !m.sideDetail {
+	if avail >= 9 {
 		detailH = min(detailWant[m.section], avail-5)
 		if m.detailRows > 0 {
 			detailH = pane.Clamp(m.detailRows, minDetailRows, avail-5)

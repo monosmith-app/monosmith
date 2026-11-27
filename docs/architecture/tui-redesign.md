@@ -267,8 +267,8 @@ Deviations from the brief and the screens:
 - The `Errors only   Full log   / search` line of the log is not built: Errors only filters the tree, as
   the brief asks, and the log has no search. The cache line under the log (`Cache miss: 2 files
   changed`) is not built: the run output does not give the reason to the shell.
-- `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows` and `MinLogRows` of `splitter` stay, unused,
-  because removing an exported symbol would force a major release.
+- `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows` and `MinLogRows` of `splitter` were kept,
+  unused, until smith 3.0.0 removed them ([Removed in 3.0.0](#removed-in-300)).
 - The VS Code extension and the JetBrains plugin are unchanged: they have their own run output.
 
 ## Phase 6 as built
@@ -389,8 +389,8 @@ Deviations from the brief and the screens:
 - Release has no `Publishes to` or `Commits` column: the plan does not say which registry a package goes
   to. The column is Why (the reason of the plan). The Dry run key stays `p` (the screens draw `d`): one
   command keeps one key. There is no `smith release -p <package>`, so The same as is the notes command.
-- `releaseview.Model.Open` stays, no longer set, and `Update` no longer opens the commits: removing an exported
-  field would force a major release. The `←→ expand/collapse` keys (`release.expand`) are gone; the
+- `Update` no longer opens the commits. `releaseview.Model.Open`, no longer set, was kept until smith 3.0.0
+  removed it ([Removed in 3.0.0](#removed-in-300)). The `←→ expand/collapse` keys (`release.expand`) are gone; the
   detail shows the commits.
 - The VS Code extension and the JetBrains plugin are unchanged: their Dependencies and Release surfaces
   are their own trees and forms.
@@ -455,9 +455,9 @@ Deviations from the brief and the screens:
 - A switch's choice is a column of radios, as every pick list (the screens draw them on one line); a click on one
   picks it.
 - The buttons keep the `label (key)` form (`Save (Enter)`); the screens draw `Save enter`.
-- `WithSideDetail`, `DetailLines`, `Geometry`, `WithSizes`, `splitter.SettingsListSpot` and `SettingsDetailSpot` stay,
-  no longer used by the shell, and `ProjectClick` stays beside the new `ProjectClickAt`: removing an exported
-  symbol would force a major release. The project section in the detail of Projects still clicks without a
+- `WithSideDetail`, `Geometry`, `splitter.SettingsListSpot` and `SettingsDetailSpot`, no longer used by the
+  shell, were kept until smith 3.0.0 removed them ([Removed in 3.0.0](#removed-in-300)). `DetailLines`,
+  `WithSizes` and `ProjectClick` stay: the shell still calls them. The project section in the detail of Projects still clicks without a
   column, so its Save and Reset buttons answer the keys, not the mouse.
 - The marks stay `×` and `▲` (see phase 2).
 - The VS Code extension and the JetBrains plugin are unchanged: their settings are their own forms.
@@ -591,10 +591,23 @@ What the redesign did not build, across the phases, for the owner to decide:
 - The Settings and Tasks groups of the palette and its command
   editor (phase 6), and the Workspace filter of Settings (phase 8).
 - The keys the screens change (`c` check again, `d` dry run): one command keeps one key.
-- Unused exported symbols kept to avoid a major release: `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows`,
-  `MinLogRows`, `releaseview.Model.Open`, and the side-detail functions of `settingsview` and `splitter`.
 - The VS Code extension follows the new views (see [VS Code as built](#vs-code-as-built)). The JetBrains plugin
   follows none of the new layouts; only the Health name (phase 2) reached it.
+
+## Removed in 3.0.0
+
+smith 3.0.0 removes the exported symbols that the redesign left unused. They were kept only
+because a removed export needs a major release. No code in the repository called them:
+
+- `layout`: `InlineHeaderFrom` and `DivideShared` (use `DivideWith`).
+- `splitter`: `RunListID` (`run.list`), `RunListSpot`, `RunListRows`, `MinRunListRows`, `MinLogRows`,
+  `SettingsListSpot` and `SettingsDetailSpot`.
+- `settingsview`: `Model.WithSideDetail`, the `Geometry` type and `Model.Geometry`.
+- `releaseview`: the `Model.Open` field.
+
+Three names of the list stay, because the shell still calls them: `settingsview.Model.DetailLines`
+(the Settings panel of the detail), `Model.WithSizes` (the sizes of the dividers) and
+`Model.ProjectClick` (a click in the project section of the detail of Projects).
 
 ## Screens
 

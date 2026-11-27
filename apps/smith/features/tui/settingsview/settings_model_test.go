@@ -874,20 +874,13 @@ func TestASwitchShowsItsStateAndEnterPresentsTheChoice(t *testing.T) {
 	}
 }
 
-func TestWithTheDetailBesideTheTabTheTabDrawsNoDetailOfItsOwn(t *testing.T) {
+func TestTheTabDrawsItsDetailAndGivesItsLinesToThePanel(t *testing.T) {
 	m := opened(t, sample()).Show(Workspace)
 	if out := text(m, 100, 28); !strings.Contains(out, "Default: false") {
 		t.Fatalf("the tab alone draws its detail:\n%s", out)
 	}
-	m = m.WithSideDetail(true)
-	if out := text(m, 100, 28); strings.Contains(out, "Default: false") || strings.Contains(out, "Why:") {
-		t.Fatalf("the detail is drawn twice:\n%s", out)
-	}
 	if lines := strings.Join(m.DetailLines(plainTheme(), 60), "\n"); !strings.Contains(lines, "Default: false") || !strings.Contains(lines, "Why:") {
 		t.Fatalf("the lines for the side panel lack the facts:\n%s", lines)
-	}
-	if g := m.Geometry(100, 28); g.SepRow >= 0 {
-		t.Fatalf("a divider is left for a detail that is not there: %+v", g)
 	}
 }
 

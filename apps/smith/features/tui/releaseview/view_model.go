@@ -29,10 +29,8 @@ type Model struct {
 	Err      error
 	// Git is what the repository says about pushing the release.
 	Git GitState
-	// Cursor is the project selected in the plan. Open is no longer set: the
-	// detail shows the commits of the selected project.
+	// Cursor is the project selected in the plan; the detail shows its commits.
 	Cursor int
-	Open   bool
 	// WhyOpen is true while the explanation of an empty plan is shown.
 	WhyOpen bool
 	// Button and FirstButton are the drawn buttons "Release now" and "Create the
@@ -64,13 +62,13 @@ func (v Model) Update(key tea.KeyMsg) Model {
 	}
 	switch commands.Nav(key.String()) {
 	case commands.NavUp:
-		v.Cursor, v.Open = (v.Cursor-1+n)%n, false
+		v.Cursor = (v.Cursor - 1 + n) % n
 	case commands.NavDown:
-		v.Cursor, v.Open = (v.Cursor+1)%n, false
+		v.Cursor = (v.Cursor + 1) % n
 	case commands.NavHome:
-		v.Cursor, v.Open = 0, false
+		v.Cursor = 0
 	case commands.NavEnd:
-		v.Cursor, v.Open = n-1, false
+		v.Cursor = n - 1
 	}
 	return v
 }
@@ -80,7 +78,7 @@ func (v Model) SelectRow(i int) Model {
 	if i < 0 || i >= len(v.Plan.Items) {
 		return v
 	}
-	v.Cursor, v.Open = i, false
+	v.Cursor = i
 	return v
 }
 
