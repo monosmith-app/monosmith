@@ -10,12 +10,20 @@ export interface DoctorFix {
   /** True when `smith doctor --fix --yes` alone may apply it. */
   safe?:       boolean
   choices?:    DoctorFixChoice[]
+  /** The files the fix writes; the first one is the file a Health row names. */
+  files?:      Array<{ path: string }>
+  /** The projects a fix folded from many projects applies to. */
+  applies_to?: string[]
 }
 
 /** One check of `smith doctor --json`. */
 export interface DoctorFinding {
   check:    string
   ok:       boolean
+  /** What is wrong, in one sentence. */
+  problem?: string
+  /** The project the check is about; absent for the workspace. */
+  project?: string
   detail?:  string
   remedy?:  string
   /** A failed check that only warns. */

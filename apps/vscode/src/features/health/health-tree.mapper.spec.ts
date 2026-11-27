@@ -1,37 +1,55 @@
 import { describe, expect, it } from 'vitest'
-import { toHealthRows } from './health-tree.mapper.ts'
+import { fileOf, fixCommandLine, toHealthRows } from './health-tree.mapper.ts'
 
 describe('toHealthRows', () => {
   const report = {
     findings: [
       { check: 'cache ignored', ok: false, detail: '.smith/ is not in .gitignore', remedy: 'add `.smith/` to .gitignore' },
-      { check: 'tracked files', ok: false, warning: true, detail: 'generated files are tracked' },
+      { check: 'tracked files', ok: false, warning: true, detail: 'generated files are tracked', project: 'web' },
       { check: 'has commits', ok: true, remedy: 'commit the workspace' },
     ],
   }
 
-  it('puts the failed checks first with the problem and the remedy under them', () => {
+  it('groups the checks by state, the failed ones first, each heading with its count', () => {
     const { nodes, summary } = toHealthRows(report)
-    expect(nodes.map((node) => node.label)).toEqual(['cache ignored', 'tracked files', 'Passed'])
+    expect(nodes.map((node) => [node.label, node.description])).toEqual([['Failed', '1'], ['Warnings', '1'], ['Passed', '1']])
     expect(nodes[0]).toMatchObject({ icon: 'error', color: 'charts.red', expanded: true })
-    expect(nodes[0]?.children?.map((child) => child.label)).toEqual(['.smith/ is not in .gitignore', 'add `.smith/` to .gitignore'])
-    expect(nodes[1]).toMatchObject({ icon: 'warning' })
-    expect(summary).toBe('1 failed, 1 warning')
+    expect(nodes[1]).toMatchObject({ icon: 'warning', expanded: true })
+    expect(nodes[2]?.expanded).toBeUndefined()
+    expect(summary).toBe('1 failed · 1 warning · 1 passed')
+  })
+
+  it('puts the problem and the remedy under a check, and says its project and file', () => {
+    const [failed, warning] = toHealthRows(report).nodes
+    const check = failed?.children?.[0]
+    expect(check).toMatchObject({ label: 'cache ignored', icon: 'error', color: 'charts.red', expanded: true, description: 'workspace · .gitignore' })
+    expect(check?.children?.map((child) => child.label)).toEqual(['.smith/ is not in .gitignore', 'add `.smith/` to .gitignore'])
+    expect(warning?.children?.[0]).toMatchObject({ label: 'tracked files', description: 'web' })
   })
 
   it('shows the first clause of a long problem and remedy, and keeps all of it in the tooltip', () => {
     const long = { check: 'agent files', ok: false, detail: '.claude/agents/smith.md is missing; smith cannot answer for it', remedy: 'run smith agent install. It writes the files' }
     const { nodes } = toHealthRows({ ...report, findings: [long] })
-    expect(nodes[0]?.children).toMatchObject([
+    expect(nodes[0]?.children?.[0]?.children).toMatchObject([
       { label: '.claude/agents/smith.md is missing', tooltip: long.detail },
       { label: 'run smith agent install', tooltip: `Fix: ${long.remedy}` },
     ])
   })
 
-  it('gives a check that carries a fix a Fix row that runs in the editor', () => {
-    const withFix = { check: 'defaults', ok: false, warning: true, remedy: '`smith upgrade --defaults` moves it', fix: { description: 'Move to the latest defaults' } }
-    const { nodes } = toHealthRows({ findings: [withFix] })
-    expect(nodes[0]?.children?.at(-1)).toMatchObject({ label: 'Fix: Move to the latest defaults', context: 'health.fix', data: 'defaults', icon: 'wrench' })
+  it('gives a check that carries a fix a Fix row with its steps, and the command line it stands for', () => {
+    const withFix = { check: 'defaults', ok: false, warning: true, project: 'web', remedy: '`smith upgrade --defaults` moves it', fix: { description: 'Move to the latest defaults', files: [{ path: 'apps/web/tsconfig.json' }] } }
+    const check = toHealthRows({ findings: [withFix] }).nodes[0]?.children?.[0]
+    expect(check?.description).toBe('web · apps/web/tsconfig.json · fix')
+    expect(check?.children?.at(-2)).toMatchObject({
+      label:       'Fix: Move to the latest defaults',
+      description: '1 Review ── 2 Apply ── 3 Check again',
+      context:     'health.fix',
+      command:     'monosmith.health.fixFinding',
+      data:        'defaults',
+      icon:        'wrench',
+    })
+    expect(check?.children?.at(-2)?.tooltip).toContain("or in a terminal: smith doctor --fix --only 'Move to the latest defaults'")
+    expect(check?.children?.at(-1)).toMatchObject({ label: 'The same as', description: "$ smith doctor --fix --only 'Move to the latest defaults'" })
   })
 
   it('does not show the remedy of a check that passed as a problem', () => {
@@ -55,5 +73,26 @@ describe('toHealthRows', () => {
 
   it('says so when smith reports no checks', () => {
     expect(toHealthRows({})).toEqual({ nodes: [], message: 'smith reported no checks.' })
+  })
+})
+
+describe('fileOf', () => {
+  it('takes the first file the fix writes', () => {
+    expect(fileOf({ check: 'c', ok: false, detail: 'see a.json', fix: { description: 'd', files: [{ path: '' }, { path: 'b.json' }] } })).toBe('b.json')
+  })
+
+  it('else finds a path in the problem or the detail, without the full stop', () => {
+    expect(fileOf({ check: 'c', ok: false, problem: 'package-lock.json still holds react 19.1.' })).toBe('package-lock.json')
+    expect(fileOf({ check: 'c', ok: false, detail: 'add .gitignore.' })).toBe('.gitignore')
+  })
+
+  it('takes no URL, version, flag or abbreviation for a file', () => {
+    expect(fileOf({ check: 'c', ok: false, detail: 'see https://x.dev/a.html, use --fix.json e.g. version 2.15.0' })).toBe('')
+  })
+})
+
+describe('fixCommandLine', () => {
+  it('is the command the fix in the editor runs', () => {
+    expect(fixCommandLine({ check: 'c', ok: false, fix: { description: 'Sync the lock file' } })).toBe("smith doctor --fix --only 'Sync the lock file'")
   })
 })

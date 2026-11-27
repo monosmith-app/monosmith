@@ -14,6 +14,8 @@ export interface ListNode {
   expanded?:    boolean
   /** What a command given the row needs, such as a package name. */
   data?:        string
+  /** The command the row runs when it is chosen (a click, or Enter): it is given the row. */
+  command?:     string
   children?:    ListNode[]
 }
 

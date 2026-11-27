@@ -2,7 +2,7 @@ import type { CommandHost } from '../../shared/command-host/index.ts'
 import { readFolderData, type ListNode } from '../../shared/list-view/index.ts'
 import { sayDoctor, summarizeDoctor } from './doctor-report.mapper.ts'
 import { fixDoctor } from './fix-doctor.use-case.ts'
-import { confirmFix, pickFixAnswer, tellFixOutcome } from './fix-finding-prompts.client.ts'
+import { confirmFix, pickFixAnswer, tellFixChecked, tellFixOutcome } from './fix-finding-prompts.client.ts'
 import { fixFinding } from './fix-finding.use-case.ts'
 import { confirmApplyFixes, tellChooseCheck, tellCheckPasses, tellDoctorSummary, tellFixesApplied, tellNoFix, tellNothingToCheck } from './health-prompts.client.ts'
 import { runDoctor } from './run-doctor.use-case.ts'
@@ -71,12 +71,15 @@ export async function fixHealth (host: CommandHost, view: HealthView): Promise<v
 }
 
 /**
- * Fixes the check of a Health row: smith asks the fix's questions, shows what it changes, and applies it only on a yes.
+ * Fixes the check of a Health row in the three steps of the terminal's inline fix: 1 Review (smith
+ * asks the fix's questions and its review opens beside the code), 2 Apply (only on a yes), 3 Check
+ * again (doctor runs again and says whether the check passes now). Nothing is committed.
  * @param host - the folders and the Output channel of the extension
  * @param view - the Health view
  * @param argument - the row the command started on
+ * @param showReview - opens smith's review as a page beside the code, so the confirmation stays short
  */
-export async function fixFindingRow (host: CommandHost, view: HealthView, argument: unknown): Promise<void> {
+export async function fixFindingRow (host: CommandHost, view: HealthView, argument: unknown, showReview?: (name: string, text: string) => Promise<void>): Promise<void> {
   const tagged = readFolderData((argument as ListNode | undefined)?.data)
   const state = tagged === undefined ? undefined : host.registry.folders.get(tagged.root)
   if (tagged === undefined || state?.session === undefined) {
@@ -96,9 +99,21 @@ export async function fixFindingRow (host: CommandHost, view: HealthView, argume
   const outcome = await fixFinding({
     run:     host.smithIn(state, true, 600_000),
     pick:    pickFixAnswer,
-    confirm: async (review) => await confirmFix(review, finding.fix?.description ?? finding.check),
+    confirm: async (review) => {
+      if (showReview !== undefined) await showReview(`${finding.check}.review.md`, review)
+
+      return await confirmFix(review, finding.fix?.description ?? finding.check, showReview !== undefined)
+    },
   }, finding)
-  tellFixOutcome(outcome)
+  if (outcome.kind !== 'fixed') {
+    tellFixOutcome(outcome)
+
+    return
+  }
+  // Step 3: check again, as the terminal's inline fix does, and say where the check stands now.
+  const again = await runDoctor(state.session.connection)
+  const still = (again.findings ?? []).some((item) => item.check === finding.check && !item.ok)
+  tellFixChecked(outcome, still)
   await view.reload()
   await host.refreshFolder(state.root, 'full', true)
 }
