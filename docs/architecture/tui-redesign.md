@@ -1,7 +1,7 @@
 # Design: the TUI redesign
 
-Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home) and
-phase 4 (Projects) are built. The other phases are planned.
+Status: **in progress**. Phase 1 (theme and chrome), phase 2 (layout), phase 3 (Home),
+phase 4 (Projects) and phase 5 (Runs) are built. The other phases are planned.
 This page holds the owner's decisions, the colour tokens, the phases and the drawn screens.
 The earlier design and its "as built" box are in [tui-and-ide.md](tui-and-ide.md), and the
 code layout is in [tui-architecture.md](tui-architecture.md).
@@ -22,7 +22,7 @@ The owner made these decisions for the whole redesign. Later phases do most of t
 | The footer is the short style of `bubbles/help`: `key desc • key desc`, the key in the accent and bold, the description muted, the separator in the border colour. | 1 |
 | The status bar has the last command (muted), the result counts with their symbols, the time, and the branch, the version and the doctor state at the right. | 1 |
 | A wide screen has a rail of views at the left. A narrow screen has a one-line tab strip. One view shows at a time: `Enter` opens, `Esc` goes back. | 2 |
-| A Runs view on key `3`. Today the runs show in the right panel of Projects. | 5 |
+| A Runs view on key `3`; the other views move up one (Health `4` to Settings `7`). It replaces the run panel of Projects and the older "no Run tab" rule. | 5 |
 | The Doctor view is renamed Health, in the TUI and in the VS Code extension. The `smith doctor` command keeps its name. | 2 |
 | The doctor fix shows inline in the detail (review, apply, check again), not as a dialog. | 6 |
 | One pull request for each phase. | all |
@@ -63,7 +63,7 @@ Highlight, so the token is `#1b7537`, one step darker, with 4.7:1.
    time. **Built** (see [Phase 2 as built](#phase-2-as-built)).
 3. Home. **Built** (see [Phase 3 as built](#phase-3-as-built)).
 4. Projects. **Built** (see [Phase 4 as built](#phase-4-as-built)).
-5. The Runs view.
+5. The Runs view. **Built** (see [Phase 5 as built](#phase-5-as-built)).
 6. The command palette, and Health with the inline fix.
 7. Then Dependencies, Release, Settings and the dialogs, once they are drawn.
 
@@ -209,6 +209,63 @@ Deviations from the brief and the screens:
 - The Tasks section shows the table only. The screens also draw Uses, Used by and Recent runs under
   it; those are the Dependencies and Runs sections.
 - The Cache column says `miss`, without the reason: the run output does not give it to the shell.
+
+## Phase 5 as built
+
+- The rail and the strip list Home `1`, Projects `2`, Runs `3`, Health `4`, Dependencies `5`,
+  Release `6` and Settings `7`. The footer, the help, the palette (Go to: Runs) and the Home
+  buttons (`Open Health (4)`, `Settings (7)`) follow the new keys. Only the views that can carry a
+  badge (Runs, Health, Deps, Release) keep its room in the strip, so the seven names fit 80
+  columns until three badges show; then Settings is the first to shorten (`7 Sett`).
+- The run badge (spinner, `×n`, `✓`, `»` for a dry run, `⊘`) moved from Projects to Runs.
+- The `runpage` package draws the parts from plain values: `Tree` (the tasks grouped by project,
+  in the order they were first seen, `Last` closing the branch), `TaskRow`, `HeadingLine`,
+  `AllOutputRow`, `SessionRow`, `Bar`, `Switch` and `Empty`. The shell measures and composes them
+  (`shell_runs_page_mapper.go`) and handles the keys and the wheel (`shell_runs_page_use_case.go`,
+  `runKey`).
+- A run started from any view (a task key, the Tasks section or the Run… menu of a project, Home,
+  the palette) opens the Runs view (`revealRun`). A Release preview still stays on Release, as
+  before. Esc shows all output, then goes back to the view the run was opened from (`runFrom`).
+- The header is the state and the time (`× Failed 4 tasks  12s`) with the buttons at its right end
+  when they fit, else on the lines under it; the history line `run 2 of 5 · ‹ older  newer ›` when
+  the session has more than one run; a blank line; the bar of `bubbles/progress` with `4/4 100%`
+  (a stopped run keeps the neutral bar of `progress.DrawCancelled`); the counts with their marks.
+  `bubbles/progress` draws without colour (`termenv.Ascii`) and the theme colours the cells, so the
+  plain theme stays plain.
+- The rule under the header is a fixed divider (`splitter.RunsRuleID`, never selected or moved),
+  so it runs through the padding to the frame. The tree and the log are divided by
+  `splitter.RunsTreeID`, which the mouse and the keys move; it meets the rule in `┬` (a new case of
+  `splitter.Junctions`) and the bottom border in `┴`. The tree takes a third of the width, from 24
+  columns, and the log keeps at least 30.
+- The tree starts with `All output`, then each project in bold and its tasks under `├─` and `└─`,
+  with the mark, the time and `hit` or `remote` for a cached task. Under it, **Runs this session**
+  lists at most five of the kept runs (the newest first; smith keeps 20, in memory, for the
+  session only); a click opens one.
+- The log column has the title (the task or `All output`, and `following` or `paused`), the command
+  of the task and its state, time and reason (the row of the tree has no room for them), then the log.
+- `e` (Errors only, `run.errors`) keeps only the failed tasks; a project without one leaves the tree.
+  The footer then says `e all tasks`.
+- Under 100 columns the view shows the tree or the log: `Tab` (`run.switch`), a click on the switch
+  line (` Tasks   Log: orders:build   tab switches`) or Enter on a task changes it. The header keeps only
+  the buttons that answer the run (Stop, Run again, Run unfinished). The frame is
+  `‹ Runs / smith run build -p orders`, and `Run · …` on a wide screen.
+- Before anything ran, the view says `Nothing ran yet` and lists `b`, `t`, the palette and Projects.
+- The new words are in `libs/words/catalog/en/runpage.json`; `runpage` is in the migrated list of
+  the words guard. The words of the old run panel that nothing uses left `tui_shell.json`.
+
+Deviations from the brief and the screens:
+
+- The tree groups by project, as the brief asks; the Run screen groups by state (Failed, Running,
+  Queued, Done). The counts and the marks say the state.
+- The marks stay `×`, `≈` and `▲`; the screens draw `✗`, `⚡` and `⚠`, which `shared/marks` bans. Running
+  is the spinner, queued `○`.
+- There is no time estimate (`about 20s left`): smith has no history of task times to base it on.
+- The `Errors only   Full log   / search` line of the log is not built: Errors only filters the tree, as
+  the brief asks, and the log has no search. The cache line under the log (`Cache miss: 2 files
+  changed`) is not built: the run output does not give the reason to the shell.
+- `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows` and `MinLogRows` of `splitter` stay, unused,
+  because removing an exported symbol would force a major release.
+- The VS Code extension and the JetBrains plugin are unchanged: they have their own run output.
 
 ## Screens
 

@@ -45,13 +45,13 @@ From top to bottom:
    remote. At the right are the palette hint (`⌕ Type a command, project or task  Ctrl+K`,
    or `Ctrl+K commands` on a short row) and `smith <version>`.
 2. **The views.** From 100 columns a **rail** at the left, in a rounded frame titled
-   `Views`, lists Home, Projects, Health, Dependencies, Release and Settings, one per row
+   `Views`, lists Home, Projects, Runs, Health, Dependencies, Release and Settings, one per row
    with a blank row between them. The open view has `▶` in the accent on the highlighted
    row. Each row ends with the view's badge (`×2` failed checks, `▲2` warnings, `↑3`
    dependencies with newer releases, `✓2` packages ready to release, the run's result on
-   Projects, a spinner while the view loads) and its key. The rail is 24 columns wide and
+   Runs, a spinner while the view loads) and its key. The rail is 24 columns wide and
    cannot be resized. Under 100 columns a one-line **strip** under the title bar does the
-   same: `1 Home  2 Projects  3 Health ×2  4 Deps …`, the open view in the accent, bold and
+   same: `1 Home  2 Projects  3 Runs ×1  4 Health ×2  5 Deps …`, the open view in the accent, bold and
    underlined. When the names do not fit, they are shortened, then the strip scrolls with
    `‹` and `›`. A click on a row of the rail or a tab of the strip opens the view.
 3. **The view.** Each pane is a rounded frame with its title in the top border: the view's
@@ -61,8 +61,8 @@ From top to bottom:
    terminal Projects and Health open the detail in place of the list when you press Enter;
    its frame reads `‹ Projects / orders`, and Esc goes back to the list. Inside a frame,
    thin lines divide the panels: the horizontal line between stacked panels (the rows and
-   the help of a setting, the task list and the log) and the vertical line between the
-   sections and the rows of Settings, which meet the frame in tees (`┬`, `┴`, `├`). Drag the
+   the help of a setting, the header of the Runs view and its tasks) and the vertical line between the
+   sections and the rows of Settings, or the tasks and the log of a run, which meet the frame in tees (`┬`, `┴`, `├`). Drag the
    border between the list and the detail to resize them. A form on the Start view names
    itself on its first line.
 4. **Footer**: key hints for the open view, then the ones every view ends with
@@ -86,10 +86,11 @@ goes away by itself. A result toast belongs to the view it was raised on.
 |---|---|---|
 | Home | `1` | The workspace at a glance: a summary line, four boxes (Changed, Last run, Health, Release), the list **Needs you now** (what needs a look, the most urgent first, each with the buttons that deal with it) and, on a wide screen, the buttons of **Start something** (see [Home](#home)). |
 | Projects | `2` | The projects grouped by kind, with a filter, and the detail of the selected project in four sections: Tasks, Dependencies, Runs and Settings (see [Projects](#projects)). |
-| Health | `3` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Health detail](#the-health-detail)); fixes open the fix wizard. |
-| Dependencies | `4` | A row of chips at the top, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), limits the list to one level. Under it the summary, the warning about major releases among the chosen packages (so it shows without scrolling), and the dependencies with newer releases, grouped patch and minor, then major (columns Package, Now, Latest, Level, Kind, Projects), with the `smith deps up` command line for a selection. The one-version policy's verdict (`One version`) is in the detail beside the list; on a narrow screen it is under the list. A line under the table gives the registry page of the selected package ([Registry link](#the-registry-link-in-the-deps-view)). |
-| Release | `5` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump, and a button `Release now (x)` that releases it. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
-| Settings | `6` | Plugins, style and the settings of `smith.toml`, changed in place; what the selected row is and does is in the detail beside the list (under the list on a narrow screen); see [Settings](#settings). |
+| Runs | `3` | The run going now, or one of the runs of this session: the header (what runs, the time, the progress bar and the counts), the tasks grouped by project and the log of the chosen task (see [The Runs view](#the-runs-view)). |
+| Health | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Health detail](#the-health-detail)); fixes open the fix wizard. |
+| Dependencies | `5` | A row of chips at the top, `All`, `Patch`, `Minor` and `Major` with the number of releases of each (keys `e`, `p`, `n`, `M`; click one too), limits the list to one level. Under it the summary, the warning about major releases among the chosen packages (so it shows without scrolling), and the dependencies with newer releases, grouped patch and minor, then major (columns Package, Now, Latest, Level, Kind, Projects), with the `smith deps up` command line for a selection. The one-version policy's verdict (`One version`) is in the detail beside the list; on a narrow screen it is under the list. A line under the table gives the registry page of the selected package ([Registry link](#the-registry-link-in-the-deps-view)). |
+| Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump, and a button `Release now (x)` that releases it. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. When nothing releases, the view says so in one line (`Nothing to release: no feat: or fix: commits since the last tag`) and keeps the reason behind a fold, `Why? (w)`. For a package that was never released it also offers `Create the first release commit (c)`. |
+| Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; what the selected row is and does is in the detail beside the list (under the list on a narrow screen); see [Settings](#settings). |
 
 ### Home
 
@@ -103,7 +104,7 @@ Home has four parts, from the top:
   muted line under it adds the detail.
   - **Changed**: the projects the changes affect (`● 7 projects`, `since main`), or `Nothing changed`.
   - **Last run**: how the newest run ended: `× 1 failed` with `17 passed · 9 cached`, or `✓ 17 passed`,
-    or `⊘ Stopped`. A click on the box opens that run in the run panel of Projects. Before any run it says
+    or `⊘ Stopped`. A click on the box opens that run in the Runs view. Before any run it says
     `Nothing ran yet`.
   - **Health**: `× 2 failed` (with the warnings under it), `▲ 2 warnings`, or `All checks pass`.
   - **Release**: `✓ 2 ready` with the mix of bumps (`1 minor · 1 patch`), or `Nothing ready`.
@@ -119,7 +120,7 @@ The items of Needs you now, in their order:
 
 1. **The last run failed** (a stopped run is not a failure): `orders:build failed`, the
    task that failed (the command when no task failed). Buttons: `See why` (opens that task's
-   log in the run panel of Projects) and `Run it again` (not offered for a command that makes something,
+   log in the Runs view) and `Run it again` (not offered for a command that makes something,
    such as `add`).
 2. **Setup is broken**: `2 checks fail, 6 can be fixed now`, with the first two failing
    checks named under it. Buttons: `Fix` (only when a fix is ready) and `Open Health`.
@@ -133,7 +134,7 @@ The items of Needs you now, in their order:
 7. **Tab completion** (only while it waits): `Tab completion is not set up`. Buttons: `Set up` and
    `Not now`. `Set up` (also `Set up tab completion` in the palette) runs `smith completion install --dry-run`
    and shows the files and lines in the confirmation; nothing is written until you press `Run`, and the
-   confirmed line runs in the run panel. `Not now` is remembered for you in `tui.json` (`completionOffer`),
+   confirmed line runs in the Runs view. `Not now` is remembered for you in `tui.json` (`completionOffer`),
    and the item never comes back; so does a finished setup. The item is muted, so it never takes Enter or
    the `All good` line away. See [`smith completion`](completion.md).
 8. **Remote cache** (only when the workspace has one): its state and how many local entries it
@@ -232,7 +233,7 @@ that does nothing. Esc never quits.
 
 | Key | Does |
 |---|---|
-| `1` to `6` | Show Home, Projects, Health, Dependencies, Release, Settings. |
+| `1` to `7` | Show Home, Projects, Runs, Health, Dependencies, Release, Settings. |
 | `Up` `Down`, `j` `k` | Move in a list. |
 | `Left` `Right` | Move between buttons on Home. In Projects, `Right` moves the keyboard to the detail, and there `Left` and `Right` change the section. In Health, `Right` moves the keyboard to the detail and `Left` back to the list. In Release, `Right` shows the commits behind a bump and `Left` hides them. |
 | `Tab` | Move the keyboard to the next panel of a view that has two (Projects: the list, then the detail, where `Tab` and `Shift+Tab` change the section; Health: the list, then the detail). The footer names where `Tab` goes. |
@@ -244,7 +245,7 @@ that does nothing. Esc never quits.
 | `Ctrl+C` | Stop the run in progress; pressed again, quit. A stopped run is **cancelled**, not failed (see [A stopped run](#a-stopped-run)). |
 | `m` | Turn the mouse on or off. Off lets the terminal select text itself; with it on, a plain drag selects too (see Select text). |
 | `y` | Copy the focused item (remedy, command, project path or package) to the clipboard, through the terminal (OSC 52), so it also works over SSH and in tmux panes that allow it. Works in Projects, Run, Health, Deps. |
-| `r` | Reload this view: read the files and the checks again, run nothing (Home, Health, Release, Deps). The footer says `r reload view`. While the run panel is open `r` is `run again`: it runs the last command line again. |
+| `r` | Reload this view: read the files and the checks again, run nothing (Home, Health, Release, Deps). The footer says `r reload view`. In the Runs view `r` is `run again`: it runs the last command line again. |
 
 ### Run tasks (in a workspace)
 
@@ -258,45 +259,61 @@ that does nothing. Esc never quits.
 | `w` | `smith run lint test --affected` | footer in Home, Projects |
 | `Ctrl+B` | `smith run build --release`: the optimised build (Rust, .NET, Android), on the selected project, else on every project (`release build orders`) | last in the footer of every workspace view; the button `Build release` of Projects and the palette build every project |
 
-One key has one meaning on every view, the run panel and Home included: the lower-case keys
+One key has one meaning on every view, the Runs view and Home included: the lower-case keys
 `b`, `t`, `l` and `c` act on the project selected in the list, and the capital keys `B`, `T`,
 `L` and `C` act on every project. Every label, in the footer, the palette and the project detail,
 names the scope (`build orders`, `build all 23`). With no project selected, a
 lower-case key covers the workspace.
 
-A run opens in the right panel of Projects, from any view: the keys work in every workspace view and
-switch to Projects. The footer shows only
+A run opens in the Runs view, from any view: the keys work in every workspace view and
+switch to Runs. The footer shows only
 the ones that make sense for the open view (the column above). The top panel of Projects
 has Verify, Build, Test, Lint and Typecheck of every project as buttons, and the palette names the scope in
 each title (`Build orders`, `Build all 23`). `Verify (V)` runs [`smith verify`](verify.md), the run CI
 makes: the dependency boundaries, then lint, typecheck, test and build, and a check that no file git
-tracks changed. The run panel lists its tasks as it does for `smith run`.
+tracks changed. The Runs view lists its tasks as it does for `smith run`.
 
-### The run panel
+### The Runs view
 
-The run panel is not a terminal, so it does not run an app's `start` task: the app could
+The Runs view is not a terminal, so it does not run an app's `start` task: the app could
 not draw or read keys there. The `start` button shows the line to run in a terminal instead,
 such as `smith run start -p web`.
 
-There is no Run tab. While a task runs, or when you open a past run, the right panel of Projects
-shows that run, as Nx and Turborepo do, and the list of projects stays on the left. From the top
-the panel has:
+The Runs view (key `3`) shows the run that goes now, or the run you opened. A run started from
+any view (a key, a Home button, the Run… menu or the Tasks section of a project, the palette)
+opens it. Its frame is titled `Run · smith run test -p orders` (`‹ Runs / smith run test -p
+orders` on a narrow screen). From the top it has:
 
-- the header, `<project> · <task>`, then a spinner (or the mark of how it ended) and `n/m`;
-- the buttons `Back (Esc)`, `Stop (Ctrl+C)` (faint once nothing runs), `Run again (r)`,
-  `Run unfinished (R)` (only when a task did not finish) and `Copy log (Y)`;
-- the line `run 2 of 5 · ‹ older  newer ›` (the keys `,` and `.` do the same);
-- the command line and the progress bar with the counts, one row for each task with its mark
-  (`✓` passed, `×` failed, `≈` from cache, `»` skipped, `⊘` stopped), and the log of the
-  task chosen (or all output) under a rule that says if it follows or is paused. A task the
-  remote cache served says `cached … from remote cache` in its row, and the closing line counts
-  them: `31 from cache, 29 of them remote`.
+- the header: a spinner (or the mark of how it ended), what runs (`Running 18 tasks`,
+  `Failed 4 tasks`) and the time, with the buttons at the right: `Back (Esc)`,
+  `Stop (Ctrl+C)` (faint once nothing runs), `Run again (r)`, `Run unfinished (R)` (only when
+  a task did not finish), `Copy log (Y)` and `+ (Z)`, which fills the terminal;
+- the line `run 2 of 5 · ‹ older  newer ›` when the session has more than one run (the keys
+  `,` and `.` do the same);
+- the progress bar (drawn with `bubbles/progress`) with `12/18 67%`, and the counts with
+  their marks: `× 1 failed   ✓ 9 passed   ≈ 2 cached   ● 2 running   ○ 4 queued`;
+- a rule, then at the left the tasks grouped by project (`All output` first, then each
+  project and its tasks under `├─` and `└─`, each with its mark, its time and `hit` or
+  `remote` when the cache gave it), and at the right the log of the chosen task under its
+  title, which says if it follows or is paused, the command the task ran and its state,
+  time and reason. Drag the line between them to resize them.
 
-A failed run opens with its first failed task chosen, so the log says why. Starting a run
-from any view (a key, a Home button, the palette) switches to Projects with the panel open.
-`Esc` shows all output, and `Esc` again, or `Back`, shows the project again; the run goes on,
-and the Runs section of the project opens it again. On a narrow terminal the panel replaces the list
-and `Esc` goes back to it. Home has `See why` and `Run it again`; they open the panel too.
+Under the tasks, **Runs this session** lists the runs smith kept (the newest first, at most
+five rows): a click opens one. smith keeps the runs of this session only, in memory; they go
+when smith closes.
+
+`e` (**Errors only**) keeps only the failed tasks in the tree, and `e` again shows every
+task. A failed run opens with its first failed task chosen, so the log says why. `Up` and
+`Down` choose a task, a click on its row does the same, and `PgUp` `PgDn` scroll the log.
+`Esc` shows all output, and `Esc` again, or `Back`, goes back to the view the run was
+opened from; the run goes on, `3` opens it again, and the Runs section of a project opens
+an earlier one.
+
+On a narrow terminal (under 100 columns) the view shows the tasks or the log, one at a time:
+`Tab` (or a click on `Tasks` or `Log: <task>` in the switch line) changes which, and `Enter`
+on a task shows its log. The header keeps only `Stop`, `Run again` and `Run unfinished`; the
+footer has the other keys. Before anything ran in this session the view says
+`Nothing ran yet` and how to start a run.
 
 ### A stopped run
 
@@ -312,13 +329,13 @@ failed, and the toast says "Cancelled". `R` runs the tasks that did not finish a
 |---|---|---|
 | Home | `Enter` | Press the chosen button of the selected item (at first the first button of the first item: `Fix`, `Test what changed`, `Build all`, …). |
 | any workspace view | `d` | Open Health (shown in the footer of Home and Projects). |
-| Home, Projects, Health, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; while the run panel is open the same key is `run again`. |
+| Home, Projects, Health, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; in the Runs view the same key is `run again`. |
 | Projects | `a` | Add project (a guided form). |
-| any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -p <project> ...` line, then runs it in the run panel of Projects. The palette's and the detail's "Install a package…" open the same form. |
+| any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -p <project> ...` line, then runs it in the Runs view. The palette's and the detail's "Install a package…" open the same form. |
 | any workspace view | `-` | Remove a package: the same form for `smith uninstall -p <project> ...`. After the form, a confirmation shows the exact command line and what it changes, because a removal edits the manifest and the lock file. |
 | any workspace view | `i` | Install everything every project declares, as after a fresh clone (asks to confirm the command). To add one package use `+`. |
 | Projects | `z` | Zoom the detail to the full width, and back. |
-| Projects, run panel | `Z`, the `+` button, a double click on the output | Show the run output on the whole terminal, with only a top bar. The `-` button of the top bar, `Esc`, `Z` and a double click on the output give the screen back. A double click on a button does not. |
+| Runs | `Z`, the `+` button, a double click on the output | Show the run output on the whole terminal, with only a top bar. The `-` button of the top bar, `Esc`, `Z` and a double click on the output give the screen back. A double click on a button does not. |
 | Projects | `e`, `o`, `g` | The actions of the Run… menu (`R`): How was this resolved? (`smith explain` of the project), Why (who owns its files) and Graph (the dependencies and the dependants). A project with derived files also has `E` explain them, `u` update them, `K` keep my edit, `O` own the files I edited and `r` replace them. `+` and `-` install and remove a package. A task with no key of its own takes a free letter, shown in the Key column of the Tasks section and on its button in the menu. The buttons of the well-known tasks (`build`, `test`, `lint`, `typecheck`, `package`) name what the task does to the kind of the project: `Build app`, `Test library`, `Package app`, `Package library`, and `Pack for publishing` for a project of kind `package`, because `package` is also a kind. The hint under the button keeps the raw task name (`smith run package`). Any other task (`stage-web`, `package-dmg`) reads `Run <task>`. The keys do not change. |
 | Projects | (buttons only) | Under **More**, the Run… menu opens `Settings…` (the Settings section of the detail) and the forms that apply to the selected project, each one on that project. They have no key. The palette lists them for the selected project, with the project's name. A project with a stack has `Change my test tool or linter (Swap a choice)…`. A Node app has `Add environments to a web app…` and `Remove environments from a web app…`. A Tauri app (one with a `tauri-build` task) has `Make the icons of a Tauri app…`. A Node app that is not a Tauri app yet has `Make it a Tauri desktop app…` (`smith tauri add`). An app with an `image` task has `Set the Docker Hub descriptions…`. Last come `Change kind…` (`smith kind`), `Eject a tool's configuration…` (`smith eject`) and `Remove project…`. A button that does not apply to the project does not show. Each form shows the plan or the command line and asks before it changes anything. |
 | Projects, Run, Health, Settings | `\` `|`, `[` `]` | `\` selects the next divider between two panels and `|` the previous one. `Shift`+arrows select one too. `[` moves it left or up and `]` right or down. `Tab` picks the next divider and `Esc` lets go. With one divider, `[` and `]` need no selection. Drag a divider with the mouse to do the same. A divider you drag goes back to its resting look when
@@ -326,12 +343,14 @@ you let go; a divider you select with the keys stays lit until `Esc`. Each view 
 | Projects, Health, Deps, Settings | `Ctrl+U` `Ctrl+D` | Scroll the detail (in Projects the open section: the top of the detail stays). |
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
-| Run | `w` | On a task that ran (not one replayed from the cache), open the **Why would a task run again?** form with the task filled in: `Enter` runs `smith why-miss <project:task>`. On a cached task, or one that did not run, the key says why it does nothing. Outside the run panel `w` still runs the affected projects. |
-| Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
-| Run panel | `Esc` | Show all output; press it again to go back to the project (the run goes on in the background). The `Back (Esc)` button does the same. |
+| Run | `w` | On a task that ran (not one replayed from the cache), open the **Why would a task run again?** form with the task filled in: `Enter` runs `smith why-miss <project:task>`. On a cached task, or one that did not run, the key says why it does nothing. Outside the Runs view `w` still runs the affected projects. |
+| Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log (on a narrow screen that shows the log, `Up` and `Down` scroll it). |
+| Run | `e` | Errors only: keep only the failed tasks in the tree; `e` again shows them all. |
+| Run | `Tab` | On a narrow screen, show the log, or the tasks again. |
+| Run | `Esc` | Show all output; press it again to go back to the view the run was opened from (the run goes on in the background). The `Back (Esc)` button does the same. |
 | Run | `,` `.` | Show the older or the newer run of this session (smith keeps the last 20). The line under the buttons, `run 2 of 5 · ‹ older  newer ›`, has the same two actions as clickable parts: `‹ older` and `newer ›` step through the runs. A part that cannot be used now (no older run, a run in progress) is faint, and a click on it says why. |
-| Projects, the detail | `Tab` `Shift+Tab`, `Left` `Right`, `Up` `Down`, `Enter`, `Esc`, `R` | In the detail of a project, `Tab` and `Right` show the next section and `Shift+Tab` and `Left` the one before. `Up` and `Down` choose a task (Tasks) or a run (Runs), and scroll Dependencies. `Enter` runs the chosen task as its key does, or opens the chosen run in the run panel. In Settings the keys are those of the editor (`Enter` changes the chosen setting). `Esc` gives the keyboard back to the list, or closes the detail that fills the pane. `R` opens the Run… menu, and `Esc` closes it. |
-| Projects, Health | `Tab`, `Right`, `Left`, `Up` `Down`, `Enter` | `Tab` (or `Right`, except on a Health group header, where it unfolds the group) moves the keyboard to the detail beside the list (in Projects, see the row above). There `Up` and `Down` choose one of its buttons, `Enter` presses it and `PgUp` `PgDn` scroll it. `Tab`, `Left` or `Esc` gives the keyboard back to the list. With a run open, the keyboard is on the run until `Tab` gives it to the list; the run stays open. A click in a panel gives it the keyboard. |
+| Projects, the detail | `Tab` `Shift+Tab`, `Left` `Right`, `Up` `Down`, `Enter`, `Esc`, `R` | In the detail of a project, `Tab` and `Right` show the next section and `Shift+Tab` and `Left` the one before. `Up` and `Down` choose a task (Tasks) or a run (Runs), and scroll Dependencies. `Enter` runs the chosen task as its key does, or opens the chosen run in the Runs view. In Settings the keys are those of the editor (`Enter` changes the chosen setting). `Esc` gives the keyboard back to the list, or closes the detail that fills the pane. `R` opens the Run… menu, and `Esc` closes it. |
+| Projects, Health | `Tab`, `Right`, `Left`, `Up` `Down`, `Enter` | `Tab` (or `Right`, except on a Health group header, where it unfolds the group) moves the keyboard to the detail beside the list (in Projects, see the row above). There `Up` and `Down` choose one of its buttons, `Enter` presses it and `PgUp` `PgDn` scroll it. `Tab`, `Left` or `Esc` gives the keyboard back to the list. A click in a panel gives it the keyboard. |
 | Home | `Up` `Down` `Left` `Right`, `Enter`, `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` | `Up` and `Down` move through the items of Needs you now (`Home` and `End` jump to the first and the last), and `Left` and `Right` through the buttons of the selected item; `Enter` presses the chosen button, which shows `(Enter)`. A page taller than the terminal scrolls: `PgUp` `PgDn`, `Ctrl+U` `Ctrl+D` and the wheel move it, the first or last row says `↑ more (PgUp, Ctrl+U)` or `↓ more (PgDn, Ctrl+D)`, and the arrows keep the selected item in view. |
 | Health | `Enter` | Open the check in the frame (narrow terminals; Esc goes back), or unfold the detail (wide). |
 | Health | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
@@ -403,7 +422,7 @@ of each update in [`smith up --json`](up.md).
   shows its own keys on its buttons and in its key line. Every dialog sits between the title bar
   and the footer, so the title bar, the views and the status bar stay in view.
 - When the run shown has a failed task, `r run again` and `Y copy log` lead the footer.
-- The `Esc` label says what Esc does: in the run panel, `all output` while one task's log is
+- The `Esc` label says what Esc does: in the Runs view, `all output` while one task's log is
   shown, then `back`; it leaves the footer while a run shows all output.
 - A tab shows a spinner after its name while its work goes on in the background: the checks
   of Health, the registries asked for Deps, the plan being read for Release. The Deps view
@@ -468,7 +487,7 @@ The release confirmation is titled `Release now` and lists, in this order:
 3. `What will happen:` smith makes no commit (it tags the current commit), how many tags it creates, whether the tags go to the remote (and which) or stay on this computer (no remote, or `--no-push`), and that each package goes to its registry.
 4. The exact command line, for example `smith release --yes`.
 
-Cancel has the focus, so a hurried `Enter` does not publish; `Esc` cancels too. `y` confirms. The confirming button reads `Release now (y)`, or `Release anyway (y)` when a check warns. While the release runs, the Release view shows the command, one step per package (waiting, building with a spinner, tagged) and `Ctrl+C` stops it. When it ends, a dialog lists the new tags, read from what the release printed, and a line `What next:` (`smith release --status`, or the `git push --tags` to run when the tags stayed local, or what to do after a failure). The run panel of Projects keeps the full output.
+Cancel has the focus, so a hurried `Enter` does not publish; `Esc` cancels too. `y` confirms. The confirming button reads `Release now (y)`, or `Release anyway (y)` when a check warns. While the release runs, the Release view shows the command, one step per package (waiting, building with a spinner, tagged) and `Ctrl+C` stops it. When it ends, a dialog lists the new tags, read from what the release printed, and a line `What next:` (`smith release --status`, or the `git push --tags` to run when the tags stayed local, or what to do after a failure). The Runs view keeps the full output.
 
 The preview of an empty plan does not repeat the headline, and the preview of a plan ends with a pointer to `Release now (x)` and not with the advice to run `smith release` in a terminal.
 
@@ -542,12 +561,12 @@ These are in the palette (`:`), under Health. None has a key of its own.
 | **Undo the last change…** | Runs `smith undo --dry-run` first and shows what it would revert in a dialog. `y` or `Enter` then runs `smith undo --yes`, which reverts it with a new commit; `Esc` leaves everything as it is. When commits are off, the notice reads "Undo is not on" and has a button, **Choose how smith commits**, that opens the question below. When commits are on and smith has nothing to undo, a notice shows its reason; `Enter` closes it. |
 | **Open the report** | Runs `smith report -o <file>` with a file in the temporary folder named after the workspace (`smith-report-<workspace>.html`), opens it in your browser and tells you the path in a toast, so you can open it again. |
 | **Write the agent file…** | `smith agent file` after a confirmation: `AGENTS.md`, and a short `CLAUDE.md` that imports it. |
-| **Check the derived files** | `smith derive --check` in the run panel of Projects: writes nothing, fails when a derived file is out of date or was edited. |
+| **Check the derived files** | `smith derive --check` in the Runs view: writes nothing, fails when a derived file is out of date or was edited. |
 | **Update the derived files…** | `smith derive` after a confirmation: writes the files that follow from the project graph. A file you edited is never overwritten. |
-| **Preview the derived files** | `smith derive --dry-run` in the run panel of Projects: the plan of the update, nothing is written. |
+| **Preview the derived files** | `smith derive --dry-run` in the Runs view: the plan of the update, nothing is written. |
 | **Why is this here?…** | A form that asks for a file, a folder or a setting (with the [path finder](#the-path-finder) to browse them) and runs `smith why <it>`: who owns a file and how to change it, or why a setting has its value. The Health detail of a check about a file opens it with that file filled in. |
-| **Divergences from the defaults** | `smith divergences` in the run panel of Projects: every override, ejected file and drift, each with the reason and how to go back. |
-| **Try a command in a copy…** | A form that asks for a smith command (`add package billing`) and runs `smith try` on it: the command runs in a temporary copy, doctor checks the result, and the run panel says what changed. Your files stay as they are. |
+| **Divergences from the defaults** | `smith divergences` in the Runs view: every override, ejected file and drift, each with the reason and how to go back. |
+| **Try a command in a copy…** | A form that asks for a smith command (`add package billing`) and runs `smith try` on it: the command runs in a temporary copy, doctor checks the result, and the Runs view says what changed. Your files stay as they are. |
 | **Write the launcher…** | `smith bootstrap` after a confirmation: writes `tools/smith/smith` and `tools/smith/smith.cmd`, so a laptop and CI run the same smith. |
 | **Swap a choice…** | Under Projects in the palette. Pick the project, the decision (test, lint, style) and the answer. smith shows the plan of `smith swap --dry-run` first, with the unticked box "Commit this change so it can be undone"; Run does the swap. |
 
@@ -575,16 +594,16 @@ the palette (`:`). A command that changes files shows its plan first, as every o
 
 | Palette entry | Section | What it does |
 |---|---|---|
-| **Environments of the web apps** | Projects | `smith environments list` in the run panel of Projects. |
+| **Environments of the web apps** | Projects | `smith environments list` in the Runs view. |
 | **Add environments to a web app…** | Projects | Pick the web app (the selected project first), type the names. The plan of `smith environments add --dry-run` lists the files it writes. |
 | **Remove environments from a web app…** | Projects | Same form. The plan says that the `.env.<name>` file stays and that the default environment cannot go. |
 | **Make the icons of a Tauri app…** | Projects | Asks for the square PNG and, when more than one app has a `src-tauri`, which app. The plan lists the icons it overwrites. |
 | **Add a ready-made pipeline…** | Release | Pick e2e, package-zip, deploy-pages or deploy-azure-function; a deploy pipeline asks for its app. The plan lists the files. |
 | **Set the Docker Hub descriptions…** | Release | Asks to name the repositories only (the default, nothing is sent) or to set the descriptions. |
-| **Cache: status**, **check for damage** | Health | `smith cache status` and `smith cache verify` in the run panel of Projects. |
+| **Cache: status**, **check for damage** | Health | `smith cache status` and `smith cache verify` in the Runs view. |
 | **Cache: remove what is broken…**, **trim to its limit…**, **delete it all…** | Health | `smith cache verify --fix`, `prune` (with its plan) and `clear`, each after a confirmation that says the next run is slower. |
-| **Copies between projects**, **Tools the workspace needs** | Health | `smith copies` and `smith tools` in the run panel of Projects. |
-| **Why would a task run again?…** | Health | Asks `project:task` and runs `smith why-miss`. `w` on a task of the run panel opens it with that task filled in. |
+| **Copies between projects**, **Tools the workspace needs** | Health | `smith copies` and `smith tools` in the Runs view. |
+| **Why would a task run again?…** | Health | Asks `project:task` and runs `smith why-miss`. `w` on a task of the Runs view opens it with that task filled in. |
 | **Connect smith to a coding assistant…** | Health | Tick Claude Code and VS Code; writes `.mcp.json` and `.vscode/mcp.json` after a confirmation. |
 
 In **Add project**, a web app gets ONE question about its environments, not four. The labels
@@ -679,7 +698,7 @@ sandboxed. Then the plugins installed on the plugin search path, and a row to in
 plugin. `Enter` on that row asks where the plugin comes from (a directory, an archive, an https
 URL or `github:owner/repo@tag`; an archive or URL needs its sha256 typed after the source) and
 shows the command line as you type, `smith plugin install <source> [--sha256 <digest>]`. `Enter`
-again shows it in the confirmation dialog, and `y` runs it in the run panel of Projects, so its output is the
+again shows it in the confirmation dialog, and `y` runs it in the Runs view, so its output is the
 command's own. The plugin is checked and never started; trusting it is the review above. The tab
 reads the plugins again when the command ends. The row above it, **Find a plugin in the
 marketplace…**, asks for words (or nothing, to list every plugin), runs
@@ -787,7 +806,7 @@ runs the check at once, with no question. It runs `slice-check`, the cached task
 language the checker knows (Go, Python, Rust and others), and `lint` when the workspace has Node
 projects, because ESLint's vertical-slices rules check a Node project's layout as part of its lint.
 A workspace with a Go app and Node packages runs `smith run slice-check lint`. Each project's
-result, and the output of a failure, show in the run panel. The row is absent when no project has
+result, and the output of a failure, show in the Runs view. The row is absent when no project has
 either task.
 
 ## Wizards
@@ -992,7 +1011,7 @@ view draws its buttons in the view, not in a detail pane.
 ## The mouse
 
 **Buttons.** Every action in a detail pane, the buttons of the detail of a project (`Run…`, `Open`) and of an empty Projects list (`New project`,
-`Compose a stack`) and of the run panel (`Back`, `Stop`, `Run again`, `Run unfinished`, `Copy log`), is a button that shows its key in
+`Compose a stack`) and of the Runs view (`Back`, `Stop`, `Run again`, `Run unfinished`, `Copy log`), is a button that shows its key in
 parentheses, for example `Test app (t)`. A button has three looks. It rests; it is lit while the
 pointer is over it; and it is pressed while you hold the mouse button on it. The action runs when you
 let go over the same button. Press a button, drag away and let go, and nothing runs. In an
@@ -1025,7 +1044,7 @@ change (with the cache clear choice), the missing tools dialog, the remote cache
 release adjust list, the Settings editors and the commit box of a confirmation. The row at the
 keyboard cursor has the cursor mark (`›`, `>` in the ASCII theme) and an accent label. Every
 other list marks its selected row the same way, with no background: the list of projects, the
-sections and rows of Settings, the command palette, the Deps rows, the task rows of the run panel,
+sections and rows of Settings, the command palette, the Deps rows, the task rows of the Runs view,
 the runs of the Runs section of a project, the tasks of its Tasks section, the runs on Home (where the mark sits in the gap before the run) and
 the rows of the Install packages box; a status mark keeps its colour. A Settings list that does not have the keyboard keeps the mark in bold. A box reads
 `[ ]`, `[x]` or `[-]` (part ticked, or cannot be ticked), and a one-of-several choice reads `( )`
@@ -1065,7 +1084,7 @@ until you press Esc or any other key (Esc only clears the highlight; another key
 again, scroll the wheel, change tab, resize the terminal, or the text under the highlight changes.
 
 - A drag stays inside the panel where it started: the list or the detail; in Settings the sections, the
-  settings and their help; in the run panel the task list and the log. The frames, the padding, the title bar, the rail, the strip and the footer are never selected.
+  settings and their help; in the Runs view the tasks and the log. The frames, the padding, the title bar, the rail, the strip and the footer are never selected.
 - A press on a button, a tab, a divider or a dialog starts no selection. A plain click selects nothing.
 - Without colour (`NO_COLOR`) the selection is drawn in reverse video.
 - Shift+drag, and `m` with a plain drag, still select with the terminal itself, across panels.

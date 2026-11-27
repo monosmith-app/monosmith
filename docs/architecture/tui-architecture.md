@@ -96,7 +96,7 @@ and help but never run by the shell: the open view handles them.
 ### Which panel has the keyboard
 
 A view with two panels (Projects and Doctor beside their detail) has one more piece of state, and the
-keymap reads it the same way as the run panel: `State.SideFocus` (the keyboard is on the right panel),
+keymap reads it the same way as the Runs view (`State.RunOpen`): `State.SideFocus` (the keyboard is on the right panel),
 `State.SideNext` (Tab goes to the right panel next) and `State.ProjectDetail` (the keyboard is in the
 sections of the detail of a project). A command says where it works with `NeedsSideFocus`,
 `NotInSideFocus`, `NeedsSideNext`, `NotSideNext`, `NeedsProjectDetail` and `NotInProjectDetail`, so the
@@ -215,26 +215,28 @@ sequenceDiagram
   R->>X: smith argv
   X-->>R: lines: events or text
   R-->>S: runview turns them into task states
-  S-->>P: run panel: rows, progress, log
+  S-->>P: Runs view: tree, progress, log
 ```
 
 `Shell.execute` (`shell_run_use_case.go`) classifies the command line with
 `libs/actions/catalog.Classify` into three kinds: needs a terminal (a command that asks questions;
 the shell quits and smith runs it), changes the workspace (ask first), and the rest. The rest,
 which includes every task run and the commands that print and end (`plugin`, `config`, `graph`,
-`explain`...), runs through `runner.Process` and stays in the run panel of Projects: the interface never gives up
-the terminal for them (`tea.Exec` is not used for runs). Outside a workspace there is no run panel,
+`explain`...), runs through `runner.Process` and stays in the Runs view (key 3): the interface never gives up
+the terminal for them (`tea.Exec` is not used for runs). Outside a workspace there is no Runs view,
 so `smith new`, `adopt` and `convert` quit the shell and run in the terminal.
 
-### The run panel
+### The Runs view
 
-A run shows one row per task (queued, running with a spinner and its elapsed time, passed, failed,
-cached, skipped), a progress bar with totals, and the captured log of the selected row (all output
-when none is selected). Failures are listed first and the first failed task is selected when the
+A run shows its tasks grouped by project (`runpage.Tree`; queued, running with a spinner, passed,
+failed, cached, skipped, each with its time), a progress bar with totals (`runpage.Bar`, drawn with
+`bubbles/progress`), and the captured log of the selected row (all output when none is selected),
+beside the tree on a wide screen and behind `Tab` on a narrow one. `e` keeps only the failed tasks.
+The first failed task is selected when the
 run ends, so its output is the first thing read. The runs of the session (the last 20) are kept
 in memory and shown again with `,` and `.`; `r` runs the shown run again, `R` runs the tasks that
 failed or were skipped, `Ctrl+C` stops the run. `y` copies the command line, `Y` the log shown (one
-task's output or all of it). The status bar and the run panel header keep the exact command line, as
+task's output or all of it). The status bar and the frame of the Runs view keep the exact command line, as
 typed. Full logs stay reachable: `Y` puts them on the clipboard, `m` turns mouse reporting off so
 the terminal selects text with a plain drag, and `smith run ...` with the copied command line
 prints them in any terminal.
@@ -320,7 +322,7 @@ terminal sequence, which also works over SSH.
 |---|---|
 | Single-key keymap, one adaptive pane, no menu bar | [ADR 0032](decisions/0032-single-key-tui-keymap.md) |
 | One list of actions shared by shell, MCP and serve | [ADR 0029](decisions/0029-one-list-of-actions.md) |
-| Event stream and `smith serve` (the run panel reads it for task runs) | [ADR 0026](decisions/0026-event-stream-and-smith-serve.md) |
+| Event stream and `smith serve` (the Runs view reads it for task runs) | [ADR 0026](decisions/0026-event-stream-and-smith-serve.md) |
 | Doctor fixes with steps and choices | [ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md) |
 | Adopt and convert depth levels | [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md) |
 
