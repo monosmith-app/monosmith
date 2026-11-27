@@ -250,6 +250,15 @@ typed. Full logs stay reachable: `Y` puts them on the clipboard, `m` turns mouse
 the terminal selects text with a plain drag, and `smith run ...` with the copied command line
 prints them in any terminal.
 
+The header's estimate is `shell_run_estimate_use_case.go`: `keepDurations` adds each passed task
+to `rundurations.History` (the last `rundurations.Keep` times per task) when a run ends and saves it
+with `Config.SaveDurations`, which `tui_handler.go` points at `rundurations.Save` in
+`session.LocalCacheDir`; `timeLeft` asks `rundurations.Estimate`. The search of the log is
+`shell_log_search_use_case.go` over the package `logsearch` (`Find`, `Highlight`) and
+`logview.Log.ShowRow`; `State.LogSearch` and `Command.NeedsLogSearch` keep `n`/`N` out of the way
+while there is no search. The cache miss reason comes from the run engine (`taskrun.missOf`, the
+`miss` of `task.finished`) through `runview.MissText` to `runview.Task.Miss`.
+
 ### runview reads events, and text as a fallback
 
 For a task run the shell starts the child with `--json-events`

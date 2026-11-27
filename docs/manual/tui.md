@@ -301,7 +301,8 @@ opens it. Its frame is titled `Run · smith run test -p orders` (`‹ Runs / smi
 orders` on a narrow screen). From the top it has:
 
 - the header: a spinner (or the mark of how it ended), what runs (`Running 18 tasks`,
-  `Failed 4 tasks`) and the time, with the buttons at the right: `Back (Esc)`,
+  `Failed 4 tasks`) and the time, then, while it runs, `· about 20s left` when every task left
+  ran before (see below), with the buttons at the right: `Back (Esc)`,
   `Stop (Ctrl+C)` (faint once nothing runs), `Run again (r)`, `Run unfinished (R)` (only when
   a task did not finish), `Copy log (Y)` and `+ (Z)`, which fills the terminal;
 - the line `run 2 of 5 · ‹ older  newer ›` when the session has more than one run (the keys
@@ -312,7 +313,21 @@ orders` on a narrow screen). From the top it has:
   project and its tasks under `├─` and `└─`, each with its mark, its time and `hit` or
   `remote` when the cache gave it), and at the right the log of the chosen task under its
   title, which says if it follows or is paused, the command the task ran and its state,
-  time and reason. Drag the line between them to resize them.
+  time and reason. A task that uses the cache and ran says why the cache did not answer:
+  `Cache miss: 2 files changed` (or `no entry yet`, `the command changed`, `the key changed`,
+  `the cache was off (--no-cache)`); the Tasks of a project say `miss · 2 files changed`. Drag the
+  line between them to resize them.
+
+**The time left.** smith keeps how long each task took when it passed, the last five times,
+in `tui-durations.json` in the workspace's local cache folder (`.smith/cache`, which git
+ignores; never the remote cache). While a run goes, the header adds `· about 20s left`: the
+typical time of each task left, less what a running task already spent, shared by the tasks
+that run at once. A task that never passed before gives no estimate, so the line is left out.
+
+**Search the log.** `/` types a search over the log shown: `Search: panic▏  1 of 3` in its title,
+each match in the accent and bold, the one you are on also on the selected background. `Enter`
+keeps the search, `n` goes to the next match and `N` to the one before, round the end, and the log
+scrolls to it. `Esc` clears the search (then it shows all output, then goes back).
 
 Under the tasks, **Runs this session** lists the runs smith kept (the newest first, at most
 five rows): a click opens one. smith keeps the runs of this session only, in memory; they go

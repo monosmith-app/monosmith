@@ -479,8 +479,29 @@ These items of the left-open list were built after phase 8.
   (`projects.unselect`, `NeedsPicked`) clears the selection before the filter. The new words are in
   `libs/words/catalog/en/projects_pick.json`.
 
+- The time estimate of the Runs view: `· about 20s left` after the time while a run goes. The owner decided the
+  durations live only in the workspace's local cache, which git ignores (`<local cache>/tui-durations.json`,
+  `rundurations`), never in the remote cache. Each task keeps its last five passed times; the estimate is the
+  median of each task left, less what a running one spent, divided by the tasks running at once. A task with no
+  history gives no estimate.
+- The log search: `/` (`run.search`) types `Search: text▏  1 of 3` in the log's title, the matches are in the accent and
+  bold and the current one is also on the selected background, `n`/`N` (`run.search-next`) go round the matches and
+  scroll to them, `Esc` clears the search first.
+- The cache miss reason: the run engine now says why a task that uses the cache ran (`runevents.Miss`, the `miss`
+  field of `task.finished`: `no-entry`, `inputs-changed` with the count of files and the other kinds, `key-changed`,
+  `no-cache`). The Runs view shows `Cache miss: 2 files changed` over the log of the task, and the Tasks table of a
+  project `miss · 2 files changed`. The new words are in `libs/words/catalog/en/runs_follow_up.json`.
+
 Deviations:
 
+- The estimate counts only passed tasks (a cached, failed or stopped one says nothing about how long it takes), and
+  it shares the work by the tasks running now, not by the parallelism smith may reach later.
+- The screens' `Errors only   Full log   / search` line is not drawn: `e` already filters the tree, and the search
+  shows in the title of the log. `n` and `N` come after `Esc back` in the footer, so a narrow footer drops them first;
+  the help lists them.
+- The cache line is over the log, with the task's facts, not under it: the bottom of the log is where it grows.
+  The screens' `in src/Orders since the last pass` is not said: the engine counts the files, it does not group
+  them by folder; `smith why-miss` (`w`) lists them.
 - The narrow strip has no Pinned group: it is one line. A narrow screen pins and unpins with `P`, and shows the pins
   once it is wide.
 - The selection keeps the `[ ]`/`[x]` boxes of every pick list (the screens draw no mark for it), and it counts only
@@ -494,11 +515,10 @@ Deviations:
 What the redesign did not build, across the phases, for the owner to decide:
 
 - The marks `✗`, `⚠` and `⚡` the screens draw: `shared/marks` bans them (phases 2 to 8).
-- The time estimate, the log search
-  and the cache reason of the Runs view (phase 5), the Settings and Tasks groups of the palette and its command
+- The Settings and Tasks groups of the palette and its command
   editor (phase 6), the dry run of Dependencies and the per-package one-version line (phase 7), and the Workspace
   filter of Settings (phase 8).
-- The keys the screens change (`c` check again, `d` dry run, `Space` select several): one command keeps one key.
+- The keys the screens change (`c` check again, `d` dry run): one command keeps one key.
 - Unused exported symbols kept to avoid a major release: `run.list`, `RunListSpot`, `RunListRows`, `MinRunListRows`,
   `MinLogRows`, `releaseview.Model.Open`, and the side-detail functions of `settingsview` and `splitter`.
 - The VS Code extension and the JetBrains plugin follow none of the new layouts; only the Health name (phase 2)
