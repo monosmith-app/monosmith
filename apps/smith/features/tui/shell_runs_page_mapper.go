@@ -331,6 +331,9 @@ func (s Shell) runsHead(w int) ([]string, map[int]hit) {
 	if took := progress.Elapsed(s.run.RunTime(s.now())); took != "" {
 		state += "  " + s.th.Muted(took)
 	}
+	if left, ok := s.timeLeft(); ok {
+		state += s.th.Muted(words.Say("runpage.estimate", "time", left))
+	}
 	var ctl []string
 	var ctlHits []hit
 	if row, spans, bw := s.runButtonRow(); pane.Width(state)+2+bw <= w {

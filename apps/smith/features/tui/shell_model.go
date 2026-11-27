@@ -30,6 +30,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/resultdialog"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/rundurations"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/selection"
@@ -117,6 +118,11 @@ type Config struct {
 	// the person's own preferences, never in the workspace.
 	Pins     []string
 	SavePins func(pins []string)
+	// Durations are how long the tasks took in their last runs, for the time
+	// estimate of the Runs view; SaveDurations keeps them after a run (nil keeps
+	// none). They live in the workspace's local cache, never in the remote one.
+	Durations     rundurations.History
+	SaveDurations func(rundurations.History)
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -228,6 +234,10 @@ type Shell struct {
 	proc runner.Handle
 	// stopping is set once Ctrl+C asked the run to stop.
 	stopping bool
+	// durations are how long the tasks took before, for the estimate of a run;
+	// saveDurations keeps them when a run adds to them.
+	durations     rundurations.History
+	saveDurations func(rundurations.History)
 	// runSel is the task whose log is shown ("" for all output); runTop scrolls the task list.
 	runSel string
 	// runErrors is true while the tree of the Runs view keeps only the failed
@@ -449,6 +459,7 @@ func NewShell(cfg Config) Shell {
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
 	sh.hyperlinks = cfg.Hyperlinks
 	sh.pins, sh.savePins = append([]string(nil), cfg.Pins...), cfg.SavePins
+	sh.durations, sh.saveDurations = cfg.Durations, cfg.SaveDurations
 	sh.commitSet, sh.commitChoice, sh.saveCommit = cfg.CommitOperationsSet, cfg.CommitChoice, cfg.SaveCommitChoice
 	if cfg.Repair != nil {
 		sh.repair = cfg.Repair

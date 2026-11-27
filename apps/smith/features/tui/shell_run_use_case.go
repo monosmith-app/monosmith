@@ -268,8 +268,9 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-// finished tells the user how the run ended.
+// finished tells the user how the run ended, and keeps how long its tasks took.
 func (s *Shell) finished() {
+	s.keepDurations()
 	if s.run.OK() && isCompletionSetup(s.run.Command) {
 		s.completionWanted = false
 	}

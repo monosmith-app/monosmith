@@ -14,5 +14,7 @@
   "runview.miss.what.serve": "the served app changed",
   "runview.miss.what.platform": "the platform changed",
   "tui.projects.cache.miss_why": "miss · {why}",
-  "runpage.log.miss": "Cache miss: {why}"
+  "runpage.log.miss": "Cache miss: {why}",
+  "runpage.estimate": " · about {time} left",
+  "rundurations.nodir": "There is no local cache folder, so the time of the tasks is not kept."
 }
