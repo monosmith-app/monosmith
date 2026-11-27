@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/features/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/features/tui/theme"
 )
@@ -86,8 +87,8 @@ func TestAHoveredButtonLooksDifferentAndLeavingRestoresIt(t *testing.T) {
 	if hover == rest {
 		t.Fatal("the button under the pointer must show the hover state")
 	}
-	// The margin cell at the left edge is on no button and no row.
-	l.send(motion(0, y))
+	// The blank column after the rail is on no button and no row.
+	l.send(motion(layout.RailWidth, y))
 	if got := l.rawRow(y); got != rest {
 		t.Fatalf("the button must be back at rest:\n%q\n%q", got, rest)
 	}

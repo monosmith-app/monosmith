@@ -382,7 +382,7 @@ func TestThePreviewStaysOnTheReleaseScreenAndSaysWhatItWaitsFor(t *testing.T) {
 	if l.sh().tab != "release" {
 		t.Fatalf("the preview left the Release screen for %q", l.sh().tab)
 	}
-	l.has("Preview: smith release --dry-run", "registry", "Ctrl+C stops it")
+	l.has("Preview: smith release --dry-run", "registry", "Ctrl+C", "stops it")
 	l.keys("ctrl+c")
 	l.send(outputMsg{proc: p, exit: &runner.Exit{Code: 1, Cancelled: true}})
 	l.has("Preview: smith release --dry-run", "full output in the run panel of Projects")

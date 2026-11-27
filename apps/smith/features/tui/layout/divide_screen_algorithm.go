@@ -24,9 +24,10 @@ type Layout struct {
 	StatusBar    Rect
 }
 
-// RailWidth is the width of the rail of views, its frame included. The rail
-// is not resizable.
-const RailWidth = 24
+// RailWidth is the width of the rail of views, its rule included: the
+// longest view name ("Dependencies"), a blank cell on each side and the rule.
+// The rail is not resizable.
+const RailWidth = 15
 
 // railGap is the blank column between the rail and the content frames.
 const railGap = 1

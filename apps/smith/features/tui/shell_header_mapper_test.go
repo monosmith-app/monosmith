@@ -27,7 +27,7 @@ func TestOnAWideScreenTheTitleBarIsTheFirstRowAndTheRailListsTheViews(t *testing
 		t.Fatalf("a blank row, then the rail and the frames: %+v", lay)
 	}
 	rail := strings.Join(l.lines()[lay.Rail.Y:lay.Rail.Y+lay.Rail.H], "\n")
-	for _, want := range []string{"╭─ Views", "Home", "Projects", "Health", "Dependencies", "Release", "Settings"} {
+	for _, want := range []string{" Views ", "Home", "Projects", "Health", "Dependencies", "Release", "Settings"} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("the rail lacks %q:\n%s", want, rail)
 		}
